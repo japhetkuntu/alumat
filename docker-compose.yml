@@ -68,8 +68,8 @@ services:
     container_name: alumni-minio
     restart: unless-stopped
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioapp}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioapp}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     ports:
       - "${MINIO_API_PORT:-9000}:9000"
@@ -91,8 +91,8 @@ services:
       minio:
         condition: service_healthy
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioapp}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioapp}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-alumat}
     entrypoint: >
       /bin/sh -c "
@@ -125,12 +125,12 @@ services:
       Redis__AdminRedisConfig__DbNumber: 0
       BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumni.umat.edu.gh}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumni.umat.edu.gh}
-      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY:-UMaT-Alumni-Admin-SuperSecretSigningKey-ChangeInProduction}
-      BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY:-UMaT-Alumni-Member-SuperSecretSigningKey-ChangeInProduction}
+      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY}
+      BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
       MailhogConfig__SmtpHost: mailhog
       MailhogConfig__SmtpPort: 1025
-      StorageConfig__AccessKey: ${MINIO_ROOT_USER:-minioapp}
-      StorageConfig__SecretKey: ${MINIO_ROOT_PASSWORD:-minioapp}
+      StorageConfig__AccessKey: ${MINIO_ROOT_USER}
+      StorageConfig__SecretKey: ${MINIO_ROOT_PASSWORD}
       StorageConfig__BucketName: ${MINIO_BUCKET_NAME:-alumat}
       StorageConfig__Region: ${STORAGE_REGION:-us-east-1}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT:-http://minio:9000}
@@ -166,15 +166,15 @@ services:
       Redis__MemberRedisConfig__DbNumber: 1
       BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumni.umat.edu.gh}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumni.umat.edu.gh}
-      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY:-UMaT-Alumni-Admin-SuperSecretSigningKey-ChangeInProduction}
-      BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY:-UMaT-Alumni-Member-SuperSecretSigningKey-ChangeInProduction}
-      PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY:-}
-      PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY:-}
+      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY}
+      BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
+      PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY}
+      PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY}
       PaystackConfig__CallbackUrl: ${PAYSTACK_CALLBACK_URL:-http://localhost:3200/contributions}
       MailhogConfig__SmtpHost: mailhog
       MailhogConfig__SmtpPort: 1025
-      StorageConfig__AccessKey: ${MINIO_ROOT_USER:-minioapp}
-      StorageConfig__SecretKey: ${MINIO_ROOT_PASSWORD:-minioapp}
+      StorageConfig__AccessKey: ${MINIO_ROOT_USER}
+      StorageConfig__SecretKey: ${MINIO_ROOT_PASSWORD}
       StorageConfig__BucketName: ${MINIO_BUCKET_NAME:-alumat}
       StorageConfig__Region: ${STORAGE_REGION:-us-east-1}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT:-http://minio:9000}
