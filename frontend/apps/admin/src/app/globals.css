@@ -1,0 +1,678 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Anthropic Sans", var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Paystack-style spacing tokens */
+  --space-section: 80px;
+  --space-section-sm: 48px;
+  --space-card: 28px;
+  --space-gap: 24px;
+
+  /* Card / surface tokens */
+  --card-radius: 12px;
+  --card-border: rgba(14, 113, 67, 0.12);
+  --card-shadow: none;
+  --card-shadow-hover: none;
+
+  /* Transition token */
+  --transition: all 0.18s ease;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* UMaT Brand Utility Colors */
+  --color-umat-emerald: var(--umat-emerald);
+  --color-umat-sky: var(--umat-sky);
+  --color-umat-scarlet: var(--umat-scarlet);
+  --color-umat-gold: var(--umat-gold);
+
+  /* Precise border radius scale (Linear focus) */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+
+  /* Sophisticated Shadow Scale (Figma natural depth) */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+
+  /* Purposeful Animation Tokens (Slack responsiveness) */
+  --animate-in: animate-in 0.2s cubic-bezier(0.2, 0, 0, 1);
+  --animate-out: animate-out 0.15s cubic-bezier(0, 0, 0.2, 1);
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-slide-down: slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-scale-in: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-tooltip: slide-up 0.15s cubic-bezier(0.16, 1, 0.3, 1), fade-in 0.1s ease-out;
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────────── */
+
+@keyframes animate-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes animate-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Typography (Paystack-inspired) ───────────────────────────────────────── */
+html {
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+body {
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+h3 {
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+}
+
+h4 {
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+}
+
+p, li, dd {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--foreground);
+}
+
+small, .text-small {
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* Section spacing */
+.section {
+  padding-block: var(--space-section);
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding-block: var(--space-section-sm);
+  }
+}
+
+.section__inner {
+  max-width: 1160px;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* Card base styling */
+.card {
+  border-radius: var(--card-radius);
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  transition: var(--transition);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.card__content {
+  padding: var(--space-card);
+  min-width: 0;
+}
+
+.card__header {
+  padding: var(--space-card) var(--space-card) calc(var(--space-card) * 0.7) var(--space-card);
+  min-width: 0;
+}
+
+.card__content > * {
+  min-width: 0;
+}
+
+/* Button reset to match Paystack */
+.btn {
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 12px 24px;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid transparent;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.btn-primary:hover {
+  filter: brightness(0.92);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+.btn-secondary {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover {
+  background: var(--muted);
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  color: var(--foreground);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--foreground);
+}
+
+.btn-ghost:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.btn-destructive {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  color: var(--destructive);
+}
+
+.btn-destructive:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Input styling */
+.input {
+  border: 1.5px solid rgba(229, 231, 235, 1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.9);
+  transition: var(--transition);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.input:disabled {
+  background: rgba(243, 244, 246, 0.8);
+}
+
+.input-error {
+  border-color: rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+
+.input-success {
+  border-color: rgba(34, 197, 94, 0.9);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.16);
+}
+
+/* Tables */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(107, 114, 128, 1);
+  border-bottom: 1px solid rgba(229, 231, 235, 1);
+}
+
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 1);
+  font-size: 13px;
+}
+
+.table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.table-empty {
+  padding: 48px;
+  text-align: center;
+  color: rgba(107, 114, 128, 1);
+}
+
+/* Utility (paystack-esque) */
+.uppercase-tracking {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.shadow-subtle {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* ─── Icons (Lucide / SVG) — ensure visibility and proper sizing ───────────────────────────────── */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+}
+
+/* ─── Root design tokens — UMaT Brand ───────────────────────────────── */
+/*
+ * Official UMaT Colors:
+ *   Emerald Green  → --primary       (#10B981 family)
+ *   Sky Blue       → --info / --umat-sky
+ *   Scarlet Red    → --destructive   (#EF4444 family)
+ *   Golden Yellow  → --warning / --umat-gold
+ *   Black + White  → base foreground/background
+ */
+
+:root {
+  --radius: 12px;
+
+  /* ── Base ── */
+  --background: #ffffff;
+  --foreground: #111827;
+
+  --card: #ffffff;
+  --card-foreground: #111827;
+
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+
+  /* ── Brand tokens ── */
+  --brand-primary: #0e7143;
+  --brand-primary-light: #d1ede0;
+  --brand-primary-mid: #0e7143;
+  --brand-primary-dark: #073d25;
+
+  --brand-accent: #ebb30a;
+  --brand-accent-light: #fdf3cc;
+  --brand-accent-mid: #ebb30a;
+  --brand-accent-dark: #6b4f02;
+
+  --color-background-primary: #ffffff;
+  --color-background-info: #d1ede0;
+  --color-text-info: #073d25;
+  --color-border-info: #0e7143;
+
+  /* ── Primary / key actions ── */
+  --primary: var(--brand-primary);
+  --primary-foreground: #ffffff;
+
+  /* ── Secondary / surface ── */
+  --secondary: #f5faf7;
+  --secondary-foreground: #111827;
+
+  --muted: #f7fbf8;
+  --muted-foreground: #6b7280;
+
+  --accent: var(--brand-accent);
+  --accent-foreground: #6b4f02;
+
+  /* ── Destructive — red semantic derived from red family ── */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* ── Border & Input ── */
+  --border: rgba(14, 113, 67, 0.15);
+  --input: #ffffff;
+  --ring: rgba(14, 113, 67, 0.4);
+
+  /* ── Status palette */
+  --success: var(--brand-primary);
+  --success-foreground: #ffffff;
+  --warning: var(--brand-accent);
+  --warning-foreground: #6b4f02;
+  --info: var(--brand-primary);
+  --info-foreground: #ffffff;
+
+  /* ── UMaT Brand Raw Tokens (use in components directly) ── */
+  --umat-emerald: var(--brand-primary);
+  --umat-sky: #4f46e5;
+  --umat-scarlet: #dc2626;
+  --umat-gold: var(--brand-accent);
+
+  /* ── Chart colors — brand-first palette */
+  --chart-1: var(--brand-primary);
+  --chart-2: var(--brand-accent);
+  --chart-3: #dc2626;
+  --chart-4: #6b7280;
+  --chart-5: #111827;
+
+  /* ── Sidebar ── */
+  --sidebar: #f5faf7;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--brand-accent-light);
+  --sidebar-accent-foreground: #6b4f02;
+  --sidebar-border: rgba(14, 113, 67, 0.12);
+  --sidebar-ring: rgba(14, 113, 67, 0.25);
+}
+
+.dark {
+  --background: #07120d;
+  --foreground: #eef7ec;
+
+  --card: #0b2014;
+  --card-foreground: #eef7ec;
+
+  --popover: #0f2718;
+  --popover-foreground: #eef7ec;
+
+  --primary: #5dbf8e;
+  --primary-foreground: #ffffff;
+
+  --secondary: #122a1c;
+  --secondary-foreground: #dcead9;
+
+  --muted: #102516;
+  --muted-foreground: #9ca3af;
+
+  --accent: #f5d06a;
+  --accent-foreground: #3a2a01;
+
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(93, 191, 142, 0.18);
+  --input: #122a1f;
+  --ring: rgba(93, 191, 142, 0.5);
+
+  --success: #5dbf8e;
+  --success-foreground: #0b2014;
+  --warning: #f5d06a;
+  --warning-foreground: #3a2a01;
+  --info: #5dbf8e;
+  --info-foreground: #0b2014;
+
+  --umat-emerald: #5dbf8e;
+  --umat-sky: #7c96f7;
+  --umat-scarlet: #f87171;
+  --umat-gold: #f5d06a;
+
+  --chart-1: #5dbf8e;
+  --chart-2: #f5d06a;
+  --chart-3: #f87171;
+  --chart-4: #9ca3af;
+  --chart-5: #0f1f14;
+
+  --sidebar: #102516;
+  --sidebar-foreground: #eef7ec;
+  --sidebar-primary: #5dbf8e;
+  --sidebar-primary-foreground: #0b2014;
+  --sidebar-accent: #122b1b;
+  --sidebar-accent-foreground: #f5d06a;
+  --sidebar-border: rgba(93, 191, 142, 0.18);
+  --sidebar-ring: rgba(93, 191, 142, 0.5);
+}
+
+
+/* ─── Base & Typography (Notion Hierarchy) ─────────────────────────── */
+
+*, *::before, *::after {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: "Geist Var", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px; /* Slightly smaller for premium feel */
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+}
+
+/* Notion-style header hierarchy */
+h1, h2, h3, h4, .text-display {
+  letter-spacing: -0.022em;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+h1 { font-size: 2.25rem; margin-bottom: 1.5rem; }
+h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+h3 { font-size: 1.25rem; margin-bottom: 0.75rem; }
+
+/* ─── Precise Interactions (Linear Feedback) ───────────────────────── */
+
+a, button, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+button:active:not(:disabled), [role="button"]:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+}
+
+/* ─── Glass & Blur (Figma Overlays) ────────────────────────────────── */
+
+.glass {
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+/* ─── Scrollbar (Minimalist) ────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ─── Skeleton (Slack Polish) ───────────────────────────────────────── */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--secondary) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s infinite linear;
+  border-radius: var(--radius-sm);
+}
+
+.bg-subtle-pattern {
+  background-image: radial-gradient(var(--primary) / 8% 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── Selection ─────────────────────────────────────────────────────── */
+
+::selection {
+  background: color-mix(in oklch, var(--primary) 18%, transparent);
+  color: var(--foreground);
+}
+
+/* ─── Form error/success animations ─────────────────────────────────── */
+
+.field-error {
+  animation: slide-down 0.2s ease-out;
+}
+
+.field-shake {
+  animation: shake 0.3s ease-out;
+}
+
+/* ─── Or divider (forms) ────────────────────────────────────────────── */
+
+.divider-or {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.divider-or::before,
+.divider-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── Table styles ──────────────────────────────────────────────────── */
+
+.table-row-alt:nth-child(even) {
+  background-color: color-mix(in oklch, var(--primary) 4%, transparent);
+}
+
+/* ─── Auth page helpers (no-scroll, dynamic viewport) ───────────────────── */
+.auth-page-root {
+  /* Fallback to 100vh for browsers that don't support dVh */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.auth-form-scroll {
+  /* Keep the form container within viewport and allow internal scrolling when needed */
+  max-height: calc(100vh - 80px);
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+}

@@ -1,0 +1,15 @@
+{
+  "name": "umat-alumni-frontend",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev --workspace=@alumni/admin",
+    "dev:member": "npm run dev --workspace=@alumni/member",
+    "build:admin": "npm run build --workspace=@alumni/admin",
+    "build:member": "npm run build --workspace=@alumni/member",
+    "lint:admin": "npm run lint --workspace=@alumni/admin",
+    "lint:member": "npm run lint --workspace=@alumni/member"
+  }
+}
