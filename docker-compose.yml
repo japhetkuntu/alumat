@@ -123,8 +123,8 @@ services:
         Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-admin};SearchPath=alumni
       Redis__AdminRedisConfig__ConnectionString: redis:6379
       Redis__AdminRedisConfig__DbNumber: 0
-      BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumni.umat.edu.gh}
-      BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumni.umat.edu.gh}
+      BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumat.umat.edu.gh}
+      BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumat.umat.edu.gh}
       BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY}
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
       MailhogConfig__SmtpHost: mailhog
@@ -164,8 +164,8 @@ services:
         Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-admin};SearchPath=alumni
       Redis__MemberRedisConfig__ConnectionString: redis:6379
       Redis__MemberRedisConfig__DbNumber: 1
-      BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumni.umat.edu.gh}
-      BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumni.umat.edu.gh}
+      BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumat.umat.edu.gh}
+      BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumat.umat.edu.gh}
       BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY}
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
       PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY}

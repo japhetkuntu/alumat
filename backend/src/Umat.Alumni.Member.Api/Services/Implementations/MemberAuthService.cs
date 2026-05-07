@@ -283,7 +283,7 @@ public class MemberAuthService(
     {
         try
         {
-            var link = $"https://alumni.umat.edu.gh/auth/verify-email?token={token}&email={Uri.EscapeDataString(email)}";
+            var link = $"https://alumat.umat.edu.gh/auth/verify-email?token={token}&email={Uri.EscapeDataString(email)}";
             await emailService.SendEmailAsync(new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
@@ -303,7 +303,7 @@ public class MemberAuthService(
     {
         try
         {
-            var link = $"https://alumni.umat.edu.gh/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+            var link = $"https://alumat.umat.edu.gh/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
             await emailService.SendEmailAsync(new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],

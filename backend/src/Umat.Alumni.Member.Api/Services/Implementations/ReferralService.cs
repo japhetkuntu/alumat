@@ -118,7 +118,7 @@ public class ReferralService(
                     {
                         referrer_name = member.Name,
                         referral_code = memberEntity.ReferralCode,
-                        register_url = $"https://alumni.umat.edu.gh/register?ref={memberEntity.ReferralCode}",
+                        register_url = $"https://alumat.umat.edu.gh/register?ref={memberEntity.ReferralCode}",
                     },
                 });
             }

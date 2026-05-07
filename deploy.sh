@@ -13,8 +13,13 @@ set -euo pipefail
 # ── Configuration ──────────────────────────────────────────────────────────────
 readonly COMPOSE_FILE="docker-compose.prod.yml"
 readonly ENV_FILE=".env"
-readonly DOMAIN_BASE="alumni.umat.edu.gh"
-readonly SUBDOMAINS=(admin api admin-api)
+readonly ALL_DOMAINS=(
+  "alumat.umat.edu.gh"
+  "admin-alumat.umat.edu.gh"
+  "alumat-api.umat.edu.gh"
+  "admin-alumat-api.umat.edu.gh"
+  "cdn-alumat.umat.edu.gh"
+)
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-admin@umat.edu.gh}"
 
 # ── Colours ────────────────────────────────────────────────────────────────────
@@ -217,12 +222,12 @@ provision_ssl() {
   log "Waiting 5 s for nginx to accept connections…"
   sleep 5
 
-  local domain_flags=(-d "${DOMAIN_BASE}" -d "www.${DOMAIN_BASE}")
-  for sub in "${SUBDOMAINS[@]}"; do
-    domain_flags+=(-d "${sub}.${DOMAIN_BASE}")
+  local domain_flags=()
+  for d in "${ALL_DOMAINS[@]}"; do
+    domain_flags+=(-d "$d")
   done
 
-  log "Requesting certificates for: ${DOMAIN_BASE} www.${DOMAIN_BASE} ${SUBDOMAINS[*]/%/.${DOMAIN_BASE}}"
+  log "Requesting certificates for: ${ALL_DOMAINS[*]}"
   log "ACME e-mail: $CERTBOT_EMAIL"
 
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm certbot certonly \
@@ -236,8 +241,8 @@ provision_ssl() {
 
   ok "Certificates issued."
   warn "Next: add HTTPS server blocks to docker/nginx/nginx.conf"
-  warn "  ssl_certificate /etc/letsencrypt/live/${DOMAIN_BASE}/fullchain.pem;"
-  warn "  ssl_certificate_key /etc/letsencrypt/live/${DOMAIN_BASE}/privkey.pem;"
+  warn "  ssl_certificate /etc/letsencrypt/live/alumat.umat.edu.gh/fullchain.pem;"
+  warn "  ssl_certificate_key /etc/letsencrypt/live/alumat.umat.edu.gh/privkey.pem;"
   warn "  include /etc/nginx/ssl-params.conf;"
   warn "Then: docker compose --env-file $ENV_FILE -f $COMPOSE_FILE restart nginx"
 }
@@ -264,11 +269,12 @@ print_summary() {
   echo ""
   echo -e "  ${BOLD}ROUTING MAP:${NC}"
   echo "  ┌──────────────────────────────────────────────────────────────────┐"
-  printf "  │  %-40s → %-22s│\n" "http://${DOMAIN_BASE} (:80)"           "frontend-member:3000"
-  printf "  │  %-40s → %-22s│\n" "http://admin.${DOMAIN_BASE} (:8001)"   "frontend-admin:3000"
-  printf "  │  %-40s → %-22s│\n" "http://api.${DOMAIN_BASE} (:8081)"     "member-api:8080"
-  printf "  │  %-40s → %-22s│\n" "http://admin-api.${DOMAIN_BASE} (:8082)" "admin-api:8080"
-  printf "  │  %-40s → %-22s│\n" "http://$server_ip:9000"                "MinIO (file CDN)"
+  printf "  │  %-40s → %-22s│\n" "http://alumat.umat.edu.gh"             "frontend-member:3000"
+  printf "  │  %-40s → %-22s│\n" "http://admin-alumat.umat.edu.gh"       "frontend-admin:3000"
+  printf "  │  %-40s → %-22s│\n" "http://alumat-api.umat.edu.gh"         "member-api:8080"
+  printf "  │  %-40s → %-22s│\n" "http://admin-alumat-api.umat.edu.gh"   "admin-api:8080"
+  printf "  │  %-40s → %-22s│\n" "http://cdn-alumat.umat.edu.gh"         "minio:9000 (CDN)"
+  printf "  │  %-40s → %-22s│\n" "http://$server_ip:9000"                "MinIO direct (CDN)"
   echo "  └──────────────────────────────────────────────────────────────────┘"
 
   echo ""

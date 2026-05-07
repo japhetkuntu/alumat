@@ -10,7 +10,7 @@ public class MailhogConfig
     public string? SmtpPassword { get; set; }
     public string WebUiUrl { get; set; } = "http://localhost:8025";
     public string DefaultSenderName { get; set; } = "UMaT Alumni";
-    public string DefaultSenderEmail { get; set; } = "noreply@alumni.umat.edu.gh";
+    public string DefaultSenderEmail { get; set; } = "noreply@alumat.umat.edu.gh";
     public string TemplateDirectory { get; set; } = "Templates";
     public Dictionary<string, string> TemplateSubjects { get; set; } = new();
 }
