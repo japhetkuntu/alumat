@@ -1,0 +1,246 @@
+# =============================================================================
+# UMaT Alumni – Docker Compose
+# =============================================================================
+# Copy .env.example to .env and fill in any secrets before running.
+# Start everything:  docker compose up --build -d
+# Stop everything:   docker compose down
+# Wipe volumes too:  docker compose down -v
+# =============================================================================
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: alumni-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-AlumniDb}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-schema.sql:/docker-entrypoint-initdb.d/init-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - alumni-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: alumni-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - alumni-net
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: alumni-mailhog
+    restart: unless-stopped
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    environment:
+      MH_STORAGE: memory
+      MH_SMTP_BIND_ADDR: 0.0.0.0:1025
+      MH_UI_BIND_ADDR: 0.0.0.0:8025
+    networks:
+      - alumni-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: alumni-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioapp}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioapp}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - alumni-net
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: alumni-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioapp}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioapp}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-alumat}
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://alumni-minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+        mc mb --ignore-existing local/$$MINIO_BUCKET_NAME;
+        mc anonymous set download local/$$MINIO_BUCKET_NAME;
+        exit 0;
+      "
+    networks:
+      - alumni-net
+
+  # ── Backend APIs ─────────────────────────────────────────────────────────────
+
+  admin-api:
+    build:
+      context: ./backend
+      dockerfile: src/Umat.Alumni.Admin.Api/Dockerfile
+    image: alumni/admin-api:local
+    container_name: alumni-admin-api
+    restart: unless-stopped
+    ports:
+      - "5100:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__AlumniConnection: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-AlumniDb};
+        Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-admin};SearchPath=alumni
+      Redis__AdminRedisConfig__ConnectionString: redis:6379
+      Redis__AdminRedisConfig__DbNumber: 0
+      BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumni.umat.edu.gh}
+      BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumni.umat.edu.gh}
+      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY:-UMaT-Alumni-Admin-SuperSecretSigningKey-ChangeInProduction}
+      BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY:-UMaT-Alumni-Member-SuperSecretSigningKey-ChangeInProduction}
+      MailhogConfig__SmtpHost: mailhog
+      MailhogConfig__SmtpPort: 1025
+      StorageConfig__AccessKey: ${MINIO_ROOT_USER:-minioapp}
+      StorageConfig__SecretKey: ${MINIO_ROOT_PASSWORD:-minioapp}
+      StorageConfig__BucketName: ${MINIO_BUCKET_NAME:-alumat}
+      StorageConfig__Region: ${STORAGE_REGION:-us-east-1}
+      StorageConfig__Endpoint: ${STORAGE_ENDPOINT:-http://minio:9000}
+      StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT:-http://minio:9000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    networks:
+      - alumni-net
+
+  member-api:
+    build:
+      context: ./backend
+      dockerfile: src/Umat.Alumni.Member.Api/Dockerfile
+    image: alumni/member-api:local
+    container_name: alumni-member-api
+    restart: unless-stopped
+    ports:
+      - "5200:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__AlumniConnection: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB:-AlumniDb};
+        Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD:-admin};SearchPath=alumni
+      Redis__MemberRedisConfig__ConnectionString: redis:6379
+      Redis__MemberRedisConfig__DbNumber: 1
+      BearerTokenConfig__Issuer: ${JWT_ISSUER:-https://alumni.umat.edu.gh}
+      BearerTokenConfig__Audience: ${JWT_AUDIENCE:-https://alumni.umat.edu.gh}
+      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY:-UMaT-Alumni-Admin-SuperSecretSigningKey-ChangeInProduction}
+      BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY:-UMaT-Alumni-Member-SuperSecretSigningKey-ChangeInProduction}
+      PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY:-}
+      PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY:-}
+      PaystackConfig__CallbackUrl: ${PAYSTACK_CALLBACK_URL:-http://localhost:3200/contributions}
+      MailhogConfig__SmtpHost: mailhog
+      MailhogConfig__SmtpPort: 1025
+      StorageConfig__AccessKey: ${MINIO_ROOT_USER:-minioapp}
+      StorageConfig__SecretKey: ${MINIO_ROOT_PASSWORD:-minioapp}
+      StorageConfig__BucketName: ${MINIO_BUCKET_NAME:-alumat}
+      StorageConfig__Region: ${STORAGE_REGION:-us-east-1}
+      StorageConfig__Endpoint: ${STORAGE_ENDPOINT:-http://minio:9000}
+      StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT:-http://minio:9000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    networks:
+      - alumni-net
+
+  # ── Frontend Apps ─────────────────────────────────────────────────────────
+  # NEXT_PUBLIC_* variables are baked into the JS bundle at build time.
+  # They should point to API URLs reachable from the user's browser.
+
+  frontend-admin:
+    build:
+      context: ./frontend/apps/admin
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_ADMIN_API_URL: ${NEXT_PUBLIC_ADMIN_API_URL:-http://localhost:5100/api/v1}
+    image: alumni/frontend-admin:local
+    container_name: alumni-frontend-admin
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    depends_on:
+      - admin-api
+    networks:
+      - alumni-net
+
+  frontend-member:
+    build:
+      context: ./frontend/apps/member
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MEMBER_API_URL: ${NEXT_PUBLIC_MEMBER_API_URL:-http://localhost:5200/api/v1}
+    image: alumni/frontend-member:local
+    container_name: alumni-frontend-member
+    restart: unless-stopped
+    ports:
+      - "3200:3000"
+    depends_on:
+      - member-api
+    networks:
+      - alumni-net
+
+# =============================================================================
+# Named volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: alumni_postgres_data
+  redis_data:
+    name: alumni_redis_data
+  minio_data:
+    name: alumni_minio_data
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  alumni-net:
+    name: alumni-net

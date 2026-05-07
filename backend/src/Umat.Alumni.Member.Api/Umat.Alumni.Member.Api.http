@@ -1,0 +1,6 @@
+@Umat.Alumni.Member.Api_HostAddress = http://localhost:5165
+
+GET {{Umat.Alumni.Member.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,68 @@
+# ── Secrets & environment files ───────────────────────────────────────────────
+.env
+.env.production
+.env.local
+.env.*.local
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
+
+# ── .NET / C# build artifacts ─────────────────────────────────────────────────
+**/bin/
+**/obj/
+out/
+publish/
+*.publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.nupkg
+packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+TestResults/
+*.trx
+
+# ── Node / Next.js ────────────────────────────────────────────────────────────
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+dist/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+docker/certbot/conf/
+docker/certbot/www/
+
+# ── OS generated ──────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.bak
+*.tmp
+*.suo
+*.ntvs*
+*.njsproj
+*.sw?
+.history/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+**/logs/
