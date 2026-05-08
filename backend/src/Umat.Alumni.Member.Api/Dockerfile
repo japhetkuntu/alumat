@@ -11,6 +11,7 @@ COPY src/Umat.Alumni.PostgresDb.Sdk/Umat.Alumni.PostgresDb.Sdk.csproj src/Umat.A
 COPY src/Umat.Alumni.Redis.Sdk/Umat.Alumni.Redis.Sdk.csproj src/Umat.Alumni.Redis.Sdk/
 COPY src/Umat.Alumni.Storage.Sdk/Umat.Alumni.Storage.Sdk.csproj src/Umat.Alumni.Storage.Sdk/
 COPY src/Umat.Alumni.Mailtrap.Sdk/Umat.Alumni.Mailtrap.Sdk.csproj src/Umat.Alumni.Mailtrap.Sdk/
+COPY src/Umat.Alumni.Mailhog.Sdk/Umat.Alumni.Mailhog.Sdk.csproj src/Umat.Alumni.Mailhog.Sdk/
 COPY src/Umat.Alumni.Paystack.Sdk/Umat.Alumni.Paystack.Sdk.csproj src/Umat.Alumni.Paystack.Sdk/
 COPY src/Umat.Alumni.Admin.Api/Umat.Alumni.Admin.Api.csproj src/Umat.Alumni.Admin.Api/
 COPY src/Umat.Alumni.Member.Api/Umat.Alumni.Member.Api.csproj src/Umat.Alumni.Member.Api/
