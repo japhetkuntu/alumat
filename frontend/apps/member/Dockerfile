@@ -15,6 +15,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./package.json
 COPY apps/member ./apps/member
 
+# Ensure the app workspace can resolve next from the hoisted root node_modules.
+RUN mkdir -p /app/apps/member/node_modules && ln -s /app/node_modules /app/apps/member/node_modules
+
 ARG NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_PUBLIC_MEMBER_API_URL=$NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
