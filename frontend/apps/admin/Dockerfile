@@ -36,7 +36,7 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/apps/admin/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./apps/admin/.next/static
 
 USER nextjs
 EXPOSE 3000
