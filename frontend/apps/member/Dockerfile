@@ -11,14 +11,16 @@ RUN npm ci
 # ── Build ─────────────────────────────────────────────────────────────────────
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
+# Root package.json needed for workspace build scripts
+COPY package.json ./package.json
 COPY apps/member ./apps/member
 
 ARG NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_PUBLIC_MEMBER_API_URL=$NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
-WORKDIR /app/apps/member
-RUN npm run build
+# Run from workspace root so Turbopack can resolve next from /app/node_modules
+RUN npm run build:member
 
 # ── Runtime ───────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
