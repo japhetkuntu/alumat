@@ -13,6 +13,7 @@ export interface ErrorResponse {
   errorMessage: string;
 }
 
+
 export interface PagedResult<T> {
   pageIndex: number;
   pageSize: number;
