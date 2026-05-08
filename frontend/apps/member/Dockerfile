@@ -1,17 +1,27 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
+# ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
-COPY package.json package-lock.json* ./
+# Copy workspace manifests for layer caching
+COPY package.json package-lock.json ./
+COPY apps/member/package.json ./apps/member/package.json
 RUN npm ci
 
+# ── Build ─────────────────────────────────────────────────────────────────────
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY apps/member ./apps/member
+
+ARG NEXT_PUBLIC_MEMBER_API_URL
+ENV NEXT_PUBLIC_MEMBER_API_URL=$NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+
+WORKDIR /app/apps/member
 RUN npm run build
 
-FROM base AS runner
+# ── Runtime ───────────────────────────────────────────────────────────────────
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -19,9 +29,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/apps/member/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/member/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/member/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000

@@ -199,8 +199,8 @@ services:
   frontend-admin:
     env_file: .env
     build:
-      context: ./frontend/apps/admin
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_ADMIN_API_URL: ${NEXT_PUBLIC_ADMIN_API_URL}
     image: alumni/frontend-admin:prod
@@ -214,8 +214,8 @@ services:
   frontend-member:
     env_file: .env
     build:
-      context: ./frontend/apps/member
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: apps/member/Dockerfile
       args:
         NEXT_PUBLIC_MEMBER_API_URL: ${NEXT_PUBLIC_MEMBER_API_URL}
     image: alumni/frontend-member:prod

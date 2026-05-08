@@ -197,8 +197,8 @@ services:
 
   frontend-admin:
     build:
-      context: ./frontend/apps/admin
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: apps/admin/Dockerfile
       args:
         NEXT_PUBLIC_ADMIN_API_URL: ${NEXT_PUBLIC_ADMIN_API_URL:-http://localhost:5100/api/v1}
     image: alumni/frontend-admin:local
@@ -213,8 +213,8 @@ services:
 
   frontend-member:
     build:
-      context: ./frontend/apps/member
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: apps/member/Dockerfile
       args:
         NEXT_PUBLIC_MEMBER_API_URL: ${NEXT_PUBLIC_MEMBER_API_URL:-http://localhost:5200/api/v1}
     image: alumni/frontend-member:local
