@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard, ChevronRight, Copy, Check, Share2 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns } from "@/lib/admin-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -40,6 +40,14 @@ export default function MemberDetailPage() {
   const [modal, setModal] = useState<ModalState>(null);
   const [reasonText, setReasonText] = useState("");
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
+  const [copied, setCopied] = useState(false);
+
+  const copyProfileLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    toast.success("Profile link copied to clipboard");
+    setTimeout(() => setCopied(false), 2500);
+  };
   const qc = useQueryClient();
 
   const { data: member, isLoading } = useQuery({
@@ -96,14 +104,28 @@ export default function MemberDetailPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6 page-enter">
-      <div className="flex items-center gap-3">
-        <Link href="/members">
-          <Button size="sm" variant="ghost"><ArrowLeft size={14} />Back</Button>
-        </Link>
-        <div>
-          <h1 className="text-[22px] font-bold tracking-tight">Member Details</h1>
-          <p className="text-muted-foreground text-[13px]">View and manage member information</p>
-        </div>
+      {/* Breadcrumb */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <nav className="flex items-center gap-1.5 text-sm">
+          <Link href="/members">
+            <Button size="sm" variant="ghost" className="h-8 px-2 text-muted-foreground hover:text-foreground font-medium">
+              Members
+            </Button>
+          </Link>
+          <ChevronRight size={14} className="text-muted-foreground shrink-0" />
+          <span className="font-semibold text-foreground truncate max-w-[180px]">{fullName}</span>
+        </nav>
+        <Button
+          size="sm"
+          variant="outline"
+          className={cn(
+            "gap-2 h-8 px-3 rounded-lg transition-all duration-300 font-medium",
+            copied && "border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
+          )}
+          onClick={copyProfileLink}
+        >
+          {copied ? <><Check size={13} /> Link copied!</> : <><Share2 size={13} /> Share profile</>}
+        </Button>
       </div>
 
       {/* Profile header */}

@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { CreditCard, Loader2, ArrowLeft, Calendar, Target, Users, PlayCircle, Image as ImageIcon, CheckCircle2, Award, ChevronRight } from "lucide-react";
+import { CreditCard, Loader2, ArrowLeft, Calendar, Target, Users, PlayCircle, Image as ImageIcon, CheckCircle2, Award, ChevronRight, Copy, Check, Share2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { YouTubeEmbed } from "@/components/ui/youtube-embed";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { getCampaignById, getMyProfile, initiatePaystackPayment, renewMembership, getMyContributions } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -24,6 +24,7 @@ export default function CampaignDetailPage() {
   const router = useRouter();
   const [amount, setAmount] = useState<string>("");
   const [preset, setPreset] = useState<number | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const { data: campaign, isLoading: isLoadingCampaign } = useQuery({
     queryKey: ["campaign", id],
@@ -114,20 +115,49 @@ export default function CampaignDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
         {/* Main Content Area */}
         <div className="lg:col-span-8 space-y-6 sm:space-y-8 lg:space-y-10">
-          <div className="flex flex-wrap items-center gap-3 justify-between bg-white/70 border border-border/50 rounded-2xl px-4 py-3">
-            <p className="text-sm text-muted-foreground">Need help collecting for your campaign outside the member portal? Share this link with anyone:</p>
-            <div className="flex gap-2 items-center">
-              <Button variant="outline" size="sm" onClick={() => {
-                const link = `${window.location.origin}/payment-campaign/${id}`;
-                void navigator.clipboard.writeText(link);
-                toast.success("Shareable link copied to clipboard");
-              }}>
-                Copy public contribution link
-              </Button>
-              <a href={`/payment-campaign/${id}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary hover:underline">
-                Open as guest
-              </a>
-            </div>
+          {/* Share Banner */}
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+            <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-background">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <Share2 size={14} className="text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-black text-[13px] leading-tight">Share this campaign</p>
+                    <p className="text-[11px] text-muted-foreground">Anyone with this link can contribute — no sign-in needed</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center h-9 rounded-xl border border-border/50 bg-white/80 px-3 gap-2 min-w-0">
+                    <ExternalLink size={12} className="text-muted-foreground shrink-0" />
+                    <span className="text-[11px] text-muted-foreground truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/payment-campaign/${id}` : `/payment-campaign/${id}`}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={shareCopied ? "default" : "outline"}
+                    className={cn(
+                      "h-9 px-3 rounded-xl font-bold gap-1.5 shrink-0 text-[12px] transition-all duration-300",
+                      shareCopied && "bg-emerald-500 hover:bg-emerald-500 text-white border-emerald-500"
+                    )}
+                    onClick={() => {
+                      const link = `${window.location.origin}/payment-campaign/${id}`;
+                      void navigator.clipboard.writeText(link);
+                      setShareCopied(true);
+                      toast.success("Public link copied!");
+                      setTimeout(() => setShareCopied(false), 2500);
+                    }}
+                  >
+                    {shareCopied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy link</>}
+                  </Button>
+                  <a href={`/payment-campaign/${id}`} target="_blank" rel="noreferrer" className="shrink-0">
+                    <Button size="sm" variant="ghost" className="h-9 px-3 gap-1 text-[12px] font-bold text-primary hover:bg-primary/5 rounded-xl">
+                      <ExternalLink size={12} />Preview
+                    </Button>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
           </div>
           <header className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.1]">{campaign.title}</h1>

@@ -151,7 +151,6 @@ function PaymentStatusModal({
 
 export default function MemberContributionsPage() {
   const [page, setPage] = useState(1);
-  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, number>>({});
   const pageSize = 20;
   const { data: campaignsData } = useQuery({
     queryKey: ["m-campaigns"],
@@ -194,10 +193,11 @@ export default function MemberContributionsPage() {
     },
     onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
       if (data?.authorizationUrl) {
-        localStorage.setItem("umat-paystack-pending-ref", data.reference ?? "");
-        setPendingReference(data.reference ?? null);
-        setModalOpen(true);
-        window.open(data.authorizationUrl, "_blank");
+        if (data.reference) {
+          localStorage.setItem("umat-paystack-pending-ref", data.reference);
+          setPendingReference(data.reference);
+        }
+        window.location.href = data.authorizationUrl;
       } else {
         toast.success("Payment initiated successfully.");
         qc.invalidateQueries({ queryKey: ["m-contributions"] });
@@ -205,7 +205,7 @@ export default function MemberContributionsPage() {
       }
     },
     onError: (e) => toast.error(handleApiError(e)),
-  onSettled: () => setPayingCampaignId(null),
+    onSettled: () => setPayingCampaignId(null),
   });
 
   const openStatusModal = (reference: string) => {
@@ -361,16 +361,16 @@ export default function MemberContributionsPage() {
                             <span className="text-xs font-bold">Membership paid — this is a one-time payment.</span>
                           </div>
                         )}
-                        <div className="flex flex-wrap items-stretch gap-3">
-                          <Link href={`/contributions/${c.id}`} className="basis-full sm:flex-1 min-w-[9rem] no-card-click">
-                            <Button variant="outline" className="w-full h-11 font-bold text-[13px] border-border/60 hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-all">
+                        <div className="flex flex-wrap items-stretch gap-2">
+                          <Link href={`/contributions/${c.id}`} className="flex-1 min-w-[9rem] no-card-click">
+                            <Button variant="outline" className="w-full h-10 font-bold text-[13px] border-border/60 hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-all">
                               View Details
                             </Button>
                           </Link>
 
                           {membershipPaid && (
-                            <Link href="/membership-certificate" className="basis-full sm:flex-1 min-w-[9rem] no-card-click">
-                              <Button variant="outline" className="w-full h-11 font-bold text-[13px] border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 transition-all">
+                            <Link href="/membership-certificate" className="flex-1 min-w-[9rem] no-card-click">
+                              <Button variant="outline" className="w-full h-10 font-bold text-[13px] border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 transition-all">
                                 <Award size={16} className="mr-2" />
                                 Certificate
                               </Button>
@@ -378,42 +378,31 @@ export default function MemberContributionsPage() {
                           )}
 
                           {c.allowOnlinePayments && !membershipPaid && (
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
-                              {!isMembership && (
-                                <input
-                                  type="number"
-                                  min={0.01}
-                                  step={0.01}
-                                  value={paymentAmounts[c.id] ?? c.amountPerMember}
-                                  onChange={(e) => {
-                                    const next = Number(e.target.value);
-                                    if (!Number.isNaN(next) && next >= 0.01) {
-                                      setPaymentAmounts((prev) => ({ ...prev, [c.id]: next }));
-                                    }
-                                  }}
-                                  className="w-full sm:w-36 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
-                                  placeholder={formatCurrency(c.amountPerMember)}
-                                />
-                              )}
-                              {isMembership && (
-                                <span className="px-3 py-2 text-sm font-bold text-foreground/80">{formatCurrency(getMemberAmount(c))}</span>
-                              )}
-                              <Button
-                                className="h-11 px-4 font-extrabold text-[13px] shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all no-card-click"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const amount = isMembership ? getMemberAmount(c) : (paymentAmounts[c.id] ?? c.amountPerMember);
-                                  if (amount > 0) {
-                                    setPayingCampaignId(c.id);
-                                    payMut.mutate({ campaignId: c.id, amount, isMembership });
-                                  }
-                                }}
-                                disabled={payMut.isPending}
-                              >
-                                {payingCampaignId === c.id && payMut.isPending ? <Loader2 size={16} className="animate-spin" /> : "Pay Now"}
-                              </Button>
-                            </div>
-                          )}
+                          <Button
+                            className="w-full h-12 rounded-2xl bg-primary text-white font-black text-sm shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const amount = isMembership ? getMemberAmount(c) : c.amountPerMember;
+                              if (amount > 0) {
+                                setPayingCampaignId(c.id);
+                                payMut.mutate({ campaignId: c.id, amount, isMembership });
+                              }
+                            }}
+                            disabled={payMut.isPending}
+                          >
+                            {payingCampaignId === c.id && payMut.isPending ? (
+                              <span className="inline-flex items-center gap-2">
+                                <Loader2 size={16} className="animate-spin" />
+                                Processing payment...
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center gap-2">
+                                <CreditCard size={16} />
+                                Pay {formatCurrency(isMembership ? getMemberAmount(c) : c.amountPerMember)} now
+                              </span>
+                            )}
+                          </Button>
+                        )}
                         </div>
 
                         {myPayment?.status === "Pending" && myPayment.transactionRef && (
