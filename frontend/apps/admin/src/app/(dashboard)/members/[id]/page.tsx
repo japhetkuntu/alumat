@@ -15,6 +15,7 @@ import { formatDate } from "@/lib/utils";
 import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns } from "@/lib/admin-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 import type { MemberStatus } from "@/types";
 
@@ -82,7 +83,14 @@ export default function MemberDetailPage() {
   });
 
   if (isLoading) return <div className="p-6 lg:p-8 space-y-6 page-enter"><CardSkeleton /><CardSkeleton /></div>;
-  if (!member) return <div className="p-6 text-muted-foreground">Member not found.</div>;
+  if (!member) return (
+    <div className="p-6 lg:p-8">
+      <Link href="/members" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+        <ArrowLeft size={14} /> Back to Members
+      </Link>
+      <EmptyState icon={<XCircle size={48} />} title="Member not found" description="This member profile doesn't exist or may have been removed." />
+    </div>
+  );
 
   const fullName = `${member.firstName} ${member.lastName}`;
 

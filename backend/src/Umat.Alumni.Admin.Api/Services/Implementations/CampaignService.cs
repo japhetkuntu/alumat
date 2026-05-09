@@ -8,14 +8,16 @@ using Umat.Alumni.PostgresDb.Sdk.Extensions;
 using Umat.Alumni.PostgresDb.Sdk.Models;
 using Umat.Alumni.PostgresDb.Sdk.Repositories;
 using Umat.Alumni.Storage.Sdk.Services;
+using MemberEntity = Umat.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace Umat.Alumni.Admin.Api.Services.Implementations;
 
 public class CampaignService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
-    IAlumniPgRepository<Member> memberRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
     IStorageService storageService,
+    INotificationDispatcher notifDispatcher,
     ILogger<CampaignService> logger) : ICampaignService
 {
     public async Task<IApiResponse<PgPagedResult<CampaignDto>>> GetCampaignsAsync(CampaignFilter filter, AuthData admin)
@@ -170,6 +172,7 @@ public class CampaignService(
             await campaignRepo.AddAsync(campaign);
 
             logger.LogInformation("Campaign {CampaignId} created by admin {AdminId}", campaign.Id, admin.Id);
+            _ = Task.Run(() => notifDispatcher.DispatchCampaignAlertAsync(campaign));
             return campaign.ToDto().ToCreatedApiResponse("Campaign created");
         }
         catch (Exception e)
@@ -518,7 +521,8 @@ public class CampaignService(
 public class ContributionService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
-    IAlumniPgRepository<Member> memberRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
+    INotificationDispatcher notifDispatcher,
     ILogger<ContributionService> logger) : IContributionService
 {
     public async Task<IApiResponse<PgPagedResult<ContributionDto>>> GetContributionsAsync(ContributionAdminFilter filter, AuthData admin)
@@ -722,6 +726,16 @@ public class ContributionService(
             }
 
             logger.LogInformation("Contribution {ContributionId} confirmed by admin {AdminId}", contributionId, admin.Id);
+
+            // Notify the member
+            var member = await memberRepo.GetByIdAsync(contribution.MemberId);
+            if (member is not null)
+            {
+                var campaignTitle = campaign?.Title ?? contribution.Campaign?.Title ?? "campaign";
+                _ = Task.Run(() => notifDispatcher.DispatchContributionConfirmedAsync(
+                    member.Id, member.Email, member.FirstName, contribution.Amount, campaignTitle, contributionId));
+            }
+
             return new object().ToOkApiResponse("Contribution confirmed");
         }
         catch (Exception e)
@@ -752,6 +766,18 @@ public class ContributionService(
             await contributionRepo.UpdateAsync(contribution);
 
             logger.LogInformation("Contribution {ContributionId} rejected by admin {AdminId}", contributionId, admin.Id);
+
+            // Notify the member
+            var memberForReject = await memberRepo.GetByIdAsync(contribution.MemberId);
+            if (memberForReject is not null)
+            {
+                var rejectedContrib = contribution;
+                var campaignForReject = await campaignRepo.GetByIdAsync(rejectedContrib.CampaignId);
+                var campaignTitle = campaignForReject?.Title ?? rejectedContrib.Campaign?.Title ?? "campaign";
+                _ = Task.Run(() => notifDispatcher.DispatchContributionRejectedAsync(
+                    memberForReject.Id, memberForReject.Email, memberForReject.FirstName, campaignTitle, reason, contributionId));
+            }
+
             return new object().ToOkApiResponse("Contribution rejected");
         }
         catch (Exception e)

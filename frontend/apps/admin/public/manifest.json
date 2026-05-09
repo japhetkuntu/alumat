@@ -1,0 +1,20 @@
+{
+  "name": "UMaT Alumni Admin",
+  "short_name": "Alumni Admin",
+  "description": "Admin portal for managing the UMaT alumni network.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/umat-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "en"
+}

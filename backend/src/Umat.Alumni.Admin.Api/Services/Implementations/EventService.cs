@@ -16,6 +16,7 @@ public class EventService(
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
+    INotificationDispatcher notifDispatcher,
     ILogger<EventService> logger) : IEventService
 {
     public async Task<IApiResponse<PgPagedResult<AlumniEventDto>>> GetEventsAsync(EventFilter filter, AuthData admin)
@@ -128,6 +129,7 @@ public class EventService(
 
             await eventRepo.AddAsync(ev);
             logger.LogInformation("Event {EventId} created by admin {AdminId}", ev.Id, admin.Id);
+            _ = Task.Run(() => notifDispatcher.DispatchEventReminderAsync(ev));
             return ev.ToDto().ToCreatedApiResponse("Event created");
         }
         catch (Exception e)

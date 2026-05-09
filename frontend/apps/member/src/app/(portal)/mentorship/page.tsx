@@ -78,6 +78,7 @@ export default function MemberMentorshipPage() {
       qc.invalidateQueries({ queryKey: ["m-incoming-requests"] });
       qc.invalidateQueries({ queryKey: ["m-my-mentor-profile"] });
       setConfirmAction(null);
+      toast.success("Request accepted! You are now mentoring this member.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });

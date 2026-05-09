@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Download, Link2, FileText, FolderOpen, ExternalLink, ArrowRight } from "lucide-react";
+import { Download, Link2, FileText, FolderOpen, ExternalLink, ArrowRight, X } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -125,11 +125,17 @@ export default function MemberResourcesPage() {
               { value: "File", label: "File" },
             ]}
           />
-          <Input type="date" value={addedAfter} onChange={(e) => { setAddedAfter(e.target.value); setPage(1); }} />
-          <Input type="date" value={addedBefore} onChange={(e) => { setAddedBefore(e.target.value); setPage(1); }} />
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added after</label>
+            <Input type="date" value={addedAfter} onChange={(e) => { setAddedAfter(e.target.value); setPage(1); }} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added before</label>
+            <Input type="date" value={addedBefore} onChange={(e) => { setAddedBefore(e.target.value); setPage(1); }} />
+          </div>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {categories.map((c) => {
             const active = categoryFilter === (c === "All" ? "" : c);
             return (
@@ -146,6 +152,14 @@ export default function MemberResourcesPage() {
               </button>
             );
           })}
+          {(search || categoryFilter || typeFilter || addedAfter || addedBefore) && (
+            <button
+              onClick={() => { setSearch(""); setCategoryFilter(""); setTypeFilter(""); setAddedAfter(""); setAddedBefore(""); setPage(1); }}
+              className="ml-2 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-all"
+            >
+              <X size={11} /> Clear filters
+            </button>
+          )}
         </div>
       </div>
 

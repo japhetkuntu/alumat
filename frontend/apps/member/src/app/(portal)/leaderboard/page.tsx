@@ -83,11 +83,12 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
 
-                  <div className="sm:hidden">
-                    <div className="flex items-center gap-1 text-sm font-semibold">
-                      <TrendingUp className="w-4 h-4 text-primary" />
+                  <div className="sm:hidden flex flex-col items-end gap-0.5">
+                    <div className="flex items-center gap-1 text-sm font-bold text-primary">
+                      <TrendingUp className="w-3.5 h-3.5" />
                       {Math.round(entry.membershipRate)}%
                     </div>
+                    <p className="text-[11px] text-muted-foreground">{formatCurrency(entry.totalContributed)}</p>
                   </div>
                 </CardContent>
               </Card>

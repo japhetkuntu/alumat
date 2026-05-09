@@ -18,6 +18,7 @@ import {
   Menu,
   ShieldCheck,
   Star,
+  Bell,
   X,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -27,6 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getInitials } from "@/lib/utils";
+import { NotificationPanel } from "@/components/admin/notification-panel";
 
 const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -44,6 +46,7 @@ const baseNavItems = [
   { href: "/spotlights", label: "Spotlights", icon: Star },
   { label: "Reports", isHeader: true },
   { href: "/reports", label: "Reports & Exports", icon: BarChart3 },
+  { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
@@ -185,6 +188,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         {/* Subtle top glow */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent shadow-[0_1px_10px_rgba(var(--primary-rgb),0.1)]" />
         
+        {/* Desktop header */}
+        <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
+          <NotificationPanel />
+        </div>
+
         {/* Mobile header */}
         <div className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl">
           <div className="flex items-center gap-3">
@@ -193,8 +201,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <span className="font-bold text-[15px] tracking-tight">UMaT Admin</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-            <span className="text-[10px] font-bold text-primary">AD</span>
+          <div className="flex items-center gap-2">
+            <NotificationPanel />
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+              <span className="text-[10px] font-bold text-primary">AD</span>
+            </div>
           </div>
         </div>
 

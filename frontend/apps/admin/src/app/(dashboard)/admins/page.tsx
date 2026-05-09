@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SearchModal } from "@/components/ui/search-modal";
 import { YearGroupPicker } from "@/components/ui/year-group-picker";
+import { FormSelect } from "@/components/ui/select";
 import { getAdmins, createAdmin, updateAdmin } from "@/lib/admin-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
@@ -56,11 +57,7 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateAdmin
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Role</Label>
-              <select value={role} onChange={(e) => setRole(e.target.value as typeof roles[number])} className="input w-full">
-                {roles.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+              <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
             </div>
             <div className="space-y-2">
               <Label>Year group (optional)</Label>
@@ -116,11 +113,7 @@ function EditAdminForm({
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
-              <select value={role} onChange={(e) => setRole(e.target.value as typeof roles[number])} className="input w-full">
-                {roles.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+              <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
             </div>
             <div className="space-y-2">
               <Label>Year group (optional)</Label>

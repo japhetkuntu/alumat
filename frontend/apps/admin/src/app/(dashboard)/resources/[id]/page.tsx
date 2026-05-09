@@ -3,13 +3,14 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Link2, Download, ExternalLink, Pencil } from "lucide-react";
+import { ArrowLeft, FileText, Link2, Download, ExternalLink, Pencil, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
 import { getResource, getResources } from "@/lib/admin-api";
+import { EmptyState } from "@/components/ui/empty-state";
 import { YouTubeEmbed } from "@/components/ui/youtube-embed";
 
 const categoryColor: Record<string, string> = {
@@ -62,11 +63,11 @@ export default function AdminResourceDetailPage() {
 
   if (!resource) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        <p className="text-lg font-semibold">Resource not found.</p>
+      <div className="p-8 lg:p-12 max-w-4xl mx-auto">
         <Link href="/resources">
-          <Button variant="ghost" className="mt-4"><ArrowLeft size={14} />Back to Resources</Button>
+          <Button variant="ghost" size="sm" className="mb-6"><ArrowLeft size={14} />Back to Resources</Button>
         </Link>
+        <EmptyState icon={<FileText size={48} />} title="Resource not found" description="This resource may have been removed or the link is incorrect." />
       </div>
     );
   }
@@ -75,24 +76,31 @@ export default function AdminResourceDetailPage() {
 
   return (
     <div className="p-8 lg:p-12 space-y-8 max-w-4xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-center gap-1.5 text-sm">
+          <Link href="/resources">
+            <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-bold group">
+              <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+              Resources
+            </Button>
+          </Link>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{resource.title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {href && (
+            <a href={href} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="font-bold"><ExternalLink size={13} />Open</Button>
+            </a>
+          )}
+          <Link href={`/resources/${id}/edit`}>
+            <Button variant="outline" size="sm" className="font-bold"><Pencil size={13} />Edit</Button>
+          </Link>
+        </div>
+      </nav>
       {/* Header */}
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex items-center justify-between gap-3">
-          <Link href="/resources">
-            <Button variant="ghost" size="sm" className="shrink-0"><ArrowLeft size={14} />Back</Button>
-          </Link>
-          <div className="flex items-center gap-2">
-            {href && (
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="font-bold"><ExternalLink size={13} />Open</Button>
-              </a>
-            )}
-            <Link href={`/resources/${id}/edit`}>
-              <Button variant="outline" size="sm" className="font-bold"><Pencil size={13} />Edit</Button>
-            </Link>
-          </div>
-        </div>
-
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${colorCls}`}>

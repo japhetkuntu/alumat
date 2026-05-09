@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Link2, Download, ExternalLink, Copy, Bookmark, BookmarkCheck } from "lucide-react";
+import { ArrowLeft, FileText, Link2, Download, ExternalLink, Copy, Bookmark, BookmarkCheck, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
 import { getResource, getResources, trackResourceDownload } from "@/lib/member-api";
+import { EmptyState } from "@/components/ui/empty-state";
 import { YouTubeEmbed } from "@/components/ui/youtube-embed";
 import { toast } from "sonner";
 
@@ -85,11 +86,11 @@ export default function MemberResourceDetailPage() {
 
   if (!resource) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        <p className="text-lg font-semibold">Resource not found.</p>
+      <div className="p-8 lg:p-12 max-w-4xl mx-auto">
         <Link href="/resources">
-          <Button variant="ghost" className="mt-4"><ArrowLeft size={14} />Back to Resources</Button>
+          <Button variant="ghost" size="sm" className="mb-6"><ArrowLeft size={14} />Back to Resources</Button>
         </Link>
+        <EmptyState icon={<FileText size={48} />} title="Resource not found" description="This resource may have been removed or the link is incorrect." />
       </div>
     );
   }
@@ -118,12 +119,17 @@ export default function MemberResourceDetailPage() {
 
   return (
     <div className="p-8 lg:p-12 max-w-4xl mx-auto space-y-8">
-      {/* Back */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
         <Link href="/resources">
-          <Button variant="ghost" size="sm"><ArrowLeft size={14} />Back to Resources</Button>
+          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-bold group -ml-2">
+            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+            Resources
+          </Button>
         </Link>
-      </div>
+        <ChevronRight size={14} className="text-muted-foreground/50" />
+        <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{resource.title}</span>
+      </nav>
 
       {/* Hero Banner */}
       {resource.bannerImageUrl ? (

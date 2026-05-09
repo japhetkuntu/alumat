@@ -14,6 +14,7 @@ namespace Umat.Alumni.Admin.Api.Services.Implementations;
 public class JobService(
     IAlumniPgRepository<Job> jobRepo,
     IStorageService storageService,
+    INotificationDispatcher notifDispatcher,
     ILogger<JobService> logger) : IJobService
 {
     public async Task<IApiResponse<PgPagedResult<JobDto>>> GetJobsAsync(JobFilter filter, AuthData admin)
@@ -87,6 +88,7 @@ public class JobService(
 
             await jobRepo.AddAsync(job);
             logger.LogInformation("Job {JobId} created by admin {AdminId}", job.Id, admin.Id);
+            _ = Task.Run(() => notifDispatcher.DispatchJobAlertAsync(job));
             return job.ToDto().ToCreatedApiResponse("Job posted");
         }
         catch (Exception e)

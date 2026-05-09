@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, MessageSquare, Pin, Lock, Send, ArrowLeft, Clock } from "lucide-react";
+import { Plus, MessageSquare, Pin, Lock, Clock } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,18 @@ import { Label } from "@/components/ui/label";
 import { FormSelect } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchModal } from "@/components/ui/search-modal";
-import { UserAvatar } from "@/components/ui/user-avatar";
 import { formatDate } from "@/lib/utils";
-import { getForumCategories, getForumThreads, createThread, getThreadPosts, replyToThread } from "@/lib/member-api";
+import { getForumCategories, getForumThreads, createThread } from "@/lib/member-api";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
-import type { ForumThread } from "@/types";
+import Link from "next/link";
 
 export default function MemberForumPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedThread, setSelectedThread] = useState<ForumThread | null>(null);
   const [showNewThread, setShowNewThread] = useState(false);
   const [form, setForm] = useState({ categoryId: "", title: "", content: "" });
-  const [replyText, setReplyText] = useState("");
   const [search, setSearch] = useState("");
   const [threadFilter, setThreadFilter] = useState<"all" | "recent" | "popular" | "pinned">("all");
   const [threadPage, setThreadPage] = useState(1);
@@ -50,99 +47,20 @@ export default function MemberForumPage() {
     placeholderData: (prev) => prev,
   });
 
-  const { data: postsData } = useQuery({
-    queryKey: ["m-thread-posts", selectedThread?.id],
-    queryFn: () => getThreadPosts(selectedThread!.id),
-    enabled: !!selectedThread,
-  });
-
   const createMut = useMutation({
     mutationFn: () => createThread({ categoryId: form.categoryId, title: form.title, content: form.content }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-forum-threads"] }); setShowNewThread(false); setForm({ categoryId: "", title: "", content: "" }); toast.success("Thread posted"); },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const replyMut = useMutation({
-    mutationFn: () => replyToThread(selectedThread!.id, replyText),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-thread-posts", selectedThread?.id] }); setReplyText(""); toast.success("Reply posted"); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ["m-forum-threads"] }); 
+      setShowNewThread(false); 
+      setForm({ categoryId: "", title: "", content: "" }); 
+      toast.success("Thread posted! Others can now reply to your post."); 
+    },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   const categories = catsData?.results ?? [];
   const threads = threadsData?.results ?? [];
   const threadTotalPages = threadsData?.totalPages ?? 1;
-  const posts = postsData?.results ?? [];
-
-  if (selectedThread) {
-    return (
-      <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex items-start gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedThread(null)} className="shrink-0 mt-0.5">
-            <ArrowLeft size={16} />Back
-          </Button>
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              {selectedThread.categoryName && (
-                <Badge variant="secondary" className="text-[10px] font-bold">{selectedThread.categoryName}</Badge>
-              )}
-              {selectedThread.isPinned && <Badge className="text-[10px] font-bold bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-800"><Pin size={9} className="mr-1" />Pinned</Badge>}
-              {selectedThread.isClosed && <Badge variant="outline" className="text-[10px] font-bold"><Lock size={9} className="mr-1" />Closed</Badge>}
-            </div>
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-extrabold tracking-tight leading-tight">{selectedThread.title}</h1>
-            <p className="text-[12px] text-muted-foreground">{formatDate(selectedThread.createdAt)}</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {posts.map((p, i) => {
-            const authorName = p.authorName ?? "Unknown";
-            const isFirst = i === 0;
-            return (
-              <Card key={p.id} className={isFirst ? "border-primary/20 bg-primary/5" : ""}>
-                <CardContent className="p-5 flex gap-4">
-                  <div className="shrink-0">
-                    <UserAvatar
-                      src={p.authorProfilePictureUrl}
-                      name={authorName}
-                      size="sm"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-sm">{authorName}</span>
-                      {isFirst && <Badge variant="secondary" className="text-[9px] font-bold">OP</Badge>}
-                      <span className="text-[11px] text-muted-foreground ml-auto">{formatDate(p.createdAt)}</span>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground/90">{p.content}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {!selectedThread.isClosed && (
-          <Card>
-            <CardContent className="p-4">
-              <Textarea
-                placeholder="Write your reply..."
-                rows={3}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="mb-3"
-              />
-              <Button size="sm" className="gap-2" disabled={replyMut.isPending || !replyText.trim()} onClick={() => replyMut.mutate()}>
-                <Send size={13} />{replyMut.isPending ? "Sending..." : "Post Reply"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-        {selectedThread.isClosed && (
-          <p className="text-center text-sm text-muted-foreground py-4">This thread is closed</p>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-8">
@@ -197,15 +115,17 @@ export default function MemberForumPage() {
           ) : (
             <div className="space-y-2 max-h-72 overflow-y-auto">
               {threads.slice(0, 5).map((t) => (
-                <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/30 px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{t.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {t.categoryName || "Uncategorized"} • {formatDate(t.createdAt)}
-                    </p>
+                <Link key={t.id} href={`/forum/${t.id}`}>
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 px-3 py-2 cursor-pointer transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">{t.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {t.categoryName || "Uncategorized"} • {formatDate(t.createdAt)}
+                      </p>
+                    </div>
+                    {t.isPinned && <Badge variant="secondary" className="text-[10px] uppercase font-bold">Pinned</Badge>}
                   </div>
-                  {t.isPinned && <Badge variant="secondary" className="text-[10px] uppercase font-bold">Pinned</Badge>}
-                </div>
+                </Link>
               ))}
               {threads.length > 5 && (
                 <p className="text-xs text-muted-foreground">Showing {Math.min(5, threads.length)} of {threads.length} results. Close to view the full list.</p>
@@ -258,32 +178,32 @@ export default function MemberForumPage() {
       ) : (
         <div className="space-y-3">
           {threads.map((t, i) => (
-            <Card
-              key={t.id}
-              className="group cursor-pointer border-border/40 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-700"
-              style={{ animationDelay: `${i * 40}ms` }}
-              onClick={() => setSelectedThread(t)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {t.categoryName && (
-                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{t.categoryName}</span>
-                      )}
-                      {t.isPinned && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-bold"><Pin size={9} />Pinned</span>}
-                      {t.isClosed && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold"><Lock size={9} />Closed</span>}
+            <Link key={t.id} href={`/forum/${t.id}`}>
+              <Card
+                className="group cursor-pointer border-border/40 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-700"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {t.categoryName && (
+                          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{t.categoryName}</span>
+                        )}
+                        {t.isPinned && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-bold"><Pin size={9} />Pinned</span>}
+                        {t.isClosed && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-bold"><Lock size={9} />Closed</span>}
+                      </div>
+                      <p className="font-bold text-[15px] leading-snug group-hover:text-primary transition-colors">{t.title}</p>
+                      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><Clock size={10} />{formatDate(t.createdAt)}</span>
+                        <span className="flex items-center gap-1"><MessageSquare size={10} />{t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}</span>
+                      </div>
                     </div>
-                    <p className="font-bold text-[15px] leading-snug group-hover:text-primary transition-colors">{t.title}</p>
-                    <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1"><Clock size={10} />{formatDate(t.createdAt)}</span>
-                      <span className="flex items-center gap-1"><MessageSquare size={10} />{t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}</span>
-                    </div>
+                    <MessageSquare size={18} className="shrink-0 text-muted-foreground/40 group-hover:text-primary/50 transition-colors mt-1" />
                   </div>
-                  <MessageSquare size={18} className="shrink-0 text-muted-foreground/40 group-hover:text-primary/50 transition-colors mt-1" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

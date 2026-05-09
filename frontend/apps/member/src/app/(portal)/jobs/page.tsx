@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Clock, Briefcase, ArrowRight } from "lucide-react";
+import { MapPin, Clock, Briefcase, ArrowRight, X } from "lucide-react";
 import Link from "next/link";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,7 @@ export default function MemberJobsPage() {
           <Input placeholder="Filter by location" className="h-11" value={locationFilter} onChange={(e) => { setLocationFilter(e.target.value); setPage(1); }} />
 
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {["", "Full-time", "Part-time", "Contract", "Internship"].map((t) => (
             <button
               key={t}
@@ -99,6 +99,14 @@ export default function MemberJobsPage() {
               {t === "" ? "All Types" : t}
             </button>
           ))}
+          {(search || locationFilter || typeFilter) && (
+            <button
+              onClick={() => { setSearch(""); setLocationFilter(""); setTypeFilter(""); setPage(1); }}
+              className="ml-2 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-destructive/40 text-destructive hover:bg-destructive/10 transition-all"
+            >
+              <X size={11} /> Clear filters
+            </button>
+          )}
         </div>
       </div>
 

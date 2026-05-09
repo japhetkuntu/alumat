@@ -20,6 +20,7 @@ import type {
   CreateAdminRequest,
   UpdateAdminRequest,
   Spotlight,
+  NotificationItem,
 } from "@/types";
 
 function toFormData(data: object): FormData {
@@ -686,4 +687,24 @@ export async function approveSpotlight(spotlightId: string): Promise<Spotlight> 
 export async function rejectSpotlight(spotlightId: string, reason?: string): Promise<Spotlight> {
   const res = await adminClient.post<ApiResponse<Spotlight>>(`/spotlights/${spotlightId}/reject`, { reason });
   return res.data.data!;
+}
+
+// ── In-app Notifications ────────────────────────────────────────────────────
+
+export async function getNotifications(page = 1, pageSize = 20): Promise<PagedResult<NotificationItem>> {
+  const res = await adminClient.get<ApiResponse<PagedResult<NotificationItem>>>("/notifications", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const res = await adminClient.get<ApiResponse<number>>("/notifications/unread-count");
+  return res.data.data ?? 0;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await adminClient.put(`/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await adminClient.put("/notifications/read-all");
 }

@@ -71,6 +71,7 @@ builder.Services.AddScoped<ISpotlightService, SpotlightService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddScoped<IClassNoteService, ClassNoteService>();
 builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
+builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 
 // Request body size limit (10 MB)
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);

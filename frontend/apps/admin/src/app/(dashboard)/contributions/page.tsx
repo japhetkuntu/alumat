@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Loader2 } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -86,6 +86,23 @@ export default function AdminContributionsPage() {
   const densityCellClass = compactRows ? "py-2" : "py-2.5";
   const densityRowClass = compactRows ? "h-[46px]" : "h-[52px]";
 
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportCsv = async () => {
+    setExportLoading(true);
+    try {
+      const res = await getContributions({ page: 1, pageSize: 5000, status: statusFilter || undefined, search: search || undefined });
+      const rows = res.results ?? [];
+      if (!rows.length) { toast.error("No data to export."); return; }
+      const headers = ["id", "memberName", "memberNumber", "memberEmail", "campaignName", "amount", "status", "paymentMethod", "transactionRef", "paidAt", "createdAt"];
+      const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => JSON.stringify((r as unknown as Record<string, unknown>)[h] ?? "")).join(","))].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      const a = document.createElement("a");
+      a.href = url; a.download = "contributions.csv"; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { toast.error(handleApiError(e)); } finally { setExportLoading(false); }
+  };
+
   return (
     <div className="p-6 lg:p-8 space-y-6 page-enter">
       <div className="flex items-center justify-between gap-4">
@@ -98,7 +115,9 @@ export default function AdminContributionsPage() {
             {compactRows ? "Comfortable Rows" : "Compact Rows"}
           </Button>
           <Button size="sm" variant="outline" className="h-9 px-3.5" onClick={() => setShowManualForm(!showManualForm)}><Plus size={14} />Record Payment</Button>
-          <Button size="sm" variant="outline" className="h-9 px-3.5"><Download size={14} />Export</Button>
+          <Button size="sm" variant="outline" className="h-9 px-3.5" disabled={exportLoading} onClick={handleExportCsv}>
+            {exportLoading ? <><Loader2 size={14} className="animate-spin" />Exporting…</> : <><Download size={14} />Export</>}
+          </Button>
         </div>
       </div>
 

@@ -23,6 +23,7 @@ public class ContributionService : IContributionService
     private readonly IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo;
     private readonly IPaystackService paystackService;
     private readonly IRedisService<MemberRedisConfig> redis;
+    private readonly INotificationDispatcher notifDispatcher;
     private readonly ILogger<ContributionService> logger;
     private readonly string _paystackCallbackUrl;
 
@@ -89,6 +90,7 @@ public class ContributionService : IContributionService
         IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo,
         IPaystackService paystackService,
         IRedisService<MemberRedisConfig> redis,
+        INotificationDispatcher notifDispatcher,
         IConfiguration configuration,
         ILogger<ContributionService> logger)
     {
@@ -98,6 +100,7 @@ public class ContributionService : IContributionService
         this.paymentTransactionRepo = paymentTransactionRepo;
         this.paystackService = paystackService;
         this.redis = redis;
+        this.notifDispatcher = notifDispatcher;
         this.logger = logger;
 
         // Ensure callback goes to our callback route so the app can show status modal.
@@ -918,6 +921,12 @@ public class ContributionService : IContributionService
                 CreatedBy = member.Id,
             };
             await contributionRepo.AddAsync(contribution);
+
+            // Notify admins
+            var uploadingMember = await memberRepo.GetByIdAsync(member.Id);
+            var memberName = uploadingMember is not null ? $"{uploadingMember.FirstName} {uploadingMember.LastName}" : member.Email;
+            _ = Task.Run(() => notifDispatcher.DispatchPaymentReceivedToAdminsAsync(
+                memberName, member.Email, 0, campaign.Title, contribution.Id));
 
             logger.LogInformation("Proof uploaded, contribution {ContributionId} created for member {MemberId}", contribution.Id, member.Id);
             return contribution.ToDto().ToCreatedApiResponse("Proof uploaded. Awaiting admin confirmation.");

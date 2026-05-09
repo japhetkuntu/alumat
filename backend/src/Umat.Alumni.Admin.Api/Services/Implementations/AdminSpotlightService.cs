@@ -12,6 +12,7 @@ namespace Umat.Alumni.Admin.Api.Services.Implementations;
 public class AdminSpotlightService(
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
+    INotificationDispatcher notifDispatcher,
     ILogger<AdminSpotlightService> logger) : IAdminSpotlightService
 {
     public async Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetSpotlightsAsync(int page, int pageSize, string? status)
@@ -81,6 +82,8 @@ public class AdminSpotlightService(
             };
 
             await spotlightRepo.AddAsync(spotlight);
+
+            _ = Task.Run(() => notifDispatcher.DispatchSpotlightAlertAsync(spotlight));
 
             var dto = spotlight.ToDto();
             dto.MemberGraduationYear = member.GraduationYear;

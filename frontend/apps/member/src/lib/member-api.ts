@@ -1,5 +1,5 @@
 import { memberClient, publicMemberClient } from "@/lib/api-client";
-import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference } from "@/types";
+import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference, NotificationItem } from "@/types";
 
 function toFormData(data: object): FormData {
   const fd = new FormData();
@@ -280,6 +280,11 @@ export async function getThreadPosts(threadId: string, page = 1, pageSize = 30):
   return res.data.data!;
 }
 
+export async function getForumThread(threadId: string): Promise<ForumThread> {
+  const res = await memberClient.get(`/forum/threads/${threadId}`);
+  return res.data.data ?? res.data;
+}
+
 export interface CreateThreadBody { categoryId: string; title: string; content: string; }
 
 export async function createThread(body: CreateThreadBody) {
@@ -478,4 +483,24 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 export async function updateNotificationPreferences(data: Omit<NotificationPreference, "id">): Promise<NotificationPreference> {
   const res = await memberClient.put("/notificationpreferences", data);
   return res.data.data!;
+}
+
+// ── In-app Notifications ────────────────────────────────────────────────────
+
+export async function getNotifications(page = 1, pageSize = 20): Promise<PagedResult<NotificationItem>> {
+  const res = await memberClient.get("/notifications", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const res = await memberClient.get("/notifications/unread-count");
+  return res.data.data ?? 0;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await memberClient.put(`/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await memberClient.put("/notifications/read-all");
 }

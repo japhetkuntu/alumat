@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pin, Pencil, Send, Images, Youtube, Archive } from "lucide-react";
+import { ArrowLeft, Pin, Pencil, Send, Images, Youtube, Archive, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { YouTubeEmbed } from "@/components/ui/youtube-embed";
 import { formatDate } from "@/lib/utils";
 import { getNewsPost, publishNewsPost, updateNewsPost } from "@/lib/admin-api";
 import { handleApiError } from "@/lib/api-client";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 
 export default function AdminNewsDetailPage() {
@@ -64,21 +65,31 @@ export default function AdminNewsDetailPage() {
 
   if (!post) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        <p className="text-lg font-semibold">Post not found.</p>
-        <Link href="/news"><Button variant="ghost" className="mt-4"><ArrowLeft size={14} />Back to News</Button></Link>
+      <div className="p-8 lg:p-12 max-w-4xl mx-auto">
+        <Link href="/news">
+          <Button variant="ghost" size="sm" className="mb-6"><ArrowLeft size={14} />Back to News</Button>
+        </Link>
+        <EmptyState icon={<Archive size={48} />} title="Post not found" description="This news post may have been removed or the link is incorrect." />
       </div>
     );
   }
 
   return (
     <div className="p-8 lg:p-12 space-y-8 max-w-4xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <Link href="/news">
+          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-bold group">
+            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+            News
+          </Button>
+        </Link>
+        <ChevronRight size={14} className="text-muted-foreground/50" />
+        <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{post.title}</span>
+      </nav>
       {/* Header */}
       <div className="flex items-start justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex items-start gap-4">
-          <Link href="/news">
-            <Button variant="ghost" size="sm" className="mt-1"><ArrowLeft size={14} />Back</Button>
-          </Link>
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1">
               {post.isPinned && <Pin size={14} className="text-orange-500" />}

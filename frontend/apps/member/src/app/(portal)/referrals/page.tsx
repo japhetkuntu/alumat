@@ -55,6 +55,12 @@ export default function ReferralsPage() {
     MembershipPaid: "success",
   };
 
+  const statusLabel: Record<string, string> = {
+    Pending: "Pending",
+    Registered: "Registered",
+    MembershipPaid: "Activated",
+  };
+
   return (
     <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-10 selection:bg-primary/20">
       <header className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -160,7 +166,7 @@ export default function ReferralsPage() {
                     {r.referredMemberName && <p className="text-xs text-muted-foreground">{r.referredMemberName}</p>}
                     <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
                   </div>
-                  <Badge variant={statusVariant[r.status] ?? "secondary"}>{r.status}</Badge>
+                  <Badge variant={statusVariant[r.status] ?? "secondary"}>{statusLabel[r.status] ?? r.status}</Badge>
                 </CardContent>
               </Card>
             ))}

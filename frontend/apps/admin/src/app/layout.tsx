@@ -5,6 +5,13 @@ import { Providers } from "@/components/shared/providers";
 export const metadata: Metadata = {
   title: "UMaT Alumni - Admin Portal",
   description: "University of Mines and Technology Alumni Admin Portal",
+  manifest: "/manifest.json",
+  themeColor: "#4f46e5",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Alumni Admin",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

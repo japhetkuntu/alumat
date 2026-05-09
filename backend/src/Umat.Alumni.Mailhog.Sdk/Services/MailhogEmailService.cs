@@ -89,6 +89,7 @@ public class MailhogEmailService(MailhogConfig config, ILogger<MailhogEmailServi
             "contribution-confirmed" => "Contribution Confirmed — UMaT Alumni",
             "event-rsvp-confirmed" => "RSVP Confirmed — UMaT Alumni",
             "referral-invitation" => "You've Been Invited to UMaT Alumni",
+            "notification" => "New Notification — UMaT Alumni",
             _ => $"UMaT Alumni — {FormatTemplateId(templateId)}",
         };
     }

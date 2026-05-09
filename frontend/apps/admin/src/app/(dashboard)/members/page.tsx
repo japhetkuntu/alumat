@@ -99,6 +99,7 @@ export default function AdminMembersPage() {
   const densityCellClass = compactRows ? "py-2" : "py-2.5";
   const densityRowClass = compactRows ? "h-[46px]" : "h-[52px]";
   const actionFocusClass = "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-1";
+  const [exportLoading, setExportLoading] = useState(false);
 
   const closeModal = () => { setModal(null); setReasonText(""); };
 
@@ -108,6 +109,28 @@ export default function AdminMembersPage() {
     else if (modal.type === "reject") rejectMut.mutate({ id: modal.memberId, reason: reasonText || undefined });
     else if (modal.type === "ban") banMut.mutate({ id: modal.memberId, reason: reasonText || undefined });
     else if (modal.type === "unban") unbanMut.mutate(modal.memberId);
+  };
+
+  const handleExportCsv = async () => {
+    setExportLoading(true);
+    try {
+      const result = await getMembers({ search: search || undefined, status: statusFilter || undefined, page: 1, pageSize: 5000 });
+      const rows = result.results ?? [];
+      if (!rows.length) { toast.error("No members to export"); return; }
+      const headers = ["id", "firstName", "lastName", "email", "phone", "graduationYear", "department", "status", "memberNumber"];
+      const csv = [headers.join(","), ...rows.map((m) =>
+        headers.map((h) => `"${String(m[h as keyof typeof m] ?? "").replace(/"/g, '""')}"`).join(",")
+      )].join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = `members-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      toast.success(`Exported ${rows.length} members`);
+    } catch (e) {
+      toast.error(handleApiError(e));
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   return (
@@ -124,7 +147,9 @@ export default function AdminMembersPage() {
           <Button size="sm" variant="outline" className="h-9 px-3.5" onClick={() => setCompactRows((v) => !v)}>
             {compactRows ? "Comfortable Rows" : "Compact Rows"}
           </Button>
-          <Button size="sm" variant="outline" className="h-9 px-3.5"><Download size={14} />Export CSV</Button>
+          <Button size="sm" variant="outline" className="h-9 px-3.5" disabled={exportLoading} onClick={handleExportCsv}>
+            {exportLoading ? <><Loader2 size={14} className="animate-spin" />Exporting…</> : <><Download size={14} />Export CSV</>}
+          </Button>
         </div>
       </div>
 

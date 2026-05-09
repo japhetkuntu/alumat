@@ -32,7 +32,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<Umat.Alumni.Admin.Api.Services.Interfaces.INotificationDispatcher>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "Admin", GraduationYear = 2025 };
 
         // Act
@@ -68,7 +68,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<Umat.Alumni.Admin.Api.Services.Interfaces.INotificationDispatcher>(), logger);
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin", GraduationYear = 2025 };
 
         // Act

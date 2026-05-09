@@ -162,6 +162,11 @@ export default function AdminSettingsPage() {
           </CardTitle>
           <CardDescription>Choose what platform events trigger alerts</CardDescription>
         </CardHeader>
+        <div className="px-6 pb-2">
+          <p className="text-[11px] text-muted-foreground bg-muted/50 border border-border/40 rounded-lg px-3 py-2">
+            ℹ️ These preferences are saved to your browser. They will reset if you clear your browser data.
+          </p>
+        </div>
         <CardContent className="divide-y divide-border/40">
           <Toggle
             checked={notifPrefs.newMemberRegistrations}

@@ -3,7 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Calendar, MapPin, Users, Ticket, ArrowLeft, Loader2, PlayCircle, Image as ImageIcon, CheckCircle2, Navigation } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, ArrowLeft, Loader2, PlayCircle, Image as ImageIcon, CheckCircle2, Navigation, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { MediaGallery } from "@/components/ui/media-gallery";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function EventDetailPage() {
   const { id } = useParams() as { id: string };
@@ -65,7 +67,14 @@ export default function EventDetailPage() {
     );
   }
 
-  if (!event) return null;
+  if (!event) return (
+    <div className="p-8 lg:p-12 max-w-5xl mx-auto">
+      <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/events")}>
+        <ArrowLeft size={16} className="mr-2" /> Back to Events
+      </Button>
+      <EmptyState icon={<Calendar size={48} />} title="Event not found" description="This event may have been removed or the link is incorrect." />
+    </div>
+  );
 
   const mapUrl = event.googleLocationUrl?.trim() ? event.googleLocationUrl.trim() : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue)}`;
 
@@ -82,12 +91,16 @@ export default function EventDetailPage() {
 
   return (
     <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-12 pb-24 selection:bg-primary/20">
-      {/* Navigation & Header */}
+      {/* Breadcrumb + Navigation */}
       <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
-        <Button variant="ghost" size="sm" className="h-10 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 font-bold group" onClick={() => router.back()}>
-          <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to Events
-        </Button>
+        <div className="flex items-center gap-1.5 text-sm">
+          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group" onClick={() => router.push("/events")}>
+            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+            Events
+          </Button>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{event.title}</span>
+        </div>
         <Badge variant={statusVariant[event.status] || "secondary"} className="h-7 px-3 font-black uppercase tracking-widest text-[10px]">
           {event.status}
         </Badge>

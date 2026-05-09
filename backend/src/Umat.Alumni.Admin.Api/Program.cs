@@ -70,6 +70,7 @@ builder.Services.AddScoped<IMentorshipService, MentorshipService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IAdminManagementService, AdminManagementService>();
 builder.Services.AddScoped<IAdminSpotlightService, AdminSpotlightService>();
+builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 
 // Request body size limit (10 MB)
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);

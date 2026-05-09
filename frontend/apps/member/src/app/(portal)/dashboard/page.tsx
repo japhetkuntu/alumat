@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { CreditCard, Calendar, TrendingUp, ChevronRight, Award, AlertTriangle, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,6 @@ import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatSkeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   getMyCampaigns,
@@ -92,32 +90,41 @@ export default function MemberDashboardPage() {
       : "Your current year membership is unpaid. Pay now to activate your membership."
     : "Loading membership status...";
 
-  const hasShownExpiryWarningRef = useRef(false);
-
-  useEffect(() => {
-    if (!membershipStatus.isSuccess || hasShownExpiryWarningRef.current) return;
-
-    const data = membershipStatus.data;
-    if (data.isMembershipActive && data.membershipExpiry) {
-      const expiryDate = new Date(data.membershipExpiry);
-      const today = new Date();
-      const daysLeft = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysLeft > 0 && daysLeft <= 30) {
-        toast.warning(`Your membership expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Renew soon to continue enjoying benefits.`);
-        hasShownExpiryWarningRef.current = true;
-      }
-    } else if (!data.isMembershipActive) {
-      toast.error("Your membership is not active. Pay your current year's membership campaign to activate it.");
-      hasShownExpiryWarningRef.current = true;
-    }
-  }, [membershipStatus.isSuccess, membershipStatus.data]);
+  // Compute expiry warning for inline banner
+  const expiryDaysLeft = (() => {
+    if (!membershipStatus.data?.isMembershipActive || !membershipStatus.data.membershipExpiry) return null;
+    const days = Math.ceil((new Date(membershipStatus.data.membershipExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return days > 0 && days <= 30 ? days : null;
+  })();
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-[1800px] mx-auto">
       <header className="space-y-1 animate-in fade-in slide-in-from-bottom-3 duration-700">
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground text-sm font-normal">Welcome back, here&apos;s what&apos;s happening in your alumni community.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+          {profile?.firstName ? `Welcome back, ${profile.firstName}` : "Dashboard"} 👋
+        </h1>
+        <p className="text-muted-foreground text-sm font-normal">Here&apos;s what&apos;s happening in your alumni community.</p>
       </header>
+
+      {/* Inline membership warning banner */}
+      {membershipStatus.isSuccess && !membershipStatus.data.isMembershipActive && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/5 border border-destructive/20 text-sm animate-in fade-in duration-500">
+          <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">Membership inactive</p>
+            <p className="text-muted-foreground mt-0.5">Pay your current year&apos;s membership campaign to activate your membership and access all benefits.</p>
+          </div>
+        </div>
+      )}
+      {expiryDaysLeft !== null && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-sm animate-in fade-in duration-500">
+          <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-700 dark:text-amber-400">Membership expiring soon</p>
+            <p className="text-muted-foreground mt-0.5">Your membership expires in {expiryDaysLeft} day{expiryDaysLeft === 1 ? "" : "s"}. Renew to continue enjoying benefits.</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {isLoading ? (

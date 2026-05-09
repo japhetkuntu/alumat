@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import {
   Briefcase, MapPin, Clock, ExternalLink, ArrowLeft,
   Building2, Calendar, Globe, Eye, XCircle, Pencil,
-  CheckCircle2, AlertCircle,
+  CheckCircle2, AlertCircle, ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { formatDate } from "@/lib/utils";
 import { getJob, updateJob, closeJob, deleteJob, type UpdateJobBody } from "@/lib/admin-api";
 import { handleApiError } from "@/lib/api-client";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useState } from "react";
 import type { Job } from "@/types";
 
@@ -146,23 +148,34 @@ export default function AdminJobDetailPage() {
     );
   }
 
-  if (!job) return null;
+  if (!job) return (
+    <div className="p-6 lg:p-12 max-w-6xl mx-auto">
+      <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/jobs")}>
+        <ArrowLeft size={16} className="mr-2" /> Back to Jobs
+      </Button>
+      <EmptyState icon={<Briefcase size={48} />} title="Job not found" description="This listing may have been removed or the link is incorrect." />
+    </div>
+  );
 
   const sc = statusConfig[job.status] ?? statusConfig.Active;
 
   return (
     <div className="p-6 lg:p-12 max-w-6xl mx-auto space-y-10 pb-24">
-      {/* Navigation */}
+      {/* Breadcrumb */}
       <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 font-bold group"
-          onClick={() => router.push("/jobs")}
-        >
-          <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to Job Board
-        </Button>
+        <div className="flex items-center gap-1.5 text-sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group"
+            onClick={() => router.push("/jobs")}
+          >
+            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+            Jobs
+          </Button>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{job.title}</span>
+        </div>
         <div className="flex items-center gap-2">
           <Badge variant={sc.variant} className="flex items-center gap-1.5 h-7 px-3 font-black uppercase tracking-widest text-[10px]">
             {sc.icon}

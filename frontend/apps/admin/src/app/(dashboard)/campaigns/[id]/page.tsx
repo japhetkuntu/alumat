@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle, XCircle, X, Expand, Pencil } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, X, Expand, Pencil, ChevronRight } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign } from "@/lib/admin-api";
+import { EmptyState } from "@/components/ui/empty-state";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/skeleton";
@@ -98,7 +99,14 @@ export default function CampaignDetailPage() {
   });
 
   if (loadingCampaign) return <div className="p-6 lg:p-8 space-y-6 page-enter"><CardSkeleton /><CardSkeleton /></div>;
-  if (!campaign) return <div className="p-6 text-muted-foreground">Campaign not found.</div>;
+  if (!campaign) return (
+    <div className="p-6 lg:p-8">
+      <Link href="/campaigns">
+        <Button size="sm" variant="ghost" className="mb-6"><ArrowLeft size={14} />Back to Campaigns</Button>
+      </Link>
+      <EmptyState icon={<XCircle size={48} />} title="Campaign not found" description="This campaign may have been removed or the link is incorrect." />
+    </div>
+  );
 
   const pct = campaign.targetAmount > 0 ? Math.round((campaign.collectedAmount / campaign.targetAmount) * 100) : 0;
   const contributions = contribs?.results ?? [];
@@ -108,14 +116,15 @@ export default function CampaignDetailPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6 page-enter">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link href={backLink}>
-            <Button size="sm" variant="ghost"><ArrowLeft size={14} />Back</Button>
+            <Button size="sm" variant="ghost" className="h-8 px-2 font-bold group">
+              <ArrowLeft size={14} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+              {campaign.isMembershipCampaign ? "Membership" : "Campaigns"}
+            </Button>
           </Link>
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight">{campaign.title}</h1>
-            <p className="text-muted-foreground text-[13px]">Campaign Details &amp; Contributions</p>
-          </div>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{campaign.title}</span>
         </div>
         {campaign.status === "Active" && (
           <Button size="sm" variant="outline" onClick={() => setEditing(!editing)} className="font-bold">

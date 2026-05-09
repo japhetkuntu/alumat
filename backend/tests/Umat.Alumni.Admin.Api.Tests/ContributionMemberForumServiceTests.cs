@@ -24,6 +24,8 @@ using Umat.Alumni.Member.Api.Models;
 using Umat.Alumni.Member.Api.Options;
 using Umat.Alumni.Member.Api.Services.Implementations;
 using MemberContributionService = Umat.Alumni.Member.Api.Services.Implementations.ContributionService;
+using INotificationDispatcher = Umat.Alumni.Member.Api.Services.Interfaces.INotificationDispatcher;
+using IAdminNotificationDispatcher = Umat.Alumni.Admin.Api.Services.Interfaces.INotificationDispatcher;
 using DbMember = Umat.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Xunit;
 
@@ -60,7 +62,7 @@ public class ContributionMemberForumServiceTests
                 };
             });
 
-        var service = new AdminContributionService(mockContributionRepo.Object, Mock.Of<IAlumniPgRepository<Campaign>>(), Mock.Of<IAlumniPgRepository<DbMember>>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, Mock.Of<IAlumniPgRepository<Campaign>>(), Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminContributionService>());
         var admin = new AuthData { Id = "admin1", Role = "Admin" };
 
         var response = await service.GetContributionsAsync(new ContributionAdminFilter { Page = 1, PageSize = 10 }, admin);
@@ -88,7 +90,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>())).ReturnsAsync((DbMember?)null);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync((DbMember?)null);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminContributionService>());
 
         var campaign = new Campaign { Id = "camp1", Title = "Test Campaign", CollectedAmount = 0m, PaidCount = 0 };
         mockCampaignRepo.Setup(r => r.GetByIdAsync("camp1")).ReturnsAsync(campaign);
@@ -148,7 +150,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>())).ReturnsAsync(existingMember);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync(existingMember);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminContributionService>());
 
         var result = await service.RecordManualContributionAsync(new RecordManualContributionRequest(
             "camp1",
@@ -194,7 +196,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>())).ReturnsAsync((DbMember?)null);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync((DbMember?)null);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminContributionService>());
 
         var result = await service.RecordManualContributionAsync(new RecordManualContributionRequest(
             "camp1",
@@ -510,7 +512,7 @@ public class ContributionMemberForumServiceTests
             .ReturnsAsync(1)
             .Callback<AlumniEvent>(e => createdEvent = e);
 
-        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, new NullLogger<EventService>());
+        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<EventService>());
         var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
 
         var request = new CreateEventRequest
@@ -538,7 +540,7 @@ public class ContributionMemberForumServiceTests
         var mockMemberRepo = new Mock<IAlumniPgRepository<Umat.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>>();
         var mockStorage = new Mock<IStorageService>();
 
-        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, new NullLogger<EventService>());
+        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<EventService>());
         var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
 
         var request = new CreateEventRequest
@@ -571,7 +573,7 @@ public class ContributionMemberForumServiceTests
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
 
         var request = new CreateCampaignRequest
@@ -606,7 +608,7 @@ public class ContributionMemberForumServiceTests
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin", GraduationYear = 2025 };
 
         var request = new CreateCampaignRequest
@@ -636,7 +638,7 @@ public class ContributionMemberForumServiceTests
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
 
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationDispatcher>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
 
         var request = new CreateCampaignRequest
@@ -675,6 +677,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -708,6 +711,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -735,7 +739,7 @@ public class ContributionMemberForumServiceTests
         mockCampaignRepo.Setup(r => r.GetByIdAsync("membership-campaign")).ReturnsAsync(new Campaign { Id = "membership-campaign", Title = "Membership", AmountPerMember = 100, IsMembershipCampaign = true, AllowManualPayments = true });
         mockContributionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new Contribution { Id = "c1", MemberId = "m1", CampaignId = "membership-campaign", Status = "Confirmed" });
 
-        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockPaystackService.Object, mockRedis.Object, config.Object, logger);
+        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockPaystackService.Object, mockRedis.Object, Mock.Of<INotificationDispatcher>(), config.Object, logger);
 
         var response = await service.InitiateMembershipRenewalAsync(new InitiateMembershipRenewalRequest("membership-campaign", 1, "manual"), new AuthData { Id = "m1", Email = "john@example.com" });
 
@@ -771,6 +775,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -808,6 +813,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -848,6 +854,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -882,6 +889,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -935,6 +943,7 @@ public class ContributionMemberForumServiceTests
             Mock.Of<IAlumniPgRepository<PaymentTransaction>>(),
             Mock.Of<IPaystackService>(),
             Mock.Of<IRedisService<MemberRedisConfig>>(),
+            Mock.Of<INotificationDispatcher>(),
             Mock.Of<IConfiguration>(),
             new NullLogger<MemberContributionService>());
 
@@ -981,6 +990,7 @@ public class ContributionMemberForumServiceTests
             mockPaymentTransactionRepo.Object,
             mockPaystackService.Object,
             mockRedis.Object,
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 

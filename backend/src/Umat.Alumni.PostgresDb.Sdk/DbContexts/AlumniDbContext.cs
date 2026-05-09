@@ -37,6 +37,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options) : DbCont
     public DbSet<ClassNote> ClassNotes => Set<ClassNote>();
     public DbSet<ClassNoteLike> ClassNoteLikes => Set<ClassNoteLike>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -237,5 +238,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options) : DbCont
 
         // NotificationPreference
         modelBuilder.Entity<NotificationPreference>().HasIndex(np => np.MemberId).IsUnique();
+
+        // Notification
+        modelBuilder.Entity<Notification>().HasIndex(n => n.RecipientId);
+        modelBuilder.Entity<Notification>().HasIndex(n => new { n.RecipientId, n.RecipientType });
+        modelBuilder.Entity<Notification>().HasIndex(n => n.IsRead);
     }
 }

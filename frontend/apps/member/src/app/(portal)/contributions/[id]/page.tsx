@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { CreditCard, Loader2, ArrowLeft, Calendar, Target, Users, PlayCircle, Image as ImageIcon, CheckCircle2, Award } from "lucide-react";
+import { CreditCard, Loader2, ArrowLeft, Calendar, Target, Users, PlayCircle, Image as ImageIcon, CheckCircle2, Award, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { YouTubeEmbed } from "@/components/ui/youtube-embed";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getCampaignById, getMyProfile, initiatePaystackPayment, renewMembership, getMyContributions } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useState } from "react";
 
 export default function CampaignDetailPage() {
@@ -70,7 +71,14 @@ export default function CampaignDetailPage() {
     );
   }
 
-  if (!campaign) return null;
+  if (!campaign) return (
+    <div className="p-8 lg:p-12 max-w-5xl mx-auto">
+      <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/contributions")}>
+        <ArrowLeft size={16} className="mr-2" /> Back to Campaigns
+      </Button>
+      <EmptyState icon={<CreditCard size={48} />} title="Campaign not found" description="This campaign may have ended or the link is incorrect." />
+    </div>
+  );
 
   const hasPaid = myContributions?.results.some(c => c.status === "Confirmed" || c.status === "Pending");
   const isMembership = !!campaign?.isMembershipCampaign;
@@ -88,12 +96,16 @@ export default function CampaignDetailPage() {
 
   return (
     <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 selection:bg-primary/20">
-      {/* Navigation & Header */}
+      {/* Breadcrumb + Navigation */}
       <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
-        <Button variant="ghost" size="sm" className="h-10 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 font-bold group" onClick={() => router.back()}>
-          <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to Campaigns
-        </Button>
+        <div className="flex items-center gap-1.5 text-sm">
+          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group" onClick={() => router.push("/contributions")}>
+            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+            Campaigns
+          </Button>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{campaign.title}</span>
+        </div>
         <Badge variant={campaign.status === "Active" ? "success" : "secondary"} className="h-7 px-3 font-black uppercase tracking-widest text-[10px]">
           {campaign.status}
         </Badge>

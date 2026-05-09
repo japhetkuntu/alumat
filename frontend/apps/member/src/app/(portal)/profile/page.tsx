@@ -158,9 +158,9 @@ export default function MemberProfilePage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              disabled={employmentMut.isPending || employmentStatus === "Pensioner"}
-              onClick={() => {}}
-              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 transition-all ${employmentStatus === "Employed" ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border"} ${employmentStatus === "Pensioner" ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={employmentMut.isPending || employmentStatus === "Pensioner" || employmentStatus === "Employed"}
+              onClick={() => { if (employmentStatus !== "Pensioner" && employmentStatus !== "Employed") { setEmploymentStatus("Employed"); employmentMut.mutate("Employed"); } }}
+              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 transition-all ${employmentStatus === "Employed" ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border"} ${employmentStatus === "Pensioner" ? "opacity-50 cursor-not-allowed" : "hover:border-primary/40"}`}
             >
               <Briefcase size={24} className={employmentStatus === "Employed" ? "text-primary" : "text-muted-foreground"} />
               <span className={`font-bold text-sm ${employmentStatus === "Employed" ? "text-primary" : "text-foreground"}`}>Employed</span>

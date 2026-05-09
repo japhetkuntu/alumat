@@ -289,4 +289,20 @@ public static class EntityDtoExtensions
         ClassNoteAlerts = np.ClassNoteAlerts,
         SpotlightAlerts = np.SpotlightAlerts,
     };
+
+    public static NotificationDto ToDto(this Notification n) => new()
+    {
+        Id = n.Id,
+        RecipientId = n.RecipientId,
+        RecipientType = n.RecipientType,
+        Title = n.Title,
+        Body = n.Body,
+        Type = n.Type,
+        IsRead = n.IsRead,
+        ReadAt = n.ReadAt,
+        RelatedEntityId = n.RelatedEntityId,
+        RelatedEntityType = n.RelatedEntityType,
+        ActionUrl = n.ActionUrl,
+        CreatedAt = n.CreatedAt,
+    };
 }

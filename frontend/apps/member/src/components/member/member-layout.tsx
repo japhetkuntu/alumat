@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { NotificationPanel } from "@/components/member/notification-panel";
 import {
   LayoutDashboard,
   CreditCard,
@@ -26,6 +27,7 @@ import {
   Star,
   UserPlus,
   StickyNote,
+  Bell,
 } from "lucide-react";
 
 const navItems = [
@@ -42,6 +44,7 @@ const navItems = [
   { href: "/spotlights", label: "Spotlights", icon: Star },
   { href: "/referrals", label: "Refer a Friend", icon: UserPlus },
   { href: "/class-notes", label: "Class Notes", icon: StickyNote },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/profile", label: "My Profile", icon: UserCircle },
 ];
 
@@ -211,6 +214,11 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         {/* Subtle top glow */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         
+        {/* Desktop header */}
+        <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
+          <NotificationPanel />
+        </div>
+
         {/* Mobile header - Refined and compact */}
         <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center gap-3">
@@ -222,15 +230,18 @@ export function MemberLayout({ children }: { children: ReactNode }) {
               <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Member Portal</span>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-10 w-10 p-0 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95" 
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open full menu"
-          >
-            <Menu size={20} className="text-muted-foreground" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationPanel />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-10 w-10 p-0 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95" 
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open full menu"
+            >
+              <Menu size={20} className="text-muted-foreground" />
+            </Button>
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative pb-28 sm:pb-32 lg:pb-0 scroll-touch">

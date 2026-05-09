@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, CheckCircle, XCircle, Plus, Search, Loader2 } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
+import { Star, CheckCircle, XCircle, Plus, Search, Loader2 } from "lucide-react";import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,19 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { formatDate, getInitials } from "@/lib/utils";
+import { formatDate, getInitials, cn } from "@/lib/utils";
 import { getSpotlights, approveSpotlight, rejectSpotlight, createSpotlight, getMembers } from "@/lib/admin-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { Spotlight, Member } from "@/types";
-
-const statusColors: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  Approved: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  Rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
 
 export default function AdminSpotlightsPage() {
   const [statusFilter, setStatusFilter] = useState("");
@@ -133,71 +126,72 @@ export default function AdminSpotlightsPage() {
           description={statusFilter ? `No ${statusFilter.toLowerCase()} spotlights yet.` : "No spotlight submissions yet."}
         />
       ) : (
-        <div className="grid gap-4">
-          {spotlights.map((s) => (
-            <Card key={s.id} className="overflow-hidden">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-11 w-11 shrink-0">
-                    {s.memberProfilePictureUrl && <AvatarImage src={s.memberProfilePictureUrl} />}
-                    <AvatarFallback className="text-xs font-bold">
-                      {s.memberName ? getInitials(s.memberName) : "?"}
-                    </AvatarFallback>
-                  </Avatar>
+        <div className="grid gap-5">
+          {spotlights.map((s) => {
+            const isPending = s.status === "Pending";
+            const gradMap: Record<string, string> = {
+              Pending: "from-amber-500 to-orange-500",
+              Approved: "from-emerald-500 to-teal-500",
+              Rejected: "from-rose-500 to-red-500",
+            };
+            const grad = gradMap[s.status] ?? "from-primary to-primary/70";
+            return (
+              <Card key={s.id} className="overflow-hidden border-border/40 hover:shadow-md transition-shadow duration-200">
+                <CardContent className="p-0">
+                  {/* Colored top bar + gradient mini-banner */}
+                  <div className={`relative h-20 sm:h-24 bg-gradient-to-br ${grad} px-5 sm:px-6 flex items-end pb-3`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
+                    <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-0.5 self-start mt-3">
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{s.status}</span>
+                    </div>
+                    {/* Avatar overlapping */}
+                    <div className="absolute -bottom-5 left-5 sm:left-6 p-0.5 rounded-full bg-background shadow-lg ring-2 ring-background">
+                      <Avatar className="h-12 w-12">
+                        {s.memberProfilePictureUrl && <AvatarImage src={s.memberProfilePictureUrl} />}
+                        <AvatarFallback className={`text-sm font-black text-white bg-gradient-to-br ${grad}`}>
+                          {s.memberName ? getInitials(s.memberName) : "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </div>
 
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-start justify-between gap-3">
+                  {/* Body */}
+                  <div className="pt-8 pb-5 px-5 sm:px-6">
+                    <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
-                        <h3 className="font-bold text-sm leading-tight">{s.title}</h3>
+                        <h3 className="font-black text-base leading-tight">{s.title}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {s.memberName ?? "Unknown"} · Class of {s.memberGraduationYear ?? "N/A"} · {formatDate(s.createdAt)}
+                          {s.memberName ?? "Unknown"} &middot; Class of {s.memberGraduationYear ?? "N/A"} &middot; {formatDate(s.createdAt)}
                         </p>
                       </div>
-                      <Badge className={`shrink-0 text-[10px] uppercase font-bold ${statusColors[s.status] ?? ""}`}>
-                        {s.status}
-                      </Badge>
+                      {s.featuredMonth && (
+                        <Badge variant="secondary" className="shrink-0 text-[10px] font-bold uppercase">
+                          {new Date(s.featuredMonth).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                        </Badge>
+                      )}
                     </div>
 
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{s.story}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 mb-3">{s.story}</p>
 
                     {s.imageUrl && (
-                      <img
-                        src={s.imageUrl}
-                        alt={s.title}
-                        className="mt-2 rounded-lg max-h-48 object-cover"
-                      />
+                      <img src={s.imageUrl} alt={s.title} className="w-full rounded-xl max-h-48 object-cover mb-3 border border-border/30" />
                     )}
 
-                    {s.featuredMonth && (
-                      <p className="text-xs text-muted-foreground">
-                        Featured: {new Date(s.featuredMonth).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-                      </p>
-                    )}
-
-                    {s.status === "Pending" && (
-                      <div className="flex gap-2 pt-1">
-                        <Button
-                          size="sm"
-                          className="h-8 text-xs font-bold"
-                          onClick={() => setApproveTarget(s)}
-                        >
-                          <CheckCircle size={14} className="mr-1" />Approve
+                    {isPending && (
+                      <div className="flex gap-2 mt-1">
+                        <Button size="sm" className="h-8 text-xs font-bold" onClick={() => setApproveTarget(s)}>
+                          <CheckCircle size={13} className="mr-1" />Approve
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs font-bold text-destructive hover:text-destructive"
-                          onClick={() => setRejectTarget(s)}
-                        >
-                          <XCircle size={14} className="mr-1" />Reject
+                        <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-destructive hover:text-destructive" onClick={() => setRejectTarget(s)}>
+                          <XCircle size={13} className="mr-1" />Reject
                         </Button>
                       </div>
                     )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

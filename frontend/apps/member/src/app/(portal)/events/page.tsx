@@ -25,6 +25,7 @@ const statusVariant: Record<EventStatus, "info" | "success" | "secondary" | "des
 
 export default function MemberEventsPage() {
   const [page, setPage] = useState(1);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const pageSize = 12;
   const qc = useQueryClient();
 
@@ -42,21 +43,23 @@ export default function MemberEventsPage() {
   const rsvpMut = useMutation({
     mutationFn: (eventId: string) => rsvpEvent(eventId),
     onSuccess: () => { 
+      setPendingId(null);
       qc.invalidateQueries({ queryKey: ["m-rsvps"] }); 
       qc.invalidateQueries({ queryKey: ["m-events-list"] }); 
-      toast.success("RSVP confirmed!"); 
+      toast.success("RSVP confirmed! We'll see you there."); 
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { setPendingId(null); toast.error(handleApiError(e)); },
   });
 
   const cancelMut = useMutation({
     mutationFn: (eventId: string) => cancelRsvp(eventId),
     onSuccess: () => { 
+      setPendingId(null);
       qc.invalidateQueries({ queryKey: ["m-rsvps"] }); 
       qc.invalidateQueries({ queryKey: ["m-events-list"] }); 
       toast.success("RSVP cancelled"); 
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { setPendingId(null); toast.error(handleApiError(e)); },
   });
 
   const events = eventsData?.results ?? [];
@@ -149,9 +152,11 @@ export default function MemberEventsPage() {
                       <Button 
                         className={`flex-1 h-11 font-black shadow-lg transition-all ${hasRsvp ? "bg-muted text-foreground hover:bg-destructive hover:text-white" : "shadow-primary/10 hover:shadow-primary/20"}`}
                         size="sm"
-                        disabled={rsvpMut.isPending || cancelMut.isPending || (isFull && !hasRsvp)}
+                        title={hasRsvp ? "Click to cancel your RSVP" : isFull ? "Event is full" : "Confirm your attendance"}
+                        disabled={pendingId === e.id || (isFull && !hasRsvp)}
                         onClick={(clickEvent) => {
                           clickEvent.preventDefault();
+                          setPendingId(e.id);
                           if (hasRsvp) {
                             cancelMut.mutate(e.id);
                           } else {
@@ -159,10 +164,10 @@ export default function MemberEventsPage() {
                           }
                         }}
                       >
-                        {rsvpMut.isPending || cancelMut.isPending ? (
+                        {pendingId === e.id ? (
                           <Loader2 size={16} className="animate-spin" />
                         ) : hasRsvp ? (
-                          "Participating"
+                          "Participating ✓"
                         ) : isFull ? (
                           "Full"
                         ) : (

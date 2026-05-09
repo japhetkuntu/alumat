@@ -514,3 +514,18 @@ export interface NotificationPreference {
   classNoteAlerts: boolean;
   spotlightAlerts: boolean;
 }
+
+export interface NotificationItem {
+  id: string;
+  recipientId: string;
+  recipientType: string;
+  title: string;
+  body: string;
+  type: string;
+  isRead: boolean;
+  readAt?: string | null;
+  relatedEntityId?: string | null;
+  relatedEntityType?: string | null;
+  actionUrl?: string | null;
+  createdAt: string;
+}

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Users, TrendingUp, Calendar, Briefcase, Activity, Layers, DollarSign } from "lucide-react";
+import { Download, Users, TrendingUp, Calendar, Briefcase, Activity, Layers, DollarSign, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -45,25 +45,25 @@ export default function AdminReportsPage() {
   const membersExportQuery = useQuery({
     queryKey: ["report-members-export"],
     queryFn: () => getMembers({ page: 1, pageSize: 2000 }),
-    enabled: !membersQuery.isLoading,
+    enabled: false,
   });
 
   const contributionsExportQuery = useQuery({
     queryKey: ["report-contributions-export"],
     queryFn: () => getContributions({ page: 1, pageSize: 2000 }),
-    enabled: !contributionsQuery.isLoading,
+    enabled: false,
   });
 
   const eventsExportQuery = useQuery({
     queryKey: ["report-events-export"],
     queryFn: () => getEvents(1, 2000),
-    enabled: !eventsQuery.isLoading,
+    enabled: false,
   });
 
   const jobsExportQuery = useQuery({
     queryKey: ["report-jobs-export"],
     queryFn: () => getJobs(1, 2000),
-    enabled: !jobsQuery.isLoading,
+    enabled: false,
   });
 
   useEffect(() => {
@@ -126,8 +126,10 @@ export default function AdminReportsPage() {
     );
   };
 
-  const exportMembers = () => {
-    const members = membersExportQuery.data?.results ?? [];
+  const exportMembers = async () => {
+    const result = await membersExportQuery.refetch();
+    const members = result.data?.results ?? [];
+    if (!members.length) { toast.error("No member data to export"); return; }
     downloadCsv(
       "members-report.csv",
       members.map((m) => ({
@@ -142,8 +144,10 @@ export default function AdminReportsPage() {
     );
   };
 
-  const exportContributions = () => {
-    const contributions = contributionsExportQuery.data?.results ?? [];
+  const exportContributions = async () => {
+    const result = await contributionsExportQuery.refetch();
+    const contributions = result.data?.results ?? [];
+    if (!contributions.length) { toast.error("No contribution data to export"); return; }
     downloadCsv(
       "contributions-report.csv",
       contributions.map((c) => ({
@@ -162,8 +166,10 @@ export default function AdminReportsPage() {
     );
   };
 
-  const exportEvents = () => {
-    const events = eventsExportQuery.data?.results ?? [];
+  const exportEvents = async () => {
+    const result = await eventsExportQuery.refetch();
+    const events = result.data?.results ?? [];
+    if (!events.length) { toast.error("No event data to export"); return; }
     downloadCsv(
       "events-report.csv",
       events.map((e) => ({
@@ -178,8 +184,10 @@ export default function AdminReportsPage() {
     );
   };
 
-  const exportJobs = () => {
-    const jobs = jobsExportQuery.data?.results ?? [];
+  const exportJobs = async () => {
+    const result = await jobsExportQuery.refetch();
+    const jobs = result.data?.results ?? [];
+    if (!jobs.length) { toast.error("No job data to export"); return; }
     downloadCsv(
       "jobs-report.csv",
       jobs.map((j) => ({
@@ -276,36 +284,36 @@ export default function AdminReportsPage() {
             variant="outline"
             className="gap-1 h-9 px-3.5"
             onClick={exportMembers}
-            disabled={membersExportQuery.isLoading || !membersExportQuery.data?.results?.length}
+            disabled={membersExportQuery.isFetching}
           >
-            <Download size={13} />Members CSV
+            {membersExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Members CSV</>}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="gap-1 h-9 px-3.5"
             onClick={exportContributions}
-            disabled={contributionsExportQuery.isLoading || !contributionsExportQuery.data?.results?.length}
+            disabled={contributionsExportQuery.isFetching}
           >
-            <Download size={13} />Contributions CSV
+            {contributionsExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Contributions CSV</>}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="gap-1 h-9 px-3.5"
             onClick={exportEvents}
-            disabled={eventsExportQuery.isLoading || !eventsExportQuery.data?.results?.length}
+            disabled={eventsExportQuery.isFetching}
           >
-            <Download size={13} />Events CSV
+            {eventsExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Events CSV</>}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="gap-1 h-9 px-3.5"
             onClick={exportJobs}
-            disabled={jobsExportQuery.isLoading || !jobsExportQuery.data?.results?.length}
+            disabled={jobsExportQuery.isFetching}
           >
-            <Download size={13} />Jobs CSV
+            {jobsExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Jobs CSV</>}
           </Button>
         </CardContent>
       </Card>
