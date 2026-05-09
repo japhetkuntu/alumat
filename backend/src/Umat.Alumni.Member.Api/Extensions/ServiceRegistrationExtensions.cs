@@ -11,6 +11,8 @@ using Microsoft.OpenApi.Models;
 using Umat.Alumni.Common.Sdk.Models;
 using Umat.Alumni.Common.Sdk.Options;
 using Umat.Alumni.Member.Api.Actors;
+using Umat.Alumni.Member.Api.Services.Interfaces;
+using Umat.Alumni.Member.Api.Actors;
 
 namespace Umat.Alumni.Member.Api.Extensions;
 
@@ -124,6 +126,16 @@ public static class ServiceRegistrationExtensions
         {
             var system = provider.GetRequiredService<ActorSystem>();
             return system.ActorOf(DependencyResolver.For(system).Props<PaystackCallbackActor>(), "paystackCallbackProcessor");
+        });
+
+        // Notification dispatcher actor — processes all fan-out notification commands.
+        services.AddSingleton<INotificationActor>(provider =>
+        {
+            var system = provider.GetRequiredService<ActorSystem>();
+            var actorRef = system.ActorOf(
+                DependencyResolver.For(system).Props<NotificationDispatcherActor>(),
+                "notificationDispatcher");
+            return new NotificationActorRef(actorRef);
         });
 
         return services;

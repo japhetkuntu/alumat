@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Umat.Alumni.Admin.Api.Actors;
+using Umat.Alumni.Admin.Api.Services.Interfaces;
 using Umat.Alumni.Common.Sdk.Models;
 using Umat.Alumni.Common.Sdk.Options;
 
@@ -118,6 +120,17 @@ public static class ServiceRegistrationExtensions
             configure?.Invoke(setup);
             return ActorSystem.Create("alumni-admin", setup);
         });
+
+        // Notification dispatcher actor — processes all fan-out notification commands.
+        services.AddSingleton<INotificationActor>(provider =>
+        {
+            var system = provider.GetRequiredService<ActorSystem>();
+            var actorRef = system.ActorOf(
+                DependencyResolver.For(system).Props<NotificationDispatcherActor>(),
+                "notificationDispatcher");
+            return new NotificationActorRef(actorRef);
+        });
+
         return services;
     }
 

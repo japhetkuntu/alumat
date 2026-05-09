@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Umat.Alumni.Common.Sdk.Extensions;
 using Umat.Alumni.Common.Sdk.Models;
+using Umat.Alumni.Member.Api.Actors;
 using Umat.Alumni.Member.Api.Services.Interfaces;
 using MemberEntity = Umat.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Umat.Alumni.PostgresDb.Sdk.Entities.Alumni;
@@ -16,7 +17,7 @@ public class ClassNoteService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
-    INotificationDispatcher notifDispatcher,
+    INotificationActor notificationActor,
     ILogger<ClassNoteService> logger) : IClassNoteService
 {
     private async Task<bool> IsMembershipActiveAsync(string memberId, int graduationYear)
@@ -110,7 +111,7 @@ public class ClassNoteService(
 
             await classNoteRepo.AddAsync(note);
             var authorName = $"{member.FirstName} {member.LastName}";
-            _ = Task.Run(() => notifDispatcher.DispatchClassNoteAlertAsync(note, authorName));
+            notificationActor.Tell(new DispatchClassNoteAlertCommand(note, authorName));
             return note.ToDto().ToCreatedApiResponse("Class note posted.");
         }
         catch (Exception e)

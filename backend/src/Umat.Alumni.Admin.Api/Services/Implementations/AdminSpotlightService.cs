@@ -1,3 +1,4 @@
+using Umat.Alumni.Admin.Api.Actors;
 using Umat.Alumni.Admin.Api.Services.Interfaces;
 using Umat.Alumni.Common.Sdk.Extensions;
 using Umat.Alumni.Common.Sdk.Models;
@@ -12,7 +13,7 @@ namespace Umat.Alumni.Admin.Api.Services.Implementations;
 public class AdminSpotlightService(
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
-    INotificationDispatcher notifDispatcher,
+    INotificationActor notificationActor,
     ILogger<AdminSpotlightService> logger) : IAdminSpotlightService
 {
     public async Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetSpotlightsAsync(int page, int pageSize, string? status)
@@ -83,7 +84,7 @@ public class AdminSpotlightService(
 
             await spotlightRepo.AddAsync(spotlight);
 
-            _ = Task.Run(() => notifDispatcher.DispatchSpotlightAlertAsync(spotlight));
+            notificationActor.Tell(new DispatchSpotlightAlertCommand(spotlight));
 
             var dto = spotlight.ToDto();
             dto.MemberGraduationYear = member.GraduationYear;

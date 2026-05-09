@@ -20,11 +20,14 @@ public class NotificationDispatcher(
     {
         try
         {
-            // Get year-group members (excluding the author) who have classNoteAlerts on
-            var prefs = await prefRepo.GetAllAsync(p => p.ClassNoteAlerts && p.MemberId != note.AuthorId);
-            var memberIds = prefs.Select(p => p.MemberId).ToHashSet();
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude members who have explicitly opted out (or are the author).
+            var optedOut = await prefRepo.GetAllAsync(p => !p.ClassNoteAlerts || p.MemberId == note.AuthorId);
+            var optedOutIds = optedOut.Select(p => p.MemberId).ToHashSet();
+            // Also always exclude the author even if they have no pref row
+            optedOutIds.Add(note.AuthorId);
             var members = await memberRepo.GetAllAsync(m =>
-                memberIds.Contains(m.Id)
+                !optedOutIds.Contains(m.Id)
                 && m.Status == "Active"
                 && m.GraduationYear == note.YearGroup);
 

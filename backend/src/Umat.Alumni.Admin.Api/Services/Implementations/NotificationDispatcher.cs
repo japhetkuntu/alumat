@@ -22,11 +22,12 @@ public class NotificationDispatcher(
     {
         try
         {
-            // Get members with jobAlerts on; if year-group scoped, filter accordingly
-            var prefs = await prefRepo.GetAllAsync(p => p.JobAlerts);
-            var memberIds = prefs.Select(p => p.MemberId).ToHashSet();
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude members who have explicitly opted out.
+            var optedOut = await prefRepo.GetAllAsync(p => !p.JobAlerts);
+            var optedOutIds = optedOut.Select(p => p.MemberId).ToHashSet();
             var members = await memberRepo.GetAllAsync(m =>
-                memberIds.Contains(m.Id)
+                !optedOutIds.Contains(m.Id)
                 && m.Status == "Active"
                 && (job.YearGroups == null || job.YearGroups.Count == 0 || job.YearGroups.Contains(m.GraduationYear)));
 
@@ -58,10 +59,12 @@ public class NotificationDispatcher(
     {
         try
         {
-            var prefs = await prefRepo.GetAllAsync(p => p.CampaignAlerts);
-            var memberIds = prefs.Select(p => p.MemberId).ToHashSet();
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude members who have explicitly opted out.
+            var optedOut = await prefRepo.GetAllAsync(p => !p.CampaignAlerts);
+            var optedOutIds = optedOut.Select(p => p.MemberId).ToHashSet();
             var members = await memberRepo.GetAllAsync(m =>
-                memberIds.Contains(m.Id)
+                !optedOutIds.Contains(m.Id)
                 && m.Status == "Active"
                 && (campaign.YearGroups == null || campaign.YearGroups.Count == 0 || campaign.YearGroups.Contains(m.GraduationYear)));
 
@@ -93,10 +96,12 @@ public class NotificationDispatcher(
     {
         try
         {
-            var prefs = await prefRepo.GetAllAsync(p => p.EventReminders);
-            var memberIds = prefs.Select(p => p.MemberId).ToHashSet();
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude members who have explicitly opted out.
+            var optedOut = await prefRepo.GetAllAsync(p => !p.EventReminders);
+            var optedOutIds = optedOut.Select(p => p.MemberId).ToHashSet();
             var members = await memberRepo.GetAllAsync(m =>
-                memberIds.Contains(m.Id)
+                !optedOutIds.Contains(m.Id)
                 && m.Status == "Active"
                 && (ev.YearGroups == null || ev.YearGroups.Count == 0 || ev.YearGroups.Contains(m.GraduationYear)));
 
@@ -129,9 +134,11 @@ public class NotificationDispatcher(
     {
         try
         {
-            var prefs = await prefRepo.GetAllAsync(p => p.SpotlightAlerts);
-            var memberIds = prefs.Select(p => p.MemberId).ToHashSet();
-            var members = await memberRepo.GetAllAsync(m => memberIds.Contains(m.Id) && m.Status == "Active");
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude members who have explicitly opted out.
+            var optedOut = await prefRepo.GetAllAsync(p => !p.SpotlightAlerts);
+            var optedOutIds = optedOut.Select(p => p.MemberId).ToHashSet();
+            var members = await memberRepo.GetAllAsync(m => !optedOutIds.Contains(m.Id) && m.Status == "Active");
 
             var memberName = spotlight.Member != null
                 ? $"{spotlight.Member.FirstName} {spotlight.Member.LastName}"
