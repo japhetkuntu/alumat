@@ -239,8 +239,8 @@ services:
       - "443:443"
       # IP mode (nginx.ip.conf): one port per service.
       - "8001:8001"   # admin frontend
-      - "8081:8081"   # member api
-      - "8082:8082"   # admin api
+      - "8003:8003"   # member api
+      - "8002:8002"   # admin api
     volumes:
       - ${NGINX_CONF_FILE:-./docker/nginx/nginx.conf}:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/ssl-params.conf:/etc/nginx/ssl-params.conf:ro
