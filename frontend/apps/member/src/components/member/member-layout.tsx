@@ -62,7 +62,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             </div>
             <div className="overflow-hidden">
               <p className="font-bold text-[13px] tracking-tight truncate group-hover:text-primary transition-colors">UMaT Alumni</p>
-              <p className="text-[10px] text-muted-foreground/60 font-medium tracking-wide uppercase">Member Portal</p>
+              {/* <p className="text-[10px] text-muted-foreground/60 font-medium tracking-wide uppercase">Member Portal</p> */}
             </div>
           </div>
           {onClose && (
@@ -227,7 +227,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="flex flex-col">
               <span className="font-black text-[14px] leading-tight tracking-tight">UMaT Alumni</span>
-              <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Member Portal</span>
+              {/* <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Member Portal</span> */}
             </div>
           </div>
           <div className="flex items-center gap-1">

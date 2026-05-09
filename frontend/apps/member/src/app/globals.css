@@ -6,7 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Anthropic Sans", var(--font-geist-sans);
+  --font-sans: var(--font-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
 
   /* Paystack-style spacing tokens */
@@ -165,7 +166,6 @@ h4 {
 p, li, dd {
   font-size: 1rem;
   line-height: 1.65;
-  color: var(--foreground);
 }
 
 *,
