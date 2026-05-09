@@ -112,6 +112,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
+      USE_HTTPS_REDIRECT: ${USE_HTTPS_REDIRECT:-false}
       ConnectionStrings__AlumniConnection: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
@@ -156,6 +158,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
+      USE_HTTPS_REDIRECT: ${USE_HTTPS_REDIRECT:-false}
       ConnectionStrings__AlumniConnection: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni

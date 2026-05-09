@@ -80,8 +80,10 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// Swagger only in development
-if (app.Environment.IsDevelopment())
+var enableSwagger = builder.Configuration.GetValue<bool>("ENABLE_SWAGGER", false);
+
+// Swagger only in development, or when explicitly enabled in production.
+if (app.Environment.IsDevelopment() || enableSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UMaT Alumni Member API v1"));
@@ -90,8 +92,13 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
+
+    var useHttpsRedirect = builder.Configuration.GetValue<bool>("USE_HTTPS_REDIRECT", false);
+    if (useHttpsRedirect)
+    {
+        app.UseHttpsRedirection();
+    }
 }
-app.UseHttpsRedirection();
 
 // Global exception handler — never expose server errors to the frontend
 app.UseExceptionHandler(!app.Environment.IsProduction());
