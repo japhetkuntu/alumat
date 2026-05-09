@@ -132,10 +132,10 @@ configure_firewall() {
   local nginx_conf
   nginx_conf=$(grep -E "^NGINX_CONF_FILE=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || true)
   if [[ "$nginx_conf" == *nginx.ip.conf* ]]; then
-    for port in 8001 8081 8082; do
+    for port in 8001 8002 8003; do
       sudo ufw allow "$port"/tcp comment "Alumni IP-mode service port" 2>/dev/null || true
     done
-    ok "Firewall: IP-mode ports 8001, 8081, 8082 opened."
+    ok "Firewall: IP-mode ports 8001, 8002, 8003 opened."
   fi
 
   # MinIO is exposed publicly (CDN use), open it
