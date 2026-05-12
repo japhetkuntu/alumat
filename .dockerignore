@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.git/
+**/.gitignore
+**/docker-compose*.yml
+**/Dockerfile*
+**/node_modules/
+**/*.user
+**/*.suo
+**/*.log
+**/*.nupkg
