@@ -256,14 +256,19 @@ provision_ssl() {
 
   ok "Certificates issued (or already valid)."
 
-  # ── Step 3: Restart nginx with full HTTPS configuration ──────────────────────
+  # ── Step 3: Restart nginx with full HTTPS config, ensure all services are up ─
   log "Restarting nginx with full HTTPS configuration (nginx.conf)…"
   unset NGINX_CONF_FILE
+  # Force-recreate nginx so it picks up the now-present certs.
+  # Then run a plain 'up -d' (no --no-deps) so any backend/frontend
+  # containers that aren't running get started without recreating healthy ones.
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" \
     up -d --no-deps --force-recreate nginx
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" \
+    up -d
 
-  log "Waiting 5 s for nginx to reload…"
-  sleep 5
+  log "Waiting 8 s for services to initialise…"
+  sleep 8
 
   nginx_status=$(docker inspect --format='{{.State.Status}}' alumni-nginx 2>/dev/null || echo "missing")
   if [[ "$nginx_status" == "running" ]]; then
