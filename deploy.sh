@@ -6,6 +6,7 @@
 #   ./deploy.sh              Full deploy: validate → build → start → health check
 #   ./deploy.sh --ssl        Provision Let's Encrypt SSL (run after first deploy)
 #   ./deploy.sh --update     Rebuild changed images and restart services
+#   ./deploy.sh --fresh      Tear down compose stack, volumes, images and start fresh
 #   ./deploy.sh --status     Print live service status and routing map
 # =============================================================================
 set -euo pipefail
@@ -39,10 +40,7 @@ for arg in "$@"; do
   case "$arg" in
     --ssl)    MODE="ssl"    ;;
     --update) MODE="update" ;;
-    --status) MODE="status" ;;
-    --help|-h)
-      sed -n '/^# Usage/,/^# ===/p' "$0" | head -n 8 | sed 's/^# \{0,1\}//'
-      exit 0 ;;
+    --fresh)  MODE="fresh"  ;;
     *) die "Unknown argument: $arg. Use --help for usage." ;;
   esac
 done
@@ -350,6 +348,27 @@ update_mode() {
   ok "Update complete."
 }
 
+fresh_mode() {
+  check_prerequisites
+  validate_env
+  validate_compose
+  prepare_dirs
+
+  warn "This will remove the entire compose stack, named volumes, built images, and orphan containers."
+  warn "If you want to preserve data, do not run with --fresh."
+
+  banner "Fresh start – teardown and rebuild"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" down --rmi all --volumes --remove-orphans
+  ok "Compose stack, images and volumes removed."
+
+  pull_images
+  build_images
+  start_services
+  health_checks
+  print_summary
+  ok "Fresh start complete."
+}
+
 ssl_mode() {
   check_prerequisites
   validate_env
@@ -366,5 +385,6 @@ case "$MODE" in
   deploy) deploy_mode ;;
   ssl)    ssl_mode    ;;
   update) update_mode ;;
+  fresh)  fresh_mode  ;;
   status) status_mode ;;
 esac
