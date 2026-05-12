@@ -18,7 +18,7 @@ readonly ALL_DOMAINS=(
   "admin-alumat.umat.edu.gh"
   "alumat-api.umat.edu.gh"
   "admin-alumat-api.umat.edu.gh"
-  "cdn-alumat.umat.edu.gh"
+  "cdn.alumat.umat.edu.gh"
 )
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-admin@umat.edu.gh}"
 
@@ -273,7 +273,7 @@ print_summary() {
   printf "  │  %-40s → %-22s│\n" "http://admin-alumat.umat.edu.gh"       "frontend-admin:3000"
   printf "  │  %-40s → %-22s│\n" "http://alumat-api.umat.edu.gh"         "member-api:8080"
   printf "  │  %-40s → %-22s│\n" "http://admin-alumat-api.umat.edu.gh"   "admin-api:8080"
-  printf "  │  %-40s → %-22s│\n" "http://cdn-alumat.umat.edu.gh"         "minio:9000 (CDN)"
+  printf "  │  %-40s → %-22s│\n" "http://cdn.alumat.umat.edu.gh"         "minio:9000 (CDN)"
   printf "  │  %-40s → %-22s│\n" "http://$server_ip:9000"                "MinIO direct (CDN)"
   echo "  └──────────────────────────────────────────────────────────────────┘"
 
