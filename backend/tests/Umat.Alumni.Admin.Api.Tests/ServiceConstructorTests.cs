@@ -40,14 +40,14 @@ public class ServiceConstructorTests
         var redisService = new Mock<IRedisService<Umat.Alumni.Admin.Api.Options.AdminRedisConfig>>();
         var tokenOptions = Microsoft.Extensions.Options.Options.Create(new BearerTokenConfig { AdminSigningKey = "x", Issuer = "x", Audience = "x", AccessTokenLifetime = 1, RefreshTokenLifetime = 1 });
 
-        var notifDispatcher = new Mock<INotificationDispatcher>();
+        var notificationActor = new Mock<INotificationActor>();
 
         var _ = new AdminAuthService(adminRepo.Object, redisService.Object, tokenOptions, new NullLogger<AdminAuthService>());
         var __ = new AdminManagementService(adminRepo.Object, new NullLogger<AdminManagementService>());
-        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, storageService.Object, notifDispatcher.Object, new NullLogger<CampaignService>());
-        var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notifDispatcher.Object, new NullLogger<EventService>());
+        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<CampaignService>());
+        var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<EventService>());
         var _____ = new ForumService(forumCategoryRepo.Object, forumThreadRepo.Object, new NullLogger<ForumService>());
-        var ______ = new JobService(jobRepo.Object, storageService.Object, notifDispatcher.Object, new NullLogger<JobService>());
+        var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<JobService>());
         var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, new NullLogger<MemberManagementService>());
         var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, new NullLogger<MentorshipService>());
         var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, new NullLogger<NewsService>());
