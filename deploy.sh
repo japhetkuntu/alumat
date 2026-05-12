@@ -218,10 +218,28 @@ provision_ssl() {
   banner "SSL – Let's Encrypt"
 
   set -a; source "$ENV_FILE"; set +a
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d nginx certbot
-  log "Waiting 5 s for nginx to accept connections…"
-  sleep 5
 
+  # ── Step 1: Start nginx with HTTP-only bootstrap config ──────────────────────
+  # nginx refuses to start if ssl_certificate files don't exist yet.
+  # nginx.pre-ssl.conf has no SSL blocks, so it starts cleanly and can serve
+  # ACME challenges for the webroot validation.
+  log "Starting nginx in HTTP-only bootstrap mode (nginx.pre-ssl.conf)…"
+  NGINX_CONF_FILE=./docker/nginx/nginx.pre-ssl.conf \
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" \
+    up -d --no-deps --force-recreate nginx
+
+  log "Waiting 8 s for nginx to become ready…"
+  sleep 8
+
+  local nginx_status
+  nginx_status=$(docker inspect --format='{{.State.Status}}' alumni-nginx 2>/dev/null || echo "missing")
+  if [[ "$nginx_status" != "running" ]]; then
+    docker logs --tail 30 alumni-nginx 2>&1 || true
+    die "nginx failed to start with pre-SSL config (status: $nginx_status). See logs above."
+  fi
+  ok "nginx is running (HTTP-only bootstrap mode)."
+
+  # ── Step 2: Request certificates via webroot challenge ───────────────────────
   local domain_flags=()
   for d in "${ALL_DOMAINS[@]}"; do
     domain_flags+=(-d "$d")
@@ -230,15 +248,30 @@ provision_ssl() {
   log "Requesting certificates for: ${ALL_DOMAINS[*]}"
   log "ACME e-mail: $CERTBOT_EMAIL"
 
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --entrypoint "/bin/sh" certbot -c \
-    "certbot certonly --webroot --webroot-path /var/www/certbot --non-interactive --agree-tos --email '$CERTBOT_EMAIL' ${domain_flags[*]} --expand"
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" \
+    run --rm --no-deps --entrypoint "/bin/sh" certbot -c \
+    "certbot certonly --webroot --webroot-path /var/www/certbot \
+     --non-interactive --agree-tos --email '${CERTBOT_EMAIL}' \
+     ${domain_flags[*]} --expand"
 
-  ok "Certificates issued."
-  warn "Next: add HTTPS server blocks to docker/nginx/nginx.conf"
-  warn "  ssl_certificate /etc/letsencrypt/live/alumat.umat.edu.gh/fullchain.pem;"
-  warn "  ssl_certificate_key /etc/letsencrypt/live/alumat.umat.edu.gh/privkey.pem;"
-  warn "  include /etc/nginx/ssl-params.conf;"
-  warn "Then: docker compose --env-file $ENV_FILE -f $COMPOSE_FILE restart nginx"
+  ok "Certificates issued (or already valid)."
+
+  # ── Step 3: Restart nginx with full HTTPS configuration ──────────────────────
+  log "Restarting nginx with full HTTPS configuration (nginx.conf)…"
+  unset NGINX_CONF_FILE
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" \
+    up -d --no-deps --force-recreate nginx
+
+  log "Waiting 5 s for nginx to reload…"
+  sleep 5
+
+  nginx_status=$(docker inspect --format='{{.State.Status}}' alumni-nginx 2>/dev/null || echo "missing")
+  if [[ "$nginx_status" == "running" ]]; then
+    ok "nginx is running with full HTTPS configuration."
+  else
+    docker logs --tail 30 alumni-nginx 2>&1 || true
+    die "nginx failed to start with HTTPS config (status: $nginx_status). Check logs above."
+  fi
 }
 
 # ── 11. Status / summary ───────────────────────────────────────────────────────
