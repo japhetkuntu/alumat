@@ -363,10 +363,14 @@ fresh_mode() {
 
   pull_images
   build_images
-  start_services
+
+  log "Starting services with nginx.pre-ssl.conf so nginx boots before SSL certs exist."
+  NGINX_CONF_FILE=./docker/nginx/nginx.pre-ssl.conf \
+    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans
+
   health_checks
   print_summary
-  ok "Fresh start complete."
+  ok "Fresh start complete. Run ./deploy.sh --ssl to provision HTTPS certificates."
 }
 
 ssl_mode() {
