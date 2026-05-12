@@ -58,7 +58,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 dark:hover:bg-white/5 transition-colors cursor-pointer group">
             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-emerald-500/25 border border-white/20 bg-white/10">
-              <Image src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
+              <img src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
             </div>
             <div className="overflow-hidden">
               <p className="font-bold text-[13px] tracking-tight truncate group-hover:text-primary transition-colors">UMaT Alumni</p>
@@ -223,7 +223,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-primary/20 border border-white/20 bg-white/10">
-              <Image src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
+              <img src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="font-black text-[14px] leading-tight tracking-tight">UMaT Alumni</span>

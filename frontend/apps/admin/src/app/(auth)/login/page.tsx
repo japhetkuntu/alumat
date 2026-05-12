@@ -7,7 +7,6 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -53,7 +52,7 @@ export default function AdminLoginPage() {
       {/* Mobile logo (visible when banner is hidden) */}
       <div className="mb-10 text-center md:hidden">
         <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-white/15 bg-white/10">
-          <Image src="/umat-logo.svg" alt="UMaT Logo" width={56} height={56} className="object-contain" />
+          <img src="/umat-logo.svg" alt="UMaT Logo" width={56} height={56} className="object-contain" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">UMaT Alumni</h1>
         <p className="text-muted-foreground text-sm mt-1">Admin Portal</p>

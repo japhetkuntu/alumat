@@ -72,7 +72,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 dark:hover:bg-white/5 transition-colors cursor-pointer group">
             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-emerald-500/25 border border-white/20 bg-white/10">
-              <Image src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
+              <img src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
             </div>
             <div className="overflow-hidden">
               <p className="font-bold text-[13px] tracking-tight truncate group-hover:text-primary transition-colors">UMaT Alumni</p>
