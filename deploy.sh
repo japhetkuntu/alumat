@@ -230,14 +230,8 @@ provision_ssl() {
   log "Requesting certificates for: ${ALL_DOMAINS[*]}"
   log "ACME e-mail: $CERTBOT_EMAIL"
 
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm certbot certonly \
-    --webroot \
-    --webroot-path /var/www/certbot \
-    --non-interactive \
-    --agree-tos \
-    --email "$CERTBOT_EMAIL" \
-    "${domain_flags[@]}" \
-    --expand
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --entrypoint "/bin/sh" certbot -c \
+    "certbot certonly --webroot --webroot-path /var/www/certbot --non-interactive --agree-tos --email '$CERTBOT_EMAIL' ${domain_flags[*]} --expand"
 
   ok "Certificates issued."
   warn "Next: add HTTPS server blocks to docker/nginx/nginx.conf"
