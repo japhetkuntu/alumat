@@ -1,50 +1,95 @@
+import Link from "next/link";
+import { GraduationCap } from "lucide-react";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="auth-page-root flex min-h-screen bg-background selection:bg-primary/10">
-      {/* Left — member branding panel */}
-      <aside className="hidden md:flex md:w-[40%] lg:w-[45%] flex-col justify-between px-6 md:px-10 py-8 md:py-10 bg-[var(--umat-emerald)] text-white">
-        <div className="space-y-8">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <span className="text-lg font-bold text-white">UM</span>
+    <div className="flex min-h-screen" style={{ background: "var(--background)" }}>
+
+      {/* ── Left — photo panel ── */}
+      <aside className="hidden md:flex md:w-[42%] lg:w-[48%] shrink-0 relative flex-col overflow-hidden">
+
+        {/* Photo */}
+        <img
+          src="https://images.unsplash.com/photo-1523848309072-c199db53f137?auto=format&fit=crop&w=1400&q=85"
+          alt="Aerial view of a mining site"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+
+        {/* Overlay */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(160deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 45%, rgba(0,0,0,0.8) 100%)",
+          }}
+        />
+
+        {/* Content */}
+        <div className="relative flex flex-col justify-between h-full p-10">
+
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "var(--primary)" }}
+            >
+              <GraduationCap size={17} color="white" />
             </div>
-            <span className="text-sm font-semibold tracking-wide text-white/80">UMaT Alumni</span>
-          </div>
+            <span className="text-[14px] font-semibold text-white tracking-tight">
+              UMaT Alumni Portal
+            </span>
+          </Link>
 
-          <div className="max-w-sm space-y-5">
-            <h1 className="text-[52px] font-black leading-[1.1]">Opportunities, Community, and Growth — in one place.</h1>
-            <p className="text-[16px] font-medium text-white/70">
-              A single hub for alumni events, networks, and career-building resources.
+          {/* Pull-quote — editorial signature element */}
+          <div>
+            <p
+              className="font-[family-name:var(--font-display)] text-white/20 leading-none select-none mb-1"
+              style={{ fontSize: "6rem", fontWeight: 700, lineHeight: 1 }}
+              aria-hidden="true"
+            >
+              "
             </p>
-            <ul className="space-y-2 text-[15px] text-white/80">
-              <li className="flex items-start gap-2">
-                <span className="mt-1 text-white/70">✓</span>
-                Connect with fellow graduates
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 text-white/70">✓</span>
-                Discover events & opportunities
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 text-white/70">✓</span>
-                Share updates and access resources
-              </li>
-            </ul>
+            <blockquote
+              className="font-[family-name:var(--font-display)] text-white leading-tight mb-6"
+              style={{
+                fontSize: "clamp(1.3rem, 2vw, 1.75rem)",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                maxWidth: "22ch",
+              }}
+            >
+              UMaT didn't just give me a degree.
+              It gave me a network that has opened
+              every door since.
+            </blockquote>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-[2px] self-stretch rounded-full"
+                style={{ background: "var(--primary)" }}
+              />
+              <div>
+                <p className="text-[13px] font-semibold text-white">Emmanuel Owusu-Ansah</p>
+                <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Mining Engineer · Class of 2014
+                </p>
+              </div>
+            </div>
+           
           </div>
-        </div>
 
-        <div className="text-sm text-white/60">
-          <p className="font-semibold text-white">&quot;A simple, reliable space to keep our community connected.&quot;</p>
-          <p className="mt-2">— Esther N., Class of 2016</p>
         </div>
       </aside>
 
-      {/* Right — form panel */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 bg-background md:flex md:items-center md:justify-center">
-        <div className="w-full max-w-[520px] mx-auto py-6 md:py-0">
+      {/* ── Right — form panel ── */}
+      <main
+        className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-12 sm:px-10"
+        style={{ background: "var(--background)" }}
+      >
+        <div className="w-full max-w-[480px]">
           {children}
         </div>
       </main>
+
     </div>
   );
 }

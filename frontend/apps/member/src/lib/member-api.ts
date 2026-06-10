@@ -281,7 +281,7 @@ export async function getThreadPosts(threadId: string, page = 1, pageSize = 30):
 }
 
 export async function getForumThread(threadId: string): Promise<ForumThread> {
-  const res = await memberClient.get(`/forum/threads/${threadId}`);
+  const res = await memberClient.get(`/forum/threads/${threadId}/posts`);
   return res.data.data ?? res.data;
 }
 

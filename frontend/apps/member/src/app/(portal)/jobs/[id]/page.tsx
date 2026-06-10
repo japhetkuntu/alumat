@@ -3,271 +3,281 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Briefcase, MapPin, Clock, ExternalLink, ArrowLeft, Globe,
-  Building2, Calendar, CheckCircle2, ChevronRight,
+  Briefcase, MapPin, Clock, ExternalLink,
+  ArrowLeft, Globe, Building2, Calendar,
 } from "lucide-react";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/utils";
 import { getJobById } from "@/lib/member-api";
 
-const typeColors: Record<string, "info" | "secondary" | "warning" | "success"> = {
-  "Full-time": "info",
-  "Part-time": "secondary",
-  Contract: "warning",
-  Internship: "success",
-};
-
-function DeadlineStatus({ deadline }: { deadline: string }) {
-  const deadlineDate = new Date(deadline);
-  const now = new Date();
-  const diffDays = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) {
-    return (
-      <span className="text-[10px] font-bold text-destructive uppercase tracking-widest animate-in fade-in">
-        Deadline passed
-      </span>
-    );
-  }
-  if (diffDays <= 7) {
-    return (
-      <span className="text-[10px] font-bold text-orange-500 uppercase tracking-widest animate-in fade-in">
-        {diffDays === 0 ? "Closes today" : `${diffDays} day${diffDays === 1 ? "" : "s"} left`}
-      </span>
-    );
-  }
-  return (
-    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-      {formatDate(deadline)}
-    </span>
-  );
+/* ─────────────────────────────────────────────────────────────────────────
+   DAYS LEFT — plain-language deadline indicator
+   ───────────────────────────────────────────────────────────────────────── */
+function DaysLeft({ deadline }: { deadline: string }) {
+  const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000);
+  if (days < 0)  return <span className="text-[13px] font-semibold text-destructive">Deadline passed</span>;
+  if (days === 0) return <span className="text-[13px] font-semibold text-destructive">Closes today</span>;
+  if (days <= 7)  return <span className="text-[13px] font-semibold" style={{ color: "#d97706" }}>{days} day{days !== 1 ? "s" : ""} left</span>;
+  return <span className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>{formatDate(deadline)}</span>;
 }
 
+const typeVariant: Record<string, "info" | "secondary" | "warning" | "success"> = {
+  "Full-time": "info",
+  "Part-time": "secondary",
+  Contract:    "warning",
+  Internship:  "success",
+};
+
 export default function MemberJobDetailPage() {
-  const { id } = useParams() as { id: string };
-  const router = useRouter();
+  const { id }   = useParams() as { id: string };
+  const router   = useRouter();
 
   const { data: job, isLoading } = useQuery({
     queryKey: ["m-job", id],
-    queryFn: () => getJobById(id),
+    queryFn:  () => getJobById(id),
   });
 
+  /* ── Loading ── */
   if (isLoading) {
     return (
-      <div className="p-8 lg:p-12 max-w-5xl mx-auto space-y-8 animate-pulse">
-        <div className="h-8 w-32 bg-muted rounded-lg" />
-        <div className="h-56 w-full bg-muted rounded-2xl" />
-        <div className="space-y-4">
-          <div className="h-10 w-2/3 bg-muted rounded-lg" />
-          <div className="h-4 w-full bg-muted rounded-lg" />
-          <div className="h-4 w-5/6 bg-muted rounded-lg" />
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-6 animate-pulse">
+        <div className="h-6 w-24 rounded-lg" style={{ background: "var(--secondary)" }} />
+        <div className="h-56 w-full rounded-2xl" style={{ background: "var(--secondary)" }} />
+        <div className="space-y-3">
+          <div className="h-8 w-2/3 rounded-lg" style={{ background: "var(--secondary)" }} />
+          <div className="h-4 w-full rounded-lg"  style={{ background: "var(--secondary)" }} />
+          <div className="h-4 w-4/5 rounded-lg"  style={{ background: "var(--secondary)" }} />
         </div>
       </div>
     );
   }
 
   if (!job) return (
-    <div className="p-8 lg:p-12 max-w-5xl mx-auto">
-      <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/jobs")}>
-        <ArrowLeft size={16} className="mr-2" /> Back to Jobs
+    <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+      <Button variant="ghost" size="sm" className="mb-6 font-semibold gap-2" onClick={() => router.push("/jobs")}>
+        <ArrowLeft size={15} /> Back to jobs
       </Button>
-      <EmptyState icon={<Briefcase size={48} />} title="Job not found" description="This listing may have been removed or the link is incorrect." />
+      <EmptyState
+        icon={<Briefcase size={40} />}
+        title="Job not found"
+        description="This listing may have been removed or the link is incorrect."
+      />
     </div>
   );
 
   const deadlinePassed = job.deadline && new Date(job.deadline) < new Date();
 
   return (
-    <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-12 pb-24 selection:bg-primary/20">
-      {/* Breadcrumb + Navigation */}
-      <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
-        <div className="flex items-center gap-1.5 text-sm">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group"
-            onClick={() => router.push("/jobs")}
-          >
-            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            Jobs
-          </Button>
-          <ChevronRight size={14} className="text-muted-foreground/50" />
-          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{job.title}</span>
-        </div>
-        <Badge variant={typeColors[job.type] ?? "secondary"} className="h-7 px-3 font-black uppercase tracking-widest text-[10px]">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
+
+      {/* ── Nav row ── */}
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <button
+          onClick={() => router.push("/jobs")}
+          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          <ArrowLeft size={15} /> Back to jobs
+        </button>
+        <Badge variant={typeVariant[job.type] ?? "secondary"} className="text-[11px] font-semibold uppercase tracking-wide">
           {job.type}
         </Badge>
-      </nav>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
-        {/* Main Content */}
-        <div className="lg:col-span-8 space-y-6 sm:space-y-8 lg:space-y-10">
-          {/* Banner / Hero */}
-          <section className="animate-in fade-in zoom-in-95 duration-1000 delay-200">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+
+        {/* ════════════════════════════════════
+            LEFT — main content
+        ════════════════════════════════════ */}
+        <div className="lg:col-span-7 space-y-8">
+
+          {/* Banner */}
+          <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
             {job.bannerImageUrl ? (
-              <div className="rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white dark:border-white/5 ring-1 ring-black/5 ring-offset-4 ring-offset-background aspect-video relative group">
-                <img
-                  src={job.bannerImageUrl}
-                  alt={job.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                <div className="absolute bottom-6 left-6">
-                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-black/40 backdrop-blur-sm border border-white/10">
-                    <Building2 size={18} className="text-white/80" />
-                    <span className="text-white font-black text-lg">{job.company}</span>
-                  </div>
-                </div>
-              </div>
+              <img
+                src={job.bannerImageUrl}
+                alt={job.title}
+                className="w-full object-cover"
+                style={{ maxHeight: 380 }}
+              />
             ) : (
-              <div className="rounded-[2rem] bg-gradient-to-br from-primary/10 via-primary/5 to-muted/20 aspect-video flex flex-col items-center justify-center border-4 border-white dark:border-white/5 ring-1 ring-black/5 gap-4">
-                <div className="w-24 h-24 rounded-[1.5rem] bg-primary/10 flex items-center justify-center">
-                  <Briefcase size={48} className="text-primary/30" />
+              <div
+                className="flex flex-col items-center justify-center gap-3 py-14"
+                style={{ background: "var(--secondary)" }}
+              >
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                >
+                  <Briefcase size={28} style={{ color: "var(--primary)" }} />
                 </div>
-                <p className="text-lg font-black text-foreground/30">{job.company}</p>
+                <p className="text-[15px] font-semibold" style={{ color: "var(--muted-foreground)" }}>
+                  {job.company}
+                </p>
               </div>
             )}
-          </section>
+          </div>
 
-          {/* Title & Metadata */}
-          <header className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.1]">
+          {/* Title + meta */}
+          <div>
+            <h1
+              className="font-[family-name:var(--font-display)] leading-tight mb-4"
+              style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)" }}
+            >
               {job.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-bold text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Building2 size={18} className="text-primary" />
-                {job.company}
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin size={18} className="text-primary" />
-                {job.location}
-              </div>
-              {job.deadline && (
-                <div className="flex items-center gap-2">
-                  <Clock size={18} className="text-primary" />
-                  Deadline: {formatDate(job.deadline)}
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {[
+                { icon: Building2, text: job.company },
+                { icon: MapPin,    text: job.location },
+                { icon: Calendar,  text: `Posted ${formatDate(job.createdAt)}` },
+                ...(job.deadline ? [{ icon: Clock, text: `Deadline: ${formatDate(job.deadline)}` }] : []),
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5 text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  <Icon size={14} style={{ color: "var(--primary)" }} />
+                  {text}
                 </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-primary" />
-                Posted {formatDate(job.createdAt)}
-              </div>
+              ))}
             </div>
-          </header>
+          </div>
+
+          {/* Apply button — shown in content on mobile, sidebar on desktop */}
+          <div className="lg:hidden">
+            <ApplyBlock job={job} deadlinePassed={!!deadlinePassed} />
+          </div>
 
           {/* Description */}
-          <section className="space-y-6 prose prose-lg dark:prose-invert max-w-none animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
-            <h2 className="text-2xl font-black tracking-tight border-b border-border/40 pb-4">
-              About the Role
+          <div>
+            <h2
+              className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b"
+              style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+            >
+              About the role
             </h2>
-            <div className="whitespace-pre-wrap font-medium text-muted-foreground leading-relaxed text-lg">
-              {job.description || "No detailed description has been provided for this job posting. Please visit the application link for more information."}
-            </div>
-          </section>
+            <p
+              className="whitespace-pre-wrap leading-[1.85]"
+              style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
+            >
+              {job.description || "No description has been provided for this listing. Please visit the application link or contact the alumni office for more information."}
+            </p>
+          </div>
+
         </div>
 
-        {/* Sidebar */}
-        <aside className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-          <Card className="sticky top-24 overflow-hidden border-border/40 shadow-2xl shadow-primary/5 bg-card/80 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-primary" />
-            <CardContent className="p-5 sm:p-8 lg:p-10 space-y-6 sm:space-y-8 pt-8 sm:pt-12">
-              {/* Apply CTA */}
-              <div className="space-y-4">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-2">Application</p>
-                {deadlinePassed ? (
-                  <div className="p-6 rounded-2xl bg-muted/50 border border-border/40 text-center space-y-2">
-                    <p className="text-sm font-bold text-muted-foreground">Application Closed</p>
-                    <p className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
-                      The deadline for this position has passed.
-                    </p>
-                  </div>
-                ) : job.applyUrl ? (
-                  <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
-                    <Button className="w-full h-16 rounded-2xl font-black text-lg shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] group/btn">
-                      <Globe size={22} className="mr-3 group-hover/btn:rotate-12 transition-transform" />
-                      Apply Now
-                      <ExternalLink size={14} className="ml-auto opacity-60" />
-                    </Button>
-                  </a>
-                ) : (
-                  <div className="p-6 rounded-2xl bg-muted/50 border border-border/40 text-center space-y-2">
-                    <p className="text-sm font-bold text-muted-foreground">No Application Link</p>
-                    <p className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
-                      Contact the alumni office for more information.
-                    </p>
-                  </div>
-                )}
+        {/* ════════════════════════════════════
+            RIGHT — sticky sidebar
+        ════════════════════════════════════ */}
+        <aside className="lg:col-span-5">
+          <div
+            className="rounded-2xl border overflow-hidden lg:sticky lg:top-24"
+            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+          >
+            <div className="h-1 w-full" style={{ background: "var(--primary)" }} />
+            <div className="p-5 sm:p-6 space-y-5">
+
+              {/* Apply — desktop */}
+              <div className="hidden lg:block">
+                <ApplyBlock job={job} deadlinePassed={!!deadlinePassed} />
               </div>
 
-              {/* Deadline indicator */}
-              {job.deadline && !deadlinePassed && (
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/5 border border-primary/20 animate-in zoom-in-95 duration-500">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <CheckCircle2 size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-none mb-1">
-                      Applications Open
-                    </p>
-                    <DeadlineStatus deadline={job.deadline} />
-                  </div>
-                </div>
-              )}
-
-              {/* Details */}
-              <div className="space-y-3 pt-4 border-t border-border/40">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40 relative group/loc overflow-hidden">
-                  <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover/loc:translate-y-0 transition-transform duration-500" />
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 z-10">
-                    <Building2 size={20} />
-                  </div>
-                  <div className="z-10">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Company</p>
-                    <p className="text-sm font-black">{job.company}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <MapPin size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Location</p>
-                    <p className="text-sm font-black">{job.location}</p>
-                  </div>
-                </div>
-
-                {job.deadline && (
-                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                      <Clock size={20} />
+              {/* Details list */}
+              <div
+                className="rounded-xl border divide-y overflow-hidden"
+                style={{ borderColor: "var(--border)" }}
+              >
+                {[
+                  { icon: Building2, label: "Company",  value: job.company },
+                  { icon: MapPin,    label: "Location",  value: job.location },
+                  { icon: Briefcase, label: "Job type",  value: job.type },
+                  { icon: Calendar,  label: "Posted",    value: formatDate(job.createdAt) },
+                  ...(job.deadline ? [{
+                    icon: Clock,
+                    label: "Deadline",
+                    value: null,
+                    custom: <DaysLeft deadline={job.deadline} />,
+                  }] : []),
+                ].map(({ icon: Icon, label, value, custom }) => (
+                  <div key={label} className="flex items-center gap-3 px-4 py-3.5"
+                    style={{ background: "var(--background)" }}>
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                    >
+                      <Icon size={14} style={{ color: "var(--primary)" }} />
                     </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Deadline</p>
-                      <p className="text-sm font-black">{formatDate(job.deadline)}</p>
+                    <div className="flex-1 flex items-center justify-between gap-3 min-w-0">
+                      <span className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{label}</span>
+                      {custom ?? (
+                        <span className="text-[13.5px] font-semibold text-right" style={{ color: "var(--foreground)" }}>
+                          {value}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )}
-
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <Briefcase size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Job Type</p>
-                    <p className="text-sm font-black">{job.type}</p>
-                  </div>
-                </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+
+            </div>
+          </div>
         </aside>
+
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   APPLY BLOCK — shared between mobile (inline) and desktop (sidebar)
+   ───────────────────────────────────────────────────────────────────────── */
+function ApplyBlock({ job, deadlinePassed }: { job: any; deadlinePassed: boolean }) {
+  if (deadlinePassed) {
+    return (
+      <div
+        className="rounded-xl p-4 text-center"
+        style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}
+      >
+        <p className="text-[14px] font-semibold mb-1" style={{ color: "var(--foreground)" }}>
+          Applications closed
+        </p>
+        <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+          The deadline for this position has passed.
+        </p>
+      </div>
+    );
+  }
+
+  if (job.applyUrl) {
+    return (
+      <div className="space-y-3">
+        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="block">
+          <Button className="w-full font-bold text-[15px] gap-2" style={{ height: 48 }}>
+            <Globe size={16} />
+            Apply now
+            <ExternalLink size={13} className="ml-auto opacity-60" />
+          </Button>
+        </a>
+        {job.deadline && (
+          <p className="text-center text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+            <DaysLeft deadline={job.deadline} />
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-xl p-4 text-center"
+      style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}
+    >
+      <p className="text-[14px] font-semibold mb-1" style={{ color: "var(--foreground)" }}>
+        No application link
+      </p>
+      <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+        Contact the alumni office for more information.
+      </p>
     </div>
   );
 }

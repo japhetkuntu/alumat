@@ -1,11 +1,10 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Pin, ChevronRight } from "lucide-react";
+import { ArrowLeft, Calendar, Pin } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RichTextViewer } from "@/components/ui/rich-text-editor";
@@ -14,97 +13,161 @@ import { formatDate } from "@/lib/utils";
 import { getNewsPost } from "@/lib/member-api";
 import { Newspaper } from "lucide-react";
 
-const categoryColor: Record<string, string> = {
-  Announcement: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  Achievement: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  News: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  Event: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-  Opportunity: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+const categoryStyle: Record<string, { bg: string; text: string; border: string }> = {
+  Announcement: { bg: "rgba(59,130,246,0.08)",  text: "#2563eb", border: "rgba(59,130,246,0.2)"  },
+  Achievement:  { bg: "rgba(245,158,11,0.08)",  text: "#d97706", border: "rgba(245,158,11,0.2)"  },
+  News:         { bg: "rgba(16,185,129,0.08)",  text: "#059669", border: "rgba(16,185,129,0.2)"  },
+  Event:        { bg: "rgba(139,92,246,0.08)",  text: "#7c3aed", border: "rgba(139,92,246,0.2)"  },
+  Opportunity:  { bg: "rgba(6,182,212,0.08)",   text: "#0891b2", border: "rgba(6,182,212,0.2)"   },
 };
 
 export default function NewsDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id }   = useParams<{ id: string }>();
+  const router   = useRouter();
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["m-news-post", id],
-    queryFn: () => getNewsPost(id),
+    queryFn:  () => getNewsPost(id),
   });
 
+  /* ── Loading ── */
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-12 max-w-3xl mx-auto space-y-6">
-        <div className="h-10 w-32 rounded-xl bg-muted/50 animate-pulse" />
+      <div className="p-6 lg:p-10 max-w-3xl mx-auto space-y-6 animate-pulse">
+        <div className="h-6 w-24 rounded-lg" style={{ background: "var(--secondary)" }} />
         <CardSkeleton />
         <CardSkeleton />
       </div>
     );
   }
 
-  if (!post) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-12 max-w-3xl mx-auto space-y-6">
-        <Link href="/news">
-          <Button variant="ghost" size="sm" className="h-10 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 font-bold group -ml-2">
-            <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-            Back to News
-          </Button>
-        </Link>
-        <EmptyState icon={<Newspaper size={48} />} title="Article not found" description="This article may have been removed or the link is invalid." />
-      </div>
-    );
-  }
+  if (!post) return (
+    <div className="p-6 lg:p-10 max-w-3xl mx-auto">
+      <button
+        onClick={() => router.push("/news")}
+        className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-6 transition-colors hover:underline"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        <ArrowLeft size={15} /> Back to news
+      </button>
+      <EmptyState
+        icon={<Newspaper size={40} />}
+        title="Article not found"
+        description="This article may have been removed or the link is invalid."
+      />
+    </div>
+  );
 
-  const colorCls = categoryColor[post.category] ?? "bg-muted/50 text-muted-foreground border-border/40";
+  const catStyle = categoryStyle[post.category];
+  const hasGallery = (post.imageUrls?.length ?? 0) > 1 || (post.youtubeVideoUrls?.length ?? 0) > 0;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-12 max-w-3xl mx-auto space-y-6 sm:space-y-8 pb-24 page-enter">
-      <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
-        <Link href="/news">
-          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group -ml-2">
-            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            News
-          </Button>
-        </Link>
-        <ChevronRight size={14} className="text-muted-foreground/50" />
-        <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{post.title}</span>
-      </nav>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-20">
 
-      <header className="space-y-4">
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* ── Nav ── */}
+      <button
+        onClick={() => router.push("/news")}
+        className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-7 transition-colors hover:underline"
+        style={{ color: "var(--muted-foreground)" }}
+      >
+        <ArrowLeft size={15} /> Back to news
+      </button>
+
+      {/* ── Header ── */}
+      <div className="space-y-4 mb-7">
+
+        {/* Category + pinned */}
+        <div className="flex flex-wrap items-center gap-2">
           {post.isPinned && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-widest">
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+              style={{ background: "rgba(249,115,22,0.08)", color: "#ea580c", border: "1px solid rgba(249,115,22,0.2)" }}
+            >
               <Pin size={10} /> Pinned
             </span>
           )}
-          <span className={`px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${colorCls}`}>{post.category}</span>
+          {catStyle ? (
+            <span
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+              style={{ background: catStyle.bg, color: catStyle.text, border: `1px solid ${catStyle.border}` }}
+            >
+              {post.category}
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+              style={{ background: "var(--secondary)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}
+            >
+              {post.category}
+            </span>
+          )}
         </div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black tracking-tight leading-tight">{post.title}</h1>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground font-medium">
+
+        {/* Title */}
+        <h1
+          className="font-[family-name:var(--font-display)] leading-tight"
+          style={{
+            fontSize: "clamp(1.5rem, 4vw, 2.25rem)",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            color: "var(--foreground)",
+          }}
+        >
+          {post.title}
+        </h1>
+
+        {/* Date + author */}
+        <div className="flex flex-wrap items-center gap-4">
           {post.publishedAt && (
-            <span className="flex items-center gap-1.5">
-              <Calendar size={14} className="text-primary/60" />
+            <span className="flex items-center gap-1.5 text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+              <Calendar size={14} style={{ color: "var(--primary)" }} />
               {formatDate(post.publishedAt)}
             </span>
           )}
-          {post.authorName && <span>by {post.authorName}</span>}
+          {post.authorName && (
+            <span className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+              by <span className="font-semibold" style={{ color: "var(--foreground)" }}>{post.authorName}</span>
+            </span>
+          )}
         </div>
-      </header>
+      </div>
 
-      {post.imageUrls && post.imageUrls.length > 0 && (
-        <div className="rounded-2xl overflow-hidden border border-border/40 shadow-lg aspect-video">
-          <img src={post.imageUrls[0]} alt={post.title} className="w-full h-full object-cover" />
+      {/* ── Hero image ── */}
+      {post.imageUrls?.[0] && (
+        <div
+          className="rounded-2xl overflow-hidden border mb-8"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <img
+            src={post.imageUrls[0]}
+            alt={post.title}
+            className="w-full object-cover"
+            style={{ maxHeight: 460 }}
+          />
         </div>
       )}
 
-      <div className="prose prose-lg dark:prose-invert max-w-none">
+      {/* ── Content ── */}
+      <div className="prose prose-base dark:prose-invert max-w-none mb-8">
         <RichTextViewer content={post.content} />
       </div>
 
-      {((post.imageUrls && post.imageUrls.length > 1) || (post.youtubeVideoUrls && post.youtubeVideoUrls.length > 0)) && (
-        <div className="rounded-2xl overflow-hidden border border-border/40 bg-muted/5 p-6">
-          <MediaGallery imageUrls={post.imageUrls?.slice(1)} youtubeUrls={post.youtubeVideoUrls} />
+      {/* ── Media gallery (remaining images + videos) ── */}
+      {hasGallery && (
+        <div>
+          <h2
+            className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b"
+            style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+          >
+            Photos &amp; videos
+          </h2>
+          <MediaGallery
+            imageUrls={post.imageUrls?.slice(1)}
+            youtubeUrls={post.youtubeVideoUrls}
+          />
         </div>
       )}
+
     </div>
   );
 }

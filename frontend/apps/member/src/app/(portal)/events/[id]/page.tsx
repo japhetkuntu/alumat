@@ -3,12 +3,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Calendar, MapPin, Users, Ticket, ArrowLeft, Loader2, PlayCircle, Image as ImageIcon, CheckCircle2, Navigation, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import {
+  Calendar, MapPin, Users, Ticket, ArrowLeft,
+  Loader2, CheckCircle2, Navigation,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { MediaGallery } from "@/components/ui/media-gallery";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -16,20 +17,27 @@ import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-ap
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@/components/ui/empty-state";
 
+const statusVariant: Record<string, "info" | "success" | "secondary" | "destructive"> = {
+  Upcoming:  "info",
+  Ongoing:   "success",
+  Completed: "secondary",
+  Cancelled: "destructive",
+};
+
 export default function EventDetailPage() {
-  const { id } = useParams() as { id: string };
-  const router = useRouter();
-  const qc = useQueryClient();
+  const { id }  = useParams() as { id: string };
+  const router  = useRouter();
+  const qc      = useQueryClient();
   const [rsvpConfirmOpen, setRsvpConfirmOpen] = useState(false);
 
-  const { data: event, isLoading: isLoadingEvent } = useQuery({
+  const { data: event, isLoading } = useQuery({
     queryKey: ["event", id],
-    queryFn: () => getEventById(id),
+    queryFn:  () => getEventById(id),
   });
 
   const { data: myRsvps } = useQuery({
     queryKey: ["m-rsvps"],
-    queryFn: () => getMyRsvps(),
+    queryFn:  () => getMyRsvps(),
   });
 
   const rsvpMut = useMutation({
@@ -38,7 +46,7 @@ export default function EventDetailPage() {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["event", id] });
       setRsvpConfirmOpen(false);
-      toast.success("RSVP confirmed!");
+      toast.success("You're in! We'll see you there.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -48,237 +56,357 @@ export default function EventDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["event", id] });
-      toast.success("RSVP cancelled");
+      toast.success("RSVP cancelled.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  if (isLoadingEvent) {
+  /* ── Loading ── */
+  if (isLoading) {
     return (
-      <div className="p-8 lg:p-12 max-w-5xl mx-auto space-y-8 animate-pulse">
-        <div className="h-8 w-32 bg-muted rounded-lg" />
-        <div className="aspect-video w-full bg-muted rounded-2xl" />
-        <div className="space-y-4">
-          <div className="h-10 w-2/3 bg-muted rounded-lg" />
-          <div className="h-4 w-full bg-muted rounded-lg" />
-          <div className="h-4 w-5/6 bg-muted rounded-lg" />
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-6 animate-pulse">
+        <div className="h-6 w-24 rounded-lg" style={{ background: "var(--secondary)" }} />
+        <div className="h-64 w-full rounded-2xl" style={{ background: "var(--secondary)" }} />
+        <div className="space-y-3">
+          <div className="h-8 w-2/3 rounded-lg" style={{ background: "var(--secondary)" }} />
+          <div className="h-4 w-full rounded-lg"  style={{ background: "var(--secondary)" }} />
+          <div className="h-4 w-4/5 rounded-lg"  style={{ background: "var(--secondary)" }} />
         </div>
       </div>
     );
   }
 
   if (!event) return (
-    <div className="p-8 lg:p-12 max-w-5xl mx-auto">
-      <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/events")}>
-        <ArrowLeft size={16} className="mr-2" /> Back to Events
+    <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+      <Button variant="ghost" size="sm" className="mb-6 font-semibold gap-2" onClick={() => router.push("/events")}>
+        <ArrowLeft size={15} /> Back to events
       </Button>
-      <EmptyState icon={<Calendar size={48} />} title="Event not found" description="This event may have been removed or the link is incorrect." />
+      <EmptyState
+        icon={<Calendar size={40} />}
+        title="Event not found"
+        description="This event may have been removed or the link is incorrect."
+      />
     </div>
   );
 
-  const mapUrl = event.googleLocationUrl?.trim() ? event.googleLocationUrl.trim() : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue)}`;
+  const hasRsvp  = (myRsvps ?? []).some(r => r.eventId === id && r.status === "Confirmed");
+  const canRsvp  = event.status === "Upcoming" || event.status === "Ongoing";
+  const isFull   = event.capacity ? event.rsvpCount >= event.capacity : false;
+  const mapUrl   = event.googleLocationUrl?.trim()
+    ? event.googleLocationUrl.trim()
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue)}`;
 
-  const hasRsvp = (myRsvps ?? []).some(r => r.eventId === id && r.status === "Confirmed");
-  const canRsvp = event.status === "Upcoming" || event.status === "Ongoing";
-  const isFull = event.capacity ? event.rsvpCount >= event.capacity : false;
-  
-  const statusVariant: Record<string, "info" | "success" | "secondary" | "destructive"> = {
-    Upcoming: "info",
-    Ongoing: "success",
-    Completed: "secondary",
-    Cancelled: "destructive",
-  };
+  const hasMedia = (event.imageUrls?.length ?? 0) > 0 || (event.youtubeVideoUrls?.length ?? 0) > 0;
 
   return (
-    <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-12 pb-24 selection:bg-primary/20">
-      {/* Breadcrumb + Navigation */}
-      <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
-        <div className="flex items-center gap-1.5 text-sm">
-          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group" onClick={() => router.push("/events")}>
-            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            Events
-          </Button>
-          <ChevronRight size={14} className="text-muted-foreground/50" />
-          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{event.title}</span>
-        </div>
-        <Badge variant={statusVariant[event.status] || "secondary"} className="h-7 px-3 font-black uppercase tracking-widest text-[10px]">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
+
+      {/* ── Nav row ── */}
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <button
+          onClick={() => router.push("/events")}
+          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          <ArrowLeft size={15} /> Back to events
+        </button>
+        <Badge
+          variant={statusVariant[event.status] ?? "secondary"}
+          className="text-[11px] font-semibold uppercase tracking-wide"
+        >
           {event.status}
         </Badge>
-      </nav>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
-        {/* Main Content Area */}
-        <div className="lg:col-span-8 space-y-10">
-          <header className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.1]">{event.title}</h1>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-bold text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-primary" />
-                {formatDate(event.startDate)}
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin size={18} className="text-primary" />
-                {event.venue}
-              </div>
-              <div className="flex items-center gap-2">
-                <Users size={18} className="text-primary" />
-                {event.rsvpCount} Participating
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+
+        {/* ════════════════════════════════════════════
+            LEFT — main content
+        ════════════════════════════════════════════ */}
+        <div className="lg:col-span-7 space-y-8">
+
+          {/* Title + meta */}
+          <div>
+            <h1
+              className="font-[family-name:var(--font-display)] leading-tight mb-4"
+              style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)" }}
+            >
+              {event.title}
+            </h1>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {[
+                { icon: Calendar, text: formatDate(event.startDate)             },
+                { icon: MapPin,   text: event.venue                              },
+                { icon: Users,    text: `${event.rsvpCount} attending`           },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5 text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  <Icon size={14} style={{ color: "var(--primary)" }} />
+                  {text}
+                </div>
+              ))}
             </div>
-          </header>
+          </div>
 
-          {/* Featured Visual */}
-          <section className="animate-in fade-in zoom-in-95 duration-1000 delay-200">
+          {/* Banner */}
+          <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
             {event.bannerImageUrl ? (
-              <div className="rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white dark:border-white/5 ring-1 ring-black/5 ring-offset-4 ring-offset-background aspect-video relative group">
-                <img src={event.bannerImageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-              </div>
+              <img
+                src={event.bannerImageUrl}
+                alt={event.title}
+                className="w-full object-cover"
+                style={{ maxHeight: 420 }}
+              />
             ) : (
-              <div className="rounded-[2rem] bg-gradient-to-br from-primary/10 to-muted/20 aspect-video flex items-center justify-center border-4 border-white dark:border-white/5 ring-1 ring-black/5">
-                <ImageIcon size={64} className="text-primary/20" />
+              <div
+                className="flex items-center justify-center py-16"
+                style={{ background: "var(--secondary)" }}
+              >
+                <Calendar size={48} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
               </div>
             )}
-          </section>
+          </div>
 
-          {/* Description & Details */}
-          <section className="space-y-6 prose prose-lg dark:prose-invert max-w-none animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
-            <h2 className="text-2xl font-black tracking-tight border-b border-border/40 pb-4">Event details</h2>
-            <div className="whitespace-pre-wrap font-medium text-muted-foreground leading-relaxed text-lg">
-              {event.description || "Join us for this special UMaT Alumni gathering. More details will be shared as we get closer to the date."}
+          {/* RSVP block — mobile only */}
+          <div className="lg:hidden">
+            <RsvpBlock
+              event={event}
+              hasRsvp={hasRsvp}
+              canRsvp={canRsvp}
+              isFull={isFull}
+              mapUrl={mapUrl}
+              onRsvp={() => setRsvpConfirmOpen(true)}
+              onCancel={() => cancelMut.mutate()}
+              cancelPending={cancelMut.isPending}
+              rsvpPending={rsvpMut.isPending}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <h2
+              className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b"
+              style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+            >
+              About this event
+            </h2>
+            <p
+              className="whitespace-pre-wrap leading-[1.85]"
+              style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
+            >
+              {event.description || "More details will be shared closer to the date. RSVP to stay informed."}
+            </p>
+          </div>
+
+          {/* Media gallery */}
+          {hasMedia && (
+            <div>
+              <h2
+                className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b"
+                style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+              >
+                Photos & videos
+              </h2>
+              <MediaGallery imageUrls={event.imageUrls} youtubeUrls={event.youtubeVideoUrls} />
             </div>
-          </section>
-
-          {/* Media Links / Extras */}
-          {((event.imageUrls && event.imageUrls.length > 0) || (event.youtubeVideoUrls && event.youtubeVideoUrls.length > 0)) && (
-            <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <PlayCircle size={20} className="text-primary" />
-                Event Gallery & Media
-              </h3>
-              <div className="rounded-[2rem] overflow-hidden border border-border/40 bg-muted/5 p-6 sm:p-8">
-                <MediaGallery imageUrls={event.imageUrls} youtubeUrls={event.youtubeVideoUrls} />
-              </div>
-            </section>
           )}
         </div>
 
-        {/* Sidebar: RSVP & Meta Action */}
-        <aside className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-          <Card className="sticky top-24 overflow-hidden border-border/40 shadow-2xl shadow-primary/5 bg-card/80 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-primary" />
-            <CardContent className="p-5 sm:p-8 lg:p-10 space-y-6 sm:space-y-8">
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-2">Registration</p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-3xl font-black tracking-tight text-foreground">
-                      {event.isTicketed && event.ticketPrice ? formatCurrency(event.ticketPrice) : "Free Access"}
-                    </p>
-                    {event.isTicketed && <Ticket size={24} className="text-primary" />}
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-border/40">
-                  {hasRsvp && (
-                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/5 border border-primary/20 animate-in zoom-in-95 duration-500">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                        <CheckCircle2 size={24} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-none mb-1">Status</p>
-                        <p className="text-sm font-black text-primary/80">You&apos;re participating</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {!canRsvp ? (
-                    <div className="p-6 rounded-2xl bg-muted/50 border border-border/40 text-center space-y-2">
-                        <p className="text-sm font-bold text-muted-foreground">Registration Closed</p>
-                        <p className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">This event has already taken place or was cancelled.</p>
-                    </div>
-                  ) : hasRsvp ? (
-                    <Button 
-                      variant="outline"
-                      className="w-full h-16 rounded-2xl font-black text-lg border-destructive/20 text-destructive hover:bg-destructive hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98] group/btn" 
-                      disabled={cancelMut.isPending}
-                      onClick={() => cancelMut.mutate()}
-                    >
-                      {cancelMut.isPending ? (
-                        <Loader2 size={24} className="animate-spin" />
-                      ) : (
-                        "Cancel Participation"
-                      )}
-                    </Button>
-                  ) : (
-                    <>
-                      <Button 
-                        className="w-full h-16 rounded-2xl font-black text-lg shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] group/btn" 
-                        disabled={rsvpMut.isPending || isFull}
-                        onClick={() => {
-                          if (isFull) return;
-                          setRsvpConfirmOpen(true);
-                        }}
-                      >
-                        {rsvpMut.isPending ? (
-                          <Loader2 size={24} className="animate-spin" />
-                        ) : (
-                          <>
-                            <Calendar size={22} className="mr-3 group-hover/btn:rotate-12 transition-transform" />
-                            {isFull ? "Event fully booked" : "Confirm RSVP"}
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40 relative group/loc overflow-hidden">
-                  <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover/loc:translate-y-0 transition-transform duration-500" />
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0 transition-transform group-hover/loc:scale-110 z-10">
-                    <MapPin size={20} />
-                  </div>
-                  <div className="z-10">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Venue</p>
-                    <p className="text-sm font-black truncate max-w-[160px]">{event.venue}</p>
-                  </div>
-                  <a 
-                    href={mapUrl}
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="ml-auto w-8 h-8 rounded-lg bg-background border border-border/40 flex items-center justify-center hover:bg-primary hover:text-white transition-all z-10"
-                  >
-                    <Navigation size={14} />
-                  </a>
-                </div>
-                
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Attendance</p>
-                    <p className="text-sm font-black">{event.rsvpCount} Alumni</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* ════════════════════════════════════════════
+            RIGHT — sticky sidebar
+        ════════════════════════════════════════════ */}
+        <aside className="hidden lg:block lg:col-span-5">
+          <div
+            className="rounded-2xl border overflow-hidden lg:sticky lg:top-24"
+            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+          >
+            <div className="h-1 w-full" style={{ background: "var(--primary)" }} />
+            <div className="p-5 sm:p-6">
+              <RsvpBlock
+                event={event}
+                hasRsvp={hasRsvp}
+                canRsvp={canRsvp}
+                isFull={isFull}
+                mapUrl={mapUrl}
+                onRsvp={() => setRsvpConfirmOpen(true)}
+                onCancel={() => cancelMut.mutate()}
+                cancelPending={cancelMut.isPending}
+                rsvpPending={rsvpMut.isPending}
+              />
+            </div>
+          </div>
         </aside>
+
       </div>
 
       <ConfirmModal
         open={rsvpConfirmOpen}
-        title="Confirm RSVP"
-        message="Reserve your spot for this event?"
+        title="Confirm your spot"
+        message={`Reserve your place at "${event.title}"?`}
         confirmLabel="Yes, RSVP"
         variant="default"
         isLoading={rsvpMut.isPending}
         onConfirm={() => rsvpMut.mutate()}
         onCancel={() => setRsvpConfirmOpen(false)}
       />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   RSVP BLOCK — shared between mobile (inline) and desktop (sidebar)
+   ───────────────────────────────────────────────────────────────────────── */
+function RsvpBlock({
+  event, hasRsvp, canRsvp, isFull, mapUrl,
+  onRsvp, onCancel, cancelPending, rsvpPending,
+}: {
+  event: any;
+  hasRsvp: boolean;
+  canRsvp: boolean;
+  isFull: boolean;
+  mapUrl: string;
+  onRsvp: () => void;
+  onCancel: () => void;
+  cancelPending: boolean;
+  rsvpPending: boolean;
+}) {
+  return (
+    <div className="space-y-5">
+
+      {/* Ticket / price */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+            Registration
+          </p>
+          <p
+            className="font-[family-name:var(--font-display)] font-bold"
+            style={{ fontSize: "1.4rem", color: "var(--foreground)", letterSpacing: "-0.02em" }}
+          >
+            {event.isTicketed && event.ticketPrice ? formatCurrency(event.ticketPrice) : "Free"}
+          </p>
+        </div>
+        {event.isTicketed && <Ticket size={22} style={{ color: "var(--primary)" }} />}
+      </div>
+
+      {/* RSVP status — if already going */}
+      {hasRsvp && (
+        <div
+          className="flex items-center gap-3 p-3.5 rounded-xl"
+          style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
+        >
+          <CheckCircle2 size={18} className="text-green-600 shrink-0" />
+          <p className="text-[13.5px] font-semibold text-green-700">
+            You're going to this event.
+          </p>
+        </div>
+      )}
+
+      {/* Action button */}
+      {canRsvp ? (
+        hasRsvp ? (
+          <Button
+            variant="outline"
+            className="w-full font-semibold text-[14px] gap-2"
+            style={{ height: 44, borderColor: "var(--destructive)", color: "var(--destructive)" }}
+            disabled={cancelPending}
+            onClick={onCancel}
+          >
+            {cancelPending ? <Loader2 size={15} className="animate-spin" /> : "Cancel my RSVP"}
+          </Button>
+        ) : (
+          <Button
+            className="w-full font-bold text-[15px] gap-2"
+            style={{ height: 48 }}
+            disabled={rsvpPending || isFull}
+            onClick={onRsvp}
+          >
+            {rsvpPending ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : isFull ? (
+              "Event fully booked"
+            ) : (
+              <><Calendar size={16} /> Confirm RSVP</>
+            )}
+          </Button>
+        )
+      ) : (
+        <div
+          className="p-4 rounded-xl text-center"
+          style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}
+        >
+          <p className="text-[14px] font-semibold mb-0.5" style={{ color: "var(--foreground)" }}>
+            Registration closed
+          </p>
+          <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+            This event has ended or was cancelled.
+          </p>
+        </div>
+      )}
+
+      {/* Details list */}
+      <div
+        className="rounded-xl border divide-y overflow-hidden"
+        style={{ borderColor: "var(--border)" }}
+      >
+        {/* Venue with map link */}
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+          >
+            <MapPin size={14} style={{ color: "var(--primary)" }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Venue</p>
+            <p className="text-[13.5px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+              {event.venue}
+            </p>
+          </div>
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-primary hover:text-white"
+            style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}
+            title="Open in Google Maps"
+          >
+            <Navigation size={13} />
+          </a>
+        </div>
+
+        {/* Date */}
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+          >
+            <Calendar size={14} style={{ color: "var(--primary)" }} />
+          </div>
+          <div>
+            <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Date</p>
+            <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
+              {formatDate(event.startDate)}
+            </p>
+          </div>
+        </div>
+
+        {/* Attendance */}
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+          >
+            <Users size={14} style={{ color: "var(--primary)" }} />
+          </div>
+          <div>
+            <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Attendance</p>
+            <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
+              {event.rsvpCount} alumni going
+              {event.capacity ? ` · ${event.capacity - event.rsvpCount} spots remaining` : ""}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

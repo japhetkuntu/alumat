@@ -1,97 +1,177 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Medal, TrendingUp } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Trophy, Medal, TrendingUp, Users, CreditCard, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { getLeaderboard } from "@/lib/member-api";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
+
+/* Medal colours */
+const RANK_STYLE = [
+  { bg: "rgba(234,179,8,0.12)",  border: "rgba(234,179,8,0.35)",  text: "#b45309" }, // 1st — gold
+  { bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.35)", text: "#64748b" }, // 2nd — silver
+  { bg: "rgba(180,83,9,0.10)",   border: "rgba(180,83,9,0.3)",    text: "#92400e" }, // 3rd — bronze
+];
+
+function RankBadge({ index }: { index: number }) {
+  if (index < 3) {
+    const s = RANK_STYLE[index];
+    const Icon = index === 0 ? Trophy : Medal;
+    return (
+      <div
+        className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0"
+        style={{ background: s.bg, border: `1.5px solid ${s.border}` }}
+      >
+        <Icon size={index === 0 ? 18 : 17} style={{ color: s.text }} />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0 text-[14px] font-bold tabular-nums"
+      style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
+    >
+      {index + 1}
+    </div>
+  );
+}
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+
   const { data: entries, isLoading } = useQuery({
     queryKey: ["m-leaderboard"],
-    queryFn: getLeaderboard,
+    queryFn:  getLeaderboard,
   });
 
   return (
-    <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-10 selection:bg-primary/20">
-      <header className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
-          Year Group Leaderboard
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base lg:text-lg font-medium leading-relaxed max-w-2xl">
-          See how your graduating class ranks against others. Compete for the top spot through membership and contributions!
-        </p>
-      </header>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
+      {/* ── Header ── */}
+      <div>
+        <h1
+          className="font-[family-name:var(--font-display)] tracking-tight"
+          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
+        >
+          Year group leaderboard
+        </h1>
+        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+          See how your graduating class ranks against others through membership, contributions, and events.
+        </p>
+      </div>
+
+      {/* ── List ── */}
       {isLoading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : !entries?.length ? (
-        <EmptyState icon={<Trophy size={48} />} title="No leaderboard data yet" description="Leaderboard will populate as members make contributions." />
+        <EmptyState
+          icon={<Trophy size={40} />}
+          title="No leaderboard data yet"
+          description="Rankings will appear as members make contributions and attend events."
+        />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {entries.map((entry, index) => {
             const isMyYear = user?.graduationYear === entry.yearGroup;
-            return (
-              <Card
-                key={entry.yearGroup}
-                className={`transition-all hover:shadow-md ${isMyYear ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
-              >
-                <CardContent className="flex items-center gap-4 p-4 sm:p-5">
-                  <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted font-bold text-lg shrink-0">
-                    {index === 0 ? (
-                      <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
-                    ) : index === 1 ? (
-                      <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                    ) : index === 2 ? (
-                      <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
-                    ) : (
-                      <span className="text-muted-foreground">{index + 1}</span>
-                    )}
-                  </div>
 
+            return (
+              <div
+                key={entry.yearGroup}
+                className={cn(
+                  "rounded-2xl border transition-all duration-150",
+                  isMyYear && "ring-2 ring-primary/25",
+                )}
+                style={{
+                  borderColor: isMyYear ? "var(--primary)" : "var(--border)",
+                  background:  isMyYear ? "var(--color-background-info)" : "var(--background)",
+                }}
+              >
+                <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5">
+
+                  {/* Rank circle */}
+                  <RankBadge index={index} />
+
+                  {/* Class + member count */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-base sm:text-lg">Class of {entry.yearGroup}</h3>
-                      {isMyYear && <Badge variant="info">Your Class</Badge>}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3
+                        className="font-[family-name:var(--font-display)] font-bold"
+                        style={{ fontSize: "1rem", color: "var(--foreground)" }}
+                      >
+                        Class of {entry.yearGroup}
+                      </h3>
+                      {isMyYear && (
+                        <Badge variant="info" className="text-[10.5px] font-semibold">
+                          Your class
+                        </Badge>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-[12.5px] mt-0.5 flex items-center gap-1" style={{ color: "var(--muted-foreground)" }}>
+                      <Users size={11} />
                       {entry.totalMembers} members
                     </p>
                   </div>
 
-                  <div className="hidden sm:flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                      <p className="font-semibold text-foreground">{Math.round(entry.membershipRate)}%</p>
-                      <p className="text-muted-foreground text-xs">Membership</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-semibold text-foreground">{formatCurrency(entry.totalContributed)}</p>
-                      <p className="text-muted-foreground text-xs">Contributed</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-semibold text-foreground">{entry.eventAttendanceCount}</p>
-                      <p className="text-muted-foreground text-xs">Events</p>
-                    </div>
+                  {/* Stats — 3 columns on sm+, condensed on mobile */}
+                  <div className="hidden sm:flex items-center gap-6 sm:gap-8 shrink-0">
+                    {[
+                      { icon: TrendingUp, value: `${Math.round(entry.membershipRate)}%`, label: "Membership" },
+                      { icon: CreditCard, value: formatCurrency(entry.totalContributed),  label: "Contributed" },
+                      { icon: Calendar,   value: entry.eventAttendanceCount,              label: "Events"      },
+                    ].map(({ icon: Icon, value, label }) => (
+                      <div key={label} className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <Icon size={12} style={{ color: "var(--primary)" }} />
+                          <p className="text-[14px] font-bold tabular-nums" style={{ color: "var(--foreground)" }}>
+                            {value}
+                          </p>
+                        </div>
+                        <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="sm:hidden flex flex-col items-end gap-0.5">
-                    <div className="flex items-center gap-1 text-sm font-bold text-primary">
-                      <TrendingUp className="w-3.5 h-3.5" />
+                  {/* Mobile — show just membership rate + contributions stacked */}
+                  <div className="sm:hidden flex flex-col items-end gap-1 shrink-0">
+                    <p
+                      className="text-[14px] font-bold tabular-nums"
+                      style={{ color: "var(--primary)" }}
+                    >
                       {Math.round(entry.membershipRate)}%
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">{formatCurrency(entry.totalContributed)}</p>
+                    </p>
+                    <p className="text-[11.5px] font-medium tabular-nums" style={{ color: "var(--muted-foreground)" }}>
+                      {formatCurrency(entry.totalContributed)}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+
+                </div>
+
+                {/* Mobile stat row — sits below the main row, only on xs */}
+                <div
+                  className="sm:hidden flex items-center justify-around px-4 pb-3 gap-4 border-t"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  {[
+                    { label: "Membership rate", value: `${Math.round(entry.membershipRate)}%` },
+                    { label: "Contributed",     value: formatCurrency(entry.totalContributed)  },
+                    { label: "Events",          value: entry.eventAttendanceCount              },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="text-center pt-3">
+                      <p className="text-[13px] font-bold tabular-nums" style={{ color: "var(--foreground)" }}>
+                        {value}
+                      </p>
+                      <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
             );
           })}
         </div>

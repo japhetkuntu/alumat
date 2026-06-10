@@ -2,61 +2,90 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Newspaper, Calendar, Tag, ChevronRight, Pin } from "lucide-react";
+import { Newspaper, Calendar, Pin } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
-import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { getNewsPosts } from "@/lib/member-api";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-const categories = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity"];
+const CATEGORIES = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity"];
 
-const categoryColor: Record<string, string> = {
-  Announcement: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  Achievement: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  News: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  Event: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-  Opportunity: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+const categoryStyle: Record<string, { bg: string; text: string; border: string }> = {
+  Announcement: { bg: "rgba(59,130,246,0.08)",  text: "#2563eb", border: "rgba(59,130,246,0.2)"  },
+  Achievement:  { bg: "rgba(245,158,11,0.08)",  text: "#d97706", border: "rgba(245,158,11,0.2)"  },
+  News:         { bg: "rgba(16,185,129,0.08)",  text: "#059669", border: "rgba(16,185,129,0.2)"  },
+  Event:        { bg: "rgba(139,92,246,0.08)",  text: "#7c3aed", border: "rgba(139,92,246,0.2)"  },
+  Opportunity:  { bg: "rgba(6,182,212,0.08)",   text: "#0891b2", border: "rgba(6,182,212,0.2)"   },
 };
+
+function CategoryPill({ category }: { category: string }) {
+  const s = categoryStyle[category];
+  if (!s) return (
+    <span
+      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border"
+      style={{ background: "var(--secondary)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}
+    >
+      {category}
+    </span>
+  );
+  return (
+    <span
+      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border"
+      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
+    >
+      {category}
+    </span>
+  );
+}
 
 export default function MemberNewsPage() {
   const [category, setCategory] = useState("");
-  const [page, setPage] = useState(1);
+  const [page,     setPage]     = useState(1);
   const pageSize = 20;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["m-news", category, page],
-    queryFn: () => getNewsPosts(page, pageSize, category || undefined),
+    queryKey:        ["m-news", category, page],
+    queryFn:         () => getNewsPosts(page, pageSize, category || undefined),
     placeholderData: (prev) => prev,
   });
 
-  const posts = data?.results ?? [];
+  const posts      = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
 
   return (
-    <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-10 selection:bg-primary/20">
-      <header className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">News &amp; Announcements</h1>
-        <p className="text-muted-foreground text-sm sm:text-base lg:text-lg font-medium leading-relaxed max-w-2xl">
-          Stay informed with the latest from the UMaT alumni community — achievements, events, and opportunities.
-        </p>
-      </header>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      {/* Category filter */}
-      <div className="flex gap-2 flex-wrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-        {categories.map((c) => {
+      {/* ── Header ── */}
+      <div>
+        <h1
+          className="font-[family-name:var(--font-display)] tracking-tight"
+          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
+        >
+          News &amp; announcements
+        </h1>
+        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+          The latest from the UMaT alumni community.
+        </p>
+      </div>
+
+      {/* ── Category filter ── */}
+      <div className="flex flex-wrap gap-2">
+        {CATEGORIES.map(c => {
           const active = category === (c === "All" ? "" : c);
           return (
             <button
               key={c}
               onClick={() => { setCategory(c === "All" ? "" : c); setPage(1); }}
-              className={`px-4 py-1.5 rounded-full text-[12px] font-bold transition-all duration-200 border ${
-                active
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                  : "bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground hover:bg-muted/60"
-              }`}
+              className={cn(
+                "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                active ? "text-white border-transparent" : "border-border hover:border-primary/40",
+              )}
+              style={active
+                ? { background: "var(--primary)", color: "white" }
+                : { background: "var(--background)", color: "var(--muted-foreground)" }}
             >
               {c}
             </button>
@@ -64,71 +93,106 @@ export default function MemberNewsPage() {
         })}
       </div>
 
+      {/* ── Grid ── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : posts.length === 0 ? (
-        <EmptyState icon={<Newspaper size={48} />} title="No posts yet" description="News and announcements will appear here." />
+        <EmptyState
+          icon={<Newspaper size={40} />}
+          title="No posts yet"
+          description="News and announcements will appear here when published."
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((p, i) => {
-            const colorCls = categoryColor[p.category] ?? "bg-muted/50 text-muted-foreground border-border/40";
-            return (
-              <Link key={p.id} href={`/news/${p.id}`}>
-                <Card
-                  className="group relative flex flex-col overflow-hidden border-border/40 hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer animate-in fade-in slide-in-from-bottom-6 duration-700 h-full"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  {/* Banner / visual */}
-                  <div className="relative h-48 overflow-hidden">
-                    {p.imageUrls && p.imageUrls.length > 0 ? (
-                      <img src={p.imageUrls[0]} alt={p.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" loading="lazy" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/10 via-primary/5 to-muted/20 flex items-center justify-center">
-                        <Newspaper size={40} className="text-primary/15" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      {p.isPinned && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/20 backdrop-blur-sm border border-orange-500/30 text-orange-300 text-[9px] font-black uppercase tracking-widest">
-                          <Pin size={9} /> Pinned
-                        </span>
-                      )}
-                      <span className={`px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest backdrop-blur-sm ${colorCls}`}>{p.category}</span>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {posts.map(p => (
+            <Link
+              key={p.id}
+              href={`/news/${p.id}`}
+              className="group rounded-2xl border overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{ borderColor: "var(--border)", background: "var(--background)" }}
+            >
+              {/* Banner */}
+              <div className="relative shrink-0 overflow-hidden" style={{ height: 180 }}>
+                {p.imageUrls?.[0] ? (
+                  <img
+                    src={p.imageUrls[0]}
+                    alt={p.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: "var(--secondary)" }}
+                  >
+                    <Newspaper size={36} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
                   </div>
+                )}
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 55%)" }} />
 
-                  <CardContent className="flex-1 flex flex-col p-5 space-y-3">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary">
-                        <Calendar size={11} />
-                        {p.publishedAt ? formatDate(p.publishedAt) : "Draft"}
-                      </div>
-                      <h3 className="text-base font-bold leading-snug group-hover:text-primary transition-colors line-clamp-3">{p.title}</h3>
-                    </div>
+                {/* Badges over image */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                  {p.isPinned && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={{
+                        background: "rgba(249,115,22,0.85)",
+                        backdropFilter: "blur(4px)",
+                        color: "white",
+                      }}
+                    >
+                      <Pin size={9} /> Pinned
+                    </span>
+                  )}
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{
+                      background: "rgba(0,0,0,0.35)",
+                      backdropFilter: "blur(4px)",
+                      color: "rgba(255,255,255,0.9)",
+                    }}
+                  >
+                    {p.category}
+                  </span>
+                </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-border/40">
-                      <span className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1">
-                        <Tag size={11} /> {p.category}
-                      </span>
-                      <div className="w-8 h-8 rounded-lg bg-muted/30 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                        <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+                {/* Date over image */}
+                <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5 text-white/80 text-[11.5px] font-medium">
+                  <Calendar size={11} />
+                  {p.publishedAt ? formatDate(p.publishedAt) : "Draft"}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="flex flex-col flex-1 p-4 gap-3">
+                <h3
+                  className="text-[14.5px] font-semibold leading-snug line-clamp-3 transition-colors duration-200 group-hover:text-primary"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {p.title}
+                </h3>
+
+                <div
+                  className="flex items-center justify-between mt-auto pt-3 border-t"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <CategoryPill category={p.category} />
+                  <span
+                    className="text-[12.5px] font-semibold transition-colors duration-200 group-hover:text-primary"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    Read →
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
 
-      <div className="pt-4">
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-      </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

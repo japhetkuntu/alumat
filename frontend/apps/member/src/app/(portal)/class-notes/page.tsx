@@ -11,35 +11,39 @@ import { formatDistanceToNow } from "date-fns";
 import { getInitials, cn } from "@/lib/utils";
 import { getClassNotes, createClassNote, toggleClassNoteLike, deleteClassNote } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import type { ClassNote } from "@/types";
 
-const AVATAR_GRADIENTS = [
-  "from-violet-500 to-purple-500",
-  "from-blue-500 to-cyan-500",
-  "from-emerald-500 to-teal-500",
-  "from-orange-500 to-rose-500",
-  "from-pink-500 to-fuchsia-500",
-  "from-amber-500 to-yellow-500",
-];
-
-function avatarGrad(name: string) {
-  let s = 0;
-  for (const c of name) s += c.charCodeAt(0);
-  return AVATAR_GRADIENTS[s % AVATAR_GRADIENTS.length];
-}
-
 const MAX_CHARS = 1000;
 
+/* Deterministic avatar color — inline styles, dark-mode safe */
+const AVATAR_COLORS = [
+  { bg: "rgba(139,92,246,0.12)",  text: "#7c3aed", border: "rgba(139,92,246,0.25)"  },
+  { bg: "rgba(59,130,246,0.12)",  text: "#2563eb", border: "rgba(59,130,246,0.25)"  },
+  { bg: "rgba(16,185,129,0.12)",  text: "#059669", border: "rgba(16,185,129,0.25)"  },
+  { bg: "rgba(245,158,11,0.12)",  text: "#d97706", border: "rgba(245,158,11,0.25)"  },
+  { bg: "rgba(236,72,153,0.12)",  text: "#be185d", border: "rgba(236,72,153,0.25)"  },
+  { bg: "rgba(239,68,68,0.12)",   text: "#dc2626", border: "rgba(239,68,68,0.25)"   },
+];
+function avatarColor(name: string) {
+  let s = 0;
+  for (const c of name) s += c.charCodeAt(0);
+  return AVATAR_COLORS[s % AVATAR_COLORS.length];
+}
+
+/* Safe relative time */
+function relativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return formatDistanceToNow(d, { addSuffix: true });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   NOTE CARD
+   ───────────────────────────────────────────────────────────────────────── */
 function NoteCard({
-  note,
-  userId,
-  onLike,
-  onDelete,
-  isDeleting,
-  isLiking,
+  note, userId, onLike, onDelete, isDeleting, isLiking,
 }: {
   note: ClassNote;
   userId?: string;
@@ -48,74 +52,121 @@ function NoteCard({
   isDeleting: boolean;
   isLiking: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const isOwn = note.authorId === userId;
-  const grad = avatarGrad(note.authorName ?? "A");
-  const long = note.content.length > 280;
+  const [expanded,      setExpanded]      = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const isOwn  = note.authorId === userId;
+  const color  = avatarColor(note.authorName ?? "A");
+  const long   = note.content.length > 280;
+  const time   = relativeTime(note.createdAt);
 
   return (
-    <div className="group relative flex gap-3 sm:gap-4 py-5 border-b border-border/30 last:border-0 px-4 sm:px-6 hover:bg-muted/20 transition-colors duration-150">
-      <Avatar className="w-10 h-10 shrink-0 mt-0.5">
-        {note.authorProfilePictureUrl && (
-          <img src={note.authorProfilePictureUrl} alt={note.authorName ?? ""} className="object-cover" />
-        )}
-        <AvatarFallback className={cn("text-white font-black text-sm bg-gradient-to-br", grad)}>
-          {getInitials(note.authorName ?? "A")}
-        </AvatarFallback>
-      </Avatar>
+    <div
+      className="flex gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b transition-colors"
+      style={{ borderColor: "var(--border)" }}
+    >
+      {/* Avatar */}
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[12px] font-semibold overflow-hidden"
+        style={{ background: color.bg, border: `1.5px solid ${color.border}`, color: color.text }}
+      >
+        {note.authorProfilePictureUrl
+          ? <img src={note.authorProfilePictureUrl} alt={note.authorName ?? ""} className="w-full h-full object-cover" />
+          : getInitials(note.authorName ?? "A")}
+      </div>
 
       <div className="flex-1 min-w-0">
+        {/* Author row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-black text-sm">{note.authorName ?? "Member"}</span>
+          <span className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
+            {note.authorName ?? "Member"}
+          </span>
           {note.yearGroup && (
-            <span className="flex items-center gap-0.5 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wide">
-              <GraduationCap size={10} />
-              {note.yearGroup}
+            <span className="flex items-center gap-0.5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+              <GraduationCap size={10} /> {note.yearGroup}
             </span>
           )}
-          <span className="text-[11px] text-muted-foreground/50">
-            {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
-          </span>
+          {time && (
+            <span className="text-[11.5px]" style={{ color: "var(--muted-foreground)", opacity: 0.55 }}>
+              {time}
+            </span>
+          )}
         </div>
 
-        <p className={cn("mt-1.5 text-[14px] leading-relaxed whitespace-pre-wrap text-foreground/90", !expanded && long && "line-clamp-4")}>
+        {/* Content */}
+        <p
+          className={cn("mt-1.5 text-[14px] leading-relaxed whitespace-pre-wrap", !expanded && long && "line-clamp-4")}
+          style={{ color: "var(--foreground)", opacity: 0.9 }}
+        >
           {note.content}
         </p>
         {long && (
-          <button onClick={() => setExpanded((v) => !v)} className="text-[12px] font-bold text-primary mt-1 hover:underline">
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="text-[12.5px] font-semibold mt-1 hover:underline"
+            style={{ color: "var(--primary)" }}
+          >
             {expanded ? "Show less" : "Read more"}
           </button>
         )}
 
+        {/* Image */}
         {note.imageUrl && (
-          <img src={note.imageUrl} alt="" className="mt-3 rounded-xl w-full max-h-72 object-cover border border-border/30" />
+          <img
+            src={note.imageUrl}
+            alt=""
+            className="mt-3 rounded-xl w-full object-cover border"
+            style={{ maxHeight: 280, borderColor: "var(--border)" }}
+          />
         )}
 
-        <div className="mt-3 flex items-center gap-3">
+        {/* Actions */}
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          {/* Like */}
           <button
             onClick={onLike}
             disabled={isLiking}
             className={cn(
-              "flex items-center gap-1.5 text-[12px] font-semibold rounded-full px-2.5 py-1 transition-all",
+              "flex items-center gap-1.5 text-[12.5px] font-semibold rounded-full px-2.5 py-1 transition-colors",
               note.isLikedByMe
                 ? "text-rose-500 bg-rose-50 dark:bg-rose-950/30"
-                : "text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30",
+                : "hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30",
             )}
+            style={!note.isLikedByMe ? { color: "var(--muted-foreground)" } : {}}
           >
-            <Heart size={14} className={cn("transition-transform", note.isLikedByMe && "fill-current scale-110")} />
-            <span>{note.likeCount > 0 ? note.likeCount : ""}</span>
+            <Heart size={13} className={cn("transition-transform", note.isLikedByMe && "fill-current scale-110")} />
+            {note.likeCount > 0 && <span>{note.likeCount}</span>}
             <span>{note.isLikedByMe ? "Liked" : "Like"}</span>
           </button>
 
+          {/* Delete — always visible on mobile, destructive confirm */}
           {isOwn && (
-            <button
-              onClick={onDelete}
-              disabled={isDeleting}
-              className="flex items-center gap-1 text-[12px] font-semibold text-muted-foreground/50 hover:text-destructive rounded-full px-2 py-1 transition-colors opacity-0 group-hover:opacity-100"
-            >
-              {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-              Delete
-            </button>
+            confirmDelete ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Delete this?</span>
+                <button
+                  onClick={() => { onDelete(); setConfirmDelete(false); }}
+                  disabled={isDeleting}
+                  className="text-[12px] font-semibold text-destructive hover:underline"
+                >
+                  {isDeleting ? <Loader2 size={12} className="animate-spin" /> : "Yes, delete"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-[12px] font-semibold hover:underline"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1 text-[12.5px] font-semibold rounded-full px-2 py-1 transition-colors"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                <Trash2 size={12} /> Delete
+              </button>
+            )
           )}
         </div>
       </div>
@@ -123,23 +174,28 @@ function NoteCard({
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PAGE
+   ───────────────────────────────────────────────────────────────────────── */
 export default function ClassNotesPage() {
-  const { user } = useAuth();
-  const [page, setPage] = useState(1);
-  const [newPost, setNewPost] = useState("");
+  const { user }   = useAuth();
+  const [page,     setPage]    = useState(1);
+  const [newPost,  setNewPost] = useState("");
   const pageSize = 20;
   const qc = useQueryClient();
+  const color    = avatarColor(user?.name ?? "M");
+  const charsLeft = MAX_CHARS - newPost.length;
 
   const { data: notesData, isLoading } = useQuery({
-    queryKey: ["m-class-notes", page],
-    queryFn: () => getClassNotes(page, pageSize),
+    queryKey:        ["m-class-notes", page],
+    queryFn:         () => getClassNotes(page, pageSize),
     placeholderData: (prev) => prev,
   });
 
   const postMut = useMutation({
     mutationFn: () => createClassNote({ content: newPost }),
     onSuccess: () => {
-      toast.success("Posted to your class wall!");
+      toast.success("Posted.");
       setNewPost("");
       qc.invalidateQueries({ queryKey: ["m-class-notes"] });
     },
@@ -148,125 +204,144 @@ export default function ClassNotesPage() {
 
   const likeMut = useMutation({
     mutationFn: (noteId: string) => toggleClassNoteLike(noteId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["m-class-notes"] }),
-    onError: (e) => toast.error(handleApiError(e)),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ["m-class-notes"] }),
+    onError:    (e) => toast.error(handleApiError(e)),
   });
 
   const deleteMut = useMutation({
     mutationFn: (noteId: string) => deleteClassNote(noteId),
     onSuccess: () => {
-      toast.success("Note deleted");
+      toast.success("Note deleted.");
       qc.invalidateQueries({ queryKey: ["m-class-notes"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  const notes = notesData?.results ?? [];
+  const notes      = notesData?.results ?? [];
   const totalPages = notesData?.totalPages ?? 1;
-  const charsLeft = MAX_CHARS - newPost.length;
 
   return (
-    <div className="w-full max-w-[680px] mx-auto selection:bg-primary/20">
-      {/* Page header banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-teal-500/10 via-cyan-500/5 to-transparent border-b border-border/40 px-4 sm:px-6 py-8 mb-6">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/5 rounded-full -translate-y-1/3 translate-x-1/3" />
-        <div className="relative flex items-start gap-4">
-          <div className="w-11 h-11 rounded-2xl bg-teal-500/15 flex items-center justify-center shrink-0">
-            <BookOpen size={20} className="text-teal-600 dark:text-teal-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Class Notes</h1>
-            <p className="text-muted-foreground text-sm font-medium mt-0.5 leading-relaxed">
-              {user?.graduationYear
-                ? `The wall for Class of ${user.graduationYear} — share updates, memories & milestones.`
-                : "Connect with your year group through posts and updates."}
-            </p>
-          </div>
+    <div className="w-full max-w-[680px] mx-auto p-4 sm:p-6 space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex items-start gap-3">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+        >
+          <BookOpen size={17} style={{ color: "var(--primary)" }} />
+        </div>
+        <div>
+          <h1
+            className="font-[family-name:var(--font-display)] tracking-tight"
+            style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--foreground)" }}
+          >
+            Class notes
+          </h1>
+          <p className="text-[13.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+            {user?.graduationYear
+              ? `The wall for Class of ${user.graduationYear} — share updates, memories & milestones.`
+              : "Connect with your year group through posts and updates."}
+          </p>
         </div>
       </div>
 
-      {/* Composer */}
-      <div className="px-4 sm:px-6 mb-2">
-        <div className="rounded-2xl border border-border/50 bg-background shadow-sm overflow-hidden focus-within:border-primary/40 focus-within:shadow-md focus-within:shadow-primary/5 transition-all duration-200">
-          <div className="flex gap-3 p-4">
-            <Avatar className="w-9 h-9 shrink-0 mt-0.5">
-              <AvatarFallback className={cn("text-white font-black text-sm bg-gradient-to-br", avatarGrad(user?.name ?? "M"))}>
-                {getInitials(user?.name ?? "M")}
-              </AvatarFallback>
-            </Avatar>
-            <Textarea
-              placeholder={`What's on your mind${user?.graduationYear ? `, Class of ${user.graduationYear}` : ""}?`}
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value.slice(0, MAX_CHARS))}
-              rows={3}
-              className="resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-[14px] leading-relaxed placeholder:text-muted-foreground/50"
-            />
+      {/* ── Composer ── */}
+      <div
+        className="rounded-2xl border overflow-hidden transition-shadow duration-200 focus-within:shadow-sm"
+        style={{ borderColor: "var(--border)", background: "var(--background)" }}
+      >
+        <div className="flex gap-3 p-4">
+          {/* Current user avatar */}
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[12px] font-semibold"
+            style={{ background: color.bg, border: `1.5px solid ${color.border}`, color: color.text }}
+          >
+            {getInitials(user?.name ?? "M")}
           </div>
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/30 bg-muted/20">
-            <span className={cn("text-[11px] font-medium", charsLeft < 50 ? "text-orange-500" : "text-muted-foreground/50")}>
-              {charsLeft} characters remaining
-            </span>
-            <Button
-              size="sm"
-              onClick={() => postMut.mutate()}
-              disabled={!newPost.trim() || postMut.isPending}
-              className="h-8 font-bold text-[12px] px-4"
-            >
-              {postMut.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Send className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              Post
-            </Button>
-          </div>
+          <Textarea
+            placeholder={`What's on your mind${user?.graduationYear ? `, Class of ${user.graduationYear}` : ""}?`}
+            value={newPost}
+            onChange={e => setNewPost(e.target.value.slice(0, MAX_CHARS))}
+            rows={3}
+            className="resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-[14px] leading-relaxed"
+            style={{ color: "var(--foreground)" }}
+          />
+        </div>
+        <div
+          className="flex items-center justify-between px-4 py-2.5 border-t"
+          style={{ borderColor: "var(--border)", background: "var(--secondary)" }}
+        >
+          <span
+            className="text-[12px] font-medium"
+            style={{ color: charsLeft < 50 ? "#d97706" : "var(--muted-foreground)", opacity: charsLeft < 50 ? 1 : 0.6 }}
+          >
+            {charsLeft} left
+          </span>
+          <Button
+            size="sm"
+            onClick={() => postMut.mutate()}
+            disabled={!newPost.trim() || postMut.isPending}
+            className="gap-1.5 font-semibold text-[13px]"
+            style={{ height: 34 }}
+          >
+            {postMut.isPending
+              ? <Loader2 size={13} className="animate-spin" />
+              : <><Send size={13} /> Post</>}
+          </Button>
         </div>
       </div>
 
-      {/* Feed */}
-      <div className="mt-4 rounded-2xl border border-border/40 bg-background shadow-sm overflow-hidden mx-4 sm:mx-6">
+      {/* ── Feed ── */}
+      <div
+        className="rounded-2xl border overflow-hidden"
+        style={{ borderColor: "var(--border)", background: "var(--background)" }}
+      >
         {isLoading ? (
-          <div className="divide-y divide-border/20">
+          <div>
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex gap-3 p-5 animate-pulse">
-                <div className="w-10 h-10 rounded-full bg-muted shrink-0" />
+              <div key={i} className="flex gap-3 p-5 border-b animate-pulse" style={{ borderColor: "var(--border)" }}>
+                <div className="w-9 h-9 rounded-full shrink-0" style={{ background: "var(--secondary)" }} />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-muted rounded w-1/3" />
-                  <div className="h-4 bg-muted rounded w-full" />
-                  <div className="h-4 bg-muted rounded w-4/5" />
+                  <div className="h-3 rounded w-1/3" style={{ background: "var(--secondary)" }} />
+                  <div className="h-4 rounded w-full"  style={{ background: "var(--secondary)" }} />
+                  <div className="h-4 rounded w-4/5"  style={{ background: "var(--secondary)" }} />
                 </div>
               </div>
             ))}
           </div>
         ) : notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <MessageSquarePlus size={28} className="text-muted-foreground/40" />
+          <div className="flex flex-col items-center justify-center py-14 px-4 text-center gap-3">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ background: "var(--secondary)" }}
+            >
+              <MessageSquarePlus size={24} style={{ color: "var(--muted-foreground)", opacity: 0.4 }} />
             </div>
-            <p className="font-bold text-base">No class notes yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Be the first to post to your year group wall!</p>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
+              No class notes yet
+            </p>
+            <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+              Be the first to post to your year group wall.
+            </p>
           </div>
         ) : (
-          <div>
-            {notes.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                userId={user?.id}
-                onLike={() => likeMut.mutate(note.id)}
-                onDelete={() => deleteMut.mutate(note.id)}
-                isDeleting={deleteMut.isPending}
-                isLiking={likeMut.isPending}
-              />
-            ))}
-          </div>
+          notes.map((note, i) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              userId={user?.id}
+              onLike={() => likeMut.mutate(note.id)}
+              onDelete={() => deleteMut.mutate(note.id)}
+              isDeleting={deleteMut.isPending && deleteMut.variables === note.id}
+              isLiking={likeMut.isPending && likeMut.variables === note.id}
+            />
+          ))
         )}
       </div>
 
       {totalPages > 1 && (
-        <div className="px-4 sm:px-6 pb-8 mt-4">
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-        </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
     </div>
   );

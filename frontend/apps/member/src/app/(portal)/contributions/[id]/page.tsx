@@ -1,389 +1,546 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { CreditCard, Loader2, ArrowLeft, Calendar, Target, Users, PlayCircle, Image as ImageIcon, CheckCircle2, Award, ChevronRight, Copy, Check, Share2, ExternalLink } from "lucide-react";
+import {
+  CreditCard, Loader2, ArrowLeft, Calendar, Target,
+  Users, CheckCircle2, Award, Copy, Check,
+  Share2, ExternalLink, AlertCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { YouTubeEmbed } from "@/components/ui/youtube-embed";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { getCampaignById, getMyProfile, initiatePaystackPayment, renewMembership, getMyContributions } from "@/lib/member-api";
+import {
+  getCampaignById, getMyProfile,
+  initiatePaystackPayment, renewMembership, getMyContributions,
+} from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useState } from "react";
 
 export default function CampaignDetailPage() {
   useAuth();
   const { id } = useParams() as { id: string };
   const router = useRouter();
-  const [amount, setAmount] = useState<string>("");
-  const [preset, setPreset] = useState<number | null>(null);
+  const [amount, setAmount]         = useState("");
+  const [preset, setPreset]         = useState<number | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
-  const { data: campaign, isLoading: isLoadingCampaign } = useQuery({
+  const { data: campaign, isLoading } = useQuery({
     queryKey: ["campaign", id],
-    queryFn: () => getCampaignById(id),
+    queryFn:  () => getCampaignById(id),
   });
 
   const { data: myContributions } = useQuery({
     queryKey: ["m-contributions", { campaignId: id }],
-    queryFn: () => getMyContributions({ campaignId: id }),
+    queryFn:  () => getMyContributions({ campaignId: id }),
   });
 
   const { data: profile } = useQuery({
     queryKey: ["m-profile"],
-    queryFn: getMyProfile,
+    queryFn:  getMyProfile,
   });
 
   const payMut = useMutation({
-    mutationFn: (payAmount: number) => {
-      if (campaign?.isMembershipCampaign) {
-        return renewMembership(id, 1, "online");
-      }
-      return initiatePaystackPayment({ campaignId: id, amount: payAmount });
-    },
-    onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
-      if (data?.authorizationUrl) {
-        window.location.href = data.authorizationUrl;
-      } else {
-        toast.success("Payment initiated successfully.");
-      }
+    mutationFn: (payAmount: number) =>
+      campaign?.isMembershipCampaign
+        ? renewMembership(id, 1, "online")
+        : initiatePaystackPayment({ campaignId: id, amount: payAmount }),
+    onSuccess: (data: { authorizationUrl?: string }) => {
+      if (data?.authorizationUrl) window.location.href = data.authorizationUrl;
+      else toast.success("Payment initiated.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  if (isLoadingCampaign) {
+  /* ── Loading ── */
+  if (isLoading) {
     return (
-      <div className="p-8 lg:p-12 max-w-5xl mx-auto space-y-8 animate-pulse">
-        <div className="h-8 w-32 bg-muted rounded-lg" />
-        <div className="aspect-video w-full bg-muted rounded-2xl" />
-        <div className="space-y-4">
-          <div className="h-10 w-2/3 bg-muted rounded-lg" />
-          <div className="h-4 w-full bg-muted rounded-lg" />
-          <div className="h-4 w-5/6 bg-muted rounded-lg" />
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-6 animate-pulse">
+        <div className="h-6 w-28 rounded-lg" style={{ background: "var(--secondary)" }} />
+        <div className="h-64 w-full rounded-2xl" style={{ background: "var(--secondary)" }} />
+        <div className="space-y-3">
+          <div className="h-8 w-2/3 rounded-lg" style={{ background: "var(--secondary)" }} />
+          <div className="h-4 w-full rounded-lg" style={{ background: "var(--secondary)" }} />
+          <div className="h-4 w-4/5 rounded-lg" style={{ background: "var(--secondary)" }} />
         </div>
       </div>
     );
   }
 
   if (!campaign) return (
-    <div className="p-8 lg:p-12 max-w-5xl mx-auto">
-      <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/contributions")}>
-        <ArrowLeft size={16} className="mr-2" /> Back to Campaigns
+    <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+      <Button variant="ghost" size="sm" className="mb-6 font-semibold gap-2" onClick={() => router.push("/contributions")}>
+        <ArrowLeft size={15} /> Back to campaigns
       </Button>
-      <EmptyState icon={<CreditCard size={48} />} title="Campaign not found" description="This campaign may have ended or the link is incorrect." />
+      <EmptyState
+        icon={<CreditCard size={40} />}
+        title="Campaign not found"
+        description="This campaign may have ended or the link is incorrect."
+      />
     </div>
   );
 
-  const hasPaid = myContributions?.results.some(c => c.status === "Confirmed" || c.status === "Pending");
-  const isMembership = !!campaign?.isMembershipCampaign;
+  /* ── Derived values ── */
+  const hasPaid        = myContributions?.results.some(c => c.status === "Confirmed" || c.status === "Pending");
+  const isMembership   = !!campaign.isMembershipCampaign;
   const membershipPaid = isMembership && hasPaid;
-  const isPensioner = profile?.employmentStatus === "Pensioner";
-  const memberAmount = isPensioner && campaign.pensionerAmountPerMember != null
+  const isPensioner    = profile?.employmentStatus === "Pensioner";
+  const memberAmount   = isPensioner && campaign.pensionerAmountPerMember != null
     ? campaign.pensionerAmountPerMember : campaign.amountPerMember;
+
   const pct = isMembership && campaign.totalEligibleMembers
     ? Math.round((campaign.paidCount / campaign.totalEligibleMembers) * 100)
-    : campaign.targetAmount > 0 ? Math.round((campaign.collectedAmount / campaign.targetAmount) * 100) : 0;
-  const isPaying = payMut.isPending;
-  const displayAmount = isMembership ? String(memberAmount) : (amount || String(campaign.amountPerMember ?? ""));
-  const numericAmount = Number(displayAmount);
-  const isValidAmount = numericAmount > 0;
+    : campaign.targetAmount > 0
+      ? Math.round((campaign.collectedAmount / campaign.targetAmount) * 100) : 0;
+
+  const displayAmount  = isMembership ? String(memberAmount) : (amount || String(campaign.amountPerMember ?? ""));
+  const numericAmount  = Number(displayAmount);
+  const isValidAmount  = numericAmount > 0;
+  const isActive       = campaign.status === "Active";
+  const canPay         = isActive && isValidAmount && campaign.allowOnlinePayments && !membershipPaid;
+
+  const publicLink = typeof window !== "undefined"
+    ? `${window.location.origin}/payment-campaign/${id}`
+    : `/payment-campaign/${id}`;
+
+  function copyLink() {
+    void navigator.clipboard.writeText(publicLink);
+    setShareCopied(true);
+    toast.success("Link copied to clipboard.");
+    setTimeout(() => setShareCopied(false), 2500);
+  }
 
   return (
-    <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-10 pb-20 selection:bg-primary/20">
-      {/* Breadcrumb + Navigation */}
-      <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
-        <div className="flex items-center gap-1.5 text-sm">
-          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 font-bold group" onClick={() => router.push("/contributions")}>
-            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            Campaigns
-          </Button>
-          <ChevronRight size={14} className="text-muted-foreground/50" />
-          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{campaign.title}</span>
-        </div>
-        <Badge variant={campaign.status === "Active" ? "success" : "secondary"} className="h-7 px-3 font-black uppercase tracking-widest text-[10px]">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
+
+      {/* ── Nav row ── */}
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <button
+          onClick={() => router.push("/contributions")}
+          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          <ArrowLeft size={15} /> Back to campaigns
+        </button>
+        <Badge variant={isActive ? "success" : "secondary"} className="text-[11px] font-bold uppercase tracking-wide">
           {campaign.status}
         </Badge>
-      </nav>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12">
-        {/* Main Content Area */}
-        <div className="lg:col-span-8 space-y-6 sm:space-y-8 lg:space-y-10">
-          {/* Share Banner */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-            <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-background">
-              <CardContent className="p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <Share2 size={14} className="text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="font-black text-[13px] leading-tight">Share this campaign</p>
-                    <p className="text-[11px] text-muted-foreground">Anyone with this link can contribute — no sign-in needed</p>
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+
+        {/* ════════════════════════════════════════════
+            LEFT — main content
+        ════════════════════════════════════════════ */}
+        <div className="lg:col-span-7 space-y-8">
+
+          {/* Title + meta */}
+          <div>
+            {isMembership && (
+              <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+                Membership campaign
+              </p>
+            )}
+            <h1
+              className="font-[family-name:var(--font-display)] leading-tight mb-4"
+              style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.25rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)" }}
+            >
+              {campaign.title}
+            </h1>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {[
+                { icon: Calendar, text: `Closes ${formatDate(campaign.deadline)}` },
+                { icon: Target,   text: `Goal: ${formatCurrency(campaign.targetAmount)}` },
+                { icon: Users,    text: `${campaign.paidCount} contributor${campaign.paidCount !== 1 ? "s" : ""}` },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5 text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  <Icon size={14} style={{ color: "var(--primary)" }} />
+                  {text}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 flex items-center h-9 rounded-xl border border-border/50 bg-white/80 px-3 gap-2 min-w-0">
-                    <ExternalLink size={12} className="text-muted-foreground shrink-0" />
-                    <span className="text-[11px] text-muted-foreground truncate font-mono">{typeof window !== "undefined" ? `${window.location.origin}/payment-campaign/${id}` : `/payment-campaign/${id}`}</span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={shareCopied ? "default" : "outline"}
-                    className={cn(
-                      "h-9 px-3 rounded-xl font-bold gap-1.5 shrink-0 text-[12px] transition-all duration-300",
-                      shareCopied && "bg-emerald-500 hover:bg-emerald-500 text-white border-emerald-500"
-                    )}
-                    onClick={() => {
-                      const link = `${window.location.origin}/payment-campaign/${id}`;
-                      void navigator.clipboard.writeText(link);
-                      setShareCopied(true);
-                      toast.success("Public link copied!");
-                      setTimeout(() => setShareCopied(false), 2500);
-                    }}
-                  >
-                    {shareCopied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy link</>}
-                  </Button>
-                  <a href={`/payment-campaign/${id}`} target="_blank" rel="noreferrer" className="shrink-0">
-                    <Button size="sm" variant="ghost" className="h-9 px-3 gap-1 text-[12px] font-bold text-primary hover:bg-primary/5 rounded-xl">
-                      <ExternalLink size={12} />Preview
-                    </Button>
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          <header className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.1]">{campaign.title}</h1>
-            <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-primary" />
-                Ends {formatDate(campaign.deadline)}
-              </div>
-              <div className="flex items-center gap-2">
-                <Target size={18} className="text-primary" />
-                Goal: {formatCurrency(campaign.targetAmount)}
-              </div>
-              <div className="flex items-center gap-2">
-                <Users size={18} className="text-primary" />
-                {campaign.paidCount} Contributors
-              </div>
+              ))}
             </div>
-          </header>
+          </div>
 
-          {/* Featured Visual */}
-          <section className="animate-in fade-in zoom-in-95 duration-1000 delay-200">
+          {/* Banner / video */}
+          <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
             {campaign.youtubeVideoUrl ? (
-              <div className="rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white dark:border-white/5 ring-1 ring-black/5 ring-offset-4 ring-offset-background bg-muted/20">
-                <YouTubeEmbed url={campaign.youtubeVideoUrl} />
-              </div>
+              <YouTubeEmbed url={campaign.youtubeVideoUrl} />
             ) : campaign.bannerImageUrl ? (
-              <div className="rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white dark:border-white/5 ring-1 ring-black/5 ring-offset-4 ring-offset-background aspect-video">
-                <img src={campaign.bannerImageUrl} alt={campaign.title} className="w-full h-full object-cover" />
-              </div>
+              <img
+                src={campaign.bannerImageUrl}
+                alt={campaign.title}
+                className="w-full object-cover"
+                style={{ maxHeight: 420 }}
+              />
             ) : (
-              <div className="rounded-[2rem] bg-gradient-to-br from-primary/10 to-muted/20 aspect-video flex items-center justify-center border-4 border-white dark:border-white/5 ring-1 ring-black/5">
-                <ImageIcon size={64} className="text-primary/20" />
+              <div
+                className="flex items-center justify-center"
+                style={{ height: 240, background: "var(--secondary)" }}
+              >
+                <CreditCard size={48} style={{ color: "var(--muted-foreground)", opacity: 0.25 }} />
               </div>
             )}
-          </section>
+          </div>
 
-          {/* Description & Details */}
-          <section className="space-y-6 prose prose-lg dark:prose-invert max-w-none animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
-            <h2 className="text-2xl font-black tracking-tight border-b border-border/40 pb-4">About this campaign</h2>
-            <div className="whitespace-pre-wrap font-medium text-muted-foreground leading-relaxed text-lg">
-              {campaign.description || "The community hasn't provided details for this campaign yet. Please reach out to the alumni office for more information."}
-            </div>
-          </section>
+          {/* Progress — shown in main content on mobile, sidebar on desktop */}
+          <div className="lg:hidden">
+            <ProgressBlock campaign={campaign} isMembership={isMembership} pct={pct} />
+          </div>
 
-          {/* Media Links / Extras */}
-          {(campaign.youtubeVideoUrl || campaign.bannerImageUrl) && (
-            <section className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <PlayCircle size={20} className="text-primary" />
-                Campaign Media
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {campaign.bannerImageUrl && (
-                  <div className="aspect-square rounded-2xl overflow-hidden border border-border/40 hover:border-primary/40 transition-colors cursor-pointer group">
-                    <img src={campaign.bannerImageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Gallery item" />
-                  </div>
-                )}
-                <div className="aspect-square rounded-2xl bg-muted/30 border border-dashed border-border/60 flex items-center justify-center opacity-40">
-                  <ImageIcon size={24} className="text-muted-foreground" />
-                </div>
+          {/* Description */}
+          <div>
+            <h2
+              className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b"
+              style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+            >
+              About this campaign
+            </h2>
+            <p
+              className="whitespace-pre-wrap leading-[1.85]"
+              style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
+            >
+              {campaign.description || "No details have been provided for this campaign yet. Please contact the alumni office for more information."}
+            </p>
+          </div>
+
+          {/* Share link */}
+          <div
+            className="rounded-2xl border p-4 sm:p-5"
+            style={{ borderColor: "var(--color-border-info)", background: "var(--color-background-info)" }}
+          >
+            <div className="flex items-center gap-2.5 mb-3">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: "var(--background)", border: "1px solid var(--color-border-info)" }}
+              >
+                <Share2 size={14} style={{ color: "var(--primary)" }} />
               </div>
-            </section>
-          )}
+              <div>
+                <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Share this campaign
+                </p>
+                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                  Anyone with this link can contribute — no sign-in needed
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div
+                className="flex-1 flex items-center h-9 rounded-lg border px-3 gap-2 min-w-0 overflow-hidden"
+                style={{ background: "var(--background)", borderColor: "var(--border)" }}
+              >
+                <ExternalLink size={11} style={{ color: "var(--muted-foreground)" }} className="shrink-0" />
+                <span className="text-[11.5px] font-mono truncate" style={{ color: "var(--muted-foreground)" }}>
+                  {publicLink}
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant={shareCopied ? "default" : "outline"}
+                className={cn("shrink-0 gap-1.5 font-semibold text-[12.5px]", shareCopied && "bg-green-600 hover:bg-green-600 border-green-600 text-white")}
+                style={{ height: 36 }}
+                onClick={copyLink}
+              >
+                {shareCopied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+              </Button>
+              <a href={publicLink} target="_blank" rel="noreferrer">
+                <Button size="sm" variant="ghost" className="shrink-0 gap-1 font-semibold text-[12.5px]"
+                  style={{ height: 36, color: "var(--primary)" }}>
+                  <ExternalLink size={12} /> Preview
+                </Button>
+              </a>
+            </div>
+          </div>
+
         </div>
 
-        {/* Sidebar: Stats & Payment Action */}
-        <aside className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-          <Card className="sticky top-24 overflow-hidden border-border/40 shadow-2xl shadow-primary/5 bg-card/80 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-primary" />
-            <CardContent className="p-5 sm:p-8 lg:p-10 space-y-6 sm:space-y-8">
-              <div className="space-y-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tighter text-foreground">{pct}%</span>
-                  <span className="text-[13px] font-extrabold text-muted-foreground uppercase tracking-wider mb-2">{isMembership ? 'Members Paid' : 'Funded'}</span>
-                </div>
-                <Progress value={pct} className="h-3 rounded-full bg-primary/10">
-                  <div className="h-full bg-primary relative animate-pulse-slow">
-                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:20px_20px]" />
-                  </div>
-                </Progress>
-                <div className="flex justify-between pt-1 font-bold text-[13px]">
-                  <span className="text-primary">{isMembership ? `${campaign.paidCount} paid` : `${formatCurrency(campaign.collectedAmount)} raised`}</span>
-                  <span className="text-muted-foreground/60">{isMembership ? `${campaign.totalEligibleMembers ?? '?'} eligible` : `Target ${formatCurrency(campaign.targetAmount)}`}</span>
-                </div>
+        {/* ════════════════════════════════════════════
+            RIGHT — sticky sidebar
+        ════════════════════════════════════════════ */}
+        <aside className="lg:col-span-5">
+          <div
+            className="rounded-2xl border overflow-hidden lg:sticky lg:top-24"
+            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+          >
+            {/* Top accent */}
+            <div className="h-1 w-full" style={{ background: "var(--primary)" }} />
+
+            <div className="p-5 sm:p-6 space-y-6">
+
+              {/* Progress */}
+              <div className="hidden lg:block">
+                <ProgressBlock campaign={campaign} isMembership={isMembership} pct={pct} />
               </div>
 
-              <div className="pt-8 border-t border-border/40 space-y-6">
-                <div>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-2">{isMembership ? "Your Amount" : "Minimum Contribution"}</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-foreground/40 mb-4">{isMembership ? formatCurrency(memberAmount) : formatCurrency(campaign.amountPerMember)}</p>
-                  
-                  {isMembership && (
-                    <p className="text-xs text-muted-foreground mb-4">This is a one-time membership payment{isPensioner ? " (pensioner rate)" : ""}. The amount is set by the admin.</p>
-                  )}
-
-                  {membershipPaid && (
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-green-50 border border-green-200 text-green-800 dark:bg-green-950/30 dark:border-green-800 dark:text-green-300 mb-4">
-                      <CheckCircle2 size={18} />
-                      <span className="text-sm font-bold">Membership paid &mdash; thank you!</span>
-                    </div>
-                  )}
-
-                  {membershipPaid && (
-                    <Link href="/membership-certificate">
-                      <Button variant="outline" className="w-full mb-4 h-11 font-bold text-[13px] border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30">
-                        <Award size={16} className="mr-2" />
-                        View Membership Certificate
-                      </Button>
-                    </Link>
-                  )}
-
-                  {!isMembership && (
-                    <div className="space-y-2 mb-6">
-                      <p className="text-[11px] font-bold text-primary uppercase tracking-widest">Enter Amount (GHS)</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {([1, 2, 5] as const).map((multiplier) => {
-                          const val = multiplier * campaign.amountPerMember;
-                          return (
-                            <Button
-                              key={multiplier}
-                              size="sm"
-                              variant={preset === multiplier ? "default" : "outline"}
-                              className="text-[12px] font-bold"
-                              onClick={() => {
-                                setPreset(multiplier);
-                                setAmount(String(val));
-                              }}
-                            >
-                              {multiplier}× ({formatCurrency(val)})
-                            </Button>
-                          );
-                        })}
-                      </div>
-                      <Input 
-                        type="number" 
-                        min={0.01}
-                        step="0.01"
-                        value={displayAmount}
-                        onChange={(e) => {
-                          setPreset(null);
-                          setAmount(e.target.value);
-                        }}
-                        className="h-14 text-2xl font-black rounded-xl border-primary/20 focus:border-primary/50 focus:ring-primary/20"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {hasPaid && !isMembership && (
-                    <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-primary/5 rounded-lg border border-primary/10 animate-in fade-in slide-in-from-bottom-2">
-                      <CheckCircle2 size={14} className="text-primary" />
-                      <span className="text-[10px] font-extrabold text-primary uppercase tracking-tight">Previous Contributor</span>
-                    </div>
-                  )}
-                  
-                  <Button 
-                    className="w-full h-16 rounded-2xl font-black text-lg shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] group/btn" 
-                    disabled={isPaying || campaign.status !== "Active" || !isValidAmount || !campaign.allowOnlinePayments || membershipPaid}
-                    onClick={() => payMut.mutate(numericAmount)}
+              {/* Amount + deadline info row */}
+              <div
+                className="grid grid-cols-2 divide-x rounded-xl overflow-hidden"
+                style={{ background: "var(--secondary)", borderColor: "var(--border)", border: "1px solid var(--border)" }}
+              >
+                <div className="p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--muted-foreground)" }}>
+                    {isMembership ? "Your amount" : "Per member"}
+                  </p>
+                  <p
+                    className="font-[family-name:var(--font-display)] font-bold tabular-nums"
+                    style={{ fontSize: "1.25rem", color: "var(--foreground)", letterSpacing: "-0.02em" }}
                   >
-                    {isPaying ? (
-                      <Loader2 size={24} className="animate-spin" />
-                    ) : membershipPaid ? (
-                      <>
-                        <CheckCircle2 size={22} className="mr-3" />
-                        Already Paid
-                      </>
-                    ) : campaign.allowOnlinePayments ? (
-                      <>
-                        <CreditCard size={22} className="mr-3 group-hover/btn:rotate-12 transition-transform" />
-                        {isMembership ? "Pay Membership" : hasPaid ? "Support Again" : "Complete Payment"}
-                      </>
-                    ) : (
-                      "Online payments unavailable"
-                    )}
-                  </Button>
+                    {formatCurrency(memberAmount)}
+                  </p>
+                  {isPensioner && isMembership && (
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Pensioner rate</p>
+                  )}
                 </div>
-
-                <p className="text-[11px] text-center font-bold text-muted-foreground/50 uppercase tracking-widest">
-                  Secure payment via Paystack
-                </p>
-
-                {campaign.allowManualPayments && (
-                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                    <h4 className="text-sm font-black text-primary mb-2 text-center p-b-2">Manual Payment Instructions</h4>
-                    <p className="text-sm font-bold">Reference: <span className="text-primary">{profile?.memberNumber ?? "N/A"}</span></p>
-                    {campaign.bankAccount ? (
-                      <div className="space-y-1 text-sm">
-                        <p className="font-bold">Bank Transfer</p>
-                        <p>Account: {campaign.bankAccount.accountName}</p>
-                        <p>Number: {campaign.bankAccount.accountNumber}</p>
-                        <p>Bank: {campaign.bankAccount.bankName}</p>
-                        <p>Branch: {campaign.bankAccount.branch}</p>
-                      </div>
-                    ) : null}
-                    {campaign.mobileMoneyAccount ? (
-                      <div className="space-y-1 text-sm pt-2 border-t border-primary/20">
-                        <p className="font-bold">Mobile Money</p>
-                        <p>Provider: {campaign.mobileMoneyAccount.provider}</p>
-                        <p>Name: {campaign.mobileMoneyAccount.name}</p>
-                        <p>Number: {campaign.mobileMoneyAccount.mobileMoneyNumber}</p>
-                      </div>
-                    ) : null}
-                    {!campaign.bankAccount && !campaign.mobileMoneyAccount && (
-                      <p className="text-sm text-muted-foreground">No manual account configured yet. Please contact the alumni office for details.</p>
-                    )}
-                  </div>
-                )}
+                <div className="p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--muted-foreground)" }}>
+                    Deadline
+                  </p>
+                  <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    {formatDate(campaign.deadline)}
+                  </p>
+                  <DaysLeft deadline={campaign.deadline} />
+                </div>
               </div>
 
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <Calendar size={20} />
-                  </div>
+              {/* Membership paid state */}
+              {membershipPaid && (
+                <div
+                  className="flex items-center gap-3 p-4 rounded-xl"
+                  style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
+                >
+                  <CheckCircle2 size={18} className="text-green-600 shrink-0" />
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ends in</p>
-                    <p className="text-sm font-black">{formatDate(campaign.deadline)}</p>
+                    <p className="text-[14px] font-semibold text-green-700">Membership paid — thank you!</p>
+                    <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                      This is a one-time payment per membership year.
+                    </p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              )}
+
+              {/* Certificate link */}
+              {membershipPaid && (
+                <Link href="/membership-certificate">
+                  <Button variant="outline" className="w-full gap-2 font-semibold text-[13.5px]"
+                    style={{ height: 42, borderColor: "#d97706", color: "#b45309" }}>
+                    <Award size={15} /> View membership certificate
+                  </Button>
+                </Link>
+              )}
+
+              {/* Already contributed notice (non-membership) */}
+              {hasPaid && !isMembership && (
+                <div
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                >
+                  <CheckCircle2 size={14} style={{ color: "var(--primary)" }} className="shrink-0" />
+                  <p className="text-[13px] font-semibold" style={{ color: "var(--color-text-info)" }}>
+                    You've contributed to this campaign before.
+                  </p>
+                </div>
+              )}
+
+              {/* Amount input — non-membership only */}
+              {!isMembership && isActive && (
+                <div className="space-y-3">
+                  <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>
+                    Choose an amount (GHS)
+                  </p>
+                  {/* Preset buttons */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {([1, 2, 5] as const).map((multiplier) => {
+                      const val = multiplier * campaign.amountPerMember;
+                      const active = preset === multiplier;
+                      return (
+                        <button
+                          key={multiplier}
+                          onClick={() => { setPreset(multiplier); setAmount(String(val)); }}
+                          className={cn(
+                            "rounded-xl py-2.5 text-[13px] font-semibold border transition-colors",
+                            active
+                              ? "text-white border-transparent"
+                              : "border-border hover:border-primary/40",
+                          )}
+                          style={{
+                            background: active ? "var(--primary)" : "var(--background)",
+                            color: active ? "white" : "var(--foreground)",
+                          }}
+                        >
+                          <span className="block text-[10px] mb-0.5 font-bold opacity-60">
+                            {multiplier}×
+                          </span>
+                          {formatCurrency(val)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step="0.01"
+                    value={displayAmount}
+                    onChange={e => { setPreset(null); setAmount(e.target.value); }}
+                    className="h-12 text-[16px] font-semibold"
+                    placeholder={`Min. ${formatCurrency(campaign.amountPerMember)}`}
+                  />
+                </div>
+              )}
+
+              {/* Pay button */}
+              {isActive && campaign.allowOnlinePayments && (
+                <Button
+                  className="w-full font-bold text-[15px] gap-2"
+                  style={{ height: 48 }}
+                  disabled={!canPay || payMut.isPending}
+                  onClick={() => payMut.mutate(numericAmount)}
+                >
+                  {payMut.isPending ? (
+                    <><Loader2 size={16} className="animate-spin" /> Processing…</>
+                  ) : membershipPaid ? (
+                    <><CheckCircle2 size={16} /> Already paid</>
+                  ) : (
+                    <><CreditCard size={16} />
+                      {isMembership
+                        ? `Pay ${formatCurrency(memberAmount)}`
+                        : hasPaid ? `Contribute again` : `Pay ${formatCurrency(numericAmount || campaign.amountPerMember)}`}
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {!isActive && (
+                <div
+                  className="flex items-center gap-2.5 p-3.5 rounded-xl"
+                  style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}
+                >
+                  <AlertCircle size={16} style={{ color: "var(--muted-foreground)" }} className="shrink-0" />
+                  <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+                    This campaign is no longer accepting contributions.
+                  </p>
+                </div>
+              )}
+
+              <p className="text-center text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
+                Payments are processed securely via Paystack
+              </p>
+
+              {/* Manual payment instructions */}
+              {campaign.allowManualPayments && (
+                <div
+                  className="rounded-xl border p-4 space-y-3"
+                  style={{ borderColor: "var(--border)", background: "var(--secondary)" }}
+                >
+                  <p className="text-[13px] font-bold" style={{ color: "var(--foreground)" }}>
+                    Pay manually
+                  </p>
+                  <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+                    Use your member number as the payment reference:{" "}
+                    <span className="font-bold font-mono" style={{ color: "var(--foreground)" }}>
+                      {profile?.memberNumber ?? "—"}
+                    </span>
+                  </p>
+
+                  {campaign.bankAccount && (
+                    <div className="space-y-1 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+                      <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>Bank transfer</p>
+                      {[
+                        ["Account name",   campaign.bankAccount.accountName],
+                        ["Account number", campaign.bankAccount.accountNumber],
+                        ["Bank",           campaign.bankAccount.bankName],
+                        ["Branch",         campaign.bankAccount.branch],
+                      ].map(([label, value]) => value && (
+                        <div key={label} className="flex items-center justify-between gap-3">
+                          <span className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{label}</span>
+                          <span className="text-[12.5px] font-semibold text-right" style={{ color: "var(--foreground)" }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {campaign.mobileMoneyAccount && (
+                    <div className="space-y-1 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+                      <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>Mobile money</p>
+                      {[
+                        ["Provider", campaign.mobileMoneyAccount.provider],
+                        ["Name",     campaign.mobileMoneyAccount.name],
+                        ["Number",   campaign.mobileMoneyAccount.mobileMoneyNumber],
+                      ].map(([label, value]) => value && (
+                        <div key={label} className="flex items-center justify-between gap-3">
+                          <span className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{label}</span>
+                          <span className="text-[12.5px] font-semibold text-right" style={{ color: "var(--foreground)" }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!campaign.bankAccount && !campaign.mobileMoneyAccount && (
+                    <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+                      No account details configured yet. Contact the alumni office.
+                    </p>
+                  )}
+                </div>
+              )}
+
+            </div>
+          </div>
         </aside>
+
       </div>
     </div>
   );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PROGRESS BLOCK — shared between mobile (main) and desktop (sidebar)
+   ───────────────────────────────────────────────────────────────────────── */
+function ProgressBlock({ campaign, isMembership, pct }: {
+  campaign: any; isMembership: boolean; pct: number;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end justify-between gap-2">
+        <p
+          className="font-[family-name:var(--font-display)] font-bold tabular-nums leading-none"
+          style={{ fontSize: "2rem", color: "var(--foreground)", letterSpacing: "-0.03em" }}
+        >
+          {pct}%
+        </p>
+        <p className="text-[12px] font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>
+          {isMembership ? "members paid" : "of goal reached"}
+        </p>
+      </div>
+      <Progress value={pct} className="h-2.5" />
+      <div className="flex items-center justify-between text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+        <span className="font-semibold" style={{ color: "var(--primary)" }}>
+          {isMembership
+            ? `${campaign.paidCount} paid`
+            : formatCurrency(campaign.collectedAmount)}
+        </span>
+        <span>
+          {isMembership
+            ? `${campaign.totalEligibleMembers ?? "?"} eligible`
+            : `Goal: ${formatCurrency(campaign.targetAmount)}`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DAYS LEFT — small plain-language countdown
+   ───────────────────────────────────────────────────────────────────────── */
+function DaysLeft({ deadline }: { deadline: string }) {
+  const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000);
+  if (days < 0) return <p className="text-[11.5px] text-destructive mt-0.5 font-medium">Closed</p>;
+  if (days === 0) return <p className="text-[11.5px] text-destructive mt-0.5 font-medium">Closes today</p>;
+  if (days <= 7)  return <p className="text-[11.5px] mt-0.5 font-medium" style={{ color: "#d97706" }}>{days} day{days !== 1 ? "s" : ""} left</p>;
+  return <p className="text-[11.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{days} days left</p>;
 }

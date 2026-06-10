@@ -7,7 +7,10 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowLeft, CheckCircle2, Clock, CreditCard, Loader2 } from "lucide-react";
+import {
+  Eye, EyeOff, ArrowLeft, CheckCircle2, Clock,
+  CreditCard, Loader2, GraduationCap, ChevronRight,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +19,7 @@ import { FormSelect } from "@/components/ui/select";
 import { memberClient, handleApiError } from "@/lib/api-client";
 import { getDepartments, getCurrentMembershipCampaign, type Department } from "@/lib/member-api";
 import type { Campaign } from "@/types";
+import { cn } from "@/lib/utils";
 
 const currentYear = new Date().getFullYear();
 const GRAD_YEAR_START = 1952;
@@ -24,69 +28,75 @@ const gradYears = Array.from(
   (_, i) => currentYear - i,
 );
 
-const schema = z.object({
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  email: z.string().email("Enter a valid email"),
-  phone: z.string().optional(),
-  studentId: z.string().min(1, "Student ID is required"),
-  graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
-  departmentId: z.string().optional(),
-  referralCode: z.string().optional(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
-}).refine((d) => d.password === d.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const schema = z
+  .object({
+    firstName: z.string().min(2, "First name is required"),
+    lastName: z.string().min(2, "Last name is required"),
+    email: z.string().email("Enter a valid email"),
+    phone: z.string().optional(),
+    studentId: z.string().min(1, "Student ID is required"),
+    graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
+    departmentId: z.string().optional(),
+    referralCode: z.string().optional(),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 type FormData = z.infer<typeof schema>;
 type Step = "form" | "otp" | "pending";
 
-const STEPS: { key: Step; label: string; short: string }[] = [
-  { key: "form", label: "Create account", short: "Account" },
-  { key: "otp", label: "Verify email", short: "Verify" },
-  { key: "pending", label: "Activate", short: "Activate" },
+/* ─────────────────────────────────────────────────────────────────────────
+   STEP INDICATOR
+   ───────────────────────────────────────────────────────────────────────── */
+const STEPS: { key: Step; label: string }[] = [
+  { key: "form",    label: "Your details" },
+  { key: "otp",     label: "Verify email" },
+  { key: "pending", label: "Activate"     },
 ];
 
 function StepIndicator({ step }: { step: Step }) {
   const current = STEPS.findIndex((s) => s.key === step);
   return (
-    <div className="flex items-center w-full mb-8">
+    <div className="flex items-center justify-center gap-0 mb-8">
       {STEPS.map((s, i) => {
-        const done = i < current;
+        const done   = i < current;
         const active = i === current;
         return (
-          <div key={s.key} className="flex items-center flex-1 min-w-0">
-            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+          <div key={s.key} className="flex items-center">
+            {/* Circle */}
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
               <div
-                className={[
-                  "flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs font-bold transition-all duration-300",
-                  done
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : active
-                    ? "bg-primary/10 border-primary text-primary"
-                    : "bg-muted/40 border-border text-muted-foreground",
-                ].join(" ")}
+                className={cn(
+                  "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-all duration-300",
+                  done   && "bg-primary border-primary text-white",
+                  active && "border-primary bg-primary/10 text-primary",
+                  !done && !active && "border-border bg-background text-muted-foreground",
+                )}
               >
-                {done ? <CheckCircle2 size={14} /> : i + 1}
+                {done ? <CheckCircle2 size={13} /> : i + 1}
               </div>
               <span
-                className={[
+                className={cn(
                   "text-[10px] font-medium leading-none whitespace-nowrap",
-                  active ? "text-primary" : done ? "text-foreground/70" : "text-muted-foreground",
-                ].join(" ")}
+                  active && "text-primary",
+                  done   && "text-foreground/60",
+                  !done && !active && "text-muted-foreground",
+                )}
               >
-                <span className="hidden sm:inline">{s.label}</span>
-                <span className="sm:hidden">{s.short}</span>
+                {s.label}
               </span>
             </div>
+            {/* Connector */}
             {i < STEPS.length - 1 && (
               <div
-                className={[
-                  "flex-1 h-[2px] mx-2 mt-[-12px] rounded-full transition-all duration-500",
+                className={cn(
+                  "w-16 h-[2px] mx-2 mt-[-12px] rounded-full transition-all duration-500 shrink-0",
                   done ? "bg-primary" : "bg-border",
-                ].join(" ")}
+                )}
               />
             )}
           </div>
@@ -96,22 +106,24 @@ function StepIndicator({ step }: { step: Step }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   HELPERS
+   ───────────────────────────────────────────────────────────────────────── */
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-GH", {
-    style: "currency",
-    currency: "GHS",
-    minimumFractionDigits: 2,
+    style: "currency", currency: "GHS", minimumFractionDigits: 2,
   }).format(amount);
 }
 
 function formatDeadline(dateStr: string) {
   return new Intl.DateTimeFormat("en-GH", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+    day: "numeric", month: "long", year: "numeric",
   }).format(new Date(dateStr));
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MEMBERSHIP CAMPAIGN CARD
+   ───────────────────────────────────────────────────────────────────────── */
 function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email: string }) {
   const daysLeft = Math.max(
     0,
@@ -119,55 +131,71 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
   );
 
   return (
-    <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-primary/5 to-primary/10 overflow-hidden">
+    <div
+      className="rounded-xl border overflow-hidden"
+      style={{ borderColor: "var(--color-border-info)", background: "var(--color-background-info)" }}
+    >
       {campaign.bannerImageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={campaign.bannerImageUrl}
           alt={campaign.title}
-          className="w-full h-28 object-cover"
+          className="w-full h-24 object-cover"
         />
       )}
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-3">
+        {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-primary/80 uppercase tracking-widest mb-1">
-              Membership Activation {campaign.membershipYear}
+            <p
+              className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1"
+              style={{ color: "var(--primary)" }}
+            >
+              Membership {campaign.membershipYear}
             </p>
-            <h3 className="text-base font-bold text-foreground leading-tight line-clamp-2">{campaign.title}</h3>
+            <h3 className="text-[14px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>
+              {campaign.title}
+            </h3>
           </div>
-          <div className="flex-shrink-0 text-right">
-            <p className="text-xl font-extrabold text-primary">{formatCurrency(campaign.amountPerMember)}</p>
-            <p className="text-[10px] text-muted-foreground">per member</p>
+          <div className="shrink-0 text-right">
+            <p className="text-[20px] font-bold" style={{ color: "var(--primary)" }}>
+              {formatCurrency(campaign.amountPerMember)}
+            </p>
+            <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>per member</p>
           </div>
         </div>
 
         {campaign.description && (
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{campaign.description}</p>
+          <p className="text-[12.5px] leading-relaxed line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
+            {campaign.description}
+          </p>
         )}
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Clock size={11} className="flex-shrink-0" />
-            <span>Closes {formatDeadline(campaign.deadline)}</span>
-          </div>
+        {/* Meta */}
+        <div className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+          <Clock size={11} className="shrink-0" />
+          <span>Closes {formatDeadline(campaign.deadline)}</span>
           {daysLeft > 0 && (
-            <span className={["font-semibold", daysLeft <= 7 ? "text-destructive" : "text-amber-600 dark:text-amber-400"].join(" ")}>
-              {daysLeft}d left
+            <span
+              className="font-semibold ml-1"
+              style={{ color: daysLeft <= 7 ? "var(--destructive)" : "var(--color-text-warning, #b45309)" }}
+            >
+              · {daysLeft}d left
             </span>
           )}
         </div>
 
+        {/* CTA */}
         <Link
           href={`/activate-membership/${campaign.id}${email ? `?email=${encodeURIComponent(email)}` : ""}`}
-          className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-2.5 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: "var(--primary)" }}
         >
-          <CreditCard size={15} />
-          Activate membership — {formatCurrency(campaign.amountPerMember)}
+          <CreditCard size={14} />
+          Activate — {formatCurrency(campaign.amountPerMember)}
         </Link>
 
-        <p className="text-center text-[10px] text-muted-foreground leading-relaxed">
-          Payment acts as proof of your alumni status and speeds up account approval.
+        <p className="text-center text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+          Payment confirms your alumni status and speeds up approval.
         </p>
       </div>
     </div>
@@ -178,26 +206,28 @@ function MembershipCampaignSection({ email }: { email: string }) {
   const [campaign, setCampaign] = useState<Campaign | null | undefined>(undefined);
 
   useEffect(() => {
-    getCurrentMembershipCampaign()
-      .then((c) => setCampaign(c))
-      .catch(() => setCampaign(null));
+    getCurrentMembershipCampaign().then(setCampaign).catch(() => setCampaign(null));
   }, []);
 
   if (campaign === undefined) {
     return (
-      <div className="rounded-2xl border border-border bg-muted/20 p-6 flex items-center justify-center gap-3 text-sm text-muted-foreground">
-        <Loader2 size={16} className="animate-spin" />
-        Checking membership campaigns...
+      <div className="rounded-xl border p-5 flex items-center gap-3 text-[13px]"
+        style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
+        <Loader2 size={15} className="animate-spin shrink-0" />
+        Checking for active campaigns…
       </div>
     );
   }
 
   if (!campaign) {
     return (
-      <div className="rounded-2xl border border-secondary/30 bg-secondary/5 p-4 space-y-2">
-        <p className="text-sm font-semibold text-foreground">Membership activation</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          There is no active membership campaign for {currentYear} yet. Once your account is approved, you can activate your membership from your dashboard or contact the alumni office.
+      <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--secondary)" }}>
+        <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--foreground)" }}>
+          Membership activation
+        </p>
+        <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+          No active campaign for {currentYear} yet. You can activate your membership from your
+          dashboard once approved, or contact the alumni office directly.
         </p>
       </div>
     );
@@ -206,14 +236,60 @@ function MembershipCampaignSection({ email }: { email: string }) {
   return <MembershipCampaignCard campaign={campaign} email={email} />;
 }
 
-export default function RegisterPage() {
+/* ─────────────────────────────────────────────────────────────────────────
+   FIELD ERROR
+   ───────────────────────────────────────────────────────────────────────── */
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
   return (
-    <Suspense>
-      <RegisterForm />
-    </Suspense>
+    <p className="text-[12px] font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+      {message}
+    </p>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PASSWORD INPUT
+   ───────────────────────────────────────────────────────────────────────── */
+function PasswordInput({
+  id, placeholder, show, onToggle, registration, error,
+}: {
+  id: string;
+  placeholder: string;
+  show: boolean;
+  onToggle: () => void;
+  registration: ReturnType<ReturnType<typeof useForm<FormData>>["register"]>;
+  error?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="relative">
+        <Input
+          id={id}
+          type={show ? "text" : "password"}
+          placeholder={placeholder}
+          error={!!error}
+          className="h-11 text-[14px] pr-11"
+          {...registration}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-0 top-0 h-full w-11 flex items-center justify-center transition-colors"
+          style={{ color: "var(--muted-foreground)" }}
+          aria-label={show ? "Hide password" : "Show password"}
+        >
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+      <FieldError message={error} />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   REGISTER FORM
+   ───────────────────────────────────────────────────────────────────────── */
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -228,12 +304,11 @@ function RegisterForm() {
   const [resendsLeft, setResendsLeft] = useState(3);
   const [departments, setDepartments] = useState<Department[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const refCode = searchParams.get("ref") ?? "";
 
   useEffect(() => {
     getDepartments().then(setDepartments).catch(() => {});
   }, []);
-
-  const refCode = searchParams.get("ref") ?? "";
 
   const {
     register,
@@ -313,375 +388,396 @@ function RegisterForm() {
     }
   }
 
+  /* ── Sub-step navigation ── */
+  async function nextFromStep1() {
+    const ok = await trigger(["firstName", "lastName", "email"]);
+    if (ok) setFormSubStep(2);
+  }
+  async function nextFromStep2() {
+    const ok = await trigger(["studentId", "graduationYear"]);
+    if (ok) setFormSubStep(3);
+  }
+
   return (
-    <div className="w-full animate-in fade-in slide-in-from-bottom-6 duration-700">
+    <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+
       {/* Mobile logo */}
-      <div className="mb-8 text-center md:hidden">
-        <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-white/15">
-          <span className="text-xl font-bold text-primary-foreground">UM</span>
+      <div className="flex items-center gap-3 mb-8 md:hidden">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
+          <GraduationCap size={17} color="white" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">UMaT Alumni</h1>
-        <p className="text-muted-foreground text-sm mt-1">Connecting gold-standard graduates</p>
+        <span className="text-[14px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
+          UMaT Alumni Portal
+        </span>
       </div>
 
-      <div className="space-y-6">
-        {/* Step indicator */}
-        <StepIndicator step={step} />
+      {/* Step indicator */}
+      <StepIndicator step={step} />
 
-        {/* Step heading */}
-        <div className="space-y-1.5">
-          <div className="text-xs font-semibold tracking-widest text-primary/80 uppercase">Member portal</div>
-          {step === "form" && (
-            <>
-              <h1 className="text-[26px] font-bold text-foreground">
-                {formSubStep === 1 && "Personal info"}
-                {formSubStep === 2 && "Your alumni info"}
-                {formSubStep === 3 && "Secure your account"}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {formSubStep === 1 && "Let's start with the basics."}
-                {formSubStep === 2 && "Help us verify your alumni status."}
-                {formSubStep === 3 && "Choose a strong password for your account."}
-              </p>
-            </>
-          )}
-          {step === "otp" && (
-            <>
-              <h1 className="text-[26px] font-bold text-foreground">Verify your email</h1>
-              <p className="text-sm text-muted-foreground">
-                We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>. Enter it below to confirm your address.
-              </p>
-            </>
-          )}
-          {step === "pending" && (
-            <>
-              <h1 className="text-[26px] font-bold text-foreground">Almost there!</h1>
-              <p className="text-sm text-muted-foreground">Your email is verified. Complete the steps below to speed up your approval.</p>
-            </>
-          )}
-        </div>
+      {/* ══════════════════════════════════════════════
+          STEP: FORM
+      ══════════════════════════════════════════════ */}
+      {step === "form" && (
+        <>
+          {/* Heading */}
+          <div className="mb-6">
+            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+              {formSubStep === 1 && "Step 1 of 3"}
+              {formSubStep === 2 && "Step 2 of 3"}
+              {formSubStep === 3 && "Step 3 of 3"}
+            </p>
+            <h1
+              className="font-[family-name:var(--font-display)] mb-1"
+              style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}
+            >
+              {formSubStep === 1 && "Personal details"}
+              {formSubStep === 2 && "Alumni information"}
+              {formSubStep === 3 && "Secure your account"}
+            </h1>
+            <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+              {formSubStep === 1 && "Start with your basic contact information."}
+              {formSubStep === 2 && "Help us verify your connection to UMaT."}
+              {formSubStep === 3 && "Choose a strong password to protect your account."}
+            </p>
+          </div>
 
-        {/* ── Step 1: Registration form (3 sub-steps) ───────────── */}
-        {step === "form" && (
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-5"
-          >
-            {/* Sub-step progress */}
-            <div className="flex items-center gap-2">
-              {([1, 2, 3] as const).map((n) => (
-                <div
-                  key={n}
-                  className={[
-                    "h-1 flex-1 rounded-full transition-all duration-300",
-                    n < formSubStep
-                      ? "bg-primary"
-                      : n === formSubStep
-                      ? "bg-primary/50"
-                      : "bg-border",
-                  ].join(" ")}
-                />
-              ))}
-              <span className="text-[11px] text-muted-foreground font-medium whitespace-nowrap ml-1">
-                {formSubStep} / 3
-              </span>
-            </div>
+          {/* Sub-step progress — minimal dots */}
+          <div className="flex gap-1.5 mb-6">
+            {([1, 2, 3] as const).map((n) => (
+              <div
+                key={n}
+                className={cn(
+                  "h-1 rounded-full transition-all duration-300",
+                  n < formSubStep  ? "flex-1 bg-primary" :
+                  n === formSubStep ? "flex-[2] bg-primary/50" :
+                                      "flex-1 bg-border",
+                )}
+              />
+            ))}
+          </div>
 
-            {/* Sub-step 1 — Personal info */}
+          <form onSubmit={handleSubmit(onSubmit)}>
+
+            {/* ── Sub-step 1: Personal info ── */}
             {formSubStep === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First name</Label>
-                    <Input id="firstName" placeholder="Kwame" autoFocus {...register("firstName")} />
-                    {errors.firstName && <p className="text-xs text-destructive">{errors.firstName.message}</p>}
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="firstName" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      First name
+                    </Label>
+                    <Input id="firstName" placeholder="Kwame" autoFocus error={!!errors.firstName}
+                      className="h-11 text-[14px]" {...register("firstName")} />
+                    <FieldError message={errors.firstName?.message} />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last name</Label>
-                    <Input id="lastName" placeholder="Mensah" {...register("lastName")} />
-                    {errors.lastName && <p className="text-xs text-destructive">{errors.lastName.message}</p>}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="lastName" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      Last name
+                    </Label>
+                    <Input id="lastName" placeholder="Mensah" error={!!errors.lastName}
+                      className="h-11 text-[14px]" {...register("lastName")} />
+                    <FieldError message={errors.lastName?.message} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
-                  <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">
-                    Phone number <span className="text-muted-foreground font-normal">(optional)</span>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Email address
                   </Label>
-                  <Input id="phone" type="tel" placeholder="+233 XX XXX XXXX" {...register("phone")} />
+                  <Input id="email" type="email" placeholder="you@example.com" error={!!errors.email}
+                    className="h-11 text-[14px]" {...register("email")} />
+                  <FieldError message={errors.email?.message} />
                 </div>
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={async () => {
-                    const ok = await trigger(["firstName", "lastName", "email"]);
-                    if (ok) setFormSubStep(2);
-                  }}
-                >
-                  Continue
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Phone{" "}
+                    <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>
+                      (optional)
+                    </span>
+                  </Label>
+                  <Input id="phone" type="tel" placeholder="+233 XX XXX XXXX"
+                    className="h-11 text-[14px]" {...register("phone")} />
+                </div>
+                <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
+                  onClick={nextFromStep1}>
+                  Continue <ChevronRight size={15} className="ml-1" />
                 </Button>
               </div>
             )}
 
-            {/* Sub-step 2 — Alumni info */}
+            {/* ── Sub-step 2: Alumni info ── */}
             {formSubStep === 2 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="space-y-2">
-                  <Label htmlFor="studentId">Student ID</Label>
-                  <Input id="studentId" placeholder="e.g. UMaT/ENG/20/0001" autoFocus {...register("studentId")} />
-                  {errors.studentId && <p className="text-xs text-destructive">{errors.studentId.message}</p>}
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
+                <div className="space-y-1.5">
+                  <Label htmlFor="studentId" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Student ID
+                  </Label>
+                  <Input id="studentId" placeholder="UMaT/ENG/20/0001" autoFocus error={!!errors.studentId}
+                    className="h-11 text-[14px]" {...register("studentId")} />
+                  <FieldError message={errors.studentId?.message} />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="graduationYear">Graduation year</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      Graduation year
+                    </Label>
                     <FormSelect
                       value={watch("graduationYear") ? String(watch("graduationYear")) : ""}
-                      onValueChange={(v) =>
-                        setValue("graduationYear", Number(v) as unknown as number, { shouldValidate: true })
-                      }
+                      onValueChange={(v) => setValue("graduationYear", Number(v) as unknown as number, { shouldValidate: true })}
                       placeholder="Select year"
                       options={gradYears.map((y) => ({ value: String(y), label: String(y) }))}
                     />
-                    {errors.graduationYear && <p className="text-xs text-destructive">{errors.graduationYear.message}</p>}
+                    <FieldError message={errors.graduationYear?.message} />
                   </div>
                   {departments.length > 0 && (
-                    <div className="space-y-2">
-                      <Label htmlFor="departmentId">
-                        Department <span className="text-muted-foreground font-normal">(optional)</span>
+                    <div className="space-y-1.5">
+                      <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                        Department{" "}
+                        <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
                       </Label>
                       <FormSelect
                         value={watch("departmentId") ?? ""}
                         onValueChange={(v) => setValue("departmentId", v, { shouldValidate: true })}
-                        placeholder="Select department"
+                        placeholder="Select"
                         options={departments.map((d) => ({ value: d.id, label: d.name }))}
                       />
                     </div>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="referralCode">
-                    Referral code <span className="text-muted-foreground font-normal">(optional)</span>
+                <div className="space-y-1.5">
+                  <Label htmlFor="referralCode" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Referral code{" "}
+                    <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
                   </Label>
-                  <Input
-                    id="referralCode"
-                    placeholder="e.g. KWAMEN-A1B2C3"
-                    {...register("referralCode")}
-                    readOnly={!!refCode}
-                    className={refCode ? "bg-muted" : ""}
-                  />
+                  <Input id="referralCode" placeholder="e.g. KWAMEN-A1B2C3"
+                    readOnly={!!refCode} className={cn("h-11 text-[14px]", refCode && "bg-secondary")}
+                    {...register("referralCode")} />
                   {refCode && (
-                    <p className="text-xs text-muted-foreground">You were referred by a fellow alumnus!</p>
+                    <p className="text-[12px]" style={{ color: "var(--primary)" }}>
+                      You were referred by a fellow alumnus.
+                    </p>
                   )}
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setFormSubStep(1)}
-                  >
-                    <ArrowLeft size={14} className="mr-1" /> Back
+                <div className="flex gap-3 mt-1">
+                  <Button type="button" variant="outline" className="flex-1 text-[14px] font-medium" style={{ height: 44 }}
+                    onClick={() => setFormSubStep(1)}>
+                    <ArrowLeft size={14} className="mr-1.5" /> Back
                   </Button>
-                  <Button
-                    type="button"
-                    className="flex-1"
-                    onClick={async () => {
-                      const ok = await trigger(["studentId", "graduationYear"]);
-                      if (ok) setFormSubStep(3);
-                    }}
-                  >
-                    Continue
+                  <Button type="button" className="flex-[2] text-[14px] font-semibold" style={{ height: 44 }}
+                    onClick={nextFromStep2}>
+                    Continue <ChevronRight size={15} className="ml-1" />
                   </Button>
                 </div>
               </div>
             )}
 
-            {/* Sub-step 3 — Password */}
+            {/* ── Sub-step 3: Password ── */}
             {formSubStep === 3 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Min 8 characters"
-                      autoFocus
-                      {...register("password")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Password
+                  </Label>
+                  <PasswordInput
+                    id="password"
+                    placeholder="Min. 8 characters"
+                    show={showPassword}
+                    onToggle={() => setShowPassword(s => !s)}
+                    registration={register("password")}
+                    error={errors.password?.message}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm password</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Repeat your password"
-                      {...register("confirmPassword")}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Confirm password
+                  </Label>
+                  <PasswordInput
+                    id="confirmPassword"
+                    placeholder="Repeat your password"
+                    show={showConfirmPassword}
+                    onToggle={() => setShowConfirmPassword(s => !s)}
+                    registration={register("confirmPassword")}
+                    error={errors.confirmPassword?.message}
+                  />
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setFormSubStep(2)}
-                  >
-                    <ArrowLeft size={14} className="mr-1" /> Back
+                <div className="flex gap-3 mt-1">
+                  <Button type="button" variant="outline" className="flex-1 text-[14px] font-medium" style={{ height: 44 }}
+                    onClick={() => setFormSubStep(2)}>
+                    <ArrowLeft size={14} className="mr-1.5" /> Back
                   </Button>
-                  <Button type="submit" className="flex-1" isLoading={isSubmitting} loadingText="Submitting...">
+                  <Button type="submit" className="flex-[2] text-[14px] font-semibold" style={{ height: 44 }}
+                    isLoading={isSubmitting} loadingText="Creating account…">
                     Create account
                   </Button>
                 </div>
               </div>
             )}
+
           </form>
-        )}
 
-        {/* ── Step 2: OTP Verification ───────────────────────────── */}
-        {step === "otp" && (
-          <div className="space-y-6">
-            <div className="flex justify-center gap-2 sm:gap-3" onPaste={handleOtpPaste}>
-              {otp.map((digit, i) => (
-                <input
-                  key={i}
-                  ref={(el) => { inputRefs.current[i] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(i, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  className="h-12 w-12 sm:h-14 sm:w-14 rounded-[10px] border border-input bg-background/50 text-center text-xl font-bold transition-all duration-150 ease-out focus:border-ring/50 focus:outline-none focus:ring-2 focus:ring-ring/15 focus:bg-background"
-                />
-              ))}
-            </div>
-
-            <Button
-              className="w-full"
-              onClick={verifyOtp}
-              isLoading={verifying}
-              loadingText="Verifying..."
-              disabled={otp.join("").length !== 6}
-            >
-              Verify &amp; continue
-            </Button>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Didn&apos;t receive the code?{" "}
-              {resendsLeft > 0 ? (
-                <button
-                  type="button"
-                  onClick={resendOtp}
-                  disabled={resending}
-                  className="text-primary hover:underline font-medium disabled:opacity-50"
-                >
-                  {resending ? "Sending..." : `Resend code (${resendsLeft} left)`}
-                </button>
-              ) : (
-                <span className="text-destructive font-medium">No resend attempts remaining</span>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => { setStep("form"); setFormSubStep(1); setOtp(["", "", "", "", "", ""]); }}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mx-auto transition-colors"
-            >
-              <ArrowLeft size={14} /> Back to registration form
-            </button>
-          </div>
-        )}
-
-        {/* ── Step 3: Pending approval + Membership activation ────── */}
-        {step === "pending" && (
-          <div className="space-y-5">
-            {/* Status checklist */}
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-green-500/10 border border-green-500/20">
-                  <CheckCircle2 size={18} className="text-green-500" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">Email verified</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Registration submitted for <span className="font-medium text-foreground">{email}</span>
-                  </p>
-                </div>
-              </div>
-              <div className="h-px bg-border" />
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/20">
-                  <Clock size={18} className="text-amber-500" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">Awaiting admin approval</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Our team reviews your details. This usually takes up to 24 hours.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Membership activation section */}
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">Activate your membership</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Paying the membership activation fee confirms your alumni status and helps us approve your account faster.
-                </p>
-              </div>
-              <MembershipCampaignSection email={email} />
-            </div>
-
-            {/* Footer actions */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end pt-1">
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => { setStep("form"); setFormSubStep(1); setOtp(["", "", "", "", "", ""]); }}
-              >
-                Register another account
-              </Button>
-              <Button className="w-full sm:w-auto" onClick={() => router.push("/login")}>
-                Go to login
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === "form" && (
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-[13px] mt-6" style={{ color: "var(--muted-foreground)" }}>
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline font-medium">
+            <Link href="/login" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>
               Sign in
             </Link>
           </p>
-        )}
-      </div>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════
+          STEP: OTP
+      ══════════════════════════════════════════════ */}
+      {step === "otp" && (
+        <div className="animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="mb-7">
+            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+              Step 2 of 3
+            </p>
+            <h1 className="font-[family-name:var(--font-display)] mb-1"
+              style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}>
+              Check your email
+            </h1>
+            <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+              We sent a 6-digit code to{" "}
+              <span className="font-semibold" style={{ color: "var(--foreground)" }}>{email}</span>.
+              Enter it below.
+            </p>
+          </div>
+
+          {/* OTP inputs */}
+          <div className="flex justify-center gap-2 mb-6" onPaste={handleOtpPaste}>
+            {otp.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { inputRefs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(i, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                className={cn(
+                  "h-12 w-12 rounded-xl border text-center text-xl font-bold transition-all duration-150",
+                  "focus:outline-none focus:ring-2 focus:ring-offset-0",
+                  digit
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-input bg-background text-foreground focus:border-primary focus:ring-primary/20",
+                )}
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              />
+            ))}
+          </div>
+
+          <Button
+            className="w-full text-[14px] font-semibold mb-4"
+            style={{ height: 44 }}
+            onClick={verifyOtp}
+            isLoading={verifying}
+            loadingText="Verifying…"
+            disabled={otp.join("").length !== 6}
+          >
+            Verify &amp; continue
+          </Button>
+
+          <div className="text-center text-[13px] mb-5" style={{ color: "var(--muted-foreground)" }}>
+            Didn't receive it?{" "}
+            {resendsLeft > 0 ? (
+              <button type="button" onClick={resendOtp} disabled={resending}
+                className="font-semibold hover:underline disabled:opacity-50 transition-opacity"
+                style={{ color: "var(--primary)" }}>
+                {resending ? "Sending…" : `Resend (${resendsLeft} left)`}
+              </button>
+            ) : (
+              <span className="font-semibold text-destructive">No resend attempts left</span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => { setStep("form"); setFormSubStep(1); setOtp(["", "", "", "", "", ""]); }}
+            className="flex items-center gap-1.5 text-[13px] mx-auto transition-colors hover:underline"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            <ArrowLeft size={13} /> Back to registration
+          </button>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════
+          STEP: PENDING
+      ══════════════════════════════════════════════ */}
+      {step === "pending" && (
+        <div className="animate-in fade-in slide-in-from-bottom-3 duration-300 space-y-5">
+          <div className="mb-2">
+            <h1 className="font-[family-name:var(--font-display)] mb-1"
+              style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}>
+              You're almost in.
+            </h1>
+            <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+              Email verified. Complete the step below to speed up approval.
+            </p>
+          </div>
+
+          {/* Status card */}
+          <div className="rounded-xl border divide-y" style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center gap-3 p-4">
+              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)" }}>
+                <CheckCircle2 size={16} className="text-green-500" />
+              </div>
+              <div>
+                <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>Email verified</p>
+                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>{email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-4">
+              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                <Clock size={16} style={{ color: "#d97706" }} />
+              </div>
+              <div>
+                <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>Awaiting admin review</p>
+                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Usually within 24 hours</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Membership activation */}
+          <div>
+            <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--foreground)" }}>
+              Activate your membership
+            </p>
+            <p className="text-[12.5px] mb-3" style={{ color: "var(--muted-foreground)" }}>
+              Paying the activation fee confirms your alumni status and helps us approve you faster.
+            </p>
+            <MembershipCampaignSection email={email} />
+          </div>
+
+          {/* Footer actions */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-1">
+            <Button variant="outline" className="flex-1 text-[13.5px] font-medium" style={{ height: 42 }}
+              onClick={() => { setStep("form"); setFormSubStep(1); setOtp(["", "", "", "", "", ""]); }}>
+              Register another account
+            </Button>
+            <Button className="flex-1 text-[13.5px] font-semibold" style={{ height: 42 }}
+              onClick={() => router.push("/login")}>
+              Go to sign in
+            </Button>
+          </div>
+        </div>
+      )}
+
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full flex items-center justify-center py-20">
+        <Loader2 size={26} className="animate-spin" style={{ color: "var(--primary)" }} />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

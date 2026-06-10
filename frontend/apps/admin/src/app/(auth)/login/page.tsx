@@ -16,15 +16,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
 
 const schema = z.object({
-  email: z.string().email("Enter a valid email"),
+  email:    z.string().email("Enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
-
 type FormData = z.infer<typeof schema>;
 
 export default function AdminLoginPage() {
   const { login } = useAuth();
-  const router = useRouter();
+  const router    = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -37,37 +36,59 @@ export default function AdminLoginPage() {
     try {
       await login(data);
       router.push("/dashboard");
-      toast.success("Welcome back, Admin!", {
-        description: "You're now signed in to the admin portal.",
+      toast.success("Welcome back.", {
+        description: "You're signed in to the admin portal.",
       });
     } catch (err) {
-      toast.error("Sign in failed", {
-        description: handleApiError(err),
-      });
+      toast.error("Sign-in failed", { description: handleApiError(err) });
     }
   }
 
   return (
-    <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
-      {/* Mobile logo (visible when banner is hidden) */}
-      <div className="mb-10 text-center md:hidden">
-        <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-white/15 bg-white/10">
-          <img src="/umat-logo.svg" alt="UMaT Logo" width={56} height={56} className="object-contain" />
+    <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* Mobile logo — only visible when the left panel is hidden */}
+      <div className="mb-8 md:hidden flex flex-col items-center gap-3">
+        <div
+          className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center"
+          style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}
+        >
+          {/* Plain img — Next.js <Image> doesn't handle local SVGs reliably */}
+          <img src="/umat-logo.svg" alt="UMaT Logo" width={40} height={40} className="object-contain" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">UMaT Alumni</h1>
-        <p className="text-muted-foreground text-sm mt-1">Admin Portal</p>
+        <div className="text-center">
+          <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>UMaT Alumni</p>
+          <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Admin portal</p>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        <div className="space-y-3">
-          <div className="text-sm font-semibold tracking-widest text-primary/90 uppercase">Admin portal</div>
-          <h1 className="text-[26px] font-bold text-foreground">Sign in to manage the platform</h1>
-          <p className="text-sm text-muted-foreground">Access member, event, and contribution tools in one place.</p>
+      <div className="space-y-7">
+
+        {/* Heading */}
+        <div className="space-y-2">
+          <p
+            className="text-[11.5px] font-bold tracking-[0.1em] uppercase"
+            style={{ color: "var(--primary)" }}
+          >
+            Admin portal
+          </p>
+          <h1
+            className="font-[family-name:var(--font-display)] leading-tight"
+            style={{ fontSize: "clamp(1.5rem, 3vw, 1.75rem)", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}
+          >
+            Sign in to manage the platform
+          </h1>
+          <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+            Access member, event, and contribution tools in one place.
+          </p>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+          {/* Email */}
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-[13px] font-semibold text-foreground/80">
+            <Label htmlFor="email" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
               Email address
             </Label>
             <Input
@@ -85,14 +106,16 @@ export default function AdminLoginPage() {
             )}
           </div>
 
+          {/* Password */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-[13px] font-semibold text-foreground/80">
+              <Label htmlFor="password" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                 Password
               </Label>
               <Link
                 href="/forgot-password"
-                className="text-[12px] text-primary hover:text-primary/80 transition-colors font-semibold"
+                className="text-[12.5px] font-semibold transition-colors hover:underline"
+                style={{ color: "var(--primary)" }}
               >
                 Forgot password?
               </Link>
@@ -108,11 +131,12 @@ export default function AdminLoginPage() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0 top-0 h-full w-12 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-0 top-0 h-full w-12 flex items-center justify-center transition-colors"
+                style={{ color: "var(--muted-foreground)" }}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             {errors.password && (
@@ -122,12 +146,13 @@ export default function AdminLoginPage() {
             )}
           </div>
 
+          {/* Submit */}
           <Button
             type="submit"
-            className="w-full h-13 text-[15px] font-semibold shadow-sm hover:shadow-md transition-all mt-2"
-            style={{ height: "52px" }}
+            className="w-full font-semibold text-[15px] mt-1"
+            style={{ height: 52 }}
             isLoading={isSubmitting}
-            loadingText="Signing you in..."
+            loadingText="Signing in…"
           >
             Sign in
           </Button>

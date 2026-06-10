@@ -2,37 +2,48 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Copy, Check, Send, Loader2, Gift } from "lucide-react";
+import { UserPlus, Copy, Check, Send, Loader2, Gift, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/utils";
 import { getReferralInfo, sendReferralInvite, getMyReferrals } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 
+const statusVariant: Record<string, "info" | "success" | "secondary"> = {
+  Pending:       "info",
+  Registered:    "success",
+  MembershipPaid: "success",
+};
+const statusLabel: Record<string, string> = {
+  Pending:       "Pending",
+  Registered:    "Registered",
+  MembershipPaid: "Activated",
+};
+
 export default function ReferralsPage() {
-  const [email, setEmail] = useState("");
+  const [email,  setEmail]  = useState("");
   const [copied, setCopied] = useState(false);
   const qc = useQueryClient();
 
   const { data: info, isLoading: loadingInfo } = useQuery({
     queryKey: ["m-referral-info"],
-    queryFn: getReferralInfo,
+    queryFn:  getReferralInfo,
   });
 
   const { data: referrals, isLoading: loadingReferrals } = useQuery({
     queryKey: ["m-referrals-list"],
-    queryFn: getMyReferrals,
+    queryFn:  getMyReferrals,
   });
 
   const inviteMut = useMutation({
     mutationFn: () => sendReferralInvite(email),
     onSuccess: () => {
-      toast.success("Invitation sent!");
+      toast.success("Invitation sent.");
       setEmail("");
       qc.invalidateQueries({ queryKey: ["m-referral-info"] });
       qc.invalidateQueries({ queryKey: ["m-referrals-list"] });
@@ -40,135 +51,202 @@ export default function ReferralsPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  const handleCopy = () => {
-    if (info?.referralCode) {
-      navigator.clipboard.writeText(info.referralCode);
-      setCopied(true);
-      toast.success("Referral code copied!");
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const statusVariant: Record<string, "info" | "success" | "secondary"> = {
-    Pending: "info",
-    Registered: "success",
-    MembershipPaid: "success",
-  };
-
-  const statusLabel: Record<string, string> = {
-    Pending: "Pending",
-    Registered: "Registered",
-    MembershipPaid: "Activated",
-  };
+  function handleCopy() {
+    if (!info?.referralCode) return;
+    navigator.clipboard.writeText(info.referralCode);
+    setCopied(true);
+    toast.success("Referral code copied.");
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
-    <div className="p-2 lg:px-6 lg:py-5 w-full max-w-[1400px] mx-auto space-y-6 sm:space-y-8 lg:space-y-10 selection:bg-primary/20">
-      <header className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground">
-          Refer a Friend
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base lg:text-lg font-medium leading-relaxed max-w-2xl">
-          Invite fellow UMaT alumni to join the community. Earn recognition and badges for successful referrals!
-        </p>
-      </header>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[900px] mx-auto space-y-6 sm:space-y-8">
 
+      {/* ── Header ── */}
+      <div>
+        <h1
+          className="font-[family-name:var(--font-display)] tracking-tight"
+          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
+        >
+          Refer a friend
+        </h1>
+        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+          Invite fellow UMaT alumni to join the community.
+        </p>
+      </div>
+
+      {/* ── Stats + code + invite ── */}
       {loadingInfo ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : info && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-primary">{info.totalReferrals}</p>
-                <p className="text-sm text-muted-foreground">Total Referrals</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-green-600">{info.registeredReferrals}</p>
-                <p className="text-sm text-muted-foreground">Registered</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <p className="text-3xl font-bold text-amber-500">{info.pendingReferrals}</p>
-                <p className="text-sm text-muted-foreground">Pending</p>
-              </CardContent>
-            </Card>
+        <div className="space-y-4">
+
+          {/* Stat tiles */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: Users,   value: info.totalReferrals,      label: "Total",     color: "var(--primary)"  },
+              { icon: Check,   value: info.registeredReferrals, label: "Registered", color: "#059669"        },
+              { icon: Clock,   value: info.pendingReferrals,    label: "Pending",    color: "#d97706"        },
+            ].map(({ icon: Icon, value, label, color }) => (
+              <div
+                key={label}
+                className="rounded-2xl border p-4 flex flex-col gap-2"
+                style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              >
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                >
+                  <Icon size={14} style={{ color: "var(--primary)" }} />
+                </div>
+                <p
+                  className="font-[family-name:var(--font-display)] font-bold tabular-nums leading-none"
+                  style={{ fontSize: "1.75rem", color, letterSpacing: "-0.02em" }}
+                >
+                  {value}
+                </p>
+                <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
+              </div>
+            ))}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Gift className="w-5 h-5 text-primary" />
-                Your Referral Code
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-2.5 bg-muted rounded-lg font-mono text-lg tracking-wider text-center">
-                  {info.referralCode}
-                </code>
-                <Button variant="outline" size="icon" onClick={handleCopy}>
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
+          {/* Referral code */}
+          <div
+            className="rounded-2xl border p-5 space-y-3"
+            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+          >
+            <div className="flex items-center gap-2">
+              <Gift size={15} style={{ color: "var(--primary)" }} />
+              <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
+                Your referral code
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div
+                className="flex-1 flex items-center justify-center rounded-xl px-4 py-3 font-mono text-[18px] font-bold tracking-widest select-all"
+                style={{
+                  background:    "var(--secondary)",
+                  border:        "1px solid var(--border)",
+                  color:         "var(--foreground)",
+                  letterSpacing: "0.15em",
+                }}
+              >
+                {info.referralCode}
               </div>
-              {info.hasReferrerBadge && (
-                <Badge variant="success" className="gap-1">
-                  🏆 Referrer Badge Earned
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
+              <Button
+                variant="outline"
+                onClick={handleCopy}
+                className="shrink-0 gap-1.5 font-semibold text-[13px]"
+                style={{ height: 46 }}
+              >
+                {copied
+                  ? <><Check size={14} className="text-green-600" /> Copied</>
+                  : <><Copy size={14} /> Copy</>}
+              </Button>
+            </div>
+            {info.hasReferrerBadge && (
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold"
+                style={{ background: "rgba(245,158,11,0.1)", color: "#d97706", border: "1px solid rgba(245,158,11,0.2)" }}
+              >
+                🏆 Referrer badge earned
+              </div>
+            )}
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Send className="w-5 h-5 text-primary" />
-                Send Invitation
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          {/* Send invite */}
+          <div
+            className="rounded-2xl border p-5 space-y-3"
+            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+          >
+            <div className="flex items-center gap-2">
+              <Send size={14} style={{ color: "var(--primary)" }} />
+              <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
+                Send an invitation
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                Email address
+              </Label>
               <div className="flex gap-2">
                 <Input
+                  id="invite-email"
                   type="email"
-                  placeholder="Enter email address"
+                  placeholder="colleague@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && email.trim() && inviteMut.mutate()}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && email.trim() && inviteMut.mutate()}
+                  className="h-11 text-[14px] flex-1"
                 />
-                <Button onClick={() => inviteMut.mutate()} disabled={!email.trim() || inviteMut.isPending}>
-                  {inviteMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                <Button
+                  onClick={() => inviteMut.mutate()}
+                  disabled={!email.trim() || inviteMut.isPending}
+                  className="gap-2 font-semibold text-[13.5px] shrink-0"
+                  style={{ height: 44 }}
+                >
+                  {inviteMut.isPending
+                    ? <Loader2 size={15} className="animate-spin" />
+                    : <><UserPlus size={15} /> Send invite</>}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </>
+            </div>
+          </div>
+
+        </div>
       )}
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold">Referral History</h2>
+      {/* ── Referral history ── */}
+      <div className="space-y-3">
+        <h2
+          className="font-[family-name:var(--font-display)] font-bold"
+          style={{ fontSize: "1rem", color: "var(--foreground)" }}
+        >
+          Referral history
+        </h2>
+
         {loadingReferrals ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
           </div>
         ) : !referrals?.length ? (
-          <EmptyState icon={<UserPlus size={48} />} title="No referrals yet" description="Start inviting fellow alumni to grow the community!" />
+          <EmptyState
+            icon={<UserPlus size={40} />}
+            title="No referrals yet"
+            description="Share your referral code or send an invitation above to get started."
+          />
         ) : (
           <div className="space-y-2">
-            {referrals.map((r) => (
-              <Card key={r.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <p className="font-medium text-sm">{r.referredEmail}</p>
-                    {r.referredMemberName && <p className="text-xs text-muted-foreground">{r.referredMemberName}</p>}
-                    <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
+            {referrals.map(r => (
+              <div
+                key={r.id}
+                className="rounded-2xl border flex items-center justify-between gap-4 px-4 py-3.5"
+                style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              >
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+                    {r.referredMemberName ?? r.referredEmail}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                    {r.referredMemberName && (
+                      <p className="text-[12.5px] truncate" style={{ color: "var(--muted-foreground)" }}>
+                        {r.referredEmail}
+                      </p>
+                    )}
+                    <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+                      {formatDate(r.createdAt)}
+                    </p>
                   </div>
-                  <Badge variant={statusVariant[r.status] ?? "secondary"}>{statusLabel[r.status] ?? r.status}</Badge>
-                </CardContent>
-              </Card>
+                </div>
+                <Badge
+                  variant={statusVariant[r.status] ?? "secondary"}
+                  className="text-[11px] font-semibold shrink-0"
+                >
+                  {statusLabel[r.status] ?? r.status}
+                </Badge>
+              </div>
             ))}
           </div>
         )}
