@@ -1,0 +1,29 @@
+[Unit]
+Description=Alumni Portal Platform Frontend (Next.js standalone)
+After=network.target alumni-platform-api.service
+Wants=alumni-platform-api.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/alumunion/frontend-platform
+ExecStart=/usr/bin/node apps/platform/server.js
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStartSec=120
+SyslogIdentifier=alumni-frontend-platform
+StandardOutput=journal
+StandardError=journal
+
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=PORT=3003
+Environment=HOSTNAME=127.0.0.1
+# No *_API_INTERNAL_URL needed — unlike institution/member, this app has no
+# SSR tenant-theme fetch; its api-client.ts already defaults to same-origin
+# "/api/v1", which Nginx proxies to platform-api on the browser side.
+
+[Install]
+WantedBy=multi-user.target

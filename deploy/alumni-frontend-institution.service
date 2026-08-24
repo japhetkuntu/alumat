@@ -1,0 +1,31 @@
+[Unit]
+Description=Alumni Portal Institution Frontend (Next.js standalone)
+After=network.target alumni-institution-api.service
+Wants=alumni-institution-api.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/alumunion/frontend-institution
+ExecStart=/usr/bin/node apps/institution/server.js
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStartSec=120
+SyslogIdentifier=alumni-frontend-institution
+StandardOutput=journal
+StandardError=journal
+
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+# Loopback-only — Nginx is the only thing that talks to this port.
+Environment=PORT=3001
+Environment=HOSTNAME=127.0.0.1
+# Server-side only (never reaches the browser) — used by src/lib/theme.ts's
+# SSR tenant-theme fetch, which can't rely on a same-origin relative URL the
+# way the browser bundle does. Points at the loopback API port directly.
+Environment=INSTITUTION_API_INTERNAL_URL=http://127.0.0.1:5001/api/v1
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+[Unit]
+Description=Alumni Portal Platform API
+After=network.target postgresql.service redis-server.service alumni-institution-api.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/alumunion/platform-api
+ExecStart=/usr/bin/dotnet /var/www/alumunion/platform-api/ReservEase.Alumni.Platform.Api.dll
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStartSec=300
+SyslogIdentifier=alumni-platform-api
+StandardOutput=journal
+StandardError=journal
+
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5003
+Environment=DOTNET_NOLOGO=1
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+Environment=DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+EnvironmentFile=/etc/alumunion/platform-api.env
+
+[Install]
+WantedBy=multi-user.target

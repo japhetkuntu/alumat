@@ -1,0 +1,28 @@
+[Unit]
+Description=Alumni Portal Member Frontend (Next.js standalone)
+After=network.target alumni-member-api.service
+Wants=alumni-member-api.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/alumunion/frontend-member
+ExecStart=/usr/bin/node apps/member/server.js
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStartSec=120
+SyslogIdentifier=alumni-frontend-member
+StandardOutput=journal
+StandardError=journal
+
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=PORT=3002
+Environment=HOSTNAME=127.0.0.1
+# Server-side only — see src/lib/theme.ts's SSR tenant-theme fetch.
+Environment=MEMBER_API_INTERNAL_URL=http://127.0.0.1:5002/api/v1
+
+[Install]
+WantedBy=multi-user.target
