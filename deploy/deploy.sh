@@ -45,9 +45,6 @@ check_disk_space() {
   fi
 }
 
-echo "== checking disk space =="
-check_disk_space
-
 echo "== pulling latest source =="
 cd "$SRC_DIR"
 git pull
