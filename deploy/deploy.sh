@@ -25,7 +25,11 @@ wait_healthy() {
   return 1
 }
 
-MIN_FREE_GB=3
+# Override with e.g. `MIN_FREE_GB=2 sudo -E bash deploy.sh` if you're on a
+# small droplet and have already freed what you reasonably can — this is a
+# safety check, not a hard requirement; the real fix for a droplet that's
+# consistently this tight is more disk, not a lower number here.
+MIN_FREE_GB="${MIN_FREE_GB:-2}"
 check_disk_space() {
   local free_gb
   free_gb=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
@@ -35,7 +39,8 @@ check_disk_space() {
     echo "  dotnet nuget locals all --clear"
     echo "  find $BACKEND_SRC -type d \\( -name bin -o -name obj \\) -exec rm -rf {} +"
     echo "  apt-get clean && journalctl --vacuum-time=3d"
-    echo "If that's not enough, resize the droplet's disk (DigitalOcean dashboard → Resize)."
+    echo "If that's not enough, resize the droplet's disk (DigitalOcean dashboard → Resize),"
+    echo "or lower this check: MIN_FREE_GB=2 sudo -E bash deploy.sh"
     exit 1
   fi
 }
