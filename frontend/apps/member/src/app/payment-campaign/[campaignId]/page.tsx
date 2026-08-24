@@ -72,7 +72,10 @@ export default function PublicCampaignContributionPage() {
       const amountToPay = campaign?.isMembershipCampaign
         ? campaign.amountPerMember
         : Number(amount || campaign?.amountPerMember || 0);
-      return initiatePaystackPaymentGuest({ campaignId, amount: amountToPay, email });
+      // Built client-side so the Paystack redirect lands back on THIS
+      // institution's own subdomain, not the backend's shared fallback host.
+      const callbackUrl = `${window.location.origin}/contributions/callback`;
+      return initiatePaystackPaymentGuest({ campaignId, amount: amountToPay, email, callbackUrl });
     },
     onSuccess: (result: { authorizationUrl: string; reference: string }) => {
       setPaymentStatus("Payment initiated — redirecting…");

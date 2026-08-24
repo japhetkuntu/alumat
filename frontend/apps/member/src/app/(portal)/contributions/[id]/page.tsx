@@ -49,10 +49,14 @@ export default function CampaignDetailPage() {
   });
 
   const payMut = useMutation({
-    mutationFn: (payAmount: number) =>
-      campaign?.isMembershipCampaign
-        ? renewMembership(id, 1, "online")
-        : initiatePaystackPayment({ campaignId: id, amount: payAmount }),
+    mutationFn: (payAmount: number) => {
+      // Built client-side so the Paystack redirect lands back on THIS
+      // institution's own subdomain, not the backend's shared fallback host.
+      const callbackUrl = `${window.location.origin}/contributions/callback`;
+      return campaign?.isMembershipCampaign
+        ? renewMembership(id, 1, "online", callbackUrl)
+        : initiatePaystackPayment({ campaignId: id, amount: payAmount, callbackUrl });
+    },
     onSuccess: (data: { authorizationUrl?: string }) => {
       if (data?.authorizationUrl) window.location.href = data.authorizationUrl;
       else toast.success("Payment initiated.");

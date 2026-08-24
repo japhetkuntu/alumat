@@ -137,8 +137,8 @@ export async function getMyCurrentYearUnpaidMembershipCampaigns(): Promise<Campa
   return res.data.data ?? [];
 }
 
-export async function renewMembership(campaignId: string, years = 1, paymentMethod: "online" | "manual" = "online") {
-  const res = await memberClient.post("/contributions/membership/renew", { campaignId, years, paymentMethod });
+export async function renewMembership(campaignId: string, years = 1, paymentMethod: "online" | "manual" = "online", callbackUrl?: string) {
+  const res = await memberClient.post("/contributions/membership/renew", { campaignId, years, paymentMethod, callbackUrl });
   return res.data.data;
 }
 
@@ -149,7 +149,7 @@ export async function getMyContributions(params?: { page?: number; pageSize?: nu
   return res.data.data!;
 }
 
-export interface InitiatePaystackBody { campaignId: string; amount: number; }
+export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; }
 export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; }
 
 export async function initiatePaystackPayment(body: InitiatePaystackBody) {

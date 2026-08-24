@@ -418,8 +418,16 @@ export default function MemberContributionsPage() {
     .reduce((sum, c) => sum + c.amount, 0);
 
   const payMut = useMutation({
-    mutationFn: ({ campaignId, amount, isMembership }: { campaignId: string; amount: number; isMembership?: boolean }) =>
-      isMembership ? renewMembership(campaignId, 1, "online") : initiatePaystackPayment({ campaignId, amount }),
+    mutationFn: ({ campaignId, amount, isMembership }: { campaignId: string; amount: number; isMembership?: boolean }) => {
+      // Built client-side (not baked into the backend's shared PaystackConfig
+      // fallback) so the Paystack redirect lands back on THIS institution's
+      // own subdomain, not the bare platform domain — see activate-membership's
+      // callbackOrigin comment for the same reasoning.
+      const callbackUrl = `${window.location.origin}/contributions/callback`;
+      return isMembership
+        ? renewMembership(campaignId, 1, "online", callbackUrl)
+        : initiatePaystackPayment({ campaignId, amount, callbackUrl });
+    },
     onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
       if (data?.authorizationUrl) {
         if (data.reference) {
