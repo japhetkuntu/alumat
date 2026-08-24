@@ -3,21 +3,23 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, MessageSquare, Pin, Lock, Clock, Search } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FormSelect } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { formatDate } from "@/lib/utils";
+import { Pagination } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { FormSelect } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getForumCategories, getForumThreads, createThread } from "@/lib/member-api";
-import { CardSkeleton } from "@/components/ui/skeleton";
+import { CardSkeleton } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState } from "@alumni/ui";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
 
 /* Safe date formatter — never throws on bad input */
 function safeDate(value: string | null | undefined): string {
@@ -81,18 +83,10 @@ export default function MemberForumPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1
-            className="font-[family-name:var(--font-display)] tracking-tight"
-            style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-          >
-            Community forum
-          </h1>
-          <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-            Discuss, share ideas, and connect with fellow UMaT alumni.
-          </p>
-        </div>
+      <PageHeader
+        title="Forum"
+        description="Ask questions, share knowledge, and keep the conversation moving."
+      >
         <Button
           onClick={() => setShowNewThread(v => !v)}
           className="shrink-0 gap-2 font-semibold text-[13.5px]"
@@ -100,7 +94,7 @@ export default function MemberForumPage() {
         >
           <Plus size={14} /> New thread
         </Button>
-      </div>
+      </PageHeader>
 
       {/* ── New thread form ── */}
       {showNewThread && (
@@ -257,38 +251,24 @@ export default function MemberForumPage() {
         <div className="space-y-2">
           {threads.map(t => (
             <Link key={t.id} href={`/forum/${t.id}`} className="block group">
-              <div
-                className="rounded-2xl border p-4 sm:p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm"
-                style={{ borderColor: "var(--border)", background: "var(--background)" }}
-              >
+              <div className="card p-4 sm:p-5 transition-all duration-150 hover:-translate-y-0.5">
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0 space-y-2">
 
                     {/* Labels */}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {t.categoryName && (
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10.5px] font-semibold"
-                          style={{ background: "var(--color-background-info)", color: "var(--primary)", border: "1px solid var(--color-border-info)" }}
-                        >
-                          {t.categoryName}
-                        </span>
+                        <Badge variant="info" size="sm">{t.categoryName}</Badge>
                       )}
                       {t.isPinned && (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold"
-                          style={{ background: "rgba(249,115,22,0.08)", color: "#ea580c", border: "1px solid rgba(249,115,22,0.2)" }}
-                        >
+                        <Badge variant="warning" size="sm" className="gap-1">
                           <Pin size={9} /> Pinned
-                        </span>
+                        </Badge>
                       )}
                       {t.isClosed && (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold"
-                          style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
-                        >
+                        <Badge variant="neutral" size="sm" className="gap-1">
                           <Lock size={9} /> Closed
-                        </span>
+                        </Badge>
                       )}
                     </div>
 

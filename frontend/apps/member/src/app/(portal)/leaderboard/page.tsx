@@ -2,13 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Trophy, Medal, TrendingUp, Users, CreditCard, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { formatCurrency } from "@alumni/ui";
 import { getLeaderboard } from "@/lib/member-api";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { cn } from "@/lib/utils";
+import { cn } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 
 /* Medal colours */
 const RANK_STYLE = [
@@ -52,17 +53,11 @@ export default function LeaderboardPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
       {/* ── Header ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          Year group leaderboard
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          See how your graduating class ranks against others through membership, contributions, and events.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Community progress"
+        title="Class leaderboard"
+        description="See how your graduating class ranks against others through membership, contributions, and events."
+      />
 
       {/* ── List ── */}
       {isLoading ? (
@@ -84,13 +79,9 @@ export default function LeaderboardPage() {
               <div
                 key={entry.yearGroup}
                 className={cn(
-                  "rounded-2xl border transition-all duration-150",
-                  isMyYear && "ring-2 ring-primary/25",
+                  "card transition-all duration-150",
+                  isMyYear && "ring-2 ring-primary/25 bg-primary/5 border-primary/30",
                 )}
-                style={{
-                  borderColor: isMyYear ? "var(--primary)" : "var(--border)",
-                  background:  isMyYear ? "var(--color-background-info)" : "var(--background)",
-                }}
               >
                 <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5">
 

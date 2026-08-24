@@ -1,16 +1,67 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { LucideIcon } from "lucide-react";
 import {
   GraduationCap, Users, Briefcase, Heart, Globe,
   Menu, X, ArrowRight, ChevronRight,
   BookOpen, Trophy, CreditCard, Bell,
   MapPin, Zap, Shield, Star, Award, ChevronDown,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@alumni/ui";
+import { cn } from "@alumni/ui";
+import { publicMemberClient } from "@/lib/api-client";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DYNAMIC CONTENT — Stories and the news banner are editable by both the
+   platform team and this institution's own admins (see the Landing content
+   tab in the Platform Portal / Institution Portal settings). Everything
+   else on this page stays static for now.
+   ───────────────────────────────────────────────────────────────────────── */
+const STORY_ICONS: Record<string, LucideIcon> = {
+  Briefcase, Users, CreditCard, BookOpen, Globe, Heart, Trophy, Bell,
+  GraduationCap, Shield, MapPin, Zap, Star, Award,
+};
+const STORY_FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80",
+];
+
+interface DynamicLandingStory {
+  icon: string;
+  eyebrow: string;
+  scenario: string;
+  description: string;
+  imageUrl?: string | null;
+}
+
+interface DynamicNewsBanner {
+  enabled: boolean;
+  text: string;
+  linkText?: string | null;
+  linkUrl?: string | null;
+}
+
+interface LandingContent {
+  landingPageStories: DynamicLandingStory[];
+  newsBanner: DynamicNewsBanner | null;
+}
+
+function useLandingContent() {
+  const { data } = useQuery({
+    queryKey: ["member-landing-content"],
+    queryFn: async () => {
+      const res = await publicMemberClient.get<{ data: LandingContent }>("/public/institution/theme");
+      return res.data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  return data;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    UNSPLASH IMAGE URLS
@@ -38,18 +89,18 @@ const NAV_LINKS = [
 ];
 
 const FEATURES = [
-  { icon: Briefcase,  label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards." },
+  { icon: Briefcase,  label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true },
   { icon: Users,      label: "Directory",     title: "Find any grad in seconds",      desc: "Search by class year, department, company, or country." },
   { icon: CreditCard, label: "Contributions", title: "Fund what matters",             desc: "Alumni-led campaigns for labs, scholarships, and campus improvements." },
   { icon: BookOpen,   label: "Class Notes",   title: "Keep the conversation going",   desc: "Post milestones, share knowledge, trade stories by graduation year." },
   { icon: Globe,      label: "Events",        title: "Never miss a reunion",          desc: "Homecomings, webinars, networking nights — RSVP in one place." },
-  { icon: Heart,      label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do." },
+  { icon: Heart,      label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true },
   { icon: Trophy,     label: "Spotlights",    title: "Celebrate the wins",            desc: "Recognition for alumni making a difference in their fields." },
   { icon: Bell,       label: "Notifications", title: "Hear about what you care about", desc: "Jobs, campaigns, event invites — you choose what reaches you." },
 ];
 
 const STATS = [
-  { end: 5000, suffix: "+",    label: "Alumni registered",     desc: "Verified UMaT graduates"          },
+  { end: 5000, suffix: "+",    label: "Alumni registered",     desc: "Verified graduates"          },
   { end: 120,  suffix: "+",    label: "Countries represented", desc: "A truly global network"            },
   { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised in campaigns", desc: "Funding labs & scholarships" },
   { end: 300,  suffix: "+",    label: "Jobs posted",           desc: "Roles shared by alumni employers"  },
@@ -75,12 +126,12 @@ const USE_CASES = [
     eyebrow: "Mentorship",
     image: IMG.storyMentor,
     scenario: "The mentor who's already done it",
-    desc: "Every programme, every career path — there's a UMaT graduate ahead of you on that road. The mentorship feature is how you find them.",
+    desc: "Every programme, every career path — there's a graduate ahead of you on that road. The mentorship feature is how you find them.",
   },
 ];
 
 const HOW_IT_WORKS = [
-  { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your UMaT details. No long forms, no waiting for approval emails." },
+  { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your alumni details. No long forms, no waiting for approval emails." },
   { n: "02", icon: MapPin,  title: "Build out your profile",        desc: "Add your career, company, location. The more context you give, the easier it is for the right people to find you." },
   { n: "03", icon: Zap,    title: "Use it",                         desc: "Browse jobs, back a campaign, request a mentor, or just show up in the directory so others can reach you." },
 ];
@@ -91,22 +142,22 @@ const SPOTLIGHTS = [
     badge: "New appointment",
     badgeIcon: Star,
     image: IMG.vcIncoming,
-    name: "Prof. Bernard Kumi-Boateng",
-    role: "Vice Chancellor-Elect · Effective 1 August 2026",
-    teaser: "A UMaT PhD alumnus appointed to lead the very university he graduated from.",
-    full: "Prof. Bernard Kumi-Boateng earned his PhD in Geomatic Engineering right here at UMaT in 2012, and has spent nearly two decades building the institution he once studied at — rising from Lecturer to Full Professor, serving as Head of Department, Dean of Students, Dean of Planning and Quality Assurance, and most recently as Dean of the Faculty of Geosciences and Environmental Studies. On 13 April 2026, the University Council appointed him as Vice Chancellor effective 1 August 2026, following a rigorous national and international search. He is a Licensed Surveyor, a Fellow of WAIMM, and a Visiting Professor at universities in The Gambia and Kenya.",
-    readMoreUrl: "https://umat.edu.gh/media-press/news/professor-bernard-kumi-boateng-appointed-vice-chancellor-of-the-university-of-mines-and-technology",
+    name: "Dr. Alex Mensah",
+    role: "Vice Chancellor-Elect · Effective this year",
+    teaser: "An alumnus appointed to lead the very institution they graduated from.",
+    full: "Alumni leadership spotlights like this one celebrate graduates who go on to shape the institutions and industries around them — new appointments, awards, publications, and milestones your community will want to see. Institution staff can publish spotlights like this one directly from the Institution Portal.",
+    readMoreUrl: "#",
   },
   {
     type: "outgoing" as const,
     badge: "A tribute",
     badgeIcon: Award,
     image: IMG.vcOutgoing,
-    name: "Prof. Richard Kwesi Amankwah",
-    role: "Vice Chancellor · 2020–2026",
-    teaser: "Six years of steady, transformative leadership. Thank you, Prof. Amankwah.",
-    full: "Prof. Richard Kwesi Amankwah took office in August 2020 and leaves behind a university with stronger research partnerships, deeper industry ties, and a higher international profile. A Professor of Minerals Engineering with a PhD from Queen's University, Canada, he helped raise approximately $10 million in research funding, held visiting professorships across Africa, and was recognised as a 'Lecturer Icon' by the Students Representative Council. The entire alumni community thanks him for six years of dedicated service.",
-    readMoreUrl: "https://umat.edu.gh/the-vice-chancellor",
+    name: "Dr. Jordan Kwarteng",
+    role: "Vice Chancellor · Outgoing",
+    teaser: "Years of steady, transformative leadership — thank you.",
+    full: "Tribute spotlights recognize outgoing leaders and long-serving staff, giving the alumni community a place to reflect on someone's impact. This is example content — replace it with your own institution's real spotlights from the Institution Portal.",
+    readMoreUrl: "#",
   },
 ];
 
@@ -179,29 +230,19 @@ function Section({ id, children, className, style }: {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   STAT CARD
+   STAT ROW — for the dark full-bleed stats band (no card chrome)
    ───────────────────────────────────────────────────────────────────────── */
-function StatCard({ stat, active, delay }: { stat: typeof STATS[number]; active: boolean; delay: string }) {
+function StatRow({ stat, active, delay, index }: { stat: typeof STATS[number]; active: boolean; delay: string; index: number }) {
   const count = useCounter(stat.end, active);
   const { ref, visible } = useFadeUp();
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn("card card__content transition-all duration-700 hover:-translate-y-1", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
-      <div className="mb-4">
-        {stat.prefix && (
-          <p className="text-[11px] font-semibold tracking-wide uppercase mb-0.5" style={{ color: "var(--primary)", opacity: 0.7 }}>
-            {stat.prefix}
-          </p>
-        )}
-        <p className="font-[family-name:var(--font-display)] leading-none tabular-nums break-words"
-          style={{ fontSize: "clamp(1.8rem,3.5vw,2.4rem)", fontWeight: 700, color: "var(--primary)", letterSpacing: "-0.02em" }}>
-          {count.toLocaleString()}{stat.suffix}
-        </p>
-      </div>
-      <div className="pt-4 border-t" style={{ borderColor: "var(--border)" }}>
-        <p className="text-[14px] font-semibold mb-0.5" style={{ color: "var(--foreground)" }}>{stat.label}</p>
-        {stat.desc && <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>{stat.desc}</p>}
-      </div>
+      className={cn("px-5 py-1 sm:px-8 transition-all duration-700", index === 0 && "pl-0", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
+      <p className="font-[family-name:var(--font-display)] leading-none tabular-nums break-words mb-2"
+        style={{ fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, color: "var(--background)", letterSpacing: "-0.02em" }}>
+        {stat.prefix}{count.toLocaleString()}{stat.suffix}
+      </p>
+      <p className="text-[12.5px] font-medium" style={{ color: "color-mix(in oklch, var(--background) 65%, transparent)" }}>{stat.label}</p>
     </div>
   );
 }
@@ -211,24 +252,32 @@ function StatCard({ stat, active, delay }: { stat: typeof STATS[number]; active:
    ───────────────────────────────────────────────────────────────────────── */
 function FeatureCard({ feature, delay }: { feature: typeof FEATURES[number]; delay: string }) {
   const { ref, visible } = useFadeUp();
+  const big = "big" in feature && feature.big;
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn("card group transition-all duration-500 hover:-translate-y-1 hover:shadow-sm", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
-      <div className="card__content">
-        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-4 transition-colors duration-200"
+      className={cn(
+        "card group transition-all duration-500 hover:-translate-y-1 hover:shadow-sm",
+        big && "sm:col-span-2",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+      )}>
+      <div className={cn("card__content", big && "sm:flex sm:items-center sm:gap-6")}>
+        <div className={cn("w-10 h-10 rounded-[10px] flex items-center justify-center transition-colors duration-200 shrink-0",
+          big ? "sm:w-14 sm:h-14 mb-4 sm:mb-0" : "mb-4")}
           style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-          <feature.icon size={17} style={{ color: "var(--primary)" }} />
+          <feature.icon size={big ? 20 : 17} className={big ? "sm:size-6" : ""} style={{ color: "var(--primary)" }} />
         </div>
-        <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
-          {feature.label}
-        </p>
-        <h3 className="text-[14px] font-semibold leading-snug mb-2 group-hover:text-primary transition-colors duration-200"
-          style={{ color: "var(--foreground)" }}>
-          {feature.title}
-        </h3>
-        <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-          {feature.desc}
-        </p>
+        <div>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
+            {feature.label}
+          </p>
+          <h3 className={cn("font-semibold leading-snug mb-2 group-hover:text-primary transition-colors duration-200", big ? "text-[17px]" : "text-[14px]")}
+            style={{ color: "var(--foreground)" }}>
+            {feature.title}
+          </h3>
+          <p className={cn("leading-relaxed", big ? "text-[13.5px] max-w-[42ch]" : "text-[13px]")} style={{ color: "var(--muted-foreground)" }}>
+            {feature.desc}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -244,9 +293,9 @@ function SpotlightCard({ item, delay }: { item: typeof SPOTLIGHTS[number]; delay
   const isIncoming = item.type === "incoming";
 
   return (
-    <div ref={ref} style={{ transitionDelay: delay }}
+    <div ref={ref}
       className={cn("overflow-hidden rounded-2xl border transition-all duration-700 hover:shadow-md", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6")}
-      style={{ borderColor: isIncoming ? "var(--color-border-info)" : "var(--border)", background: "var(--background)" }}>
+      style={{ transitionDelay: delay, borderColor: isIncoming ? "var(--color-border-info)" : "var(--border)", background: "var(--background)" }}>
 
       {/* ── Photo banner ── */}
       <div className="relative w-full overflow-hidden" style={{ height: 210 }}>
@@ -302,7 +351,15 @@ function SpotlightCard({ item, delay }: { item: typeof SPOTLIGHTS[number]; delay
 /* ─────────────────────────────────────────────────────────────────────────
    USE CASE CARD — with photo banner
    ───────────────────────────────────────────────────────────────────────── */
-function UseCaseCard({ item, delay }: { item: typeof USE_CASES[number]; delay: string }) {
+interface UseCaseItem {
+  icon: LucideIcon;
+  eyebrow: string;
+  image: string;
+  scenario: string;
+  desc: string;
+}
+
+function UseCaseCard({ item, delay }: { item: UseCaseItem; delay: string }) {
   const { ref, visible } = useFadeUp();
   return (
     <div ref={ref} style={{ transitionDelay: `${delay}ms` }}
@@ -329,21 +386,52 @@ function UseCaseCard({ item, delay }: { item: typeof USE_CASES[number]; delay: s
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   HOW-IT-WORKS STEP — sits on the connecting timeline, not a boxed card
+   ───────────────────────────────────────────────────────────────────────── */
+function HowItWorksStep({ step, delay }: { step: typeof HOW_IT_WORKS[number]; delay: string }) {
+  const { ref, visible } = useFadeUp();
+  return (
+    <div ref={ref}
+      className={cn("relative transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
+      style={{ transitionDelay: delay }}>
+      <div className="relative z-10 w-11 h-11 rounded-full flex items-center justify-center mb-5"
+        style={{ background: "var(--primary)" }}>
+        <step.icon size={17} color="white" />
+      </div>
+      <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+        Step {step.n}
+      </p>
+      <h3 className="text-[16px] font-semibold mb-2 leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+      <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    ANNOUNCEMENT BANNER
    ───────────────────────────────────────────────────────────────────────── */
-function AnnouncementBanner() {
+function AnnouncementBanner({ banner }: { banner: DynamicNewsBanner }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
+  const isAnchor = banner.linkUrl?.startsWith("#");
   return (
     <div className="relative flex items-center justify-center gap-2.5 px-10 py-2.5 text-center"
       style={{ background: "var(--primary)", color: "white" }}>
       <Star size={11} className="shrink-0 opacity-75" />
       <p className="text-[12.5px] font-medium">
-        Prof. Bernard Kumi-Boateng appointed new UMaT Vice Chancellor — effective 1 August 2026.{" "}
-        <button onClick={() => scrollToSection("#spotlight")}
-          className="underline underline-offset-2 font-semibold opacity-90 hover:opacity-100 cursor-pointer">
-          See the spotlight ↓
-        </button>
+        {banner.text}{" "}
+        {banner.linkText && banner.linkUrl && (
+          isAnchor ? (
+            <button onClick={() => scrollToSection(banner.linkUrl!)}
+              className="underline underline-offset-2 font-semibold opacity-90 hover:opacity-100 cursor-pointer">
+              {banner.linkText} ↓
+            </button>
+          ) : (
+            <Link href={banner.linkUrl} className="underline underline-offset-2 font-semibold opacity-90 hover:opacity-100">
+              {banner.linkText} →
+            </Link>
+          )
+        )}
       </p>
       <button onClick={() => setDismissed(true)}
         className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100 transition-opacity"
@@ -361,6 +449,18 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsActive, setStatsActive] = useState(false);
+  const content = useLandingContent();
+
+  const stories = useMemo(() => {
+    if (!content?.landingPageStories?.length) return USE_CASES;
+    return content.landingPageStories.map((s, i) => ({
+      icon: STORY_ICONS[s.icon] ?? Star,
+      eyebrow: s.eyebrow,
+      image: s.imageUrl || STORY_FALLBACK_IMAGES[i % STORY_FALLBACK_IMAGES.length],
+      scenario: s.scenario,
+      desc: s.description,
+    }));
+  }, [content]);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -382,19 +482,22 @@ export default function LandingPage() {
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
 
       {/* ── Announcement banner ── */}
-      <AnnouncementBanner />
+      {content?.newsBanner?.enabled && content.newsBanner.text && (
+        <AnnouncementBanner banner={content.newsBanner} />
+      )}
 
       {/* ════════════════════════════════════════════════════════════════
           NAVBAR
       ════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b" style={{ background: "rgba(255,255,255,0.97)", borderColor: "var(--border)" }}>
+      <header className="sticky top-0 z-50 border-b backdrop-blur-xl"
+        style={{ background: "color-mix(in oklch, var(--background) 86%, transparent)", borderColor: "var(--border)" }}>
         <div className="section__inner flex items-center justify-between h-16 gap-4">
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
               <GraduationCap size={17} color="white" />
             </div>
-            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>UMaT Alumni</p>
+            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>Alumni Portal</p>
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
@@ -420,12 +523,12 @@ export default function LandingPage() {
         </div>
 
         {menuOpen && (
-          <div className="md:hidden fixed inset-0 top-16 z-40 flex flex-col px-5 py-5 gap-1 overflow-y-auto"
-            style={{ background: "rgba(255,255,255,0.97)", borderTop: "1px solid var(--border)" }}>
+          <div className="md:hidden fixed inset-x-0 top-16 z-40 flex flex-col px-5 py-8 gap-5 overflow-y-auto h-[calc(100dvh-4rem)]"
+            style={{ background: "var(--background)", borderTop: "1px solid var(--border)" }}>
             {NAV_LINKS.map(link => (
               <button key={link.label} onClick={() => { scrollToSection(link.href); setMenuOpen(false); }}
-                className="w-full text-left rounded-xl px-4 py-3.5 text-base font-medium transition-colors hover:bg-secondary"
-                style={{ color: "var(--muted-foreground)" }}>
+                className="w-full text-left font-[family-name:var(--font-display)] text-[26px] font-semibold transition-colors hover:text-primary"
+                style={{ color: "var(--foreground)" }}>
                 {link.label}
               </button>
             ))}
@@ -447,27 +550,27 @@ export default function LandingPage() {
         <div className="absolute -top-40 -right-40 w-[640px] h-[640px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--primary) 6%, transparent) 0%, transparent 65%)" }} />
 
-        <div className="section__inner relative pt-2 pb-24">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-start">
+        <div className="section__inner--wide relative pt-6 pb-20">
+          <div className="grid gap-x-10 gap-y-14 lg:grid-cols-[1.35fr_1fr] items-end">
 
             {/* Left col */}
-            <div>
-              <Eyebrow>Verified UMaT alumni network</Eyebrow>
-              <h1 className="font-[family-name:var(--font-display)] mb-6"
-                style={{ fontSize: "clamp(2.4rem,5.5vw,4.2rem)", fontWeight: 700, lineHeight: 1.06, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
+            <div className="lg:pr-6">
+              <Eyebrow>Verified alumni network</Eyebrow>
+              <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[19ch]"
+                style={{ fontSize: "clamp(2.4rem,4.6vw,3.75rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
                 The alumni portal{" "}
-                <span className="relative" style={{ color: "var(--primary)" }}>
+                <span className="relative whitespace-nowrap" style={{ color: "var(--primary)" }}>
                   built
                   <span className="absolute left-0 right-0 -bottom-1 h-[3px] rounded-full" style={{ background: "var(--brand-primary-light)" }} />
                 </span>{" "}
                 to connect, support, and grow together.
               </h1>
-              <p className="mb-9 max-w-[52ch]"
-                style={{ fontSize: "clamp(0.975rem,1.5vw,1.075rem)", lineHeight: 1.8, color: "var(--muted-foreground)" }}>
+              <p className="mb-10 max-w-[46ch]"
+                style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
                 One place for jobs, campaigns, mentorship, events, and verified connections —
                 built to feel modern, reliable, and easy for graduates at every stage of their career.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 mb-10">
+              <div className="flex flex-col sm:flex-row gap-3 mb-12">
                 <Link href="/register">
                   <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-[15px] font-semibold gap-2">
                     Join the network <ArrowRight size={15} />
@@ -480,99 +583,53 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              {/* Trust tiles */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Trust strip — inline, not a grid of boxes */}
+              <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
                 {[
                   { icon: GraduationCap, text: "Verified access"    },
                   { icon: Briefcase,     text: "Jobs from grads"    },
                   { icon: Heart,         text: "Mentor matching"    },
                   { icon: Globe,         text: "Events & campaigns" },
                 ].map(item => (
-                  <div key={item.text} className="card flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-0.5 cursor-default">
-                    <div className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0"
-                      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-                      <item.icon size={14} style={{ color: "var(--primary)" }} />
-                    </div>
-                    <p className="text-[12.5px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.text}</p>
+                  <div key={item.text} className="flex items-center gap-2 cursor-default">
+                    <item.icon size={15} style={{ color: "var(--primary)" }} />
+                    <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>{item.text}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right — photo card */}
-            <div className="card overflow-hidden flex flex-col lg:sticky lg:top-24"
-              style={{ boxShadow: "0 4px 32px color-mix(in oklch, var(--primary) 8%, transparent)" }}>
-
-              {/* Photo — fixed height, fills width */}
-              <div className="relative w-full shrink-0 overflow-hidden" style={{ height: 200 }}>
-                <img src={IMG.heroPanel} alt="UMaT students collaborating"
+            {/* Right — single photo, overlaid stat badge, no nested card list */}
+            <div className="relative">
+              <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: "min(72vh, 560px)", boxShadow: "0 8px 40px color-mix(in oklch, var(--primary) 12%, transparent)" }}>
+                <img src={IMG.heroPanel} alt="Students collaborating"
                   className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
-                <div className="absolute bottom-4 left-5 right-5">
-                  <p className="text-white text-[13px] font-medium leading-snug">
-                    One network. Every graduate, wherever they are.
+                  style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.72) 100%)" }} />
+
+                <div className="hidden sm:flex absolute top-5 left-5 items-center gap-2 rounded-full px-3 py-1.5"
+                  style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.25)" }}>
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#fff" }} />
+                  <span className="text-[10.5px] font-semibold tracking-[0.08em] uppercase text-white">Built around alumni needs</span>
+                </div>
+
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-white font-[family-name:var(--font-display)] leading-snug mb-3" style={{ fontSize: "1.35rem" }}>
+                    One network.<br />Every graduate, wherever they are.
                   </p>
-                </div>
-              </div>
-
-              {/* Body — grows to fill remaining card height */}
-              <div className="card__content flex flex-col flex-1">
-
-                {/* Live indicator */}
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--primary)" }} />
-                  <span className="text-[11px] font-semibold tracking-[0.1em] uppercase"
-                    style={{ color: "var(--muted-foreground)" }}>
-                    Built around alumni needs
-                  </span>
-                </div>
-
-                {/* Feature rows — flex-1 so they spread */}
-                <div className="flex flex-col flex-1" style={{ borderColor: "var(--border)" }}>
-                  {[
-                    {
-                      icon: Briefcase,
-                      title: "Everything in one place",
-                      body: "Jobs, mentorship, contributions, events — all in one tab.",
-                    },
-                    {
-                      icon: Bell,
-                      title: "Control what you see",
-                      body: "Choose the updates, campaigns, and connections that matter.",
-                    },
-                    {
-                      icon: Shield,
-                      title: "Trusted, verified network",
-                      body: "Every member is part of the UMaT community.",
-                    },
-                  ].map((item, idx) => (
-                    <div key={item.title}
-                      className={cn("flex items-start gap-3 py-4", idx < 2 && "border-b")}
-                      style={{ borderColor: "var(--border)" }}>
-                      <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
-                        style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-                        <item.icon size={14} style={{ color: "var(--primary)" }} />
-                      </div>
-                      <div>
-                        <p className="text-[13.5px] font-semibold leading-snug mb-0.5"
-                          style={{ color: "var(--foreground)" }}>{item.title}</p>
-                        <p className="text-[12.5px] leading-relaxed"
-                          style={{ color: "var(--muted-foreground)" }}>{item.body}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA — pinned to bottom */}
-                <div className="pt-5 mt-2 border-t" style={{ borderColor: "var(--border)" }}>
                   <Link href="/register">
-                    <Button className="w-full gap-2 font-semibold">
+                    <Button className="gap-2 font-semibold">
                       Create your free account <ArrowRight size={14} />
                     </Button>
                   </Link>
                 </div>
+              </div>
 
+              {/* Floating stat card — inset on the photo at mobile widths, floating clear of it from sm+ */}
+              <div className="absolute right-3 top-3 sm:-right-6 sm:-top-6 rounded-xl px-4 py-3 sm:px-5 sm:py-4"
+                style={{ background: "var(--background)", border: "1px solid var(--card-border)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)" }}>
+                <p className="font-[family-name:var(--font-display)] leading-none mb-1 text-[1.3rem] sm:text-[1.6rem]" style={{ fontWeight: 700, color: "var(--primary)" }}>5,000+</p>
+                <p className="text-[10.5px] sm:text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)" }}>Verified graduates</p>
               </div>
             </div>
 
@@ -588,11 +645,11 @@ export default function LandingPage() {
           <div className="mb-10 max-w-[52ch]">
             <Eyebrow>Alumni in leadership</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              A UMaT graduate will lead UMaT.
+              A graduate will lead their alma mater.
             </h2>
             <p style={{ color: "var(--muted-foreground)", lineHeight: 1.75 }}>
-              Prof. Bernard Kumi-Boateng — who earned his PhD at UMaT — has been appointed Vice Chancellor
-              from 1 August 2026. We also take a moment to thank his predecessor.
+              An alumnus has been appointed Vice Chancellor, effective this year.
+              We also take a moment to thank their predecessor.
             </p>
           </div>
 
@@ -617,20 +674,24 @@ export default function LandingPage() {
       </Section>
 
       {/* ════════════════════════════════════════════════════════════════
-          STATS
+          STATS — full-bleed banded row, not a card grid
       ════════════════════════════════════════════════════════════════ */}
-      <div className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="text-center mb-12">
-            <Eyebrow>Alumni impact</Eyebrow>
-            <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)" }}>
-              What UMaT alumni are already doing here.
-            </h2>
-          </div>
-          <div ref={statsRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-[var(--space-gap)]">
-            {STATS.map((stat, i) => (
-              <StatCard key={stat.label} stat={stat} active={statsActive} delay={`${i * 75}ms`} />
-            ))}
+      <div className="border-b" style={{ background: "var(--foreground)", borderColor: "var(--border)" }}>
+        <div className="section__inner--wide">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0 py-14">
+            <div className="lg:w-[280px] lg:pr-10 shrink-0">
+              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, var(--background) 55%, transparent)" }}>
+                Alumni impact
+              </p>
+              <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--background)", fontSize: "clamp(1.5rem,2.4vw,2rem)", lineHeight: 1.15 }}>
+                What alumni are already doing here.
+              </h2>
+            </div>
+            <div ref={statsRef} className="flex-1 grid grid-cols-2 md:grid-cols-4 divide-x" style={{ borderColor: "color-mix(in oklch, var(--background) 15%, transparent)" }}>
+              {STATS.map((stat, i) => (
+                <StatRow key={stat.label} stat={stat} active={statsActive} delay={`${i * 75}ms`} index={i} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -641,7 +702,7 @@ export default function LandingPage() {
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[56ch]">
-            <Eyebrow>What's inside</Eyebrow>
+            <Eyebrow>What&apos;s inside</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               One portal for every alumni need.
             </h2>
@@ -653,6 +714,15 @@ export default function LandingPage() {
             {FEATURES.map((feature, i) => (
               <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} />
             ))}
+            {/* Filler tile — closes out the bento row instead of leaving a gap */}
+            <Link href="/register" className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 transition-all duration-500 hover:-translate-y-1"
+              style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
+              <div>
+                <p className="text-[14px] font-semibold text-white mb-1">That&apos;s everything — see it live</p>
+                <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Create a free account and explore the full portal.</p>
+              </div>
+              <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
+            </Link>
           </div>
         </div>
       </Section>
@@ -668,13 +738,15 @@ export default function LandingPage() {
               The three reasons most alumni join.
             </h2>
             <p style={{ color: "var(--muted-foreground)", lineHeight: 1.75 }}>
-              These are the most common ways UMaT graduates use the portal to move forward.
+              These are the most common ways graduates use the portal to move forward.
             </p>
           </div>
 
           <div className="grid gap-[var(--space-gap)] sm:grid-cols-3">
-            {USE_CASES.map((item, i) => (
-              <UseCaseCard key={item.scenario} item={item} delay={i * 70} />
+            {stories.map((item, i) => (
+              <div key={item.scenario} className={i === 1 ? "sm:mt-8" : undefined}>
+                <UseCaseCard item={item} delay={`${i * 70}ms`} />
+              </div>
             ))}
           </div>
 
@@ -694,26 +766,17 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <Eyebrow>Getting started</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] max-w-[28ch] mx-auto" style={{ color: "var(--foreground)" }}>
-              Three steps. That's all it takes.
+              Three steps. That&apos;s all it takes.
             </h2>
           </div>
-          <div className="max-w-4xl mx-auto grid gap-[var(--space-gap)] sm:grid-cols-3">
-            {HOW_IT_WORKS.map((step, i) => (
-              <div key={step.n} className="card transition-all duration-300 hover:-translate-y-1" style={{ transitionDelay: `${i * 75}ms` }}>
-                <div className="card__content">
-                  <p className="font-[family-name:var(--font-display)] leading-none mb-5 select-none"
-                    style={{ fontSize: "3.5rem", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--brand-primary-light)" }}>
-                    {step.n}
-                  </p>
-                  <div className="w-9 h-9 rounded-[10px] flex items-center justify-center mb-4"
-                    style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-                    <step.icon size={16} style={{ color: "var(--primary)" }} />
-                  </div>
-                  <h3 className="text-[15px] font-semibold mb-2 leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
-                  <p style={{ fontSize: "0.84rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
-                </div>
-              </div>
-            ))}
+          <div className="max-w-5xl mx-auto relative">
+            {/* Connecting line — desktop only */}
+            <div className="hidden sm:block absolute top-[22px] left-[8%] right-[8%] h-px" style={{ background: "var(--border)" }} />
+            <div className="grid gap-10 sm:gap-6 sm:grid-cols-3">
+              {HOW_IT_WORKS.map((step, i) => (
+                <HowItWorksStep key={step.n} step={step} delay={`${i * 100}ms`} />
+              ))}
+            </div>
           </div>
         </div>
       </Section>
@@ -721,34 +784,37 @@ export default function LandingPage() {
       {/* ════════════════════════════════════════════════════════════════
           FINAL CTA
       ════════════════════════════════════════════════════════════════ */}
-      <Section className="border-t" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="relative overflow-hidden rounded-2xl border text-center"
-            style={{ background: "var(--background)", borderColor: "var(--card-border)", boxShadow: "0 4px 40px color-mix(in oklch, var(--primary) 7%, transparent)" }}>
-            <div className="absolute top-0 left-0 right-0 h-[3px]"
-              style={{ background: "linear-gradient(90deg, transparent, var(--primary), transparent)" }} />
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-52 rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(ellipse, color-mix(in oklch, var(--primary) 6%, transparent), transparent 70%)" }} />
+      <Section style={{ background: "var(--primary)" }}>
+        <div className="relative overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
 
-            <div className="relative px-8 py-14 sm:px-16 sm:py-16 flex flex-col items-center">
-              <Eyebrow>Take the next step</Eyebrow>
-              <h2 className="font-[family-name:var(--font-display)] mb-5 mx-auto max-w-[22ch] text-center"
-                style={{ fontSize: "clamp(1.9rem,4vw,3.2rem)", lineHeight: 1.1, color: "var(--foreground)" }}>
-                UMaT shaped you.{" "}
-                <span style={{ color: "var(--primary)" }}>Now shape what comes next.</span>
-              </h2>
-              <p className="mx-auto max-w-[46ch] mb-9"
-                style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-                Join thousands of alumni already using the portal to connect, contribute, and grow with trusted peers.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="section__inner--wide relative py-20 sm:py-24">
+            <div className="grid gap-10 lg:grid-cols-[1.2fr_auto] items-end">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  Take the next step
+                </p>
+                <h2 className="font-[family-name:var(--font-display)] mb-5 max-w-[16ch]"
+                  style={{ fontSize: "clamp(2rem,4.2vw,3.4rem)", lineHeight: 1.06, color: "white" }}>
+                  Your journey shaped you. Now shape what comes next.
+                </h2>
+                <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
+                  Join thousands of alumni already using the portal to connect, contribute, and grow with trusted peers.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
                 <Link href="/register">
-                  <Button size="lg" className="w-full sm:w-auto h-12 px-10 text-[15px] font-semibold gap-2">
+                  <Button size="lg" className="w-full h-12 px-10 text-[15px] font-semibold gap-2"
+                    style={{ background: "white", color: "var(--primary)" }}>
                     Create my account <ChevronRight size={16} />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="lg" variant="ghost" className="w-full sm:w-auto h-12 px-9 text-[15px] font-medium">
+                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[15px] font-medium"
+                    style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
                     Sign in instead
                   </Button>
                 </Link>
@@ -767,7 +833,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
               <GraduationCap size={14} color="white" />
             </div>
-            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>UMaT Alumni Portal</span>
+            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Alumni Portal</span>
           </Link>
 
           <p className="text-[11.5px] text-center" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect, useMemo, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -12,14 +13,21 @@ import {
   CreditCard, Loader2, GraduationCap, ChevronRight,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FormSelect } from "@/components/ui/select";
-import { memberClient, handleApiError } from "@/lib/api-client";
-import { getDepartments, getCurrentMembershipCampaign, type Department } from "@/lib/member-api";
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { FormSelect } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { memberClient, publicMemberClient, handleApiError, applyServerFieldErrors } from "@/lib/api-client";
+import { getDepartments, getBatches, getCurrentMembershipCampaign, type Department, type Batch } from "@/lib/member-api";
 import type { Campaign } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn } from "@alumni/ui";
+
+// Dev-only: lets a local build reach a specific institution without real
+// wildcard-subdomain DNS (see TenantResolutionMiddleware / X-Institution-Slug).
+// Ignored by the backend outside Development, and hidden here in production
+// builds since real members reach their institution via its actual subdomain.
+const SHOW_WORKSPACE_FIELD = process.env.NODE_ENV === "development";
 
 const currentYear = new Date().getFullYear();
 const GRAD_YEAR_START = 1952;
@@ -28,25 +36,30 @@ const gradYears = Array.from(
   (_, i) => currentYear - i,
 );
 
-const schema = z
-  .object({
-    firstName: z.string().min(2, "First name is required"),
-    lastName: z.string().min(2, "Last name is required"),
-    email: z.string().email("Enter a valid email"),
-    phone: z.string().optional(),
-    studentId: z.string().min(1, "Student ID is required"),
-    graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
-    departmentId: z.string().optional(),
-    referralCode: z.string().optional(),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+// Whether Student ID is required varies per institution (platform-configured
+// via RequireStudentId — see the theme fetch below), so the schema is built
+// dynamically instead of being a fixed module-level constant.
+function buildSchema(requireStudentId: boolean) {
+  return z
+    .object({
+      firstName: z.string().min(2, "First name is required"),
+      lastName: z.string().min(2, "Last name is required"),
+      email: z.string().email("Enter a valid email"),
+      phone: z.string().optional(),
+      studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
+      graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
+      departmentId: z.string().optional(),
+      referralCode: z.string().optional(),
+      password: z.string().min(8, "Password must be at least 8 characters"),
+      confirmPassword: z.string(),
+    })
+    .refine((d) => d.password === d.confirmPassword, {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    });
+}
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<ReturnType<typeof buildSchema>>;
 type Step = "form" | "otp" | "pending";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -125,16 +138,14 @@ function formatDeadline(dateStr: string) {
    MEMBERSHIP CAMPAIGN CARD
    ───────────────────────────────────────────────────────────────────────── */
 function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email: string }) {
+  const [now] = useState(() => Date.now());
   const daysLeft = Math.max(
     0,
-    Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / 86_400_000),
+    Math.ceil((new Date(campaign.deadline).getTime() - now) / 86_400_000),
   );
 
   return (
-    <div
-      className="rounded-xl border overflow-hidden"
-      style={{ borderColor: "var(--color-border-info)", background: "var(--color-background-info)" }}
-    >
+    <div className="rounded-xl border border-border overflow-hidden bg-primary/5">
       {campaign.bannerImageUrl && (
         <img
           src={campaign.bannerImageUrl}
@@ -145,13 +156,8 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
       <div className="p-4 space-y-3">
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p
-              className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1"
-              style={{ color: "var(--primary)" }}
-            >
-              Membership {campaign.membershipYear}
-            </p>
+          <div className="flex-1 min-w-0 space-y-1">
+            <Badge variant="default">Membership {campaign.membershipYear}</Badge>
             <h3 className="text-[14px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>
               {campaign.title}
             </h3>
@@ -177,7 +183,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
           {daysLeft > 0 && (
             <span
               className="font-semibold ml-1"
-              style={{ color: daysLeft <= 7 ? "var(--destructive)" : "var(--color-text-warning, #b45309)" }}
+              style={{ color: daysLeft <= 7 ? "var(--destructive)" : "var(--warning)" }}
             >
               · {daysLeft}d left
             </span>
@@ -303,12 +309,58 @@ function RegisterForm() {
   const [resending, setResending] = useState(false);
   const [resendsLeft, setResendsLeft] = useState(3);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  // Starts "" to match SSR (localStorage isn't available server-side), then
+  // syncs from any previously-saved workspace slug once mounted client-side.
+  const [workspaceSlug, setWorkspaceSlug] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const refCode = searchParams.get("ref") ?? "";
 
   useEffect(() => {
-    getDepartments().then(setDepartments).catch(() => {});
+    if (SHOW_WORKSPACE_FIELD) {
+      setWorkspaceSlug(localStorage.getItem("institution_slug") ?? "");
+    }
   }, []);
+
+  function updateWorkspaceSlug(value: string) {
+    setWorkspaceSlug(value);
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed) {
+      localStorage.setItem("institution_slug", trimmed);
+      // Mirrored into a cookie so the server-side theme fetch in layout.tsx
+      // (no access to localStorage) can also forward X-Institution-Slug.
+      document.cookie = `institution_slug=${trimmed}; path=/; max-age=2592000; samesite=lax`;
+    } else {
+      localStorage.removeItem("institution_slug");
+      document.cookie = "institution_slug=; path=/; max-age=0";
+    }
+  }
+
+  useEffect(() => {
+    getDepartments().then(setDepartments).catch(() => {});
+    getBatches().then(setBatches).catch(() => {});
+  }, []);
+
+  // Institutions that haven't set up their own batches yet fall back to the
+  // platform's generic year range, so registration never breaks for them.
+  const graduationYearOptions = batches.length > 0
+    ? batches.map((b) => ({ value: String(b.year), label: b.name }))
+    : gradYears.map((y) => ({ value: String(y), label: String(y) }));
+
+  // Whether Student ID is required is per-institution config (RequireStudentId),
+  // defaulting to true (the previous, always-required behavior) until the
+  // real value loads, so the field never briefly appears optional by mistake.
+  const { data: theme } = useQuery({
+    queryKey: ["m-register-institution-theme"],
+    queryFn: async () => {
+      const res = await publicMemberClient.get<{ data: { requireStudentId: boolean } }>("/public/institution/theme");
+      return res.data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const requireStudentId = theme?.requireStudentId ?? true;
+  const schema = useMemo(() => buildSchema(requireStudentId), [requireStudentId]);
 
   const {
     register,
@@ -316,6 +368,7 @@ function RegisterForm() {
     watch,
     setValue,
     trigger,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -330,7 +383,8 @@ function RegisterForm() {
       setResendsLeft(3);
       toast.success("Verification code sent to your email");
     } catch (err) {
-      toast.error(handleApiError(err));
+      const appliedToField = applyServerFieldErrors<FormData>(err, setError);
+      if (!appliedToField) toast.error(handleApiError(err));
     }
   }
 
@@ -406,8 +460,8 @@ function RegisterForm() {
         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
           <GraduationCap size={17} color="white" />
         </div>
-        <span className="text-[14px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
-          UMaT Alumni Portal
+        <span className="font-[family-name:var(--font-display)] text-[14px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
+          Alumni Portal
         </span>
       </div>
 
@@ -436,7 +490,7 @@ function RegisterForm() {
             </h1>
             <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
               {formSubStep === 1 && "Start with your basic contact information."}
-              {formSubStep === 2 && "Help us verify your connection to UMaT."}
+              {formSubStep === 2 && "Help us verify your connection to your institution."}
               {formSubStep === 3 && "Choose a strong password to protect your account."}
             </p>
           </div>
@@ -461,6 +515,23 @@ function RegisterForm() {
             {/* ── Sub-step 1: Personal info ── */}
             {formSubStep === 1 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
+                {SHOW_WORKSPACE_FIELD && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="workspace" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      Workspace (dev only)
+                    </Label>
+                    <Input
+                      id="workspace"
+                      placeholder="greenfield"
+                      className="h-11 text-[14px]"
+                      value={workspaceSlug}
+                      onChange={(e) => updateWorkspaceSlug(e.target.value)}
+                    />
+                    <p className="text-[12px] text-muted-foreground">
+                      Institution slug — stands in for real subdomain routing until wildcard DNS is set up.
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="firstName" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
@@ -509,9 +580,9 @@ function RegisterForm() {
               <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
                 <div className="space-y-1.5">
                   <Label htmlFor="studentId" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Student ID
+                    Student ID{!requireStudentId && <span className="font-normal text-muted-foreground"> (optional)</span>}
                   </Label>
-                  <Input id="studentId" placeholder="UMaT/ENG/20/0001" autoFocus error={!!errors.studentId}
+                  <Input id="studentId" placeholder="ENG/20/0001" autoFocus error={!!errors.studentId}
                     className="h-11 text-[14px]" {...register("studentId")} />
                   <FieldError message={errors.studentId?.message} />
                 </div>
@@ -524,7 +595,7 @@ function RegisterForm() {
                       value={watch("graduationYear") ? String(watch("graduationYear")) : ""}
                       onValueChange={(v) => setValue("graduationYear", Number(v) as unknown as number, { shouldValidate: true })}
                       placeholder="Select year"
-                      options={gradYears.map((y) => ({ value: String(y), label: String(y) }))}
+                      options={graduationYearOptions}
                     />
                     <FieldError message={errors.graduationYear?.message} />
                   </div>
@@ -679,7 +750,7 @@ function RegisterForm() {
           </Button>
 
           <div className="text-center text-[13px] mb-5" style={{ color: "var(--muted-foreground)" }}>
-            Didn't receive it?{" "}
+            Didn&apos;t receive it?{" "}
             {resendsLeft > 0 ? (
               <button type="button" onClick={resendOtp} disabled={resending}
                 className="font-semibold hover:underline disabled:opacity-50 transition-opacity"
@@ -710,7 +781,7 @@ function RegisterForm() {
           <div className="mb-2">
             <h1 className="font-[family-name:var(--font-display)] mb-1"
               style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}>
-              You're almost in.
+              You&apos;re almost in.
             </h1>
             <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
               Email verified. Complete the step below to speed up approval.
@@ -720,9 +791,8 @@ function RegisterForm() {
           {/* Status card */}
           <div className="rounded-xl border divide-y" style={{ borderColor: "var(--border)" }}>
             <div className="flex items-center gap-3 p-4">
-              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)" }}>
-                <CheckCircle2 size={16} className="text-green-500" />
+              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-success/10 border border-success/25">
+                <CheckCircle2 size={16} className="text-success" />
               </div>
               <div>
                 <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>Email verified</p>
@@ -730,9 +800,8 @@ function RegisterForm() {
               </div>
             </div>
             <div className="flex items-center gap-3 p-4">
-              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)" }}>
-                <Clock size={16} style={{ color: "#d97706" }} />
+              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-warning/10 border border-warning/25">
+                <Clock size={16} className="text-warning" />
               </div>
               <div>
                 <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>Awaiting admin review</p>

@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  User, Lock, Bell, Link as LinkIcon, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle,
+  User, Lock, Bell, Link as LinkIcon, Eye, EyeOff, Loader2, AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { getInitials, cn } from "@/lib/utils";
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { Avatar, AvatarFallback } from "@alumni/ui";
+import { Separator } from "@alumni/ui";
+import { getInitials, cn } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 import { getMyProfile, changePassword, getNotificationPreferences, updateNotificationPreferences } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
@@ -104,6 +105,8 @@ export default function MemberSettingsPage() {
       jobAlerts: notifPrefs.jobAlerts,
       classNoteAlerts: notifPrefs.classNoteAlerts,
       spotlightAlerts: notifPrefs.spotlightAlerts,
+      smsAlerts: notifPrefs.smsAlerts,
+      whatsAppAlerts: notifPrefs.whatsAppAlerts,
       [key]: value,
     });
   }
@@ -111,11 +114,10 @@ export default function MemberSettingsPage() {
   const fullName = profile ? `${profile.firstName} ${profile.lastName}` : (user?.name ?? "");
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 xl:p-12 space-y-6 sm:space-y-8 lg:space-y-10 max-w-3xl mx-auto">
-      <header className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">Settings</h1>
-        <p className="text-muted-foreground text-sm sm:text-base lg:text-lg font-medium">Manage your account preferences and security.</p>
-      </header>
+    <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto">
+      <PageHeader eyebrow="Account controls" title="Settings" description="Manage your account preferences and security." />
+
+      <div className="grid grid-cols-1 gap-5 mt-6">
 
       {/* Account overview */}
       <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
@@ -220,10 +222,23 @@ export default function MemberSettingsPage() {
             label="Spotlight Updates"
             description="Get notified about new alumni spotlights"
           />
+          <Toggle
+            checked={notifPrefs?.smsAlerts ?? false}
+            onChange={(v) => toggleNotif("smsAlerts", v)}
+            label="SMS Notifications"
+            description={profile?.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number to your profile to enable SMS alerts"}
+          />
+          <Toggle
+            checked={notifPrefs?.whatsAppAlerts ?? false}
+            onChange={(v) => toggleNotif("whatsAppAlerts", v)}
+            label="WhatsApp Notifications"
+            description={profile?.phone ? "Also send important alerts to your phone via WhatsApp" : "Add a phone number to your profile to enable WhatsApp alerts"}
+          />
         </CardContent>
       </Card>
 
-      {/* Security */}
+      {/* Security + About */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -302,7 +317,7 @@ export default function MemberSettingsPage() {
       <Card className="border-border/40 bg-muted/20 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250">
         <CardContent className="p-6 flex items-center justify-between">
           <div>
-            <p className="text-sm font-bold">UMaT Alumni Member Portal</p>
+            <p className="text-sm font-bold">Alumni Member Portal</p>
             <p className="text-[12px] text-muted-foreground mt-0.5">University of Mines &amp; Technology</p>
           </div>
           <div className="flex items-center gap-2">
@@ -315,6 +330,9 @@ export default function MemberSettingsPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      </div>
     </div>
   );
 }

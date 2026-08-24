@@ -1,29 +1,29 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.17.1 --activate
 
 # ── Install dependencies ──────────────────────────────────────────────────────
 FROM base AS deps
 # Copy workspace manifests for layer caching
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/member/package.json ./apps/member/package.json
-RUN npm ci
+COPY packages/ui/package.json ./packages/ui/package.json
+RUN pnpm install --frozen-lockfile
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-# Root package.json needed for workspace build scripts
-COPY package.json ./package.json
+COPY --from=deps /app/apps/member/node_modules ./apps/member/node_modules
+COPY --from=deps /app/packages/ui/node_modules ./packages/ui/node_modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/member ./apps/member
-
-# Ensure the app workspace can resolve next from the hoisted root node_modules.
-RUN mkdir -p /app/apps/member/node_modules && ln -s /app/node_modules /app/apps/member/node_modules
+COPY packages/ui ./packages/ui
 
 ARG NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_PUBLIC_MEMBER_API_URL=$NEXT_PUBLIC_MEMBER_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Run from workspace root so Turbopack can resolve next from /app/node_modules
-RUN npm run build:member
+RUN pnpm turbo run build --filter=@alumni/member
 
 # ── Runtime ───────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner

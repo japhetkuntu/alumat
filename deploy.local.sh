@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UMaT Alumni – Local Development Deploy Script (macOS)
+# Alumni Platform – Local Development Deploy Script (macOS)
 # =============================================================================
 # Usage:
 #   ./deploy.local.sh            Build and start the full local stack
@@ -150,7 +150,7 @@ health_checks() {
 print_summary() {
   echo ""
   echo -e "${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${BOLD}║        UMaT Alumni – Local Stack  (macOS)                   ║${NC}"
+  echo -e "${BOLD}║        Alumni Platform – Local Stack  (macOS)                   ║${NC}"
   echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
   echo ""
 

@@ -6,23 +6,23 @@ import {
   UserCheck, Plus, CheckCircle, XCircle, Clock,
   Inbox, Users, ChevronDown,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { getInitials, formatDate, cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
+import { getInitials, formatDate, cn } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 import {
   getMentors, requestMentorship, registerAsMentor,
   getMyMentorshipRequests, getMyMentorProfile,
   getIncomingMentorshipRequests, acceptMentorshipRequest,
   rejectMentorshipRequest,
 } from "@/lib/member-api";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import type { MentorProfileStatus, MentorshipStatus } from "@/types";
@@ -156,7 +156,7 @@ export default function MemberMentorshipPage() {
 
   const { data: requestsData } = useQuery({
     queryKey: ["m-my-requests"],
-    queryFn:  getMyMentorshipRequests,
+    queryFn:  () => getMyMentorshipRequests(),
   });
 
   const { data: myProfile } = useQuery({
@@ -167,7 +167,7 @@ export default function MemberMentorshipPage() {
 
   const { data: incomingData } = useQuery({
     queryKey: ["m-incoming-requests"],
-    queryFn:  getIncomingMentorshipRequests,
+    queryFn:  () => getIncomingMentorshipRequests(),
     enabled:  !!myProfile,
   });
 
@@ -229,37 +229,29 @@ export default function MemberMentorshipPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1
-            className="font-[family-name:var(--font-display)] tracking-tight"
-            style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-          >
-            Mentorship
-          </h1>
-          <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-            Find a mentor, or give back by mentoring fellow alumni.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Community · Growth"
+        title="Mentorship"
+        description="Find a mentor, or give back by mentoring fellow alumni."
+      />
 
-        {/* Tab nav */}
-        <div className="flex flex-wrap gap-2">
-          <TabBtn active={view === "find"}     onClick={() => setView("find")}>
-            <UserCheck size={13} /> Find a mentor
+      {/* Tab nav */}
+      <div className="flex flex-wrap gap-2">
+        <TabBtn active={view === "find"}     onClick={() => setView("find")}>
+          <UserCheck size={13} /> Find a mentor
+        </TabBtn>
+        <TabBtn active={view === "requests"} onClick={() => setView("requests")}>
+          <Clock size={13} /> My requests
+        </TabBtn>
+        {myProfile && (
+          <TabBtn active={view === "incoming"} onClick={() => setView("incoming")}>
+            <Inbox size={13} />
+            Incoming{pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}
           </TabBtn>
-          <TabBtn active={view === "requests"} onClick={() => setView("requests")}>
-            <Clock size={13} /> My requests
-          </TabBtn>
-          {myProfile && (
-            <TabBtn active={view === "incoming"} onClick={() => setView("incoming")}>
-              <Inbox size={13} />
-              Incoming{pendingIncoming > 0 ? ` (${pendingIncoming})` : ""}
-            </TabBtn>
-          )}
-          <TabBtn active={view === "become"} onClick={() => setView("become")}>
-            <Plus size={13} /> Become a mentor
-          </TabBtn>
-        </div>
+        )}
+        <TabBtn active={view === "become"} onClick={() => setView("become")}>
+          <Plus size={13} /> Become a mentor
+        </TabBtn>
       </div>
 
       {/* ── My mentor profile banner ── */}
@@ -403,8 +395,7 @@ export default function MemberMentorshipPage() {
           ) : requests.map(r => (
             <div
               key={r.id}
-              className="rounded-2xl border p-4 sm:p-5 flex flex-wrap items-start justify-between gap-4"
-              style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              className="card p-4 sm:p-5 flex flex-wrap items-start justify-between gap-4"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
@@ -417,7 +408,7 @@ export default function MemberMentorshipPage() {
                 </p>
                 {r.message && (
                   <p className="text-[12.5px] mt-1.5 italic" style={{ color: "var(--muted-foreground)" }}>
-                    "{r.message}"
+                    &ldquo;{r.message}&rdquo;
                   </p>
                 )}
               </div>
@@ -443,8 +434,7 @@ export default function MemberMentorshipPage() {
           ) : incoming.map(r => (
             <div
               key={r.id}
-              className="rounded-2xl border p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4"
-              style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              className="card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4"
             >
               {/* Mentee info */}
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -465,7 +455,7 @@ export default function MemberMentorshipPage() {
                   </p>
                   {r.message && (
                     <p className="text-[12.5px] mt-1 italic" style={{ color: "var(--muted-foreground)" }}>
-                      "{r.message}"
+                      &ldquo;{r.message}&rdquo;
                     </p>
                   )}
                 </div>
@@ -511,8 +501,7 @@ export default function MemberMentorshipPage() {
         <div className="max-w-lg">
           {myProfile && myProfile.status !== "Rejected" ? (
             <div
-              className="rounded-2xl border p-6 text-center space-y-3"
-              style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              className="card p-6 text-center space-y-3"
             >
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
@@ -528,14 +517,13 @@ export default function MemberMentorshipPage() {
               </Badge>
               {myProfile.status === "Pending" && (
                 <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-                  Your application is under review. You'll be notified once it's approved.
+                  Your application is under review. You&apos;ll be notified once it&apos;s approved.
                 </p>
               )}
             </div>
           ) : (
             <div
-              className="rounded-2xl border p-5 sm:p-6 space-y-5"
-              style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              className="card p-5 sm:p-6 space-y-5"
             >
               <div>
                 <h2

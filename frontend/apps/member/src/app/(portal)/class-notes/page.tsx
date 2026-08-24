@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquarePlus, Heart, Trash2, Loader2, Send, BookOpen, GraduationCap } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
 import { formatDistanceToNow } from "date-fns";
-import { getInitials, cn } from "@/lib/utils";
+import { getInitials, cn } from "@alumni/ui";
 import { getClassNotes, createClassNote, toggleClassNoteLike, deleteClassNote } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
@@ -247,10 +247,7 @@ export default function ClassNotesPage() {
       </div>
 
       {/* ── Composer ── */}
-      <div
-        className="rounded-2xl border overflow-hidden transition-shadow duration-200 focus-within:shadow-sm"
-        style={{ borderColor: "var(--border)", background: "var(--background)" }}
-      >
+      <div className="card overflow-hidden transition-shadow duration-200 focus-within:shadow-sm">
         <div className="flex gap-3 p-4">
           {/* Current user avatar */}
           <div
@@ -293,10 +290,7 @@ export default function ClassNotesPage() {
       </div>
 
       {/* ── Feed ── */}
-      <div
-        className="rounded-2xl border overflow-hidden"
-        style={{ borderColor: "var(--border)", background: "var(--background)" }}
-      >
+      <div className="card overflow-hidden">
         {isLoading ? (
           <div>
             {Array.from({ length: 4 }).map((_, i) => (
@@ -326,7 +320,7 @@ export default function ClassNotesPage() {
             </p>
           </div>
         ) : (
-          notes.map((note, i) => (
+          notes.map((note) => (
             <NoteCard
               key={note.id}
               note={note}

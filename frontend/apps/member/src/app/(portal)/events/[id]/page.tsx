@@ -8,14 +8,15 @@ import {
   Loader2, CheckCircle2, Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { MediaGallery } from "@/components/ui/media-gallery";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
+import { MediaGallery } from "@alumni/ui";
+import { formatCurrency, formatDate } from "@alumni/ui";
 import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState } from "@alumni/ui";
+import type { AlumniEvent } from "@/types";
 
 const statusVariant: Record<string, "info" | "success" | "secondary" | "destructive"> = {
   Upcoming:  "info",
@@ -259,7 +260,7 @@ function RsvpBlock({
   event, hasRsvp, canRsvp, isFull, mapUrl,
   onRsvp, onCancel, cancelPending, rsvpPending,
 }: {
-  event: any;
+  event: AlumniEvent;
   hasRsvp: boolean;
   canRsvp: boolean;
   isFull: boolean;
@@ -294,9 +295,9 @@ function RsvpBlock({
           className="flex items-center gap-3 p-3.5 rounded-xl"
           style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
         >
-          <CheckCircle2 size={18} className="text-green-600 shrink-0" />
-          <p className="text-[13.5px] font-semibold text-green-700">
-            You're going to this event.
+          <CheckCircle2 size={18} className="text-success shrink-0" />
+          <p className="text-[13.5px] font-semibold text-success">
+            You&apos;re going to this event.
           </p>
         </div>
       )}

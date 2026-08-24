@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Linkedin, X, Building2, MapPin, User } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
-import { UserAvatar } from "@/components/ui/user-avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { FormSelect } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { Pagination } from "@alumni/ui";
+import { UserAvatar } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { FormSelect } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 import { searchDirectory } from "@/lib/member-api";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { cn } from "@/lib/utils";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 import type { Member } from "@/types";
 
 const currentYear    = new Date().getFullYear();
@@ -49,18 +50,7 @@ export default function MemberDirectoryPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      {/* ── Header ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          Alumni directory
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          Search by name, company, or graduation year.
-        </p>
-      </div>
+      <PageHeader title="Alumni directory" description="Find the people and stories that make our community feel like home." />
 
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
@@ -196,7 +186,7 @@ export default function MemberDirectoryPage() {
       {/* ── Profile drawer ── */}
       {selected && (
         <div
-          className="fixed inset-0 z-40 flex items-end sm:items-center justify-center sm:justify-end"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:justify-end"
           onClick={() => setSelected(null)}
         >
           {/* Backdrop */}
@@ -207,7 +197,7 @@ export default function MemberDirectoryPage() {
 
           {/* Panel */}
           <div
-            className="relative z-50 w-full sm:w-[360px] sm:m-4 sm:max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 duration-300"
+            className="relative z-[61] w-full sm:w-[360px] sm:m-4 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 duration-300"
             style={{ background: "var(--background)", borderColor: "var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.15)" }}
             onClick={e => e.stopPropagation()}
           >
@@ -216,7 +206,7 @@ export default function MemberDirectoryPage() {
               <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
             </div>
 
-            <div className="p-5 space-y-5">
+            <div className="p-5 space-y-5" style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>
 
               {/* Header */}
               <div className="flex items-center justify-between">

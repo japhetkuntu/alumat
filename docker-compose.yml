@@ -1,5 +1,5 @@
 # =============================================================================
-# UMaT Alumni – Production Docker Compose
+# ReservEase Alumni – Production Docker Compose
 # =============================================================================
 # Usage:
 #   cp .env.production.example .env   # then fill in all secrets
@@ -101,13 +101,13 @@ services:
   # ── Backend APIs ─────────────────────────────────────────────────────────────
   # No host ports – nginx routes all external traffic internally.
 
-  admin-api:
+  institution-api:
     env_file: .env
     build:
       context: ./backend
-      dockerfile: src/Umat.Alumni.Admin.Api/Dockerfile
-    image: alumni/admin-api:prod
-    container_name: alumni-admin-api
+      dockerfile: src/ReservEase.Alumni.Institution.Api/Dockerfile
+    image: alumni/institution-api:prod
+    container_name: alumni-institution-api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -117,20 +117,17 @@ services:
       ConnectionStrings__AlumniConnection: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
-      Redis__AdminRedisConfig__ConnectionString: redis:6379
-      Redis__AdminRedisConfig__DbNumber: 0
+      PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
+      Redis__InstitutionRedisConfig__ConnectionString: redis:6379
+      Redis__InstitutionRedisConfig__DbNumber: 0
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
-      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY}
+      BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
-      MailhogConfig__SmtpHost: ${SMTP_HOST}
-      MailhogConfig__SmtpPort: ${SMTP_PORT}
-      MailhogConfig__UseSsl: ${USE_SSL:-false}
-      MailhogConfig__UseStartTls: ${USE_STARTTLS:-true}
-      MailhogConfig__SmtpUsername: ${SMTP_USERNAME}
-      MailhogConfig__SmtpPassword: ${SMTP_PASSWORD}
-      MailhogConfig__DefaultSenderName: ${SMTP_SENDER_NAME}
-      MailhogConfig__DefaultSenderEmail: ${SMTP_SENDER_EMAIL}
+      MailtrapConfig__ApiKey: ${MAILTRAP_API_KEY}
+      MailtrapConfig__DefaultMessageSource__Name: ${MAIL_SENDER_NAME}
+      MailtrapConfig__DefaultMessageSource__Email: ${MAIL_SENDER_EMAIL}
       StorageConfig__AccessKey: ${STORAGE_ACCESS_KEY}
       StorageConfig__SecretKey: ${STORAGE_SECRET_KEY}
       StorageConfig__BucketName: ${STORAGE_BUCKET}
@@ -151,7 +148,7 @@ services:
     env_file: .env
     build:
       context: ./backend
-      dockerfile: src/Umat.Alumni.Member.Api/Dockerfile
+      dockerfile: src/ReservEase.Alumni.Member.Api/Dockerfile
     image: alumni/member-api:prod
     container_name: alumni-member-api
     restart: unless-stopped
@@ -163,23 +160,62 @@ services:
       ConnectionStrings__AlumniConnection: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
+      PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__MemberRedisConfig__ConnectionString: redis:6379
       Redis__MemberRedisConfig__DbNumber: 1
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
-      BearerTokenConfig__AdminSigningKey: ${ADMIN_SIGNING_KEY}
+      BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
       PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY}
       PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY}
       PaystackConfig__CallbackUrl: ${PAYSTACK_CALLBACK_URL}
-      MailhogConfig__SmtpHost: ${SMTP_HOST}
-      MailhogConfig__SmtpPort: ${SMTP_PORT}
-      MailhogConfig__UseSsl: ${USE_SSL:-false}
-      MailhogConfig__UseStartTls: ${USE_STARTTLS:-true}
-      MailhogConfig__SmtpUsername: ${SMTP_USERNAME}
-      MailhogConfig__SmtpPassword: ${SMTP_PASSWORD}
-      MailhogConfig__DefaultSenderName: ${SMTP_SENDER_NAME}
-      MailhogConfig__DefaultSenderEmail: ${SMTP_SENDER_EMAIL}
+      MailtrapConfig__ApiKey: ${MAILTRAP_API_KEY}
+      MailtrapConfig__DefaultMessageSource__Name: ${MAIL_SENDER_NAME}
+      MailtrapConfig__DefaultMessageSource__Email: ${MAIL_SENDER_EMAIL}
+      StorageConfig__AccessKey: ${STORAGE_ACCESS_KEY}
+      StorageConfig__SecretKey: ${STORAGE_SECRET_KEY}
+      StorageConfig__BucketName: ${STORAGE_BUCKET}
+      StorageConfig__Region: ${STORAGE_REGION}
+      StorageConfig__Endpoint: ${STORAGE_ENDPOINT}
+      StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT}
+      ArkeselConfig__ApiKey: ${ARKESEL_API_KEY}
+      ArkeselConfig__SenderId: ${ARKESEL_SENDER_ID}
+      WaSenderConfig__ApiKey: ${WASENDER_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - alumni-net
+
+  platform-api:
+    env_file: .env
+    build:
+      context: ./backend
+      dockerfile: src/ReservEase.Alumni.Platform.Api/Dockerfile
+    image: alumni/platform-api:prod
+    container_name: alumni-platform-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
+      USE_HTTPS_REDIRECT: ${USE_HTTPS_REDIRECT:-false}
+      ConnectionStrings__AlumniConnection: >-
+        Host=postgres;Port=5432;Database=${POSTGRES_DB};
+        Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
+      PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
+      Redis__PlatformRedisConfig__ConnectionString: redis:6379
+      Redis__PlatformRedisConfig__DbNumber: 2
+      BearerTokenConfig__Issuer: ${JWT_ISSUER}
+      BearerTokenConfig__Audience: ${JWT_AUDIENCE}
+      BearerTokenConfig__PlatformSigningKey: ${PLATFORM_SIGNING_KEY}
       StorageConfig__AccessKey: ${STORAGE_ACCESS_KEY}
       StorageConfig__SecretKey: ${STORAGE_SECRET_KEY}
       StorageConfig__BucketName: ${STORAGE_BUCKET}
@@ -191,27 +227,34 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
     networks:
       - alumni-net
+    # Not yet routed through nginx — see docker/nginx/nginx.multitenant.example.conf.
+    # Reachable locally via `docker compose exec` or a temporary port mapping until then.
 
   # ── Frontend Apps ─────────────────────────────────────────────────────────
-  # NEXT_PUBLIC_* variables are baked into the JS bundle at build time.
-  # They must point to URLs reachable from the user's browser (public URLs).
+  # These apps call the API same-origin ("/api/v1/...", proxied by nginx —
+  # see nginx.conf's per-host "location /api/" blocks) so that any number of
+  # institution subdomains resolve to the correct tenant automatically,
+  # instead of every deployment being wired to one fixed API hostname at
+  # build time. INSTITUTION_API_INTERNAL_URL / MEMBER_API_INTERNAL_URL below are a
+  # separate, server-only concern: Next.js's own server-side rendering (the
+  # tenant theme fetch) runs inside this container, not the browser, so it
+  # needs the API's internal Compose DNS name — set as a plain runtime env,
+  # not a NEXT_PUBLIC_ build arg, since it must never reach the client bundle.
 
-  frontend-admin:
+  frontend-institution:
     env_file: .env
     build:
       context: ./frontend
-      dockerfile: apps/admin/Dockerfile
-      args:
-        NEXT_PUBLIC_ADMIN_API_URL: ${NEXT_PUBLIC_ADMIN_API_URL}
-    image: alumni/frontend-admin:prod
-    container_name: alumni-frontend-admin
+      dockerfile: apps/institution/Dockerfile
+    image: alumni/frontend-institution:prod
+    container_name: alumni-frontend-institution
     restart: unless-stopped
+    environment:
+      INSTITUTION_API_INTERNAL_URL: http://institution-api:8080/api/v1
     depends_on:
-      - admin-api
+      - institution-api
     networks:
       - alumni-net
 
@@ -220,11 +263,11 @@ services:
     build:
       context: ./frontend
       dockerfile: apps/member/Dockerfile
-      args:
-        NEXT_PUBLIC_MEMBER_API_URL: ${NEXT_PUBLIC_MEMBER_API_URL}
     image: alumni/frontend-member:prod
     container_name: alumni-frontend-member
     restart: unless-stopped
+    environment:
+      MEMBER_API_INTERNAL_URL: http://member-api:8080/api/v1
     depends_on:
       - member-api
     networks:
@@ -242,7 +285,7 @@ services:
       - "80:80"
       - "443:443"
       # IP mode (nginx.ip.conf): one port per service.
-      - "8001:8001"   # admin frontend
+      - "8001:8001"   # institution portal frontend
       - "8003:8003"   # member api
       - "8002:8002"   # admin api
     volumes:
@@ -251,9 +294,9 @@ services:
       - certbot_www:/var/www/certbot:ro
       - certbot_conf:/etc/letsencrypt:ro
     depends_on:
-      - admin-api
+      - institution-api
       - member-api
-      - frontend-admin
+      - frontend-institution
       - frontend-member
     networks:
       - alumni-net

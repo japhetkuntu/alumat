@@ -3,42 +3,20 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Newspaper, Calendar, Pin } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
-import { formatDate } from "@/lib/utils";
+import { Pagination } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getNewsPosts } from "@/lib/member-api";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "@alumni/ui";
 
 const CATEGORIES = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity"];
 
-const categoryStyle: Record<string, { bg: string; text: string; border: string }> = {
-  Announcement: { bg: "rgba(59,130,246,0.08)",  text: "#2563eb", border: "rgba(59,130,246,0.2)"  },
-  Achievement:  { bg: "rgba(245,158,11,0.08)",  text: "#d97706", border: "rgba(245,158,11,0.2)"  },
-  News:         { bg: "rgba(16,185,129,0.08)",  text: "#059669", border: "rgba(16,185,129,0.2)"  },
-  Event:        { bg: "rgba(139,92,246,0.08)",  text: "#7c3aed", border: "rgba(139,92,246,0.2)"  },
-  Opportunity:  { bg: "rgba(6,182,212,0.08)",   text: "#0891b2", border: "rgba(6,182,212,0.2)"   },
-};
-
 function CategoryPill({ category }: { category: string }) {
-  const s = categoryStyle[category];
-  if (!s) return (
-    <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border"
-      style={{ background: "var(--secondary)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}
-    >
-      {category}
-    </span>
-  );
-  return (
-    <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border"
-      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
-    >
-      {category}
-    </span>
-  );
+  return <Badge className="text-[11px]">{category}</Badge>;
 }
 
 export default function MemberNewsPage() {
@@ -58,18 +36,7 @@ export default function MemberNewsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      {/* ── Header ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          News &amp; announcements
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          The latest from the UMaT alumni community.
-        </p>
-      </div>
+      <PageHeader title="News & announcements" description="The people, progress, and opportunities shaping our alumni community." />
 
       {/* ── Category filter ── */}
       <div className="flex flex-wrap gap-2">
@@ -81,11 +48,10 @@ export default function MemberNewsPage() {
               onClick={() => { setCategory(c === "All" ? "" : c); setPage(1); }}
               className={cn(
                 "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
-                active ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                active
+                  ? "bg-primary text-primary-foreground border-transparent"
+                  : "border-border text-muted-foreground hover:border-primary/40",
               )}
-              style={active
-                ? { background: "var(--primary)", color: "white" }
-                : { background: "var(--background)", color: "var(--muted-foreground)" }}
             >
               {c}
             </button>
@@ -136,12 +102,8 @@ export default function MemberNewsPage() {
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
                   {p.isPinned && (
                     <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                      style={{
-                        background: "rgba(249,115,22,0.85)",
-                        backdropFilter: "blur(4px)",
-                        color: "white",
-                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold backdrop-blur-sm"
+                      style={{ background: "var(--warning)", color: "var(--warning-foreground)" }}
                     >
                       <Pin size={9} /> Pinned
                     </span>

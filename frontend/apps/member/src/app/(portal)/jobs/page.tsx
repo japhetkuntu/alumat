@@ -4,25 +4,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Clock, Briefcase, ArrowRight, X, Search } from "lucide-react";
 import Link from "next/link";
-import { Pagination } from "@/components/ui/pagination";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { formatDate } from "@/lib/utils";
+import { Pagination } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getJobs } from "@/lib/member-api";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { cn } from "@/lib/utils";
-
-/* Job type → subtle pill color */
-const typeStyle: Record<string, { bg: string; text: string; border: string }> = {
-  "Full-time": { bg: "rgba(59,130,246,0.08)", text: "#2563eb", border: "rgba(59,130,246,0.2)" },
-  FullTime:    { bg: "rgba(59,130,246,0.08)", text: "#2563eb", border: "rgba(59,130,246,0.2)" },
-  "Part-time": { bg: "rgba(139,92,246,0.08)", text: "#7c3aed", border: "rgba(139,92,246,0.2)" },
-  PartTime:    { bg: "rgba(139,92,246,0.08)", text: "#7c3aed", border: "rgba(139,92,246,0.2)" },
-  Contract:    { bg: "rgba(245,158,11,0.08)", text: "#d97706", border: "rgba(245,158,11,0.2)" },
-  Internship:  { bg: "rgba(16,185,129,0.08)", text: "#059669", border: "rgba(16,185,129,0.2)" },
-  Remote:      { bg: "rgba(6,182,212,0.08)",  text: "#0891b2", border: "rgba(6,182,212,0.2)"  },
-};
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 
 const JOB_TYPES = ["", "Full-time", "Part-time", "Contract", "Internship"];
 
@@ -48,18 +38,7 @@ export default function MemberJobsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      {/* ── Header ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          Job board
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          Opportunities shared by the UMaT alumni network.
-        </p>
-      </div>
+      <PageHeader title="Job board" description="Opportunities shared by the alumni network." />
 
       {/* ── Filters ── */}
       <div className="space-y-3">
@@ -132,8 +111,9 @@ export default function MemberJobsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {jobs.map((j) => {
-            const ts = typeStyle[j.type];
             const isExpired = j.deadline && new Date(j.deadline) < new Date();
+            const daysLeft  = j.deadline ? Math.ceil((new Date(j.deadline).getTime() - Date.now()) / 86_400_000) : null;
+            const closingSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 8;
             return (
               <Link
                 key={j.id}
@@ -151,21 +131,7 @@ export default function MemberJobsPage() {
                     >
                       <Briefcase size={17} style={{ color: "var(--primary)" }} />
                     </div>
-                    {ts ? (
-                      <span
-                        className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full shrink-0"
-                        style={{ background: ts.bg, color: ts.text, border: `1px solid ${ts.border}` }}
-                      >
-                        {j.type}
-                      </span>
-                    ) : (
-                      <span
-                        className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full shrink-0"
-                        style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
-                      >
-                        {j.type}
-                      </span>
-                    )}
+                    <Badge className="shrink-0">{j.type}</Badge>
                   </div>
 
                   {/* Title + company */}
@@ -187,13 +153,17 @@ export default function MemberJobsPage() {
                       <MapPin size={12} /> {j.location}
                     </span>
                     {j.deadline && (
-                      <span
-                        className="flex items-center gap-1.5 text-[12.5px]"
-                        style={{ color: isExpired ? "var(--destructive)" : "var(--muted-foreground)" }}
-                      >
-                        <Clock size={12} />
-                        {isExpired ? "Closed" : formatDate(j.deadline)}
-                      </span>
+                      isExpired ? (
+                        <Badge variant="destructive" size="sm" className="gap-1"><Clock size={11} /> Closed</Badge>
+                      ) : closingSoon ? (
+                        <Badge variant="warning" size="sm" className="gap-1">
+                          <Clock size={11} /> Closes in {daysLeft} day{daysLeft === 1 ? "" : "s"}
+                        </Badge>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+                          <Clock size={12} /> {formatDate(j.deadline)}
+                        </span>
+                      )
                     )}
                   </div>
 

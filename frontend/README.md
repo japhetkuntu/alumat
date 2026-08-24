@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Alumni Platform — Frontend Monorepo
 
-## Getting Started
+Three Next.js apps sharing one component library, managed with **pnpm workspaces** and **Turborepo**.
 
-First, run the development server:
+## Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+apps/
+  institution/   Institution Portal — staff-facing admin app for one institution
+  member/        Member Portal — alumni-facing app
+  platform/      Platform Portal — SaaS operator app across all institutions
+packages/
+  ui/            @alumni/ui — shared components (Button, Card, Dialog, Table, ...) and utils
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Each app owns its own brand tokens, pages, and API client. `@alumni/ui` holds only generic, app-agnostic primitives — consumed as raw TypeScript source (no build step), transpiled by each app's own Next.js build via `transpilePackages`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Getting started
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm install
 
-## Learn More
+pnpm dev:institution   # http://localhost:4100
+pnpm dev:member        # http://localhost:3200
+pnpm dev:platform      # http://localhost:3300
+```
 
-To learn more about Next.js, take a look at the following resources:
+Other tasks run through Turborepo:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm build:institution   # or build:member / build:platform
+pnpm lint:institution    # or lint:member / lint:platform
+pnpm typecheck           # runs across every app + packages/ui
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Adding a shared component
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Add it to `packages/ui/src/components/`, export it from `packages/ui/src/index.ts`, then import it from any app as `import { X } from "@alumni/ui"`. Keep it free of app-specific branding or business logic — those stay local to each app.

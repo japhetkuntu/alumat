@@ -11,13 +11,24 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center py-16 px-4 text-center", className)}>
-      {icon && <div className="mb-4 text-muted-foreground/40">{icon}</div>}
-      <h3 className="text-[14px] font-medium text-muted-foreground">{title}</h3>
-      {description && (
-        <p className="mt-1.5 text-[13px] text-muted-foreground/70 max-w-[320px] leading-relaxed">{description}</p>
+    <div className={cn("flex flex-col items-center justify-center py-16 px-6 text-center", className)}>
+      {icon && (
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 [&>svg]:text-primary"
+          style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+        >
+          {icon}
+        </div>
       )}
-      {action && <div className="mt-4">{action}</div>}
+      <h3 className="font-[family-name:var(--font-display)] text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>
+        {title}
+      </h3>
+      {description && (
+        <p className="mt-2 text-[13.5px] max-w-[340px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+          {description}
+        </p>
+      )}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }

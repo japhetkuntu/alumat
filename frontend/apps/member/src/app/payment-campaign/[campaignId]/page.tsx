@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Card, CardContent } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { Progress } from "@alumni/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@alumni/ui";
 import {
   Copy, Check, Share2, MessageCircle, Twitter, Facebook,
   Users, Target, Calendar, ChevronDown, ChevronUp,
@@ -17,22 +17,29 @@ import {
 } from "lucide-react";
 import { getCampaignById, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { YouTubeEmbed } from "@/components/ui/youtube-embed";
+import { formatCurrency, formatDate, cn } from "@alumni/ui";
+import { YouTubeEmbed } from "@alumni/ui";
+
+// Hydration-safe read of the current page URL (see useHostname()): server and
+// the first client render both see "", avoiding a mismatch, then React syncs
+// to the real value right after mount.
+function useShareUrl() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => window.location.href,
+    () => ""
+  );
+}
 
 export default function PublicCampaignContributionPage() {
   const { campaignId } = useParams() as { campaignId: string };
   const [email, setEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [showEmail, setShowEmail] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
+  const shareUrl = useShareUrl();
   const [copied, setCopied] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("Ready to initiate payment");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") setShareUrl(window.location.href);
-  }, []);
 
   const copyShareUrl = async () => {
     if (!shareUrl) return;
@@ -48,11 +55,15 @@ export default function PublicCampaignContributionPage() {
     enabled: Boolean(campaignId),
   });
 
-  useEffect(() => {
-    if (campaign) {
-      setAmount(campaign.isMembershipCampaign ? String(campaign.amountPerMember) : "");
-    }
-  }, [campaign]);
+  // Prefill the amount field when the campaign loads — done during render
+  // (React's documented alternative to an effect for this case) rather than
+  // in a useEffect, guarded so it only fires once per distinct `campaign`
+  // reference.
+  const [syncedCampaign, setSyncedCampaign] = useState(campaign);
+  if (campaign && campaign !== syncedCampaign) {
+    setSyncedCampaign(campaign);
+    setAmount(campaign.isMembershipCampaign ? String(campaign.amountPerMember) : "");
+  }
 
   const payMutation = useMutation({
     mutationFn: () => {
@@ -78,7 +89,7 @@ export default function PublicCampaignContributionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <div className="w-10 h-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
           <p className="text-sm font-medium">Loading campaign…</p>
@@ -89,10 +100,10 @@ export default function PublicCampaignContributionPage() {
 
   if (!campaign) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-3 p-8">
           <div className="text-5xl mb-4">🔍</div>
-          <h1 className="text-2xl font-bold">Campaign not found</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold">Campaign not found</h1>
           <p className="text-muted-foreground max-w-sm mx-auto">This campaign may have ended or the link might be incorrect. Check with the organiser for the correct link.</p>
         </div>
       </div>
@@ -108,7 +119,7 @@ export default function PublicCampaignContributionPage() {
   const shareText = encodeURIComponent(`Support "${campaign.title}" — every contribution counts!`);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen bg-background">
       {/* Top accent bar */}
       <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/70 to-primary/40" />
 
@@ -131,7 +142,7 @@ export default function PublicCampaignContributionPage() {
                   <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest">Membership</Badge>
                 )}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">{campaign.title}</h1>
+              <h1 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{campaign.title}</h1>
             </div>
           </div>
           {campaign.description && (
@@ -196,9 +207,9 @@ export default function PublicCampaignContributionPage() {
                 <p className="text-sm text-muted-foreground">Thank you to everyone who supported!</p>
               </div>
             ) : !campaign.allowOnlinePayments ? (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 text-center space-y-2">
-                <p className="font-bold text-amber-800">Online payments are not enabled for this campaign.</p>
-                <p className="text-sm text-amber-700">Please contact the organiser for alternative payment instructions.</p>
+              <div className="rounded-xl bg-warning/10 border border-warning/30 p-5 text-center space-y-2">
+                <p className="font-bold text-warning">Online payments are not enabled for this campaign.</p>
+                <p className="text-sm text-warning/80">Please contact the organiser for alternative payment instructions.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -291,8 +302,8 @@ export default function PublicCampaignContributionPage() {
         <Card className="border-border/40 shadow-lg shadow-black/5 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Share2 size={15} className="text-emerald-600" />
+              <div className="w-8 h-8 rounded-xl bg-success/10 flex items-center justify-center">
+                <Share2 size={15} className="text-success" />
               </div>
               <div>
                 <p className="font-black text-[15px]">Share this campaign</p>
@@ -311,7 +322,7 @@ export default function PublicCampaignContributionPage() {
                 variant={copied ? "default" : "outline"}
                 className={cn(
                   "h-10 px-4 rounded-xl font-bold gap-1.5 shrink-0 transition-all duration-300",
-                  copied && "bg-emerald-500 hover:bg-emerald-500 text-white border-emerald-500"
+                  copied && "bg-success/100 hover:bg-success/100 text-white border-success"
                 )}
                 onClick={copyShareUrl}
               >
@@ -325,7 +336,7 @@ export default function PublicCampaignContributionPage() {
                 href={`https://wa.me/?text=${shareText}%20${encodedShare}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center gap-2 h-10 rounded-xl border border-border/40 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all text-[13px] font-bold text-muted-foreground"
+                className="flex items-center justify-center gap-2 h-10 rounded-xl border border-border/40 hover:bg-success/10 hover:border-success/30 hover:text-success transition-all text-[13px] font-bold text-muted-foreground"
               >
                 <MessageCircle size={15} />
                 WhatsApp
@@ -354,7 +365,7 @@ export default function PublicCampaignContributionPage() {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-muted-foreground pb-6">
-          Powered by UMaT Alumni Portal · Payments secured by Paystack
+          Powered by the Alumni Portal · Payments secured by Paystack
         </p>
       </div>
 

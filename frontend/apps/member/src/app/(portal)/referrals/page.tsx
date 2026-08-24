@@ -4,15 +4,16 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, Copy, Check, Send, Loader2, Gift, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { formatDate } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getReferralInfo, sendReferralInvite, getMyReferrals } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 
 const statusVariant: Record<string, "info" | "success" | "secondary"> = {
   Pending:       "info",
@@ -63,17 +64,11 @@ export default function ReferralsPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[900px] mx-auto space-y-6 sm:space-y-8">
 
       {/* ── Header ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          Refer a friend
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          Invite fellow UMaT alumni to join the community.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Bring someone back into the circle"
+        title="Refer a friend"
+        description="Invite fellow alumni to join the community."
+      />
 
       {/* ── Stats + code + invite ── */}
       {loadingInfo ? (
@@ -92,8 +87,7 @@ export default function ReferralsPage() {
             ].map(({ icon: Icon, value, label, color }) => (
               <div
                 key={label}
-                className="rounded-2xl border p-4 flex flex-col gap-2"
-                style={{ borderColor: "var(--border)", background: "var(--background)" }}
+                className="card p-4 flex flex-col gap-2"
               >
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -114,8 +108,7 @@ export default function ReferralsPage() {
 
           {/* Referral code */}
           <div
-            className="rounded-2xl border p-5 space-y-3"
-            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+            className="card p-5 space-y-3"
           >
             <div className="flex items-center gap-2">
               <Gift size={15} style={{ color: "var(--primary)" }} />
@@ -142,7 +135,7 @@ export default function ReferralsPage() {
                 style={{ height: 46 }}
               >
                 {copied
-                  ? <><Check size={14} className="text-green-600" /> Copied</>
+                  ? <><Check size={14} className="text-success" /> Copied</>
                   : <><Copy size={14} /> Copy</>}
               </Button>
             </div>
@@ -158,8 +151,7 @@ export default function ReferralsPage() {
 
           {/* Send invite */}
           <div
-            className="rounded-2xl border p-5 space-y-3"
-            style={{ borderColor: "var(--border)", background: "var(--background)" }}
+            className="card p-5 space-y-3"
           >
             <div className="flex items-center gap-2">
               <Send size={14} style={{ color: "var(--primary)" }} />
@@ -222,8 +214,7 @@ export default function ReferralsPage() {
             {referrals.map(r => (
               <div
                 key={r.id}
-                className="rounded-2xl border flex items-center justify-between gap-4 px-4 py-3.5"
-                style={{ borderColor: "var(--border)", background: "var(--background)" }}
+                className="card flex items-center justify-between gap-4 px-4 py-3.5"
               >
                 <div className="min-w-0">
                   <p className="text-[14px] font-semibold truncate" style={{ color: "var(--foreground)" }}>

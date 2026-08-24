@@ -1,24 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2, CreditCard, Loader2, RefreshCcw,
-  XCircle, Award, TrendingUp, ChevronRight, AlertCircle,
+  XCircle, Award, TrendingUp, AlertCircle,
 } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { TableSkeleton } from "@/components/ui/skeleton";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { Progress } from "@alumni/ui";
 import {
   Dialog, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+} from "@alumni/ui";
+import { formatCurrency, formatDate } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 import {
   getMyCampaigns,
   getMyContributions,
@@ -28,7 +28,7 @@ import {
   getMyProfile,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import type { Campaign, ContributionStatus } from "@/types";
+import type { Campaign, Contribution, ContributionStatus } from "@/types";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
   Confirmed: "success",
@@ -37,6 +37,26 @@ const statusVariant: Record<ContributionStatus, "success" | "warning" | "destruc
 };
 
 type PollStatus = "loading" | "pending" | "success" | "error";
+
+// Hydration-safe read of the pending Paystack reference from localStorage
+// (see useHostname()): server and the first client render both see null,
+// avoiding a mismatch, then React syncs to the real value right after mount.
+// Writers (openStatusModal / payMut.onSuccess / closeModal below) update
+// localStorage directly and call notifyPendingRef() instead of a setState.
+const pendingRefListeners = new Set<() => void>();
+function subscribePendingRef(callback: () => void) {
+  pendingRefListeners.add(callback);
+  return () => pendingRefListeners.delete(callback);
+}
+function notifyPendingRef() {
+  pendingRefListeners.forEach((listener) => listener());
+}
+function getPendingRefSnapshot(): string | null {
+  return localStorage.getItem("alumni-paystack-pending-ref");
+}
+function getPendingRefServerSnapshot(): string | null {
+  return null;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    PAYMENT STATUS MODAL
@@ -73,6 +93,9 @@ function PaymentStatusModal({
     }
   }, [reference, onConfirmed]);
 
+  // Legitimate external-system sync: starting the payment-status poll (a
+  // network request) when the modal opens, not adjusting state from a prop.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!open) return; reset(); poll(); }, [open, reset, poll]);
 
   useEffect(() => {
@@ -86,9 +109,9 @@ function PaymentStatusModal({
     : status === "error"   ? XCircle
     : AlertCircle;
 
-  const iconColor = status === "success" ? "text-green-600"
+  const iconColor = status === "success" ? "text-success"
     : status === "error" ? "text-destructive"
-    : status === "pending" ? "text-amber-500"
+    : status === "pending" ? "text-warning"
     : "text-primary";
 
   const title = {
@@ -103,9 +126,9 @@ function PaymentStatusModal({
       <DialogContent className="max-w-sm">
         <DialogHeader className="items-center text-center gap-3">
           <div className={cn("w-14 h-14 rounded-full flex items-center justify-center",
-            status === "success" ? "bg-green-50" :
+            status === "success" ? "bg-success/10" :
             status === "error"   ? "bg-destructive/10" :
-            status === "pending" ? "bg-amber-50" : "bg-primary/10")}>
+            status === "pending" ? "bg-warning/10" : "bg-primary/10")}>
             <Icon size={28} className={cn(iconColor, status === "loading" && "animate-spin")} />
           </div>
           <DialogTitle className="text-[17px]">{title}</DialogTitle>
@@ -148,7 +171,7 @@ function CampaignCard({
   isPaying,
 }: {
   campaign: Campaign;
-  myPayment: any;
+  myPayment: Contribution | undefined;
   membershipPaid: boolean;
   isPensioner: boolean;
   getMemberAmount: (c: Campaign) => number;
@@ -268,12 +291,9 @@ function CampaignCard({
 
         {/* Membership paid confirmation */}
         {membershipPaid && (
-          <div
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
-            style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
-          >
-            <CheckCircle2 size={16} className="text-green-600 shrink-0" />
-            <p className="text-[13px] font-semibold text-green-700">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-success/10 border border-success/20">
+            <CheckCircle2 size={16} className="text-success shrink-0" />
+            <p className="text-[13px] font-semibold text-success">
               Membership paid for this year.
             </p>
           </div>
@@ -281,10 +301,7 @@ function CampaignCard({
 
         {/* Pending payment check */}
         {myPayment?.status === "Pending" && myPayment.transactionRef && (
-          <div
-            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl"
-            style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}
-          >
+          <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-warning/10 border border-warning/20">
             <p className="text-[13px] font-medium" style={{ color: "var(--muted-foreground)" }}>
               Payment is being processed.
             </p>
@@ -317,8 +334,8 @@ function CampaignCard({
             <Link href="/membership-certificate" className="flex-1 min-w-[8rem]">
               <Button
                 variant="outline"
-                className="w-full font-semibold text-[13.5px] gap-1.5"
-                style={{ height: 42, borderColor: "#d97706", color: "#b45309" }}
+                className="w-full font-semibold text-[13.5px] gap-1.5 border-warning/50 text-warning hover:bg-warning/10"
+                style={{ height: 42 }}
               >
                 <Award size={14} />
                 Certificate
@@ -350,8 +367,7 @@ function CampaignCard({
 export default function MemberContributionsPage() {
   const [page, setPage]               = useState(1);
   const [payingCampaignId, setPaying] = useState<string | null>(null);
-  const [pendingReference, setPendingRef] = useState<string | null>(null);
-  const [modalOpen, setModalOpen]     = useState(false);
+  const pendingReference = useSyncExternalStore(subscribePendingRef, getPendingRefSnapshot, getPendingRefServerSnapshot);
   const pageSize = 20;
   const qc = useQueryClient();
 
@@ -406,8 +422,8 @@ export default function MemberContributionsPage() {
     onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
       if (data?.authorizationUrl) {
         if (data.reference) {
-          localStorage.setItem("umat-paystack-pending-ref", data.reference);
-          setPendingRef(data.reference);
+          localStorage.setItem("alumni-paystack-pending-ref", data.reference);
+          notifyPendingRef();
         }
         window.location.href = data.authorizationUrl;
       } else {
@@ -421,22 +437,13 @@ export default function MemberContributionsPage() {
   });
 
   const openStatusModal = (reference: string) => {
-    localStorage.setItem("umat-paystack-pending-ref", reference);
-    setPendingRef(reference);
-    setModalOpen(true);
+    localStorage.setItem("alumni-paystack-pending-ref", reference);
+    notifyPendingRef();
   };
 
-  useEffect(() => {
-    const stored = localStorage.getItem("umat-paystack-pending-ref");
-    if (stored) setPendingRef(stored);
-  }, []);
-
-  useEffect(() => { setModalOpen(!!pendingReference); }, [pendingReference]);
-
   const closeModal = () => {
-    setModalOpen(false);
-    setPendingRef(null);
-    localStorage.removeItem("umat-paystack-pending-ref");
+    localStorage.removeItem("alumni-paystack-pending-ref");
+    notifyPendingRef();
   };
 
   return (
@@ -444,15 +451,11 @@ export default function MemberContributionsPage() {
 
       {/* ── Page header ── */}
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          Campaigns & contributions
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          Support active campaigns and track your payment history.
-        </p>
+        <PageHeader
+          eyebrow="Financial overview"
+          title="My Contributions"
+          description="Support active campaigns and track your payment history."
+        />
       </div>
 
       {/* ── Active campaigns ── */}
@@ -678,7 +681,7 @@ export default function MemberContributionsPage() {
 
       <PaymentStatusModal
         reference={pendingReference}
-        open={modalOpen}
+        open={!!pendingReference}
         onClose={closeModal}
         onConfirmed={() => {
           closeModal();

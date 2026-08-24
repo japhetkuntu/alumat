@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, useMemo, ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { cn, getInitials } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { cn, getInitials } from "@alumni/ui";
+import { Avatar, AvatarFallback } from "@alumni/ui";
+import { Button } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
+import { memberClient } from "@/lib/api-client";
 import {
   LayoutDashboard,
   CreditCard,
@@ -27,42 +28,118 @@ import {
   Star,
   UserPlus,
   StickyNote,
-  Bell,
+  UsersRound,
 } from "lucide-react";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/contributions", label: "My Contributions", icon: CreditCard },
-  { href: "/jobs", label: "Job Board", icon: Briefcase },
-  { href: "/events", label: "Events", icon: Calendar },
-  { href: "/directory", label: "Alumni Directory", icon: Users },
-  { href: "/news", label: "News", icon: Newspaper },
-  { href: "/forum", label: "Forum", icon: MessageSquare },
-  { href: "/mentorship", label: "Mentorship", icon: GraduationCap },
-  { href: "/resources", label: "Resources", icon: FolderOpen },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/spotlights", label: "Spotlights", icon: Star },
-  { href: "/referrals", label: "Refer a Friend", icon: UserPlus },
-  { href: "/class-notes", label: "Class Notes", icon: StickyNote },
-  { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/profile", label: "My Profile", icon: UserCircle },
+// Grouped by what a member is trying to DO, not by feature type — keeps the
+// sidebar scannable and gives "Home" a clear job (the daily-return feed)
+// instead of competing for attention with 15 flat siblings.
+const navGroups: { section: string | null; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+  {
+    section: null,
+    items: [
+      { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+    ],
+  },
+  {
+    section: "Give",
+    items: [
+      { href: "/contributions", label: "Give", icon: CreditCard },
+    ],
+  },
+  {
+    section: "Grow",
+    items: [
+      { href: "/jobs", label: "Jobs", icon: Briefcase },
+      { href: "/mentorship", label: "Mentorship", icon: GraduationCap },
+      { href: "/directory", label: "Directory", icon: Users },
+    ],
+  },
+  {
+    section: "Community",
+    items: [
+      { href: "/class-notes", label: "Class Notes", icon: StickyNote },
+      { href: "/forum", label: "Forum", icon: MessageSquare },
+      { href: "/communities", label: "Communities", icon: UsersRound },
+      { href: "/events", label: "Events", icon: Calendar },
+      { href: "/news", label: "News", icon: Newspaper },
+      { href: "/resources", label: "Resources", icon: FolderOpen },
+    ],
+  },
+  {
+    section: "Recognition",
+    items: [
+      { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+      { href: "/spotlights", label: "Spotlights", icon: Star },
+      { href: "/referrals", label: "Referrals", icon: UserPlus },
+    ],
+  },
+  {
+    section: null,
+    items: [
+      { href: "/profile", label: "Profile", icon: UserCircle },
+    ],
+  },
 ];
+const navItems = navGroups.flatMap((g) => g.items);
+
+// Maps each gateable nav item to the backend feature key that can disable it
+// (see InstitutionFeatures in ReservEase.Alumni.PostgresDb.Sdk). Items not
+// listed here are core plumbing and can never be disabled.
+const NAV_FEATURE_KEYS: Record<string, string> = {
+  "/contributions": "Contributions",
+  "/jobs": "Jobs",
+  "/events": "Events",
+  "/directory": "Directory",
+  "/news": "News",
+  "/forum": "Forum",
+  "/mentorship": "Mentorship",
+  "/resources": "Resources",
+  "/leaderboard": "Leaderboard",
+  "/spotlights": "Spotlights",
+  "/referrals": "Referrals",
+  "/class-notes": "ClassNotes",
+};
+
+/** Shared across Sidebar and MobileBottomNav — react-query dedupes the fetch since both use the same queryKey. */
+function useDisabledFeatures(): Set<string> {
+  const { data } = useQuery({
+    queryKey: ["member-nav-theme"],
+    queryFn: async () => {
+      const res = await memberClient.get<{ data: { disabledFeatures: string[] } }>("/public/institution/theme");
+      return res.data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  return useMemo(() => new Set(data?.disabledFeatures ?? []), [data]);
+}
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const disabledFeatures = useDisabledFeatures();
+  const visibleGroups = navGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => {
+        const featureKey = NAV_FEATURE_KEYS[item.href];
+        return !featureKey || !disabledFeatures.has(featureKey);
+      }),
+    }))
+    .filter((g) => g.items.length > 0);
+  let itemIndex = 0;
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-emerald-50/60 to-slate-50 dark:from-[#0d1411] dark:to-[#111] w-[240px] border-r border-border/40 select-none">
+    <div className="flex flex-col h-full bg-sidebar w-[240px] border-r border-sidebar-border select-none">
       <div className="p-4 mb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 dark:hover:bg-white/5 transition-colors cursor-pointer group">
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-emerald-500/25 border border-white/20 bg-white/10">
-              <img src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
+          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors cursor-pointer group">
+            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-md shadow-primary/15 border border-border/40 bg-primary/5">
+              <img src="/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
             </div>
             <div className="overflow-hidden">
-              <p className="font-bold text-[13px] tracking-tight truncate group-hover:text-primary transition-colors">UMaT Alumni</p>
-              {/* <p className="text-[10px] text-muted-foreground/60 font-medium tracking-wide uppercase">Member Portal</p> */}
+              <p className="font-[family-name:var(--font-display)] font-semibold text-[14px] tracking-tight truncate group-hover:text-primary transition-colors">Alumni Portal</p>
             </div>
           </div>
           {onClose && (
@@ -73,39 +150,47 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 space-y-0.5 custom-scrollbar">
-        {navItems.map((item, i) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200 group relative",
-                active
-                  ? "bg-white dark:bg-white/10 text-foreground shadow-sm border border-border/40"
-                  : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
-              )}
-              style={{ 
-                animationDelay: `${i * 30}ms`,
-                animation: 'fade-in-right 0.4s ease-out both'
-              }}
-            >
-              <item.icon size={16} className={cn(
-                "shrink-0 transition-colors duration-200",
-                active ? "text-primary" : "group-hover:text-primary"
-              )} />
-              {item.label}
-              {active && (
-                <div className="absolute left-0 w-1 h-4 bg-primary rounded-r-full" />
-              )}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto px-3 space-y-3 custom-scrollbar">
+        {visibleGroups.map((group, gi) => (
+          <div key={group.section ?? `_root-${gi}`}>
+            {group.section && (
+              <p className="px-3 mb-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground/60">
+                {group.section}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(item.href + "/");
+                const i = itemIndex++;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 group relative",
+                      active
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
+                    )}
+                    style={{
+                      animation: `fade-in-right 0.4s ease-out ${i * 30}ms both`,
+                    }}
+                  >
+                    <item.icon size={16} className={cn(
+                      "shrink-0 transition-colors duration-200",
+                      active ? "text-primary" : "group-hover:text-primary"
+                    )} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      <div className="p-4 mt-auto border-t border-border/30 bg-black/2 dark:bg-white/2">
+      <div className="p-4 mt-auto border-t border-sidebar-border bg-black/2 dark:bg-white/2">
         <div className="flex items-center gap-3 mb-4 px-2">
           <Avatar className="h-8 w-8 ring-2 ring-background shadow-md">
             <AvatarFallback name={user?.name} className="text-[10px]">{getInitials(user?.name ?? "M")}</AvatarFallback>
@@ -133,14 +218,18 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 
 function MobileBottomNav() {
   const pathname = usePathname();
-  
+  const disabledFeatures = useDisabledFeatures();
+
   const bottomNavItems = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/contributions", label: "Pay", icon: CreditCard },
+    { href: "/contributions", label: "Give", icon: CreditCard },
     { href: "/jobs", label: "Jobs", icon: Briefcase },
     { href: "/events", label: "Events", icon: Calendar },
     { href: "/profile", label: "Profile", icon: UserCircle },
-  ];
+  ].filter((item) => {
+    const featureKey = NAV_FEATURE_KEYS[item.href];
+    return !featureKey || !disabledFeatures.has(featureKey);
+  });
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 sm:px-4" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
@@ -223,10 +312,10 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-primary/20 border border-white/20 bg-white/10">
-              <img src="/umat-logo.svg" alt="UMaT Logo" width={32} height={32} className="object-contain" />
+              <img src="/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-[14px] leading-tight tracking-tight">UMaT Alumni</span>
+              <span className="font-black text-[14px] leading-tight tracking-tight">Alumni Portal</span>
               {/* <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Member Portal</span> */}
             </div>
           </div>

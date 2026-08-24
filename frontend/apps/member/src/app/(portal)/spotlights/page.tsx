@@ -6,20 +6,20 @@ import {
   Star, GraduationCap, Plus, Loader2, ChevronDown,
   Send, X, CheckCircle2, Clock,
 } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDate, getInitials, cn } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { formatDate, getInitials, cn } from "@alumni/ui";
 import { getSpotlights, submitSpotlight, getMySpotlights } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { EmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import type { Spotlight } from "@/types";
+import { PageHeader } from "@alumni/ui";
 
 /* Deterministic avatar background color from name */
 const AVATAR_COLORS = [
@@ -47,13 +47,9 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
   return (
     <div
       className={cn(
-        "rounded-2xl border overflow-hidden transition-all duration-150",
-        featured && "ring-2 ring-primary/20",
+        "card overflow-hidden transition-all duration-150",
+        featured && "ring-2 ring-primary/20 border-primary/40",
       )}
-      style={{
-        borderColor: featured ? "var(--primary)" : "var(--border)",
-        background:  "var(--background)",
-      }}
     >
       {/* Banner image — only if provided */}
       {spotlight.imageUrl && (
@@ -205,7 +201,7 @@ function SubmitDrawer({
               id="spot-title"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. From UMaT to Silicon Valley"
+              placeholder="e.g. From campus to Silicon Valley"
               className="h-11 text-[14px]"
             />
           </div>
@@ -217,7 +213,7 @@ function SubmitDrawer({
               id="spot-story"
               value={story}
               onChange={e => setStory(e.target.value)}
-              placeholder="Tell us about your journey, achievements, and what UMaT meant to your career…"
+              placeholder="Tell us about your journey, achievements, and what your time here meant to your career…"
               rows={6}
               className="text-[14px] resize-none"
             />
@@ -284,27 +280,14 @@ export default function SpotlightsPage() {
   const totalPages = spotlightsData?.totalPages ?? 1;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[900px] mx-auto space-y-6 sm:space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Star size={15} className="fill-primary" style={{ color: "var(--primary)" }} />
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--primary)" }}>
-              Alumni spotlights
-            </p>
-          </div>
-          <h1
-            className="font-[family-name:var(--font-display)] tracking-tight"
-            style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-          >
-            Celebrating our alumni
-          </h1>
-          <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-            Inspiring stories from UMaT graduates making an impact.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Stories that stay with us"
+        title="Spotlights"
+        description="Inspiring stories from graduates making an impact."
+      >
         <Button
           onClick={() => setShowSubmit(true)}
           className="font-semibold gap-2 text-[13.5px] shrink-0"
@@ -312,7 +295,7 @@ export default function SpotlightsPage() {
         >
           <Plus size={14} /> Share my story
         </Button>
-      </div>
+      </PageHeader>
 
       {/* ── Tabs ── */}
       <div className="flex gap-2">
@@ -337,8 +320,8 @@ export default function SpotlightsPage() {
       {tab === "featured" && (
         <>
           {isLoading ? (
-            <div className="grid gap-4">
-              {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : spotlights.length === 0 ? (
             <EmptyState
@@ -352,9 +335,11 @@ export default function SpotlightsPage() {
               }
             />
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {spotlights.map((s, i) => (
-                <SpotlightCard key={s.id} spotlight={s} featured={i === 0} />
+                <div key={s.id} className={i === 0 ? "md:col-span-2" : undefined}>
+                  <SpotlightCard spotlight={s} featured={i === 0} />
+                </div>
               ))}
             </div>
           )}
@@ -364,7 +349,7 @@ export default function SpotlightsPage() {
 
       {/* ── My submissions tab ── */}
       {tab === "mine" && (
-        <>
+        <div className="max-w-[720px]">
           {loadingMine ? (
             <div className="grid gap-3">
               {Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}
@@ -387,8 +372,7 @@ export default function SpotlightsPage() {
                 return (
                   <div
                     key={s.id}
-                    className="rounded-2xl border overflow-hidden"
-                    style={{ borderColor: "var(--border)", background: "var(--background)" }}
+                    className="card overflow-hidden"
                   >
                     {/* Status stripe */}
                     <div
@@ -422,7 +406,7 @@ export default function SpotlightsPage() {
                           </p>
                         )}
                         {s.status === "Approved" && (
-                          <p className="flex items-center gap-1 text-[12px] font-medium text-green-600">
+                          <p className="flex items-center gap-1 text-[12px] font-medium text-success">
                             <CheckCircle2 size={11} /> Published
                           </p>
                         )}
@@ -433,7 +417,7 @@ export default function SpotlightsPage() {
               })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       <SubmitDrawer

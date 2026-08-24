@@ -348,6 +348,7 @@ export interface ForumThread {
   id: string;
   categoryId: string;
   categoryName?: string;
+  communityId?: string | null;
   authorId: string;
   authorName?: string;
   authorProfilePictureUrl?: string;
@@ -513,6 +514,8 @@ export interface NotificationPreference {
   jobAlerts: boolean;
   classNoteAlerts: boolean;
   spotlightAlerts: boolean;
+  smsAlerts: boolean;
+  whatsAppAlerts: boolean;
 }
 
 export interface NotificationItem {

@@ -10,9 +10,9 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
 
@@ -23,12 +23,35 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+// Dev-only: lets a local build reach a specific institution without real
+// wildcard-subdomain DNS (see TenantResolutionMiddleware / X-Institution-Slug).
+// Ignored by the backend outside Development, and hidden here in production
+// builds since real members reach their institution via its actual subdomain.
+const SHOW_WORKSPACE_FIELD = process.env.NODE_ENV === "development";
+
+// Mirrors the slug into a cookie (not just localStorage) so the server-side
+// theme fetch in layout.tsx — which runs before any client JS and has no
+// access to localStorage — can also forward X-Institution-Slug and render
+// the right institution's colors/branding on first paint, not just after
+// client-side API calls kick in.
+function persistWorkspaceSlug(slug: string) {
+  const trimmed = slug.trim().toLowerCase();
+  if (trimmed) {
+    localStorage.setItem("institution_slug", trimmed);
+    document.cookie = `institution_slug=${trimmed}; path=/; max-age=2592000; samesite=lax`;
+  } else {
+    localStorage.removeItem("institution_slug");
+    document.cookie = "institution_slug=; path=/; max-age=0";
+  }
+}
+
 function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillEmail = searchParams.get("email") ?? "";
   const [showPassword, setShowPassword] = useState(false);
+  const [workspaceSlug, setWorkspaceSlug] = useState("");
 
   const {
     register,
@@ -40,12 +63,22 @@ function LoginForm() {
   });
 
   async function onSubmit(data: FormData) {
+    // Only writes when non-empty — leaving this field blank means "don't
+    // touch it", not "clear whatever slug is already set" (e.g. via the
+    // console or a previous login), so it can't silently wipe it out.
+    if (SHOW_WORKSPACE_FIELD && workspaceSlug.trim()) {
+      persistWorkspaceSlug(workspaceSlug);
+    }
     try {
       await login(data);
-      router.push("/dashboard");
       toast.success("Welcome back!", {
         description: "You've successfully signed in to your alumni account.",
       });
+      // A hard navigation (not router.push) so the root layout's server-side
+      // theme fetch re-runs and picks up the workspace cookie set above —
+      // client-side route transitions reuse the already-rendered root layout.
+      if (SHOW_WORKSPACE_FIELD) window.location.assign("/dashboard");
+      else router.push("/dashboard");
     } catch (err) {
       toast.error("Sign in failed", {
         description: handleApiError(err),
@@ -58,20 +91,40 @@ function LoginForm() {
       {/* Mobile logo (visible when banner is hidden) */}
       <div className="mb-10 text-center md:hidden">
         <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-white/15 bg-white/10">
-          <Image src="/umat-logo.svg" alt="UMaT Logo" width={56} height={56} className="object-contain" />
+          <Image src="/logo.svg" alt="Logo" width={56} height={56} className="object-contain" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">UMaT Alumni</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">Alumni Portal</h1>
         <p className="text-muted-foreground text-sm mt-1">Connecting gold-standard graduates</p>
       </div>
 
       <div className="space-y-8">
-        <div className="space-y-3 text-center">
+        <div className="space-y-2.5">
           <div className="text-sm font-semibold tracking-widest text-primary/90 uppercase">Member portal</div>
-          <h1 className="text-[26px] font-bold text-foreground ">Sign in to your account</h1>
-          <p className="text-sm text-muted-foreground">Access events, connections, and member resources.</p>
+          <h1 className="font-[family-name:var(--font-display)] text-[32px] sm:text-[38px] font-semibold text-foreground leading-tight">
+            Welcome back
+          </h1>
+          <p className="text-sm text-muted-foreground">Sign in to stay connected with your alumni community.</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {SHOW_WORKSPACE_FIELD && (
+            <div className="space-y-1.5">
+              <Label htmlFor="workspace" className="text-[13px] font-semibold text-foreground/80">
+                Workspace (dev only)
+              </Label>
+              <Input
+                id="workspace"
+                placeholder="greenfield"
+                value={workspaceSlug}
+                onChange={(e) => setWorkspaceSlug(e.target.value)}
+                className="h-12 text-[15px]"
+              />
+              <p className="text-[12px] text-muted-foreground">
+                Institution slug — stands in for real subdomain routing until wildcard DNS is set up.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-[13px] font-semibold text-foreground/80">
               Email address
@@ -143,7 +196,7 @@ function LoginForm() {
 
         <div className="text-center text-sm text-muted-foreground space-y-3">
           <p>
-            New to UMaT?{' '}
+            New here?{' '}
             <Link href="/register" className="text-primary hover:underline font-semibold">
               Create an account
             </Link>

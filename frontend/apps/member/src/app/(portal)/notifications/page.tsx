@@ -6,8 +6,8 @@ import {
   Bell, CheckCheck, Loader2, Briefcase, Megaphone, Calendar,
   Star, CreditCard, MessageSquare, Check,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 import {
   getNotifications, getUnreadNotificationCount,
   markNotificationRead, markAllNotificationsRead,
@@ -17,6 +17,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { handleApiError } from "@/lib/api-client";
 import Link from "next/link";
+import { PageHeader } from "@alumni/ui";
 
 /* Extract path from a full URL — falls back to the string as-is if already a path */
 function toPath(url: string | null | undefined): string | null {
@@ -214,20 +215,13 @@ export default function NotificationsPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[860px] mx-auto space-y-6">
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1
-            className="font-[family-name:var(--font-display)] tracking-tight"
-            style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-          >
-            Notifications
-          </h1>
-          <p className="mt-0.5 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-            {unreadCount > 0
-              ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
-              : "You're all caught up."}
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Stay in the loop"
+        title="Notifications"
+        description={unreadCount > 0
+          ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
+          : "You're all caught up."}
+      >
         {unreadCount > 0 && (
           <Button
             variant="outline"
@@ -243,7 +237,7 @@ export default function NotificationsPage() {
             Mark all read
           </Button>
         )}
-      </div>
+      </PageHeader>
 
       {/* ── Filter tabs ── */}
       <div className="flex flex-wrap gap-2">
@@ -276,10 +270,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── Notification list ── */}
-      <div
-        className="rounded-2xl border overflow-hidden"
-        style={{ borderColor: "var(--border)", background: "var(--background)" }}
-      >
+      <div className="card overflow-hidden">
         {isLoading ? (
           <div>
             {Array.from({ length: 6 }).map((_, i) => (

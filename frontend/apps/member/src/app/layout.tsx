@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Lora } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shared/providers";
+import { getInstitutionTheme, themeStyleVars } from "@/lib/theme";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,21 +18,40 @@ const lora = Lora({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "UMaT Alumni - Member Portal",
-  description: "University of Mines and Technology Alumni Member Portal",
-  manifest: "/manifest.json",
-  themeColor: "#4f46e5",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "UMaT Alumni",
-  },
-};
+// Dynamic per-institution: browser tab title and favicon are configured by
+// platform staff (MemberPortalTitle / IconUrl), not hardcoded — falls back
+// to generic copy when an institution hasn't set one.
+export async function generateMetadata(): Promise<Metadata> {
+  const theme = await getInstitutionTheme();
+  const title = theme?.portalTitle || theme?.portalName || "Alumni Portal";
+  return {
+    title,
+    description: "Alumni Member Portal",
+    manifest: "/manifest.json",
+    icons: theme?.iconUrl ? { icon: theme.iconUrl } : undefined,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title,
+    },
+  };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export async function generateViewport(): Promise<Viewport> {
+  const theme = await getInstitutionTheme();
+  return { themeColor: theme?.primaryColorHex || "#4f46e5" };
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = await getInstitutionTheme();
+
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${lora.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${lora.variable}`}
+      style={themeStyleVars(theme)}
+    >
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>{children}</Providers>
       </body>

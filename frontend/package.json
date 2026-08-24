@@ -1,15 +1,20 @@
 {
-  "name": "umat-alumni-frontend",
+  "name": "reservease-alumni-frontend",
   "private": true,
-  "workspaces": [
-    "apps/*"
-  ],
+  "packageManager": "pnpm@10.17.1",
   "scripts": {
-    "dev:admin": "npm run dev --workspace=@alumni/admin",
-    "dev:member": "npm run dev --workspace=@alumni/member",
-    "build:admin": "npm run build --workspace=@alumni/admin",
-    "build:member": "npm run build --workspace=@alumni/member",
-    "lint:admin": "npm run lint --workspace=@alumni/admin",
-    "lint:member": "npm run lint --workspace=@alumni/member"
+    "dev:institution": "turbo run dev --filter=@alumni/institution",
+    "dev:member": "turbo run dev --filter=@alumni/member",
+    "dev:platform": "turbo run dev --filter=@alumni/platform",
+    "build:institution": "turbo run build --filter=@alumni/institution",
+    "build:member": "turbo run build --filter=@alumni/member",
+    "build:platform": "turbo run build --filter=@alumni/platform",
+    "lint:institution": "turbo run lint --filter=@alumni/institution",
+    "lint:member": "turbo run lint --filter=@alumni/member",
+    "lint:platform": "turbo run lint --filter=@alumni/platform",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
   }
 }

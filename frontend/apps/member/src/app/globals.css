@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../../../packages/ui/src";
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
@@ -6,21 +7,21 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono);
 
-  /* Paystack-style spacing tokens */
+  /* Warm editorial spacing tokens */
   --space-section: 80px;
   --space-section-sm: 48px;
-  --space-card: 28px;
-  --space-gap: 24px;
+  --space-card: 24px;
+  --space-gap: 20px;
 
   /* Card / surface tokens */
-  --card-radius: 12px;
-  --card-border: rgba(14, 113, 67, 0.12);
-  --card-shadow: none;
-  --card-shadow-hover: none;
+  --card-radius: 16px;
+  --card-border: var(--border);
+  --card-shadow: 0 1px 2px rgba(30, 41, 59, 0.05);
+  --card-shadow-hover: 0 8px 24px rgba(30, 41, 59, 0.08);
 
   /* Transition token */
   --transition: all 0.18s ease;
@@ -61,11 +62,11 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  /* UMaT Brand Utility Colors */
-  --color-umat-emerald: var(--umat-emerald);
-  --color-umat-sky: var(--umat-sky);
-  --color-umat-scarlet: var(--umat-scarlet);
-  --color-umat-gold: var(--umat-gold);
+  /* Accent Utility Colors */
+  --color-accent-emerald: var(--accent-emerald);
+  --color-accent-sky: var(--accent-sky);
+  --color-accent-scarlet: var(--accent-scarlet);
+  --color-accent-gold: var(--accent-gold);
 
   /* Precise border radius scale (Linear focus) */
   --radius-xs: 4px;
@@ -219,9 +220,21 @@ small, .text-small {
 }
 
 .section__inner {
-  max-width: 1160px;
+  max-width: 1400px;
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: clamp(1.5rem, 5vw, 4rem);
+}
+
+.section__inner--wide {
+  max-width: 1560px;
+  margin-inline: auto;
+  padding-inline: clamp(1.5rem, 6vw, 5rem);
+}
+
+.section__inner--narrow {
+  max-width: 900px;
+  margin-inline: auto;
+  padding-inline: clamp(1.5rem, 5vw, 4rem);
 }
 
 /* Card base styling */
@@ -422,13 +435,13 @@ svg {
   stroke: currentColor;
 }
 
-/* ─── Root design tokens — UMaT Brand ───────────────────────────────── */
+/* ─── Root design tokens — Default Brand ───────────────────────────────── */
 /*
- * Official UMaT Colors:
+ * Default Brand Colors:
  *   Emerald Green  → --primary       (#10B981 family)
- *   Sky Blue       → --info / --umat-sky
+ *   Sky Blue       → --info / --accent-sky
  *   Scarlet Red    → --destructive   (#EF4444 family)
- *   Golden Yellow  → --warning / --umat-gold
+ *   Golden Yellow  → --warning / --accent-gold
  *   Black + White  → base foreground/background
  */
 
@@ -441,15 +454,15 @@ svg {
   --bp-xl: 1280px;
   --bp-2xl: 1536px;
 
-  /* ── Base ── */
-  --background: #ffffff;
-  --foreground: #111827;
+  /* ── Base — warm ivory canvas, true-white cards ── */
+  --background: #f8f6f1;
+  --foreground: #1e293b;
 
   --card: #ffffff;
-  --card-foreground: #111827;
+  --card-foreground: #1e293b;
 
   --popover: #ffffff;
-  --popover-foreground: #111827;
+  --popover-foreground: #1e293b;
 
   /* ── Brand tokens ── */
   --brand-primary: #0e7143;
@@ -471,22 +484,22 @@ svg {
   --primary: var(--brand-primary);
   --primary-foreground: #ffffff;
 
-  /* ── Secondary / surface ── */
-  --secondary: #f5faf7;
-  --secondary-foreground: #111827;
+  /* ── Secondary / surface — warm neutral, not mint-tinted ── */
+  --secondary: #f0eee8;
+  --secondary-foreground: #1e293b;
 
-  --muted: #f7fbf8;
-  --muted-foreground: #6b7280;
+  --muted: #f0eee8;
+  --muted-foreground: #667085;
 
   --accent: var(--brand-accent);
   --accent-foreground: #6b4f02;
 
   /* ── Destructive — red semantic derived from red family ── */
-  --destructive: #dc2626;
+  --destructive: #b94a48;
   --destructive-foreground: #ffffff;
 
   /* ── Border & Input ── */
-  --border: rgba(14, 113, 67, 0.15);
+  --border: rgba(30, 41, 59, 0.12);
   --input: #ffffff;
   --ring: rgba(14, 113, 67, 0.4);
 
@@ -498,11 +511,11 @@ svg {
   --info: var(--brand-primary);
   --info-foreground: #ffffff;
 
-  /* ── UMaT Brand Raw Tokens (use in components directly) ── */
-  --umat-emerald: var(--brand-primary);
-  --umat-sky: #4f46e5;
-  --umat-scarlet: #dc2626;
-  --umat-gold: var(--brand-accent);
+  /* ── Accent Raw Tokens (use in components directly) ── */
+  --accent-emerald: var(--brand-primary);
+  --accent-sky: #4f46e5;
+  --accent-scarlet: #dc2626;
+  --accent-gold: var(--brand-accent);
 
   /* ── Chart colors — brand-first palette */
   --chart-1: var(--brand-primary);
@@ -511,48 +524,48 @@ svg {
   --chart-4: #6b7280;
   --chart-5: #111827;
 
-  /* ── Sidebar ── */
-  --sidebar: #f5faf7;
-  --sidebar-foreground: #111827;
+  /* ── Sidebar — true white, distinct from the warm ivory canvas ── */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
   --sidebar-primary: var(--brand-primary);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--brand-accent-light);
   --sidebar-accent-foreground: #6b4f02;
-  --sidebar-border: rgba(14, 113, 67, 0.12);
+  --sidebar-border: rgba(30, 41, 59, 0.1);
   --sidebar-ring: rgba(14, 113, 67, 0.25);
 }
 
 .dark {
-  /* ── Base — deep graphite (Linear-style) ── */
-  --background: oklch(0.13 0.012 162);     /* Deep emerald-tinted black      */
-  --foreground: oklch(0.94 0.006 0);
+  /* ── Base — warm charcoal (ivory canvas, inverted), not cold graphite ── */
+  --background: oklch(0.16 0.010 70);      /* Deep warm charcoal              */
+  --foreground: oklch(0.94 0.006 70);
 
-  --card: oklch(0.16 0.012 162);
-  --card-foreground: oklch(0.94 0.006 0);
+  --card: oklch(0.20 0.010 70);
+  --card-foreground: oklch(0.94 0.006 70);
 
-  --popover: oklch(0.18 0.012 162);
-  --popover-foreground: oklch(0.94 0.006 0);
+  --popover: oklch(0.22 0.010 70);
+  --popover-foreground: oklch(0.94 0.006 70);
 
   /* ── Primary ── */
   --primary: oklch(0.68 0.155 162);        /* Brighter emerald for dark mode */
   --primary-foreground: oklch(0.10 0.01 0);
 
-  --secondary: oklch(0.22 0.012 162);
-  --secondary-foreground: oklch(0.86 0.008 0);
+  --secondary: oklch(0.25 0.010 70);
+  --secondary-foreground: oklch(0.86 0.008 70);
 
-  --muted: oklch(0.20 0.010 162);
-  --muted-foreground: oklch(0.64 0.010 0);
+  --muted: oklch(0.23 0.008 70);
+  --muted-foreground: oklch(0.66 0.010 70);
 
-  --accent: oklch(0.25 0.015 162);
+  --accent: oklch(0.28 0.014 70);
   --accent-foreground: oklch(0.68 0.155 162);
 
   /* ── Destructive ── */
-  --destructive: oklch(0.62 0.20 27);
+  --destructive: oklch(0.62 0.18 25);
   --destructive-foreground: oklch(0.99 0 0);
 
   /* ── Border & Input ── */
-  --border: oklch(0.25 0.012 0);
-  --input: oklch(0.27 0.012 0);
+  --border: oklch(0.30 0.010 70);
+  --input: oklch(0.28 0.010 70);
   --ring: oklch(0.68 0.155 162 / 0.5);
 
   /* ── Status colors ── */
@@ -563,11 +576,11 @@ svg {
   --info: oklch(0.68 0.160 240);
   --info-foreground: oklch(0.10 0.01 0);
 
-  /* ── UMaT Brand Raw Tokens ── */
-  --umat-emerald: oklch(0.68 0.155 162);
-  --umat-sky: oklch(0.68 0.160 240);
-  --umat-scarlet: oklch(0.62 0.20 27);
-  --umat-gold: oklch(0.80 0.155 68);
+  /* ── Accent Raw Tokens ── */
+  --accent-emerald: oklch(0.68 0.155 162);
+  --accent-sky: oklch(0.68 0.160 240);
+  --accent-scarlet: oklch(0.62 0.20 27);
+  --accent-gold: oklch(0.80 0.155 68);
 
   /* ── Chart colors ── */
   --chart-1: oklch(0.68 0.155 162);
@@ -577,13 +590,13 @@ svg {
   --chart-5: oklch(0.70 0.01 0);
 
   /* ── Sidebar ── */
-  --sidebar: oklch(0.15 0.012 162);
-  --sidebar-foreground: oklch(0.90 0.005 0);
+  --sidebar: oklch(0.18 0.010 70);
+  --sidebar-foreground: oklch(0.90 0.005 70);
   --sidebar-primary: oklch(0.68 0.155 162);
   --sidebar-primary-foreground: oklch(0.10 0.01 0);
-  --sidebar-accent: oklch(0.22 0.015 162);
+  --sidebar-accent: oklch(0.25 0.014 70);
   --sidebar-accent-foreground: oklch(0.68 0.155 162);
-  --sidebar-border: oklch(0.25 0.012 162);
+  --sidebar-border: oklch(0.30 0.010 70);
   --sidebar-ring: oklch(0.68 0.155 162 / 0.5);
 }
 

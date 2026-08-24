@@ -1,7 +1,7 @@
 {
-  "name": "UMaT Alumni Portal",
-  "short_name": "UMaT Alumni",
-  "description": "Stay connected with the UMaT alumni community. Access jobs, events, campaigns and more.",
+  "name": "Alumni Portal",
+  "short_name": "Alumni",
+  "description": "Stay connected with your alumni community. Access jobs, events, campaigns and more.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,7 +9,7 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/umat-logo.svg",
+      "src": "/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

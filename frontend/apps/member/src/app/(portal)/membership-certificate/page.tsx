@@ -1,19 +1,26 @@
 "use client";
 
-import { useRef, useState, useCallback, Fragment } from "react";
+import { useRef, useState, useCallback, useMemo, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Download, Award, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import umatLogo from "@/app/umatLogo.png";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { CardSkeleton } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
+import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import {
   getMyProfile, getMyContributions, getMyCampaigns, getMyMembershipStatus,
 } from "@/lib/member-api";
+import { publicMemberClient } from "@/lib/api-client";
 import type { Campaign, Contribution } from "@/types";
+
+interface InstitutionThemeResponse {
+  portalName: string;
+  displayName: string;
+  logoUrl: string | null;
+}
 
 interface PaidMembership {
   campaign: Campaign;
@@ -28,6 +35,19 @@ export default function MembershipCertificatePage() {
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["m-profile"],
     queryFn:  getMyProfile,
+  });
+
+  // The certificate must show this institution's own name/logo, not a fixed
+  // one — this platform hosts any number of institutions, each with their
+  // own branding, so it's fetched per-tenant rather than baked in.
+  const { data: theme } = useQuery({
+    queryKey: ["m-institution-theme"],
+    queryFn: async () => {
+      const res = await publicMemberClient.get<{ data: InstitutionThemeResponse }>("/public/institution/theme");
+      return res.data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 
   const { data: membershipStatus } = useQuery({
@@ -48,7 +68,7 @@ export default function MembershipCertificatePage() {
 
   const isLoading = loadingProfile || loadingCampaigns || loadingContribs;
 
-  const paidMemberships: PaidMembership[] = (() => {
+  const paidMemberships: PaidMembership[] = useMemo(() => {
     if (!campaignsData?.results || !contributionsData?.results) return [];
     const membershipCampaigns = campaignsData.results.filter(c => c.isMembershipCampaign);
     const confirmedContribs   = contributionsData.results.filter(c => c.status === "Confirmed");
@@ -59,11 +79,14 @@ export default function MembershipCertificatePage() {
       })
       .filter((x): x is PaidMembership => x !== null)
       .sort((a, b) => (b.campaign.membershipYear ?? 0) - (a.campaign.membershipYear ?? 0));
-  })();
+  }, [campaignsData, contributionsData]);
 
-  const selected = selectedYear
-    ? paidMemberships.find(p => p.campaign.membershipYear === selectedYear)
-    : paidMemberships[0];
+  const selected = useMemo(
+    () => (selectedYear
+      ? paidMemberships.find(p => p.campaign.membershipYear === selectedYear)
+      : paidMemberships[0]),
+    [paidMemberships, selectedYear]
+  );
 
   const activeYear = selected?.campaign.membershipYear ?? paidMemberships[0]?.campaign.membershipYear;
 
@@ -81,7 +104,7 @@ export default function MembershipCertificatePage() {
       el.style.position = "fixed";
       el.style.left     = "-9999px";
       el.style.top      = "0";
-      el.offsetHeight;
+      void el.offsetHeight; // force a layout reflow before measuring/capturing
 
       const canvas = await html2canvas(el, {
         scale:           3,
@@ -156,34 +179,29 @@ export default function MembershipCertificatePage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
 
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <button
-            onClick={() => history.back()}
-            className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-2 transition-colors hover:underline"
-            style={{ color: "var(--muted-foreground)" }}
-          >
-            <ArrowLeft size={15} /> Back
-          </button>
-          <h1
-            className="font-[family-name:var(--font-display)] tracking-tight"
-            style={{ fontSize: "clamp(1.25rem, 3vw, 1.75rem)", fontWeight: 700, color: "var(--foreground)" }}
-          >
-            Membership certificate
-          </h1>
-          <p className="text-[13.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-            View and download your certificates
-          </p>
-        </div>
-        <Button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="font-semibold gap-2 text-[14px] shrink-0"
-          style={{ height: 44 }}
+      <div>
+        <button
+          onClick={() => history.back()}
+          className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-2 transition-colors hover:underline"
+          style={{ color: "var(--muted-foreground)" }}
         >
-          <Download size={15} />
-          {downloading ? "Generating PDF…" : "Download PDF"}
-        </Button>
+          <ArrowLeft size={15} /> Back
+        </button>
+        <PageHeader
+          eyebrow="Verified membership record"
+          title="Membership Certificate"
+          description="View and download your certificates"
+        >
+          <Button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="font-semibold gap-2 text-[14px] shrink-0"
+            style={{ height: 44 }}
+          >
+            <Download size={15} />
+            {downloading ? "Generating PDF…" : "Download PDF"}
+          </Button>
+        </PageHeader>
       </div>
 
       {/* ── Year selector ── */}
@@ -253,19 +271,32 @@ export default function MembershipCertificatePage() {
           >
             {/* Logo + org name */}
             <div className="flex items-center" style={{ gap: "clamp(4px, 1.3cqw, 12px)", marginBottom: "clamp(4px, 1.7cqw, 16px)" }}>
-              <Image
-                src={umatLogo}
-                alt="UMaT Logo"
-                width={48}
-                height={48}
-                className="object-contain"
-                style={{ width: "clamp(16px, 5cqw, 48px)", height: "clamp(16px, 5cqw, 48px)" }}
-              />
+              {theme?.logoUrl ? (
+                <Image
+                  src={theme.logoUrl}
+                  alt={`${theme.displayName} logo`}
+                  width={48}
+                  height={48}
+                  unoptimized
+                  className="object-contain"
+                  style={{ width: "clamp(16px, 5cqw, 48px)", height: "clamp(16px, 5cqw, 48px)" }}
+                />
+              ) : (
+                <div
+                  className="rounded-full flex items-center justify-center font-bold text-white"
+                  style={{
+                    width: "clamp(16px, 5cqw, 48px)", height: "clamp(16px, 5cqw, 48px)",
+                    background: "var(--primary)", fontSize: "clamp(7px, 2.1cqw, 20px)",
+                  }}
+                >
+                  {(theme?.displayName ?? "A").charAt(0).toUpperCase()}
+                </div>
+              )}
               <h2
                 className="font-bold text-amber-800 tracking-wider"
                 style={{ fontSize: "clamp(7px, 2.1cqw, 20px)" }}
               >
-                UMaT ALUMNI ASSOCIATION
+                {(theme?.displayName ?? "ALUMNI").toUpperCase()} ALUMNI ASSOCIATION
               </h2>
             </div>
 
@@ -331,12 +362,12 @@ export default function MembershipCertificatePage() {
 
             {/* Verified badge */}
             <div
-              className="flex items-center rounded-full bg-green-50 border border-green-200"
+              className="flex items-center rounded-full bg-success/10 border border-success/30"
               style={{ gap: "clamp(2px, 0.9cqw, 8px)", padding: "clamp(2px, 0.9cqw, 8px) clamp(6px, 1.7cqw, 16px)" }}
             >
-              <CheckCircle2 className="text-green-600"
+              <CheckCircle2 className="text-success"
                 style={{ width: "clamp(8px, 1.7cqw, 16px)", height: "clamp(8px, 1.7cqw, 16px)" }} />
-              <span className="font-semibold text-green-700 tracking-wide"
+              <span className="font-semibold text-success tracking-wide"
                 style={{ fontSize: "clamp(5px, 1.3cqw, 12px)" }}>
                 Payment Verified &amp; Confirmed
               </span>
@@ -388,7 +419,7 @@ export default function MembershipCertificatePage() {
                 </p>
                 <p
                   className={cn("text-[13.5px] font-semibold truncate", item.mono && "font-mono")}
-                  style={{ color: item.green ? "#059669" : "var(--foreground)" }}
+                  style={{ color: item.green ? "var(--success)" : "var(--foreground)" }}
                 >
                   {item.value}
                 </p>

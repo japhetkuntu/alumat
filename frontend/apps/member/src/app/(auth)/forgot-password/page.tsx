@@ -6,10 +6,11 @@ import { z } from "zod";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle2 } from "lucide-react";
+
+import { Button } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
 
 const schema = z.object({ email: z.string().email("Enter a valid email") });
@@ -30,54 +31,68 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  if (isSubmitSuccessful) {
-    return (
-      <div className="w-full max-w-md">
-        <Card>
-          <CardContent className="pt-8 pb-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">✓</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Check your email</h2>
-            <p className="text-muted-foreground text-sm">
-              If an account exists for that email, we&apos;ve sent password reset instructions.
-            </p>
-            <Link href="/login" className="mt-6 block text-sm text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full max-w-md">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-[22px] tracking-tight">Reset your password</CardTitle>
-          <CardDescription>
-            Enter your email address and we&apos;ll send you a reset link.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+    <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
+      <div className="space-y-8">
+        <div className="space-y-2.5">
+          <div className="text-sm font-semibold tracking-widest text-primary/90 uppercase">Account recovery</div>
+          <h1 className="font-[family-name:var(--font-display)] text-[32px] sm:text-[34px] font-semibold text-foreground leading-tight">
+            Forgot your password?
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your email and we&apos;ll send a reset link if an account exists.
+          </p>
+        </div>
+
+        {isSubmitSuccessful ? (
+          <div className="rounded-xl bg-success/10 p-4 flex items-start gap-3">
+            <CheckCircle2 size={18} className="text-success shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-success">Check your email</p>
+              <p className="text-success/80 mt-0.5">
+                If an account exists, you&apos;ll receive instructions shortly.
+              </p>
             </div>
-            <Button type="submit" className="w-full" isLoading={isSubmitting} loadingText="Sending">
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[13px] font-semibold text-foreground/80">
+                Email address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                error={!!errors.email}
+                className="h-12 text-[15px]"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-[12px] font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-13 text-[15px] font-semibold shadow-sm hover:shadow-md transition-all"
+              style={{ height: "52px" }}
+              isLoading={isSubmitting}
+              loadingText="Sending..."
+            >
               Send reset link
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            <Link href="/login" className="text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+        )}
+
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href="/login" className="text-primary hover:underline font-semibold">
+            Back to sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

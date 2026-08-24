@@ -31,6 +31,19 @@ export async function getDepartments(): Promise<Department[]> {
   return res.data.data ?? [];
 }
 
+// ── Batches (graduating-class year groups) ──────────────────────────────────
+
+export interface Batch {
+  id: string;
+  name: string;
+  year: number;
+}
+
+export async function getBatches(): Promise<Batch[]> {
+  const res = await memberClient.get("/batches");
+  return res.data.data ?? [];
+}
+
 // ── Auth / Profile ──────────────────────────────────────────────────────────
 
 export interface MemberProfileResponse {
@@ -42,6 +55,7 @@ export interface MemberProfileResponse {
   memberNumber?: string;
   graduationYear: number;
   departmentId: string;
+  departmentName?: string;
   company?: string;
   jobTitle?: string;
   location?: string;
@@ -97,8 +111,8 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 // ── Campaigns ───────────────────────────────────────────────────────────────
 
-export async function getMyCampaigns(page = 1, pageSize = 20): Promise<PagedResult<Campaign>> {
-  const res = await memberClient.get("/campaigns", { params: { page, pageSize } });
+export async function getMyCampaigns(page = 1, pageSize = 20, communityId?: string): Promise<PagedResult<Campaign>> {
+  const res = await memberClient.get("/campaigns", { params: { page, pageSize, communityId: communityId || undefined } });
   return res.data.data!;
 }
 
@@ -188,8 +202,8 @@ export async function uploadContributionProof(body: UploadProofBody) {
 
 // ── Events ───────────────────────────────────────────────────────────────────
 
-export async function getEvents(page = 1, pageSize = 20, status?: string): Promise<PagedResult<AlumniEvent>> {
-  const res = await memberClient.get("/events", { params: { page, pageSize, status } });
+export async function getEvents(page = 1, pageSize = 20, status?: string, communityId?: string): Promise<PagedResult<AlumniEvent>> {
+  const res = await memberClient.get("/events", { params: { page, pageSize, status, communityId } });
   return res.data.data!;
 }
 
@@ -255,6 +269,83 @@ export async function getNewsPost(postId: string): Promise<NewsPost> {
   return res.data.data!;
 }
 
+// ── Communities ───────────────────────────────────────────────────────────────
+
+export interface Community {
+  id: string;
+  name: string;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  memberCount: number;
+  myStatus: "Pending" | "Approved" | "Rejected" | null;
+  myRole: "Member" | "Leader" | null;
+}
+
+export interface CommunityMember {
+  memberId: string;
+  name: string;
+  profilePictureUrl?: string | null;
+  role: "Member" | "Leader";
+}
+
+export interface JoinRequest {
+  membershipId: string;
+  memberId: string;
+  memberName: string;
+  profilePictureUrl?: string | null;
+  requestedAt: string;
+}
+
+export async function getCommunities(): Promise<Community[]> {
+  const res = await memberClient.get("/communities");
+  return res.data.data ?? [];
+}
+
+export async function getMyCommunities(): Promise<Community[]> {
+  const res = await memberClient.get("/communities/mine");
+  return res.data.data ?? [];
+}
+
+export async function getCommunity(id: string): Promise<Community> {
+  const res = await memberClient.get(`/communities/${id}`);
+  return res.data.data!;
+}
+
+export async function joinCommunity(id: string) {
+  const res = await memberClient.post(`/communities/${id}/join`);
+  return res.data;
+}
+
+export async function leaveCommunity(id: string) {
+  const res = await memberClient.delete(`/communities/${id}/membership`);
+  return res.data;
+}
+
+export async function getCommunityMembers(id: string): Promise<CommunityMember[]> {
+  const res = await memberClient.get(`/communities/${id}/members`);
+  return res.data.data ?? [];
+}
+
+export async function getCommunityJoinRequests(id: string): Promise<JoinRequest[]> {
+  const res = await memberClient.get(`/communities/${id}/join-requests`);
+  return res.data.data ?? [];
+}
+
+export async function approveJoinRequest(communityId: string, membershipId: string) {
+  const res = await memberClient.post(`/communities/${communityId}/join-requests/${membershipId}/approve`);
+  return res.data;
+}
+
+export async function rejectJoinRequest(communityId: string, membershipId: string) {
+  const res = await memberClient.post(`/communities/${communityId}/join-requests/${membershipId}/reject`);
+  return res.data;
+}
+
+export async function removeCommunityMember(communityId: string, memberId: string) {
+  const res = await memberClient.delete(`/communities/${communityId}/members/${memberId}`);
+  return res.data;
+}
+
 // ── Forum ─────────────────────────────────────────────────────────────────────
 
 export async function getForumCategories(): Promise<PagedResult<ForumCategory>> {
@@ -268,9 +359,10 @@ export async function getForumThreads(
   categoryId?: string,
   search?: string,
   filter?: string,
+  communityId?: string,
 ): Promise<PagedResult<ForumThread>> {
   const res = await memberClient.get("/forum/threads", {
-    params: { page, pageSize, categoryId: categoryId || undefined, search: search || undefined, filter: filter || undefined },
+    params: { page, pageSize, categoryId: categoryId || undefined, search: search || undefined, filter: filter || undefined, communityId: communityId || undefined },
   });
   return res.data.data!;
 }
@@ -285,7 +377,7 @@ export async function getForumThread(threadId: string): Promise<ForumThread> {
   return res.data.data ?? res.data;
 }
 
-export interface CreateThreadBody { categoryId: string; title: string; content: string; }
+export interface CreateThreadBody { categoryId?: string; title: string; content: string; communityId?: string; }
 
 export async function createThread(body: CreateThreadBody) {
   const res = await memberClient.post("/forum/threads", body);
@@ -371,6 +463,7 @@ export async function getResources(
   type?: string,
   addedAfter?: string,
   addedBefore?: string,
+  communityId?: string,
 ): Promise<PagedResult<Resource>> {
   const res = await memberClient.get("/resources", {
     params: {
@@ -381,6 +474,7 @@ export async function getResources(
       type: type || undefined,
       addedAfter: addedAfter || undefined,
       addedBefore: addedBefore || undefined,
+      communityId: communityId || undefined,
     },
   });
   return res.data.data!;
@@ -454,12 +548,12 @@ export async function getMyReferrals(): Promise<Referral[]> {
 
 // ── Class Notes ──────────────────────────────────────────────────────────────
 
-export async function getClassNotes(page = 1, pageSize = 20): Promise<PagedResult<ClassNote>> {
-  const res = await memberClient.get("/classnotes", { params: { page, pageSize } });
+export async function getClassNotes(page = 1, pageSize = 20, communityId?: string): Promise<PagedResult<ClassNote>> {
+  const res = await memberClient.get("/classnotes", { params: { page, pageSize, communityId: communityId || undefined } });
   return res.data.data!;
 }
 
-export async function createClassNote(data: { content: string; imageUrl?: string }): Promise<ClassNote> {
+export async function createClassNote(data: { content: string; imageUrl?: string; communityId?: string }): Promise<ClassNote> {
   const res = await memberClient.post("/classnotes", data);
   return res.data.data!;
 }

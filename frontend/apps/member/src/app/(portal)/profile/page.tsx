@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { UserAvatar } from "@/components/ui/user-avatar";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@alumni/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
+import { UserAvatar } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
 import { getMyProfile, updateMyProfile, changePassword, getMyBadges } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { cn } from "@/lib/utils";
+import { CardSkeleton } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 
 /* ─────────────────────────────────────────────────────────────────────────
    EMPLOYMENT OPTION BUTTON
@@ -42,11 +43,10 @@ function EmploymentOption({
       onClick={onClick}
       className={cn(
         "relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 text-center transition-colors",
-        active   ? "border-primary"      : "border-border",
+        active   ? "border-primary bg-primary/10"      : "border-border bg-background",
         !disabled && !active && "hover:border-primary/40",
         disabled && "cursor-not-allowed opacity-50",
       )}
-      style={active ? { background: "var(--color-background-info)" } : { background: "var(--background)" }}
     >
       <Icon size={22} style={{ color: active ? "var(--primary)" : "var(--muted-foreground)" }} />
       <span
@@ -104,19 +104,23 @@ export default function MemberProfilePage() {
     queryFn:  getMyBadges,
   });
 
-  useEffect(() => {
-    if (profile) {
-      setProfileForm({
-        company:     profile.company     ?? "",
-        jobTitle:    profile.jobTitle    ?? "",
-        location:    profile.location    ?? "",
-        linkedInUrl: profile.linkedInUrl ?? "",
-        bio:         profile.bio         ?? "",
-        phone:       profile.phone       ?? "",
-      });
-      setEmploymentStatus(profile.employmentStatus ?? "Employed");
-    }
-  }, [profile]);
+  // Adjust local form state when the fetched profile changes — done during
+  // render (React's documented alternative to an effect for this case)
+  // rather than in a useEffect, guarded so it only fires once per distinct
+  // `profile` reference.
+  const [syncedProfile, setSyncedProfile] = useState(profile);
+  if (profile && profile !== syncedProfile) {
+    setSyncedProfile(profile);
+    setProfileForm({
+      company:     profile.company     ?? "",
+      jobTitle:    profile.jobTitle    ?? "",
+      location:    profile.location    ?? "",
+      linkedInUrl: profile.linkedInUrl ?? "",
+      bio:         profile.bio         ?? "",
+      phone:       profile.phone       ?? "",
+    });
+    setEmploymentStatus(profile.employmentStatus ?? "Employed");
+  }
 
   const updateMut = useMutation({
     mutationFn: () => updateMyProfile({
@@ -159,7 +163,7 @@ export default function MemberProfilePage() {
 
   if (isLoading || !profile) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-2xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -167,20 +171,12 @@ export default function MemberProfilePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-2xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
 
-      {/* ── Page heading ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          My profile
-        </h1>
-        <p className="text-[13.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-          Update your information visible to fellow alumni.
-        </p>
-      </div>
+      <PageHeader eyebrow="Account" title="My profile" description="Update your information visible to fellow alumni." />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-5 items-start mt-6">
+      <div className="space-y-5">
 
       {/* ── Identity card ── */}
       <Card>
@@ -280,14 +276,7 @@ export default function MemberProfilePage() {
           </p>
 
           {employmentStatus === "Pensioner" && (
-            <div
-              className="rounded-xl p-3.5 text-[13px] font-medium"
-              style={{
-                background: "rgba(245,158,11,0.08)",
-                border:     "1px solid rgba(245,158,11,0.25)",
-                color:      "#92400e",
-              }}
-            >
+            <div className="rounded-xl p-3.5 text-[13px] font-medium bg-warning/10 border border-warning/25 text-warning">
               Your status is set to <strong>Pensioner</strong>. This cannot be changed back.
             </div>
           )}
@@ -324,6 +313,9 @@ export default function MemberProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      </div>
+      <div className="space-y-5">
 
       {/* ── Professional info ── */}
       <Card>
@@ -470,6 +462,9 @@ export default function MemberProfilePage() {
           </form>
         </CardContent>
       </Card>
+
+      </div>
+      </div>
 
       {/* ── Confirm pensioner modal ── */}
       <ConfirmModal

@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2, RefreshCcw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 import { getPaystackPaymentStatus } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 
@@ -67,7 +69,7 @@ export default function PaystackCallbackPage() {
     if (!reference) return;
 
     // Keep the reference so the contributions page can show the status modal
-    localStorage.setItem("umat-paystack-pending-ref", reference);
+    localStorage.setItem("alumni-paystack-pending-ref", reference);
 
     // Redirect back to the contributions page (where the modal auto-opens)
     router.push("/contributions");
@@ -91,34 +93,49 @@ export default function PaystackCallbackPage() {
   }, [reference, status, pollStatus]);
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh] p-6">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <div className="mx-auto mb-3">
+    <div className="flex items-center justify-center min-h-[70vh] p-4 sm:p-6">
+      <Card className="w-full max-w-md text-center animate-in fade-in slide-in-from-bottom-3 duration-500">
+        <CardHeader className="items-center pb-2">
+          <div
+            className={cn(
+              "w-[72px] h-[72px] rounded-full flex items-center justify-center mb-2",
+              status === "success" ? "bg-success/10" : status === "error" ? "bg-destructive/10" : "bg-warning/10",
+            )}
+          >
             {status === "loading" ? (
-              <Loader2 size={48} className="animate-spin text-primary" />
+              <Loader2 size={30} className="animate-spin text-primary" />
             ) : status === "success" ? (
-              <CheckCircle2 size={48} className="text-green-600" />
+              <CheckCircle2 size={30} className="text-success" />
+            ) : status === "pending" ? (
+              <Loader2 size={30} className="text-warning" />
             ) : (
-              <XCircle size={48} className="text-destructive" />
+              <XCircle size={30} className="text-destructive" />
             )}
           </div>
-          <CardTitle>{statusLabel}</CardTitle>
-          <CardDescription>{message}</CardDescription>
+          <Badge
+            variant={status === "success" ? "success" : status === "error" ? "destructive" : "warning"}
+            className="text-[11px] font-bold uppercase tracking-wide"
+          >
+            {statusLabel}
+          </Badge>
+          <CardTitle className="text-[22px] mt-1">
+            {status === "success" ? "Payment confirmed" : status === "error" ? "We couldn't confirm this payment" : "We're checking your payment"}
+          </CardTitle>
+          <CardDescription className="leading-relaxed">{message}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
-              className="flex-1"
+              className="flex-1 font-semibold gap-2"
               variant={status === "success" ? "secondary" : "outline"}
               onClick={() => pollStatus()}
               disabled={status === "loading"}
             >
-              <RefreshCcw className="mr-2 h-4 w-4" />
+              <RefreshCcw className="h-4 w-4" />
               {status === "loading" ? "Checking..." : `Check status (${counter}s)`}
             </Button>
             <Button
-              className="flex-1"
+              className="flex-1 font-semibold"
               onClick={() => router.push("/contributions")}
             >
               Back to Contributions

@@ -3,23 +3,15 @@
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, Pin } from "lucide-react";
-import Link from "next/link";
 
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { RichTextViewer } from "@/components/ui/rich-text-editor";
-import { MediaGallery } from "@/components/ui/media-gallery";
-import { formatDate } from "@/lib/utils";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { RichTextViewer } from "@alumni/ui";
+import { MediaGallery } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getNewsPost } from "@/lib/member-api";
 import { Newspaper } from "lucide-react";
-
-const categoryStyle: Record<string, { bg: string; text: string; border: string }> = {
-  Announcement: { bg: "rgba(59,130,246,0.08)",  text: "#2563eb", border: "rgba(59,130,246,0.2)"  },
-  Achievement:  { bg: "rgba(245,158,11,0.08)",  text: "#d97706", border: "rgba(245,158,11,0.2)"  },
-  News:         { bg: "rgba(16,185,129,0.08)",  text: "#059669", border: "rgba(16,185,129,0.2)"  },
-  Event:        { bg: "rgba(139,92,246,0.08)",  text: "#7c3aed", border: "rgba(139,92,246,0.2)"  },
-  Opportunity:  { bg: "rgba(6,182,212,0.08)",   text: "#0891b2", border: "rgba(6,182,212,0.2)"   },
-};
 
 export default function NewsDetailPage() {
   const { id }   = useParams<{ id: string }>();
@@ -58,7 +50,6 @@ export default function NewsDetailPage() {
     </div>
   );
 
-  const catStyle = categoryStyle[post.category];
   const hasGallery = (post.imageUrls?.length ?? 0) > 1 || (post.youtubeVideoUrls?.length ?? 0) > 0;
 
   return (
@@ -79,28 +70,11 @@ export default function NewsDetailPage() {
         {/* Category + pinned */}
         <div className="flex flex-wrap items-center gap-2">
           {post.isPinned && (
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-              style={{ background: "rgba(249,115,22,0.08)", color: "#ea580c", border: "1px solid rgba(249,115,22,0.2)" }}
-            >
+            <Badge variant="warning" className="gap-1.5">
               <Pin size={10} /> Pinned
-            </span>
+            </Badge>
           )}
-          {catStyle ? (
-            <span
-              className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-              style={{ background: catStyle.bg, color: catStyle.text, border: `1px solid ${catStyle.border}` }}
-            >
-              {post.category}
-            </span>
-          ) : (
-            <span
-              className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-              style={{ background: "var(--secondary)", color: "var(--muted-foreground)", borderColor: "var(--border)" }}
-            >
-              {post.category}
-            </span>
-          )}
+          <Badge>{post.category}</Badge>
         </div>
 
         {/* Title */}

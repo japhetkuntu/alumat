@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@alumni/ui";
+import { Card, CardContent } from "@alumni/ui";
 import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {

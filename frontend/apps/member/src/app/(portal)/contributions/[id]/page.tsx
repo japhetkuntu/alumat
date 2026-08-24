@@ -11,18 +11,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { YouTubeEmbed } from "@/components/ui/youtube-embed";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { Progress } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { YouTubeEmbed } from "@alumni/ui";
+import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import {
   getCampaignById, getMyProfile,
   initiatePaystackPayment, renewMembership, getMyContributions,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState } from "@alumni/ui";
+import type { Campaign } from "@/types";
 
 export default function CampaignDetailPage() {
   useAuth();
@@ -244,7 +245,7 @@ export default function CampaignDetailPage() {
               <Button
                 size="sm"
                 variant={shareCopied ? "default" : "outline"}
-                className={cn("shrink-0 gap-1.5 font-semibold text-[12.5px]", shareCopied && "bg-green-600 hover:bg-green-600 border-green-600 text-white")}
+                className={cn("shrink-0 gap-1.5 font-semibold text-[12.5px]", shareCopied && "bg-success hover:bg-success border-success text-white")}
                 style={{ height: 36 }}
                 onClick={copyLink}
               >
@@ -311,13 +312,10 @@ export default function CampaignDetailPage() {
 
               {/* Membership paid state */}
               {membershipPaid && (
-                <div
-                  className="flex items-center gap-3 p-4 rounded-xl"
-                  style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
-                >
-                  <CheckCircle2 size={18} className="text-green-600 shrink-0" />
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-success/10 border border-success/20">
+                  <CheckCircle2 size={18} className="text-success shrink-0" />
                   <div>
-                    <p className="text-[14px] font-semibold text-green-700">Membership paid — thank you!</p>
+                    <p className="text-[14px] font-semibold text-success">Membership paid — thank you!</p>
                     <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                       This is a one-time payment per membership year.
                     </p>
@@ -328,8 +326,8 @@ export default function CampaignDetailPage() {
               {/* Certificate link */}
               {membershipPaid && (
                 <Link href="/membership-certificate">
-                  <Button variant="outline" className="w-full gap-2 font-semibold text-[13.5px]"
-                    style={{ height: 42, borderColor: "#d97706", color: "#b45309" }}>
+                  <Button variant="outline" className="w-full gap-2 font-semibold text-[13.5px] border-warning/50 text-warning hover:bg-warning/10"
+                    style={{ height: 42 }}>
                     <Award size={15} /> View membership certificate
                   </Button>
                 </Link>
@@ -343,7 +341,7 @@ export default function CampaignDetailPage() {
                 >
                   <CheckCircle2 size={14} style={{ color: "var(--primary)" }} className="shrink-0" />
                   <p className="text-[13px] font-semibold" style={{ color: "var(--color-text-info)" }}>
-                    You've contributed to this campaign before.
+                    You&apos;ve contributed to this campaign before.
                   </p>
                 </div>
               )}
@@ -502,7 +500,7 @@ export default function CampaignDetailPage() {
    PROGRESS BLOCK — shared between mobile (main) and desktop (sidebar)
    ───────────────────────────────────────────────────────────────────────── */
 function ProgressBlock({ campaign, isMembership, pct }: {
-  campaign: any; isMembership: boolean; pct: number;
+  campaign: Campaign; isMembership: boolean; pct: number;
 }) {
   return (
     <div className="space-y-2">
@@ -538,9 +536,10 @@ function ProgressBlock({ campaign, isMembership, pct }: {
    DAYS LEFT — small plain-language countdown
    ───────────────────────────────────────────────────────────────────────── */
 function DaysLeft({ deadline }: { deadline: string }) {
-  const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000);
+  const [now] = useState(() => Date.now());
+  const days = Math.ceil((new Date(deadline).getTime() - now) / 86_400_000);
   if (days < 0) return <p className="text-[11.5px] text-destructive mt-0.5 font-medium">Closed</p>;
   if (days === 0) return <p className="text-[11.5px] text-destructive mt-0.5 font-medium">Closes today</p>;
-  if (days <= 7)  return <p className="text-[11.5px] mt-0.5 font-medium" style={{ color: "#d97706" }}>{days} day{days !== 1 ? "s" : ""} left</p>;
+  if (days <= 7)  return <p className="text-[11.5px] mt-0.5 font-medium text-warning">{days} day{days !== 1 ? "s" : ""} left</p>;
   return <p className="text-[11.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{days} days left</p>;
 }

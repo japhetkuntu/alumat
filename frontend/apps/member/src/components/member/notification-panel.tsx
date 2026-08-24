@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { Bell, Check, CheckCheck, Loader2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -202,6 +203,15 @@ export function NotificationPanel() {
               </div>
             )}
           </div>
+
+          {/* Footer */}
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="block text-center py-2.5 text-[12px] font-semibold text-primary hover:bg-primary/5 transition-colors border-t border-border/40"
+          >
+            View all notifications
+          </Link>
         </div>
         </>
       )}

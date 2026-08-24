@@ -1,22 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
   Briefcase, MapPin, Clock, ExternalLink,
   ArrowLeft, Globe, Building2, Calendar,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
-import { formatDate } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getJobById } from "@/lib/member-api";
+import type { Job } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DAYS LEFT — plain-language deadline indicator
    ───────────────────────────────────────────────────────────────────────── */
 function DaysLeft({ deadline }: { deadline: string }) {
-  const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000);
+  const [now] = useState(() => Date.now());
+  const days = Math.ceil((new Date(deadline).getTime() - now) / 86_400_000);
   if (days < 0)  return <span className="text-[13px] font-semibold text-destructive">Deadline passed</span>;
   if (days === 0) return <span className="text-[13px] font-semibold text-destructive">Closes today</span>;
   if (days <= 7)  return <span className="text-[13px] font-semibold" style={{ color: "#d97706" }}>{days} day{days !== 1 ? "s" : ""} left</span>;
@@ -231,7 +234,7 @@ export default function MemberJobDetailPage() {
 /* ─────────────────────────────────────────────────────────────────────────
    APPLY BLOCK — shared between mobile (inline) and desktop (sidebar)
    ───────────────────────────────────────────────────────────────────────── */
-function ApplyBlock({ job, deadlinePassed }: { job: any; deadlinePassed: boolean }) {
+function ApplyBlock({ job, deadlinePassed }: { job: Job; deadlinePassed: boolean }) {
   if (deadlinePassed) {
     return (
       <div

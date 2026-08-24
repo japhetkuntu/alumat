@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useSyncExternalStore } from "react";
 import { AuthData, AuthTokens, LoginRequest } from "@/types";
 import { memberClient } from "@/lib/api-client";
 
@@ -15,40 +15,58 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Hydration-safe read of auth state from localStorage, modeled as an external
+// store (see useHostname()) instead of setState-in-effect: the server and the
+// first client render both see `null`/`false`, avoiding a hydration mismatch,
+// then React syncs to the real value right after mount.
+const authListeners = new Set<() => void>();
+function subscribeAuth(callback: () => void) {
+  authListeners.add(callback);
+  return () => authListeners.delete(callback);
+}
+function notifyAuth() {
+  authListeners.forEach((listener) => listener());
+}
+
+function createJSONSnapshot<T>(key: string) {
+  let cachedRaw: string | null = null;
+  let cachedValue: T | null = null;
+  return function getSnapshot(): T | null {
+    const raw = localStorage.getItem(key);
+    if (raw !== cachedRaw) {
+      cachedRaw = raw;
+      try {
+        cachedValue = raw ? (JSON.parse(raw) as T) : null;
+      } catch {
+        localStorage.removeItem(key);
+        cachedValue = null;
+      }
+    }
+    return cachedValue;
+  };
+}
+
+const getUserSnapshot = createJSONSnapshot<AuthData>("user");
+const getUserServerSnapshot = () => null;
+const getTokensSnapshot = createJSONSnapshot<AuthTokens>("tokens");
+const getTokensServerSnapshot = () => null;
+
+function useHasMounted() {
+  return useSyncExternalStore(() => () => {}, () => true, () => false);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthData | null>(null);
-  const [tokens, setTokens] = useState<AuthTokens | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  React.useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) setUser(JSON.parse(storedUser));
-    } catch {
-      localStorage.removeItem("user");
-    }
-
-    try {
-      const storedTokens = localStorage.getItem("tokens");
-      if (storedTokens) setTokens(JSON.parse(storedTokens));
-    } catch {
-      localStorage.removeItem("tokens");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-    }
-
-    setIsHydrated(true);
-  }, []);
-
-  const isLoading = !isHydrated;
+  const hasMounted = useHasMounted();
+  const user = useSyncExternalStore(subscribeAuth, getUserSnapshot, getUserServerSnapshot);
+  const tokens = useSyncExternalStore(subscribeAuth, getTokensSnapshot, getTokensServerSnapshot);
+  const isLoading = !hasMounted;
 
   function persist(u: AuthData, t: AuthTokens) {
-    setUser(u);
-    setTokens(t);
     localStorage.setItem("user", JSON.stringify(u));
     localStorage.setItem("tokens", JSON.stringify(t));
     localStorage.setItem("access_token", t.accessToken);
     localStorage.setItem("refresh_token", t.refreshToken);
+    notifyAuth();
   }
 
   async function login(req: LoginRequest) {
@@ -60,12 +78,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   function logout() {
-    setUser(null);
-    setTokens(null);
     localStorage.removeItem("user");
     localStorage.removeItem("tokens");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    notifyAuth();
     window.location.href = "/login";
   }
 

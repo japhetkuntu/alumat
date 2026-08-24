@@ -1,0 +1,6 @@
+@ReservEase.Alumni.Admin.Api_HostAddress = http://localhost:5095
+
+GET {{ReservEase.Alumni.Admin.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

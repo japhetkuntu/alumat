@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UMaT Alumni – Production Deployment Script
+# Alumni Platform – Production Deployment Script
 # =============================================================================
 # Usage:
 #   ./deploy.sh              Full deploy: validate → build → start → health check
@@ -284,7 +284,7 @@ print_summary() {
 
   echo ""
   echo -e "${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${BOLD}║       UMaT Alumni – Platform Deployment Summary             ║${NC}"
+  echo -e "${BOLD}║       Alumni Platform – Deployment Summary             ║${NC}"
   echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "  ${BOLD}Server IP:${NC}   $server_ip"
@@ -320,7 +320,7 @@ print_summary() {
 # ── Mode dispatch ──────────────────────────────────────────────────────────────
 deploy_mode() {
   echo ""
-  echo -e "${BOLD}UMaT Alumni – Production Deployment${NC}  ($(date '+%Y-%m-%d %H:%M:%S %Z'))"
+  echo -e "${BOLD}Alumni Platform – Production Deployment${NC}  ($(date '+%Y-%m-%d %H:%M:%S %Z'))"
   echo ""
   check_prerequisites
   validate_env

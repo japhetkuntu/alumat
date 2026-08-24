@@ -4,18 +4,19 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Send, Pin, Lock, MessageSquare, Clock } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { UserAvatar } from "@/components/ui/user-avatar";
-import { formatDate } from "@/lib/utils";
+import { Button } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { UserAvatar } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
 import { getThreadPosts, replyToThread, getForumThread } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
+import { cn } from "@alumni/ui";
 
 /* Safe date formatter — never throws on undefined / invalid input */
 function safeDate(value: string | null | undefined): string {
@@ -89,11 +90,11 @@ export default function ThreadDetailPage() {
 
       {/* ── Nav ── */}
       <button
-        onClick={() => router.push("/forum")}
+        onClick={() => router.push(thread.communityId ? `/communities/${thread.communityId}` : "/forum")}
         className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
         style={{ color: "var(--muted-foreground)" }}
       >
-        <ArrowLeft size={15} /> Back to forum
+        <ArrowLeft size={15} /> {thread.communityId ? "Back to community" : "Back to forum"}
       </button>
 
       {/* ── Thread header ── */}
@@ -101,28 +102,17 @@ export default function ThreadDetailPage() {
         {/* Labels */}
         <div className="flex flex-wrap items-center gap-2">
           {thread.categoryName && (
-            <span
-              className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-              style={{ background: "var(--color-background-info)", color: "var(--primary)", border: "1px solid var(--color-border-info)" }}
-            >
-              {thread.categoryName}
-            </span>
+            <Badge variant="info">{thread.categoryName}</Badge>
           )}
           {thread.isPinned && (
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-              style={{ background: "rgba(249,115,22,0.08)", color: "#ea580c", border: "1px solid rgba(249,115,22,0.2)" }}
-            >
+            <Badge variant="warning" className="gap-1.5">
               <Pin size={10} /> Pinned
-            </span>
+            </Badge>
           )}
           {thread.isClosed && (
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
-              style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
-            >
+            <Badge variant="neutral" className="gap-1.5">
               <Lock size={10} /> Closed
-            </span>
+            </Badge>
           )}
         </div>
 
@@ -166,11 +156,7 @@ export default function ThreadDetailPage() {
             return (
               <div
                 key={post.id}
-                className="flex gap-3 sm:gap-4 rounded-2xl border p-4 sm:p-5"
-                style={{
-                  borderColor: isOriginal ? "var(--color-border-info)" : "var(--border)",
-                  background:  isOriginal ? "var(--color-background-info)" : "var(--background)",
-                }}
+                className={cn("flex gap-3 sm:gap-4 card p-4 sm:p-5", isOriginal && "bg-primary/5 border-primary/20")}
               >
                 {/* Avatar */}
                 <div className="shrink-0">
@@ -214,16 +200,13 @@ export default function ThreadDetailPage() {
       {/* ── Reply box / closed state ── */}
       {thread.isClosed ? (
         <div
-          className="flex items-center justify-center gap-2 py-5 rounded-2xl border text-[13.5px] font-medium"
-          style={{ borderColor: "var(--border)", background: "var(--secondary)", color: "var(--muted-foreground)" }}
+          className="flex items-center justify-center gap-2 py-5 card text-[13.5px] font-medium"
+          style={{ color: "var(--muted-foreground)" }}
         >
           <Lock size={14} /> This thread is closed — no new replies
         </div>
       ) : (
-        <div
-          className="rounded-2xl border p-5 space-y-3"
-          style={{ borderColor: "var(--border)", background: "var(--background)" }}
-        >
+        <div className="card p-5 space-y-3">
           <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
             Post a reply
           </p>

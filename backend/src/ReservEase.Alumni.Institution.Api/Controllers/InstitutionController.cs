@@ -1,0 +1,74 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using ReservEase.Alumni.Institution.Api.Models;
+using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
+
+namespace ReservEase.Alumni.Institution.Api.Controllers;
+
+/// <summary>
+/// Self-service view of the current institution's profile and branding.
+/// Scoped to the current request's resolved tenant
+/// (<see cref="ICurrentTenantService"/>) — staff can never target another
+/// institution's record; there is no institution id in the route.
+///
+/// Institution staff can no longer edit branding themselves — that's now
+/// platform-staff-only (Platform.Api's InstitutionsController), so most of
+/// this stays display-only. The one deliberate carve-out is the Member
+/// Portal landing page's Stories and news banner (<see cref="UpdateLandingContent"/>),
+/// which institution admins are meant to keep current themselves.
+/// </summary>
+[Authorize]
+[Route("api/v{version:apiVersion}/institution")]
+public class InstitutionController(
+    IAlumniPgRepository<InstitutionEntity> institutionRepo,
+    ICurrentTenantService currentTenant) : DefaultController
+{
+    /// <summary>Get the current institution's profile and branding (mostly read-only).</summary>
+    [HttpGet("me")]
+    [SwaggerOperation(Summary = "Get current institution")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    public async Task<IActionResult> GetCurrentInstitution()
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Success", Code = 200, Data = ToDto(institution) });
+    }
+
+    /// <summary>Update this institution's Member Portal landing page Stories and news banner — the one piece of content institution admins may edit themselves.</summary>
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [HttpPatch("me/landing-content")]
+    [SwaggerOperation(Summary = "Update landing page stories and news banner")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    public async Task<IActionResult> UpdateLandingContent([FromBody] UpdateLandingContentRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        institution.LandingPageStories = request.LandingPageStories;
+        institution.NewsBanner = request.NewsBanner;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Landing content updated", Code = 200, Data = ToDto(institution) });
+    }
+
+    private async Task<InstitutionEntity?> GetResolvedInstitutionAsync() =>
+        string.IsNullOrEmpty(currentTenant.InstitutionId)
+            ? null
+            : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+
+    private static InstitutionResponse ToDto(InstitutionEntity i) => new(
+        i.Id, i.Name, i.Slug, i.CustomDomain, i.PortalName, i.Tagline,
+        i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex,
+        i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
+        i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
+        i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+        i.Plan, i.Status, i.MemberLimit, i.StorageLimitGb);
+}

@@ -4,15 +4,16 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calendar, MapPin, Users, ArrowRight, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { Pagination } from "@/components/ui/pagination";
+import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDate, formatCurrency, cn } from "@/lib/utils";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { PageHeader } from "@alumni/ui";
+import { formatDate, formatCurrency, cn } from "@alumni/ui";
 import { getEvents, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { CardSkeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import type { EventStatus } from "@/types";
 
 const statusVariant: Record<EventStatus, "info" | "success" | "secondary" | "destructive"> = {
@@ -22,9 +23,19 @@ const statusVariant: Record<EventStatus, "info" | "success" | "secondary" | "des
   Cancelled: "destructive",
 };
 
+type EventFilter = "all" | "upcoming" | "going" | "completed";
+
+const EVENT_FILTERS: { value: EventFilter; label: string }[] = [
+  { value: "all",       label: "All events" },
+  { value: "upcoming",  label: "Upcoming" },
+  { value: "going",     label: "Going" },
+  { value: "completed", label: "Completed" },
+];
+
 export default function MemberEventsPage() {
   const [page,      setPage]      = useState(1);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [filter,    setFilter]    = useState<EventFilter>("all");
   const pageSize = 12;
   const qc = useQueryClient();
 
@@ -61,24 +72,39 @@ export default function MemberEventsPage() {
     onError: (e) => { setPendingId(null); toast.error(handleApiError(e)); },
   });
 
-  const events     = eventsData?.results ?? [];
+  const allEvents  = eventsData?.results ?? [];
   const totalPages = eventsData?.totalPages ?? 1;
   const rsvpSet    = new Set((myRsvps ?? []).filter(r => r.status === "Confirmed").map(r => r.eventId));
+
+  const events = allEvents.filter(e => {
+    if (filter === "all") return true;
+    if (filter === "going") return rsvpSet.has(e.id);
+    if (filter === "upcoming") return e.status === "Upcoming" || e.status === "Ongoing";
+    if (filter === "completed") return e.status === "Completed";
+    return true;
+  });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      {/* ── Header ── */}
-      <div>
-        <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
-          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
-        >
-          Events
-        </h1>
-        <p className="mt-1 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-          Connect and celebrate with fellow UMaT alumni.
-        </p>
+      <PageHeader eyebrow="Connect in person" title="Events" description="Find your next alumni moment." />
+
+      {/* ── Filter pills ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        {EVENT_FILTERS.map(f => (
+          <button
+            key={f.value}
+            onClick={() => setFilter(f.value)}
+            className={cn(
+              "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+              filter === f.value
+                ? "bg-primary text-primary-foreground border-transparent"
+                : "border-border text-muted-foreground hover:border-primary/40",
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {/* ── Grid ── */}
@@ -193,7 +219,7 @@ export default function MemberEventsPage() {
                         onClick={ev => {
                           ev.preventDefault();
                           setPendingId(e.id);
-                          hasRsvp ? cancelMut.mutate(e.id) : rsvpMut.mutate(e.id);
+                          if (hasRsvp) cancelMut.mutate(e.id); else rsvpMut.mutate(e.id);
                         }}
                       >
                         {isPending ? (
