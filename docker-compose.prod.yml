@@ -136,6 +136,7 @@ services:
       StorageConfig__Region: ${STORAGE_REGION}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT}
       StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT}
+      StorageConfig__RootFolder: ${STORAGE_ROOT_FOLDER:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -184,6 +185,7 @@ services:
       StorageConfig__Region: ${STORAGE_REGION}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT}
       StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT}
+      StorageConfig__RootFolder: ${STORAGE_ROOT_FOLDER:-}
       ArkeselConfig__ApiKey: ${ARKESEL_API_KEY}
       ArkeselConfig__SenderId: ${ARKESEL_SENDER_ID}
       WaSenderConfig__ApiKey: ${WASENDER_API_KEY}
@@ -226,6 +228,7 @@ services:
       StorageConfig__Region: ${STORAGE_REGION}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT}
       StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT}
+      StorageConfig__RootFolder: ${STORAGE_ROOT_FOLDER:-}
     depends_on:
       postgres:
         condition: service_healthy

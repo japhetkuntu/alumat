@@ -26,12 +26,20 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
         return new AmazonS3Client(_settings.AccessKey, _settings.SecretKey, config);
     }
 
+    /// <summary>Joins RootFolder + folderName + objectName, skipping any blank segment.</summary>
+    private string BuildKey(string folderName, string objectName)
+    {
+        var folder = string.IsNullOrEmpty(folderName) ? _settings.FolderName : folderName;
+        var segments = new[] { _settings.RootFolder, folder, objectName }
+            .Where(s => !string.IsNullOrEmpty(s));
+        return string.Join("/", segments);
+    }
+
     public async Task<string> UploadFileAsync(IFormFile file, string objectName, string folderName = "")
     {
         using var client = CreateClient();
         using var stream = file.OpenReadStream();
-        var newFolderName = string.IsNullOrEmpty(folderName) ? _settings.FolderName : folderName;
-         var newObjectName = string.IsNullOrEmpty(newFolderName)?objectName: $"{newFolderName}/{objectName}";
+        var newObjectName = BuildKey(folderName, objectName);
 
         var uploadRequest = new TransferUtilityUploadRequest
         {
@@ -40,7 +48,7 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
             BucketName = _settings.BucketName,
             ContentType = file.ContentType,
             CannedACL = S3CannedACL.PublicRead,
-            
+
         };
 
         var transferUtility = new TransferUtility(client);
@@ -52,8 +60,7 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
     public string GetFileUrl(string fileName, string folderName = "")
     {
        if( string.IsNullOrEmpty(fileName)) return string.Empty;
-        var newFolderName = string.IsNullOrEmpty(folderName) ? _settings.FolderName : folderName;
-        return $"{_settings.CdnEndpoint}/{_settings.BucketName}/{newFolderName}/{fileName}";
+        return $"{_settings.CdnEndpoint}/{_settings.BucketName}/{BuildKey(folderName, fileName)}";
     }
 
     public async Task<List<string>> BulkUploadFilesAsync(List<IFormFile> files)
@@ -71,8 +78,7 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
     public async Task<string> UploadFileAsync(Stream fileStream, string objectName, string folderName = "", string contentType = "application/pdf")
     {
         using var client = CreateClient();
-        var newFolderName = string.IsNullOrEmpty(folderName) ? _settings.FolderName : folderName;
-        var newObjectName = $"{newFolderName}/{objectName}";
+        var newObjectName = BuildKey(folderName, objectName);
 
         var uploadRequest = new TransferUtilityUploadRequest
         {
