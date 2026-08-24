@@ -104,7 +104,8 @@ chown -R www-data:www-data "$OUT/institution-api" "$OUT/member-api" "$OUT/platfo
 # same three-directory copy as each app's own Dockerfile does.
 # ---------------------------------------------------------------------------
 publish_frontend() {
-  local app="$1" out="$OUT/frontend-${app}"
+  local app="$1"
+  local out="$OUT/frontend-${app}"
   echo "== building frontend: ${app} =="
   (cd "$FRONTEND_SRC" && pnpm --filter "@alumni/${app}" build)
 
