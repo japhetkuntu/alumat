@@ -47,6 +47,18 @@ echo "== pulling latest source =="
 cd "$SRC_DIR"
 git pull
 
+# This script lives inside the repo it just pulled — if that pull changed
+# deploy.sh itself (e.g. this very file was edited upstream), bash's read
+# position for the rest of the currently-running script becomes misaligned
+# with the new on-disk content, producing bizarre mid-script errors ("X:
+# unbound variable" at a line that doesn't match the file). Re-exec fresh
+# from disk once, so everything past this point always runs the version that
+# was just pulled, not whatever bash had buffered before the pull.
+if [[ -z "${ALUMNI_DEPLOY_REEXECED:-}" ]]; then
+  export ALUMNI_DEPLOY_REEXECED=1
+  exec bash "$SRC_DIR/deploy/deploy.sh" "$@"
+fi
+
 # Every dotnet publish leaves bin/obj behind in the source tree (separate from
 # the actual published output in $OUT) — across enough redeploys without this,
 # these silently accumulate until a build fails with "No space left on
