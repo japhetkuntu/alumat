@@ -25,9 +25,38 @@ wait_healthy() {
   return 1
 }
 
+MIN_FREE_GB=3
+check_disk_space() {
+  local free_gb
+  free_gb=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+  if [[ "$free_gb" -lt "$MIN_FREE_GB" ]]; then
+    echo "ERROR: only ${free_gb}G free on / — need at least ${MIN_FREE_GB}G to build 3 .NET APIs + 3 Next.js apps."
+    echo "Free up space first, e.g.:"
+    echo "  dotnet nuget locals all --clear"
+    echo "  find $BACKEND_SRC -type d \\( -name bin -o -name obj \\) -exec rm -rf {} +"
+    echo "  apt-get clean && journalctl --vacuum-time=3d"
+    echo "If that's not enough, resize the droplet's disk (DigitalOcean dashboard → Resize)."
+    exit 1
+  fi
+}
+
+echo "== checking disk space =="
+check_disk_space
+
 echo "== pulling latest source =="
 cd "$SRC_DIR"
 git pull
+
+# Every dotnet publish leaves bin/obj behind in the source tree (separate from
+# the actual published output in $OUT) — across enough redeploys without this,
+# these silently accumulate until a build fails with "No space left on
+# device" mid-restore, same as the NuGet http cache below. Both are safe to
+# wipe every time: publish always restores/rebuilds from scratch regardless.
+echo "== clearing stale build artifacts =="
+find "$BACKEND_SRC" -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
+dotnet nuget locals http-cache --clear
+
+check_disk_space
 
 # install.sh only renders nginx.conf once, at first provisioning — a later
 # change to the template never reaches already-provisioned droplets on its
