@@ -50,6 +50,9 @@ public class ContributionService : IContributionService
         return $"{slug}-{graduationYear}-";
     }
 
+    private async Task<Institution?> GetCurrentInstitutionAsync() =>
+        string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+
     public async Task<IApiResponse<PgPagedResult<ContributionDto>>> GetMyContributionsAsync(
         string memberId, ContributionFilter filter)
     {
@@ -193,6 +196,7 @@ public class ContributionService : IContributionService
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Amount must be greater than zero.");
 
             var amountInKobo = (long)(request.Amount * 100);
+            var currentInstitution = await GetCurrentInstitutionAsync();
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
@@ -204,6 +208,7 @@ public class ContributionService : IContributionService
                     { "memberId", memberId },
                     { "campaignId", request.CampaignId },
                 },
+                Subaccount = currentInstitution?.PaystackSubaccountCode,
             });
 
             if (!response.Status)
@@ -325,6 +330,7 @@ public class ContributionService : IContributionService
 
             var amount = amountPerYear * request.Years;
             var amountInKobo = (long)(amount * 100);
+            var currentInstitution = await GetCurrentInstitutionAsync();
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
                 Email = member.Email,
@@ -336,6 +342,7 @@ public class ContributionService : IContributionService
                     { "campaignId", campaign.Id },
                     { "membershipYears", request.Years.ToString() }
                 },
+                Subaccount = currentInstitution?.PaystackSubaccountCode,
             });
 
             if (!response.Status)
@@ -510,6 +517,11 @@ public class ContributionService : IContributionService
                     }
                 }
 
+                var institution = await GetCurrentInstitutionAsync();
+                var feeAmount = institution is not null
+                    ? Math.Round(transaction.Amount * institution.PlatformFeePercentage / 100m, 2)
+                    : 0m;
+
                 var contribution = new Contribution
                 {
                     MemberId = transaction.MemberId,
@@ -523,6 +535,8 @@ public class ContributionService : IContributionService
                     ConfirmedAt = DateTime.UtcNow,
                     ConfirmedBy = "Paystack",
                     CreatedBy = transaction.MemberId,
+                    PlatformFeeAmount = feeAmount,
+                    NetAmountToInstitution = transaction.Amount - feeAmount,
                 };
 
                 await contributionRepo.AddAsync(contribution);

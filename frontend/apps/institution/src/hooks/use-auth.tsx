@@ -62,7 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isLoading = !hasMounted;
 
   function persist(u: AuthData, t: AuthTokens) {
-    localStorage.setItem("user", JSON.stringify(u));
+    // The backend returns firstName/lastName, not a combined `name` — derive
+    // it once here so every screen that reads user?.name (sidebar, dashboard
+    // greeting, etc.) gets the admin's real name instead of falling back to
+    // a placeholder.
+    const derivedName = u.name || [u.firstName, u.lastName].filter(Boolean).join(" ");
+    const user: AuthData = { ...u, name: derivedName };
+    localStorage.setItem("user", JSON.stringify(user));
     localStorage.setItem("tokens", JSON.stringify(t));
     localStorage.setItem("access_token", t.accessToken);
     localStorage.setItem("refresh_token", t.refreshToken);

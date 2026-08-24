@@ -9,7 +9,7 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
-import { formatDate } from "@alumni/ui";
+import { formatDate, formatCurrency } from "@alumni/ui";
 import { getInstitutions } from "@/lib/platform-api";
 import { InstitutionStatus } from "@/types";
 
@@ -98,13 +98,14 @@ export default function InstitutionsPage() {
               <TableHead>Institution</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>Members</TableHead>
+              <TableHead>Revenue</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Onboarded</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!isLoading && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={6} />}
+            {!isLoading && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={7} />}
             {results.map((inst) => (
               <TableRow key={inst.id}>
                 <TableCell>
@@ -120,6 +121,7 @@ export default function InstitutionsPage() {
                 </TableCell>
                 <TableCell>{inst.plan}</TableCell>
                 <TableCell>{inst.memberCount.toLocaleString()}</TableCell>
+                <TableCell>{formatCurrency(inst.revenue, "USD")}</TableCell>
                 <TableCell>
                   <Badge variant={(statusBadge[inst.status] ?? statusBadge.Trial).variant}>
                     {(statusBadge[inst.status] ?? statusBadge.Trial).label}

@@ -36,6 +36,7 @@ public class PublicController : DefaultController
             institution.PortalName,
             institution.Name,
             institution.PrimaryColorHex,
+            institution.SecondaryColorHex,
             institution.LogoUrl,
             institution.Tagline,
             institution.IconUrl,

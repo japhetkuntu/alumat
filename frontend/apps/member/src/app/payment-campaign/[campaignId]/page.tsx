@@ -76,7 +76,7 @@ export default function PublicCampaignContributionPage() {
     },
     onSuccess: (result: { authorizationUrl: string; reference: string }) => {
       setPaymentStatus("Payment initiated — redirecting…");
-      toast.success("Redirecting to Paystack…");
+      toast.success("Redirecting to secure payment…");
       setTimeout(() => { window.location.href = result.authorizationUrl; }, 400);
     },
     onError: (error) => {
@@ -282,7 +282,7 @@ export default function PublicCampaignContributionPage() {
                   {payMutation.isPending ? (
                     <><Loader2 size={18} className="animate-spin" /> Processing…</>
                   ) : (
-                    <>Pay {isValidAmount ? formatCurrency(numericAmount) : ""} with Paystack <ArrowRight size={18} /></>
+                    <>Pay {isValidAmount ? formatCurrency(numericAmount) : ""} online <ArrowRight size={18} /></>
                   )}
                 </Button>
 
@@ -365,7 +365,7 @@ export default function PublicCampaignContributionPage() {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-muted-foreground pb-6">
-          Powered by the Alumni Portal · Payments secured by Paystack
+          Powered by the Alumni Portal · Payments secured online
         </p>
       </div>
 
@@ -374,7 +374,7 @@ export default function PublicCampaignContributionPage() {
         <DialogContent size="default">
           <DialogHeader>
             <DialogTitle>Processing payment</DialogTitle>
-            <DialogDescription>Please wait while we redirect you to Paystack.</DialogDescription>
+            <DialogDescription>Please wait while we redirect you to the payment page.</DialogDescription>
           </DialogHeader>
           <div className="mt-2 space-y-4">
             <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -382,7 +382,7 @@ export default function PublicCampaignContributionPage() {
               <p className="text-sm font-semibold text-primary">{paymentStatus}</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              If your browser doesn&apos;t redirect automatically, complete the payment in the Paystack window and return here.
+              If your browser doesn&apos;t redirect automatically, complete the payment in the payment window and return here.
             </p>
           </div>
           <DialogFooter>

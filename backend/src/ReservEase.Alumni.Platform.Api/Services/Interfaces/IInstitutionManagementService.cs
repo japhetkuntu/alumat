@@ -15,6 +15,8 @@ public interface IInstitutionManagementService
     Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateFeaturesAsync(string id, UpdateInstitutionFeaturesRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName);
+    Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName);
+    Task<IApiResponse<InstitutionRevenueResponse>> GetRevenueAsync(string id);
     Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug);
     Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync();
 }

@@ -16,6 +16,7 @@ import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { formatDate, formatCurrency, getInitials } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -40,6 +41,11 @@ function safeDate(value: string | null | undefined): string {
 
 const TABS = ["Discussion", "Events", "Resources", "Wall", "Campaigns", "Members", "Requests"] as const;
 
+const TAB_CAPTIONS: Partial<Record<(typeof TABS)[number], string>> = {
+  Discussion: "Threaded Q&A and longer conversations",
+  Wall: "Quick updates and photos, like a group feed",
+};
+
 export default function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -49,6 +55,7 @@ export default function CommunityDetailPage() {
   const [showNewThread, setShowNewThread] = useState(false);
   const [form, setForm] = useState({ title: "", content: "" });
   const [newNote, setNewNote] = useState("");
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const { data: community, isLoading } = useQuery({
     queryKey: ["m-community", id],
@@ -270,7 +277,7 @@ export default function CommunityDetailPage() {
             {isApproved && !isLeader && (
               <Button
                 variant="outline"
-                onClick={() => leaveMut.mutate()}
+                onClick={() => setConfirmLeave(true)}
                 isLoading={leaveMut.isPending}
                 loadingText="Leaving"
                 className="bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white hover:border-white/60 font-semibold"
@@ -307,6 +314,12 @@ export default function CommunityDetailPage() {
               </button>
             ))}
           </div>
+
+          {TAB_CAPTIONS[tab] && (
+            <p className="text-[12.5px] -mt-3 sm:-mt-5" style={{ color: "var(--muted-foreground)" }}>
+              {TAB_CAPTIONS[tab]}
+            </p>
+          )}
 
           {tab === "Discussion" && (
             <div className="max-w-[720px] mx-auto space-y-4">
@@ -551,6 +564,17 @@ export default function CommunityDetailPage() {
           )}
         </>
       )}
+
+      <ConfirmModal
+        open={confirmLeave}
+        title="Leave this community?"
+        message="You'll lose access to its discussions, wall, resources, and campaigns unless a leader approves your request to rejoin."
+        confirmLabel="Leave community"
+        variant="destructive"
+        isLoading={leaveMut.isPending}
+        onConfirm={() => { leaveMut.mutate(); setConfirmLeave(false); }}
+        onCancel={() => setConfirmLeave(false)}
+      />
     </div>
   );
 }

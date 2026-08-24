@@ -167,7 +167,11 @@ export default function MemberResourcesPage() {
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : resources.length === 0 ? (
-        <EmptyState icon={<FolderOpen size={48} />} title="No resources found" description="Try adjusting your search or check back later." />
+        (search || categoryFilter || typeFilter || addedAfter || addedBefore) ? (
+          <EmptyState icon={<FolderOpen size={48} />} title="No resources found" description="Try adjusting your search or filters." />
+        ) : (
+          <EmptyState icon={<FolderOpen size={48} />} title="No resources yet" description="Check back later for guides, articles, and tools from the alumni team." />
+        )
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {resources.map((r) => {

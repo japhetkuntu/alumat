@@ -29,6 +29,7 @@ import {
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import type { Campaign, Contribution, ContributionStatus } from "@/types";
+import { contributionMethodLabel } from "@/types";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
   Confirmed: "success",
@@ -603,7 +604,7 @@ export default function MemberContributionsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <Badge variant="secondary" className="text-[11px] font-semibold">
-                        {c.paymentMethod}
+                        {contributionMethodLabel(c.paymentMethod)}
                       </Badge>
                     </td>
                     <td className="px-5 py-4">

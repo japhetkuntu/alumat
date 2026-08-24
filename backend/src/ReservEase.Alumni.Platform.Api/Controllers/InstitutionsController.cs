@@ -102,6 +102,28 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>Update this institution's platform fee % and Paystack settlement banking details — keeps the Paystack subaccount in sync.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing")]
+    [HttpPatch("{id}/payments")]
+    [SwaggerOperation(Summary = "Update institution payment settings")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdatePayments(string id, [FromBody] UpdateInstitutionPaymentsRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdatePaymentsAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
+    /// <summary>How money moved for this institution — gross collected, the platform's cut, and what settled to them.</summary>
+    [HttpGet("{id}/revenue")]
+    [SwaggerOperation(Summary = "Get institution revenue")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionRevenueResponse>))]
+    public async Task<IActionResult> GetRevenue(string id)
+    {
+        var result = await institutionService.GetRevenueAsync(id);
+        return result.ToActionResult();
+    }
+
     /// <summary>Update this institution's Member Portal landing page Stories and news banner — institution admins can also edit this themselves (Institution.Api).</summary>
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/landing-content")]

@@ -11,7 +11,8 @@ import { Textarea } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
-import { getMyProfile, updateMyProfile, changePassword, getMyBadges } from "@/lib/member-api";
+import { getMyProfile, updateMyProfile, changePassword, getMyBadges, getCurrentMembershipCampaign } from "@/lib/member-api";
+import { formatCurrency } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
@@ -102,6 +103,11 @@ export default function MemberProfilePage() {
   const { data: badges } = useQuery({
     queryKey: ["m-badges"],
     queryFn:  getMyBadges,
+  });
+
+  const { data: membershipCampaign } = useQuery({
+    queryKey: ["m-current-membership-campaign"],
+    queryFn:  getCurrentMembershipCampaign,
   });
 
   // Adjust local form state when the fetched profile changes — done during
@@ -285,7 +291,11 @@ export default function MemberProfilePage() {
             <EmploymentOption
               icon={Briefcase}
               label="Employed"
-              description="Currently working or self-employed"
+              description={
+                membershipCampaign?.amountPerMember != null
+                  ? `Currently working or self-employed — ${formatCurrency(membershipCampaign.amountPerMember)}/year`
+                  : "Currently working or self-employed"
+              }
               active={employmentStatus === "Employed"}
               disabled={employmentMut.isPending || employmentStatus === "Pensioner" || employmentStatus === "Employed"}
               onClick={() => {
@@ -297,7 +307,11 @@ export default function MemberProfilePage() {
             <EmploymentOption
               icon={Armchair}
               label="Pensioner"
-              description="Retired and receiving pension"
+              description={
+                membershipCampaign?.pensionerAmountPerMember != null
+                  ? `Retired and receiving pension — ${formatCurrency(membershipCampaign.pensionerAmountPerMember)}/year`
+                  : "Retired and receiving pension"
+              }
               active={employmentStatus === "Pensioner"}
               disabled={employmentMut.isPending || employmentStatus === "Pensioner"}
               onClick={() => {

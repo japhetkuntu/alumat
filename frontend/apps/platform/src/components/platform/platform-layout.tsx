@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Building2,
   CreditCard,
-  Layers,
   Users,
   LifeBuoy,
   Megaphone,
@@ -26,8 +25,7 @@ import { getInitials } from "@alumni/ui";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/institutions", label: "Institutions", icon: Building2 },
-  { href: "/billing", label: "Subscriptions & Billing", icon: CreditCard },
-  { href: "/plans", label: "Plans & Features", icon: Layers },
+  { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
   { href: "/staff", label: "Platform Staff", icon: Users },
   { href: "/support", label: "Support", icon: LifeBuoy },
   { href: "/announcements", label: "Announcements", icon: Megaphone },

@@ -12,6 +12,7 @@ import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { TableSkeleton } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import {
   getCommunities, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole,
@@ -139,6 +140,7 @@ export default function CommunitiesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<CommunityListItem | null>(null);
   const [viewingMembers, setViewingMembers] = useState<CommunityListItem | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<CommunityListItem | null>(null);
   const qc = useQueryClient();
 
   const { data: communities = [], isLoading } = useQuery({
@@ -154,7 +156,7 @@ export default function CommunitiesPage() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: { id: string; name: string; description?: string; coverImageUrl?: string; isActive: boolean }) => updateCommunity(id, body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); setEditing(null); toast.success("Community updated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); setEditing(null); setDeactivateTarget(null); toast.success("Community updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -219,7 +221,7 @@ export default function CommunitiesPage() {
                     {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{c.description}</p>}
                   </TableCell>
                   <TableCell>{c.approvedCount}</TableCell>
-                  <TableCell>{c.pendingCount > 0 ? <Badge variant="warning">{c.pendingCount}</Badge> : "—"}</TableCell>
+                  <TableCell>{c.pendingCount > 0 ? <Badge variant="warning">{c.pendingCount}</Badge> : 0}</TableCell>
                   <TableCell>{c.leaderCount}</TableCell>
                   <TableCell><Badge variant={c.isActive ? "success" : "neutral"}>{c.isActive ? "Active" : "Inactive"}</Badge></TableCell>
                   <TableCell>{formatDate(c.createdAt)}</TableCell>
@@ -227,7 +229,12 @@ export default function CommunitiesPage() {
                     <div className="flex items-center gap-2 justify-end">
                       <Button size="sm" variant="outline" onClick={() => setViewingMembers(c)}>Members</Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing(c)}>Edit</Button>
-                      <Button size="sm" variant={c.isActive ? "destructive" : "secondary"} onClick={() => toggleActive(c)} isLoading={updateMut.isPending}>
+                      <Button
+                        size="sm"
+                        variant={c.isActive ? "destructive" : "secondary"}
+                        onClick={() => c.isActive ? setDeactivateTarget(c) : toggleActive(c)}
+                        isLoading={updateMut.isPending}
+                      >
                         {c.isActive ? "Deactivate" : "Activate"}
                       </Button>
                     </div>
@@ -238,6 +245,17 @@ export default function CommunitiesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        open={!!deactivateTarget}
+        title="Deactivate this community?"
+        message={`"${deactivateTarget?.name ?? ""}" will be hidden from members and no longer accept new join requests. You can reactivate it later.`}
+        confirmLabel="Deactivate"
+        variant="destructive"
+        isLoading={updateMut.isPending}
+        onConfirm={() => { if (deactivateTarget) toggleActive(deactivateTarget); }}
+        onCancel={() => setDeactivateTarget(null)}
+      />
     </div>
   );
 }

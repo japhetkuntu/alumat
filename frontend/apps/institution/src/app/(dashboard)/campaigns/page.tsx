@@ -167,7 +167,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
               <Label>Allow Online Payments</Label>
               <div className="flex items-center gap-2">
                 <input id="online-pay" type="checkbox" checked={form.allowOnlinePayments} onChange={(e) => f("allowOnlinePayments", e.target.checked)} className="h-4 w-4" />
-                <label htmlFor="online-pay" className="text-sm">Enable Paystack / online gateway</label>
+                <label htmlFor="online-pay" className="text-sm">Enable online payments</label>
               </div>
             </div>
             <div className="space-y-2">
@@ -453,7 +453,7 @@ export default function AdminCampaignsPage() {
       <ConfirmModal
         open={!!closeTarget}
         title="Close Campaign"
-        message={`Close "${closeTarget?.title}"? This is irreversible: once closed, the campaign cannot be reopened. Please confirm that you want to finalize and disburse Paystack contributions now.`}
+        message={`Close "${closeTarget?.title}"? This is irreversible: once closed, the campaign cannot be reopened. Please confirm that you want to finalize and disburse online payment contributions now.`}
         confirmLabel="Close Campaign"
         variant="destructive"
         isLoading={closeMut.isPending}

@@ -56,14 +56,15 @@ export default function AdminDashboardPage() {
     if (slot) slot.amount += c.amount;
   });
 
-  const firstName = (user?.name ?? "there").split(" ")[0];
+  const firstName = user?.name?.trim()?.split(" ")[0] || "";
+  const greeting = firstName ? `Good morning, ${firstName}` : "Welcome back";
   const todayLabel = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
 
   return (
     <div className="p-[26px] pt-[26px] max-w-[1240px] mx-auto">
       <div className="flex items-end justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Good morning, {firstName}</h1>
+          <h1 className="text-[25px] font-bold m-0">{greeting}</h1>
           <p className="mt-1.5 text-muted-foreground text-[13px]">{todayLabel} &middot; Institution operations overview</p>
         </div>
         <span className="shrink-0 whitespace-nowrap px-2.5 py-2 rounded-[6px] text-[12px] font-bold" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
@@ -111,14 +112,23 @@ export default function AdminDashboardPage() {
           {isLoading ? (
             <Skeleton className="h-[150px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={trendMonths} barSize={30}>
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                <YAxis hide />
-                <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
-                <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={trendMonths} barSize={30}>
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <YAxis hide />
+                  <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
+                  <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              {trendMonths.every((m) => m.amount === 0) && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <p className="text-[13px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md">
+                    No contributions recorded yet this period
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </section>
 

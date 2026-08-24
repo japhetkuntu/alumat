@@ -53,9 +53,11 @@ export default function PlatformDashboardPage() {
         </Card>
         <Card>
           <CardContent className="p-5">
-            <p className="text-[12px] text-muted-foreground">Monthly Recurring Revenue</p>
-            <p className="text-[26px] font-bold mt-1">{formatCurrency(summary?.mrr ?? 0, "USD")}</p>
-            <p className="text-[12px] text-muted-foreground mt-1">From active, priced subscriptions</p>
+            <p className="text-[12px] text-muted-foreground">Platform Revenue</p>
+            <p className="text-[26px] font-bold mt-1">{formatCurrency(summary?.revenue ?? 0, "USD")}</p>
+            <p className="text-[12px] text-muted-foreground mt-1">
+              Platform fee collected across all institutions &middot; MRR {formatCurrency(summary?.mrr ?? 0, "USD")}
+            </p>
           </CardContent>
         </Card>
         <Card>

@@ -211,7 +211,11 @@ export default function AdminForumPage() {
           {threadsLoading ? (
             <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           ) : threads.length === 0 ? (
-            <EmptyState icon={<MessageSquare size={40} />} title="No threads found" description="No threads match your current filters." className="py-8" />
+            (search || categoryFilter || threadFilter !== "all") ? (
+              <EmptyState icon={<MessageSquare size={40} />} title="No threads found" description="No threads match your current filters. Try adjusting your search, category, or filter." className="py-8" />
+            ) : (
+              <EmptyState icon={<MessageSquare size={40} />} title="No discussion threads yet" description="Threads created by alumni will show up here." className="py-8" />
+            )
           ) : threads.map((t, i) => (
             <Card
               key={t.id}

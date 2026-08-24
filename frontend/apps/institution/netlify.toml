@@ -1,0 +1,20 @@
+# Netlify site config for the Institution Portal (@alumni/institution).
+# Create this as its own Netlify site with "Base directory" = frontend/apps/institution
+# — Netlify walks up from there, finds frontend/pnpm-workspace.yaml, and installs
+# the whole workspace (including the shared @alumni/ui package) before building.
+#
+# Required environment variables (set in the Netlify site's dashboard, not here):
+#   NEXT_PUBLIC_INSTITUTION_API_URL = https://admin-alumat-api.umat.edu.gh/api/v1
+#   INSTITUTION_API_INTERNAL_URL    = https://admin-alumat-api.umat.edu.gh/api/v1
+#     (same value as above — there's no internal Docker network on Netlify, so
+#     the server-side theme fetch in src/lib/theme.ts uses the same public URL.)
+
+[build]
+  command = "pnpm --filter @alumni/institution build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

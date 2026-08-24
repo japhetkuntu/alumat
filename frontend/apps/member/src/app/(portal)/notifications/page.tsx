@@ -292,7 +292,11 @@ export default function NotificationsPage() {
               <Bell size={22} style={{ color: "var(--muted-foreground)", opacity: 0.35 }} />
             </div>
             <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
-              {tab === "Unread" ? "No unread notifications" : `No ${tab.toLowerCase()} notifications`}
+              {tab === "All"
+                ? "No notifications yet"
+                : tab === "Unread"
+                  ? "No unread notifications"
+                  : `No ${tab.toLowerCase()} notifications`}
             </p>
             <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
               {tab === "Unread" ? "You're all caught up." : "Check back later."}

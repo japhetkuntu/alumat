@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Paystack.Sdk.Models;
+using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -7,6 +9,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
+using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -15,7 +18,8 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// <c>IgnoreQueryFilters()</c> on tenant-scoped entities, since this service
 /// (unlike the institution/member APIs) is not itself scoped to one tenant.
 /// </summary>
-public class InstitutionManagementService(AlumniDbContext db, IAuditLogService auditLog, ILogger<InstitutionManagementService> logger)
+public class InstitutionManagementService(
+    AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService, ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
     public async Task<IApiResponse<PgPagedResult<InstitutionListItemResponse>>> GetInstitutionsAsync(
@@ -50,9 +54,13 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
         foreach (var i in institutions)
         {
             var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
+            var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+                .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
+                .SumAsync(c => c.PlatformFeeAmount);
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
-                i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt, ResolveMrr(i.Plan, planPrices)));
+                i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt, ResolveMrr(i.Plan, planPrices),
+                i.PlatformFeePercentage, revenue));
         }
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -102,12 +110,34 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
                 PortalName = string.IsNullOrWhiteSpace(request.PortalName) ? request.Name : request.PortalName,
                 SupportEmail = request.SupportEmail,
                 PrimaryColorHex = request.PrimaryColorHex,
+                SecondaryColorHex = request.SecondaryColorHex,
                 Plan = request.Plan,
                 Status = "Trial",
                 TrialEndsAt = DateTime.UtcNow.AddDays(14),
                 OnboardedAt = DateTime.UtcNow,
+                PlatformFeePercentage = request.PlatformFeePercentage,
+                SettlementBankCode = request.SettlementBankCode,
+                SettlementBankName = request.SettlementBankName,
+                SettlementAccountNumber = request.SettlementAccountNumber,
+                SettlementAccountName = request.SettlementAccountName,
                 CreatedBy = createdBy,
             };
+
+            if (!string.IsNullOrWhiteSpace(request.SettlementBankCode) && !string.IsNullOrWhiteSpace(request.SettlementAccountNumber))
+            {
+                var subaccount = await paystackService.CreateSubaccountAsync(new SubaccountRequest
+                {
+                    BusinessName = institution.Name,
+                    SettlementBank = request.SettlementBankCode,
+                    AccountNumber = request.SettlementAccountNumber,
+                    PercentageCharge = request.PlatformFeePercentage,
+                });
+                if (subaccount.Status)
+                    institution.PaystackSubaccountCode = subaccount.Data?.SubaccountCode;
+                else
+                    logger.LogWarning("Paystack subaccount creation failed during onboarding for {Slug}: {Message}", slug, subaccount.Message);
+            }
+
             db.Institutions.Add(institution);
             await db.SaveChangesAsync();
 
@@ -186,6 +216,7 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
         institution.LogoUrl = request.LogoUrl;
         institution.IconUrl = request.IconUrl;
         institution.PrimaryColorHex = request.PrimaryColorHex;
+        institution.SecondaryColorHex = request.SecondaryColorHex;
         institution.InstitutionPortalTitle = request.InstitutionPortalTitle;
         institution.InstitutionAuthHeadline = request.InstitutionAuthHeadline;
         institution.InstitutionAuthSubtext = request.InstitutionAuthSubtext;
@@ -223,6 +254,60 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Features updated");
     }
 
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName)
+    {
+        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+        var subaccountRequest = new SubaccountRequest
+        {
+            BusinessName = institution.Name,
+            SettlementBank = request.SettlementBankCode,
+            AccountNumber = request.SettlementAccountNumber,
+            PercentageCharge = request.PlatformFeePercentage,
+        };
+
+        var subaccount = string.IsNullOrWhiteSpace(institution.PaystackSubaccountCode)
+            ? await paystackService.CreateSubaccountAsync(subaccountRequest)
+            : await paystackService.UpdateSubaccountAsync(institution.PaystackSubaccountCode, subaccountRequest);
+
+        if (!subaccount.Status)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>($"Paystack subaccount sync failed: {subaccount.Message}");
+
+        institution.PlatformFeePercentage = request.PlatformFeePercentage;
+        institution.SettlementBankCode = request.SettlementBankCode;
+        institution.SettlementBankName = request.SettlementBankName;
+        institution.SettlementAccountNumber = request.SettlementAccountNumber;
+        institution.SettlementAccountName = request.SettlementAccountName;
+        if (!string.IsNullOrWhiteSpace(subaccount.Data?.SubaccountCode))
+            institution.PaystackSubaccountCode = subaccount.Data.SubaccountCode;
+        institution.UpdatedAt = DateTime.UtcNow;
+        institution.UpdatedBy = updatedBy;
+        await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(updatedBy, actorName, $"updated institution payment settings (fee {request.PlatformFeePercentage}%)", institution.Name);
+
+        return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Payment settings updated");
+    }
+
+    public async Task<IApiResponse<InstitutionRevenueResponse>> GetRevenueAsync(string id)
+    {
+        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionRevenueResponse>("Institution not found");
+
+        var confirmed = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+            .Where(c => c.InstitutionId == id && c.Status == "Confirmed")
+            .ToListAsync();
+
+        var gross = confirmed.Sum(c => c.Amount);
+        var fee = confirmed.Sum(c => c.PlatformFeeAmount);
+        var net = confirmed.Sum(c => c.NetAmountToInstitution);
+
+        return new InstitutionRevenueResponse(id, gross, fee, net, confirmed.Count).ToOkApiResponse();
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName)
     {
         var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
@@ -257,6 +342,9 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
         var newThisMonth = await db.Institutions.CountAsync(i => i.OnboardedAt >= monthStart);
 
         var mrr = await GetMrrAsync();
+        var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+            .Where(c => c.Status == "Confirmed")
+            .SumAsync(c => c.PlatformFeeAmount);
 
         var growthCounts = new List<int>();
         var growthLabels = new List<string>();
@@ -268,7 +356,7 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
             growthLabels.Add(bucketStart.ToString("MMM"));
         }
 
-        return new PlatformDashboardSummary(totalInstitutions, activeCount, trialCount, totalMembers, newThisMonth, mrr, growthCounts, growthLabels)
+        return new PlatformDashboardSummary(totalInstitutions, activeCount, trialCount, totalMembers, newThisMonth, mrr, revenue, growthCounts, growthLabels)
             .ToOkApiResponse();
     }
 
@@ -289,14 +377,20 @@ public class InstitutionManagementService(AlumniDbContext db, IAuditLogService a
     {
         var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
         var planPrices = await db.Plans.ToDictionaryAsync(p => p.Name, p => (p.Price, p.BillingInterval));
+        var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+            .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
+            .SumAsync(c => c.PlatformFeeAmount);
         return new InstitutionDetailResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain,
             i.PortalName, i.Tagline, i.ContactName, i.ContactEmail, i.SupportEmail,
-            i.LogoUrl, i.IconUrl, i.PrimaryColorHex,
+            i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.Plan, i.Status, memberCount, i.MemberLimit, 0, i.StorageLimitGb,
-            i.OnboardedAt, i.TrialEndsAt, ResolveMrr(i.Plan, planPrices));
+            i.OnboardedAt, i.TrialEndsAt, ResolveMrr(i.Plan, planPrices),
+            i.PlatformFeePercentage, i.PaystackSubaccountCode,
+            i.SettlementBankCode, i.SettlementBankName,
+            i.SettlementAccountNumber, i.SettlementAccountName, revenue);
     }
 }

@@ -161,7 +161,11 @@ export default function AdminMentorshipPage() {
               {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-44 rounded-xl bg-muted animate-pulse" />)}
             </div>
           ) : mentors.length === 0 ? (
-            <EmptyState icon={<UserCheck size={40} />} title="No mentor profiles found" description="Adjust your filters or check back later." className="py-8" />
+            (mentorSearch || mentorStatusFilter) ? (
+              <EmptyState icon={<UserCheck size={40} />} title="No mentor profiles found" description="No mentors match your current search or filter." className="py-8" />
+            ) : (
+              <EmptyState icon={<UserCheck size={40} />} title="No mentor profiles yet" description="Alumni who apply to become mentors will appear here." className="py-8" />
+            )
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {mentors.map((m, i) => {

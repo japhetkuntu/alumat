@@ -105,7 +105,7 @@ export default function LeaderboardPage() {
                     </div>
                     <p className="text-[12.5px] mt-0.5 flex items-center gap-1" style={{ color: "var(--muted-foreground)" }}>
                       <Users size={11} />
-                      {entry.totalMembers} members
+                      {entry.totalMembers} {entry.totalMembers === 1 ? "member" : "members"}
                     </p>
                   </div>
 

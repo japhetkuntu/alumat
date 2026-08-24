@@ -41,7 +41,12 @@ export type MemberStatus = "Pending" | "Active" | "Suspended" | "Banned" | "Bloc
 export interface AuthData {
   id: string;
   email: string;
+  // The API returns firstName/lastName, not a combined name — `name` is
+  // derived from those in useAuth's persist() before this is cached, so
+  // every consumer of AuthData can keep reading a single display name.
   name: string;
+  firstName?: string;
+  lastName?: string;
   role: UserRole;
   graduationYear?: number;
 }
@@ -220,6 +225,10 @@ export interface PaystackDisbursementSummary {
   totalOutstanding: number;
   confirmedCount: number;
   disbursedCount: number;
+  /** Total platform fee taken across all confirmed online payments for this campaign. */
+  totalPlatformFee: number;
+  /** Total amount that settled (or will settle) to the institution — totalPaidToPaystack minus totalPlatformFee. */
+  totalNetToInstitution: number;
 }
 
 export interface ReportSummary {
@@ -254,6 +263,10 @@ export interface Contribution {
   notes?: string;
   confirmedAt?: string;
   createdAt: string;
+  /** The platform's cut of this contribution. Zero for manual/offline payments and for contributions confirmed before this field existed. */
+  platformFeeAmount: number;
+  /** Amount minus platformFeeAmount — what actually settled to the institution's account. */
+  netAmountToInstitution: number;
 }
 
 export interface InitiateContributionRequest {

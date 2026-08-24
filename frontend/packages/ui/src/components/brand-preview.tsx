@@ -6,6 +6,8 @@ import { generateBrandPalette } from "../lib/brand-palette";
 export interface BrandPreviewProps {
   /** Hex color the user is currently considering — updates live as they type/pick. */
   color: string;
+  /** Optional second brand color — many institutions have a real two-color identity. Falls back to the platform's generic gold accent when omitted. */
+  secondaryColor?: string;
   /** Institution/portal name shown in the mockups. Defaults to a generic placeholder. */
   name?: string;
   className?: string;
@@ -19,14 +21,14 @@ export interface BrandPreviewProps {
  * of it. Pure client-side computation; nothing is sent anywhere or saved
  * until the caller's own save action runs.
  */
-export function BrandPreview({ color, name = "Your Portal", className }: BrandPreviewProps) {
+export function BrandPreview({ color, secondaryColor, name = "Your Portal", className }: BrandPreviewProps) {
   const palette = React.useMemo(() => {
     try {
-      return generateBrandPalette(color);
+      return generateBrandPalette(color, secondaryColor || undefined);
     } catch {
       return null;
     }
-  }, [color]);
+  }, [color, secondaryColor]);
 
   if (!palette) {
     return (
@@ -83,12 +85,19 @@ function InstitutionPortalMock({ palette, name, initial }: MockProps) {
           <div style={{ borderRadius: 8, background: palette.primaryLight, border: `1px solid ${palette.primarySoft}`, padding: 8, fontSize: 9.5, color: palette.primaryDark }}>
             Info callout uses your color
           </div>
-          <button
-            type="button"
-            style={{ alignSelf: "flex-start", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 10.5, fontWeight: 700, background: palette.primary, color: palette.textOnPrimary, cursor: "default" }}
-          >
-            Primary action
-          </button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              type="button"
+              style={{ border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 10.5, fontWeight: 700, background: palette.primary, color: palette.textOnPrimary, cursor: "default" }}
+            >
+              Primary action
+            </button>
+            {palette.accent && (
+              <span style={{ alignSelf: "center", borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: palette.accent.light, color: palette.accent.dark }}>
+                Featured
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </PreviewFrame>
@@ -107,7 +116,11 @@ function MemberPortalMock({ palette, name, initial }: MockProps) {
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: palette.primaryLight, color: palette.primaryDark }}>Verified</span>
-          <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: "#f1f5f9", color: "#64748b" }}>Alumni</span>
+          {palette.accent ? (
+            <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: palette.accent.light, color: palette.accent.dark }}>Top donor</span>
+          ) : (
+            <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: "#f1f5f9", color: "#64748b" }}>Alumni</span>
+          )}
         </div>
         <div style={{ borderRadius: 10, border: "1px solid #eef2f1", padding: 10, fontSize: 9.5, color: "#475569", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>New job posted in your network</span>

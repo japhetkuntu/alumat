@@ -427,7 +427,7 @@ export default function CampaignDetailPage() {
               )}
 
               <p className="text-center text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
-                Payments are processed securely via Paystack
+                Payments are processed securely online
               </p>
 
               {/* Manual payment instructions */}

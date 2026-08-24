@@ -12,6 +12,7 @@ import { Label } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
 import { YearGroupPicker } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { getInstitutionStaff, createInstitutionStaff, updateInstitutionStaff } from "@/lib/institution-api";
@@ -148,6 +149,7 @@ export default function AdminsPage() {
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<InstitutionStaffUser | null>(null);
+  const [disableTarget, setDisableTarget] = useState<InstitutionStaffUser | null>(null);
   const pageSize = 20;
   const qc = useQueryClient();
 
@@ -165,7 +167,7 @@ export default function AdminsPage() {
 
   const updateMut = useMutation({
     mutationFn: ([id, req]: [string, UpdateInstitutionStaffRequest]) => updateInstitutionStaff(id, req),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-admins"] }); setEditingAdmin(null); toast.success("Institution admin updated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-admins"] }); setEditingAdmin(null); setDisableTarget(null); toast.success("Institution admin updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -302,7 +304,7 @@ export default function AdminsPage() {
                       <Button
                         size="sm"
                         variant={a.isDisabled ? "secondary" : "destructive"}
-                        onClick={() => handleDisableToggle(a)}
+                        onClick={() => a.isDisabled ? handleDisableToggle(a) : setDisableTarget(a)}
                         isLoading={updateMut.isPending}
                       >
                         {a.isDisabled ? "Enable" : "Disable"}
@@ -317,6 +319,17 @@ export default function AdminsPage() {
       </Card>
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+
+      <ConfirmModal
+        open={!!disableTarget}
+        title="Disable this admin?"
+        message={`${disableTarget ? `${disableTarget.firstName} ${disableTarget.lastName}` : "This admin"} will lose access to the Institution Portal immediately.`}
+        confirmLabel="Disable"
+        variant="destructive"
+        isLoading={updateMut.isPending}
+        onConfirm={() => { if (disableTarget) handleDisableToggle(disableTarget); }}
+        onCancel={() => setDisableTarget(null)}
+      />
     </div>
   );
 }

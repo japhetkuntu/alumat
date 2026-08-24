@@ -23,6 +23,27 @@ import type {
   NotificationItem,
 } from "@/types";
 
+/**
+ * Human-facing label for a contribution's payment method. The backend still
+ * stores/returns the literal processor name (e.g. "Paystack") since that's
+ * how the payment was actually routed, but end users shouldn't see the
+ * processor's brand — just that it was an online payment.
+ */
+export function paymentMethodLabel(method: string): string {
+  switch (method) {
+    case "Paystack":
+      return "Online payment";
+    case "MobileMoney":
+      return "Mobile Money";
+    case "BankTransfer":
+      return "Bank Transfer";
+    case "Manual":
+      return "Manual";
+    default:
+      return method;
+  }
+}
+
 function toFormData(data: object): FormData {
   const fd = new FormData();
   for (const [key, value] of Object.entries(data)) {

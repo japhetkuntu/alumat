@@ -133,6 +133,10 @@ public class ContributionDto
     public DateTime? ConfirmedAt { get; set; }
     public string? ConfirmedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    /// <summary>The platform's cut of this contribution. Zero for manual/offline payments and for contributions confirmed before this field existed.</summary>
+    public decimal PlatformFeeAmount { get; set; }
+    /// <summary>Amount minus PlatformFeeAmount — what actually settles to the institution's account.</summary>
+    public decimal NetAmountToInstitution { get; set; }
 }
 
 public class PaystackDisbursementSummaryDto
@@ -142,6 +146,10 @@ public class PaystackDisbursementSummaryDto
     public decimal TotalOutstanding { get; set; }
     public int ConfirmedCount { get; set; }
     public int DisbursedCount { get; set; }
+    /// <summary>Total platform fee taken across all confirmed online payments for this campaign.</summary>
+    public decimal TotalPlatformFee { get; set; }
+    /// <summary>Total amount that settled (or will settle) to the institution across all confirmed online payments for this campaign — TotalPaidToPaystack minus TotalPlatformFee.</summary>
+    public decimal TotalNetToInstitution { get; set; }
 }
 
 public class ReportSummaryDto

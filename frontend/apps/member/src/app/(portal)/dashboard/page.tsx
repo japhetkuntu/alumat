@@ -728,9 +728,14 @@ export default function MemberDashboardPage() {
                       <p className="text-[14px] font-semibold flex-1 leading-snug" style={{ color: "var(--foreground)" }}>
                         {c.title}
                       </p>
-                      <p className="text-[14px] font-bold shrink-0" style={{ color: "var(--primary)" }}>
-                        {formatCurrency(c.amountPerMember)}
-                      </p>
+                      <div className="text-right shrink-0">
+                        <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
+                          {formatCurrency(c.amountPerMember)}
+                        </p>
+                        <p className="text-[10px] font-normal" style={{ color: "var(--muted-foreground)" }}>
+                          Per member
+                        </p>
+                      </div>
                     </div>
                     <Progress value={pct} className="h-2 mb-1.5" />
                     <div className="flex items-center justify-between text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
@@ -784,9 +789,14 @@ export default function MemberDashboardPage() {
                             {c.title}
                           </p>
                         </div>
-                        <p className="text-[14px] font-bold shrink-0" style={{ color: "var(--primary)" }}>
-                          {formatCurrency(c.amountPerMember)}
-                        </p>
+                        <div className="text-right shrink-0">
+                          <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
+                            {formatCurrency(c.amountPerMember)}
+                          </p>
+                          <p className="text-[10px] font-normal" style={{ color: "var(--muted-foreground)" }}>
+                            Per member
+                          </p>
+                        </div>
                       </div>
                       <Progress value={pct} className="h-2 mb-1.5" />
                       <div className="flex items-center justify-between text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>

@@ -5,6 +5,7 @@ public record InstitutionThemeResponse(
     string PortalName,
     string DisplayName,
     string PrimaryColorHex,
+    string? SecondaryColorHex,
     string? LogoUrl,
     string? Tagline,
     string? IconUrl,

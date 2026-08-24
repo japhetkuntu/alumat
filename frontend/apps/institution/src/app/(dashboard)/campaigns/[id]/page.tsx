@@ -17,7 +17,7 @@ import { Progress } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign } from "@/lib/institution-api";
+import { getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel } from "@/lib/institution-api";
 import { EmptyState } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -91,7 +91,7 @@ export default function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin-contributions", id] });
       qc.invalidateQueries({ queryKey: ["admin-campaign-paystack-summary", id] });
       setConfirmCampaignDisburseOpen(false);
-      toast.success("Campaign paystack contributions marked as disbursed.");
+      toast.success("Campaign online payment contributions marked as disbursed.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -170,19 +170,26 @@ export default function CampaignDetailPage() {
           </div>
 
           <div className="mt-1 rounded-[6px] border border-border p-4">
-            <h3 className="text-[13.5px] font-semibold">Paystack contribution overview</h3>
+            <h3 className="text-[13.5px] font-semibold">Online payment overview</h3>
+            <p className="text-xs text-muted-foreground mt-1">This platform takes a small percentage of each online payment to run the service — the rest pays out directly to your institution&apos;s account.</p>
             {loadingPaystackSummary ? (
-              <p className="text-sm text-muted-foreground">Loading paystack summary…</p>
+              <p className="text-sm text-muted-foreground mt-2">Loading payment summary…</p>
             ) : paystackSummary ? (
-              <div className="flex flex-wrap gap-4 mt-2 text-sm">
-                <div><p className="text-muted-foreground">Total paid via Paystack</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPaidToPaystack)}</p></div>
-                <div><p className="text-muted-foreground">Total disbursed</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalDisbursed)}</p></div>
-                <div><p className="text-muted-foreground">Outstanding</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalOutstanding)}</p></div>
-                <div><p className="text-muted-foreground">Confirmed contributions</p><p className="font-semibold tabular-nums">{paystackSummary.confirmedCount}</p></div>
-                <div><p className="text-muted-foreground">Disbursed count</p><p className="font-semibold tabular-nums">{paystackSummary.disbursedCount}</p></div>
-              </div>
+              <>
+                <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                  <div><p className="text-muted-foreground">Gross collected online</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPaidToPaystack)}</p></div>
+                  <div><p className="text-muted-foreground">Platform fee</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPlatformFee)}</p></div>
+                  <div><p className="text-muted-foreground">Net settled to institution</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalNetToInstitution)}</p></div>
+                </div>
+                <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                  <div><p className="text-muted-foreground">Total disbursed</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalDisbursed)}</p></div>
+                  <div><p className="text-muted-foreground">Outstanding</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalOutstanding)}</p></div>
+                  <div><p className="text-muted-foreground">Confirmed contributions</p><p className="font-semibold tabular-nums">{paystackSummary.confirmedCount}</p></div>
+                  <div><p className="text-muted-foreground">Disbursed count</p><p className="font-semibold tabular-nums">{paystackSummary.disbursedCount}</p></div>
+                </div>
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground">No Paystack summary available.</p>
+              <p className="text-sm text-muted-foreground mt-2">No online payment summary available.</p>
             )}
 
             {user?.role === "SuperAdmin" && campaign.status === "Closed" && paystackSummary && paystackSummary.totalOutstanding > 0 && (
@@ -192,7 +199,7 @@ export default function CampaignDetailPage() {
                   onClick={() => setConfirmCampaignDisburseOpen(true)}
                   isLoading={campaignDisburseMut.isPending}
                 >
-                  Mark Paystack contributions as disbursed
+                  Mark online payment contributions as disbursed
                 </Button>
               </div>
             )}
@@ -292,7 +299,7 @@ export default function CampaignDetailPage() {
                     {c.memberEmail && <p className="text-xs text-muted-foreground">{c.memberEmail}</p>}
                   </TableCell>
                   <TableCell className="font-semibold tabular-nums">{formatCurrency(c.amount)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{c.paymentMethod}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{paymentMethodLabel(c.paymentMethod)}</TableCell>
                   <TableCell><Badge variant={contribStatusVariant[c.status]}>{c.status}</Badge></TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(c.createdAt)}</TableCell>
                 </TableRow>
@@ -326,8 +333,8 @@ export default function CampaignDetailPage() {
       />
       <ConfirmModal
         open={confirmCampaignDisburseOpen}
-        title="Mark Paystack as disbursed"
-        message="This will mark all confirmed Paystack contributions for this campaign as disbursed. Continue?"
+        title="Mark online payments as disbursed"
+        message="This will mark all confirmed online payment contributions for this campaign as disbursed. Continue?"
         confirmLabel="Mark as disbursed"
         variant="destructive"
         isLoading={campaignDisburseMut.isPending}
@@ -446,15 +453,15 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 <div className="space-y-2">
                   <Label>Allow Online Payments</Label>
                   <div className="flex items-center gap-2">
-                    <input id="edit-online-pay" type="checkbox" checked={allowOnlinePayments} onChange={(e) => setAllowOnlinePayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-online-pay" className="text-sm">Enable Paystack</label>
+                    <input id="edit-online-pay-membership" type="checkbox" checked={allowOnlinePayments} onChange={(e) => setAllowOnlinePayments(e.target.checked)} className="h-4 w-4" />
+                    <label htmlFor="edit-online-pay-membership" className="text-sm">Enable online payments</label>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Allow Manual Payments</Label>
                   <div className="flex items-center gap-2">
-                    <input id="edit-manual-pay" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-manual-pay" className="text-sm">Bank/Mobile money transfers</label>
+                    <input id="edit-manual-pay-membership" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
+                    <label htmlFor="edit-manual-pay-membership" className="text-sm">Bank/Mobile money transfers</label>
                   </div>
                 </div>
               </div>
@@ -522,15 +529,15 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 <div className="space-y-2">
                   <Label>Allow Online Payments</Label>
                   <div className="flex items-center gap-2">
-                    <input id="edit-online-pay" type="checkbox" checked={allowOnlinePayments} onChange={(e) => setAllowOnlinePayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-online-pay" className="text-sm">Enable Paystack</label>
+                    <input id="edit-online-pay-regular" type="checkbox" checked={allowOnlinePayments} onChange={(e) => setAllowOnlinePayments(e.target.checked)} className="h-4 w-4" />
+                    <label htmlFor="edit-online-pay-regular" className="text-sm">Enable online payments</label>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Allow Manual Payments</Label>
                   <div className="flex items-center gap-2">
-                    <input id="edit-manual-pay" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-manual-pay" className="text-sm">Bank/mobile money transfers</label>
+                    <input id="edit-manual-pay-regular" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
+                    <label htmlFor="edit-manual-pay-regular" className="text-sm">Bank/mobile money transfers</label>
                   </div>
                 </div>
                 <div className="space-y-2">

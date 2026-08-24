@@ -60,7 +60,7 @@ function ActivateMembershipContent() {
       });
     },
     onSuccess: (result: { authorizationUrl: string; reference: string }) => {
-      toast.success("Redirecting to Paystack checkout…");
+      toast.success("Redirecting to secure checkout…");
       setTimeout(() => {
         window.location.href = result.authorizationUrl;
       }, 400);
@@ -124,7 +124,7 @@ function ActivateMembershipContent() {
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <ShieldCheck size={13} className="text-success" />
-          <span className="hidden sm:inline">Secured by Paystack ·</span>
+          <span className="hidden sm:inline">Secure payment ·</span>
           <Link href="/login" className="text-primary hover:underline font-semibold">
             Already have an account? Sign in
           </Link>
@@ -272,12 +272,12 @@ function ActivateMembershipContent() {
               {payMutation.isPending ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  Connecting to Paystack…
+                  Connecting to secure payment…
                 </>
               ) : (
                 <>
                   <CreditCard size={18} />
-                  Pay {formatCurrency(campaign.amountPerMember)} with Paystack
+                  Pay {formatCurrency(campaign.amountPerMember)} online
                 </>
               )}
             </Button>

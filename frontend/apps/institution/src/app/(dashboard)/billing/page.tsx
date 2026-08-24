@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { AlertTriangle } from "lucide-react";
 
 function UsageBar({ label, used, limit, unit = "" }: { label: string; used: number; limit: number; unit?: string }) {
   const pct = Math.min(100, Math.round((used / limit) * 100));
@@ -28,6 +29,16 @@ const invoices = [
 export default function PlanBillingPage() {
   return (
     <div className="p-[26px] max-w-[1240px] mx-auto">
+      <div className="flex items-start gap-3 rounded-lg border border-warning bg-warning/10 px-4 py-3.5 mb-6">
+        <AlertTriangle size={18} className="text-warning shrink-0 mt-0.5" />
+        <div className="text-[13px] leading-relaxed">
+          <p className="font-bold text-warning">Preview data — billing isn&apos;t connected yet</p>
+          <p className="text-foreground/80 mt-0.5">
+            Everything on this page (plan, usage, payment method, invoices) is illustrative. Real charges are not being made, and nothing here is wired to a live subscription service.
+          </p>
+        </div>
+      </div>
+
       <header className="flex items-end justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-700">
         <div className="space-y-1">
           <h1 className="text-[25px] font-bold m-0">Plan &amp; Billing</h1>
@@ -35,10 +46,6 @@ export default function PlanBillingPage() {
         </div>
         <Button disabled>Change plan</Button>
       </header>
-
-      <p className="text-[12px] text-muted-foreground bg-muted/50 border border-border/40 rounded-lg px-3 py-2 mb-6">
-        Billing isn&apos;t wired to the platform yet — figures below are illustrative until the subscription service exists.
-      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-4">
         <Card className="border-border/40">

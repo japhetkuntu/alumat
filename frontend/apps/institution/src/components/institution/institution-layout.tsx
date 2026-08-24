@@ -90,13 +90,14 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const { data: theme } = useQuery({
     queryKey: ["institution-nav-theme"],
     queryFn: async () => {
-      const res = await institutionClient.get<{ data: { disabledFeatures: string[] } }>("/public/institution/theme");
+      const res = await institutionClient.get<{ data: { disabledFeatures: string[]; portalName?: string; portalTitle?: string } }>("/public/institution/theme");
       return res.data.data;
     },
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
+  const portalBrandName = theme?.portalTitle || theme?.portalName || "Institution Portal";
 
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
@@ -132,7 +133,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
               U
             </div>
             <div className="overflow-hidden">
-              <p className="font-bold text-[15px] tracking-tight truncate text-white leading-tight">Alumni Portal</p>
+              <p className="font-bold text-[15px] tracking-tight truncate text-white leading-tight">{portalBrandName}</p>
             </div>
           </div>
           {onClose && (

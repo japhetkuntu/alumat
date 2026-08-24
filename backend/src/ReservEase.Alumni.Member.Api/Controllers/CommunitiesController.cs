@@ -5,6 +5,8 @@ using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Filters;
 
 namespace ReservEase.Alumni.Member.Api.Controllers;
 
@@ -15,6 +17,7 @@ namespace ReservEase.Alumni.Member.Api.Controllers;
 /// each feature's own controller for that enforcement.
 /// </summary>
 [Authorize]
+[RequireFeature(InstitutionFeatures.Communities)]
 public class CommunitiesController(ICommunityService communityService) : DefaultController
 {
     [HttpGet]

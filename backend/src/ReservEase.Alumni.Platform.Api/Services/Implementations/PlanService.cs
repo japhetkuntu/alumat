@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
@@ -11,7 +12,7 @@ public class PlanService(AlumniDbContext db, IAuditLogService auditLog) : IPlanS
 {
     public async Task<IApiResponse<List<PlanResponse>>> GetPlansAsync()
     {
-        var plans = await db.Plans.OrderBy(p => p.SortOrder).ToListAsync();
+        var plans = await db.Plans.OrderByDescending(p => p.SortOrder).ToListAsync();
         var items = new List<PlanResponse>();
         foreach (var p in plans)
         {

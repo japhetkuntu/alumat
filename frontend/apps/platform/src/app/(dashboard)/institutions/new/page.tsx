@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
-import { createInstitution, getPlans } from "@/lib/platform-api";
+import { createInstitution } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 
-const STEPS = ["Institution details", "Branding", "Plan", "First admin", "Review"] as const;
+const STEPS = ["Institution details", "Branding", "Payments & payouts", "First admin", "Review"] as const;
 
 function slugify(v: string) {
   return v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -24,7 +23,6 @@ function generatePassword() {
 
 export default function NewInstitutionPage() {
   const router = useRouter();
-  const { data: plans = [] } = useQuery({ queryKey: ["plans"], queryFn: getPlans });
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -36,7 +34,12 @@ export default function NewInstitutionPage() {
     appName: "",
     supportEmail: "",
     primaryColor: "#2563eb",
-    plan: "Growth",
+    secondaryColor: "",
+    platformFeePercentage: "5",
+    settlementBankName: "",
+    settlementBankCode: "",
+    settlementAccountNumber: "",
+    settlementAccountName: "",
     adminFirstName: "",
     adminLastName: "",
     adminEmail: "",
@@ -56,17 +59,22 @@ export default function NewInstitutionPage() {
           slug: form.slug,
           contactName: form.contactName,
           contactEmail: form.contactEmail,
-          plan: form.plan,
           portalName: form.appName || undefined,
           supportEmail: form.supportEmail || undefined,
           primaryColorHex: form.primaryColor,
+          secondaryColorHex: form.secondaryColor || undefined,
+          platformFeePercentage: form.platformFeePercentage ? Number(form.platformFeePercentage) : undefined,
+          settlementBankCode: form.settlementBankCode || undefined,
+          settlementBankName: form.settlementBankName || undefined,
+          settlementAccountNumber: form.settlementAccountNumber || undefined,
+          settlementAccountName: form.settlementAccountName || undefined,
           adminFirstName: form.adminFirstName || form.contactName.split(" ")[0] || "Admin",
           adminLastName: form.adminLastName || form.contactName.split(" ").slice(1).join(" ") || "User",
           adminEmail: form.adminEmail || form.contactEmail,
           adminPassword: form.adminPassword,
         });
         toast.success("Institution created", {
-          description: `${created.name} has been onboarded on the ${created.plan} plan. First admin: ${form.adminEmail || form.contactEmail}.`,
+          description: `${created.name} has been onboarded. First admin: ${form.adminEmail || form.contactEmail}.`,
         });
         router.push(`/institutions/${created.id}`);
       } catch (error) {
@@ -78,8 +86,6 @@ export default function NewInstitutionPage() {
     }
     setStep((s) => s + 1);
   }
-
-  const selectedPlan = plans.find((p) => p.name === form.plan) ?? plans[0];
 
   return (
     <div className="p-7 max-w-[1100px]">
@@ -151,11 +157,20 @@ export default function NewInstitutionPage() {
                     <Label>Support contact</Label>
                     <Input value={form.supportEmail} onChange={(e) => update("supportEmail", e.target.value)} placeholder="support@greenfield.edu.gh" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Primary color</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-md border border-border" style={{ background: form.primaryColor }} />
-                      <Input value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} className="w-[140px]" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Primary color</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-md border border-border" style={{ background: form.primaryColor }} />
+                        <Input value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} className="w-[140px]" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Secondary color</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-md border border-border" style={{ background: form.secondaryColor || "#e2e8f0" }} />
+                        <Input value={form.secondaryColor} onChange={(e) => update("secondaryColor", e.target.value)} className="w-[140px]" placeholder="Optional" />
+                      </div>
                     </div>
                   </div>
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
@@ -166,7 +181,7 @@ export default function NewInstitutionPage() {
                     <p className="text-[12px] text-muted-foreground -mt-0.5">
                       This is the actual palette that will be generated from your color — same math used for the live portals and outbound email.
                     </p>
-                    <BrandPreview color={form.primaryColor} name={form.appName || form.name || "Institution"} className="pt-1" />
+                    <BrandPreview color={form.primaryColor} secondaryColor={form.secondaryColor || undefined} name={form.appName || form.name || "Institution"} className="pt-1" />
                   </div>
                 </div>
               </>
@@ -174,26 +189,47 @@ export default function NewInstitutionPage() {
 
             {step === 2 && (
               <>
-                <h2 className="text-[16px] font-semibold mb-1">Plan</h2>
-                <p className="text-[13px] text-muted-foreground mb-4">Choose a starting plan tier. This can be changed later.</p>
-                <div className="space-y-3">
-                  {plans.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => update("plan", p.name)}
-                      className={`w-full text-left border rounded-lg p-4 transition-colors ${
-                        form.plan === p.name ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40"
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold text-[14px]">{p.name}</span>
-                        <span className="font-bold">{p.price != null ? `$${p.price}/mo` : "Custom"}</span>
-                      </div>
-                      <p className="text-[12.5px] text-muted-foreground mt-1">
-                        {p.memberLimit != null ? p.memberLimit.toLocaleString() : "Unlimited"} members &middot; {p.modules.join(", ")}
-                      </p>
-                    </button>
-                  ))}
+                <h2 className="text-[16px] font-semibold mb-1">Payments &amp; payouts</h2>
+                <p className="text-[13px] text-muted-foreground mb-4">
+                  Set the platform fee taken on this institution&apos;s collections and where their share settles.
+                </p>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label>Platform fee</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step="0.1"
+                        value={form.platformFeePercentage}
+                        onChange={(e) => update("platformFeePercentage", e.target.value)}
+                        className="w-[120px]"
+                      />
+                      <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Settlement bank name</Label>
+                      <Input value={form.settlementBankName} onChange={(e) => update("settlementBankName", e.target.value)} placeholder="GCB Bank" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Settlement bank code</Label>
+                      <Input value={form.settlementBankCode} onChange={(e) => update("settlementBankCode", e.target.value)} placeholder="040100" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Account number</Label>
+                      <Input value={form.settlementAccountNumber} onChange={(e) => update("settlementAccountNumber", e.target.value)} placeholder="1234567890" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Account name</Label>
+                      <Input value={form.settlementAccountName} onChange={(e) => update("settlementAccountName", e.target.value)} placeholder="Greenfield University Alumni Association" />
+                    </div>
+                  </div>
+                  <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
+                    Optional — leave blank and configure later from the institution&apos;s Payments tab. Providing a bank code and account number here sets up their payout account automatically.
+                  </p>
                 </div>
               </>
             )}
@@ -233,7 +269,8 @@ export default function NewInstitutionPage() {
                 <div className="space-y-3 text-[13.5px]">
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Institution</span><span className="font-semibold">{form.name || "—"}</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Tenant URL</span><span className="font-semibold font-mono">{form.slug || "—"}.yourplatform.com</span></div>
-                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Plan</span><span className="font-semibold">{form.plan}</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Settlement account</span><span className="font-semibold">{form.settlementAccountName || "Not configured"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminFirstName || "—"} {form.adminLastName} ({form.adminEmail || form.contactEmail || "—"})</span></div>
                 </div>
               </>
@@ -259,17 +296,9 @@ export default function NewInstitutionPage() {
             <div className="space-y-2.5 text-[13px]">
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Tenant URL</span><span className="font-semibold font-mono">{form.slug || "—"}.yourplatform.com</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Initial status</span><span className="font-semibold">Trial &middot; 14 days</span></div>
-              <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Plan</span><span className="font-semibold">{form.plan}</span></div>
+              <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminEmail || form.contactEmail || "Not added"}</span></div>
             </div>
-            {selectedPlan && (
-              <div className="mt-4 bg-muted/40 rounded-md p-3 text-[12.5px]">
-                <p className="font-semibold mb-1">{selectedPlan.name} trial includes</p>
-                <p className="text-muted-foreground">
-                  {selectedPlan.memberLimit != null ? selectedPlan.memberLimit.toLocaleString() : "Unlimited"} members &middot; {selectedPlan.storageLimitGb != null ? `${selectedPlan.storageLimitGb} GB storage` : "Unlimited storage"} &middot; {selectedPlan.modules.join(", ")}.
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

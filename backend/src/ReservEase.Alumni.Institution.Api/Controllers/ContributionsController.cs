@@ -16,13 +16,16 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// Manage financial contributions to campaigns.
 /// </summary>
 [Authorize]
-[RequireFeature(InstitutionFeatures.Contributions)]
+// No controller-level [RequireFeature] here — Contributions (online) and
+// ManualPayments (offline) are independently toggle-able, so each action is
+// gated individually below rather than sharing one class-level key.
 public class ContributionsController(IContributionService contributionService) : DefaultController
 {
     /// <summary>
     /// Get a paginated list of contributions with optional filters.
     /// </summary>
     [HttpGet]
+    [RequireFeature(InstitutionFeatures.Contributions)]
     [SwaggerOperation(Summary = "List contributions", Description = "Filter by campaignId and/or status.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<ContributionDto>>))]
     public async Task<IActionResult> GetContributions([FromQuery] ContributionInstitutionStaffFilter filter)
@@ -36,6 +39,7 @@ public class ContributionsController(IContributionService contributionService) :
     /// Record a manual (offline) contribution.
     /// </summary>
     [HttpPost("manual")]
+    [RequireFeature(InstitutionFeatures.ManualPayments)]
     [SwaggerOperation(Summary = "Record manual contribution")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<ContributionDto>))]
     public async Task<IActionResult> RecordManualContribution([FromBody] RecordManualContributionRequest request)
@@ -49,6 +53,7 @@ public class ContributionsController(IContributionService contributionService) :
     /// Confirm a pending contribution.
     /// </summary>
     [HttpPut("{contributionId}/confirm")]
+    [RequireFeature(InstitutionFeatures.Contributions)]
     [SwaggerOperation(Summary = "Confirm contribution")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -63,6 +68,7 @@ public class ContributionsController(IContributionService contributionService) :
     /// Reject a contribution with an optional reason.
     /// </summary>
     [HttpPut("{contributionId}/reject")]
+    [RequireFeature(InstitutionFeatures.Contributions)]
     [SwaggerOperation(Summary = "Reject contribution")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

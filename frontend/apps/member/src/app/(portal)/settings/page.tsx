@@ -3,18 +3,16 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  User, Lock, Bell, Link as LinkIcon, Eye, EyeOff, Loader2, AlertCircle,
+  User, Lock, Bell, Link as LinkIcon,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
-import { Input } from "@alumni/ui";
-import { Label } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Separator } from "@alumni/ui";
 import { getInitials, cn } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
-import { getMyProfile, changePassword, getNotificationPreferences, updateNotificationPreferences } from "@/lib/member-api";
+import { getMyProfile, getNotificationPreferences, updateNotificationPreferences } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -52,9 +50,6 @@ export default function MemberSettingsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
-  const [showPw, setShowPw] = useState(false);
-
   const { data: profile } = useQuery({
     queryKey: ["m-profile"],
     queryFn: getMyProfile,
@@ -73,28 +68,6 @@ export default function MemberSettingsPage() {
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
-
-  const pwMut = useMutation({
-    mutationFn: () => changePassword(pwForm.currentPassword, pwForm.newPassword),
-    onSuccess: () => {
-      setPwForm({ currentPassword: "", newPassword: "", confirm: "" });
-      toast.success("Password updated successfully");
-    },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  function handlePwSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirm) {
-      toast.error("Passwords don't match");
-      return;
-    }
-    if (pwForm.newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters");
-      return;
-    }
-    pwMut.mutate();
-  }
 
   function toggleNotif(key: keyof Omit<import("@/types").NotificationPreference, "id">, value: boolean) {
     if (!notifPrefs) return;
@@ -248,68 +221,14 @@ export default function MemberSettingsPage() {
           <CardDescription>Update your password to keep your account secure</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handlePwSubmit} className="space-y-4 max-w-sm">
-            <div className="space-y-1.5">
-              <Label htmlFor="currentPw" className="text-[13px] font-semibold">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPw"
-                  type={showPw ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={pwForm.currentPassword}
-                  onChange={(e) => setPwForm((f) => ({ ...f, currentPassword: e.target.value }))}
-                  className="h-11 pr-11"
-                  required
-                />
-                <button type="button" onClick={() => setShowPw(!showPw)}
-                  className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-muted-foreground hover:text-foreground">
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="newPw" className="text-[13px] font-semibold">New Password</Label>
-              <Input
-                id="newPw"
-                type={showPw ? "text" : "password"}
-                placeholder="Min. 8 characters"
-                value={pwForm.newPassword}
-                onChange={(e) => setPwForm((f) => ({ ...f, newPassword: e.target.value }))}
-                className="h-11"
-                required
-                minLength={8}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPw" className="text-[13px] font-semibold">Confirm New Password</Label>
-              <Input
-                id="confirmPw"
-                type={showPw ? "text" : "password"}
-                placeholder="Repeat new password"
-                value={pwForm.confirm}
-                onChange={(e) => setPwForm((f) => ({ ...f, confirm: e.target.value }))}
-                className={cn("h-11", pwForm.confirm && pwForm.confirm !== pwForm.newPassword && "border-destructive")}
-                required
-              />
-              {pwForm.confirm && pwForm.confirm !== pwForm.newPassword && (
-                <p className="text-[12px] text-destructive flex items-center gap-1 animate-in fade-in">
-                  <AlertCircle size={12} /> Passwords do not match
-                </p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              size="sm"
-              className="h-10"
-              disabled={pwMut.isPending || !pwForm.currentPassword || !pwForm.newPassword || !pwForm.confirm}
-            >
-              {pwMut.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
-              Update Password
-            </Button>
-          </form>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Password changes are managed from your profile page.
+            </p>
+            <Link href="/profile">
+              <Button variant="outline" size="sm" className="shrink-0">Change Password</Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
 

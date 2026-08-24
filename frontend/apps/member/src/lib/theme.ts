@@ -6,6 +6,7 @@ export interface InstitutionTheme {
   portalName: string;
   displayName: string;
   primaryColorHex: string;
+  secondaryColorHex: string | null;
   logoUrl: string | null;
   tagline: string | null;
   iconUrl: string | null;
@@ -65,8 +66,8 @@ export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
 // always wins over any class selector's declaration for the same property.
 export function themeStyleVars(theme: InstitutionTheme | null): Record<string, string> {
   if (!theme?.primaryColorHex) return {};
-  const palette = generateBrandPalette(theme.primaryColorHex);
-  return {
+  const palette = generateBrandPalette(theme.primaryColorHex, theme.secondaryColorHex ?? undefined);
+  const vars: Record<string, string> = {
     "--brand-primary": palette.primary,
     "--brand-primary-mid": palette.primary,
     "--brand-primary-light": palette.primaryLight,
@@ -79,7 +80,9 @@ export function themeStyleVars(theme: InstitutionTheme | null): Record<string, s
     "--sidebar-ring": palette.ring(0.25),
     // Overrides what .dark otherwise hardcodes to a fixed green, independent
     // of --brand-primary (--accent/--accent-foreground/--sidebar-accent* are
-    // deliberately left alone — those are the separate gold accent system).
+    // the separate gold accent system — overridden below only when the
+    // institution has a real secondary color; otherwise left at their
+    // existing generic-gold default, unchanged from before).
     "--primary": palette.primary,
     "--primary-foreground": palette.textOnPrimary,
     "--success": palette.primary,
@@ -90,5 +93,22 @@ export function themeStyleVars(theme: InstitutionTheme | null): Record<string, s
     "--chart-1": palette.primary,
     "--sidebar-primary": palette.primary,
     "--sidebar-primary-foreground": palette.textOnPrimary,
-  } as Record<string, string>;
+  };
+
+  if (palette.accent) {
+    vars["--brand-accent"] = palette.accent.color;
+    vars["--brand-accent-mid"] = palette.accent.color;
+    vars["--brand-accent-light"] = palette.accent.light;
+    vars["--brand-accent-dark"] = palette.accent.dark;
+    vars["--accent"] = palette.accent.color;
+    vars["--accent-foreground"] = palette.accent.textOnAccent;
+    vars["--accent-gold"] = palette.accent.color;
+    vars["--warning"] = palette.accent.color;
+    vars["--warning-foreground"] = palette.accent.textOnAccent;
+    vars["--chart-2"] = palette.accent.color;
+    vars["--sidebar-accent"] = palette.accent.light;
+    vars["--sidebar-accent-foreground"] = palette.accent.dark;
+  }
+
+  return vars;
 }

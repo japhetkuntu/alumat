@@ -11,6 +11,7 @@ import { Label } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { TableSkeleton } from "@alumni/ui";
+import { ConfirmModal } from "@alumni/ui";
 import { getBatches, createBatch, updateBatch, deleteBatch, type Batch } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 
@@ -61,6 +62,7 @@ function BatchForm({
 export default function BatchesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Batch | null>(null);
   const qc = useQueryClient();
 
   const { data: batches = [], isLoading } = useQuery({
@@ -82,7 +84,7 @@ export default function BatchesPage() {
 
   const deleteMut = useMutation({
     mutationFn: deleteBatch,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["batches"] }); toast.success("Batch deleted"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["batches"] }); setDeleteTarget(null); toast.success("Batch deleted"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -155,7 +157,7 @@ export default function BatchesPage() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => { if (confirm(`Delete "${b.name}"? This won't affect members already registered with this year.`)) deleteMut.mutate(b.id); }}
+                        onClick={() => setDeleteTarget(b)}
                         isLoading={deleteMut.isPending}
                       >
                         Delete
@@ -168,6 +170,17 @@ export default function BatchesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete this batch?"
+        message={`Delete "${deleteTarget?.name ?? ""}"? This won't affect members already registered with this year.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        isLoading={deleteMut.isPending}
+        onConfirm={() => { if (deleteTarget) deleteMut.mutate(deleteTarget.id); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

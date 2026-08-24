@@ -133,6 +133,8 @@ public static class EntityDtoExtensions
         ConfirmedAt = c.ConfirmedAt,
         ConfirmedBy = c.ConfirmedBy,
         CreatedAt = c.CreatedAt,
+        PlatformFeeAmount = c.PlatformFeeAmount,
+        NetAmountToInstitution = c.NetAmountToInstitution,
     };
 
     public static MentorProfileDto ToDto(this MentorProfile p) => new()

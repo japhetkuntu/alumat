@@ -21,6 +21,7 @@ public class PaystackService(PaystackConfig config, IHttpClientFactory httpClien
             reference = request.Reference,
             callback_url = request.CallbackUrl,
             metadata = request.Metadata,
+            subaccount = request.Subaccount,
         }), Encoding.UTF8, "application/json");
 
         var response = await client.PostAsync("/transaction/initialize", body);
@@ -41,6 +42,42 @@ public class PaystackService(PaystackConfig config, IHttpClientFactory httpClien
         var response = await client.GetAsync($"/transaction/verify/{reference}");
         var content = await response.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<VerifyPaymentResponse>(content, new JsonSerializerSettings
+        {
+            ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+            {
+                NamingStrategy = new Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy()
+            }
+        })!;
+    }
+
+    public async Task<SubaccountResponse> CreateSubaccountAsync(SubaccountRequest request)
+    {
+        var client = CreateClient();
+        var body = SubaccountBody(request);
+        var response = await client.PostAsync("/subaccount", body);
+        return await DeserializeSubaccountResponse(response);
+    }
+
+    public async Task<SubaccountResponse> UpdateSubaccountAsync(string subaccountCode, SubaccountRequest request)
+    {
+        var client = CreateClient();
+        var body = SubaccountBody(request);
+        var response = await client.PutAsync($"/subaccount/{subaccountCode}", body);
+        return await DeserializeSubaccountResponse(response);
+    }
+
+    private static StringContent SubaccountBody(SubaccountRequest request) => new(JsonConvert.SerializeObject(new
+    {
+        business_name = request.BusinessName,
+        settlement_bank = request.SettlementBank,
+        account_number = request.AccountNumber,
+        percentage_charge = request.PercentageCharge,
+    }), Encoding.UTF8, "application/json");
+
+    private static async Task<SubaccountResponse> DeserializeSubaccountResponse(HttpResponseMessage response)
+    {
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<SubaccountResponse>(content, new JsonSerializerSettings
         {
             ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
             {

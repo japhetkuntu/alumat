@@ -21,6 +21,7 @@ import { handleApiError } from "@/lib/api-client";
 import { TableSkeleton } from "@alumni/ui";
 import type { MemberStatus } from "@/types";
 import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 
 const statusVariant: Record<MemberStatus, "success" | "warning" | "destructive" | "secondary"> = {
   Active: "success",
@@ -47,6 +48,7 @@ type ModalState =
   | null;
 
 export default function AdminMembersPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MemberStatus | "">("");
   const [compactRows, setCompactRows] = useState(false);
@@ -174,7 +176,12 @@ export default function AdminMembersPage() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-[25px] font-bold m-0">Members</h1>
-          <p className="text-muted-foreground text-[13px] mt-1.5">{totalCount.toLocaleString()} records &middot; scoped to this institution</p>
+          <p className="text-muted-foreground text-[13px] mt-1.5">
+            {totalCount.toLocaleString()} {totalCount === 1 ? "record" : "records"} &middot;{" "}
+            {user?.graduationYear
+              ? `scoped to your assigned year group (Class of ${user.graduationYear})`
+              : "scoped to this institution"}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowImport(true)}>
@@ -230,6 +237,7 @@ export default function AdminMembersPage() {
           </span>
         </div>
         <CardContent className="p-0">
+          <div className="hidden md:block">
           <Table className="min-w-[760px] sm:min-w-[960px]">
             <TableHeader>
               <TableRow>
@@ -312,6 +320,72 @@ export default function AdminMembersPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          {/* Mobile: stacked cards instead of a cramped table */}
+          <div className="md:hidden divide-y divide-border">
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 rounded-md bg-muted animate-pulse" />)}
+              </div>
+            ) : members.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground text-sm">No members found</p>
+            ) : members.map((m) => (
+              <div key={m.id} className="p-4 space-y-2.5">
+                <div className="flex items-center gap-3">
+                  <UserAvatar src={m.profilePictureUrl} name={`${m.firstName} ${m.lastName}`} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm leading-tight truncate">{m.firstName} {m.lastName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                  </div>
+                  <Badge variant={statusVariant[m.status]}>{m.status}</Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span>{m.memberNumber ?? "—"}</span>
+                  <span>&middot;</span>
+                  <span>{m.graduationYear ? `Class of ${m.graduationYear}` : "—"}</span>
+                  <span>&middot;</span>
+                  <span className={cn("inline-flex items-center gap-1", m.isEmailVerified ? "text-success" : "text-muted-foreground")}>
+                    {m.isEmailVerified ? <MailCheck size={12} /> : <MailX size={12} />}
+                    {m.isEmailVerified ? "Verified" : "Unverified"}
+                  </span>
+                  <span>&middot;</span>
+                  <span>Joined {formatDate(m.createdAt)}</span>
+                </div>
+                <div className="flex items-center justify-end gap-1.5 pt-1">
+                  <Link href={`/members/${m.id}`}>
+                    <Button size="icon" variant="ghost" className={`h-8 w-8 rounded-md ${actionFocusClass}`} title="View details">
+                      <Eye size={15} />
+                    </Button>
+                  </Link>
+                  {m.status === "Pending" && (
+                    <>
+                      <Button size="icon" variant="ghost" className={`h-8 w-8 rounded-md text-success hover:text-success hover:bg-success/10 ${actionFocusClass}`} title="Approve"
+                        onClick={() => setModal({ type: "approve", memberId: m.id, name: `${m.firstName} ${m.lastName}` })}>
+                        <CheckCircle size={15} />
+                      </Button>
+                      <Button size="icon" variant="ghost" className={`h-8 w-8 rounded-md text-destructive hover:text-destructive/90 hover:bg-destructive/10 ${actionFocusClass}`} title="Reject"
+                        onClick={() => { setReasonText(""); setModal({ type: "reject", memberId: m.id, name: `${m.firstName} ${m.lastName}` }); }}>
+                        <XCircle size={15} />
+                      </Button>
+                    </>
+                  )}
+                  {(m.status === "Active" || m.status === "Suspended") && (
+                    <Button size="icon" variant="ghost" className={`h-8 w-8 rounded-md text-destructive hover:text-destructive/90 hover:bg-destructive/10 ${actionFocusClass}`} title="Ban member"
+                      onClick={() => { setReasonText(""); setModal({ type: "ban", memberId: m.id, name: `${m.firstName} ${m.lastName}` }); }}>
+                      <ShieldBan size={15} />
+                    </Button>
+                  )}
+                  {m.status === "Banned" && (
+                    <Button size="icon" variant="ghost" className={`h-8 w-8 rounded-md text-success hover:text-success hover:bg-success/10 ${actionFocusClass}`} title="Unban member"
+                      onClick={() => setModal({ type: "unban", memberId: m.id, name: `${m.firstName} ${m.lastName}` })}>
+                      <ShieldCheck size={15} />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

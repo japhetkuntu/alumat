@@ -2,7 +2,12 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "ax
 import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 import { ApiResponse } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_PLATFORM_API_URL ?? "http://localhost:5300/api/v1";
+// Same-origin by default ("/api/v1", proxied by nginx — see
+// docker/nginx/nginx.wildcard.conf's platform.{domain} block), matching
+// institution/member's api-client.ts. Local dev sets
+// NEXT_PUBLIC_PLATFORM_API_URL explicitly in .env (http://localhost:5300/api/v1)
+// since this app has no next.config.ts rewrite proxy to fall back on.
+const API_URL = process.env.NEXT_PUBLIC_PLATFORM_API_URL || "/api/v1";
 
 let isRefreshing = false;
 let failedQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];

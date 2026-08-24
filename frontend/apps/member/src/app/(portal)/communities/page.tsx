@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Users, Clock, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
@@ -31,6 +31,7 @@ function StatusAction({ community, onJoin, joining }: { community: Community; on
 
 export default function CommunitiesPage() {
   const qc = useQueryClient();
+  const router = useRouter();
 
   const { data: communities = [], isLoading } = useQuery({
     queryKey: ["m-communities"],
@@ -59,21 +60,25 @@ export default function CommunitiesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {communities.map((c) => (
-            <div key={c.id} className="card p-5 flex flex-col gap-3">
+            <div
+              key={c.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => router.push(`/communities/${c.id}`)}
+              onKeyDown={(e) => { if (e.key === "Enter") router.push(`/communities/${c.id}`); }}
+              className="card p-5 flex flex-col gap-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] group"
+            >
               <div className="min-w-0 space-y-2">
-                <Link
-                  href={`/communities/${c.id}`}
-                  className="block font-[family-name:var(--font-display)] text-[18px] font-semibold leading-snug hover:text-primary transition-colors"
-                >
+                <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-snug group-hover:text-primary transition-colors">
                   {c.name}
-                </Link>
+                </p>
                 {c.description && <p className="text-[13px] text-muted-foreground line-clamp-2">{c.description}</p>}
               </div>
               <div className="flex items-center justify-between gap-3 pt-2 mt-auto border-t border-border">
                 <span className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground pt-3">
                   <Users size={13} /> {c.memberCount} {c.memberCount === 1 ? "member" : "members"}
                 </span>
-                <div className="pt-3">
+                <div className="pt-3" onClick={(e) => e.stopPropagation()}>
                   <StatusAction community={c} onJoin={() => joinMut.mutate(c.id)} joining={joinMut.isPending} />
                 </div>
               </div>

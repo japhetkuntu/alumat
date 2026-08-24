@@ -256,7 +256,7 @@ export default function MemberDirectoryPage() {
               </div>
 
               {/* Details */}
-              {(selected.company || selected.location || selected.bio) && (
+              {(selected.company || selected.location || selected.bio) ? (
                 <div
                   className="space-y-3 pt-4 border-t"
                   style={{ borderColor: "var(--border)" }}
@@ -282,6 +282,13 @@ export default function MemberDirectoryPage() {
                     </div>
                   )}
                 </div>
+              ) : (
+                <p
+                  className="text-[13px] pt-4 border-t"
+                  style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+                >
+                  This alumnus hasn&apos;t added more details to their profile yet.
+                </p>
               )}
 
               {/* LinkedIn */}

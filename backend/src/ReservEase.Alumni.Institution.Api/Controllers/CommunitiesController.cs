@@ -5,6 +5,8 @@ using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Filters;
 
 namespace ReservEase.Alumni.Institution.Api.Controllers;
 
@@ -16,6 +18,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// via the Member Portal, not here.
 /// </summary>
 [Authorize(Roles = "Admin,SuperAdmin")]
+[RequireFeature(InstitutionFeatures.Communities)]
 [Route("api/v{version:apiVersion}/communities")]
 public class CommunitiesController(ICommunityService communityService) : DefaultController
 {

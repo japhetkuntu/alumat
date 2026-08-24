@@ -15,6 +15,7 @@ import {
 } from "@/lib/member-api";
 import { publicMemberClient } from "@/lib/api-client";
 import type { Campaign, Contribution } from "@/types";
+import { contributionMethodLabel } from "@/types";
 
 interface InstitutionThemeResponse {
   portalName: string;
@@ -402,7 +403,7 @@ export default function MembershipCertificatePage() {
               { label: "Campaign",          value: selected.campaign.title,                          wide: false },
               { label: "Membership year",   value: String(selected.campaign.membershipYear ?? "—"),  wide: false },
               { label: "Amount paid",       value: formatCurrency(selected.contribution.amount),     wide: false, green: true },
-              { label: "Payment method",    value: selected.contribution.paymentMethod,              wide: false },
+              { label: "Payment method",    value: contributionMethodLabel(selected.contribution.paymentMethod), wide: false },
               { label: "Payment date",      value: paymentDate ? formatDate(paymentDate) : "—",      wide: false },
               { label: "Transaction ref",   value: selected.contribution.transactionRef ?? "—",      wide: true,  mono: true },
             ].map(item => (

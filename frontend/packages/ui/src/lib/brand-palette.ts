@@ -168,13 +168,27 @@ export interface BrandPalette {
   textOnPrimary: string;
   /** rgba(...) string at the given alpha — for ring/border tokens that use a translucent brand tint. */
   ring: (alpha: number) => string;
+  /**
+   * Present only when a secondary hex was supplied. Institutions with a real
+   * two-color identity (e.g. navy + gold) get their accent family (the
+   * `--brand-accent*`/`--accent*` tokens, previously a flat generic gold for
+   * every institution) derived from this instead — same shade pipeline as
+   * primary, so it looks intentional rather than mismatched.
+   */
+  accent?: {
+    color: string;
+    dark: string;
+    light: string;
+    soft: string;
+    textOnAccent: string;
+  };
 }
 
-/** Generates the full derived palette for a single seed color, ready to plug into CSS custom properties. */
-export function generateBrandPalette(seedHex: string): BrandPalette {
+/** Generates the full derived palette for a seed color, ready to plug into CSS custom properties. Pass a secondaryHex to also derive an accent family from it. */
+export function generateBrandPalette(seedHex: string, secondaryHex?: string): BrandPalette {
   const primary = clampSeed(seedHex);
   const [r, g, b] = parseHex(primary);
-  return {
+  const palette: BrandPalette = {
     primary,
     primaryDark: darkShade(primary),
     primaryLight: lightShade(primary),
@@ -182,4 +196,17 @@ export function generateBrandPalette(seedHex: string): BrandPalette {
     textOnPrimary: textOn(primary),
     ring: (alpha: number) => `rgba(${r}, ${g}, ${b}, ${alpha})`,
   };
+
+  if (secondaryHex) {
+    const accent = clampSeed(secondaryHex);
+    palette.accent = {
+      color: accent,
+      dark: darkShade(accent),
+      light: lightShade(accent),
+      soft: softShade(accent),
+      textOnAccent: textOn(accent),
+    };
+  }
+
+  return palette;
 }

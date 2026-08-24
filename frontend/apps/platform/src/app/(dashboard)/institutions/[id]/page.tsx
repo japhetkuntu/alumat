@@ -17,15 +17,18 @@ import { formatDate } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
+import { BrandPreview } from "@alumni/ui";
+import { formatCurrency } from "@alumni/ui";
 import {
-  getInstitution, getPlans, updateInstitutionBranding, updateInstitutionPlan, updateInstitutionStatus,
-  updateInstitutionFeatures, INSTITUTION_FEATURES,
+  getInstitution, updateInstitutionBranding, updateInstitutionPlan, updateInstitutionStatus,
+  updateInstitutionFeatures, getFeatureCatalog,
+  updateInstitutionPayments, getInstitutionRevenue,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   uploadPlatformImage,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 
-const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Usage & Limits", "Billing"] as const;
+const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Usage & Limits", "Payments"] as const;
 
 const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario: "", description: "", imageUrl: "" };
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
@@ -98,7 +101,12 @@ export default function InstitutionDetailPage() {
     queryFn: () => getInstitution(id),
     retry: false,
   });
-  const { data: plans = [] } = useQuery({ queryKey: ["plans"], queryFn: getPlans });
+  const { data: featureCatalog = [] } = useQuery({ queryKey: ["feature-catalog"], queryFn: getFeatureCatalog });
+  const { data: revenue } = useQuery({
+    queryKey: ["institution-revenue", id],
+    queryFn: () => getInstitutionRevenue(id),
+    enabled: tab === "Payments",
+  });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["institution", id] });
@@ -125,8 +133,8 @@ export default function InstitutionDetailPage() {
         planForm.memberLimit ? Number(planForm.memberLimit) : undefined,
         planForm.storageLimitGb ? Number(planForm.storageLimitGb) : undefined
       ),
-    onSuccess: (updated) => {
-      toast.success(`Plan changed to ${updated.plan}`);
+    onSuccess: () => {
+      toast.success("Capacity limits updated");
       invalidate();
       setPlanOpen(false);
       setPlanError(null);
@@ -140,7 +148,7 @@ export default function InstitutionDetailPage() {
 
   const [branding, setBranding] = useState<{
     portalName: string; tagline: string; contactEmail: string; supportEmail: string;
-    logoUrl: string; iconUrl: string; primaryColorHex: string;
+    logoUrl: string; iconUrl: string; primaryColorHex: string; secondaryColorHex: string;
     institutionPortalTitle: string; institutionAuthHeadline: string; institutionAuthSubtext: string;
     memberPortalTitle: string; memberAuthHeadline: string; memberAuthSubtext: string;
     requireStudentId: boolean;
@@ -156,6 +164,7 @@ export default function InstitutionDetailPage() {
         logoUrl: branding!.logoUrl || undefined,
         iconUrl: branding!.iconUrl || undefined,
         primaryColorHex: branding!.primaryColorHex,
+        secondaryColorHex: branding!.secondaryColorHex || undefined,
         institutionPortalTitle: branding!.institutionPortalTitle || undefined,
         institutionAuthHeadline: branding!.institutionAuthHeadline || undefined,
         institutionAuthSubtext: branding!.institutionAuthSubtext || undefined,
@@ -192,6 +201,33 @@ export default function InstitutionDetailPage() {
     },
   });
 
+  const [payments, setPayments] = useState<{
+    platformFeePercentage: string; settlementBankCode: string; settlementBankName: string;
+    settlementAccountNumber: string; settlementAccountName: string;
+  } | null>(null);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
+  const paymentsMutation = useMutation({
+    mutationFn: () =>
+      updateInstitutionPayments(id, {
+        platformFeePercentage: Number(payments!.platformFeePercentage) || 0,
+        settlementBankCode: payments!.settlementBankCode,
+        settlementBankName: payments!.settlementBankName,
+        settlementAccountNumber: payments!.settlementAccountNumber,
+        settlementAccountName: payments!.settlementAccountName,
+      }),
+    onSuccess: () => {
+      toast.success("Payments settings updated");
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["institution-revenue", id] });
+      setPaymentsError(null);
+    },
+    onError: (e) => {
+      const msg = handleApiError(e);
+      setPaymentsError(msg);
+      toast.error(msg);
+    },
+  });
+
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
@@ -223,6 +259,7 @@ export default function InstitutionDetailPage() {
       logoUrl: inst.logoUrl ?? "",
       iconUrl: inst.iconUrl ?? "",
       primaryColorHex: inst.primaryColorHex,
+      secondaryColorHex: inst.secondaryColorHex ?? "",
       institutionPortalTitle: inst.institutionPortalTitle ?? "",
       institutionAuthHeadline: inst.institutionAuthHeadline ?? "",
       institutionAuthSubtext: inst.institutionAuthSubtext ?? "",
@@ -235,6 +272,16 @@ export default function InstitutionDetailPage() {
 
   if (disabledFeatures === null) {
     setDisabledFeatures(new Set(inst.disabledFeatures));
+  }
+
+  if (payments === null) {
+    setPayments({
+      platformFeePercentage: String(inst.platformFeePercentage ?? 0),
+      settlementBankCode: inst.settlementBankCode ?? "",
+      settlementBankName: inst.settlementBankName ?? "",
+      settlementAccountNumber: inst.settlementAccountNumber ?? "",
+      settlementAccountName: inst.settlementAccountName ?? "",
+    });
   }
 
   if (stories === null) {
@@ -359,12 +406,25 @@ export default function InstitutionDetailPage() {
                 <p className="text-[12px] font-semibold text-muted-foreground mb-1">Custom domain</p>
                 <p className="text-[14px] font-mono">{inst.customDomain ?? "Not configured"}</p>
               </div>
-              <div className="space-y-1.5">
-                <Label>Primary color</Label>
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-md border border-border" style={{ background: branding.primaryColorHex }} />
-                  <Input value={branding.primaryColorHex} onChange={(e) => setBranding((b) => ({ ...b!, primaryColorHex: e.target.value }))} className="w-[140px]" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Primary color</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-md border border-border" style={{ background: branding.primaryColorHex }} />
+                    <Input value={branding.primaryColorHex} onChange={(e) => setBranding((b) => ({ ...b!, primaryColorHex: e.target.value }))} className="w-[140px]" />
+                  </div>
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Secondary color</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-md border border-border" style={{ background: branding.secondaryColorHex || "#e2e8f0" }} />
+                    <Input value={branding.secondaryColorHex} onChange={(e) => setBranding((b) => ({ ...b!, secondaryColorHex: e.target.value }))} className="w-[140px]" placeholder="Optional" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1.5 pt-1">
+                <Label>Preview</Label>
+                <BrandPreview color={branding.primaryColorHex} secondaryColor={branding.secondaryColorHex || undefined} name={branding.portalName || inst.name} className="pt-1" />
               </div>
               <ImageUrlField
                 label="Logo URL"
@@ -455,13 +515,13 @@ export default function InstitutionDetailPage() {
             </p>
           </div>
           <CardContent className="p-0">
-            {INSTITUTION_FEATURES.map((f) => {
+            {featureCatalog.map((f) => {
               const enabled = !disabledFeatures.has(f.key);
               return (
                 <div key={f.key} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
                   <div>
                     <p className="text-[13px] font-semibold">{f.label}</p>
-                    {"description" in f && f.description && (
+                    {f.description && (
                       <p className="text-[12px] text-muted-foreground mt-0.5">{f.description}</p>
                     )}
                   </div>
@@ -627,41 +687,98 @@ export default function InstitutionDetailPage() {
                 setPlanOpen(true);
               }}
             >
-              Change plan
+              Change limits
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {tab === "Billing" && (
-        <Card>
-          <CardContent className="p-5 space-y-3 max-w-[560px] text-[13.5px]">
-            <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Plan</span><span className="font-semibold">{inst.plan}</span></div>
-            <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Status</span><Badge variant={badge.variant}>{badge.label}</Badge></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">MRR</span><span className="font-semibold">${inst.mrr.toLocaleString()}</span></div>
-            <p className="text-[13px] text-muted-foreground pt-1">Invoicing integration is not available yet.</p>
-          </CardContent>
-        </Card>
+      {tab === "Payments" && payments && (
+        <div className="space-y-4 max-w-[680px]">
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <p className="text-[14px] font-semibold">Revenue</p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">Real figures from this institution&apos;s confirmed payments.</p>
+            </div>
+            <CardContent className="p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-[12px] text-muted-foreground">Gross collected</p>
+                  <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.grossCollected ?? 0, "GHS")}</p>
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">Platform fee</p>
+                  <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.platformFeeTotal ?? 0, "GHS")}</p>
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">Net to institution</p>
+                  <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.netToInstitution ?? 0, "GHS")}</p>
+                </div>
+              </div>
+              <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} confirmed payments</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <p className="text-[14px] font-semibold">Fee &amp; settlement</p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">
+                The platform&apos;s cut of each confirmed payment, and the bank account this institution&apos;s share settles to.
+              </p>
+            </div>
+            <CardContent className="p-5 space-y-4">
+              <div className="space-y-1.5">
+                <Label>Platform fee</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    value={payments.platformFeePercentage}
+                    onChange={(e) => setPayments((p) => ({ ...p!, platformFeePercentage: e.target.value }))}
+                    className="w-[120px]"
+                  />
+                  <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Settlement bank name</Label>
+                  <Input value={payments.settlementBankName} onChange={(e) => setPayments((p) => ({ ...p!, settlementBankName: e.target.value }))} placeholder="GCB Bank" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Settlement bank code</Label>
+                  <Input value={payments.settlementBankCode} onChange={(e) => setPayments((p) => ({ ...p!, settlementBankCode: e.target.value }))} placeholder="040100" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Account number</Label>
+                  <Input value={payments.settlementAccountNumber} onChange={(e) => setPayments((p) => ({ ...p!, settlementAccountNumber: e.target.value }))} placeholder="1234567890" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Account name</Label>
+                  <Input value={payments.settlementAccountName} onChange={(e) => setPayments((p) => ({ ...p!, settlementAccountName: e.target.value }))} placeholder="Institution alumni association" />
+                </div>
+              </div>
+              {inst.paystackSubaccountCode && (
+                <p className="text-[12px] text-muted-foreground">Payment subaccount ID: <span className="font-mono">{inst.paystackSubaccountCode}</span></p>
+              )}
+            </CardContent>
+          </Card>
+
+          <FormError message={paymentsError} />
+          <Button onClick={() => paymentsMutation.mutate()} disabled={paymentsMutation.isPending}>
+            {paymentsMutation.isPending ? "Saving…" : "Save payments"}
+          </Button>
+        </div>
       )}
 
       <Dialog open={planOpen} onOpenChange={(o) => { setPlanOpen(o); if (!o) setPlanError(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change plan</DialogTitle>
+            <DialogTitle>Update capacity limits</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-1.5">
-              <Label>Plan</Label>
-              <select
-                className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
-                value={planForm.plan}
-                onChange={(e) => setPlanForm((f) => ({ ...f, plan: e.target.value }))}
-              >
-                {plans.map((p) => (
-                  <option key={p.id} value={p.name}>{p.name}</option>
-                ))}
-              </select>
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Member limit</Label>
@@ -677,7 +794,7 @@ export default function InstitutionDetailPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPlanOpen(false)}>Cancel</Button>
             <Button onClick={() => planMutation.mutate()} disabled={planMutation.isPending || !planForm.plan}>
-              {planMutation.isPending ? "Saving…" : "Save plan"}
+              {planMutation.isPending ? "Saving…" : "Save limits"}
             </Button>
           </DialogFooter>
         </DialogContent>

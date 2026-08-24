@@ -86,7 +86,7 @@ export default function AdminLoginPage() {
           U
         </div>
         <div className="text-center">
-          <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Alumni Portal</p>
+          <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Institution Portal</p>
           <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Institution Portal</p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export default function AdminLoginPage() {
           className="text-[13px] font-bold tracking-[0.08em] uppercase"
           style={{ color: "var(--muted-foreground)" }}
         >
-          Alumni Portal
+          Institution Portal
         </p>
         <h1
           className="leading-[1.15]"

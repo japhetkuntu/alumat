@@ -138,7 +138,12 @@ export default function AdminMembershipPage() {
         </div>
         <div className="card p-4">
           <span className="text-[12px] text-muted-foreground">Unpaid this period</span>
-          <b className="block text-[24px] mt-1 tabular-nums">{currentYearActive ? Math.max(0, currentYearEligible - currentYearPaidCount) : "N/A"}</b>
+          <b className="block text-[24px] mt-1 tabular-nums">{currentYearActive ? Math.max(0, currentYearEligible - currentYearPaidCount) : 0}</b>
+          {!currentYearActive && (
+            <small className="block text-[11px] text-muted-foreground mt-1" title={`No membership campaign for ${currentYear} yet, so there's nothing to be unpaid on.`}>
+              No {currentYear} campaign yet
+            </small>
+          )}
         </div>
         <div className="card p-4">
           <span className="text-[12px] text-muted-foreground">Historical cycles</span>
@@ -201,7 +206,7 @@ export default function AdminMembershipPage() {
                   <Label>Allow Online Payments</Label>
                   <div className="flex items-center gap-2">
                     <input id="m-online-pay" type="checkbox" checked={form.allowOnlinePayments} onChange={(e) => f("allowOnlinePayments", e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="m-online-pay" className="text-sm">Enable Paystack</label>
+                    <label htmlFor="m-online-pay" className="text-sm">Enable online payments</label>
                   </div>
                 </div>
                 <div className="space-y-2">

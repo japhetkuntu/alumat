@@ -205,6 +205,20 @@ export type CampaignFilter = BaseFilter & {
 export type ContributionStatus = "Pending" | "Confirmed" | "Rejected";
 export type ContributionMethod = "Manual" | "Paystack" | "MobileMoney" | "BankTransfer";
 
+// User-facing label for a payment method — keeps processor names like
+// "Paystack" out of anything a member reads while leaving the underlying
+// API value untouched.
+const CONTRIBUTION_METHOD_LABELS: Record<ContributionMethod, string> = {
+  Manual: "Manual",
+  Paystack: "Online payment",
+  MobileMoney: "Mobile Money",
+  BankTransfer: "Bank Transfer",
+};
+
+export function contributionMethodLabel(method: ContributionMethod | string): string {
+  return CONTRIBUTION_METHOD_LABELS[method as ContributionMethod] ?? method;
+}
+
 export interface Contribution {
   id: string;
   campaignId: string;

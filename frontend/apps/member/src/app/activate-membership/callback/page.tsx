@@ -187,7 +187,7 @@ function ActivationCallbackContent() {
                   Check again
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
-                  Paystack is still processing your payment. It usually completes within 30 seconds.
+                  Your payment is still processing. It usually completes within 30 seconds.
                 </p>
               </>
             )}

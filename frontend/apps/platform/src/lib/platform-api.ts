@@ -47,6 +47,8 @@ export interface InstitutionListItem {
   memberLimit: number;
   onboardedAt: string;
   mrr: number;
+  platformFeePercentage: number;
+  revenue: number;
 }
 
 export interface InstitutionDetail {
@@ -62,6 +64,7 @@ export interface InstitutionDetail {
   logoUrl?: string | null;
   iconUrl?: string | null;
   primaryColorHex: string;
+  secondaryColorHex?: string | null;
   institutionPortalTitle?: string | null;
   institutionAuthHeadline?: string | null;
   institutionAuthSubtext?: string | null;
@@ -81,6 +84,13 @@ export interface InstitutionDetail {
   onboardedAt: string;
   trialEndsAt?: string | null;
   mrr: number;
+  platformFeePercentage: number;
+  paystackSubaccountCode?: string | null;
+  settlementBankCode?: string | null;
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
+  revenue: number;
 }
 
 export interface CreateInstitutionRequest {
@@ -92,6 +102,12 @@ export interface CreateInstitutionRequest {
   portalName?: string;
   supportEmail?: string;
   primaryColorHex?: string;
+  secondaryColorHex?: string;
+  platformFeePercentage?: number;
+  settlementBankCode?: string;
+  settlementBankName?: string;
+  settlementAccountNumber?: string;
+  settlementAccountName?: string;
   adminFirstName: string;
   adminLastName: string;
   adminEmail: string;
@@ -142,6 +158,7 @@ export interface UpdateInstitutionBrandingRequest {
   logoUrl?: string;
   iconUrl?: string;
   primaryColorHex: string;
+  secondaryColorHex?: string;
   institutionPortalTitle?: string;
   institutionAuthHeadline?: string;
   institutionAuthSubtext?: string;
@@ -156,22 +173,48 @@ export async function updateInstitutionBranding(id: string, req: UpdateInstituti
   return res.data.data!;
 }
 
-// Mirrors backend InstitutionFeatures.All (ReservEase.Alumni.PostgresDb.Sdk) —
-// keep in sync if a feature key is added or renamed there.
-export const INSTITUTION_FEATURES = [
-  { key: "Contributions", label: "Contributions", description: "Campaigns, membership renewal, and contribution records" },
-  { key: "Events", label: "Events" },
-  { key: "Jobs", label: "Job Board" },
-  { key: "News", label: "News" },
-  { key: "Forum", label: "Forum" },
-  { key: "Mentorship", label: "Mentorship" },
-  { key: "Resources", label: "Resources" },
-  { key: "Spotlights", label: "Spotlights" },
-  { key: "Leaderboard", label: "Leaderboard", description: "Member portal only" },
-  { key: "Referrals", label: "Refer a Friend", description: "Member portal only" },
-  { key: "ClassNotes", label: "Class Notes", description: "Member portal only" },
-  { key: "Directory", label: "Alumni Directory", description: "Member portal only" },
-] as const;
+// ─── Payments & payouts ────────────────────────────────────────────────────
+
+export interface UpdateInstitutionPaymentsRequest {
+  platformFeePercentage: number;
+  settlementBankCode: string;
+  settlementBankName: string;
+  settlementAccountNumber: string;
+  settlementAccountName: string;
+}
+
+export async function updateInstitutionPayments(id: string, req: UpdateInstitutionPaymentsRequest) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/payments`, req);
+  return res.data.data!;
+}
+
+export interface InstitutionRevenue {
+  institutionId: string;
+  grossCollected: number;
+  platformFeeTotal: number;
+  netToInstitution: number;
+  confirmedPaymentCount: number;
+}
+
+export async function getInstitutionRevenue(id: string) {
+  const res = await platformClient.get<ApiResponse<InstitutionRevenue>>(`/institutions/${id}/revenue`);
+  return res.data.data!;
+}
+
+// ─── Feature catalog ────────────────────────────────────────────────────────
+
+export interface FeatureCatalogItem {
+  key: string;
+  label: string;
+  description: string;
+}
+
+/** The single source of truth for gateable feature keys — fetched from the backend
+ * so a new feature key shows up here automatically without a frontend code change. */
+export async function getFeatureCatalog() {
+  const res = await platformClient.get<ApiResponse<FeatureCatalogItem[]>>("/features/catalog");
+  return res.data.data!;
+}
 
 export async function updateInstitutionFeatures(id: string, disabledFeatures: string[]) {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/features`, { disabledFeatures });
@@ -256,6 +299,7 @@ export interface DashboardSummary {
   totalMembers: number;
   newInstitutionsThisMonth: number;
   mrr: number;
+  revenue: number;
   growthLast6Months: number[];
   growthMonthLabels: string[];
 }

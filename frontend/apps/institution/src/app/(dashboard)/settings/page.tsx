@@ -182,8 +182,15 @@ export default function BrandingSettingsPage() {
               <div className="flex items-center gap-2 mb-1">
                 <Building2 size={16} className="text-primary" />
                 <p className="font-semibold text-[15px]">Institution profile</p>
+                <Lock size={13} className="text-muted-foreground" aria-hidden="true" />
               </div>
               <p className="text-[12.5px] text-muted-foreground -mt-2">These details appear across your member-facing portals.</p>
+              <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-2.5">
+                <Lock size={14} className="text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  These fields are locked. Branding, portal titles, and login page content are managed by the platform team — contact support to request a change.
+                </p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Display name</Label>
@@ -213,9 +220,6 @@ export default function BrandingSettingsPage() {
                 <Label className="text-[13px] font-semibold">Preview</Label>
                 <BrandPreview color={institution?.primaryColorHex ?? "#2563eb"} name={institution?.portalName || institution?.name || "Institution"} className="pt-1" />
               </div>
-              <p className="text-[12px] text-muted-foreground bg-muted/50 border border-border/40 rounded-lg px-3 py-2">
-                Branding, portal titles, and login page content are managed by the platform team. Contact support to request a change.
-              </p>
             </CardContent>
           </Card>
           <Card className="border-border/40 h-fit">

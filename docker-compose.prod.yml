@@ -117,6 +117,10 @@ services:
       ConnectionStrings__AlumniConnection: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
+      # "admin." prefix is a separate wildcard level from Member.Api's bare
+      # PLATFORM_BASE_DOMAIN below — see docker/nginx/nginx.wildcard.conf.
+      PlatformBaseDomain: admin.${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__InstitutionRedisConfig__ConnectionString: redis:6379
       Redis__InstitutionRedisConfig__DbNumber: 0
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
@@ -158,6 +162,10 @@ services:
       ConnectionStrings__AlumniConnection: >-
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
+      # Bare domain — the member-facing, memorable one. Institution.Api gets
+      # the "admin." prefixed variant above so the two never collide.
+      PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__MemberRedisConfig__ConnectionString: redis:6379
       Redis__MemberRedisConfig__DbNumber: 1
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
@@ -225,7 +233,9 @@ services:
         condition: service_healthy
     networks:
       - alumni-net
-    # Not yet routed through nginx — see docker/nginx/nginx.multitenant.example.conf.
+    # Routed through nginx once NGINX_CONF_FILE points at nginx.wildcard.conf
+    # (platform.{PLATFORM_BASE_DOMAIN} → frontend-platform, same-origin /api/
+    # → this service) — inert on nginx.conf/nginx.ip.conf, which don't route it.
 
   # ── Frontend Apps ─────────────────────────────────────────────────────────
   # These apps call the API same-origin ("/api/v1/...", proxied by nginx —
@@ -268,6 +278,24 @@ services:
     networks:
       - alumni-net
 
+  frontend-platform:
+    env_file: .env
+    build:
+      context: ./frontend
+      dockerfile: apps/platform/Dockerfile
+      # Left unset (empty) so api-client.ts's own "/api/v1" same-origin
+      # fallback applies — mirrors how frontend-institution/member never
+      # pass their NEXT_PUBLIC_*_API_URL build arg either.
+      args:
+        NEXT_PUBLIC_PLATFORM_API_URL: ""
+    image: alumni/frontend-platform:prod
+    container_name: alumni-frontend-platform
+    restart: unless-stopped
+    depends_on:
+      - platform-api
+    networks:
+      - alumni-net
+
   # ── Gateway ────────────────────────────────────────────────────────────────
   # Only service that exposes ports to the internet.
 
@@ -291,8 +319,10 @@ services:
     depends_on:
       - institution-api
       - member-api
+      - platform-api
       - frontend-institution
       - frontend-member
+      - frontend-platform
     networks:
       - alumni-net
 

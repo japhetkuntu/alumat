@@ -6,6 +6,7 @@ using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.Platform.Api.Services;
 using ReservEase.Alumni.Platform.Api.Services.Implementations;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
+using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
@@ -35,6 +36,7 @@ builder.Services.Configure<BearerTokenConfig>(
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<PlatformRedisConfig>(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
+builder.Services.AddPaystackService(builder.Configuration);
 
 // Auth + API
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>

@@ -20,6 +20,14 @@ public class Institution : BaseEntity
     /// <summary>Small icon/favicon — distinct from LogoUrl, used for browser tabs and app icons.</summary>
     public string? IconUrl { get; set; }
     public string PrimaryColorHex { get; set; } = "#2563eb";
+    /// <summary>
+    /// Optional second brand color. Many institutions have a real two-color
+    /// identity (e.g. navy + gold) — when set, the shared palette algorithm
+    /// (see generateBrandPalette / EmailColorPalette, which must stay in sync)
+    /// derives the accent family from this instead of a flat generic gold.
+    /// Null is fine — every institution worked before this field existed.
+    /// </summary>
+    public string? SecondaryColorHex { get; set; }
 
     // Per-portal content — lets platform staff customize what each institution's
     // audience sees, without any code change ("plug and play" configuration).
@@ -59,11 +67,29 @@ public class Institution : BaseEntity
     /// </summary>
     public NewsBanner? NewsBanner { get; set; }
 
-    // Plan & status
+    // Plan & status — Plan/pricing tiers are not surfaced in any UI for now
+    // (revenue comes from PlatformFeePercentage below instead); MemberLimit/
+    // StorageLimitGb remain live as plain capacity limits, decoupled from Plan.
     public string Plan { get; set; } = "Starter"; // Starter, Growth, Enterprise
     public string Status { get; set; } = "Trial";  // Trial, Active, Suspended, Cancelled
     public int MemberLimit { get; set; } = 500;
     public int StorageLimitGb { get; set; } = 5;
     public DateTime? TrialEndsAt { get; set; }
     public DateTime OnboardedAt { get; set; } = DateTime.UtcNow;
+
+    // ── Revenue & payment split ──────────────────────────────────────────
+    /// <summary>
+    /// The platform's cut of every successful online payment this institution
+    /// collects, e.g. 5.00 = 5%. Set explicitly at onboarding — no silent
+    /// default, a platform admin must choose it per institution.
+    /// </summary>
+    public decimal PlatformFeePercentage { get; set; }
+
+    /// <summary>Paystack subaccount code once created — null until settlement banking details are set.</summary>
+    public string? PaystackSubaccountCode { get; set; }
+    public string? SettlementBankCode { get; set; }
+    /// <summary>Display name of the bank — Paystack itself only needs the code, this is for UI.</summary>
+    public string? SettlementBankName { get; set; }
+    public string? SettlementAccountNumber { get; set; }
+    public string? SettlementAccountName { get; set; }
 }
