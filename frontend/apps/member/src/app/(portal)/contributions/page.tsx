@@ -430,9 +430,15 @@ export default function MemberContributionsPage() {
     },
     onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
       if (data?.authorizationUrl) {
+        // Deliberately NOT calling notifyPendingRef() here — we're about to
+        // hard-navigate away in this same tick, so opening the status modal
+        // now would just start a poll fetch that the page unload aborts
+        // mid-flight, flashing an "error" state for one frame before the
+        // browser actually leaves. The localStorage write alone is enough:
+        // the modal picks it up correctly on next mount (see
+        // getPendingRefSnapshot), i.e. whenever the user actually returns.
         if (data.reference) {
           localStorage.setItem("alumni-paystack-pending-ref", data.reference);
-          notifyPendingRef();
         }
         window.location.href = data.authorizationUrl;
       } else {

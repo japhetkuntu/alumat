@@ -25,7 +25,8 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 [Route("api/v{version:apiVersion}/institution")]
 public class InstitutionController(
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
-    ICurrentTenantService currentTenant) : DefaultController
+    ICurrentTenantService currentTenant,
+    IConfiguration config) : DefaultController
 {
     /// <summary>Get the current institution's profile and branding (mostly read-only).</summary>
     [HttpGet("me")]
@@ -64,11 +65,27 @@ public class InstitutionController(
             ? null
             : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
 
-    private static InstitutionResponse ToDto(InstitutionEntity i) => new(
-        i.Id, i.Name, i.Slug, i.CustomDomain, i.PortalName, i.Tagline,
-        i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex,
-        i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
-        i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-        i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
-        i.Plan, i.Status, i.MemberLimit, i.StorageLimitGb);
+    /// <summary>
+    /// The Member Portal lives on a completely different base domain from this
+    /// one (e.g. this API's own PlatformBaseDomain is "admin.alumunion.com",
+    /// the member one is bare "alumunion.com") — there's no way to derive one
+    /// from the other by string manipulation without baking in a naming
+    /// convention, so it's configured explicitly, purely for building this
+    /// shareable link. Never used for tenant resolution.
+    /// </summary>
+    private InstitutionResponse ToDto(InstitutionEntity i)
+    {
+        var memberBaseDomain = config["MemberPortalBaseDomain"];
+        var memberPortalUrl = string.IsNullOrWhiteSpace(memberBaseDomain)
+            ? null
+            : $"https://{i.Slug}.{memberBaseDomain}";
+
+        return new(
+            i.Id, i.Name, i.Slug, i.CustomDomain, i.PortalName, i.Tagline,
+            i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex,
+            i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
+            i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
+            i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.Plan, i.Status, i.MemberLimit, i.StorageLimitGb, memberPortalUrl);
+    }
 }

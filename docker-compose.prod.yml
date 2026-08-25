@@ -120,6 +120,9 @@ services:
       # "admin." prefix is a separate wildcard level from Member.Api's bare
       # PLATFORM_BASE_DOMAIN below — see docker/nginx/nginx.wildcard.conf.
       PlatformBaseDomain: admin.${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      # Bare member domain — used only to build the shareable "your member
+      # portal" link shown to institution staff, never for tenant resolution.
+      MemberPortalBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__InstitutionRedisConfig__ConnectionString: redis:6379
       Redis__InstitutionRedisConfig__DbNumber: 0
@@ -216,6 +219,9 @@ services:
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
       PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      # Used only to build "{slug}.admin.yourplatform.com" preview links in
+      # the onboarding wizard and institution list/detail pages.
+      AdminBaseDomain: admin.${PLATFORM_BASE_DOMAIN:-yourplatform.example}
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__PlatformRedisConfig__ConnectionString: redis:6379
       Redis__PlatformRedisConfig__DbNumber: 2

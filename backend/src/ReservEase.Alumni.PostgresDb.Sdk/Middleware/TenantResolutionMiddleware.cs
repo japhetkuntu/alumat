@@ -23,6 +23,16 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 /// custom-domain or subdomain match — production tenant isolation is
 /// Host-header-only, exactly as before.
 ///
+/// Separately, an "X-Internal-Tenant-Host" header is honored in every
+/// environment, but ONLY from loopback-originated requests — this exists
+/// because Node's fetch() (used by each frontend's server-side tenant-theme
+/// fetch, see apps/*/src/lib/theme.ts) silently ignores any caller-supplied
+/// "Host" header and always sends the request URL's own host instead, so the
+/// browser's real subdomain has to be forwarded some other way for that one
+/// internal, same-machine call. Safe to trust unconditionally because these
+/// loopback ports are never reachable from the internet (nginx/firewall only
+/// expose 80/443) — nothing external can ever forge this header.
+///
 /// Falls back to a configured "DefaultInstitutionSlug" when nothing else
 /// matches — this is what keeps every existing request (today's fixed
 /// production hostnames, docker-internal calls) behaving exactly as a
@@ -31,22 +41,39 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 public class TenantResolutionMiddleware(RequestDelegate next)
 {
     private const string DevSlugHeader = "X-Institution-Slug";
+    private const string InternalTenantHostHeader = "X-Internal-Tenant-Host";
 
     public async Task InvokeAsync(
         HttpContext context, AlumniDbContext db, ICurrentTenantService currentTenant,
         IConfiguration config, IWebHostEnvironment env)
     {
-        var host = context.Request.Host.Host.ToLowerInvariant();
         var baseDomain = config["PlatformBaseDomain"];
 
-        var institution = await db.Institutions.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(i => i.CustomDomain == host);
-
-        if (institution is null && !string.IsNullOrWhiteSpace(baseDomain) && host.EndsWith("." + baseDomain))
+        async Task<Institution?> ResolveByHostAsync(string h)
         {
-            var slug = host[..^(baseDomain.Length + 1)];
-            institution = await db.Institutions.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(i => i.Slug == slug);
+            var byCustomDomain = await db.Institutions.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(i => i.CustomDomain == h);
+            if (byCustomDomain is not null) return byCustomDomain;
+
+            if (!string.IsNullOrWhiteSpace(baseDomain) && h.EndsWith("." + baseDomain))
+            {
+                var slug = h[..^(baseDomain.Length + 1)];
+                return await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Slug == slug);
+            }
+
+            return null;
+        }
+
+        var host = context.Request.Host.Host.ToLowerInvariant();
+        var institution = await ResolveByHostAsync(host);
+
+        var remoteIp = context.Connection.RemoteIpAddress;
+        if (institution is null && remoteIp is not null && System.Net.IPAddress.IsLoopback(remoteIp) &&
+            context.Request.Headers.TryGetValue(InternalTenantHostHeader, out var internalHostValues))
+        {
+            var internalHost = internalHostValues.ToString().Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(internalHost))
+                institution = await ResolveByHostAsync(internalHost);
         }
 
         if (institution is null && env.IsDevelopment() &&

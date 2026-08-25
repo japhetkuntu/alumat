@@ -19,9 +19,27 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// (unlike the institution/member APIs) is not itself scoped to one tenant.
 /// </summary>
 public class InstitutionManagementService(
-    AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService, ILogger<InstitutionManagementService> logger)
+    AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
+    IConfiguration config, ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
+    /// <summary>
+    /// The member and institution portals live on entirely different base
+    /// domains (e.g. "yourplatform.com" vs "admin.yourplatform.com") — never
+    /// derived from each other, always explicit config, so a naming
+    /// convention change on one side can't silently break the other.
+    /// </summary>
+    private string MemberPortalUrl(string slug)
+    {
+        var domain = config["PlatformBaseDomain"];
+        return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{slug}.{domain}";
+    }
+
+    private string InstitutionPortalUrl(string slug)
+    {
+        var domain = config["AdminBaseDomain"];
+        return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{slug}.{domain}";
+    }
     public async Task<IApiResponse<PgPagedResult<InstitutionListItemResponse>>> GetInstitutionsAsync(
         int page, int pageSize, string? search, string? status)
     {
@@ -60,7 +78,7 @@ public class InstitutionManagementService(
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
                 i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt, ResolveMrr(i.Plan, planPrices),
-                i.PlatformFeePercentage, revenue));
+                i.PlatformFeePercentage, revenue, MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug)));
         }
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -325,6 +343,9 @@ public class InstitutionManagementService(
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Landing content updated");
     }
 
+    public BaseDomainsResponse GetBaseDomains() =>
+        new(config["PlatformBaseDomain"] ?? string.Empty, config["AdminBaseDomain"] ?? string.Empty);
+
     public async Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug)
     {
         var normalized = slug.Trim().ToLowerInvariant();
@@ -391,6 +412,7 @@ public class InstitutionManagementService(
             i.OnboardedAt, i.TrialEndsAt, ResolveMrr(i.Plan, planPrices),
             i.PlatformFeePercentage, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,
-            i.SettlementAccountNumber, i.SettlementAccountName, revenue);
+            i.SettlementAccountNumber, i.SettlementAccountName, revenue,
+            MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug));
     }
 }

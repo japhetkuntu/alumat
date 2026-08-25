@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2,
+  Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2, Copy,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -350,16 +350,43 @@ export default function BrandingSettingsPage() {
 
             <div className="flex items-center justify-between border-t border-border py-3">
               <div>
-                <p className="font-mono text-[13px] font-semibold">{tenantHost ?? "your-institution.yourplatform.com"}</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Platform subdomain &middot; always active, cannot be removed</p>
+                <p className="font-mono text-[13px] font-semibold">{tenantHost ?? "Loading…"}</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Institution staff portal &middot; this page &middot; always active, cannot be removed</p>
               </div>
               <Badge variant="success">Live</Badge>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border py-3 gap-3">
+              <div className="min-w-0">
+                <p className="font-mono text-[13px] font-semibold truncate">
+                  {institution?.memberPortalUrl?.replace(/^https?:\/\//, "") ?? "Not configured"}
+                </p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Member portal &middot; share this with your alumni</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {institution?.memberPortalUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(institution.memberPortalUrl!);
+                      toast.success("Member portal link copied");
+                    }}
+                  >
+                    <Copy size={14} className="mr-1.5" />
+                    Copy link
+                  </Button>
+                )}
+                <Badge variant={institution?.memberPortalUrl ? "success" : "warning"}>
+                  {institution?.memberPortalUrl ? "Live" : "Not configured"}
+                </Badge>
+              </div>
             </div>
 
             <div className="flex items-center justify-between border-t border-border py-3">
               <div>
                 <p className="font-mono text-[13px] font-semibold">alumni.yourinstitution.edu</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Custom domain &middot; point your DNS CNAME to domains.yourplatform.com</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Custom domain &middot; point your DNS CNAME to the platform</p>
               </div>
               <Badge variant="warning">Not configured</Badge>
             </div>

@@ -35,16 +35,25 @@ export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
     // Ignored by the backend outside Development.
     const workspaceSlug = (await cookies()).get("institution_slug")?.value;
     const fetchHeaders: Record<string, string> = {};
-    if (host) fetchHeaders.host = host;
+    // Node's fetch() silently ignores a caller-supplied "Host" header (always
+    // uses the request URL's own host instead), so the browser's real
+    // subdomain has to be forwarded under a different name — see
+    // TenantResolutionMiddleware's X-Internal-Tenant-Host handling, which
+    // only trusts this from loopback-originated requests (this one always is).
+    if (host) fetchHeaders["X-Internal-Tenant-Host"] = host;
     if (workspaceSlug) fetchHeaders["X-Institution-Slug"] = workspaceSlug;
     const res = await fetch(`${API_URL}/public/institution/theme`, {
       headers: Object.keys(fetchHeaders).length ? fetchHeaders : undefined,
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[theme] ${API_URL}/public/institution/theme -> ${res.status} for Host="${host}"`);
+      return null;
+    }
     const body = await res.json();
     return body?.data ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`[theme] fetch to ${API_URL}/public/institution/theme failed:`, err);
     return null;
   }
 }

@@ -49,6 +49,8 @@ export interface InstitutionListItem {
   mrr: number;
   platformFeePercentage: number;
   revenue: number;
+  memberPortalUrl: string;
+  institutionPortalUrl: string;
 }
 
 export interface InstitutionDetail {
@@ -91,6 +93,8 @@ export interface InstitutionDetail {
   settlementAccountNumber?: string | null;
   settlementAccountName?: string | null;
   revenue: number;
+  memberPortalUrl: string;
+  institutionPortalUrl: string;
 }
 
 export interface CreateInstitutionRequest {
@@ -121,6 +125,16 @@ export async function getInstitutions(params: { page?: number; pageSize?: number
 
 export async function getInstitution(id: string) {
   const res = await platformClient.get<ApiResponse<InstitutionDetail>>(`/institutions/${id}`);
+  return res.data.data!;
+}
+
+export interface BaseDomains {
+  memberBaseDomain: string;
+  adminBaseDomain: string;
+}
+
+export async function getBaseDomains() {
+  const res = await platformClient.get<ApiResponse<BaseDomains>>("/institutions/base-domains");
   return res.data.data!;
 }
 

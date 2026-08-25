@@ -27,7 +27,9 @@ public record InstitutionResponse(
     string Plan,
     string Status,
     int MemberLimit,
-    int StorageLimitGb);
+    int StorageLimitGb,
+    // Shareable Member Portal URL for this institution — null if MemberPortalBaseDomain isn't configured.
+    string? MemberPortalUrl);
 
 /// <summary>
 /// Deliberate carve-out from the "institution staff can't edit branding"

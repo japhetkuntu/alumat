@@ -49,7 +49,8 @@ public record InstitutionListItemResponse(
     string Id, string Name, string Slug, string? CustomDomain,
     string ContactName, string ContactEmail, string Plan, string Status,
     int MemberCount, int MemberLimit, DateTime OnboardedAt, decimal Mrr,
-    decimal PlatformFeePercentage, decimal Revenue);
+    decimal PlatformFeePercentage, decimal Revenue,
+    string MemberPortalUrl, string InstitutionPortalUrl);
 
 public record InstitutionDetailResponse(
     string Id, string Name, string Slug, string? CustomDomain,
@@ -63,7 +64,8 @@ public record InstitutionDetailResponse(
     DateTime OnboardedAt, DateTime? TrialEndsAt, decimal Mrr,
     decimal PlatformFeePercentage, string? PaystackSubaccountCode,
     string? SettlementBankCode, string? SettlementBankName,
-    string? SettlementAccountNumber, string? SettlementAccountName, decimal Revenue);
+    string? SettlementAccountNumber, string? SettlementAccountName, decimal Revenue,
+    string MemberPortalUrl, string InstitutionPortalUrl);
 
 public class UpdateInstitutionStatusRequest
 {
@@ -154,6 +156,8 @@ public record InstitutionRevenueResponse(
 public record FeatureCatalogItem(string Key, string Label, string Description);
 
 public record SlugAvailabilityResponse(string Slug, bool Available);
+
+public record BaseDomainsResponse(string MemberBaseDomain, string AdminBaseDomain);
 
 public record PlatformDashboardSummary(
     int TotalInstitutions, int ActiveCount, int TrialCount,

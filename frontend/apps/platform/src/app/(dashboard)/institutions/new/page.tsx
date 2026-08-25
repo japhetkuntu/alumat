@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
-import { createInstitution } from "@/lib/platform-api";
+import { createInstitution, getBaseDomains } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 
 const STEPS = ["Institution details", "Branding", "Payments & payouts", "First admin", "Review"] as const;
@@ -23,6 +24,7 @@ function generatePassword() {
 
 export default function NewInstitutionPage() {
   const router = useRouter();
+  const { data: baseDomains } = useQuery({ queryKey: ["base-domains"], queryFn: getBaseDomains, staleTime: Infinity });
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -126,7 +128,12 @@ export default function NewInstitutionPage() {
                   <div className="space-y-1.5">
                     <Label>Subdomain slug</Label>
                     <Input value={form.slug} onChange={(e) => update("slug", slugify(e.target.value))} placeholder="greenfield" />
-                    {form.slug && <p className="text-[12px] text-muted-foreground">{form.slug}.yourplatform.com</p>}
+                    {form.slug && baseDomains && (
+                      <div className="text-[12px] text-muted-foreground space-y-0.5">
+                        <p>Member portal: {form.slug}.{baseDomains.memberBaseDomain}</p>
+                        <p>Institution portal: {form.slug}.{baseDomains.adminBaseDomain}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label>Country</Label>
@@ -268,7 +275,8 @@ export default function NewInstitutionPage() {
                 <p className="text-[13px] text-muted-foreground mb-4">Confirm everything looks right before creating this tenant.</p>
                 <div className="space-y-3 text-[13.5px]">
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Institution</span><span className="font-semibold">{form.name || "—"}</span></div>
-                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Tenant URL</span><span className="font-semibold font-mono">{form.slug || "—"}.yourplatform.com</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Member portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.memberBaseDomain}` : ""}</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Institution portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.adminBaseDomain}` : ""}</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Settlement account</span><span className="font-semibold">{form.settlementAccountName || "Not configured"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminFirstName || "—"} {form.adminLastName} ({form.adminEmail || form.contactEmail || "—"})</span></div>
@@ -294,7 +302,8 @@ export default function NewInstitutionPage() {
               </div>
             </div>
             <div className="space-y-2.5 text-[13px]">
-              <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Tenant URL</span><span className="font-semibold font-mono">{form.slug || "—"}.yourplatform.com</span></div>
+              <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Member portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.memberBaseDomain}` : ""}</span></div>
+              <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Institution portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.adminBaseDomain}` : ""}</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Initial status</span><span className="font-semibold">Trial &middot; 14 days</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminEmail || form.contactEmail || "Not added"}</span></div>

@@ -45,6 +45,16 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>The two base domains every institution's portals live under — lets the frontend build a live subdomain preview during onboarding without hardcoding a domain itself.</summary>
+    [HttpGet("base-domains")]
+    [SwaggerOperation(Summary = "Get the platform's member/institution base domains")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<BaseDomainsResponse>))]
+    public IActionResult GetBaseDomains()
+    {
+        var result = institutionService.GetBaseDomains();
+        return result.ToOkApiResponse().ToActionResult();
+    }
+
     /// <summary>Onboard a new institution: creates the tenant and its first (SuperAdmin) admin.</summary>
     [Authorize(Roles = "SuperAdmin,Sales")]
     [HttpPost]

@@ -130,6 +130,8 @@ export interface InstitutionProfileResponse {
   requireStudentId: boolean;
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
+  /** Shareable Member Portal URL for this institution — null if the backend has no MemberPortalBaseDomain configured. */
+  memberPortalUrl?: string | null;
 }
 
 export async function getInstitutionProfile(): Promise<InstitutionProfileResponse> {

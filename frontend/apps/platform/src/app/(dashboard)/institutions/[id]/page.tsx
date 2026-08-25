@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink } from "lucide-react";
 import { notFound, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -309,7 +309,7 @@ export default function InstitutionDetailPage() {
                 <Badge variant={badge.variant}>{badge.label}</Badge>
               </h1>
               <p className="text-[13px] text-muted-foreground font-mono mt-1">
-                {inst.customDomain ?? `${inst.slug}.yourplatform.com`} &middot; {inst.plan} plan &middot; {inst.memberCount.toLocaleString()} members
+                {inst.customDomain ?? inst.memberPortalUrl.replace(/^https?:\/\//, "")} &middot; {inst.plan} plan &middot; {inst.memberCount.toLocaleString()} members
               </p>
             </div>
           </div>
@@ -398,9 +398,43 @@ export default function InstitutionDetailPage() {
                 <Label>Support email</Label>
                 <Input type="email" value={branding.supportEmail} onChange={(e) => setBranding((b) => ({ ...b!, supportEmail: e.target.value }))} />
               </div>
-              <div>
-                <p className="text-[12px] font-semibold text-muted-foreground mb-1">Platform subdomain</p>
-                <div className="text-[14px] font-mono flex items-center">{inst.slug}.yourplatform.com <Badge variant="success" className="ml-2">Live</Badge></div>
+              <div className="space-y-2.5">
+                <div>
+                  <p className="text-[12px] font-semibold text-muted-foreground mb-1">Member portal</p>
+                  <div className="text-[14px] font-mono flex items-center gap-2">
+                    {inst.memberPortalUrl.replace(/^https?:\/\//, "")}
+                    <Badge variant="success">Live</Badge>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={async () => { await navigator.clipboard.writeText(inst.memberPortalUrl); toast.success("Member portal link copied"); }}
+                      title="Copy link"
+                    >
+                      <Copy size={13} />
+                    </button>
+                    <a href={inst.memberPortalUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground" title="Open">
+                      <ExternalLink size={13} />
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-muted-foreground mb-1">Institution portal</p>
+                  <div className="text-[14px] font-mono flex items-center gap-2">
+                    {inst.institutionPortalUrl.replace(/^https?:\/\//, "")}
+                    <Badge variant="success">Live</Badge>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={async () => { await navigator.clipboard.writeText(inst.institutionPortalUrl); toast.success("Institution portal link copied"); }}
+                      title="Copy link"
+                    >
+                      <Copy size={13} />
+                    </button>
+                    <a href={inst.institutionPortalUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground" title="Open">
+                      <ExternalLink size={13} />
+                    </a>
+                  </div>
+                </div>
               </div>
               <div>
                 <p className="text-[12px] font-semibold text-muted-foreground mb-1">Custom domain</p>

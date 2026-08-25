@@ -114,7 +114,7 @@ export default function InstitutionsPage() {
                     <div className="min-w-0">
                       <p className="font-semibold truncate">{inst.name}</p>
                       <p className="text-[12px] text-muted-foreground font-mono truncate">
-                        {inst.customDomain ?? `${inst.slug}.yourplatform.com`} &middot; {inst.contactEmail}
+                        {inst.customDomain ?? inst.memberPortalUrl.replace(/^https?:\/\//, "")} &middot; {inst.contactEmail}
                       </p>
                     </div>
                   </div>

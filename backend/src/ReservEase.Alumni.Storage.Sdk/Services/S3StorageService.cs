@@ -60,7 +60,10 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
     public string GetFileUrl(string fileName, string folderName = "")
     {
        if( string.IsNullOrEmpty(fileName)) return string.Empty;
-        return $"{_settings.CdnEndpoint}/{_settings.BucketName}/{BuildKey(folderName, fileName)}";
+        var key = BuildKey(folderName, fileName);
+        return _settings.CdnUrlIncludesBucket
+            ? $"{_settings.CdnEndpoint}/{_settings.BucketName}/{key}"
+            : $"{_settings.CdnEndpoint}/{key}";
     }
 
     public async Task<List<string>> BulkUploadFilesAsync(List<IFormFile> files)

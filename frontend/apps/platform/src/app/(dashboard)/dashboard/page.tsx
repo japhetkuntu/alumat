@@ -134,7 +134,7 @@ export default function PlatformDashboardPage() {
             <div key={inst.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold truncate">{inst.name}</p>
-                <p className="text-[12px] text-muted-foreground font-mono truncate">{inst.slug}.yourplatform.com</p>
+                <p className="text-[12px] text-muted-foreground font-mono truncate">{inst.memberPortalUrl.replace(/^https?:\/\//, "")}</p>
               </div>
               <Badge variant={inst.status === "Trial" ? "info" : "success"}>{inst.status}</Badge>
             </div>
