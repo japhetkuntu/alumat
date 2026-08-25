@@ -13,6 +13,14 @@ public interface IPaystackService
     /// <summary>Update an existing subaccount (e.g. new bank details or fee percentage) by its code.</summary>
     Task<SubaccountResponse> UpdateSubaccountAsync(string subaccountCode, SubaccountRequest request);
 
+    /// <summary>
+    /// Fetches a subaccount by code to check it still exists on Paystack — a
+    /// subaccount stored locally can go stale if someone deletes it directly
+    /// in the Paystack dashboard, in which case an update call would fail
+    /// (or silently no-op) rather than actually syncing anything.
+    /// </summary>
+    Task<SubaccountResponse> FetchSubaccountAsync(string subaccountCode);
+
     /// <summary>Real banks ("ghipss") or mobile money providers ("mobile_money") for GHS — lets the UI offer a picklist instead of free-text bank name/code.</summary>
     Task<ListBanksResponse> ListBanksAsync(string type);
 

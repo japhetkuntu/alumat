@@ -66,6 +66,13 @@ public class PaystackService(PaystackConfig config, IHttpClientFactory httpClien
         return await DeserializeSubaccountResponse(response);
     }
 
+    public async Task<SubaccountResponse> FetchSubaccountAsync(string subaccountCode)
+    {
+        var client = CreateClient();
+        var response = await client.GetAsync($"/subaccount/{subaccountCode}");
+        return await DeserializeSubaccountResponse(response);
+    }
+
     private static StringContent SubaccountBody(SubaccountRequest request) => new(JsonConvert.SerializeObject(new
     {
         business_name = request.BusinessName,

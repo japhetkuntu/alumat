@@ -286,9 +286,27 @@ public class InstitutionManagementService(
             PercentageCharge = request.PlatformFeePercentage,
         };
 
-        var subaccount = string.IsNullOrWhiteSpace(institution.PaystackSubaccountCode)
+        // A subaccount code stored locally can go stale if someone deletes it
+        // directly in the Paystack dashboard (as opposed to through this
+        // app) — an update call against a deleted code fails instead of
+        // syncing anything, so verify it still exists on Paystack first and
+        // fall back to creating a fresh one if it doesn't.
+        var existingCode = institution.PaystackSubaccountCode;
+        if (!string.IsNullOrWhiteSpace(existingCode))
+        {
+            var existing = await paystackService.FetchSubaccountAsync(existingCode);
+            if (!existing.Status || existing.Data is null)
+            {
+                logger.LogWarning(
+                    "Institution {InstitutionId}'s stored Paystack subaccount {SubaccountCode} is no longer valid ({Message}) — creating a new one instead of updating",
+                    institution.Id, existingCode, existing.Message);
+                existingCode = null;
+            }
+        }
+
+        var subaccount = string.IsNullOrWhiteSpace(existingCode)
             ? await paystackService.CreateSubaccountAsync(subaccountRequest)
-            : await paystackService.UpdateSubaccountAsync(institution.PaystackSubaccountCode, subaccountRequest);
+            : await paystackService.UpdateSubaccountAsync(existingCode, subaccountRequest);
 
         if (!subaccount.Status)
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>($"Paystack subaccount sync failed: {subaccount.Message}");
