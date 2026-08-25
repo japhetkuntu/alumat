@@ -11,6 +11,7 @@ import { Label } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
 import { createInstitution, getBaseDomains } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
 
 const STEPS = ["Institution details", "Branding", "Payments & payouts", "First admin", "Review"] as const;
 
@@ -216,26 +217,12 @@ export default function NewInstitutionPage() {
                       <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Settlement bank name</Label>
-                      <Input value={form.settlementBankName} onChange={(e) => update("settlementBankName", e.target.value)} placeholder="GCB Bank" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Settlement bank code</Label>
-                      <Input value={form.settlementBankCode} onChange={(e) => update("settlementBankCode", e.target.value)} placeholder="040100" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Account number</Label>
-                      <Input value={form.settlementAccountNumber} onChange={(e) => update("settlementAccountNumber", e.target.value)} placeholder="1234567890" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Account name</Label>
-                      <Input value={form.settlementAccountName} onChange={(e) => update("settlementAccountName", e.target.value)} placeholder="Greenfield University Alumni Association" />
-                    </div>
-                  </div>
+                  <SettlementAccountFields
+                    value={form}
+                    onChange={(next) => setForm((f) => ({ ...f, ...next }))}
+                  />
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
-                    Optional — leave blank and configure later from the institution&apos;s Payments tab. Providing a bank code and account number here sets up their payout account automatically.
+                    Optional — leave blank and configure later from the institution&apos;s Payments tab. Providing settlement details here sets up their payout account automatically.
                   </p>
                 </div>
               </>

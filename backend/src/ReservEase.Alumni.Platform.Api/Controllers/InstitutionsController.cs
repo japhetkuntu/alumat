@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
@@ -14,7 +15,7 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 /// </summary>
 [Authorize]
 [Route("api/v{version:apiVersion}/institutions")]
-public class InstitutionsController(IInstitutionManagementService institutionService) : DefaultController
+public class InstitutionsController(IInstitutionManagementService institutionService, IPaystackService paystackService) : DefaultController
 {
     [HttpGet]
     [SwaggerOperation(Summary = "List institutions")]
@@ -53,6 +54,45 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     {
         var result = institutionService.GetBaseDomains();
         return result.ToOkApiResponse().ToActionResult();
+    }
+
+    /// <summary>
+    /// Real banks or mobile money providers, straight from Paystack — lets
+    /// the settlement-details form offer a picklist instead of free-text
+    /// bank name/code, which is exactly what CreateSubaccountAsync needs
+    /// (the bank code, not the display name) to actually work.
+    /// </summary>
+    [HttpGet("banks")]
+    [SwaggerOperation(Summary = "List banks or mobile money providers for settlement account setup")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<BankOption>>))]
+    public async Task<IActionResult> GetBanks([FromQuery] string type = "ghipss")
+    {
+        if (type != "ghipss" && type != "mobile_money")
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("type must be \"ghipss\" (banks) or \"mobile_money\".").ToActionResult();
+
+        var result = await paystackService.ListBanksAsync(type);
+        if (!result.Status)
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>(result.Message).ToActionResult();
+
+        var banks = result.Data.Select(b => new BankOption(b.Name, b.Code)).ToList();
+        return banks.ToOkApiResponse().ToActionResult();
+    }
+
+    /// <summary>Looks up the real account holder name for a bank code + account number, straight from the bank via Paystack — free for NG/GH, no manual typing of the account name needed.</summary>
+    [HttpGet("resolve-account")]
+    [SwaggerOperation(Summary = "Resolve an account number to its account holder name")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ResolvedAccountResponse>))]
+    public async Task<IActionResult> ResolveAccount([FromQuery] string accountNumber, [FromQuery] string bankCode)
+    {
+        if (string.IsNullOrWhiteSpace(accountNumber) || string.IsNullOrWhiteSpace(bankCode))
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("accountNumber and bankCode are both required.").ToActionResult();
+
+        var result = await paystackService.ResolveAccountAsync(accountNumber, bankCode);
+        if (!result.Status || result.Data is null)
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>(result.Message).ToActionResult();
+
+        return new ResolvedAccountResponse(result.Data.AccountNumber ?? accountNumber, result.Data.AccountName ?? string.Empty)
+            .ToOkApiResponse().ToActionResult();
     }
 
     /// <summary>Onboard a new institution: creates the tenant and its first (SuperAdmin) admin.</summary>

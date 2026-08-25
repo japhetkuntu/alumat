@@ -12,4 +12,10 @@ public interface IPaystackService
 
     /// <summary>Update an existing subaccount (e.g. new bank details or fee percentage) by its code.</summary>
     Task<SubaccountResponse> UpdateSubaccountAsync(string subaccountCode, SubaccountRequest request);
+
+    /// <summary>Real banks ("ghipss") or mobile money providers ("mobile_money") for GHS — lets the UI offer a picklist instead of free-text bank name/code.</summary>
+    Task<ListBanksResponse> ListBanksAsync(string type);
+
+    /// <summary>Resolves an account number + bank code to the real account holder name — Paystack looks this up directly with the bank, free for NG/GH.</summary>
+    Task<ResolveAccountResponse> ResolveAccountAsync(string accountNumber, string bankCode);
 }

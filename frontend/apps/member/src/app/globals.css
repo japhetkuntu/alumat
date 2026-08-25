@@ -465,20 +465,24 @@ svg {
   --popover-foreground: #1e293b;
 
   /* ── Brand tokens ── */
-  --brand-primary: #0e7143;
-  --brand-primary-light: #d1ede0;
-  --brand-primary-mid: #0e7143;
-  --brand-primary-dark: #073d25;
+  /* Default (no institution theme resolved) matches the Platform Portal's
+     own branding, not an arbitrary member-portal color — themeStyleVars()
+     overrides all of this per-institution at runtime regardless; this is
+     only what shows before that resolves or when it's genuinely absent. */
+  --brand-primary: #2563eb;
+  --brand-primary-light: #eff6ff;
+  --brand-primary-mid: #2563eb;
+  --brand-primary-dark: #1e3a8a;
 
-  --brand-accent: #ebb30a;
-  --brand-accent-light: #fdf3cc;
-  --brand-accent-mid: #ebb30a;
-  --brand-accent-dark: #6b4f02;
+  --brand-accent: #f59e0b;
+  --brand-accent-light: #fff7ed;
+  --brand-accent-mid: #f59e0b;
+  --brand-accent-dark: #c2410c;
 
   --color-background-primary: #ffffff;
-  --color-background-info: #d1ede0;
-  --color-text-info: #073d25;
-  --color-border-info: #0e7143;
+  --color-background-info: #eff6ff;
+  --color-text-info: #1d4ed8;
+  --color-border-info: #2563eb;
 
   /* ── Primary / key actions ── */
   --primary: var(--brand-primary);
@@ -492,7 +496,7 @@ svg {
   --muted-foreground: #667085;
 
   --accent: var(--brand-accent);
-  --accent-foreground: #6b4f02;
+  --accent-foreground: #c2410c;
 
   /* ── Destructive — red semantic derived from red family ── */
   --destructive: #b94a48;
@@ -501,13 +505,13 @@ svg {
   /* ── Border & Input ── */
   --border: rgba(30, 41, 59, 0.12);
   --input: #ffffff;
-  --ring: rgba(14, 113, 67, 0.4);
+  --ring: rgba(37, 99, 235, 0.4);
 
   /* ── Status palette */
   --success: var(--brand-primary);
   --success-foreground: #ffffff;
   --warning: var(--brand-accent);
-  --warning-foreground: #6b4f02;
+  --warning-foreground: #c2410c;
   --info: var(--brand-primary);
   --info-foreground: #ffffff;
 
@@ -530,9 +534,9 @@ svg {
   --sidebar-primary: var(--brand-primary);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--brand-accent-light);
-  --sidebar-accent-foreground: #6b4f02;
+  --sidebar-accent-foreground: #c2410c;
   --sidebar-border: rgba(30, 41, 59, 0.1);
-  --sidebar-ring: rgba(14, 113, 67, 0.25);
+  --sidebar-ring: rgba(37, 99, 235, 0.25);
 }
 
 .dark {
@@ -547,8 +551,14 @@ svg {
   --popover-foreground: oklch(0.94 0.006 70);
 
   /* ── Primary ── */
-  --primary: oklch(0.68 0.155 162);        /* Brighter emerald for dark mode */
-  --primary-foreground: oklch(0.10 0.01 0);
+  /* Brand-tied tokens below match the Platform Portal's own dark-mode
+     values exactly (its dark mode is green/gold, not blue — it doesn't
+     carry its light-mode blue into dark mode either). Non-brand surface
+     tokens (background/card/popover/secondary/muted/border/input/
+     destructive/accent-sky/accent-scarlet) keep this app's own warm-
+     charcoal design language — only the brand color itself changes. */
+  --primary: #5dbf8e;
+  --primary-foreground: #ffffff;
 
   --secondary: oklch(0.25 0.010 70);
   --secondary-foreground: oklch(0.86 0.008 70);
@@ -556,8 +566,8 @@ svg {
   --muted: oklch(0.23 0.008 70);
   --muted-foreground: oklch(0.66 0.010 70);
 
-  --accent: oklch(0.28 0.014 70);
-  --accent-foreground: oklch(0.68 0.155 162);
+  --accent: #f5d06a;
+  --accent-foreground: #3a2a01;
 
   /* ── Destructive ── */
   --destructive: oklch(0.62 0.18 25);
@@ -566,25 +576,25 @@ svg {
   /* ── Border & Input ── */
   --border: oklch(0.30 0.010 70);
   --input: oklch(0.28 0.010 70);
-  --ring: oklch(0.68 0.155 162 / 0.5);
+  --ring: rgba(93, 191, 142, 0.5);
 
   /* ── Status colors ── */
-  --success: oklch(0.70 0.16 145);
-  --success-foreground: oklch(0.10 0.01 0);
-  --warning: oklch(0.80 0.155 68);
-  --warning-foreground: oklch(0.15 0.02 60);
-  --info: oklch(0.68 0.160 240);
-  --info-foreground: oklch(0.10 0.01 0);
+  --success: #5dbf8e;
+  --success-foreground: #0b2014;
+  --warning: #f5d06a;
+  --warning-foreground: #3a2a01;
+  --info: #5dbf8e;
+  --info-foreground: #0b2014;
 
   /* ── Accent Raw Tokens ── */
-  --accent-emerald: oklch(0.68 0.155 162);
+  --accent-emerald: #5dbf8e;
   --accent-sky: oklch(0.68 0.160 240);
   --accent-scarlet: oklch(0.62 0.20 27);
-  --accent-gold: oklch(0.80 0.155 68);
+  --accent-gold: #f5d06a;
 
   /* ── Chart colors ── */
-  --chart-1: oklch(0.68 0.155 162);
-  --chart-2: oklch(0.68 0.160 240);
+  --chart-1: #5dbf8e;
+  --chart-2: #f5d06a;
   --chart-3: oklch(0.80 0.155 68);
   --chart-4: oklch(0.62 0.20 27);
   --chart-5: oklch(0.70 0.01 0);
@@ -592,12 +602,12 @@ svg {
   /* ── Sidebar ── */
   --sidebar: oklch(0.18 0.010 70);
   --sidebar-foreground: oklch(0.90 0.005 70);
-  --sidebar-primary: oklch(0.68 0.155 162);
-  --sidebar-primary-foreground: oklch(0.10 0.01 0);
+  --sidebar-primary: #5dbf8e;
+  --sidebar-primary-foreground: #0b2014;
   --sidebar-accent: oklch(0.25 0.014 70);
-  --sidebar-accent-foreground: oklch(0.68 0.155 162);
+  --sidebar-accent-foreground: #f5d06a;
   --sidebar-border: oklch(0.30 0.010 70);
-  --sidebar-ring: oklch(0.68 0.155 162 / 0.5);
+  --sidebar-ring: rgba(93, 191, 142, 0.5);
 }
 
 /* ─── Base & Typography (Notion Hierarchy) ─────────────────────────── */

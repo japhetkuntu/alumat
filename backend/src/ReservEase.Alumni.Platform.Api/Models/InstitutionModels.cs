@@ -159,6 +159,10 @@ public record SlugAvailabilityResponse(string Slug, bool Available);
 
 public record BaseDomainsResponse(string MemberBaseDomain, string AdminBaseDomain);
 
+public record BankOption(string Name, string Code);
+
+public record ResolvedAccountResponse(string AccountNumber, string AccountName);
+
 public record PlatformDashboardSummary(
     int TotalInstitutions, int ActiveCount, int TrialCount,
     int TotalMembers, int NewInstitutionsThisMonth,

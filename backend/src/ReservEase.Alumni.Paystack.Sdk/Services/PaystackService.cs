@@ -86,6 +86,35 @@ public class PaystackService(PaystackConfig config, IHttpClientFactory httpClien
         })!;
     }
 
+    public async Task<ListBanksResponse> ListBanksAsync(string type)
+    {
+        var client = CreateClient();
+        var response = await client.GetAsync($"/bank?currency=GHS&type={Uri.EscapeDataString(type)}");
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<ListBanksResponse>(content, new JsonSerializerSettings
+        {
+            ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+            {
+                NamingStrategy = new Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy()
+            }
+        }) ?? new ListBanksResponse();
+    }
+
+    public async Task<ResolveAccountResponse> ResolveAccountAsync(string accountNumber, string bankCode)
+    {
+        var client = CreateClient();
+        var response = await client.GetAsync(
+            $"/bank/resolve?account_number={Uri.EscapeDataString(accountNumber)}&bank_code={Uri.EscapeDataString(bankCode)}");
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<ResolveAccountResponse>(content, new JsonSerializerSettings
+        {
+            ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+            {
+                NamingStrategy = new Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy()
+            }
+        }) ?? new ResolveAccountResponse { Message = "Could not resolve account" };
+    }
+
     private HttpClient CreateClient()
     {
         var client = httpClientFactory.CreateClient("Paystack");

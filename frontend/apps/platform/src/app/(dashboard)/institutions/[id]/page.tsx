@@ -27,6 +27,7 @@ import {
   uploadPlatformImage,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
 
 const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Usage & Limits", "Payments"] as const;
 
@@ -378,25 +379,27 @@ export default function InstitutionDetailPage() {
       )}
 
       {tab === "Branding" && branding && (
-        <div className="space-y-4 max-w-[680px]">
+        <div className="space-y-4">
           <Card>
             <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Identity</p></div>
             <CardContent className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <Label>Display name</Label>
-                <Input value={branding.portalName} onChange={(e) => setBranding((b) => ({ ...b!, portalName: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Tagline</Label>
-                <Input value={branding.tagline} onChange={(e) => setBranding((b) => ({ ...b!, tagline: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Contact email</Label>
-                <Input type="email" value={branding.contactEmail} onChange={(e) => setBranding((b) => ({ ...b!, contactEmail: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Support email</Label>
-                <Input type="email" value={branding.supportEmail} onChange={(e) => setBranding((b) => ({ ...b!, supportEmail: e.target.value }))} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Display name</Label>
+                  <Input value={branding.portalName} onChange={(e) => setBranding((b) => ({ ...b!, portalName: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Tagline</Label>
+                  <Input value={branding.tagline} onChange={(e) => setBranding((b) => ({ ...b!, tagline: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Contact email</Label>
+                  <Input type="email" value={branding.contactEmail} onChange={(e) => setBranding((b) => ({ ...b!, contactEmail: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Support email</Label>
+                  <Input type="email" value={branding.supportEmail} onChange={(e) => setBranding((b) => ({ ...b!, supportEmail: e.target.value }))} />
+                </div>
               </div>
               <div className="space-y-2.5">
                 <div>
@@ -460,78 +463,82 @@ export default function InstitutionDetailPage() {
                 <Label>Preview</Label>
                 <BrandPreview color={branding.primaryColorHex} secondaryColor={branding.secondaryColorHex || undefined} name={branding.portalName || inst.name} className="pt-1" />
               </div>
-              <ImageUrlField
-                label="Logo URL"
-                value={branding.logoUrl}
-                onChange={(url) => setBranding((b) => ({ ...b!, logoUrl: url }))}
-                placeholder="https://…/logo.svg"
-              />
-              <ImageUrlField
-                label="Icon URL"
-                hint="Small square icon — used for the browser tab and app icon, separate from the logo."
-                value={branding.iconUrl}
-                onChange={(url) => setBranding((b) => ({ ...b!, iconUrl: url }))}
-                placeholder="https://…/icon.png"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <p className="text-[14px] font-semibold">Institution Portal content</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5">Shown to this institution&apos;s own staff, on their sign-in page.</p>
-            </div>
-            <CardContent className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <Label>Browser tab title</Label>
-                <Input value={branding.institutionPortalTitle} onChange={(e) => setBranding((b) => ({ ...b!, institutionPortalTitle: e.target.value }))} placeholder={branding.portalName || "Institution Portal"} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sign-in headline</Label>
-                <Input value={branding.institutionAuthHeadline} onChange={(e) => setBranding((b) => ({ ...b!, institutionAuthHeadline: e.target.value }))} placeholder="Run the alumni office with a clear view of what matters." />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sign-in subtext</Label>
-                <Textarea rows={3} value={branding.institutionAuthSubtext} onChange={(e) => setBranding((b) => ({ ...b!, institutionAuthSubtext: e.target.value }))} placeholder="A short supporting sentence shown under the headline." />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ImageUrlField
+                  label="Logo URL"
+                  value={branding.logoUrl}
+                  onChange={(url) => setBranding((b) => ({ ...b!, logoUrl: url }))}
+                  placeholder="https://…/logo.svg"
+                />
+                <ImageUrlField
+                  label="Icon URL"
+                  hint="Small square icon — used for the browser tab and app icon, separate from the logo."
+                  value={branding.iconUrl}
+                  onChange={(url) => setBranding((b) => ({ ...b!, iconUrl: url }))}
+                  placeholder="https://…/icon.png"
+                />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <p className="text-[14px] font-semibold">Member Portal content</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5">Shown to this institution&apos;s alumni, on their sign-in and registration pages.</p>
-            </div>
-            <CardContent className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <Label>Browser tab title</Label>
-                <Input value={branding.memberPortalTitle} onChange={(e) => setBranding((b) => ({ ...b!, memberPortalTitle: e.target.value }))} placeholder={branding.portalName || "Alumni Portal"} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <div className="px-5 py-4 border-b border-border">
+                <p className="text-[14px] font-semibold">Institution Portal content</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Shown to this institution&apos;s own staff, on their sign-in page.</p>
               </div>
-              <div className="space-y-1.5">
-                <Label>Sign-in quote</Label>
-                <Textarea rows={3} value={branding.memberAuthHeadline} onChange={(e) => setBranding((b) => ({ ...b!, memberAuthHeadline: e.target.value }))} placeholder="A short testimonial-style quote shown on the sign-in page." />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Quote attribution</Label>
-                <Input value={branding.memberAuthSubtext} onChange={(e) => setBranding((b) => ({ ...b!, memberAuthSubtext: e.target.value }))} placeholder="Alumna · Class of 2018" />
-              </div>
-              <div className="flex items-center justify-between border-t border-border pt-4">
-                <div>
-                  <p className="text-[13px] font-semibold">Require Student ID at registration</p>
-                  <p className="text-[12px] text-muted-foreground mt-0.5">Off makes the field optional for this institution&apos;s members.</p>
+              <CardContent className="p-5 space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Browser tab title</Label>
+                  <Input value={branding.institutionPortalTitle} onChange={(e) => setBranding((b) => ({ ...b!, institutionPortalTitle: e.target.value }))} placeholder={branding.portalName || "Institution Portal"} />
                 </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={branding.requireStudentId}
-                  onClick={() => setBranding((b) => ({ ...b!, requireStudentId: !b!.requireStudentId }))}
-                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${branding.requireStudentId ? "bg-primary" : "bg-muted"}`}
-                >
-                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${branding.requireStudentId ? "translate-x-5" : "translate-x-0"}`} />
-                </button>
+                <div className="space-y-1.5">
+                  <Label>Sign-in headline</Label>
+                  <Input value={branding.institutionAuthHeadline} onChange={(e) => setBranding((b) => ({ ...b!, institutionAuthHeadline: e.target.value }))} placeholder="Run the alumni office with a clear view of what matters." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Sign-in subtext</Label>
+                  <Textarea rows={3} value={branding.institutionAuthSubtext} onChange={(e) => setBranding((b) => ({ ...b!, institutionAuthSubtext: e.target.value }))} placeholder="A short supporting sentence shown under the headline." />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <div className="px-5 py-4 border-b border-border">
+                <p className="text-[14px] font-semibold">Member Portal content</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Shown to this institution&apos;s alumni, on their sign-in and registration pages.</p>
               </div>
-            </CardContent>
-          </Card>
+              <CardContent className="p-5 space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Browser tab title</Label>
+                  <Input value={branding.memberPortalTitle} onChange={(e) => setBranding((b) => ({ ...b!, memberPortalTitle: e.target.value }))} placeholder={branding.portalName || "Alumni Portal"} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Sign-in quote</Label>
+                  <Textarea rows={3} value={branding.memberAuthHeadline} onChange={(e) => setBranding((b) => ({ ...b!, memberAuthHeadline: e.target.value }))} placeholder="A short testimonial-style quote shown on the sign-in page." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Quote attribution</Label>
+                  <Input value={branding.memberAuthSubtext} onChange={(e) => setBranding((b) => ({ ...b!, memberAuthSubtext: e.target.value }))} placeholder="Alumna · Class of 2018" />
+                </div>
+                <div className="flex items-center justify-between border-t border-border pt-4">
+                  <div>
+                    <p className="text-[13px] font-semibold">Require Student ID at registration</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Off makes the field optional for this institution&apos;s members.</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={branding.requireStudentId}
+                    onClick={() => setBranding((b) => ({ ...b!, requireStudentId: !b!.requireStudentId }))}
+                    className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${branding.requireStudentId ? "bg-primary" : "bg-muted"}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${branding.requireStudentId ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <FormError message={brandingError} />
           <Button onClick={() => brandingMutation.mutate()} disabled={brandingMutation.isPending}>
@@ -776,24 +783,7 @@ export default function InstitutionDetailPage() {
                   <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Settlement bank name</Label>
-                  <Input value={payments.settlementBankName} onChange={(e) => setPayments((p) => ({ ...p!, settlementBankName: e.target.value }))} placeholder="GCB Bank" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Settlement bank code</Label>
-                  <Input value={payments.settlementBankCode} onChange={(e) => setPayments((p) => ({ ...p!, settlementBankCode: e.target.value }))} placeholder="040100" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Account number</Label>
-                  <Input value={payments.settlementAccountNumber} onChange={(e) => setPayments((p) => ({ ...p!, settlementAccountNumber: e.target.value }))} placeholder="1234567890" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Account name</Label>
-                  <Input value={payments.settlementAccountName} onChange={(e) => setPayments((p) => ({ ...p!, settlementAccountName: e.target.value }))} placeholder="Institution alumni association" />
-                </div>
-              </div>
+              <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} />
               {inst.paystackSubaccountCode && (
                 <p className="text-[12px] text-muted-foreground">Payment subaccount ID: <span className="font-mono">{inst.paystackSubaccountCode}</span></p>
               )}

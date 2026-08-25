@@ -49,3 +49,52 @@ public class SubaccountData
     [JsonProperty("active")]
     public bool Active { get; set; }
 }
+
+/// <summary>One entry from Paystack's List Banks endpoint — covers both real banks (type "ghipss") and mobile money providers (type "mobile_money").</summary>
+public class PaystackBank
+{
+    [JsonProperty("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonProperty("code")]
+    public string Code { get; set; } = string.Empty;
+
+    [JsonProperty("type")]
+    public string Type { get; set; } = string.Empty;
+
+    [JsonProperty("currency")]
+    public string Currency { get; set; } = string.Empty;
+}
+
+public class ListBanksResponse
+{
+    [JsonProperty("status")]
+    public bool Status { get; set; }
+
+    [JsonProperty("message")]
+    public string Message { get; set; } = string.Empty;
+
+    [JsonProperty("data")]
+    public List<PaystackBank> Data { get; set; } = [];
+}
+
+public class ResolveAccountResponse
+{
+    [JsonProperty("status")]
+    public bool Status { get; set; }
+
+    [JsonProperty("message")]
+    public string Message { get; set; } = string.Empty;
+
+    [JsonProperty("data")]
+    public ResolveAccountData? Data { get; set; }
+}
+
+public class ResolveAccountData
+{
+    [JsonProperty("account_number")]
+    public string? AccountNumber { get; set; }
+
+    [JsonProperty("account_name")]
+    public string? AccountName { get; set; }
+}

@@ -138,6 +138,29 @@ export async function getBaseDomains() {
   return res.data.data!;
 }
 
+export interface BankOption {
+  name: string;
+  code: string;
+}
+
+/** type: "ghipss" for real banks, "mobile_money" for mobile money providers — both from Paystack directly. */
+export async function getBanks(type: "ghipss" | "mobile_money") {
+  const res = await platformClient.get<ApiResponse<BankOption[]>>("/institutions/banks", { params: { type } });
+  return res.data.data ?? [];
+}
+
+export interface ResolvedAccount {
+  accountNumber: string;
+  accountName: string;
+}
+
+export async function resolveAccount(accountNumber: string, bankCode: string) {
+  const res = await platformClient.get<ApiResponse<ResolvedAccount>>("/institutions/resolve-account", {
+    params: { accountNumber, bankCode },
+  });
+  return res.data.data!;
+}
+
 export async function checkSlugAvailability(slug: string) {
   const res = await platformClient.get<ApiResponse<{ slug: string; available: boolean }>>("/institutions/check-slug", {
     params: { slug },

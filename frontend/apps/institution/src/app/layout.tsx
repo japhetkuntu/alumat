@@ -18,6 +18,15 @@ const lora = Lora({
   display: "swap",
 });
 
+// Every route needs per-request rendering (tenant/theme is resolved from the
+// request's Host header — see getInstitutionTheme). Without this, `next
+// build` still attempts static generation for each route first, hits
+// headers() inside that fetch, and bails with a DYNAMIC_SERVER_USAGE error —
+// harmless (every route ends up correctly marked dynamic either way) but it
+// floods the build log with noise that looks like real fetch failures.
+// Declaring it upfront skips that futile attempt entirely.
+export const dynamic = "force-dynamic";
+
 // Dynamic per-institution: browser tab title and favicon are configured by
 // platform staff (InstitutionPortalTitle / IconUrl), not hardcoded — falls
 // back to generic copy when an institution hasn't set one.
