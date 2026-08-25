@@ -211,7 +211,7 @@ export default function MemberSettingsPage() {
       </Card>
 
       {/* Security + About */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
       <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -221,20 +221,20 @@ export default function MemberSettingsPage() {
           <CardDescription>Update your password to keep your account secure</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground max-w-sm">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
               Password changes are managed from your profile page.
             </p>
-            <Link href="/profile">
-              <Button variant="outline" size="sm" className="shrink-0">Change Password</Button>
+            <Link href="/profile" className="self-start">
+              <Button variant="outline" size="sm">Change Password</Button>
             </Link>
           </div>
           <Separator className="my-5" />
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground max-w-sm">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
               Sign out of your account on this device.
             </p>
-            <Button variant="outline" size="sm" className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
+            <Button variant="outline" size="sm" className="self-start text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
               Log out
             </Button>
           </div>

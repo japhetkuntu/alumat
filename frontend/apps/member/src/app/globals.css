@@ -504,7 +504,7 @@ svg {
 
   /* ── Border & Input ── */
   --border: rgba(30, 41, 59, 0.12);
-  --input: #ffffff;
+  --input: rgba(30, 41, 59, 0.18);
   --ring: rgba(37, 99, 235, 0.4);
 
   /* ── Status palette */

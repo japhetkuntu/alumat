@@ -29,6 +29,7 @@ import {
   UserPlus,
   StickyNote,
   UsersRound,
+  Globe,
 } from "lucide-react";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -53,6 +54,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/jobs", label: "Jobs", icon: Briefcase },
       { href: "/mentorship", label: "Mentorship", icon: GraduationCap },
       { href: "/directory", label: "Directory", icon: Users },
+      { href: "/alumni-map", label: "Alumni Map", icon: Globe },
     ],
   },
   {
@@ -91,6 +93,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/jobs": "Jobs",
   "/events": "Events",
   "/directory": "Directory",
+  "/alumni-map": "Directory",
   "/news": "News",
   "/forum": "Forum",
   "/mentorship": "Mentorship",

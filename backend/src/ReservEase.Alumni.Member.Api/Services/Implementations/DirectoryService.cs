@@ -60,4 +60,30 @@ public class DirectoryService(
             return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<DirectoryMemberDto>>("Failed to search members");
         }
     }
+
+    public async Task<IApiResponse<List<AlumniMapMemberDto>>> GetMapMembersAsync()
+    {
+        try
+        {
+            var members = await memberRepo.GetAllAsync(m =>
+                m.Status == "Active" && m.ShowOnAlumniMap && m.Location != null && m.Location != "");
+
+            var dtos = members.Select(m => new AlumniMapMemberDto
+            {
+                Id = m.Id,
+                FirstName = m.FirstName,
+                LastName = m.LastName,
+                Location = m.Location,
+                GraduationYear = m.GraduationYear,
+                ProfilePictureUrl = m.ProfilePictureUrl,
+            }).ToList();
+
+            return dtos.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving alumni map members");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<AlumniMapMemberDto>>("Failed to retrieve alumni map");
+        }
+    }
 }

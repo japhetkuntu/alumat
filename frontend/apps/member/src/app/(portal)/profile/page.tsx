@@ -87,6 +87,7 @@ export default function MemberProfilePage() {
   const [profileForm, setProfileForm] = useState({
     company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "",
   });
+  const [showOnAlumniMap, setShowOnAlumniMap] = useState(false);
   const [employmentStatus, setEmploymentStatus] = useState("Employed");
   const [confirmPensioner, setConfirmPensioner]  = useState(false);
   const [pwForm,  setPwForm]   = useState({ currentPassword: "", newPassword: "", confirm: "" });
@@ -126,6 +127,7 @@ export default function MemberProfilePage() {
       phone:       profile.phone       ?? "",
     });
     setEmploymentStatus(profile.employmentStatus ?? "Employed");
+    setShowOnAlumniMap(profile.showOnAlumniMap ?? false);
   }
 
   const updateMut = useMutation({
@@ -137,6 +139,7 @@ export default function MemberProfilePage() {
       bio:              profileForm.bio         || undefined,
       phone:            profileForm.phone       || undefined,
       employmentStatus,
+      showOnAlumniMap,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-profile"] });
@@ -359,6 +362,29 @@ export default function MemberProfilePage() {
                 </div>
               ))}
             </div>
+
+            <div className="flex items-start justify-between gap-4 rounded-xl p-3.5" style={{ background: "var(--muted)" }}>
+              <div>
+                <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  Plots your name and location on the alumni world map, visible to fellow members. Off by default — your location stays private unless you turn this on.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showOnAlumniMap}
+                onClick={() => setShowOnAlumniMap(v => !v)}
+                className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                style={{ background: showOnAlumniMap ? "var(--primary)" : "var(--border)" }}
+              >
+                <span
+                  className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300"
+                  style={{ transform: showOnAlumniMap ? "translateX(20px)" : "translateX(0)" }}
+                />
+              </button>
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="linkedInUrl" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                 LinkedIn URL

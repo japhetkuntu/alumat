@@ -23,4 +23,13 @@ public class DirectoryController(IDirectoryService directoryService) : DefaultCo
         var result = await directoryService.SearchMembersAsync(filter);
         return result.ToActionResult();
     }
+
+    [HttpGet("map")]
+    [SwaggerOperation(Summary = "Alumni map", Description = "Get all members who have opted in to appear on the alumni map, with their location")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<AlumniMapMemberDto>>))]
+    public async Task<IActionResult> GetMapMembers()
+    {
+        var result = await directoryService.GetMapMembersAsync();
+        return result.ToActionResult();
+    }
 }

@@ -266,6 +266,19 @@ public class DirectoryMemberDto
     public string? MemberNumber { get; set; }
 }
 
+// ── Alumni Map — deliberately minimal (no email/phone): every member here
+// has explicitly opted in via ShowOnAlumniMap, but that consent covers
+// showing their name/location on a map, not exposing contact details.
+public class AlumniMapMemberDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string? Location { get; set; }
+    public int GraduationYear { get; set; }
+    public string? ProfilePictureUrl { get; set; }
+}
+
 // ── Year Group Leaderboard ──────────────────────────────────────────────────
 
 public class YearGroupLeaderboardEntryDto

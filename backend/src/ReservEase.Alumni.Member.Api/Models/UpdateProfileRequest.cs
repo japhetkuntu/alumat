@@ -9,5 +9,6 @@ public class UpdateProfileRequest
     public string? Bio { get; set; }
     public string? Phone { get; set; }
     public string? EmploymentStatus { get; set; }
+    public bool? ShowOnAlumniMap { get; set; }
     public IFormFile? ProfilePicture { get; set; }
 }

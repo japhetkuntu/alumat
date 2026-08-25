@@ -8,7 +8,7 @@ import {
   GraduationCap, Users, Briefcase, Heart, Globe,
   Menu, X, ArrowRight, ChevronRight,
   BookOpen, Trophy, CreditCard, Bell,
-  MapPin, Zap, Shield, Star, Award, ChevronDown,
+  MapPin, Zap, Shield, Star, Award,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -48,6 +48,8 @@ interface DynamicNewsBanner {
 interface LandingContent {
   landingPageStories: DynamicLandingStory[];
   newsBanner: DynamicNewsBanner | null;
+  displayName?: string | null;
+  logoUrl?: string | null;
 }
 
 function useLandingContent() {
@@ -68,9 +70,6 @@ function useLandingContent() {
    All free-to-use under the Unsplash License — no attribution required.
    ───────────────────────────────────────────────────────────────────────── */
 const IMG = {
-  // Spotlight banners — professional Black men in formal settings
-  vcIncoming: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",   // confident man portrait by Fortune Vieyra
-  vcOutgoing: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=800&q=80",   // professional man in suit by Adeolu Eletu
   // Hero right-side panel background — students in lecture hall
   heroPanel: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80",    // students studying together
   // Use-case/stories section — 3 contextual images
@@ -134,31 +133,6 @@ const HOW_IT_WORKS = [
   { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your alumni details. No long forms, no waiting for approval emails." },
   { n: "02", icon: MapPin,  title: "Build out your profile",        desc: "Add your career, company, location. The more context you give, the easier it is for the right people to find you." },
   { n: "03", icon: Zap,    title: "Use it",                         desc: "Browse jobs, back a campaign, request a mentor, or just show up in the directory so others can reach you." },
-];
-
-const SPOTLIGHTS = [
-  {
-    type: "incoming" as const,
-    badge: "New appointment",
-    badgeIcon: Star,
-    image: IMG.vcIncoming,
-    name: "Dr. Alex Mensah",
-    role: "Vice Chancellor-Elect · Effective this year",
-    teaser: "An alumnus appointed to lead the very institution they graduated from.",
-    full: "Alumni leadership spotlights like this one celebrate graduates who go on to shape the institutions and industries around them — new appointments, awards, publications, and milestones your community will want to see. Institution staff can publish spotlights like this one directly from the Institution Portal.",
-    readMoreUrl: "#",
-  },
-  {
-    type: "outgoing" as const,
-    badge: "A tribute",
-    badgeIcon: Award,
-    image: IMG.vcOutgoing,
-    name: "Dr. Jordan Kwarteng",
-    role: "Vice Chancellor · Outgoing",
-    teaser: "Years of steady, transformative leadership — thank you.",
-    full: "Tribute spotlights recognize outgoing leaders and long-serving staff, giving the alumni community a place to reflect on someone's impact. This is example content — replace it with your own institution's real spotlights from the Institution Portal.",
-    readMoreUrl: "#",
-  },
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -278,71 +252,6 @@ function FeatureCard({ feature, delay }: { feature: typeof FEATURES[number]; del
             {feature.desc}
           </p>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   SPOTLIGHT CARD — real photo banner + brief text + expand
-   ───────────────────────────────────────────────────────────────────────── */
-function SpotlightCard({ item, delay }: { item: typeof SPOTLIGHTS[number]; delay: string }) {
-  const { ref, visible } = useFadeUp();
-  const [expanded, setExpanded] = useState(false);
-  const BadgeIcon = item.badgeIcon;
-  const isIncoming = item.type === "incoming";
-
-  return (
-    <div ref={ref}
-      className={cn("overflow-hidden rounded-2xl border transition-all duration-700 hover:shadow-md", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6")}
-      style={{ transitionDelay: delay, borderColor: isIncoming ? "var(--color-border-info)" : "var(--border)", background: "var(--background)" }}>
-
-      {/* ── Photo banner ── */}
-      <div className="relative w-full overflow-hidden" style={{ height: 210 }}>
-        <img
-          src={item.image}
-          alt={item.name}
-          className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
-        />
-        {/* Gradient scrim — bottom-heavy so name remains readable */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.68) 0%, rgba(0,0,0,0.1) 55%, transparent 100%)" }} />
-
-        {/* Name + role overlaid on photo */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <p className="text-[15px] font-semibold text-white leading-snug mb-0.5">{item.name}</p>
-          <p className="text-[12px] text-white/75 font-medium">{item.role}</p>
-        </div>
-
-        {/* Badge — top left */}
-        <div className="absolute top-3 left-3">
-          <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
-            style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.25)" }}>
-            <BadgeIcon size={10} color="white" />
-            <span className="text-[10px] font-semibold tracking-wide text-white uppercase">{item.badge}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Card body ── */}
-      <div className="p-5">
-        <p className="text-[13.5px] leading-relaxed mb-4" style={{ color: "var(--muted-foreground)" }}>
-          {item.teaser}
-        </p>
-
-        {expanded && (
-          <p className="text-[13px] leading-[1.8] mb-4 pt-3 border-t" style={{ color: "var(--muted-foreground)", borderColor: "var(--border)" }}>
-            {item.full}
-          </p>
-        )}
-
-        <button
-          onClick={() => setExpanded(e => !e)}
-          className="flex items-center gap-1.5 text-[12.5px] font-semibold transition-opacity hover:opacity-70"
-          style={{ color: "var(--primary)" }}
-        >
-          {expanded ? "Show less" : "Read more"}
-          <ChevronDown size={13} className={cn("transition-transform duration-200", expanded && "rotate-180")} />
-        </button>
       </div>
     </div>
   );
@@ -494,10 +403,14 @@ export default function LandingPage() {
         <div className="section__inner flex items-center justify-between h-16 gap-4">
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-              <GraduationCap size={17} color="white" />
-            </div>
-            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>Alumni Portal</p>
+            {content?.logoUrl ? (
+              <img src={content.logoUrl} alt={content.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-cover shrink-0" />
+            ) : (
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
+                <GraduationCap size={17} color="white" />
+              </div>
+            )}
+            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Alumni Portal"}</p>
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
@@ -636,42 +549,6 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-
-      {/* ════════════════════════════════════════════════════════════════
-          SPOTLIGHT — VC leadership transition
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="spotlight" className="border-y" style={{ background: "var(--secondary)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="mb-10 max-w-[52ch]">
-            <Eyebrow>Alumni in leadership</Eyebrow>
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              A graduate will lead their alma mater.
-            </h2>
-            <p style={{ color: "var(--muted-foreground)", lineHeight: 1.75 }}>
-              An alumnus has been appointed Vice Chancellor, effective this year.
-              We also take a moment to thank their predecessor.
-            </p>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            {SPOTLIGHTS.map((item, i) => (
-              <SpotlightCard key={item.name} item={item} delay={`${i * 100}ms`} />
-            ))}
-          </div>
-
-          <div className="mt-8 flex items-start gap-3 rounded-xl border p-4"
-            style={{ background: "var(--color-background-info)", borderColor: "var(--color-border-info)" }}>
-            <GraduationCap size={16} className="shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
-            <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-              <span className="font-semibold" style={{ color: "var(--foreground)" }}>Are you an alumnus in a leadership role?</span>{" "}
-              The alumni spotlight celebrates your achievements across the network.{" "}
-              <Link href="/register" className="font-semibold underline underline-offset-2" style={{ color: "var(--primary)" }}>
-                Join to be featured.
-              </Link>
-            </p>
-          </div>
-        </div>
-      </Section>
 
       {/* ════════════════════════════════════════════════════════════════
           STATS — full-bleed banded row, not a card grid
@@ -830,14 +707,18 @@ export default function LandingPage() {
       <footer className="border-t py-9" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner flex flex-col sm:flex-row items-center justify-between gap-5">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-              <GraduationCap size={14} color="white" />
-            </div>
-            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Alumni Portal</span>
+            {content?.logoUrl ? (
+              <img src={content.logoUrl} alt={content.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
+                <GraduationCap size={14} color="white" />
+              </div>
+            )}
+            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Alumni Portal"}</span>
           </Link>
 
           <p className="text-[11.5px] text-center" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
-            © {new Date().getFullYear()} University of Mines and Technology Alumni Association
+            © {new Date().getFullYear()} {content?.displayName || "Alumni Portal"}
           </p>
 
           <nav className="flex flex-wrap items-center justify-center gap-5" aria-label="Footer links">

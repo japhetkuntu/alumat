@@ -7,4 +7,5 @@ namespace ReservEase.Alumni.Member.Api.Services.Interfaces;
 public interface IDirectoryService
 {
     Task<IApiResponse<PgPagedResult<DirectoryMemberDto>>> SearchMembersAsync(DirectoryFilter filter);
+    Task<IApiResponse<List<AlumniMapMemberDto>>> GetMapMembersAsync();
 }

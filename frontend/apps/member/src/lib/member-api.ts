@@ -68,6 +68,7 @@ export interface MemberProfileResponse {
   membershipExpiry?: string;
   membershipYearsPaid?: number;
   lastMembershipPaidAt?: string;
+  showOnAlumniMap?: boolean;
 }
 
 export interface MembershipStatusResponse {
@@ -94,6 +95,7 @@ export interface UpdateProfileBody {
   bio?: string;
   phone?: string;
   employmentStatus?: string;
+  showOnAlumniMap?: boolean;
   profilePicture?: File;
 }
 
@@ -102,6 +104,20 @@ export async function updateMyProfile(body: UpdateProfileBody) {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
+}
+
+export interface AlumniMapMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  location?: string;
+  graduationYear: number;
+  profilePictureUrl?: string;
+}
+
+export async function getAlumniMap(): Promise<AlumniMapMember[]> {
+  const res = await memberClient.get("/directory/map");
+  return res.data.data ?? [];
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {

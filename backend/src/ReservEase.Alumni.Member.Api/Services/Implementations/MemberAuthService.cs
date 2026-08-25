@@ -463,6 +463,7 @@ public class MemberAuthService(
             member.LinkedInUrl = request.LinkedInUrl ?? member.LinkedInUrl;
             member.Bio = request.Bio ?? member.Bio;
             member.Phone = request.Phone ?? member.Phone;
+            member.ShowOnAlumniMap = request.ShowOnAlumniMap ?? member.ShowOnAlumniMap;
 
             if (request.EmploymentStatus is "Employed" or "Pensioner")
             {
@@ -676,5 +677,6 @@ public class MemberAuthService(
         m.DepartmentId, m.Company, m.JobTitle,
         m.Location, m.LinkedInUrl, m.Bio,
         m.ProfilePictureUrl, m.Status, m.EmploymentStatus,
-        m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt);
+        m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,
+        m.ShowOnAlumniMap);
 }

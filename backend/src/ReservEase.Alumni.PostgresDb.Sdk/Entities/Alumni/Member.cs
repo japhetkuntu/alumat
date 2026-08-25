@@ -17,6 +17,8 @@ public class Member : BaseEntity, ITenantScoped
     public string? Company { get; set; }
     public string? JobTitle { get; set; }
     public string? Location { get; set; }
+    // Opt-in: member must explicitly choose to appear on the Alumni Map (plotted by their Location).
+    public bool ShowOnAlumniMap { get; set; }
     public string? LinkedInUrl { get; set; }
     public string? Bio { get; set; }
     public string? ProfilePictureUrl { get; set; }
