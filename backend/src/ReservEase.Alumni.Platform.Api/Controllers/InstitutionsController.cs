@@ -164,6 +164,41 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>This institution's own staff accounts — support/ops visibility, not a login credential dump (no password data is ever returned).</summary>
+    [HttpGet("{id}/admins")]
+    [SwaggerOperation(Summary = "List institution admins")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<InstitutionStaffDto>>))]
+    public async Task<IActionResult> GetInstitutionStaff(string id)
+    {
+        var result = await institutionService.GetInstitutionStaffAsync(id);
+        return result.ToActionResult();
+    }
+
+    /// <summary>Invite a new staff admin — they receive an email with a link to set their own password, never a temp password relayed by platform staff.</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPost("{id}/admins")]
+    [SwaggerOperation(Summary = "Invite institution admin")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<InstitutionStaffDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> InviteInstitutionStaff(string id, [FromBody] InviteInstitutionStaffRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.InviteInstitutionStaffAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
+    /// <summary>Disable or re-enable an institution admin's account — a support-facing safety switch, not a hard delete.</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPatch("{id}/admins/{staffId}/disabled")]
+    [SwaggerOperation(Summary = "Disable or re-enable an institution admin")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionStaffDto>))]
+    public async Task<IActionResult> SetInstitutionStaffDisabled(string id, string staffId, [FromQuery] bool isDisabled)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.SetInstitutionStaffDisabledAsync(id, staffId, isDisabled, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
     /// <summary>How money moved for this institution — gross collected, the platform's cut, and what settled to them.</summary>
     [HttpGet("{id}/revenue")]
     [SwaggerOperation(Summary = "Get institution revenue")]

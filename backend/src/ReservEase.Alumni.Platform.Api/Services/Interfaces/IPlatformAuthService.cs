@@ -8,4 +8,6 @@ public interface IPlatformAuthService
     Task<IApiResponse<PlatformTokenResponse>> LoginAsync(LoginRequest request);
     Task<IApiResponse<PlatformTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
     Task<IApiResponse<PlatformTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);
+    Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
+    Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
 }

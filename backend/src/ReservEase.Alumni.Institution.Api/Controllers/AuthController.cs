@@ -45,6 +45,35 @@ public class AuthController(IInstitutionAuthService authService) : DefaultContro
     }
 
     /// <summary>
+    /// Send a password reset link to the provided email address, if an eligible staff account exists.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Forgot password", Description = "Send a password reset link to the provided staff email address.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var result = await authService.ForgotPasswordAsync(request);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Reset a staff member's password using a reset token from the emailed link.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Reset password", Description = "Reset a staff member's password using a reset token.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var result = await authService.ResetPasswordAsync(request);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Get the currently authenticated staff member's profile.
     /// </summary>
     [HttpGet("me")]

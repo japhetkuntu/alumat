@@ -20,4 +20,7 @@ public interface IInstitutionManagementService
     Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug);
     BaseDomainsResponse GetBaseDomains();
     Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync();
+    Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId);
+    Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName);
+    Task<IApiResponse<InstitutionStaffDto>> SetInstitutionStaffDisabledAsync(string institutionId, string staffId, bool isDisabled, string updatedBy, string actorName);
 }

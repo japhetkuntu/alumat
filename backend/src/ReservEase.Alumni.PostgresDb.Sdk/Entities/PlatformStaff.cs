@@ -11,4 +11,6 @@ public class PlatformStaff : BaseEntity
     public bool Mfa { get; set; }
     public bool IsDisabled { get; set; }
     public DateTime? LastActiveAt { get; set; }
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetSentAt { get; set; }
 }

@@ -39,6 +39,7 @@ builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection")
 builder.Services.AddRedisDatabase<InstitutionRedisConfig>(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddPaystackService(builder.Configuration);
 
 // Auth + API

@@ -54,9 +54,9 @@ export default function PlatformDashboardPage() {
         <Card>
           <CardContent className="p-5">
             <p className="text-[12px] text-muted-foreground">Platform Revenue</p>
-            <p className="text-[26px] font-bold mt-1">{formatCurrency(summary?.revenue ?? 0, "USD")}</p>
+            <p className="text-[26px] font-bold mt-1">{formatCurrency(summary?.revenue ?? 0, "GHS")}</p>
             <p className="text-[12px] text-muted-foreground mt-1">
-              Platform fee collected across all institutions &middot; MRR {formatCurrency(summary?.mrr ?? 0, "USD")}
+              Platform fee collected across all institutions
             </p>
           </CardContent>
         </Card>

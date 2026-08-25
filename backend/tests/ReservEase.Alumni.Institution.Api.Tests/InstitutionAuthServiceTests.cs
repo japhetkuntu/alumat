@@ -8,14 +8,19 @@ using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Implementations;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
+using Microsoft.AspNetCore.Http;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using Xunit;
 
 namespace ReservEase.Alumni.Institution.Api.Tests;
 
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
+using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 public class InstitutionAuthServiceTests
 {
@@ -40,7 +45,15 @@ public class InstitutionAuthServiceTests
         mockRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>() ))
             .ReturnsAsync(disabledAdmin);
 
-        var sut = new InstitutionAuthService(mockRepo.Object, mockRedis.Object, options, logger);
+        var mockInstitutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
+        var mockCurrentTenant = new Mock<ICurrentTenantService>();
+        var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        var mockMailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
+        var mockEmailService = new Mock<IEmailService>();
+
+        var sut = new InstitutionAuthService(
+            mockRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, mockHttpContextAccessor.Object,
+            mockRedis.Object, options, mockMailtrapOptions, mockEmailService.Object, logger);
 
         // Act
         var response = await sut.LoginAsync(new LoginRequest("disabled@test.com", "password"));

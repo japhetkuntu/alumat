@@ -1,6 +1,7 @@
 using Serilog;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
 using ReservEase.Alumni.Platform.Api.Extensions;
 using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.Platform.Api.Services;
@@ -37,6 +38,8 @@ builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection")
 builder.Services.AddRedisDatabase<PlatformRedisConfig>(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddPaystackService(builder.Configuration);
+builder.Services.AddMailtrapEmailService(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
 
 // Auth + API
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
@@ -52,7 +55,6 @@ builder.Services.AddScoped<IPlatformAuthService, PlatformAuthService>();
 builder.Services.AddScoped<IInstitutionManagementService, InstitutionManagementService>();
 builder.Services.AddScoped<IPlatformStaffService, PlatformStaffService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
-builder.Services.AddScoped<IPlanService, PlanService>();
 builder.Services.AddScoped<ISupportCaseService, SupportCaseService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IUploadService, UploadService>();

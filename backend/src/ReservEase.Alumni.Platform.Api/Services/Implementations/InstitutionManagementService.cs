@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Mailtrap.Sdk.Models;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
@@ -7,6 +10,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
+using Microsoft.Extensions.Options;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
@@ -20,9 +24,11 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// </summary>
 public class InstitutionManagementService(
     AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
-    IConfiguration config, ILogger<InstitutionManagementService> logger)
+    IConfiguration config, IEmailService emailService, IOptions<MailtrapConfig> mailtrapConfigOptions,
+    ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
+    private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     /// <summary>
     /// The member and institution portals live on entirely different base
     /// domains (e.g. "yourplatform.com" vs "admin.yourplatform.com") — never
@@ -66,8 +72,6 @@ public class InstitutionManagementService(
             .Take(pageSize)
             .ToListAsync();
 
-        var planPrices = await db.Plans.ToDictionaryAsync(p => p.Name, p => (p.Price, p.BillingInterval));
-
         var items = new List<InstitutionListItemResponse>();
         foreach (var i in institutions)
         {
@@ -77,7 +81,7 @@ public class InstitutionManagementService(
                 .SumAsync(c => c.PlatformFeeAmount);
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
-                i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt, ResolveMrr(i.Plan, planPrices),
+                i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt,
                 i.PlatformFeePercentage, revenue, MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug)));
         }
 
@@ -380,7 +384,6 @@ public class InstitutionManagementService(
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var newThisMonth = await db.Institutions.CountAsync(i => i.OnboardedAt >= monthStart);
 
-        var mrr = await GetMrrAsync();
         var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.Status == "Confirmed")
             .SumAsync(c => c.PlatformFeeAmount);
@@ -395,27 +398,107 @@ public class InstitutionManagementService(
             growthLabels.Add(bucketStart.ToString("MMM"));
         }
 
-        return new PlatformDashboardSummary(totalInstitutions, activeCount, trialCount, totalMembers, newThisMonth, mrr, revenue, growthCounts, growthLabels)
+        return new PlatformDashboardSummary(totalInstitutions, activeCount, trialCount, totalMembers, newThisMonth, revenue, growthCounts, growthLabels)
             .ToOkApiResponse();
     }
 
-    private async Task<decimal> GetMrrAsync()
+    public async Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId)
     {
-        var institutionPlans = await db.Institutions.Where(i => i.Status == "Active").Select(i => i.Plan).ToListAsync();
-        var planPrices = await db.Plans.ToDictionaryAsync(p => p.Name, p => (p.Price, p.BillingInterval));
-        return institutionPlans.Sum(planName => ResolveMrr(planName, planPrices));
+        var staff = await db.Set<StaffEntity>().IgnoreQueryFilters()
+            .Where(s => s.InstitutionId == institutionId)
+            .OrderBy(s => s.CreatedAt)
+            .ToListAsync();
+
+        return staff
+            .Select(s => new InstitutionStaffDto(s.Id, s.FirstName, s.LastName, s.Email, s.Role, s.IsDisabled, s.LastLoginAt, s.CreatedAt))
+            .ToList()
+            .ToOkApiResponse();
     }
 
-    private static decimal ResolveMrr(string planName, Dictionary<string, (decimal? Price, string BillingInterval)> planPrices)
+    public async Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(
+        string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName)
     {
-        if (!planPrices.TryGetValue(planName, out var plan) || plan.Price is null) return 0;
-        return plan.BillingInterval == "annual" ? plan.Price.Value / 12m : plan.Price.Value;
+        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == institutionId);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Institution not found");
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (await db.Set<StaffEntity>().IgnoreQueryFilters().AnyAsync(s => s.Email == email))
+            return ApiResponseExtensions.ToConflictApiResponse<InstitutionStaffDto>("An admin with that email already exists");
+
+        // No password is ever set or transmitted here — the invitee gets a
+        // reset-password link (same token mechanism as "forgot password")
+        // and chooses their own password on first sign-in. The random hash
+        // below is never usable to log in; it exists only because Password
+        // is a required, non-nullable column.
+        var staff = new StaffEntity
+        {
+            InstitutionId = institutionId,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            Email = email,
+            Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
+            Role = request.Role,
+            PasswordResetToken = $"reset_{Guid.NewGuid():N}",
+            PasswordResetSentAt = DateTime.UtcNow,
+            CreatedBy = createdBy,
+        };
+        db.Set<StaffEntity>().Add(staff);
+        await db.SaveChangesAsync();
+
+        _ = SendStaffInviteEmailAsync(staff.FirstName, staff.Email, staff.PasswordResetToken, institution.Name, InstitutionPortalUrl(institution.Slug));
+
+        logger.LogInformation("Invited staff {Email} to institution {InstitutionId}", email, institutionId);
+        await auditLog.LogAsync(createdBy, actorName, $"invited admin {email}", institution.Name);
+
+        return new InstitutionStaffDto(staff.Id, staff.FirstName, staff.LastName, staff.Email, staff.Role, staff.IsDisabled, staff.LastLoginAt, staff.CreatedAt)
+            .ToCreatedApiResponse();
+    }
+
+    public async Task<IApiResponse<InstitutionStaffDto>> SetInstitutionStaffDisabledAsync(
+        string institutionId, string staffId, bool isDisabled, string updatedBy, string actorName)
+    {
+        var staff = await db.Set<StaffEntity>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.Id == staffId && s.InstitutionId == institutionId);
+        if (staff is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Admin not found");
+
+        staff.IsDisabled = isDisabled;
+        staff.UpdatedAt = DateTime.UtcNow;
+        staff.UpdatedBy = updatedBy;
+        await db.SaveChangesAsync();
+
+        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == institutionId);
+        await auditLog.LogAsync(updatedBy, actorName, $"{(isDisabled ? "disabled" : "re-enabled")} admin {staff.Email}", institution?.Name ?? institutionId);
+
+        return new InstitutionStaffDto(staff.Id, staff.FirstName, staff.LastName, staff.Email, staff.Role, staff.IsDisabled, staff.LastLoginAt, staff.CreatedAt)
+            .ToOkApiResponse();
+    }
+
+    private async Task SendStaffInviteEmailAsync(string firstName, string email, string token, string institutionName, string portalUrl)
+    {
+        try
+        {
+            var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
+            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+            await emailService.SendEmailAsync(new SendEmailRequest
+            {
+                To = [new EmailContact { Email = email, Name = firstName }],
+                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
+                    ? "reset-password"
+                    : mailtrapConfig.Templates.ResetPassword,
+                TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = institutionName },
+            });
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to send staff invite email to {Email}", email);
+        }
     }
 
     private async Task<InstitutionDetailResponse> ToDetailDtoAsync(Institution i)
     {
         var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
-        var planPrices = await db.Plans.ToDictionaryAsync(p => p.Name, p => (p.Price, p.BillingInterval));
         var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
             .SumAsync(c => c.PlatformFeeAmount);
@@ -427,7 +510,7 @@ public class InstitutionManagementService(
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.Plan, i.Status, memberCount, i.MemberLimit, 0, i.StorageLimitGb,
-            i.OnboardedAt, i.TrialEndsAt, ResolveMrr(i.Plan, planPrices),
+            i.OnboardedAt, i.TrialEndsAt,
             i.PlatformFeePercentage, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,

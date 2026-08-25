@@ -14,4 +14,6 @@ public class InstitutionStaff : BaseEntity, ITenantScoped
     public int? YearGroup { get; set; }
     public bool IsDisabled { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetSentAt { get; set; }
 }

@@ -12,6 +12,7 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
+import { FormSelect } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
@@ -25,6 +26,7 @@ import {
   updateInstitutionPayments, getInstitutionRevenue,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   uploadPlatformImage,
+  getInstitutionStaff, inviteInstitutionStaff, setInstitutionStaffDisabled,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
@@ -108,6 +110,11 @@ export default function InstitutionDetailPage() {
     queryFn: () => getInstitutionRevenue(id),
     enabled: tab === "Payments",
   });
+  const { data: staff = [], isLoading: staffLoading } = useQuery({
+    queryKey: ["institution-staff", id],
+    queryFn: () => getInstitutionStaff(id),
+    enabled: tab === "Admins",
+  });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["institution", id] });
@@ -145,6 +152,35 @@ export default function InstitutionDetailPage() {
       setPlanError(msg);
       toast.error(msg);
     },
+  });
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ firstName: "", lastName: "", email: "", role: "Admin" });
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const inviteMutation = useMutation({
+    mutationFn: () => inviteInstitutionStaff(id, inviteForm),
+    onSuccess: (created) => {
+      toast.success(`Invited ${created.email} — they'll get an email to set their password.`);
+      queryClient.invalidateQueries({ queryKey: ["institution-staff", id] });
+      setInviteOpen(false);
+      setInviteForm({ firstName: "", lastName: "", email: "", role: "Admin" });
+      setInviteError(null);
+    },
+    onError: (e) => {
+      const msg = handleApiError(e);
+      setInviteError(msg);
+      toast.error(msg);
+    },
+  });
+
+  const toggleStaffMutation = useMutation({
+    mutationFn: ({ staffId, isDisabled }: { staffId: string; isDisabled: boolean }) =>
+      setInstitutionStaffDisabled(id, staffId, isDisabled),
+    onSuccess: (updated) => {
+      toast.success(updated.isDisabled ? `${updated.email} disabled` : `${updated.email} re-enabled`);
+      queryClient.invalidateQueries({ queryKey: ["institution-staff", id] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
   });
 
   const [branding, setBranding] = useState<{
@@ -705,18 +741,44 @@ export default function InstitutionDetailPage() {
       {tab === "Admins" && (
         <Card>
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <p className="text-[14px] font-semibold">Institution admins</p>
+            <div>
+              <p className="text-[14px] font-semibold">Institution admins</p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">Staff who can sign in to this institution&apos;s own admin portal.</p>
+            </div>
+            <Button size="sm" onClick={() => setInviteOpen(true)}>
+              <Plus size={14} className="mr-1.5" />
+              Invite admin
+            </Button>
           </div>
           <CardContent className="p-0">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-              <div className="flex items-center gap-3">
-                <UserAvatar name={inst.contactName} size="sm" />
-                <div>
-                  <p className="text-[13.5px] font-semibold">{inst.contactName}</p>
-                  <p className="text-[12px] text-muted-foreground">SuperAdmin &middot; {inst.contactEmail}</p>
+            {staffLoading ? (
+              <p className="px-5 py-6 text-[13px] text-muted-foreground">Loading…</p>
+            ) : staff.length === 0 ? (
+              <p className="px-5 py-6 text-[13px] text-muted-foreground">No admins yet — invite one to get started.</p>
+            ) : (
+              staff.map((s) => (
+                <div key={s.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-b-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar name={`${s.firstName} ${s.lastName}`} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-[13.5px] font-semibold truncate">{s.firstName} {s.lastName}</p>
+                      <p className="text-[12px] text-muted-foreground truncate">{s.role} &middot; {s.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <Badge variant={s.isDisabled ? "destructive" : "success"}>{s.isDisabled ? "Disabled" : "Active"}</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={toggleStaffMutation.isPending}
+                      onClick={() => toggleStaffMutation.mutate({ staffId: s.id, isDisabled: !s.isDisabled })}
+                    >
+                      {s.isDisabled ? "Re-enable" : "Disable"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </div>
+              ))
+            )}
           </CardContent>
         </Card>
       )}
@@ -829,6 +891,54 @@ export default function InstitutionDetailPage() {
             <Button variant="outline" onClick={() => setPlanOpen(false)}>Cancel</Button>
             <Button onClick={() => planMutation.mutate()} disabled={planMutation.isPending || !planForm.plan}>
               {planMutation.isPending ? "Saving…" : "Save limits"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o) setInviteError(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite admin</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>First name</Label>
+                <Input value={inviteForm.firstName} onChange={(e) => setInviteForm((f) => ({ ...f, firstName: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Last name</Label>
+                <Input value={inviteForm.lastName} onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <FormSelect
+                value={inviteForm.role}
+                onValueChange={(role) => setInviteForm((f) => ({ ...f, role }))}
+                options={[
+                  { value: "Admin", label: "Admin" },
+                  { value: "SuperAdmin", label: "SuperAdmin" },
+                ]}
+              />
+            </div>
+            <p className="text-[12px] text-muted-foreground">
+              They&apos;ll get an email with a link to set their own password — no temp password to relay.
+            </p>
+            <FormError message={inviteError} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => inviteMutation.mutate()}
+              disabled={inviteMutation.isPending || !inviteForm.firstName || !inviteForm.lastName || !inviteForm.email}
+            >
+              {inviteMutation.isPending ? "Inviting…" : "Send invite"}
             </Button>
           </DialogFooter>
         </DialogContent>

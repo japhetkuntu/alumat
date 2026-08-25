@@ -6,6 +6,9 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Models;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
@@ -19,9 +22,96 @@ public class PlatformAuthService(
     IAlumniPgRepository<PlatformStaff> staffRepo,
     IRedisService<PlatformRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
+    IOptions<MailtrapConfig> mailtrapConfigOptions,
+    IEmailService emailService,
+    IHttpContextAccessor httpContextAccessor,
     ILogger<PlatformAuthService> logger) : IPlatformAuthService
 {
     private readonly BearerTokenConfig tokenConfig = tokenConfigOptions.Value;
+    private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
+
+    /// <summary>The current request's own scheme+host — reset links must point back to this Platform Portal host, not a fixed domain.</summary>
+    private string GetRequestBaseUrl()
+    {
+        var request = httpContextAccessor.HttpContext?.Request;
+        return request is null ? "https://example.com" : $"{request.Scheme}://{request.Host}";
+    }
+
+    private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
+
+    private async Task SendResetPasswordEmailAsync(string name, string email, string token, string baseUrl)
+    {
+        try
+        {
+            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+            await emailService.SendEmailAsync(new SendEmailRequest
+            {
+                To = [new EmailContact { Email = email, Name = name }],
+                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
+                    ? "reset-password"
+                    : mailtrapConfig.Templates.ResetPassword,
+                TemplateVariables = new { first_name = name, reset_url = link },
+            });
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to send reset password email to {Email}", email);
+        }
+    }
+
+    public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        try
+        {
+            var email = request.Email.ToLower().Trim();
+            var staff = await staffRepo.GetOneAsync(s => s.Email == email);
+            if (staff is null)
+                return new object().ToOkApiResponse("Password reset instructions sent if the account exists.");
+
+            var token = GenerateUrlToken("reset");
+            staff.PasswordResetToken = token;
+            staff.PasswordResetSentAt = DateTime.UtcNow;
+            await staffRepo.UpdateAsync(staff);
+
+            _ = SendResetPasswordEmailAsync(staff.Name, staff.Email, token, GetRequestBaseUrl());
+            return new object().ToOkApiResponse("Password reset instructions sent to your email.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error sending forgot password email to {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to send password reset email");
+        }
+    }
+
+    public async Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        try
+        {
+            var email = request.Email.ToLower().Trim();
+            var staff = await staffRepo.GetOneAsync(s => s.Email == email);
+            if (staff is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid reset token or email.");
+
+            if (string.IsNullOrWhiteSpace(staff.PasswordResetToken) || staff.PasswordResetToken != request.Token)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid reset token or email.");
+
+            if (staff.PasswordResetSentAt is null || staff.PasswordResetSentAt < DateTime.UtcNow.AddHours(-24))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Password reset token has expired. Please request a new link.");
+
+            staff.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            staff.PasswordResetToken = null;
+            staff.PasswordResetSentAt = null;
+            staff.UpdatedAt = DateTime.UtcNow;
+            await staffRepo.UpdateAsync(staff);
+
+            return new object().ToOkApiResponse("Password has been reset successfully.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error resetting password for {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to reset password");
+        }
+    }
 
     public async Task<IApiResponse<PlatformTokenResponse>> LoginAsync(LoginRequest request)
     {

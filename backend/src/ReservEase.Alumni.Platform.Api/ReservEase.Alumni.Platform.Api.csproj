@@ -27,6 +27,7 @@
     <ProjectReference Include="..\ReservEase.Alumni.Redis.Sdk\ReservEase.Alumni.Redis.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Storage.Sdk\ReservEase.Alumni.Storage.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Paystack.Sdk\ReservEase.Alumni.Paystack.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Mailtrap.Sdk\ReservEase.Alumni.Mailtrap.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

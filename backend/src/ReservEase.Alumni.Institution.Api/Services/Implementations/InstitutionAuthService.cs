@@ -10,20 +10,123 @@ using ReservEase.Alumni.Institution.Api.Options;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Models;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
+using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class InstitutionAuthService(
     IAlumniPgRepository<StaffEntity> adminRepo,
+    IAlumniPgRepository<InstitutionEntity> institutionRepo,
+    ICurrentTenantService currentTenant,
+    IHttpContextAccessor httpContextAccessor,
     IRedisService<InstitutionRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
+    IOptions<MailtrapConfig> mailtrapConfigOptions,
+    IEmailService emailService,
     ILogger<InstitutionAuthService> logger) : IInstitutionAuthService
 {
     private const string PictureClaimType = "picture";
     private readonly BearerTokenConfig tokenConfig = tokenConfigOptions.Value;
+    private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
+
+    /// <summary>The current request's own scheme+host — reset links must point back to this institution's own admin portal host, not a fixed domain.</summary>
+    private string GetRequestBaseUrl()
+    {
+        var request = httpContextAccessor.HttpContext?.Request;
+        return request is null ? "https://example.com" : $"{request.Scheme}://{request.Host}";
+    }
+
+    /// <summary>The current tenant's own name/color/logo for tenant-branded email — falls back to the platform default when unset.</summary>
+    private async Task<(string? Name, string? Color, string? Logo)> GetBrandVarsAsync()
+    {
+        if (string.IsNullOrEmpty(currentTenant.InstitutionId)) return (null, null, null);
+        var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        return (institution?.Name, institution?.PrimaryColorHex, institution?.LogoUrl);
+    }
+
+    private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
+
+    private async Task SendResetPasswordEmailAsync(string firstName, string email, string token, string baseUrl)
+    {
+        try
+        {
+            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+            var brand = await GetBrandVarsAsync();
+            await emailService.SendEmailAsync(new SendEmailRequest
+            {
+                To = [new EmailContact { Email = email, Name = firstName }],
+                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
+                    ? "reset-password"
+                    : mailtrapConfig.Templates.ResetPassword,
+                TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
+            });
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to send reset password email to {Email}", email);
+        }
+    }
+
+    public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        try
+        {
+            var email = request.Email.ToLower().Trim();
+            var admin = await adminRepo.GetOneAsync(a => a.Email == email);
+            if (admin is null)
+                return new object().ToOkApiResponse("Password reset instructions sent if the account exists.");
+
+            var token = GenerateUrlToken("reset");
+            admin.PasswordResetToken = token;
+            admin.PasswordResetSentAt = DateTime.UtcNow;
+            await adminRepo.UpdateAsync(admin);
+
+            _ = SendResetPasswordEmailAsync(admin.FirstName, admin.Email, token, GetRequestBaseUrl());
+            return new object().ToOkApiResponse("Password reset instructions sent to your email.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error sending forgot password email to {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to send password reset email");
+        }
+    }
+
+    public async Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        try
+        {
+            var email = request.Email.ToLower().Trim();
+            var admin = await adminRepo.GetOneAsync(a => a.Email == email);
+            if (admin is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid reset token or email.");
+
+            if (string.IsNullOrWhiteSpace(admin.PasswordResetToken) || admin.PasswordResetToken != request.Token)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid reset token or email.");
+
+            if (admin.PasswordResetSentAt is null || admin.PasswordResetSentAt < DateTime.UtcNow.AddHours(-24))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Password reset token has expired. Please request a new link.");
+
+            admin.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            admin.PasswordResetToken = null;
+            admin.PasswordResetSentAt = null;
+            admin.UpdatedAt = DateTime.UtcNow;
+            await adminRepo.UpdateAsync(admin);
+
+            return new object().ToOkApiResponse("Password has been reset successfully.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error resetting password for {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to reset password");
+        }
+    }
 
     public async Task<IApiResponse<InstitutionTokenResponse>> LoginAsync(LoginRequest request)
     {

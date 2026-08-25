@@ -9,4 +9,6 @@ public interface IInstitutionAuthService
     Task<IApiResponse<InstitutionTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
     Task<IApiResponse<InstitutionStaffProfileResponse>> GetProfileAsync(AuthData auth);
     Task<IApiResponse<InstitutionTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);
+    Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
+    Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
 }

@@ -79,7 +79,7 @@ export default function PlatformLoginPage() {
             <Input
               id="email"
               type="email"
-              placeholder="you@yourplatform.com"
+              placeholder="you@alumunion.com"
               autoComplete="email"
               {...register("email")}
               className="h-12 text-[15px]"

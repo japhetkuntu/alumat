@@ -26,7 +26,7 @@ export default function BillingPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Active institutions</p><p className="text-[24px] font-bold mt-1">{activeInstitutions.length}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Trial institutions</p><p className="text-[24px] font-bold mt-1">{trialCount}</p></CardContent></Card>
-        <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrency(totalRevenue, "USD")}</p></CardContent></Card>
+        <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrency(totalRevenue, "GHS")}</p></CardContent></Card>
       </div>
 
       <Card>
@@ -51,7 +51,7 @@ export default function BillingPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>{inst.platformFeePercentage}%</TableCell>
-                <TableCell>{formatCurrency(inst.revenue, "USD")}</TableCell>
+                <TableCell>{formatCurrency(inst.revenue, "GHS")}</TableCell>
               </TableRow>
             ))}
           </TableBody>

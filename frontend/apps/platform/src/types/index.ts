@@ -45,7 +45,6 @@ export interface LoginRequest {
 }
 
 export type InstitutionStatus = "Trial" | "Active" | "Suspended" | "Cancelled";
-export type PlanTier = "Starter" | "Growth" | "Enterprise";
 
 export interface Institution {
   id: string;
@@ -54,29 +53,15 @@ export interface Institution {
   customDomain?: string;
   contactName: string;
   contactEmail: string;
-  plan: PlanTier;
+  plan: string;
   status: InstitutionStatus;
   memberCount: number;
   memberLimit: number;
   storageUsedGb: number;
   storageLimitGb: number;
-  mrr: number;
   onboardedAt: string;
   lastActivityAt: string;
   featureOverrides: { feature: string; planDefault: boolean; enabled: boolean; note?: string }[];
-}
-
-export interface Plan {
-  id: string;
-  name: PlanTier;
-  price: number | "Custom";
-  billingInterval: "monthly" | "annual";
-  memberLimit: number | "Unlimited";
-  storageLimitGb: number | "Unlimited";
-  modules: string[];
-  supportLevel: string;
-  subscriberCount: number;
-  isMostUsed?: boolean;
 }
 
 export interface PlatformStaffMember {

@@ -37,6 +37,29 @@ public class AuthController(IPlatformAuthService authService) : DefaultControlle
         return result.ToActionResult();
     }
 
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Forgot password", Description = "Send a password reset link to the provided platform-staff email address.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var result = await authService.ForgotPasswordAsync(request);
+        return result.ToActionResult();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Reset password", Description = "Reset a platform staff member's password using a reset token.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var result = await authService.ResetPasswordAsync(request);
+        return result.ToActionResult();
+    }
+
     [HttpGet("me")]
     [SwaggerOperation(Summary = "Get current platform staff profile")]
     public IActionResult GetCurrentStaff()

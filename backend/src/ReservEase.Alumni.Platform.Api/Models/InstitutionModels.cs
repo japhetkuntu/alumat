@@ -48,7 +48,7 @@ public class CreateInstitutionRequest
 public record InstitutionListItemResponse(
     string Id, string Name, string Slug, string? CustomDomain,
     string ContactName, string ContactEmail, string Plan, string Status,
-    int MemberCount, int MemberLimit, DateTime OnboardedAt, decimal Mrr,
+    int MemberCount, int MemberLimit, DateTime OnboardedAt,
     decimal PlatformFeePercentage, decimal Revenue,
     string MemberPortalUrl, string InstitutionPortalUrl);
 
@@ -61,7 +61,7 @@ public record InstitutionDetailResponse(
     bool RequireStudentId, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
     string Plan, string Status, int MemberCount, int MemberLimit, int StorageUsedGb, int StorageLimitGb,
-    DateTime OnboardedAt, DateTime? TrialEndsAt, decimal Mrr,
+    DateTime OnboardedAt, DateTime? TrialEndsAt,
     decimal PlatformFeePercentage, string? PaystackSubaccountCode,
     string? SettlementBankCode, string? SettlementBankName,
     string? SettlementAccountNumber, string? SettlementAccountName, decimal Revenue,
@@ -166,4 +166,22 @@ public record ResolvedAccountResponse(string AccountNumber, string AccountName);
 public record PlatformDashboardSummary(
     int TotalInstitutions, int ActiveCount, int TrialCount,
     int TotalMembers, int NewInstitutionsThisMonth,
-    decimal Mrr, decimal Revenue, List<int> GrowthLast6Months, List<string> GrowthMonthLabels);
+    decimal Revenue, List<int> GrowthLast6Months, List<string> GrowthMonthLabels);
+
+/// <summary>One of an institution's own staff accounts, as seen from Platform Portal (support/ops visibility — never exposes the password hash).</summary>
+public record InstitutionStaffDto(
+    string Id, string FirstName, string LastName, string Email, string Role,
+    bool IsDisabled, DateTime? LastLoginAt, DateTime CreatedAt);
+
+/// <summary>Invites a new staff member to an institution — they get an email with a link to set their own password, never a temp password platform staff would have to relay.</summary>
+public class InviteInstitutionStaffRequest
+{
+    [Required]
+    public string FirstName { get; set; } = string.Empty;
+    [Required]
+    public string LastName { get; set; } = string.Empty;
+    [Required, EmailAddress]
+    public string Email { get; set; } = string.Empty;
+    [Required]
+    public string Role { get; set; } = "Admin";
+}

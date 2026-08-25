@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -6,6 +7,8 @@ using ReservEase.Alumni.Institution.Api.Services.Implementations;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
@@ -45,8 +48,13 @@ public class ServiceConstructorTests
         var tokenOptions = Microsoft.Extensions.Options.Options.Create(new BearerTokenConfig { InstitutionSigningKey = "x", Issuer = "x", Audience = "x", AccessTokenLifetime = 1, RefreshTokenLifetime = 1 });
 
         var notificationActor = new Mock<INotificationActor>();
+        var httpContextAccessor = new Mock<IHttpContextAccessor>();
+        var mailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
+        var emailService = new Mock<IEmailService>();
 
-        var _ = new InstitutionAuthService(adminRepo.Object, redisService.Object, tokenOptions, new NullLogger<InstitutionAuthService>());
+        var _ = new InstitutionAuthService(
+            adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
+            redisService.Object, tokenOptions, mailtrapOptions, emailService.Object, new NullLogger<InstitutionAuthService>());
         var __ = new InstitutionStaffService(adminRepo.Object, new NullLogger<InstitutionStaffService>());
         var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<CampaignService>());
         var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<EventService>());

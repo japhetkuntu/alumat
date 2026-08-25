@@ -46,7 +46,6 @@ export interface InstitutionListItem {
   memberCount: number;
   memberLimit: number;
   onboardedAt: string;
-  mrr: number;
   platformFeePercentage: number;
   revenue: number;
   memberPortalUrl: string;
@@ -85,7 +84,6 @@ export interface InstitutionDetail {
   storageLimitGb: number;
   onboardedAt: string;
   trialEndsAt?: string | null;
-  mrr: number;
   platformFeePercentage: number;
   paystackSubaccountCode?: string | null;
   settlementBankCode?: string | null;
@@ -238,6 +236,34 @@ export async function getInstitutionRevenue(id: string) {
   return res.data.data!;
 }
 
+// ─── Institution admins ─────────────────────────────────────────────────────
+
+export interface InstitutionStaffMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isDisabled: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export async function getInstitutionStaff(id: string) {
+  const res = await platformClient.get<ApiResponse<InstitutionStaffMember[]>>(`/institutions/${id}/admins`);
+  return res.data.data ?? [];
+}
+
+export async function inviteInstitutionStaff(id: string, req: { firstName: string; lastName: string; email: string; role: string }) {
+  const res = await platformClient.post<ApiResponse<InstitutionStaffMember>>(`/institutions/${id}/admins`, req);
+  return res.data.data!;
+}
+
+export async function setInstitutionStaffDisabled(id: string, staffId: string, isDisabled: boolean) {
+  const res = await platformClient.patch<ApiResponse<InstitutionStaffMember>>(`/institutions/${id}/admins/${staffId}/disabled?isDisabled=${isDisabled}`);
+  return res.data.data!;
+}
+
 // ─── Feature catalog ────────────────────────────────────────────────────────
 
 export interface FeatureCatalogItem {
@@ -335,7 +361,6 @@ export interface DashboardSummary {
   trialCount: number;
   totalMembers: number;
   newInstitutionsThisMonth: number;
-  mrr: number;
   revenue: number;
   growthLast6Months: number[];
   growthMonthLabels: string[];
@@ -343,42 +368,6 @@ export interface DashboardSummary {
 
 export async function getDashboardSummary() {
   const res = await platformClient.get<ApiResponse<DashboardSummary>>("/dashboard/summary");
-  return res.data.data!;
-}
-
-// ─── Plans ─────────────────────────────────────────────────────────────────
-
-export interface PlanItem {
-  id: string;
-  name: string;
-  // The backend serializer drops null fields entirely, so these arrive as
-  // undefined (not null) when unset — always check with `== null` / `?.`.
-  price?: number | null;
-  billingInterval: string;
-  memberLimit?: number | null;
-  storageLimitGb?: number | null;
-  modules: string[];
-  supportLevel: string;
-  isMostUsed: boolean;
-  subscriberCount: number;
-}
-
-export async function getPlans() {
-  const res = await platformClient.get<ApiResponse<PlanItem[]>>("/plans");
-  return res.data.data!;
-}
-
-export async function createPlan(req: {
-  name: string;
-  price?: number;
-  billingInterval?: string;
-  memberLimit?: number;
-  storageLimitGb?: number;
-  modules?: string[];
-  supportLevel?: string;
-  isMostUsed?: boolean;
-}) {
-  const res = await platformClient.post<ApiResponse<PlanItem>>("/plans", req);
   return res.data.data!;
 }
 

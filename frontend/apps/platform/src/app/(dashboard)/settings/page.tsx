@@ -41,21 +41,6 @@ export default function PlatformSettingsPage() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Default branding fallback</p></div>
-          <CardContent className="p-5 space-y-4">
-            <div className="space-y-1.5">
-              <Label>Default sender email</Label>
-              <Input defaultValue="notifications@yourplatform.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Default primary color</Label>
-              <Input defaultValue="#2563EB" />
-            </div>
-            <Button variant="outline">Save changes</Button>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>

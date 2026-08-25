@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -10,7 +11,8 @@ import { Input } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { formatDate, formatCurrency } from "@alumni/ui";
-import { getInstitutions } from "@/lib/platform-api";
+import { handleApiError } from "@/lib/api-client";
+import { getInstitutions, type InstitutionListItem } from "@/lib/platform-api";
 import { InstitutionStatus } from "@/types";
 
 const STATUS_FILTERS: { label: string; value: InstitutionStatus | "All" }[] = [
@@ -31,6 +33,7 @@ const statusBadge: Record<string, { label: string; variant: "info" | "success" |
 export default function InstitutionsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<InstitutionStatus | "All">("All");
+  const [exporting, setExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["institutions", search, status],
@@ -45,6 +48,40 @@ export default function InstitutionsPage() {
 
   const results = data?.results ?? [];
 
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const all = await getInstitutions({
+        page: 1,
+        pageSize: 5000,
+        search: search.trim() || undefined,
+        status: status === "All" ? undefined : status,
+      });
+      const rows = all.results ?? [];
+      if (!rows.length) {
+        toast.error("No institutions to export");
+        return;
+      }
+      const headers: (keyof InstitutionListItem)[] = [
+        "name", "slug", "plan", "status", "contactName", "contactEmail",
+        "memberCount", "memberLimit", "platformFeePercentage", "revenue", "onboardedAt",
+      ];
+      const csv = [
+        headers.join(","),
+        ...rows.map((inst) => headers.map((h) => `"${String(inst[h] ?? "").replace(/"/g, '""')}"`).join(",")),
+      ].join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      a.download = `institutions-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      toast.success(`Exported ${rows.length} institutions`);
+    } catch (e) {
+      toast.error(handleApiError(e));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-1">
@@ -53,7 +90,9 @@ export default function InstitutionsPage() {
           <p className="text-muted-foreground text-[13px] mt-1">A complete registry of tenant institutions and their operational state.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Export CSV</Button>
+          <Button variant="outline" disabled={exporting} onClick={exportCsv}>
+            {exporting ? "Exporting…" : "Export CSV"}
+          </Button>
           <Link href="/institutions/new">
             <Button>Add institution</Button>
           </Link>
@@ -121,7 +160,7 @@ export default function InstitutionsPage() {
                 </TableCell>
                 <TableCell>{inst.plan}</TableCell>
                 <TableCell>{inst.memberCount.toLocaleString()}</TableCell>
-                <TableCell>{formatCurrency(inst.revenue, "USD")}</TableCell>
+                <TableCell>{formatCurrency(inst.revenue, "GHS")}</TableCell>
                 <TableCell>
                   <Badge variant={(statusBadge[inst.status] ?? statusBadge.Trial).variant}>
                     {(statusBadge[inst.status] ?? statusBadge.Trial).label}
