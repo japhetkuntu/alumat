@@ -1,10 +1,12 @@
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Sms.Sdk.Services;
 using ReservEase.Alumni.Whatsapp.Sdk.Services;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
+using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -13,12 +15,44 @@ public class NotificationDispatcher(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<NotificationPreference> prefRepo,
     IAlumniPgRepository<StaffEntity> adminRepo,
+    IAlumniPgRepository<Institution> institutionRepo,
+    ICurrentTenantService currentTenant,
     ISmsService smsService,
     IWhatsAppService whatsAppService,
     ILogger<NotificationDispatcher> logger) : INotificationDispatcher
 {
     private const string PortalBaseUrl = "http://localhost:3001";
     private const string AdminPortalBaseUrl = "http://localhost:3000";
+
+    /// <summary>
+    /// WhatsApp is wired up end to end but switched off for the pilot — SMS
+    /// and email only for now. Flip this back on (and re-surface the
+    /// WhatsApp toggle in Member Portal settings) when it's ready to launch.
+    /// </summary>
+    private const bool WhatsAppEnabled = false;
+
+    /// <summary>
+    /// Arkesel sender IDs are fixed and pre-registered per platform account —
+    /// an institution's own name can't become the "from" field without a
+    /// separate registration process outside this codebase — so
+    /// personalization happens in the message body instead: every SMS is
+    /// prefixed with the institution's name, cached per-dispatch so a batch
+    /// send (e.g. a class-note alert to a whole year group) only queries it
+    /// once rather than once per recipient.
+    /// </summary>
+    private string? cachedInstitutionName;
+    private bool institutionNameLoaded;
+    private async Task<string?> GetInstitutionNameAsync()
+    {
+        if (institutionNameLoaded) return cachedInstitutionName;
+        institutionNameLoaded = true;
+        if (!string.IsNullOrEmpty(currentTenant.InstitutionId))
+        {
+            var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            cachedInstitutionName = institution?.Name;
+        }
+        return cachedInstitutionName;
+    }
 
     /// <summary>
     /// Fires SMS/WhatsApp for a member if they've opted in and have a phone
@@ -31,9 +65,13 @@ public class NotificationDispatcher(
         if (string.IsNullOrWhiteSpace(member.Phone) || pref is null) return;
 
         if (pref.SmsAlerts)
-            await smsService.SendSmsAsync(member.Phone, message);
+        {
+            var institutionName = await GetInstitutionNameAsync();
+            var smsMessage = string.IsNullOrWhiteSpace(institutionName) ? message : $"{institutionName}: {message}";
+            await smsService.SendSmsAsync(member.Phone, smsMessage);
+        }
 
-        if (pref.WhatsAppAlerts)
+        if (WhatsAppEnabled && pref.WhatsAppAlerts)
             await whatsAppService.SendMessageAsync(member.Phone, message);
     }
 

@@ -36,8 +36,8 @@ export default function PrivacyPage() {
           <li>Payment records — the amount, date, campaign, and status of a contribution or membership payment.
             We do not receive or store your card number, CVV, or mobile money PIN; those go directly to
             Paystack, our payment processor;</li>
-          <li>Notification preferences — whether you&apos;ve opted in to SMS or WhatsApp alerts, and the number
-            they&apos;re sent to;</li>
+          <li>Notification preferences — whether you&apos;ve opted in to SMS alerts, and the number they&apos;re sent
+            to;</li>
           <li>Technical data — IP address, browser/device type, and basic usage logs, collected automatically for
             security and to keep the service running.</li>
         </ul>
@@ -56,9 +56,8 @@ export default function PrivacyPage() {
             initiate, sending you the account emails needed to operate the service (like password resets and
             payment receipts);</li>
           <li><strong style={{ color: "var(--foreground)" }}>Consent</strong> — showing your location on the
-            Alumni Map, sending you SMS or WhatsApp notifications, and any marketing communications. You can
-            withdraw this consent at any time from your profile settings, and we stop that specific use going
-            forward;</li>
+            Alumni Map, sending you SMS notifications, and any marketing communications. You can withdraw this
+            consent at any time from your profile settings, and we stop that specific use going forward;</li>
           <li><strong style={{ color: "var(--foreground)" }}>Legitimate interest</strong> — keeping the Platform
             secure (fraud prevention, abuse detection), improving reliability, and maintaining audit logs of
             staff actions on an Institution&apos;s portal;</li>
@@ -74,9 +73,10 @@ export default function PrivacyPage() {
           <li><strong style={{ color: "var(--foreground)" }}>Paystack</strong> — processes online payments; they
             receive what is needed to complete a transaction (amount, email, payment method details you enter
             directly with them);</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Arkesel and WaSenderAPI</strong> — deliver SMS and
-            WhatsApp notifications respectively, when you have opted in; they receive your phone number and the
-            message content, nothing more;</li>
+          <li><strong style={{ color: "var(--foreground)" }}>Arkesel</strong> — delivers SMS notifications when
+            you have opted in; they receive your phone number and the message content, nothing more. (We also
+            integrate with a WhatsApp provider for a future release — it is not active during the current
+            pilot, and this policy will be updated before it is turned on.)</li>
           <li><strong style={{ color: "var(--foreground)" }}>Cloud hosting and storage providers</strong>{" "}
             (including DigitalOcean) — store the Platform&apos;s database and uploaded files (like profile photos
             and campaign banners) securely;</li>

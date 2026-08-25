@@ -56,12 +56,17 @@ public class MemberAuthService(
         return request is null ? "https://example.com" : $"{request.Scheme}://{request.Host}";
     }
 
-    /// <summary>The current tenant's own brand color for tenant-branded email — falls back to the platform default when unset.</summary>
-    private async Task<string?> GetBrandColorAsync()
+    /// <summary>
+    /// The current tenant's own name/color/logo for tenant-branded email —
+    /// every field falls back to the platform default (null) when unset, so
+    /// mailtrap's own MailtrapEmailService.RenderHtmlAsync fallback logic
+    /// still applies unchanged.
+    /// </summary>
+    private async Task<(string? Name, string? Color, string? Logo)> GetBrandVarsAsync()
     {
-        if (string.IsNullOrEmpty(currentTenant.InstitutionId)) return null;
+        if (string.IsNullOrEmpty(currentTenant.InstitutionId)) return (null, null, null);
         var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-        return institution?.PrimaryColorHex;
+        return (institution?.Name, institution?.PrimaryColorHex, institution?.LogoUrl);
     }
 
     public async Task<IApiResponse<object>> RegisterAsync(RegisterRequest request)
@@ -313,14 +318,14 @@ public class MemberAuthService(
         try
         {
             var link = $"{baseUrl}/auth/verify-email?token={token}&email={Uri.EscapeDataString(email)}";
-            var brandColor = await GetBrandColorAsync();
+            var brand = await GetBrandVarsAsync();
             await emailService.SendEmailAsync(new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.EmailVerificationLink)
                     ? "email-verification-link"
                     : mailtrapConfig.Templates.EmailVerificationLink,
-                TemplateVariables = new { first_name = firstName, verify_url = link, brand_color = brandColor },
+                TemplateVariables = new { first_name = firstName, verify_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
             });
         }
         catch (Exception e)
@@ -334,14 +339,14 @@ public class MemberAuthService(
         try
         {
             var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-            var brandColor = await GetBrandColorAsync();
+            var brand = await GetBrandVarsAsync();
             await emailService.SendEmailAsync(new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
                     ? "reset-password"
                     : mailtrapConfig.Templates.ResetPassword,
-                TemplateVariables = new { first_name = firstName, reset_url = link, brand_color = brandColor },
+                TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
             });
         }
         catch (Exception e)
@@ -619,11 +624,12 @@ public class MemberAuthService(
     {
         try
         {
+            var brand = await GetBrandVarsAsync();
             await emailService.SendEmailAsync(new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = mailtrapConfig.Templates.EmailVerification,
-                TemplateVariables = new { first_name = firstName, otp_code = otp, brand_color = await GetBrandColorAsync() },
+                TemplateVariables = new { first_name = firstName, otp_code = otp, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
             });
         }
         catch (Exception e)

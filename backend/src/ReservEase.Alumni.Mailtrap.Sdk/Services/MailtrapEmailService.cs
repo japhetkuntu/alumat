@@ -128,6 +128,11 @@ public class MailtrapEmailService(
         variables["brand_color_soft"] = EmailColorPalette.Soft(brandColor);
         variables["brand_text_on_color"] = EmailColorPalette.TextOn(brandColor);
 
+        // The institution's own logo when they have one, otherwise the same
+        // colored-initial mark as before — one fragment templates can drop
+        // in wherever they currently render `<div class="mark">{{brand_initial}}</div>`.
+        variables["brand_mark_html"] = BuildBrandMarkHtml(variables);
+
         var templatePath = GetTemplatePath(templateId);
         if (templatePath is not null)
         {
@@ -137,6 +142,26 @@ public class MailtrapEmailService(
 
         logger.LogWarning("No template file found for '{TemplateId}' in {Directory}; using fallback layout", templateId, config.TemplateDirectory);
         return BuildFallbackHtml(templateId, variables);
+    }
+
+    private static string BuildBrandMarkHtml(Dictionary<string, string> variables)
+    {
+        var logo = variables.GetValueOrDefault("brand_logo");
+        var brandName = Sanitize(variables.GetValueOrDefault("brand_name", "Alumni Portal"));
+
+        if (!string.IsNullOrWhiteSpace(logo))
+        {
+            return $"<img src=\"{Sanitize(logo)}\" alt=\"{brandName}\" width=\"44\" height=\"44\" " +
+                   "style=\"width:44px;height:44px;border-radius:12px;object-fit:cover;margin-bottom:20px;display:block\" />";
+        }
+
+        var brandColor = variables.GetValueOrDefault("brand_color", "#0e7143");
+        var brandColorDark = variables.GetValueOrDefault("brand_color_dark", brandColor);
+        var initial = variables.GetValueOrDefault("brand_initial", "A");
+        return "<div style=\"width:44px;height:44px;border-radius:12px;" +
+               $"background:linear-gradient(135deg,{brandColor},{brandColorDark});color:#ffffff;" +
+               "font-size:18px;font-weight:800;text-align:center;line-height:44px;margin-bottom:20px\">" +
+               $"{initial}</div>";
     }
 
     private string? GetTemplatePath(string templateId)
@@ -152,11 +177,19 @@ public class MailtrapEmailService(
         return null;
     }
 
+    // Keys whose value is already-built HTML (from this service itself, with
+    // its own internal sanitization applied to any user-controlled parts —
+    // see BuildBrandMarkHtml) and must be substituted raw, not re-escaped
+    // like ordinary text variables (otherwise the tags render as literal
+    // text in the email instead of an actual image/mark).
+    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html" };
+
     private static string ReplaceTemplateVariables(string templateText, Dictionary<string, string> variables)
     {
         foreach (var (key, value) in variables)
         {
-            templateText = templateText.Replace($"{{{{{key}}}}}", Sanitize(value), StringComparison.OrdinalIgnoreCase);
+            var replacement = RawHtmlVariableKeys.Contains(key) ? value : Sanitize(value);
+            templateText = templateText.Replace($"{{{{{key}}}}}", replacement, StringComparison.OrdinalIgnoreCase);
         }
 
         return templateText;
@@ -193,6 +226,8 @@ public class MailtrapEmailService(
 
         var brand = variables.TryGetValue("brand_name", out var b) ? b : "Alumni Portal";
         sb.AppendLine("<div class=\"header\">");
+        if (variables.TryGetValue("brand_logo", out var logo) && !string.IsNullOrWhiteSpace(logo))
+            sb.AppendLine($"<img src=\"{Sanitize(logo)}\" alt=\"{Sanitize(brand)}\" width=\"40\" height=\"40\" style=\"width:40px;height:40px;border-radius:10px;object-fit:cover;margin:0 auto 10px;display:block\" />");
         sb.AppendLine($"<div class=\"badge\">{Sanitize(brand.ToUpperInvariant())}</div>");
         sb.AppendLine($"<h1>{FormatTemplateId(templateId)}</h1>");
         sb.AppendLine("</div>");
@@ -223,7 +258,7 @@ public class MailtrapEmailService(
         var rendered = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "first_name", "name", "otp_code", "register_url", "verify_url", "reset_url", "action_url",
-                "brand_name", "brand_initial", "brand_color", "brand_color_dark", "brand_color_light", "brand_color_soft", "brand_text_on_color",
+                "brand_name", "brand_initial", "brand_logo", "brand_mark_html", "brand_color", "brand_color_dark", "brand_color_light", "brand_color_soft", "brand_text_on_color",
             };
 
         var remaining = variables.Where(kv => !rendered.Contains(kv.Key)).ToList();
