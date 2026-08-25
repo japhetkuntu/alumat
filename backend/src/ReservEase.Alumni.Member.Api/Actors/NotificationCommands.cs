@@ -13,3 +13,11 @@ public sealed record DispatchPaymentReceivedCommand(
     decimal Amount,
     string CampaignTitle,
     string ContributionId) : NotificationCommand;
+
+public sealed record DispatchContributionConfirmedCommand(
+    string MemberId,
+    string MemberEmail,
+    string MemberFirstName,
+    decimal Amount,
+    string CampaignTitle,
+    string ContributionId) : NotificationCommand;

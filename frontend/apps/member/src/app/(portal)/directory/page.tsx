@@ -50,7 +50,7 @@ export default function MemberDirectoryPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      <PageHeader title="Alumni directory" description="Find the people and stories that make our community feel like home." />
+      <PageHeader title="Alumni directory" description="Find any old student in seconds — search by name, graduation year, or location, from local chapters to the diaspora." />
 
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">

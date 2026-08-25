@@ -12,6 +12,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
+using ReservEase.Alumni.Sms.Sdk.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +42,7 @@ builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddPaystackService(builder.Configuration);
+builder.Services.AddArkeselSmsService(builder.Configuration);
 
 // Auth + API
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
@@ -70,6 +72,7 @@ builder.Services.AddScoped<IInstitutionSpotlightService, InstitutionSpotlightSer
 builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+builder.Services.AddScoped<IBroadcastService, BroadcastService>();
 
 // Request body size limit (10 MB)
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);

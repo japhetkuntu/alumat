@@ -240,8 +240,8 @@ export default function ClassNotesPage() {
           </h1>
           <p className="text-[13.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
             {user?.graduationYear
-              ? `The wall for Class of ${user.graduationYear} — share updates, memories & milestones.`
-              : "Connect with your year group through posts and updates."}
+              ? `Your ${user.graduationYear} Year Group's private feed — share milestones, discuss dues, and organize your specific graduating class.`
+              : "A private space to keep your Year Group active — share milestones, discuss dues, and organize your specific graduating class."}
           </p>
         </div>
       </div>

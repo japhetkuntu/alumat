@@ -87,7 +87,7 @@ export default function MemberEventsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      <PageHeader eyebrow="Connect in person" title="Events" description="Find your next alumni moment." />
+      <PageHeader eyebrow="Connect in person" title="Events" description="Never miss a Speech Day or AGM — RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions." />
 
       {/* ── Filter pills ── */}
       <div className="flex flex-wrap items-center gap-2">
@@ -116,7 +116,7 @@ export default function MemberEventsPage() {
         <EmptyState
           icon={<Calendar size={40} />}
           title="No events yet"
-          description="Check back soon for upcoming alumni events and reunions."
+          description="Check back soon for the next Speech Day, AGM, or reunion."
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

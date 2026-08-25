@@ -1,17 +1,34 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Users, TrendingUp, Calendar, Briefcase, Activity, Layers, DollarSign, Loader2 } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { StatSkeleton, CardSkeleton } from "@alumni/ui";
+import { Input } from "@alumni/ui";
+import { Label } from "@alumni/ui";
+import { FormSelect } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { getCampaigns, getMembers, getEvents, getJobs, getContributions, getReportSummary } from "@/lib/institution-api";
 import { toast } from "sonner";
 
+const MEMBER_STATUS_OPTIONS = [
+  { value: "", label: "Any status" },
+  { value: "Active", label: "Active" },
+  { value: "Pending", label: "Pending" },
+  { value: "Suspended", label: "Suspended" },
+  { value: "Banned", label: "Banned" },
+];
+
 export default function AdminReportsPage() {
+  const [memberStatusFilter, setMemberStatusFilter] = useState("");
+  const [memberYearFrom, setMemberYearFrom] = useState("");
+  const [memberYearTo, setMemberYearTo] = useState("");
+  const [memberProfession, setMemberProfession] = useState("");
+  const [memberLocation, setMemberLocation] = useState("");
+
   const summaryQuery = useQuery({
     queryKey: ["report-summary"],
     queryFn: () => getReportSummary(),
@@ -43,8 +60,16 @@ export default function AdminReportsPage() {
   });
 
   const membersExportQuery = useQuery({
-    queryKey: ["report-members-export"],
-    queryFn: () => getMembers({ page: 1, pageSize: 2000 }),
+    queryKey: ["report-members-export", memberStatusFilter, memberYearFrom, memberYearTo, memberProfession, memberLocation],
+    queryFn: () => getMembers({
+      page: 1,
+      pageSize: 2000,
+      status: memberStatusFilter || undefined,
+      graduationYearFrom: memberYearFrom ? Number(memberYearFrom) : undefined,
+      graduationYearTo: memberYearTo ? Number(memberYearTo) : undefined,
+      jobTitleContains: memberProfession || undefined,
+      locationContains: memberLocation || undefined,
+    }),
     enabled: false,
   });
 
@@ -140,6 +165,8 @@ export default function AdminReportsPage() {
         graduationYear: m.graduationYear,
         department: m.departmentName,
         status: m.status,
+        jobTitle: m.jobTitle ?? "",
+        location: m.location ?? "",
       })),
     );
   };
@@ -270,6 +297,37 @@ export default function AdminReportsPage() {
           <p className="text-sm">Active: <strong>{activeCampaigns}</strong> · Closed: <strong>{closedCampaigns}</strong> · Total: <strong>{totalCampaigns}</strong></p>
           <Progress value={totalCampaigns > 0 ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0} />
           <p className="text-xs text-muted-foreground">Active share: {totalCampaigns ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0}%</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Member Roster Filters</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground -mt-1">
+            Narrow the member roster before exporting — e.g. all alumni working in Healthcare, or all alumni based in Kumasi.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-muted-foreground font-normal">Status</Label>
+              <FormSelect value={memberStatusFilter} onValueChange={setMemberStatusFilter} options={MEMBER_STATUS_OPTIONS} placeholder="Any status" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-muted-foreground font-normal">Year from</Label>
+              <Input type="number" value={memberYearFrom} onChange={(e) => setMemberYearFrom(e.target.value)} placeholder="e.g. 1980" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-muted-foreground font-normal">Year to</Label>
+              <Input type="number" value={memberYearTo} onChange={(e) => setMemberYearTo(e.target.value)} placeholder="e.g. 1995" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-muted-foreground font-normal">Profession contains</Label>
+              <Input value={memberProfession} onChange={(e) => setMemberProfession(e.target.value)} placeholder="e.g. Healthcare" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-muted-foreground font-normal">Location contains</Label>
+              <Input value={memberLocation} onChange={(e) => setMemberLocation(e.target.value)} placeholder="e.g. Kumasi" />
+            </div>
+          </div>
         </CardContent>
       </Card>
 

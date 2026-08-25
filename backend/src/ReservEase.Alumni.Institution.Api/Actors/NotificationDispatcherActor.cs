@@ -107,5 +107,19 @@ public class NotificationDispatcherActor : ReceiveActor
                 _log.Error(ex, "Error dispatching ContributionRejected for contribution {0}", cmd.ContributionId);
             }
         });
+
+        ReceiveAsync<SendBroadcastCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchBroadcastAsync(cmd.Recipients, cmd.Title, cmd.Message, cmd.Channels);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching broadcast to {0} recipients", cmd.Recipients.Count);
+            }
+        });
     }
 }

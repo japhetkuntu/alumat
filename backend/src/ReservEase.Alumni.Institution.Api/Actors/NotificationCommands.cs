@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 
 namespace ReservEase.Alumni.Institution.Api.Actors;
@@ -28,3 +29,9 @@ public sealed record DispatchContributionRejectedCommand(
     string CampaignTitle,
     string? Reason,
     string ContributionId) : NotificationCommand;
+
+public sealed record SendBroadcastCommand(
+    List<BroadcastRecipient> Recipients,
+    string? Title,
+    string Message,
+    List<string> Channels) : NotificationCommand;

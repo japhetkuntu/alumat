@@ -23,6 +23,7 @@ import {
   X,
   Layers,
   Users2,
+  Radio,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -75,6 +76,7 @@ const baseNavItems = [
   { label: "Insights", isHeader: true },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/broadcast", label: "Broadcast", icon: Radio },
   { label: "Institution", isHeader: true },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/billing", label: "Billing", icon: Wallet },

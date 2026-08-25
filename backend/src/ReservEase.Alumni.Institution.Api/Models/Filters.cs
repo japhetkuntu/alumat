@@ -6,6 +6,10 @@ public class MemberListFilter : BaseFilter
 {
     public string? Status { get; set; }
     public string? DepartmentId { get; set; }
+    public int? GraduationYearFrom { get; set; }
+    public int? GraduationYearTo { get; set; }
+    public string? JobTitleContains { get; set; }
+    public string? LocationContains { get; set; }
 }
 
 public class CampaignFilter : BaseFilter

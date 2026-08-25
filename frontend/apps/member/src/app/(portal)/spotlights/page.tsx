@@ -107,7 +107,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
         {/* Title */}
         {!featured && (
           <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
-            Spotlight
+            Roll of Honour
           </p>
         )}
         <h3
@@ -195,7 +195,7 @@ function SubmitDrawer({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="spot-title" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-              Spotlight title
+              Story title
             </Label>
             <Input
               id="spot-title"
@@ -285,8 +285,8 @@ export default function SpotlightsPage() {
       {/* ── Header ── */}
       <PageHeader
         eyebrow="Stories that stay with us"
-        title="Spotlights"
-        description="Inspiring stories from graduates making an impact."
+        title="Alumni Roll of Honour"
+        description="Celebrate the wins. A virtual roll of honour recognizing old students making waves globally and giving back to the school."
       >
         <Button
           onClick={() => setShowSubmit(true)}
@@ -326,7 +326,7 @@ export default function SpotlightsPage() {
           ) : spotlights.length === 0 ? (
             <EmptyState
               icon={<Star size={40} />}
-              title="No spotlights yet"
+              title="No honourees yet"
               description="Be the first to share your story."
               action={
                 <Button onClick={() => setShowSubmit(true)} className="gap-2 font-semibold">

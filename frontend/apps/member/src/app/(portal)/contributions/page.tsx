@@ -511,7 +511,7 @@ export default function MemberContributionsPage() {
         <PageHeader
           eyebrow="Financial overview"
           title="My Contributions"
-          description="Support active fundraisers and track your payment history."
+          description="Fund projects & welfare — easy payments for school development fundraisers, year-group dues, and member welfare support."
         />
       </div>
 

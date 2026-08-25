@@ -610,6 +610,14 @@ public class ContributionService : IContributionService
 
                 await contributionRepo.AddAsync(contribution);
 
+                notificationActor.Tell(new DispatchContributionConfirmedCommand(
+                    contribution.MemberId,
+                    contribution.Member?.Email ?? string.Empty,
+                    contribution.Member?.FirstName ?? string.Empty,
+                    contribution.Amount,
+                    contribution.Campaign?.Title ?? "your contribution",
+                    contribution.Id));
+
                 if (campaign is not null)
                 {
                     campaign.CollectedAmount += contribution.Amount;

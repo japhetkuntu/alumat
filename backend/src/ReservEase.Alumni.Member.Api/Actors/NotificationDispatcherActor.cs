@@ -48,5 +48,20 @@ public class NotificationDispatcherActor : ReceiveActor
                 _log.Error(ex, "Error dispatching PaymentReceived for contribution {0}", cmd.ContributionId);
             }
         });
+
+        ReceiveAsync<DispatchContributionConfirmedCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchContributionConfirmedAsync(
+                    cmd.MemberId, cmd.MemberEmail, cmd.MemberFirstName, cmd.Amount, cmd.CampaignTitle, cmd.ContributionId);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching ContributionConfirmed for contribution {0}", cmd.ContributionId);
+            }
+        });
     }
 }

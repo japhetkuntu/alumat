@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
@@ -28,4 +29,12 @@ public interface INotificationDispatcher
 
     /// <summary>Notify the member that their contribution was rejected.</summary>
     Task DispatchContributionRejectedAsync(string memberId, string memberEmail, string memberFirstName, string campaignTitle, string? reason, string contributionId);
+
+    /// <summary>
+    /// Fan-out an admin-composed broadcast to a pre-resolved set of recipients.
+    /// Unlike the other Dispatch* methods, this ignores each member's SMS
+    /// opt-in preference by design — broadcasts (e.g. emergency notices) are
+    /// meant to reach everyone with a phone number on file.
+    /// </summary>
+    Task DispatchBroadcastAsync(List<BroadcastRecipient> recipients, string? title, string message, List<string> channels);
 }

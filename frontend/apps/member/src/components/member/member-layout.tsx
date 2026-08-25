@@ -75,7 +75,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     section: "Recognition",
     items: [
       { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-      { href: "/spotlights", label: "Spotlights", icon: Star },
+      { href: "/spotlights", label: "Roll of Honour", icon: Star },
       { href: "/referrals", label: "Referrals", icon: UserPlus },
     ],
   },

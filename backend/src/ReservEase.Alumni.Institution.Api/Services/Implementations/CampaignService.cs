@@ -673,6 +673,9 @@ public class ContributionService(
                 campaign.CollectedAmount += request.Amount;
                 campaign.PaidCount += 1;
                 await campaignRepo.UpdateAsync(campaign);
+
+                notificationActor.Tell(new DispatchContributionConfirmedCommand(
+                    memberSnapshot.Id, memberSnapshot.Email ?? string.Empty, memberSnapshot.FirstName, contribution.Amount, campaign.Title, contribution.Id));
             }
 
             logger.LogInformation("Contribution {ContributionId} recorded by admin {AdminId} (confirmed={Confirmed})", contribution.Id, admin.Id, request.Confirmed);

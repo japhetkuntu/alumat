@@ -164,7 +164,9 @@ public class NotificationDispatcher(
                 RecipientId = memberId,
                 RecipientType = "Member",
                 Title = "Contribution Confirmed",
-                Body = $"Your payment of GHS {amount:N2} for \"{campaignTitle}\" has been confirmed. Thank you!",
+                Body = string.IsNullOrWhiteSpace(memberFirstName)
+                    ? $"Your payment of GHS {amount:N2} for \"{campaignTitle}\" has been received. Thank you!"
+                    : $"Thank you, {memberFirstName} — your payment of GHS {amount:N2} for \"{campaignTitle}\" has been received.",
                 Type = "ContributionConfirmed",
                 RelatedEntityId = contributionId,
                 RelatedEntityType = "Contribution",

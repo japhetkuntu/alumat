@@ -53,6 +53,10 @@ public class MemberManagementService(
                 f => (isSuper || yearGroups.Contains(f.GraduationYear))
                   && (string.IsNullOrEmpty(filter.Status) || f.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.DepartmentId) || f.DepartmentId == filter.DepartmentId)
+                  && (!filter.GraduationYearFrom.HasValue || f.GraduationYear >= filter.GraduationYearFrom.Value)
+                  && (!filter.GraduationYearTo.HasValue || f.GraduationYear <= filter.GraduationYearTo.Value)
+                  && (string.IsNullOrEmpty(filter.JobTitleContains) || (f.JobTitle != null && f.JobTitle.Contains(filter.JobTitleContains)))
+                  && (string.IsNullOrEmpty(filter.LocationContains) || (f.Location != null && f.Location.Contains(filter.LocationContains)))
                   && (string.IsNullOrEmpty(filter.Search) ||
                       f.FirstName.Contains(filter.Search) ||
                       f.LastName.Contains(filter.Search) ||
@@ -62,7 +66,7 @@ public class MemberManagementService(
                 m.Id, m.FirstName, m.LastName, m.Email, m.Phone,
                 m.GraduationYear, m.DepartmentId, m.Status, m.Company, m.CreatedAt,
                 m.MemberNumber, m.IsEmailVerified, m.RejectionCount, m.ProfilePictureUrl,
-                m.IsMembershipActive, m.MembershipExpiry));
+                m.IsMembershipActive, m.MembershipExpiry, m.JobTitle, m.Location));
 
             return new PgPagedResult<MemberListItem>
             {

@@ -237,6 +237,10 @@ export interface MemberListParams {
   pageSize?: number;
   status?: string;
   search?: string;
+  graduationYearFrom?: number;
+  graduationYearTo?: number;
+  jobTitleContains?: string;
+  locationContains?: string;
 }
 
 export async function getMembers(params: MemberListParams = {}) {
@@ -877,4 +881,35 @@ export async function markNotificationRead(id: string): Promise<void> {
 
 export async function markAllNotificationsRead(): Promise<void> {
   await institutionClient.put("/notifications/read-all");
+}
+
+// ── Broadcasts ───────────────────────────────────────────────────────────────
+
+export interface BroadcastFilter {
+  status?: string;
+  departmentId?: string;
+  graduationYearFrom?: number;
+  graduationYearTo?: number;
+}
+
+export interface SendBroadcastBody {
+  title?: string;
+  message: string;
+  channels: string[];
+  filter: BroadcastFilter;
+}
+
+export interface BroadcastResult {
+  recipientCount: number;
+  channels: string[];
+}
+
+export async function getBroadcastRecipientCount(filter: BroadcastFilter): Promise<number> {
+  const res = await institutionClient.get<ApiResponse<number>>("/broadcast/recipient-count", { params: filter });
+  return res.data.data ?? 0;
+}
+
+export async function sendBroadcast(body: SendBroadcastBody): Promise<BroadcastResult> {
+  const res = await institutionClient.post<ApiResponse<BroadcastResult>>("/broadcast", body);
+  return res.data.data!;
 }

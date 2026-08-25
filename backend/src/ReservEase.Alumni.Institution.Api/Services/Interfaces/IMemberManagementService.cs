@@ -23,7 +23,7 @@ public record MemberListItem(
     string? Phone, int GraduationYear, string DepartmentId,
     string Status, string? Company, DateTime CreatedAt,
     string? MemberNumber, bool IsEmailVerified, int RejectionCount, string? ProfilePictureUrl,
-    bool IsMembershipActive, DateTime? MembershipExpiry);
+    bool IsMembershipActive, DateTime? MembershipExpiry, string? JobTitle, string? Location);
 
 public record MemberDetailItem(
     string Id, string FirstName, string LastName, string Email,
