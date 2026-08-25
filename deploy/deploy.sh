@@ -79,6 +79,19 @@ check_disk_space
 # WishDem — this intentionally does NOT re-render nginx config. If you change
 # deploy/nginx.conf or nginx.ssl.conf, re-apply it by hand.
 
+# Stop everything before touching any files — dotnet publish and the frontend
+# rsync both overwrite a running service's files in place. Linux generally
+# tolerates that (an already-running process keeps its old file handles), but
+# it's not guaranteed for every code path (lazy-loaded assemblies, dynamic
+# Next.js chunks), and while iterating on a low-traffic box a clean stop/start
+# is simpler to reason about than "maybe fine, maybe a transient 500". This
+# does mean the site is fully down for the duration of the build below.
+echo "== stopping all services =="
+systemctl stop \
+  alumni-institution-api alumni-member-api alumni-platform-api \
+  alumni-frontend-institution alumni-frontend-member alumni-frontend-platform \
+  2>/dev/null || true
+
 echo "== installing workspace dependencies (pnpm) =="
 cd "$FRONTEND_SRC"
 pnpm install --frozen-lockfile
@@ -119,28 +132,28 @@ publish_frontend institution
 publish_frontend member
 publish_frontend platform
 
-echo "== restarting institution-api (applies any new EF migrations on boot) =="
-systemctl restart alumni-institution-api
+echo "== starting institution-api (applies any new EF migrations on boot) =="
+systemctl start alumni-institution-api
 wait_healthy "http://127.0.0.1:5001/health" alumni-institution-api
 
-echo "== restarting member-api =="
-systemctl restart alumni-member-api
+echo "== starting member-api =="
+systemctl start alumni-member-api
 wait_healthy "http://127.0.0.1:5002/health" alumni-member-api
 
-echo "== restarting platform-api =="
-systemctl restart alumni-platform-api
+echo "== starting platform-api =="
+systemctl start alumni-platform-api
 wait_healthy "http://127.0.0.1:5003/health" alumni-platform-api
 
-echo "== restarting frontend-institution =="
-systemctl restart alumni-frontend-institution
+echo "== starting frontend-institution =="
+systemctl start alumni-frontend-institution
 wait_healthy "http://127.0.0.1:3001/" alumni-frontend-institution
 
-echo "== restarting frontend-member =="
-systemctl restart alumni-frontend-member
+echo "== starting frontend-member =="
+systemctl start alumni-frontend-member
 wait_healthy "http://127.0.0.1:3002/" alumni-frontend-member
 
-echo "== restarting frontend-platform =="
-systemctl restart alumni-frontend-platform
+echo "== starting frontend-platform =="
+systemctl start alumni-frontend-platform
 wait_healthy "http://127.0.0.1:3003/" alumni-frontend-platform
 
 echo "Deploy complete."
