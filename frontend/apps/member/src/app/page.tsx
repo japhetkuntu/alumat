@@ -303,14 +303,18 @@ function HowItWorksStep({ step, delay }: { step: typeof HOW_IT_WORKS[number]; de
     <div ref={ref}
       className={cn("relative transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
       style={{ transitionDelay: delay }}>
-      <div className="relative z-10 w-11 h-11 rounded-full flex items-center justify-center mb-5"
-        style={{ background: "var(--primary)" }}>
-        <step.icon size={17} color="white" />
-      </div>
-      <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
-        Step {step.n}
+      {/* Oversized display numeral — the visual anchor, not a generic icon badge */}
+      <p
+        className="font-[family-name:var(--font-display)] leading-none select-none mb-3"
+        style={{ fontSize: "3.75rem", fontWeight: 700, color: "var(--primary)", opacity: 0.14 }}
+        aria-hidden="true"
+      >
+        {step.n}
       </p>
-      <h3 className="text-[16px] font-semibold mb-2 leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+      <div className="flex items-center gap-2 mb-2 -mt-9">
+        <step.icon size={15} style={{ color: "var(--primary)" }} />
+        <h3 className="text-[16px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+      </div>
       <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
     </div>
   );
@@ -646,14 +650,12 @@ export default function LandingPage() {
               Three steps. That&apos;s all it takes.
             </h2>
           </div>
-          <div className="max-w-5xl mx-auto relative">
-            {/* Connecting line — desktop only */}
-            <div className="hidden sm:block absolute top-[22px] left-[8%] right-[8%] h-px" style={{ background: "var(--border)" }} />
-            <div className="grid gap-10 sm:gap-6 sm:grid-cols-3">
-              {HOW_IT_WORKS.map((step, i) => (
-                <HowItWorksStep key={step.n} step={step} delay={`${i * 100}ms`} />
-              ))}
-            </div>
+          <div className="max-w-5xl mx-auto grid gap-10 sm:gap-8 sm:grid-cols-3 sm:divide-x" style={{ borderColor: "var(--border)" }}>
+            {HOW_IT_WORKS.map((step, i) => (
+              <div key={step.n} className={i > 0 ? "sm:pl-8" : undefined}>
+                <HowItWorksStep step={step} delay={`${i * 100}ms`} />
+              </div>
+            ))}
           </div>
         </div>
       </Section>
@@ -723,9 +725,10 @@ export default function LandingPage() {
 
           <nav className="flex flex-wrap items-center justify-center gap-5" aria-label="Footer links">
             {[
-              { label: "Sign in",   href: "/login"            },
-              { label: "Join now",  href: "/register"         },
-              { label: "Campaigns", href: "/payment-campaign" },
+              { label: "Sign in",   href: "/login"    },
+              { label: "Join now",  href: "/register" },
+              { label: "Terms",     href: "/terms"    },
+              { label: "Privacy",   href: "/privacy"  },
             ].map(link => (
               <Link key={link.label} href={link.href}
                 className="text-[12.5px] font-medium transition-colors hover:text-foreground"

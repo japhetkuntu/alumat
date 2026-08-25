@@ -201,12 +201,9 @@ export default function MemberSettingsPage() {
             label="SMS Notifications"
             description={profile?.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number to your profile to enable SMS alerts"}
           />
-          <Toggle
-            checked={notifPrefs?.whatsAppAlerts ?? false}
-            onChange={(v) => toggleNotif("whatsAppAlerts", v)}
-            label="WhatsApp Notifications"
-            description={profile?.phone ? "Also send important alerts to your phone via WhatsApp" : "Add a phone number to your profile to enable WhatsApp alerts"}
-          />
+          {/* WhatsApp notifications are wired up but hidden from the UI for
+              the pilot — email and SMS only for now. The underlying
+              whatsAppAlerts preference is left untouched, not forced off. */}
         </CardContent>
       </Card>
 

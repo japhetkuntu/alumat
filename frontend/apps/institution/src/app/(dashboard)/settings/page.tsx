@@ -385,15 +385,6 @@ export default function BrandingSettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-border py-3">
-              <div>
-                <p className="font-mono text-[13px] font-semibold">alumni.yourinstitution.edu</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Custom domain &middot; point your DNS CNAME to the platform</p>
-              </div>
-              <Badge variant="warning">Not configured</Badge>
-            </div>
-
-            <Button variant="outline" className="mt-4" disabled>Set up custom domain</Button>
           </CardContent>
         </Card>
       )}

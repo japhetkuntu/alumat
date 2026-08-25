@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Eye, EyeOff, ArrowLeft, CheckCircle2, Clock,
-  CreditCard, Loader2, GraduationCap, ChevronRight,
+  CreditCard, Loader2, ChevronRight,
 } from "lucide-react";
 
 import { Button } from "@alumni/ui";
@@ -22,6 +22,7 @@ import { memberClient, publicMemberClient, handleApiError, applyServerFieldError
 import { getDepartments, getBatches, getCurrentMembershipCampaign, type Department, type Batch } from "@/lib/member-api";
 import type { Campaign } from "@/types";
 import { cn } from "@alumni/ui";
+import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
 
 // Dev-only: lets a local build reach a specific institution without real
 // wildcard-subdomain DNS (see TenantResolutionMiddleware / X-Institution-Slug).
@@ -457,15 +458,7 @@ function RegisterForm() {
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* Mobile logo */}
-      <div className="flex items-center gap-3 mb-8 md:hidden">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-          <GraduationCap size={17} color="white" />
-        </div>
-        <span className="font-[family-name:var(--font-display)] text-[14px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
-          Alumni Portal
-        </span>
-      </div>
+      <AuthMobileBrand fallbackTagline="Create your alumni account" />
 
       {/* Step indicator */}
       <StepIndicator step={step} />
@@ -568,7 +561,7 @@ function RegisterForm() {
                     className="h-11 text-[14px]" {...register("phone")} />
                   <FieldError message={errors.phone?.message} />
                   <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
-                    Used to reach you on WhatsApp and SMS for important updates.
+                    Used to reach you by SMS for important updates.
                   </p>
                 </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
@@ -683,6 +676,12 @@ function RegisterForm() {
                     Create account
                   </Button>
                 </div>
+                <p className="text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
+                  By creating an account, you agree to our{" "}
+                  <Link href="/terms" target="_blank" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>Terms</Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" target="_blank" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>Privacy Policy</Link>.
+                </p>
               </div>
             )}
 

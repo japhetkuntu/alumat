@@ -7,8 +7,8 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import Image from "next/image";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
 
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -88,14 +88,7 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
-      {/* Mobile logo (visible when banner is hidden) */}
-      <div className="mb-10 text-center md:hidden">
-        <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-white/15 bg-white/10">
-          <Image src="/logo.svg" alt="Logo" width={56} height={56} className="object-contain" />
-        </div>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">Alumni Portal</h1>
-        <p className="text-muted-foreground text-sm mt-1">Connecting gold-standard graduates</p>
-      </div>
+      <AuthMobileBrand fallbackTagline="Sign in to your alumni network" />
 
       <div className="space-y-8">
         <div className="space-y-2.5">

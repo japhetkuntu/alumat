@@ -14,6 +14,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
+import { AuthMobileBrand, AuthDesktopMark } from "@/components/institution/auth-brand-mark";
 
 const schema = z.object({
   email:    z.string().email("Enter a valid email"),
@@ -80,21 +81,8 @@ export default function AdminLoginPage() {
   return (
     <div className="w-full max-w-[460px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* Mobile logo — only visible when the left panel is hidden */}
-      <div className="mb-10 md:hidden flex flex-col items-center gap-3">
-        <div className="w-12 h-12 rounded-[10px] bg-primary text-white flex items-center justify-center font-extrabold text-[20px]">
-          U
-        </div>
-        <div className="text-center">
-          <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Institution Portal</p>
-          <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Institution Portal</p>
-        </div>
-      </div>
-
-      {/* Mark, matching the mockup's colored letter mark */}
-      <div className="hidden md:flex w-[52px] h-[52px] rounded-[10px] bg-primary text-white items-center justify-center font-extrabold text-[24px] mb-6">
-        U
-      </div>
+      <AuthMobileBrand />
+      <AuthDesktopMark />
 
       <div className="space-y-3">
         <p

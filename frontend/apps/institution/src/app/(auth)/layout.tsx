@@ -1,11 +1,14 @@
+import { getInitials } from "@alumni/ui";
 import { getInstitutionTheme } from "@/lib/theme";
 import { RedirectIfAuthenticated } from "@/components/institution/redirect-if-authenticated";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const theme = await getInstitutionTheme();
-  const headline = theme?.authHeadline || "Run the alumni office with a clear view of what matters.";
+  const displayName = theme?.displayName || "your institution";
+  const headline = theme?.authHeadline || `Run ${displayName}'s alumni office with a clear view of what matters.`;
   const subtext = theme?.authSubtext ||
-    "Approve members, keep membership current, publish opportunities, and steward every contribution from one trusted institution workspace.";
+    `Approve members, keep membership current, publish opportunities, and steward every contribution from one trusted ${displayName} workspace.`;
+  const markImage = theme?.iconUrl || theme?.logoUrl;
 
   return (
     <div className="flex min-h-screen bg-background selection:bg-primary/10">
@@ -13,20 +16,24 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       {/* ── Left — branding panel ── */}
       <aside
         className="hidden md:flex md:w-[42%] lg:w-[46%] flex-col justify-between px-10 lg:px-14 py-10"
-        style={{ background: "var(--sidebar)" }}
+        style={{ background: "var(--primary)" }}
       >
         {/* Top: logo + headline */}
         <div className="space-y-10">
-          {/* Logo mark */}
+          {/* Logo mark — the institution's own icon, or an initials badge as fallback */}
           <div className="flex items-center gap-3">
-            <div
-              className="h-9 w-9 rounded-lg flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.12)" }}
-            >
-              <span className="text-[13px] font-bold text-white tracking-tight">A</span>
-            </div>
+            {markImage ? (
+              <img src={markImage} alt={displayName} className="h-9 w-9 rounded-lg object-cover" />
+            ) : (
+              <div
+                className="h-9 w-9 rounded-lg flex items-center justify-center"
+                style={{ background: "rgba(255,255,255,0.12)" }}
+              >
+                <span className="text-[13px] font-bold text-white tracking-tight">{getInitials(displayName)}</span>
+              </div>
+            )}
             <span className="text-[13.5px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
-              Institution Portal
+              {theme?.displayName || "Institution Portal"}
             </span>
           </div>
 
@@ -70,22 +77,13 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           </ul>
         </div>
 
-        {/* Bottom: pull quote */}
+        {/* Bottom: footer line */}
         <div
-          className="border-t pt-6 space-y-1"
+          className="border-t pt-6"
           style={{ borderColor: "rgba(255,255,255,0.15)" }}
         >
-          <p
-            className="text-[14px] font-medium leading-relaxed"
-            style={{ color: "rgba(255,255,255,0.85)" }}
-          >
-            &ldquo;Everything I need to keep our alumni network running smoothly.&rdquo;
-          </p>
-          <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-            — Ama A., Community Lead
-          </p>
-          <p className="text-[11px] pt-3" style={{ color: "rgba(255,255,255,0.4)" }}>
-            Alumni workspace &middot; Staff access only
+          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+            {displayName} alumni workspace &middot; Staff access only
           </p>
         </div>
       </aside>
