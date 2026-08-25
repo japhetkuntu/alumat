@@ -107,24 +107,38 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/class-notes": "ClassNotes",
 };
 
-/** Shared across Sidebar and MobileBottomNav — react-query dedupes the fetch since both use the same queryKey. */
-function useDisabledFeatures(): Set<string> {
-  const { data } = useQuery({
+interface NavThemeData {
+  disabledFeatures: string[];
+  displayName?: string | null;
+  logoUrl?: string | null;
+  iconUrl?: string | null;
+}
+
+/** Shared across Sidebar, MobileBottomNav, and the mobile header — react-query dedupes the fetch since they all use the same queryKey. Exported so other screens (e.g. Settings) can show the real institution name instead of a generic placeholder. */
+export function useNavTheme() {
+  return useQuery({
     queryKey: ["member-nav-theme"],
     queryFn: async () => {
-      const res = await memberClient.get<{ data: { disabledFeatures: string[] } }>("/public/institution/theme");
+      const res = await memberClient.get<{ data: NavThemeData }>("/public/institution/theme");
       return res.data.data;
     },
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
+}
+
+function useDisabledFeatures(): Set<string> {
+  const { data } = useNavTheme();
   return useMemo(() => new Set(data?.disabledFeatures ?? []), [data]);
 }
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
+  const brandName = navTheme?.displayName || "Alumni Portal";
+  const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const visibleGroups = navGroups
     .map((g) => ({
       ...g,
@@ -140,12 +154,16 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
     <div className="flex flex-col h-full bg-sidebar w-[240px] border-r border-sidebar-border select-none">
       <div className="p-4 mb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors cursor-pointer group">
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-md shadow-primary/15 border border-border/40 bg-primary/5">
-              <img src="/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
-            </div>
+          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-primary/5 transition-colors cursor-pointer group min-w-0">
+            {brandMark ? (
+              <img src={brandMark} alt={brandName} className="w-8 h-8 rounded-lg object-cover shrink-0 shadow-md shadow-primary/15 border border-border/40" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-md shadow-primary/15" style={{ background: "var(--primary)" }}>
+                <span className="text-[11px] font-bold text-white">{getInitials(brandName)}</span>
+              </div>
+            )}
             <div className="overflow-hidden">
-              <p className="font-[family-name:var(--font-display)] font-semibold text-[14px] tracking-tight truncate group-hover:text-primary transition-colors">Alumni Portal</p>
+              <p className="font-[family-name:var(--font-display)] font-semibold text-[14px] tracking-tight truncate group-hover:text-primary transition-colors">{brandName}</p>
             </div>
           </div>
           {onClose && (
@@ -233,33 +251,31 @@ function MobileBottomNav() {
   });
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 sm:px-4" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-      <nav className="bg-white/70 dark:bg-black/70 backdrop-blur-2xl border border-white/20 dark:border-white/5 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] rounded-[2rem] flex items-center justify-around h-[60px] sm:h-16 px-1 sm:px-2">
+    <div
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t"
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
+        background: "color-mix(in oklch, var(--background) 92%, transparent)",
+        backdropFilter: "blur(20px)",
+        borderColor: "var(--border)",
+      }}
+    >
+      <nav className="flex items-stretch justify-around h-[58px] max-w-[560px] mx-auto">
         {bottomNavItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
-            <Link 
-              key={item.href} 
+            <Link
+              key={item.href}
               href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all duration-300 relative",
-                active ? "text-primary px-2" : "text-muted-foreground/60 hover:text-foreground"
-              )}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
+              style={{ color: active ? "var(--primary)" : "var(--muted-foreground)" }}
             >
-              <div className={cn(
-                "p-1.5 rounded-xl transition-all duration-500",
-                active ? "bg-primary/10 scale-110" : "group-hover:bg-muted"
-              )}>
-                <item.icon size={20} className={cn("transition-transform duration-300", active && "scale-110")} />
-              </div>
-              <span className={cn(
-                "text-[10px] font-bold tracking-tight transition-all duration-300",
-                active ? "opacity-100 scale-100" : "opacity-0 scale-90 h-0 overflow-hidden"
-              )}>
+              <item.icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+              <span className={cn("text-[10.5px] leading-none", active ? "font-bold" : "font-medium")}>
                 {item.label}
               </span>
               {active && (
-                <div className="absolute -top-1 w-1 h-1 bg-primary rounded-full animate-in zoom-in duration-300" />
+                <div className="absolute top-0 w-8 h-[2.5px] rounded-full" style={{ background: "var(--primary)" }} />
               )}
             </Link>
           );
@@ -274,6 +290,9 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   const { isLoading, isMember } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { data: navTheme } = useNavTheme();
+  const brandName = navTheme?.displayName || "Alumni Portal";
+  const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
 
   useEffect(() => {
     if (!isLoading && !isMember && pathname !== "/login") {
@@ -311,14 +330,15 @@ export function MemberLayout({ children }: { children: ReactNode }) {
 
         {/* Mobile header - Refined and compact */}
         <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-lg shadow-primary/20 border border-white/20 bg-white/10">
-              <img src="/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-[14px] leading-tight tracking-tight">Alumni Portal</span>
-              {/* <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Member Portal</span> */}
-            </div>
+          <div className="flex items-center gap-2.5">
+            {brandMark ? (
+              <img src={brandMark} alt={brandName} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
+                <span className="text-[12px] font-bold text-white">{getInitials(brandName)}</span>
+              </div>
+            )}
+            <span className="font-bold text-[14.5px] leading-tight tracking-tight truncate max-w-[180px]">{brandName}</span>
           </div>
           <div className="flex items-center gap-1">
             <NotificationPanel />
@@ -334,7 +354,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative pb-28 sm:pb-32 lg:pb-0 scroll-touch">
+        <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative pb-24 lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
               {children}

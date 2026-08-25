@@ -15,6 +15,7 @@ import { PageHeader } from "@alumni/ui";
 import { getMyProfile, getNotificationPreferences, updateNotificationPreferences } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavTheme } from "@/components/member/member-layout";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -59,6 +60,9 @@ export default function MemberSettingsPage() {
     queryKey: ["m-notif-prefs"],
     queryFn: getNotificationPreferences,
   });
+
+  const { data: navTheme } = useNavTheme();
+  const institutionName = navTheme?.displayName || "Alumni Member Portal";
 
   const notifMut = useMutation({
     mutationFn: updateNotificationPreferences,
@@ -242,8 +246,8 @@ export default function MemberSettingsPage() {
       <Card className="border-border/40 bg-muted/20 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250">
         <CardContent className="p-6 flex items-center justify-between">
           <div>
-            <p className="text-sm font-bold">Alumni Member Portal</p>
-            <p className="text-[12px] text-muted-foreground mt-0.5">University of Mines &amp; Technology</p>
+            <p className="text-sm font-bold">{institutionName}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">Alumni Member Portal</p>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/profile">

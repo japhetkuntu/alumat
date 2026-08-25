@@ -86,10 +86,10 @@ function NotificationRow({
       {!notif.isRead && (
         <button
           onClick={() => onMarkRead(notif.id)}
-          className="opacity-0 group-hover:opacity-100 shrink-0 mt-1 p-1 rounded hover:bg-primary/10 text-primary transition-all"
+          className="shrink-0 mt-0.5 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary/10 text-primary transition-all sm:opacity-0 sm:group-hover:opacity-100"
           aria-label="Mark as read"
         >
-          <Check size={12} />
+          <Check size={13} />
         </button>
       )}
     </div>
@@ -180,8 +180,17 @@ export function NotificationPanel() {
           {/* List */}
           <div className="max-h-[60vh] sm:max-h-[380px] overflow-y-auto">
             {listQuery.isLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 size={20} className="animate-spin text-muted-foreground" />
+              <div className="divide-y divide-border/30">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex gap-3 px-4 py-3 animate-pulse">
+                    <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-muted" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="h-3 rounded bg-muted w-3/4" />
+                      <div className="h-2.5 rounded bg-muted w-full" />
+                      <div className="h-2 rounded bg-muted w-1/4" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center py-10">

@@ -343,17 +343,20 @@ export default function MemberProfilePage() {
           <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateMut.mutate(); }}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { id: "company",  label: "Company",  placeholder: "Where you work"           },
-                { id: "jobTitle", label: "Job title", placeholder: "Your current role"        },
-                { id: "location", label: "Location",  placeholder: "City, Country"            },
-                { id: "phone",    label: "Phone",     placeholder: "+233 xx xxx xxxx"         },
-              ].map(({ id, label, placeholder }) => (
+                { id: "company",  label: "Company",  placeholder: "Where you work",    type: "text"  },
+                { id: "jobTitle", label: "Job title", placeholder: "Your current role", type: "text"  },
+                { id: "location", label: "Location",  placeholder: "City, Country",     type: "text"  },
+                { id: "phone",    label: "Phone",     placeholder: "+233 xx xxx xxxx",  type: "tel"   },
+              ].map(({ id, label, placeholder, type }) => (
                 <div key={id} className="space-y-1.5">
                   <Label htmlFor={id} className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                     {label}
                   </Label>
                   <Input
                     id={id}
+                    type={type}
+                    inputMode={type === "tel" ? "tel" : undefined}
+                    autoComplete={id === "phone" ? "tel" : id === "company" ? "organization" : undefined}
                     placeholder={placeholder}
                     value={profileForm[id as keyof typeof profileForm]}
                     onChange={e => setProfileForm(f => ({ ...f, [id]: e.target.value }))}
