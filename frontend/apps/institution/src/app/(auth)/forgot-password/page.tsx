@@ -34,7 +34,7 @@ export default function AdminForgotPasswordPage() {
 
   if (isSubmitSuccessful) {
     return (
-      <div className="w-full max-w-[440px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full max-w-[460px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
         <p className="text-[13px] font-bold tracking-[0.08em] uppercase" style={{ color: "var(--muted-foreground)" }}>
           Account recovery
         </p>

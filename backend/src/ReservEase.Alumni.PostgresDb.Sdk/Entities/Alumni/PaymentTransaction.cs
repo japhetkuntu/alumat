@@ -9,6 +9,18 @@ public class PaymentTransaction : BaseEntity, ITenantScoped
     public string MemberId { get; set; } = string.Empty;
     public MemberSnapshot? Member { get; set; }
 
+    /// <summary>
+    /// True when the payer was not logged in at the time of payment. MemberId may
+    /// still be set for a guest payment — either matched by email to a pending
+    /// member, or attributed to whoever shared the campaign link (SharedByMemberId).
+    /// </summary>
+    public bool IsGuestPayment { get; set; }
+    /// <summary>
+    /// The member who shared the campaign link the guest paid through, if any —
+    /// distinct from MemberId, which is who the payment is attributed to.
+    /// </summary>
+    public string? SharedByMemberId { get; set; }
+
     public string CampaignId { get; set; } = string.Empty;
     public CampaignSnapshot? Campaign { get; set; }
 

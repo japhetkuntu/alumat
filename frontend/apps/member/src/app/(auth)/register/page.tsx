@@ -45,7 +45,9 @@ function buildSchema(requireStudentId: boolean) {
       firstName: z.string().min(2, "First name is required"),
       lastName: z.string().min(2, "Last name is required"),
       email: z.string().email("Enter a valid email"),
-      phone: z.string().optional(),
+      phone: z.string()
+        .min(9, "Enter a valid mobile number")
+        .regex(/^[+0-9\s-]+$/, "Enter a valid mobile number"),
       studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
       graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
       departmentId: z.string().optional(),
@@ -444,7 +446,7 @@ function RegisterForm() {
 
   /* ── Sub-step navigation ── */
   async function nextFromStep1() {
-    const ok = await trigger(["firstName", "lastName", "email"]);
+    const ok = await trigger(["firstName", "lastName", "email", "phone"]);
     if (ok) setFormSubStep(2);
   }
   async function nextFromStep2() {
@@ -560,13 +562,14 @@ function RegisterForm() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Phone{" "}
-                    <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>
-                      (optional)
-                    </span>
+                    Mobile number
                   </Label>
-                  <Input id="phone" type="tel" placeholder="+233 XX XXX XXXX"
+                  <Input id="phone" type="tel" placeholder="+233 XX XXX XXXX" error={!!errors.phone}
                     className="h-11 text-[14px]" {...register("phone")} />
+                  <FieldError message={errors.phone?.message} />
+                  <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+                    Used to reach you on WhatsApp and SMS for important updates.
+                  </p>
                 </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
                   onClick={nextFromStep1}>

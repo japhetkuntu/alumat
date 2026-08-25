@@ -1,3 +1,5 @@
+import { RedirectIfAuthenticated } from "@/components/platform/redirect-if-authenticated";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background">
@@ -60,7 +62,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </aside>
 
       <main className="flex-1 flex items-center justify-center p-6 sm:p-8 md:p-12 overflow-auto">
-        <div className="w-full max-w-[420px]">{children}</div>
+        <div className="w-full max-w-[420px]"><RedirectIfAuthenticated>{children}</RedirectIfAuthenticated></div>
       </main>
     </div>
   );

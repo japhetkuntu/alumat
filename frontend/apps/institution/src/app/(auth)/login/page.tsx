@@ -78,10 +78,10 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="w-full max-w-[440px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-[460px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Mobile logo — only visible when the left panel is hidden */}
-      <div className="mb-8 md:hidden flex flex-col items-center gap-3">
+      <div className="mb-10 md:hidden flex flex-col items-center gap-3">
         <div className="w-12 h-12 rounded-[10px] bg-primary text-white flex items-center justify-center font-extrabold text-[20px]">
           U
         </div>
@@ -92,11 +92,11 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Mark, matching the mockup's colored letter mark */}
-      <div className="hidden md:flex w-[52px] h-[52px] rounded-[10px] bg-primary text-white items-center justify-center font-extrabold text-[24px] mb-4">
+      <div className="hidden md:flex w-[52px] h-[52px] rounded-[10px] bg-primary text-white items-center justify-center font-extrabold text-[24px] mb-6">
         U
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <p
           className="text-[13px] font-bold tracking-[0.08em] uppercase"
           style={{ color: "var(--muted-foreground)" }}
@@ -115,10 +115,10 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-10">
 
         {SHOW_WORKSPACE_FIELD && (
-          <div className="mb-5">
+          <div className="mb-6">
             <Label htmlFor="workspace" className="text-[13.5px] font-bold mb-2 block" style={{ color: "var(--foreground)" }}>
               Workspace (dev only)
             </Label>
@@ -136,7 +136,7 @@ export default function AdminLoginPage() {
         )}
 
         {/* Email */}
-        <div className="mb-5">
+        <div className="mb-6">
           <Label htmlFor="email" className="text-[13.5px] font-bold mb-2 block" style={{ color: "var(--foreground)" }}>
             Email address
           </Label>
@@ -158,7 +158,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Password */}
-        <div className="mb-5">
+        <div className="mb-7">
           <Label htmlFor="password" className="text-[13.5px] font-bold mb-2 block" style={{ color: "var(--foreground)" }}>
             Password
           </Label>
@@ -191,7 +191,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Remember + forgot row */}
-        <div className="flex items-center justify-between text-[13.5px] mb-6">
+        <div className="flex items-center justify-between text-[13.5px] mb-7">
           <label className="flex items-center gap-2 text-foreground cursor-pointer">
             <input type="checkbox" className="h-4 w-4 rounded border-input" />
             Remember this device
@@ -216,15 +216,6 @@ export default function AdminLoginPage() {
           Sign in
         </Button>
       </form>
-
-      <div
-        className="mt-6 p-4 rounded-[8px] text-[13px] leading-relaxed"
-        style={{ background: "var(--brand-primary-light)", border: "1px solid #BFDBFE", color: "var(--color-text-info)" }}
-      >
-        <b>Institution context</b>
-        <br />
-        You are signing into the Institution Portal. Access is limited to this institution&apos;s records.
-      </div>
     </div>
   );
 }

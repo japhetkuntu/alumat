@@ -117,7 +117,7 @@ function useDisabledFeatures(): Set<string> {
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const disabledFeatures = useDisabledFeatures();
   const visibleGroups = navGroups
     .map((g) => ({
@@ -200,17 +200,12 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             <p className="text-[10px] text-muted-foreground/70 truncate">{user?.email}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 px-1">
-          <Link href="/settings" className="w-full" onClick={onClose}>
-            <Button size="sm" variant="outline" className="h-8 w-full text-[11px] font-semibold border-border/50 hover:bg-background gap-1.5">
-              <Settings size={12} />
-              Settings
-            </Button>
-          </Link>
-          <Button size="sm" variant="ghost" className="h-8 text-[11px] font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
-            Log out
+        <Link href="/settings" className="w-full block px-1" onClick={onClose}>
+          <Button size="sm" variant="outline" className="h-8 w-full text-[11px] font-semibold border-border/50 hover:bg-background gap-1.5">
+            <Settings size={12} />
+            Settings
           </Button>
-        </div>
+        </Link>
       </div>
     </div>
   );

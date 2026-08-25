@@ -30,4 +30,9 @@ public class Contribution : BaseEntity, ITenantScoped
     public decimal PlatformFeeAmount { get; set; }
     /// <summary>Amount - PlatformFeeAmount — what actually settles to the institution.</summary>
     public decimal NetAmountToInstitution { get; set; }
+
+    /// <summary>True when the payer was not logged in at the time of payment.</summary>
+    public bool IsGuestPayment { get; set; }
+    /// <summary>The member who shared the campaign link this guest paid through, if any.</summary>
+    public string? SharedByMemberId { get; set; }
 }

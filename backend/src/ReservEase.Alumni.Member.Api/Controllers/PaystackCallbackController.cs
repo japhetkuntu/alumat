@@ -49,7 +49,7 @@ public class PaystackCallbackController : ControllerBase
         if (!ValidatePaystackSignature(rawBody, signature, secretKey))
         {
             _logger.LogWarning("Paystack webhook: invalid signature (IP={IP})", HttpContext.Connection.RemoteIpAddress);
-            // return Unauthorized(new { received = false });
+             return Unauthorized(new { received = false });
         }
 
         PaystackCallbackModel? callback;

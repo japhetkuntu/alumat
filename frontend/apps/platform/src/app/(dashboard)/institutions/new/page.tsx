@@ -157,13 +157,15 @@ export default function NewInstitutionPage() {
                 <h2 className="text-[16px] font-semibold mb-1">Branding</h2>
                 <p className="text-[13px] text-muted-foreground mb-4">Use platform defaults now or configure a customer-facing identity.</p>
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label>Application name</Label>
-                    <Input value={form.appName} onChange={(e) => update("appName", e.target.value)} placeholder={`${form.name || "Institution"} Alumni`} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Support contact</Label>
-                    <Input value={form.supportEmail} onChange={(e) => update("supportEmail", e.target.value)} placeholder="support@greenfield.edu.gh" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Application name</Label>
+                      <Input value={form.appName} onChange={(e) => update("appName", e.target.value)} placeholder={`${form.name || "Institution"} Alumni`} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Support contact</Label>
+                      <Input value={form.supportEmail} onChange={(e) => update("supportEmail", e.target.value)} placeholder="support@greenfield.edu.gh" />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">

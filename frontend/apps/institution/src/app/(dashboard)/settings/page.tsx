@@ -77,7 +77,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "Security"] as const;
 
 export default function BrandingSettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Institution profile");
   const queryClient = useQueryClient();
 
@@ -240,97 +240,99 @@ export default function BrandingSettingsPage() {
       )}
 
       {tab === "Landing content" && stories && banner && (
-        <div className="space-y-4 max-w-[680px]">
-          <Card className="border-border/40">
-            <CardContent className="p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Megaphone size={16} className="text-primary" />
-                <p className="font-semibold text-[15px]">News banner</p>
-              </div>
-              <p className="text-[12.5px] text-muted-foreground -mt-2">The dismissible strip at the top of your Member Portal landing page.</p>
-              <div className="flex items-center justify-between pt-1">
-                <p className="text-[13px] font-semibold">Show banner</p>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={banner.enabled}
-                  onClick={() => setBanner((b) => ({ ...b!, enabled: !b!.enabled }))}
-                  className={cn("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors", banner.enabled ? "bg-primary" : "bg-muted")}
-                >
-                  <span className={cn("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform", banner.enabled ? "translate-x-5" : "translate-x-0")} />
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Banner text</Label>
-                <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed — effective this year." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Link text</Label>
-                  <Input value={banner.linkText ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkText: e.target.value }))} placeholder="See the spotlight" />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <Card className="border-border/40">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Megaphone size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">News banner</p>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-2">The dismissible strip at the top of your Member Portal landing page.</p>
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-[13px] font-semibold">Show banner</p>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={banner.enabled}
+                    onClick={() => setBanner((b) => ({ ...b!, enabled: !b!.enabled }))}
+                    className={cn("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors", banner.enabled ? "bg-primary" : "bg-muted")}
+                  >
+                    <span className={cn("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform", banner.enabled ? "translate-x-5" : "translate-x-0")} />
+                  </button>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Link URL</Label>
-                  <Input value={banner.linkUrl ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkUrl: e.target.value }))} placeholder="#spotlight or https://…" />
+                  <Label>Banner text</Label>
+                  <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed — effective this year." />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Link text</Label>
+                    <Input value={banner.linkText ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkText: e.target.value }))} placeholder="See the spotlight" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Link URL</Label>
+                    <Input value={banner.linkUrl ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkUrl: e.target.value }))} placeholder="#spotlight or https://…" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="border-border/40">
-            <div className="px-6 pt-5 pb-1 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-[15px]">Stories</p>
-                <p className="text-[12.5px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on your landing page. Leave empty for generic default copy.</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setStories((s) => [...(s ?? []), { ...EMPTY_STORY }])}>
-                <Plus size={14} className="mr-1.5" /> Add story
-              </Button>
-            </div>
-            <CardContent className="p-6 space-y-5">
-              {stories.length === 0 && (
-                <p className="text-[13px] text-muted-foreground">No custom stories — your landing page falls back to built-in default copy.</p>
-              )}
-              {stories.map((story, i) => (
-                <div key={i} className="space-y-3 pb-5 border-b border-border/40 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">Story {i + 1}</p>
-                    <button type="button" onClick={() => setStories((s) => s!.filter((_, idx) => idx !== i))} className="text-destructive hover:opacity-70">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Icon</Label>
-                      <select
-                        className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
-                        value={story.icon}
-                        onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, icon: e.target.value } : it)))}
-                      >
-                        {STORY_ICON_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Eyebrow</Label>
-                      <Input value={story.eyebrow} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, eyebrow: e.target.value } : it)))} placeholder="Career" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Title</Label>
-                    <Input value={story.scenario} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, scenario: e.target.value } : it)))} placeholder="The job that never reached a public board" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Description</Label>
-                    <Textarea rows={2} value={story.description} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, description: e.target.value } : it)))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Image URL</Label>
-                    <Input value={story.imageUrl ?? ""} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: e.target.value } : it)))} placeholder="https://…" />
-                  </div>
+            <Card className="border-border/40">
+              <div className="px-6 pt-5 pb-1 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-[15px]">Stories</p>
+                  <p className="text-[12.5px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on your landing page. Leave empty for generic default copy.</p>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+                <Button variant="outline" size="sm" onClick={() => setStories((s) => [...(s ?? []), { ...EMPTY_STORY }])}>
+                  <Plus size={14} className="mr-1.5" /> Add story
+                </Button>
+              </div>
+              <CardContent className="p-6 space-y-5">
+                {stories.length === 0 && (
+                  <p className="text-[13px] text-muted-foreground">No custom stories — your landing page falls back to built-in default copy.</p>
+                )}
+                {stories.map((story, i) => (
+                  <div key={i} className="space-y-3 pb-5 border-b border-border/40 last:border-0 last:pb-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">Story {i + 1}</p>
+                      <button type="button" onClick={() => setStories((s) => s!.filter((_, idx) => idx !== i))} className="text-destructive hover:opacity-70">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>Icon</Label>
+                        <select
+                          className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
+                          value={story.icon}
+                          onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, icon: e.target.value } : it)))}
+                        >
+                          {STORY_ICON_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Eyebrow</Label>
+                        <Input value={story.eyebrow} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, eyebrow: e.target.value } : it)))} placeholder="Career" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Title</Label>
+                      <Input value={story.scenario} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, scenario: e.target.value } : it)))} placeholder="The job that never reached a public board" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Description</Label>
+                      <Textarea rows={2} value={story.description} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, description: e.target.value } : it)))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Image URL</Label>
+                      <Input value={story.imageUrl ?? ""} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: e.target.value } : it)))} placeholder="https://…" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
 
           <FormError message={contentError} />
           <Button onClick={() => contentMutation.mutate()} disabled={contentMutation.isPending}>
@@ -340,7 +342,7 @@ export default function BrandingSettingsPage() {
       )}
 
       {tab === "Domain" && (
-        <Card className="border-border/40 max-w-xl">
+        <Card className="border-border/40 max-w-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-1">
               <Globe size={16} className="text-primary" />
@@ -397,7 +399,7 @@ export default function BrandingSettingsPage() {
       )}
 
       {tab === "Notifications" && (
-        <Card className="border-border/40 max-w-xl">
+        <Card className="border-border/40 max-w-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-1">
               <Bell size={16} className="text-primary" />
@@ -531,6 +533,18 @@ export default function BrandingSettingsPage() {
                   </Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 h-fit">
+            <CardContent className="p-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[14px] font-semibold">Log out</p>
+                <p className="text-[12.5px] text-muted-foreground mt-0.5">Sign out of your staff account on this device.</p>
+              </div>
+              <Button variant="outline" size="sm" className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
+                Log out
+              </Button>
             </CardContent>
           </Card>
         </div>

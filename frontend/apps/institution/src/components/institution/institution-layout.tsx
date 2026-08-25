@@ -82,7 +82,7 @@ const baseNavItems = [
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   // Cosmetic/structural only: reads the actual hostname this session is on.
   // Real per-subdomain tenant resolution against the backend is future work.
   const tenantHost = useHostname();
@@ -191,9 +191,6 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             <p className="text-[10px] text-blue-300 font-bold uppercase tracking-wider">{user?.role ?? "Super Admin"}</p>
           </div>
         </div>
-        <Button size="sm" variant="ghost" className="h-8 w-full text-[11px] font-semibold text-red-300 hover:bg-red-500/10 hover:text-red-200" onClick={logout}>
-          Log out
-        </Button>
       </div>
     </div>
   );
@@ -232,10 +229,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 flex flex-col min-w-0 bg-background relative">
         {/* Desktop header — matches the Platform Portal's translucent topbar */}
-        <div className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-          <div className="text-[13px] text-muted-foreground border border-border rounded-lg px-3 py-2 w-[380px]">
-            Search members, campaigns, payments
-          </div>
+        <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <NotificationPanel />
             <span className="text-[13px] font-semibold">

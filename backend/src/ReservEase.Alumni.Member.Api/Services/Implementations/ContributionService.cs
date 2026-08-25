@@ -147,8 +147,10 @@ public class ContributionService : IContributionService
     {
         try
         {
+            var isGuestPayment = member is null;
             var memberId = member?.Id ?? string.Empty;
             var memberEmail = member?.Email ?? request.Email;
+            string? sharedByMemberId = null;
 
             // If a guest request includes an email, try to link to a pending member's account
             if (string.IsNullOrEmpty(memberId) && !string.IsNullOrWhiteSpace(memberEmail))
@@ -170,12 +172,36 @@ public class ContributionService : IContributionService
                 }
             }
 
+            // Still not identified — if this campaign was reached through a shared link,
+            // attribute the payment to whoever shared it (marked as a guest payment below),
+            // rather than leaving it orphaned with no member at all.
+            if (string.IsNullOrEmpty(memberId) && !string.IsNullOrWhiteSpace(request.SharedByMemberId))
+            {
+                var sharer = await memberRepo.GetByIdAsync(request.SharedByMemberId);
+                if (sharer is not null)
+                {
+                    memberId = sharer.Id;
+                    sharedByMemberId = sharer.Id;
+                    member = new AuthData
+                    {
+                        Id = sharer.Id,
+                        Email = sharer.Email,
+                        FirstName = sharer.FirstName,
+                        LastName = sharer.LastName,
+                        ProfilePictureUrl = sharer.ProfilePictureUrl,
+                    };
+                    logger.LogInformation("Guest payment attributed to sharer {MemberId}, marked as guest payment", memberId);
+                }
+            }
+
             logger.LogInformation("InitiatePaystackPayment request: {Request} by member {MemberId}", request.Serialize(), string.IsNullOrEmpty(memberId) ? "anonymous" : memberId);
 
             if (string.IsNullOrWhiteSpace(memberEmail))
             {
-                // Paystack requires an email, but UI no longer forces it. Use anonymized fallback.
-                memberEmail = $"anonymous+{Guid.NewGuid():N}@anonymous.invalid";
+                // Paystack requires an email, but UI no longer forces it. Use an anonymized
+                // fallback under a real TLD — Paystack's validator rejects the RFC-2606
+                // reserved ".invalid" TLD used here previously as a malformed address.
+                memberEmail = $"guest+{Guid.NewGuid():N}@guest.alumunion.com";
             }
 
             var campaign = await campaignRepo.GetByIdAsync(request.CampaignId);
@@ -239,10 +265,12 @@ public class ContributionService : IContributionService
                 Status = "Pending",
                 PaymentMethod = "Paystack",
                 CreatedBy = string.IsNullOrEmpty(memberId) ? "anonymous" : memberId,
+                IsGuestPayment = isGuestPayment,
+                SharedByMemberId = sharedByMemberId,
             };
 
             await paymentTransactionRepo.AddAsync(transaction);
-            await redis.SetAsync($"paystack:ref:{reference}", new PaystackReferenceInfo { MemberId = memberId, CampaignId = request.CampaignId }, TimeSpan.FromHours(24));
+            await redis.SetAsync($"paystack:ref:{reference}", new PaystackReferenceInfo { MemberId = memberId, CampaignId = request.CampaignId, IsGuestPayment = isGuestPayment, SharedByMemberId = sharedByMemberId }, TimeSpan.FromHours(24));
 
             logger.LogInformation("Paystack payment initiated for member {MemberId}, campaign {CampaignId}", string.IsNullOrEmpty(memberId) ? "anonymous" : memberId, request.CampaignId);
             return ((object)new { authorizationUrl = response.Data?.AuthorizationUrl, reference })
@@ -388,6 +416,8 @@ public class ContributionService : IContributionService
     {
         public string MemberId { get; set; } = string.Empty;
         public string CampaignId { get; set; } = string.Empty;
+        public bool IsGuestPayment { get; set; }
+        public string? SharedByMemberId { get; set; }
     }
 
     private async Task<PaystackReferenceInfo?> GetReferenceInfoAsync(string reference)
@@ -434,6 +464,8 @@ public class ContributionService : IContributionService
                 PaymentMethod = "Paystack",
                 CreatedBy = referenceInfo.MemberId,
                 CallbackPayload = rawBody,
+                IsGuestPayment = referenceInfo.IsGuestPayment,
+                SharedByMemberId = referenceInfo.SharedByMemberId,
             };
 
             await paymentTransactionRepo.AddAsync(transaction);
@@ -537,6 +569,8 @@ public class ContributionService : IContributionService
                     CreatedBy = transaction.MemberId,
                     PlatformFeeAmount = feeAmount,
                     NetAmountToInstitution = transaction.Amount - feeAmount,
+                    IsGuestPayment = transaction.IsGuestPayment,
+                    SharedByMemberId = transaction.SharedByMemberId,
                 };
 
                 await contributionRepo.AddAsync(contribution);

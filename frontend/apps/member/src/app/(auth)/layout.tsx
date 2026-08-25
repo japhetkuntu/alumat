@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
 import { getInstitutionTheme } from "@/lib/theme";
+import { RedirectIfAuthenticated } from "@/components/member/redirect-if-authenticated";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const theme = await getInstitutionTheme();
@@ -87,7 +88,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         style={{ background: "var(--background)" }}
       >
         <div className="w-full max-w-[480px]">
-          {children}
+          <RedirectIfAuthenticated>{children}</RedirectIfAuthenticated>
         </div>
       </main>
 

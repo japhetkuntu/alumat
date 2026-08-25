@@ -135,6 +135,8 @@ public static class EntityDtoExtensions
         CreatedAt = c.CreatedAt,
         PlatformFeeAmount = c.PlatformFeeAmount,
         NetAmountToInstitution = c.NetAmountToInstitution,
+        IsGuestPayment = c.IsGuestPayment,
+        SharedByMemberId = c.SharedByMemberId,
     };
 
     public static MentorProfileDto ToDto(this MentorProfile p) => new()

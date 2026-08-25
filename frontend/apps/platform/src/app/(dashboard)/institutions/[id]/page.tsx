@@ -548,43 +548,45 @@ export default function InstitutionDetailPage() {
       )}
 
       {tab === "Features" && disabledFeatures && (
-        <Card className="max-w-[680px]">
+        <Card className="max-w-[1100px]">
           <div className="px-5 py-4 border-b border-border">
             <p className="text-[14px] font-semibold">Feature access</p>
             <p className="text-[12px] text-muted-foreground mt-0.5">
               All features are enabled by default. Turning one off removes it from both this institution&apos;s staff and member portals — enforced on the backend too, not just hidden.
             </p>
           </div>
-          <CardContent className="p-0">
-            {featureCatalog.map((f) => {
-              const enabled = !disabledFeatures.has(f.key);
-              return (
-                <div key={f.key} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
-                  <div>
-                    <p className="text-[13px] font-semibold">{f.label}</p>
-                    {f.description && (
-                      <p className="text-[12px] text-muted-foreground mt-0.5">{f.description}</p>
-                    )}
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {featureCatalog.map((f) => {
+                const enabled = !disabledFeatures.has(f.key);
+                return (
+                  <div key={f.key} className="flex items-center justify-between gap-3 px-4 py-3.5 border border-border rounded-lg">
+                    <div>
+                      <p className="text-[13px] font-semibold">{f.label}</p>
+                      {f.description && (
+                        <p className="text-[12px] text-muted-foreground mt-0.5">{f.description}</p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      onClick={() =>
+                        setDisabledFeatures((prev) => {
+                          const next = new Set(prev);
+                          if (enabled) next.add(f.key);
+                          else next.delete(f.key);
+                          return next;
+                        })
+                      }
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${enabled ? "bg-primary" : "bg-muted"}`}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={enabled}
-                    onClick={() =>
-                      setDisabledFeatures((prev) => {
-                        const next = new Set(prev);
-                        if (enabled) next.add(f.key);
-                        else next.delete(f.key);
-                        return next;
-                      })
-                    }
-                    className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${enabled ? "bg-primary" : "bg-muted"}`}
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </CardContent>
           <div className="p-5 border-t border-border space-y-3">
             <FormError message={featuresError} />
@@ -596,98 +598,102 @@ export default function InstitutionDetailPage() {
       )}
 
       {tab === "Content" && stories && banner && (
-        <div className="space-y-4 max-w-[680px]">
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <p className="text-[14px] font-semibold">News banner</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5">The dismissible strip at the top of the Member Portal landing page. This institution&apos;s own admins can also edit this.</p>
-            </div>
-            <CardContent className="p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-[13px] font-semibold">Show banner</p>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={banner.enabled}
-                  onClick={() => setBanner((b) => ({ ...b!, enabled: !b!.enabled }))}
-                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${banner.enabled ? "bg-primary" : "bg-muted"}`}
-                >
-                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${banner.enabled ? "translate-x-5" : "translate-x-0"}`} />
-                </button>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-4 items-start">
+            <Card>
+              <div className="px-5 py-4 border-b border-border">
+                <p className="text-[14px] font-semibold">News banner</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">The dismissible strip at the top of the Member Portal landing page. This institution&apos;s own admins can also edit this.</p>
               </div>
-              <div className="space-y-1.5">
-                <Label>Banner text</Label>
-                <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed — effective this year." />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Link text</Label>
-                  <Input value={banner.linkText ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkText: e.target.value }))} placeholder="See the spotlight" />
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[13px] font-semibold">Show banner</p>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={banner.enabled}
+                    onClick={() => setBanner((b) => ({ ...b!, enabled: !b!.enabled }))}
+                    className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${banner.enabled ? "bg-primary" : "bg-muted"}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${banner.enabled ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Link URL</Label>
-                  <Input value={banner.linkUrl ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkUrl: e.target.value }))} placeholder="#spotlight or https://…" />
+                  <Label>Banner text</Label>
+                  <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed — effective this year." />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label>Link text</Label>
+                    <Input value={banner.linkText ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkText: e.target.value }))} placeholder="See the spotlight" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Link URL</Label>
+                    <Input value={banner.linkUrl ?? ""} onChange={(e) => setBanner((b) => ({ ...b!, linkUrl: e.target.value }))} placeholder="#spotlight or https://…" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <div>
-                <p className="text-[14px] font-semibold">Stories</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on the landing page. Leave empty to use generic default copy.</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setStories((s) => [...(s ?? []), { ...EMPTY_STORY }])}>
-                <Plus size={14} className="mr-1.5" /> Add story
-              </Button>
-            </div>
-            <CardContent className="p-5 space-y-5">
-              {stories.length === 0 && (
-                <p className="text-[13px] text-muted-foreground">No custom stories — the landing page falls back to built-in default copy.</p>
-              )}
-              {stories.map((story, i) => (
-                <div key={i} className="space-y-3 pb-5 border-b border-border last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">Story {i + 1}</p>
-                    <button type="button" onClick={() => setStories((s) => s!.filter((_, idx) => idx !== i))} className="text-destructive hover:opacity-70">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Icon</Label>
-                      <select
-                        className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
-                        value={story.icon}
-                        onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, icon: e.target.value } : it)))}
-                      >
-                        {STORY_ICON_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Eyebrow</Label>
-                      <Input value={story.eyebrow} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, eyebrow: e.target.value } : it)))} placeholder="Career" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Title</Label>
-                    <Input value={story.scenario} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, scenario: e.target.value } : it)))} placeholder="The job that never reached a public board" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Description</Label>
-                    <Textarea rows={2} value={story.description} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, description: e.target.value } : it)))} />
-                  </div>
-                  <ImageUrlField
-                    label="Image URL"
-                    value={story.imageUrl ?? ""}
-                    onChange={(url) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: url } : it)))}
-                    placeholder="https://…"
-                  />
+            <Card>
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <p className="text-[14px] font-semibold">Stories</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on the landing page. Leave empty to use generic default copy.</p>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+                <Button variant="outline" size="sm" onClick={() => setStories((s) => [...(s ?? []), { ...EMPTY_STORY }])}>
+                  <Plus size={14} className="mr-1.5" /> Add story
+                </Button>
+              </div>
+              <CardContent className="p-5">
+                {stories.length === 0 && (
+                  <p className="text-[13px] text-muted-foreground">No custom stories — the landing page falls back to built-in default copy.</p>
+                )}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                  {stories.map((story, i) => (
+                    <div key={i} className="space-y-3 pb-5 border-b border-border xl:border-b-0 xl:border xl:rounded-lg xl:p-4 last:border-b-0 last:pb-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">Story {i + 1}</p>
+                        <button type="button" onClick={() => setStories((s) => s!.filter((_, idx) => idx !== i))} className="text-destructive hover:opacity-70">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>Icon</Label>
+                          <select
+                            className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
+                            value={story.icon}
+                            onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, icon: e.target.value } : it)))}
+                          >
+                            {STORY_ICON_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Eyebrow</Label>
+                          <Input value={story.eyebrow} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, eyebrow: e.target.value } : it)))} placeholder="Career" />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Title</Label>
+                        <Input value={story.scenario} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, scenario: e.target.value } : it)))} placeholder="The job that never reached a public board" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Description</Label>
+                        <Textarea rows={2} value={story.description} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, description: e.target.value } : it)))} />
+                      </div>
+                      <ImageUrlField
+                        label="Image URL"
+                        value={story.imageUrl ?? ""}
+                        onChange={(url) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: url } : it)))}
+                        placeholder="https://…"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <FormError message={contentError} />
           <Button onClick={() => contentMutation.mutate()} disabled={contentMutation.isPending}>
@@ -716,10 +722,12 @@ export default function InstitutionDetailPage() {
       )}
 
       {tab === "Usage & Limits" && (
-        <Card>
-          <CardContent className="p-5 max-w-[560px]">
-            <Limit label="Members" used={inst.memberCount} limit={inst.memberLimit} />
-            <Limit label="Storage" used={inst.storageUsedGb} limit={inst.storageLimitGb} unit=" GB" />
+        <Card className="max-w-[900px]">
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+              <Limit label="Members" used={inst.memberCount} limit={inst.memberLimit} />
+              <Limit label="Storage" used={inst.storageUsedGb} limit={inst.storageLimitGb} unit=" GB" />
+            </div>
             <Button
               variant="outline"
               className="mt-2"
@@ -735,60 +743,62 @@ export default function InstitutionDetailPage() {
       )}
 
       {tab === "Payments" && payments && (
-        <div className="space-y-4 max-w-[680px]">
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <p className="text-[14px] font-semibold">Revenue</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5">Real figures from this institution&apos;s confirmed payments.</p>
-            </div>
-            <CardContent className="p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-[12px] text-muted-foreground">Gross collected</p>
-                  <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.grossCollected ?? 0, "GHS")}</p>
-                </div>
-                <div>
-                  <p className="text-[12px] text-muted-foreground">Platform fee</p>
-                  <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.platformFeeTotal ?? 0, "GHS")}</p>
-                </div>
-                <div>
-                  <p className="text-[12px] text-muted-foreground">Net to institution</p>
-                  <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.netToInstitution ?? 0, "GHS")}</p>
-                </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <Card>
+              <div className="px-5 py-4 border-b border-border">
+                <p className="text-[14px] font-semibold">Revenue</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Real figures from this institution&apos;s confirmed payments.</p>
               </div>
-              <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} confirmed payments</p>
-            </CardContent>
-          </Card>
+              <CardContent className="p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-[12px] text-muted-foreground">Gross collected</p>
+                    <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.grossCollected ?? 0, "GHS")}</p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-muted-foreground">Platform fee</p>
+                    <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.platformFeeTotal ?? 0, "GHS")}</p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] text-muted-foreground">Net to institution</p>
+                    <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.netToInstitution ?? 0, "GHS")}</p>
+                  </div>
+                </div>
+                <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} confirmed payments</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <div className="px-5 py-4 border-b border-border">
-              <p className="text-[14px] font-semibold">Fee &amp; settlement</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5">
-                The platform&apos;s cut of each confirmed payment, and the bank account this institution&apos;s share settles to.
-              </p>
-            </div>
-            <CardContent className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <Label>Platform fee</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.1"
-                    value={payments.platformFeePercentage}
-                    onChange={(e) => setPayments((p) => ({ ...p!, platformFeePercentage: e.target.value }))}
-                    className="w-[120px]"
-                  />
-                  <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
-                </div>
+            <Card>
+              <div className="px-5 py-4 border-b border-border">
+                <p className="text-[14px] font-semibold">Fee &amp; settlement</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  The platform&apos;s cut of each confirmed payment, and the bank account this institution&apos;s share settles to.
+                </p>
               </div>
-              <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} />
-              {inst.paystackSubaccountCode && (
-                <p className="text-[12px] text-muted-foreground">Payment subaccount ID: <span className="font-mono">{inst.paystackSubaccountCode}</span></p>
-              )}
-            </CardContent>
-          </Card>
+              <CardContent className="p-5 space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Platform fee</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.1"
+                      value={payments.platformFeePercentage}
+                      onChange={(e) => setPayments((p) => ({ ...p!, platformFeePercentage: e.target.value }))}
+                      className="w-[120px]"
+                    />
+                    <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
+                  </div>
+                </div>
+                <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} />
+                {inst.paystackSubaccountCode && (
+                  <p className="text-[12px] text-muted-foreground">Payment subaccount ID: <span className="font-mono">{inst.paystackSubaccountCode}</span></p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <FormError message={paymentsError} />
           <Button onClick={() => paymentsMutation.mutate()} disabled={paymentsMutation.isPending}>

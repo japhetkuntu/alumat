@@ -1,4 +1,5 @@
 import { getInstitutionTheme } from "@/lib/theme";
+import { RedirectIfAuthenticated } from "@/components/institution/redirect-if-authenticated";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const theme = await getInstitutionTheme();
@@ -92,7 +93,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       {/* ── Right — form panel ── */}
       <main className="flex-1 flex items-center justify-center p-6 sm:p-10 md:p-14 overflow-auto">
         <div className="w-full max-w-[520px]">
-          {children}
+          <RedirectIfAuthenticated>{children}</RedirectIfAuthenticated>
         </div>
       </main>
 

@@ -47,7 +47,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 }
 
 export default function MemberSettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const qc = useQueryClient();
 
   const { data: profile } = useQuery({
@@ -228,6 +228,15 @@ export default function MemberSettingsPage() {
             <Link href="/profile">
               <Button variant="outline" size="sm" className="shrink-0">Change Password</Button>
             </Link>
+          </div>
+          <Separator className="my-5" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Sign out of your account on this device.
+            </p>
+            <Button variant="outline" size="sm" className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
+              Log out
+            </Button>
           </div>
         </CardContent>
       </Card>

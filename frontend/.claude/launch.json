@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "institution-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "institution", "dev"],
+      "port": 4100
+    },
+    {
+      "name": "platform-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "platform", "dev"],
+      "port": 3300
+    },
+    {
+      "name": "member-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "member", "dev"],
+      "port": 3200
+    }
+  ]
+}

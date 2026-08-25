@@ -137,6 +137,10 @@ public class ContributionDto
     public decimal PlatformFeeAmount { get; set; }
     /// <summary>Amount minus PlatformFeeAmount — what actually settles to the institution's account.</summary>
     public decimal NetAmountToInstitution { get; set; }
+    /// <summary>True when the payer was not logged in at the time of payment.</summary>
+    public bool IsGuestPayment { get; set; }
+    /// <summary>The member who shared the campaign link this guest paid through, if any.</summary>
+    public string? SharedByMemberId { get; set; }
 }
 
 public class PaystackDisbursementSummaryDto

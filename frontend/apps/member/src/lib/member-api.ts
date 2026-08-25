@@ -150,7 +150,7 @@ export async function getMyContributions(params?: { page?: number; pageSize?: nu
 }
 
 export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; }
-export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; }
+export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; sharedByMemberId?: string; }
 
 export async function initiatePaystackPayment(body: InitiatePaystackBody) {
   const res = await memberClient.post("/contributions/paystack/initiate", body);

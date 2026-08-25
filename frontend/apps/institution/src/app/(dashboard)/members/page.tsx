@@ -519,8 +519,8 @@ export default function AdminMembersPage() {
                 <Input type="number" placeholder="2024" value={addMemberForm.graduationYear} onChange={(e) => setAddMemberForm((f) => ({ ...f, graduationYear: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>Phone (optional)</Label>
-                <Input value={addMemberForm.phone} onChange={(e) => setAddMemberForm((f) => ({ ...f, phone: e.target.value }))} />
+                <Label>Mobile number</Label>
+                <Input placeholder="+233 XX XXX XXXX" value={addMemberForm.phone} onChange={(e) => setAddMemberForm((f) => ({ ...f, phone: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -536,7 +536,8 @@ export default function AdminMembersPage() {
                 !addMemberForm.firstName.trim() ||
                 !addMemberForm.lastName.trim() ||
                 !addMemberForm.email.trim() ||
-                !addMemberForm.graduationYear
+                !addMemberForm.graduationYear ||
+                !addMemberForm.phone.trim()
               }
               onClick={() =>
                 addMemberMut.mutate({
@@ -544,7 +545,7 @@ export default function AdminMembersPage() {
                   lastName: addMemberForm.lastName.trim(),
                   email: addMemberForm.email.trim(),
                   graduationYear: Number(addMemberForm.graduationYear),
-                  phone: addMemberForm.phone.trim() || undefined,
+                  phone: addMemberForm.phone.trim(),
                   studentId: addMemberForm.studentId.trim() || undefined,
                 })
               }
