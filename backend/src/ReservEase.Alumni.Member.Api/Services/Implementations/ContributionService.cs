@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -8,6 +9,7 @@ using ReservEase.Alumni.Member.Api.Options;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
+using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
@@ -26,6 +28,7 @@ public class ContributionService : IContributionService
     private readonly IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo;
     private readonly IAlumniPgRepository<Institution> institutionRepo;
     private readonly ICurrentTenantService currentTenant;
+    private readonly AlumniDbContext db;
     private readonly IPaystackService paystackService;
     private readonly IRedisService<MemberRedisConfig> redis;
     private readonly INotificationActor notificationActor;
@@ -39,11 +42,20 @@ public class ContributionService : IContributionService
     /// which one a member number belongs to.
     /// </summary>
     private async Task<string> GetMemberNumberPrefixAsync(int? graduationYear)
+        => await GetMemberNumberPrefixForInstitutionAsync(currentTenant.InstitutionId, graduationYear);
+
+    /// <summary>
+    /// Tenant-agnostic variant for code paths (like the Paystack webhook) that don't
+    /// have a reliable ambient tenant — the institution must be passed explicitly,
+    /// resolved from the data (e.g. the campaign the payment belongs to).
+    /// </summary>
+    private async Task<string> GetMemberNumberPrefixForInstitutionAsync(string? institutionId, int? graduationYear)
     {
         string slug = "MEMBER";
-        if (!string.IsNullOrEmpty(currentTenant.InstitutionId))
+        if (!string.IsNullOrEmpty(institutionId))
         {
-            var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var institution = await db.Set<Institution>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(i => i.Id == institutionId);
             if (!string.IsNullOrWhiteSpace(institution?.Slug))
                 slug = institution.Slug.ToUpperInvariant();
         }
@@ -116,6 +128,7 @@ public class ContributionService : IContributionService
         IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo,
         IAlumniPgRepository<Institution> institutionRepo,
         ICurrentTenantService currentTenant,
+        AlumniDbContext db,
         IPaystackService paystackService,
         IRedisService<MemberRedisConfig> redis,
         INotificationActor notificationActor,
@@ -128,6 +141,7 @@ public class ContributionService : IContributionService
         this.paymentTransactionRepo = paymentTransactionRepo;
         this.institutionRepo = institutionRepo;
         this.currentTenant = currentTenant;
+        this.db = db;
         this.paystackService = paystackService;
         this.redis = redis;
         this.notificationActor = notificationActor;
@@ -432,10 +446,20 @@ public class ContributionService : IContributionService
         }
     }
 
+    /// <summary>
+    /// Paystack's webhook always calls one fixed platform-wide URL (there is no
+    /// per-institution routing), so the request's Host header cannot be trusted to
+    /// resolve the correct tenant the way normal browser-originated requests can.
+    /// This method must therefore be entirely tenant-agnostic: every read bypasses
+    /// the ambient EF Core tenant filter via IgnoreQueryFilters(), and the correct
+    /// institution is instead derived from the data itself (the campaign the
+    /// payment belongs to) and stamped explicitly onto every new record.
+    /// </summary>
     private async Task<IApiResponse<object>> HandlePaystackReferenceAsync(string reference, string? callingMemberId = null, string? rawBody = null)
     {
         // Attempt to load an existing transaction record.
-        var transaction = await paymentTransactionRepo.GetOneAsync(t => t.Reference == reference);
+        var transaction = await db.Set<PaymentTransaction>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Reference == reference);
         PaystackReferenceInfo? referenceInfo = null;
 
         if (transaction is null)
@@ -450,11 +474,14 @@ public class ContributionService : IContributionService
             if (!string.IsNullOrEmpty(callingMemberId) && callingMemberId != referenceInfo.MemberId)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Reference does not belong to the current member");
 
-            var campaign = await campaignRepo.GetByIdAsync(referenceInfo.CampaignId);
-            var member = await memberRepo.GetByIdAsync(referenceInfo.MemberId);
+            var campaign = await db.Set<Campaign>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Id == referenceInfo.CampaignId);
+            var member = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(m => m.Id == referenceInfo.MemberId);
 
             transaction = new PaymentTransaction
             {
+                InstitutionId = campaign?.InstitutionId ?? member?.InstitutionId ?? string.Empty,
                 MemberId = referenceInfo.MemberId,
                 Member = member is not null ? new MemberSnapshot { Id = member.Id, FirstName = member.FirstName, LastName = member.LastName, Email = member.Email, ProfilePictureUrl = member.ProfilePictureUrl } : null,
                 CampaignId = referenceInfo.CampaignId,
@@ -513,14 +540,17 @@ public class ContributionService : IContributionService
         {
             transaction.Status = "Confirmed";
 
-            var existingContribution = await contributionRepo.GetOneAsync(c => c.TransactionRef == reference && c.MemberId == transaction.MemberId);
+            var existingContribution = await db.Set<Contribution>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.TransactionRef == reference && c.MemberId == transaction.MemberId);
             if (existingContribution is null)
             {
-                var campaign = await campaignRepo.GetByIdAsync(transaction.CampaignId);
+                var campaign = await db.Set<Campaign>().IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(c => c.Id == transaction.CampaignId);
 
                 if (campaign is not null && campaign.IsMembershipCampaign)
                 {
-                    var priorMembership = await contributionRepo.GetOneAsync(c => c.CampaignId == campaign.Id && c.MemberId == transaction.MemberId && c.Status == "Confirmed");
+                    var priorMembership = await db.Set<Contribution>().IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(c => c.CampaignId == campaign.Id && c.MemberId == transaction.MemberId && c.Status == "Confirmed");
                     if (priorMembership is not null)
                     {
                         transaction.Status = "Failed";
@@ -535,7 +565,8 @@ public class ContributionService : IContributionService
                 var memberSnapshot = transaction.Member;
                 if (memberSnapshot is null && !string.IsNullOrEmpty(transaction.MemberId))
                 {
-                    var member = await memberRepo.GetByIdAsync(transaction.MemberId);
+                    var member = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(m => m.Id == transaction.MemberId);
                     if (member is not null)
                     {
                         memberSnapshot = new MemberSnapshot
@@ -549,13 +580,17 @@ public class ContributionService : IContributionService
                     }
                 }
 
-                var institution = await GetCurrentInstitutionAsync();
+                var contributionInstitutionId = campaign?.InstitutionId ?? transaction.InstitutionId;
+                var institution = !string.IsNullOrEmpty(contributionInstitutionId)
+                    ? await db.Set<Institution>().IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == contributionInstitutionId)
+                    : null;
                 var feeAmount = institution is not null
                     ? Math.Round(transaction.Amount * institution.PlatformFeePercentage / 100m, 2)
                     : 0m;
 
                 var contribution = new Contribution
                 {
+                    InstitutionId = contributionInstitutionId,
                     MemberId = transaction.MemberId,
                     CampaignId = transaction.CampaignId,
                     Member = memberSnapshot,
@@ -583,21 +618,28 @@ public class ContributionService : IContributionService
 
                     if (campaign.IsMembershipCampaign && !string.IsNullOrEmpty(transaction.MemberId))
                     {
-                        var memberToUpdate = await memberRepo.GetByIdAsync(transaction.MemberId);
+                        var memberToUpdate = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
+                            .FirstOrDefaultAsync(m => m.Id == transaction.MemberId);
                         if (memberToUpdate is not null)
                         {
                             var now = DateTime.UtcNow;
                             var currentYear = now.Year;
                             var gradYear = memberToUpdate.GraduationYear;
+                            var institutionId = campaign.InstitutionId;
 
-                            // Re-evaluate full membership: active = paid ALL campaigns from grad year through current year
-                            var requiredCampaigns = await campaignRepo.GetAllAsync(c =>
-                                c.IsMembershipCampaign && c.MembershipYear.HasValue
-                                && c.MembershipYear.Value >= gradYear
-                                && c.MembershipYear.Value <= currentYear);
+                            // Re-evaluate full membership: active = paid ALL campaigns from grad year through current year.
+                            // Institution is scoped explicitly here since IgnoreQueryFilters() bypasses the usual tenant filter.
+                            var requiredCampaigns = await db.Set<Campaign>().IgnoreQueryFilters()
+                                .Where(c => c.InstitutionId == institutionId
+                                    && c.IsMembershipCampaign && c.MembershipYear.HasValue
+                                    && c.MembershipYear.Value >= gradYear
+                                    && c.MembershipYear.Value <= currentYear)
+                                .ToListAsync();
 
-                            var confirmedContributions = await contributionRepo.GetAllAsync(c =>
-                                c.MemberId == transaction.MemberId && c.Status == "Confirmed");
+                            var confirmedContributions = await db.Set<Contribution>().IgnoreQueryFilters()
+                                .Where(c => c.InstitutionId == institutionId
+                                    && c.MemberId == transaction.MemberId && c.Status == "Confirmed")
+                                .ToListAsync();
                             var paidCampaignIds = new HashSet<string>(confirmedContributions.Select(c => c.CampaignId));
                             var allPaid = requiredCampaigns.All(c => paidCampaignIds.Contains(c.Id));
 
@@ -613,8 +655,10 @@ public class ContributionService : IContributionService
                             {
                                 if (string.IsNullOrEmpty(memberToUpdate.MemberNumber))
                                 {
-                                    var prefix = await GetMemberNumberPrefixAsync(memberToUpdate.GraduationYear);
-                                    var existingWithNumber = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
+                                    var prefix = await GetMemberNumberPrefixForInstitutionAsync(institutionId, memberToUpdate.GraduationYear);
+                                    var existingWithNumber = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
+                                        .Where(m => m.InstitutionId == institutionId && m.MemberNumber != null && m.MemberNumber.StartsWith(prefix))
+                                        .ToListAsync();
                                     var maxSeq = existingWithNumber
                                         .Select(m => int.TryParse(m.MemberNumber![(prefix.Length)..], out var n) ? n : 0)
                                         .DefaultIfEmpty(0)
