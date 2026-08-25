@@ -156,7 +156,7 @@ public class InstitutionAuthService(
 
             logger.LogInformation("Admin {AdminId} logged in successfully", admin.Id);
 
-            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroup, null);
+            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
             var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
         }
@@ -194,7 +194,7 @@ public class InstitutionAuthService(
 
             logger.LogInformation("Tokens refreshed for admin {AdminId}", admin.Id);
 
-            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroup, null);
+            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
             var tokensResp = new AuthTokensResponse(accessToken, newRefresh, tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse();
         }
@@ -215,7 +215,7 @@ public class InstitutionAuthService(
             if (admin is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffProfileResponse>("Admin not found");
 
-            return new InstitutionStaffProfileResponse(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroup, null)
+            return new InstitutionStaffProfileResponse(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, null)
                 .ToOkApiResponse();
         }
         catch (Exception e)
@@ -254,7 +254,7 @@ public class InstitutionAuthService(
 
             logger.LogInformation("Password changed successfully for admin {AdminId}", admin.Id);
 
-            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroup, null);
+            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
             var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse("Password changed");
         }
@@ -284,6 +284,16 @@ public class InstitutionAuthService(
         if (auth.GraduationYear.HasValue)
         {
             claims.Add(new Claim("year_group", auth.GraduationYear.Value.ToString()));
+        }
+
+        if (auth.YearGroups is { Count: > 0 })
+        {
+            claims.AddRange(auth.YearGroups.Select(y => new Claim("year_group_scope", y.ToString())));
+        }
+
+        if (auth.CommunityIds is { Count: > 0 })
+        {
+            claims.AddRange(auth.CommunityIds.Select(c => new Claim("community_scope", c)));
         }
 
         if (!string.IsNullOrWhiteSpace(auth.InstitutionId))
@@ -348,7 +358,8 @@ public class InstitutionAuthService(
         LastName = admin.LastName,
         ProfilePictureUrl = null,
         Role = admin.Role,
-        GraduationYear = admin.YearGroup,
+        YearGroups = admin.YearGroups,
+        CommunityIds = admin.CommunityIds,
         InstitutionId = admin.InstitutionId,
         SigningKey = tokenConfig.InstitutionSigningKey,
         Issuer = tokenConfig.Issuer,

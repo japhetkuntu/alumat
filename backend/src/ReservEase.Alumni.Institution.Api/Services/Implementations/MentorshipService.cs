@@ -19,8 +19,8 @@ public class MentorshipService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<MentorProfileDto>>("Only super admins can manage mentorship");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<MentorProfileDto>>("Scoped admins cannot manage mentorship");
 
             logger.LogInformation("GetMentorProfiles request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
             var search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim();
@@ -59,8 +59,8 @@ public class MentorshipService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Only super admins can manage mentorship");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Scoped admins cannot manage mentorship");
 
             logger.LogInformation("ApproveMentor request for profileId: {ProfileId} by admin {AdminId}", profileId, admin.Id);
 
@@ -68,10 +68,10 @@ public class MentorshipService(
             if (profile is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Mentor profile not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(profile.YearGroups, profile.CreatedBy))
+            if (!admin.CanModifyScopedItem(profile.YearGroups, profile.CreatedBy))
             {
                 logger.LogWarning("Denied mentor approval access for admin {AdminId} to mentor profile {ProfileId} (adminYear={AdminYear}, profileYears={ProfileYears}, createdBy={CreatedBy})",
-                    admin.Id, profileId, admin.GraduationYear, profile.YearGroups ?? new List<int>(), profile.CreatedBy);
+                    admin.Id, profileId, profile.YearGroups ?? new List<int>(), profile.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Mentor profile not found");
             }
 
@@ -94,8 +94,8 @@ public class MentorshipService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Only super admins can manage mentorship");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Scoped admins cannot manage mentorship");
 
             logger.LogInformation("RejectMentor request for profileId: {ProfileId} by admin {AdminId}", profileId, admin.Id);
 
@@ -103,10 +103,10 @@ public class MentorshipService(
             if (profile is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Mentor profile not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(profile.YearGroups, profile.CreatedBy))
+            if (!admin.CanModifyScopedItem(profile.YearGroups, profile.CreatedBy))
             {
                 logger.LogWarning("Denied mentor reject access for admin {AdminId} to mentor profile {ProfileId} (adminYear={AdminYear}, profileYears={ProfileYears}, createdBy={CreatedBy})",
-                    admin.Id, profileId, admin.GraduationYear, profile.YearGroups ?? new List<int>(), profile.CreatedBy);
+                    admin.Id, profileId, profile.YearGroups ?? new List<int>(), profile.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Mentor profile not found");
             }
 
@@ -129,8 +129,8 @@ public class MentorshipService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<MentorshipRequestDto>>("Only super admins can manage mentorship");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<MentorshipRequestDto>>("Scoped admins cannot manage mentorship");
 
             logger.LogInformation("GetMentorshipRequests request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
             var result = await requestRepo.GetPagedAsync(

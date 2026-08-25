@@ -82,7 +82,7 @@ public class AuthController(IInstitutionAuthService authService) : DefaultContro
     public IActionResult GetCurrentStaff()
     {
         var admin = User.GetAccount();
-        return Ok(new InstitutionStaffProfileResponse(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.GraduationYear, null));
+        return Ok(new InstitutionStaffProfileResponse(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, null));
     }
 
     /// <summary>

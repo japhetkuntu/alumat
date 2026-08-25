@@ -102,7 +102,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
       if (item.href === "/forum" || item.href === "/mentorship") {
-        if (user?.role !== "SuperAdmin") return false;
+        if (user?.role !== "SuperAdmin" && user?.role !== "Admin") return false;
       }
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
       if (featureKey && disabledFeatures.has(featureKey)) return false;

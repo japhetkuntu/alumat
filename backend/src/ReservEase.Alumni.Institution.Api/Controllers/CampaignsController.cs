@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage fundraising campaigns.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Contributions)]
 public class CampaignsController(ICampaignService campaignService) : DefaultController
 {

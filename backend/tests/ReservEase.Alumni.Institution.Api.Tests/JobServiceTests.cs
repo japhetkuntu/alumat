@@ -16,7 +16,7 @@ namespace ReservEase.Alumni.Institution.Api.Tests;
 public class JobServiceTests
 {
     [Fact]
-    public async Task UpdateJobAsync_ReturnsNotFound_WhenAdminNotInYearGroup()
+    public async Task UpdateJobAsync_ReturnsNotFound_WhenScopedAdminNotInYearGroup()
     {
         // Arrange
         var mockRepo = new Mock<IAlumniPgRepository<Job>>();
@@ -33,7 +33,7 @@ public class JobServiceTests
         mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
 
         var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), logger);
-        var admin = new AuthData { Id = "admin-1", Role = "Admin", GraduationYear = 2025 };
+        var admin = new AuthData { Id = "admin-1", Role = "ScopedAdmin", YearGroups = new List<int> { 2025 } };
 
         // Act
         var response = await service.UpdateJobAsync(new UpdateJobRequest
@@ -52,9 +52,10 @@ public class JobServiceTests
     }
 
     [Fact]
-    public async Task UpdateJobAsync_ReturnsNotFound_WhenSuperAdminNotCreatorAndHasYearGroups()
+    public async Task UpdateJobAsync_Succeeds_WhenSuperAdminNotCreatorAndOutsideYearGroups()
     {
-        // Arrange
+        // SuperAdmin can do everything, regardless of who created the item or
+        // what year groups it's scoped to.
         var mockRepo = new Mock<IAlumniPgRepository<Job>>();
         var mockStorage = new Mock<IStorageService>();
         var logger = new NullLogger<JobService>();
@@ -69,9 +70,8 @@ public class JobServiceTests
         mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
 
         var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), logger);
-        var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin", GraduationYear = 2025 };
+        var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin" };
 
-        // Act
         var response = await service.UpdateJobAsync(new UpdateJobRequest
         {
             JobId = job.Id,
@@ -82,8 +82,40 @@ public class JobServiceTests
             Status = "Active",
         }, admin);
 
-        // Assert
-        Assert.Equal(404, response.Code);
-        Assert.Equal("Job not found", response.Message);
+        Assert.Equal(200, response.Code);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_Succeeds_WhenRegularAdminNotCreatorAndOutsideYearGroups()
+    {
+        // A full (non-scoped) Admin can manage everything except admin
+        // management itself — it must not be restricted by year-group scoping.
+        var mockRepo = new Mock<IAlumniPgRepository<Job>>();
+        var mockStorage = new Mock<IStorageService>();
+        var logger = new NullLogger<JobService>();
+
+        var job = new Job
+        {
+            Id = "job-3",
+            YearGroups = new List<int> { 2026 },
+            CreatedBy = "other-admin",
+        };
+
+        mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
+
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), logger);
+        var admin = new AuthData { Id = "admin-1", Role = "Admin" };
+
+        var response = await service.UpdateJobAsync(new UpdateJobRequest
+        {
+            JobId = job.Id,
+            Title = "Test",
+            Company = "TestCo",
+            Location = "Testville",
+            Type = "Full-time",
+            Status = "Active",
+        }, admin);
+
+        Assert.Equal(200, response.Code);
     }
 }

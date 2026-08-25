@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage news posts.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.News)]
 public class NewsController(INewsService newsService) : DefaultController
 {

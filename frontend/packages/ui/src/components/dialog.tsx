@@ -10,10 +10,21 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogClose = DialogPrimitive.Close;
 
+// Forces the overlay onto its own GPU compositor layer. WebKit (Safari, and
+// Chrome on iOS) can otherwise fail to repaint OTHER fixed/sticky +
+// backdrop-filter elements on the page (e.g. an app's sticky header) after
+// this blur layer unmounts, leaving them invisible until a manual
+// scroll/refresh forces a repaint.
+const GPU_LAYER_STYLE: React.CSSProperties = {
+  transform: "translateZ(0)",
+  WebkitBackfaceVisibility: "hidden",
+  backfaceVisibility: "hidden",
+};
+
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
@@ -21,6 +32,7 @@ const DialogOverlay = React.forwardRef<
       "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
+    style={{ ...GPU_LAYER_STYLE, ...style }}
     {...props}
   />
 ));

@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { memberClient } from "@/lib/api-client";
+import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   LayoutDashboard,
   CreditCard,
@@ -258,6 +259,7 @@ function MobileBottomNav() {
         background: "color-mix(in oklch, var(--background) 92%, transparent)",
         backdropFilter: "blur(20px)",
         borderColor: "var(--border)",
+        ...GPU_LAYER_STYLE,
       }}
     >
       <nav className="flex items-stretch justify-around h-[58px] max-w-[560px] mx-auto">
@@ -312,7 +314,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
       {/* Mobile sidebar overlay (Drawer) */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[9999] flex lg:hidden">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setMobileOpen(false)} />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" style={GPU_LAYER_STYLE} onClick={() => setMobileOpen(false)} />
           <div className="relative z-10 animate-in slide-in-from-left duration-500 shadow-2xl">
             <Sidebar onClose={() => setMobileOpen(false)} />
           </div>
@@ -324,12 +326,22 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         
         {/* Desktop header */}
-        <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
+        <div
+          className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40"
+          style={GPU_LAYER_STYLE}
+        >
           <NotificationPanel />
         </div>
 
-        {/* Mobile header - Refined and compact */}
-        <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        {/* Mobile header - Refined and compact. transform/backfaceVisibility force this
+            onto its own compositor layer — WebKit can otherwise fail to repaint a
+            fixed/sticky + backdrop-blur layer after a sibling blur layer (a modal
+            overlay, the notification panel) unmounts, leaving the header invisible
+            until a manual scroll/refresh forces a repaint. */}
+        <div
+          className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl"
+          style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
+        >
           <div className="flex items-center gap-2.5">
             {brandMark ? (
               <img src={brandMark} alt={brandName} className="w-8 h-8 rounded-lg object-cover shrink-0" />

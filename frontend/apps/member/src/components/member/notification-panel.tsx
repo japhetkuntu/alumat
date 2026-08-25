@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Bell, Check, CheckCheck, Loader2, X } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -138,9 +139,13 @@ export function NotificationPanel() {
           {/* Mobile backdrop */}
           <div
             className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm sm:hidden"
+            style={GPU_LAYER_STYLE}
             onClick={() => setOpen(false)}
           />
-          <div className="fixed inset-x-3 top-[4.5rem] z-50 rounded-2xl border border-border/50 bg-background shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96">
+          <div
+            className="fixed inset-x-3 top-[4.5rem] z-50 rounded-2xl border border-border/50 bg-background shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96"
+            style={GPU_LAYER_STYLE}
+          >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30">
             <div className="flex items-center gap-2">

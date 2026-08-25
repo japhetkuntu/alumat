@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -23,8 +24,8 @@ public class JobService(
         try
         {
             logger.LogInformation("GetJobs request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
 
             var result = await jobRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
@@ -37,7 +38,7 @@ public class JobService(
                       || j.Title.Contains(filter.Search)
                       || j.Company.Contains(filter.Search)
                       || j.Location.Contains(filter.Search))
-                  && (isSuper || (yearGroup.HasValue && j.YearGroups != null && j.YearGroups.Contains(yearGroup.Value))));
+                  && (isSuper || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))));
             var dtoResult = new PgPagedResult<JobDto>
             {
                 PageIndex = result.PageIndex,
@@ -63,9 +64,6 @@ public class JobService(
         try
         {
             logger.LogInformation("CreateJob request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-
             var job = new Job
             {
                 Title = request.Title,
@@ -78,7 +76,7 @@ public class JobService(
                 Status = "Active",
                 PostedBy = admin.Id,
                 CreatedBy = admin.Id,
-                YearGroups = isSuper ? request.YearGroups : (yearGroup.HasValue ? new List<int> { yearGroup.Value } : null),
+                YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups),
             };
 
             if (request.BannerImage is not null)
@@ -108,7 +106,7 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(job.YearGroups, job.CreatedBy))
+            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy))
             {
                 logger.LogWarning("Denied job update access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears}, createdBy={CreatedBy})",
                     admin.Id, job.Id, admin.GraduationYear, job.YearGroups ?? new List<int>(), job.CreatedBy);
@@ -153,7 +151,7 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Job not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(job.YearGroups, job.CreatedBy))
+            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy))
             {
                 logger.LogWarning("Denied job delete access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears}, createdBy={CreatedBy})",
                     admin.Id, jobId, admin.GraduationYear, job.YearGroups ?? new List<int>(), job.CreatedBy);
@@ -180,16 +178,11 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-            if (!isSuper)
+            if (!admin.CanViewScopedItem(job.YearGroups, createdBy: job.CreatedBy))
             {
-                if (!yearGroup.HasValue || job.YearGroups == null || !job.YearGroups.Contains(yearGroup.Value))
-                {
-                    logger.LogWarning("Denied job view access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears})",
-                        admin.Id, jobId, admin.GraduationYear, job.YearGroups ?? new List<int>());
-                    return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
-                }
+                logger.LogWarning("Denied job view access for admin {AdminId} to job {JobId} (jobYears={JobYears})",
+                    admin.Id, jobId, job.YearGroups ?? new List<int>());
+                return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
             }
 
             return job.ToDto().ToOkApiResponse();
@@ -210,7 +203,7 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Job not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(job.YearGroups, job.CreatedBy))
+            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy))
             {
                 logger.LogWarning("Denied job close access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears}, createdBy={CreatedBy})",
                     admin.Id, jobId, admin.GraduationYear, job.YearGroups ?? new List<int>(), job.CreatedBy);

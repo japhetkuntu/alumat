@@ -16,6 +16,17 @@ public static class IdentityPrincipalExtensions
             graduationYear = parsedYear;
         }
 
+        var scopedYearGroups = principal.FindAll("year_group_scope")
+            .Select(c => int.TryParse(c.Value, out var y) ? (int?)y : null)
+            .Where(y => y.HasValue)
+            .Select(y => y!.Value)
+            .ToList();
+
+        var scopedCommunityIds = principal.FindAll("community_scope")
+            .Select(c => c.Value)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .ToList();
+
         return new AuthData
         {
             Id = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
@@ -26,6 +37,8 @@ public static class IdentityPrincipalExtensions
             Role = principal.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty,
             GraduationYear = graduationYear,
             MobileNumber = principal.FindFirst(ClaimTypes.MobilePhone)?.Value ?? string.Empty,
+            YearGroups = scopedYearGroups.Count > 0 ? scopedYearGroups : null,
+            CommunityIds = scopedCommunityIds.Count > 0 ? scopedCommunityIds : null,
         };
     }
 }

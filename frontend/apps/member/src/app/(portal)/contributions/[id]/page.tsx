@@ -24,6 +24,7 @@ import {
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
 import type { Campaign } from "@/types";
+import { PaymentRedirectOverlay } from "@/components/member/payment-redirect-overlay";
 
 export default function CampaignDetailPage() {
   useAuth();
@@ -32,6 +33,7 @@ export default function CampaignDetailPage() {
   const [amount, setAmount]         = useState("");
   const [preset, setPreset]         = useState<number | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["campaign", id],
@@ -58,10 +60,14 @@ export default function CampaignDetailPage() {
         : initiatePaystackPayment({ campaignId: id, amount: payAmount, callbackUrl });
     },
     onSuccess: (data: { authorizationUrl?: string }) => {
-      if (data?.authorizationUrl) window.location.href = data.authorizationUrl;
-      else toast.success("Payment initiated.");
+      if (data?.authorizationUrl) {
+        window.location.href = data.authorizationUrl;
+      } else {
+        setRedirecting(false);
+        toast.success("Payment initiated.");
+      }
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { setRedirecting(false); toast.error(handleApiError(e)); },
   });
 
   /* ── Loading ── */
@@ -402,8 +408,8 @@ export default function CampaignDetailPage() {
                 <Button
                   className="w-full font-bold text-[15px] gap-2"
                   style={{ height: 48 }}
-                  disabled={!canPay || payMut.isPending}
-                  onClick={() => payMut.mutate(numericAmount)}
+                  disabled={!canPay || payMut.isPending || redirecting}
+                  onClick={() => { setRedirecting(true); payMut.mutate(numericAmount); }}
                 >
                   {payMut.isPending ? (
                     <><Loader2 size={16} className="animate-spin" /> Processing…</>
@@ -497,6 +503,12 @@ export default function CampaignDetailPage() {
         </aside>
 
       </div>
+
+      <PaymentRedirectOverlay
+        visible={redirecting}
+        campaignTitle={campaign.title}
+        amount={isMembership ? memberAmount : numericAmount}
+      />
     </div>
   );
 }

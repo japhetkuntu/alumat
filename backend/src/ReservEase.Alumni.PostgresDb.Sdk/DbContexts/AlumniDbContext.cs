@@ -96,6 +96,12 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Campaign>().Property(c => c.MobileMoneyAccount).HasColumnType("jsonb").HasConversion(new JsonbConverter<ManualPaymentMobileMoneyAccount>(jsonOpts));
 
         modelBuilder.Entity<AlumniEvent>().Property(e => e.YearGroups).HasColumnType("integer[]");
+        modelBuilder.Entity<InstitutionStaff>().Property(a => a.YearGroups).HasColumnType("integer[]");
+        modelBuilder.Entity<InstitutionStaff>().Property(a => a.CommunityIds)
+            .HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts))
+            .Metadata
+            .SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<AlumniEvent>().Property(e => e.ImageUrls)
             .HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts))

@@ -10,6 +10,8 @@ public class AuthClaimData
     public string FullName => $"{FirstName} {LastName}".Trim();
     public string Role { get; set; } = string.Empty;
     public int? GraduationYear { get; set; }
+    public List<int>? YearGroups { get; set; }
+    public List<string>? CommunityIds { get; set; }
     public string InstitutionId { get; set; } = string.Empty;
     public string SigningKey { get; set; } = string.Empty;
     public string Issuer { get; set; } = string.Empty;

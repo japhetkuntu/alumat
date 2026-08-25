@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -25,13 +26,16 @@ public class EventService(
         try
         {
             logger.LogInformation("GetEvents request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
 
             var result = await eventRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "StartDate", filter.SortDir ?? "asc",
                 e => (string.IsNullOrEmpty(filter.Status) || e.Status == filter.Status)
-                      && (isSuper || e.CreatedBy == admin.Id || (yearGroup.HasValue && e.YearGroups != null && e.YearGroups.Contains(yearGroup.Value))));
+                      && (isSuper || e.CreatedBy == admin.Id
+                          || (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                          || (e.CommunityId != null && communityIds.Contains(e.CommunityId))));
 
             var eventIds = result.Results.Select(e => e.Id).ToList();
             if (eventIds.Any())
@@ -75,7 +79,7 @@ public class EventService(
             if (ev is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
 
-            if (!admin.CanViewYearGroupScopedItem(ev.YearGroups, ev.CreatedBy))
+            if (!admin.CanViewScopedItem(ev.YearGroups, ev.CommunityId, ev.CreatedBy))
             {
                 logger.LogWarning("Denied event view access for admin {AdminId} to event {EventId} (adminYear={AdminYear}, eventYears={EventYears}, createdBy={CreatedBy})",
                     admin.Id, eventId, admin.GraduationYear, ev.YearGroups ?? new List<int>(), ev.CreatedBy);
@@ -150,7 +154,7 @@ public class EventService(
             if (ev is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(ev.YearGroups, ev.CreatedBy))
+            if (!admin.CanModifyScopedItem(ev.YearGroups, ev.CreatedBy, ev.CommunityId))
             {
                 logger.LogWarning("Denied event update access for admin {AdminId} to event {EventId} (adminYear={AdminYear}, eventYears={EventYears}, createdBy={CreatedBy})",
                     admin.Id, request.EventId, admin.GraduationYear, ev.YearGroups ?? new List<int>(), ev.CreatedBy);
@@ -211,7 +215,7 @@ public class EventService(
             if (ev is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Event not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(ev.YearGroups, ev.CreatedBy))
+            if (!admin.CanModifyScopedItem(ev.YearGroups, ev.CreatedBy, ev.CommunityId))
             {
                 logger.LogWarning("Denied event cancel access for admin {AdminId} to event {EventId} (adminYear={AdminYear}, eventYears={EventYears}, createdBy={CreatedBy})",
                     admin.Id, eventId, admin.GraduationYear, ev.YearGroups ?? new List<int>(), ev.CreatedBy);
@@ -241,7 +245,7 @@ public class EventService(
             if (ev is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Event not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(ev.YearGroups, ev.CreatedBy))
+            if (!admin.CanModifyScopedItem(ev.YearGroups, ev.CreatedBy, ev.CommunityId))
             {
                 logger.LogWarning("Denied event delete access for admin {AdminId} to event {EventId} (adminYear={AdminYear}, eventYears={EventYears}, createdBy={CreatedBy})",
                     admin.Id, eventId, admin.GraduationYear, ev.YearGroups ?? new List<int>(), ev.CreatedBy);
@@ -265,7 +269,7 @@ public class EventService(
         {
             logger.LogInformation("GetRsvps request for eventId: {EventId} — filter: {Filter} (admin: {AdminId})", eventId, filter.Serialize(), admin.Id);
             var ev = await eventRepo.GetByIdAsync(eventId);
-            if (ev is null || !admin.CanViewYearGroupScopedItem(ev.YearGroups, ev.CreatedBy))
+            if (ev is null || !admin.CanViewScopedItem(ev.YearGroups, ev.CommunityId, ev.CreatedBy))
             {
                 logger.LogWarning("Denied RSVP view access for admin {AdminId} to event {EventId} (adminYear={AdminYear}, eventYears={EventYears}, createdBy={CreatedBy})",
                     admin.Id, eventId, admin.GraduationYear, ev?.YearGroups ?? new List<int>(), ev?.CreatedBy);
@@ -330,7 +334,7 @@ public class EventService(
         {
             logger.LogInformation("Reopen RSVP request for eventId: {EventId} rsvpId: {RsvpId} (admin: {AdminId})", eventId, rsvpId, admin.Id);
             var ev = await eventRepo.GetByIdAsync(eventId);
-            if (ev is null || !admin.CanModifyYearGroupScopedItem(ev.YearGroups, ev.CreatedBy))
+            if (ev is null || !admin.CanModifyScopedItem(ev.YearGroups, ev.CreatedBy, ev.CommunityId))
             {
                 logger.LogWarning("Denied RSVP reopen access for admin {AdminId} to event {EventId} (adminYear={AdminYear}, eventYears={EventYears}, createdBy={CreatedBy})",
                     admin.Id, eventId, admin.GraduationYear, ev?.YearGroups ?? new List<int>(), ev?.CreatedBy);

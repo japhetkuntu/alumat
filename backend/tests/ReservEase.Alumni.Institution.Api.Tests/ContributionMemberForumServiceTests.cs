@@ -46,7 +46,7 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task GetContributionsAsync_ReturnsOnlyOwnerContributions_ForNormalAdmin()
+    public async Task GetContributionsAsync_ReturnsOnlyOwnerContributions_ForScopedAdmin()
     {
         var contributions = new List<Contribution>
         {
@@ -74,8 +74,11 @@ public class ContributionMemberForumServiceTests
                 };
             });
 
-        var service = new AdminContributionService(mockContributionRepo.Object, Mock.Of<IAlumniPgRepository<Campaign>>(), Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<IAdminNotificationActor>(), new NullLogger<AdminContributionService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin" };
+        var mockCampaignRepo2 = new Mock<IAlumniPgRepository<Campaign>>();
+        mockCampaignRepo2.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Campaign, bool>>>())).ReturnsAsync(new List<Campaign>());
+
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo2.Object, Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<IAdminNotificationActor>(), new NullLogger<AdminContributionService>());
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var response = await service.GetContributionsAsync(new ContributionInstitutionStaffFilter { Page = 1, PageSize = 10 }, admin);
 
@@ -228,7 +231,7 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task GetMembersAsync_ReturnsOnlyYearGroupMembers_ForNormalAdmin()
+    public async Task GetMembersAsync_ReturnsOnlyYearGroupMembers_ForScopedAdmin()
     {
         var members = new List<DbMember>
         {
@@ -261,7 +264,7 @@ public class ContributionMemberForumServiceTests
         var mockInstitutionRepoForMembers = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var mockCurrentTenantForMembers = new Mock<ICurrentTenantService>();
         var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockCurrentTenantForMembers.Object, new NullLogger<MemberManagementService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var listResponse = await service.GetMembersAsync(new MemberListFilter { Page = 1, PageSize = 10 }, admin);
         Assert.Equal(200, listResponse.Code);
@@ -274,13 +277,13 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task CreateCategoryAsync_AndThreadActions_ReturnForbidden_ForNonSuperAdmin()
+    public async Task CreateCategoryAsync_AndThreadActions_ReturnForbidden_ForScopedAdmin()
     {
         var mockCategoryRepo = new Mock<IAlumniPgRepository<ForumCategory>>();
         var mockThreadRepo = new Mock<IAlumniPgRepository<ForumThread>>();
 
         var service = new ForumService(mockCategoryRepo.Object, mockThreadRepo.Object, new NullLogger<ForumService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin" };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var catResponse = await service.CreateCategoryAsync("Test", "Desc", admin);
         Assert.Equal(403, catResponse.Code);
@@ -299,13 +302,13 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task MentorshipService_Actions_ReturnForbidden_ForNonSuperAdmin()
+    public async Task MentorshipService_Actions_ReturnForbidden_ForScopedAdmin()
     {
         var mockProfileRepo = new Mock<IAlumniPgRepository<MentorProfile>>();
         var mockRequestRepo = new Mock<IAlumniPgRepository<MentorshipRequest>>();
 
         var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, new NullLogger<MentorshipService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin" };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var profilesResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, admin);
         Assert.Equal(403, profilesResponse.Code);
@@ -502,9 +505,9 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public void ResolveYearGroupsForCreation_EnforcesAdminGraduationYear_ForNonSuperAdmin()
+    public void ResolveYearGroupsForCreation_EnforcesOwnScope_ForScopedAdmin()
     {
-        var admin = new AuthData { Role = "Admin", GraduationYear = 2026 };
+        var admin = new AuthData { Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
         var resolved = admin.ResolveYearGroupsForCreation(new List<int> { 2024, 2025 });
 
         Assert.NotNull(resolved);
@@ -513,7 +516,7 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task EventService_CreateEventAsync_RespectsAdminYearGroup_ForNormalAdmin()
+    public async Task EventService_CreateEventAsync_RespectsAdminYearGroup_ForScopedAdmin()
     {
         var mockEventRepo = new Mock<IAlumniPgRepository<AlumniEvent>>();
         var mockRsvpRepo = new Mock<IAlumniPgRepository<EventRsvp>>();
@@ -527,7 +530,7 @@ public class ContributionMemberForumServiceTests
             .Callback<AlumniEvent>(e => createdEvent = e);
 
         var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), new NullLogger<EventService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateEventRequest
         {
@@ -574,7 +577,7 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task CampaignService_CreateCampaignAsync_RespectsAdminYearGroup_ForNormalAdmin()
+    public async Task CampaignService_CreateCampaignAsync_RespectsAdminYearGroup_ForScopedAdmin()
     {
         var mockCampaignRepo = new Mock<IAlumniPgRepository<Campaign>>();
         var mockStorage = new Mock<IStorageService>();
@@ -588,7 +591,7 @@ public class ContributionMemberForumServiceTests
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
         var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), new NullLogger<AdminCampaignService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateCampaignRequest
         {
@@ -653,7 +656,7 @@ public class ContributionMemberForumServiceTests
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
 
         var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), new NullLogger<AdminCampaignService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateCampaignRequest
         {

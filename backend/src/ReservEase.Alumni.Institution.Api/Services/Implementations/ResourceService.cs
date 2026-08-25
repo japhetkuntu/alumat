@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -21,8 +22,9 @@ public class ResourceService(
         try
         {
             logger.LogInformation("GetResources request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
             var result = await resourceRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 r => (string.IsNullOrEmpty(filter.Category) || r.Category == filter.Category)
@@ -32,7 +34,9 @@ public class ResourceService(
                   && (string.IsNullOrEmpty(filter.Search)
                       || r.Title.Contains(filter.Search)
                       || (r.Description != null && r.Description.Contains(filter.Search)))
-                  && (isSuper || (yearGroup.HasValue && r.YearGroups != null && r.YearGroups.Contains(yearGroup.Value))));
+                  && (isSuper
+                      || (r.YearGroups != null && r.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                      || (r.CommunityId != null && communityIds.Contains(r.CommunityId))));
             var dtoResult = new PgPagedResult<ResourceDto>
             {
                 PageIndex = result.PageIndex,
@@ -62,7 +66,7 @@ public class ResourceService(
             if (resource is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<ResourceDto>("Resource not found");
 
-            if (!admin.CanViewYearGroupScopedItem(resource.YearGroups))
+            if (!admin.CanViewScopedItem(resource.YearGroups, resource.CommunityId))
             {
                 logger.LogWarning("Denied resource view access for admin {AdminId} to resource {ResourceId} (adminYear={AdminYear}, resourceYears={ResourceYears})",
                     admin.Id, resourceId, admin.GraduationYear, resource.YearGroups ?? new List<int>());
@@ -128,7 +132,7 @@ public class ResourceService(
             if (resource is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<ResourceDto>("Resource not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(resource.YearGroups, resource.CreatedBy))
+            if (!admin.CanModifyScopedItem(resource.YearGroups, resource.CreatedBy, resource.CommunityId))
             {
                 logger.LogWarning("Denied resource update access for admin {AdminId} to resource {ResourceId} (adminYear={AdminYear}, resourceYears={ResourceYears}, createdBy={CreatedBy})",
                     admin.Id, request.ResourceId, admin.GraduationYear, resource.YearGroups ?? new List<int>(), resource.CreatedBy);
@@ -178,7 +182,7 @@ public class ResourceService(
             if (resource is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Resource not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(resource.YearGroups, resource.CreatedBy))
+            if (!admin.CanModifyScopedItem(resource.YearGroups, resource.CreatedBy, resource.CommunityId))
             {
                 logger.LogWarning("Denied resource delete access for admin {AdminId} to resource {ResourceId} (adminYear={AdminYear}, resourceYears={ResourceYears}, createdBy={CreatedBy})",
                     admin.Id, resourceId, admin.GraduationYear, resource.YearGroups ?? new List<int>(), resource.CreatedBy);

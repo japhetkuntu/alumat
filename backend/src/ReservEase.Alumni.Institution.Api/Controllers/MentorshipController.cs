@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage mentorship profiles and requests.
 /// </summary>
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = "Admin,SuperAdmin")]
 [RequireFeature(InstitutionFeatures.Mentorship)]
 public class MentorshipController(IMentorshipService mentorshipService) : DefaultController
 {

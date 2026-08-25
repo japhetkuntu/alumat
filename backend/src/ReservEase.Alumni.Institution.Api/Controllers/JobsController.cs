@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage job postings.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Jobs)]
 public class JobsController(IJobService jobService) : DefaultController
 {

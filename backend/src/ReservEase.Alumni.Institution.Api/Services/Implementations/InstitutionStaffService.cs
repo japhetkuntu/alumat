@@ -20,7 +20,7 @@ public class InstitutionStaffService(
             var result = await adminRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 a => (string.IsNullOrEmpty(filter.Role) || a.Role == filter.Role)
-                  && (!filter.GraduationYear.HasValue || a.YearGroup == filter.GraduationYear)
+                  && (!filter.GraduationYear.HasValue || (a.YearGroups != null && a.YearGroups.Contains(filter.GraduationYear.Value)))
                   && (string.IsNullOrEmpty(filter.Search)
                       || a.FirstName.Contains(filter.Search)
                       || a.LastName.Contains(filter.Search)
@@ -32,7 +32,8 @@ public class InstitutionStaffService(
                 a.LastName,
                 a.Email,
                 a.Role,
-                a.YearGroup,
+                a.YearGroups,
+                a.CommunityIds,
                 a.IsDisabled,
                 a.CreatedAt));
 
@@ -65,9 +66,7 @@ public class InstitutionStaffService(
             if (existing is not null)
                 return ApiResponseExtensions.ToConflictApiResponse<InstitutionStaffListItem>("An admin with that email already exists");
 
-            var role = string.IsNullOrWhiteSpace(request.Role) ? "Admin" : request.Role;
-            if (role != "SuperAdmin" && role != "Admin")
-                role = "Admin";
+            var role = StaffRoles.IsValid(request.Role) ? request.Role : StaffRoles.Admin;
 
             var admin = new StaffEntity
             {
@@ -76,7 +75,8 @@ public class InstitutionStaffService(
                 Email = email,
                 Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Role = role,
-                YearGroup = request.GraduationYear,
+                YearGroups = role == StaffRoles.ScopedAdmin ? request.YearGroups : null,
+                CommunityIds = role == StaffRoles.ScopedAdmin ? request.CommunityIds : null,
                 IsDisabled = request.IsDisabled,
                 CreatedBy = createdBy.Id,
             };
@@ -84,7 +84,7 @@ public class InstitutionStaffService(
             await adminRepo.AddAsync(admin);
 
             logger.LogInformation("Admin {AdminId} created by {CreatorId}", admin.Id, createdBy.Id);
-            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroup, admin.IsDisabled, admin.CreatedAt);
+            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
             return listItem.ToCreatedApiResponse("Admin created");
         }
         catch (Exception e)
@@ -105,17 +105,16 @@ public class InstitutionStaffService(
 
             admin.FirstName = request.FirstName.Trim();
             admin.LastName = request.LastName.Trim();
-            admin.Role = string.IsNullOrWhiteSpace(request.Role) ? "Admin" : request.Role;
-            if (admin.Role != "SuperAdmin" && admin.Role != "Admin")
-                admin.Role = "Admin";
-            admin.YearGroup = request.GraduationYear;
+            admin.Role = StaffRoles.IsValid(request.Role) ? request.Role : StaffRoles.Admin;
+            admin.YearGroups = admin.Role == StaffRoles.ScopedAdmin ? request.YearGroups : null;
+            admin.CommunityIds = admin.Role == StaffRoles.ScopedAdmin ? request.CommunityIds : null;
             admin.IsDisabled = request.IsDisabled;
             admin.UpdatedAt = DateTime.UtcNow;
             admin.UpdatedBy = updatedBy.Id;
 
             await adminRepo.UpdateAsync(admin);
 
-            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroup, admin.IsDisabled, admin.CreatedAt);
+            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
             return listItem.ToOkApiResponse();
         }
         catch (Exception e)

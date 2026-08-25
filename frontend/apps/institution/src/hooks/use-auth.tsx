@@ -11,6 +11,7 @@ interface AuthContextValue {
   login: (req: LoginRequest) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
+  isScopedAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -100,7 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         logout,
-        isAdmin: user?.role === "Admin" || user?.role === "SuperAdmin",
+        isAdmin: user?.role === "Admin" || user?.role === "SuperAdmin" || user?.role === "ScopedAdmin",
+        isScopedAdmin: user?.role === "ScopedAdmin",
       }}
     >
       {children}

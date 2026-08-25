@@ -178,8 +178,8 @@ export default function AdminMembersPage() {
           <h1 className="text-[25px] font-bold m-0">Members</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
             {totalCount.toLocaleString()} {totalCount === 1 ? "record" : "records"} &middot;{" "}
-            {user?.graduationYear
-              ? `scoped to your assigned year group (Class of ${user.graduationYear})`
+            {user?.role === "ScopedAdmin" && user.yearGroups?.length
+              ? `scoped to your assigned year group${user.yearGroups.length > 1 ? "s" : ""} (${user.yearGroups.join(", ")})`
               : "scoped to this institution"}
           </p>
         </div>

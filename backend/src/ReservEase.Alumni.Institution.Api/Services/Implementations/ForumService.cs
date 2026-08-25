@@ -45,8 +45,8 @@ public class ForumService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<ForumCategoryDto>("Only super admins can manage forums");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<ForumCategoryDto>("Scoped admins cannot manage forums");
 
             logger.LogInformation("CreateCategory request — name: {Name} by admin {AdminId}", name, admin.Id);
 
@@ -105,8 +105,8 @@ public class ForumService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Only super admins can manage forum threads");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Scoped admins cannot manage forum threads");
 
             logger.LogInformation("PinThread request for threadId: {ThreadId} by admin {AdminId}", threadId, admin.Id);
 
@@ -132,8 +132,8 @@ public class ForumService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Only super admins can manage forum threads");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Scoped admins cannot manage forum threads");
 
             logger.LogInformation("CloseThread request for threadId: {ThreadId} by admin {AdminId}", threadId, admin.Id);
 
@@ -159,8 +159,8 @@ public class ForumService(
     {
         try
         {
-            if (admin.Role != "SuperAdmin")
-                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Only super admins can manage forum threads");
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Scoped admins cannot manage forum threads");
 
             logger.LogInformation("DeleteThread request for threadId: {ThreadId} by admin {AdminId}", threadId, admin.Id);
 

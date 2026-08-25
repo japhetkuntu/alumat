@@ -35,7 +35,7 @@ export interface BaseFilter {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-export type UserRole = "SuperAdmin" | "Admin" | "Member";
+export type UserRole = "SuperAdmin" | "Admin" | "ScopedAdmin" | "Member";
 export type MemberStatus = "Pending" | "Active" | "Suspended" | "Banned" | "Blocked";
 
 export interface AuthData {
@@ -48,7 +48,10 @@ export interface AuthData {
   firstName?: string;
   lastName?: string;
   role: UserRole;
-  graduationYear?: number;
+  // Only meaningful when role === "ScopedAdmin" — which year-groups/batches
+  // and communities this staff account is restricted to.
+  yearGroups?: number[];
+  communityIds?: string[];
 }
 
 export interface LoginRequest {
@@ -135,7 +138,8 @@ export interface InstitutionStaffUser {
   lastName: string;
   email: string;
   role: UserRole;
-  graduationYear?: number;
+  yearGroups?: number[];
+  communityIds?: string[];
   isDisabled?: boolean;
   createdAt: string;
 }
@@ -146,14 +150,16 @@ export interface CreateInstitutionStaffRequest {
   email: string;
   password: string;
   role: UserRole;
-  graduationYear?: number;
+  yearGroups?: number[];
+  communityIds?: string[];
 }
 
 export interface UpdateInstitutionStaffRequest {
   firstName: string;
   lastName: string;
   role: UserRole;
-  graduationYear?: number;
+  yearGroups?: number[];
+  communityIds?: string[];
   isDisabled?: boolean;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -30,6 +30,7 @@ import {
 import { handleApiError } from "@/lib/api-client";
 import type { Campaign, Contribution, ContributionStatus } from "@/types";
 import { contributionMethodLabel } from "@/types";
+import { PaymentRedirectOverlay } from "@/components/member/payment-redirect-overlay";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
   Confirmed: "success",
@@ -63,12 +64,14 @@ function getPendingRefServerSnapshot(): string | null {
    PAYMENT STATUS MODAL
    ───────────────────────────────────────────────────────────────────────── */
 function PaymentStatusModal({
-  reference, open, onClose, onConfirmed,
+  reference, open, onClose, onConfirmed, campaignTitle, amount,
 }: {
   reference: string | null;
   open: boolean;
   onClose: () => void;
   onConfirmed: () => void;
+  campaignTitle?: string;
+  amount?: number;
 }) {
   const [status, setStatus]   = useState<PollStatus>("loading");
   const [message, setMessage] = useState("");
@@ -122,35 +125,62 @@ function PaymentStatusModal({
     error:   "Something went wrong",
   }[status];
 
+  const resolved = status === "success" || status === "error";
+
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
       <DialogContent className="max-w-sm">
+        {(campaignTitle || amount != null) && (
+          <div
+            className="flex items-center justify-between gap-3 -mt-1 mb-1 px-3.5 py-2.5 rounded-xl"
+            style={{ background: "var(--secondary)" }}
+          >
+            <span className="text-[13px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+              {campaignTitle ?? "Contribution"}
+            </span>
+            {amount != null && (
+              <span className="text-[13px] font-bold tabular-nums shrink-0" style={{ color: "var(--foreground)" }}>
+                {formatCurrency(amount)}
+              </span>
+            )}
+          </div>
+        )}
+
         <DialogHeader className="items-center text-center gap-3">
-          <div className={cn("w-14 h-14 rounded-full flex items-center justify-center",
+          <div className={cn("relative w-16 h-16 rounded-full flex items-center justify-center",
             status === "success" ? "bg-success/10" :
             status === "error"   ? "bg-destructive/10" :
             status === "pending" ? "bg-warning/10" : "bg-primary/10")}>
-            <Icon size={28} className={cn(iconColor, status === "loading" && "animate-spin")} />
+            {status === "loading" && (
+              <div className="absolute inset-0 rounded-full animate-ping opacity-30" style={{ background: "var(--primary)" }} />
+            )}
+            <Icon size={30} className={cn(iconColor, "relative", status === "loading" && "animate-spin")} />
           </div>
           <DialogTitle className="text-[17px]">{title}</DialogTitle>
           {message && (
-            <DialogDescription className="text-[13.5px] text-center leading-relaxed">
+            <DialogDescription className="text-[13.5px] text-center leading-relaxed max-w-[280px]">
               {message}
             </DialogDescription>
           )}
         </DialogHeader>
         <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
+          {!resolved && (
+            <Button
+              variant="outline"
+              onClick={() => poll()}
+              disabled={status === "loading"}
+              className="flex-1 gap-2 font-semibold"
+            >
+              <RefreshCcw size={14} className={status === "loading" ? "animate-spin" : ""} />
+              {status === "loading" ? "Checking…" : `Check again (${seconds}s)`}
+            </Button>
+          )}
           <Button
-            variant="outline"
-            onClick={() => poll()}
-            disabled={status === "loading"}
-            className="flex-1 gap-2 font-semibold"
+            onClick={onClose}
+            variant={resolved ? "default" : "ghost"}
+            className="flex-1 font-semibold"
           >
-            <RefreshCcw size={14} className={status === "loading" ? "animate-spin" : ""} />
-            {status === "loading" ? "Checking…" : `Check again (${seconds}s)`}
-          </Button>
-          <Button onClick={onClose} className="flex-1 font-semibold">
-            Done
+            {status === "success" ? "Done" : status === "error" ? "Close" : "I'll check later"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -368,7 +398,20 @@ function CampaignCard({
 export default function MemberContributionsPage() {
   const [page, setPage]               = useState(1);
   const [payingCampaignId, setPaying] = useState<string | null>(null);
+  const [payingContext, setPayingContext] = useState<{ title: string; amount: number } | null>(null);
+  const [statusModalContext, setStatusModalContext] = useState<{ title: string; amount: number } | null>(null);
   const pendingReference = useSyncExternalStore(subscribePendingRef, getPendingRefSnapshot, getPendingRefServerSnapshot);
+  // Set synchronously (before the localStorage write below) the instant we know
+  // we're about to hard-navigate to Paystack. useSyncExternalStore re-reads
+  // localStorage on EVERY render, not just when notifyPendingRef() fires — so
+  // the very next render this component gets (triggered by payMut's own
+  // onSettled → setPaying(null), which always runs right after onSuccess)
+  // would otherwise pick up the reference we just wrote and flip the status
+  // modal open, which then fires a poll fetch that page-unload aborts mid-flight
+  // as a flashed "error" state, one frame before the browser actually leaves.
+  // This ref suppresses that self-triggered open deterministically, with no
+  // reliance on timing.
+  const redirectingRef = useRef(false);
   const pageSize = 20;
   const qc = useQueryClient();
 
@@ -430,13 +473,10 @@ export default function MemberContributionsPage() {
     },
     onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
       if (data?.authorizationUrl) {
-        // Deliberately NOT calling notifyPendingRef() here — we're about to
-        // hard-navigate away in this same tick, so opening the status modal
-        // now would just start a poll fetch that the page unload aborts
-        // mid-flight, flashing an "error" state for one frame before the
-        // browser actually leaves. The localStorage write alone is enough:
-        // the modal picks it up correctly on next mount (see
-        // getPendingRefSnapshot), i.e. whenever the user actually returns.
+        // See redirectingRef above — must be set before the localStorage
+        // write so it's already true by the time onSettled's setPaying(null)
+        // triggers this component's next render.
+        redirectingRef.current = true;
         if (data.reference) {
           localStorage.setItem("alumni-paystack-pending-ref", data.reference);
         }
@@ -447,16 +487,18 @@ export default function MemberContributionsPage() {
         qc.invalidateQueries({ queryKey: ["m-campaigns"] });
       }
     },
-    onError:   (e) => toast.error(handleApiError(e)),
+    onError:   (e) => { toast.error(handleApiError(e)); setPayingContext(null); },
     onSettled: () => setPaying(null),
   });
 
-  const openStatusModal = (reference: string) => {
+  const openStatusModal = (reference: string, context?: { title: string; amount: number }) => {
+    setStatusModalContext(context ?? null);
     localStorage.setItem("alumni-paystack-pending-ref", reference);
     notifyPendingRef();
   };
 
   const closeModal = () => {
+    setStatusModalContext(null);
     localStorage.removeItem("alumni-paystack-pending-ref");
     notifyPendingRef();
   };
@@ -509,10 +551,11 @@ export default function MemberContributionsPage() {
                     const amount = getMemberAmount(c);
                     if (amount > 0) {
                       setPaying(c.id);
+                      setPayingContext({ title: c.title, amount });
                       payMut.mutate({ campaignId: c.id, amount, isMembership: !!c.isMembershipCampaign });
                     }
                   }}
-                  onCheckStatus={() => myPayment?.transactionRef && openStatusModal(myPayment.transactionRef)}
+                  onCheckStatus={() => myPayment?.transactionRef && openStatusModal(myPayment.transactionRef, { title: c.title, amount: myPayment.amount })}
                 />
               );
             })}
@@ -694,9 +737,17 @@ export default function MemberContributionsPage() {
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </section>
 
+      <PaymentRedirectOverlay
+        visible={!!payingContext}
+        campaignTitle={payingContext?.title}
+        amount={payingContext?.amount}
+      />
+
       <PaymentStatusModal
         reference={pendingReference}
-        open={!!pendingReference}
+        open={!!pendingReference && !redirectingRef.current}
+        campaignTitle={statusModalContext?.title}
+        amount={statusModalContext?.amount}
         onClose={closeModal}
         onConfirmed={() => {
           closeModal();

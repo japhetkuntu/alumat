@@ -12,11 +12,12 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// Manage this institution's graduating-class year groups ("batches") — lets
 /// admins define their own list instead of the platform's generic year range.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize]
 [Route("api/v{version:apiVersion}/batches")]
 public class BatchesController(IBatchService batchService) : DefaultController
 {
     [HttpGet]
+    [Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
     [SwaggerOperation(Summary = "List batches")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<BatchListItem>>))]
     public async Task<IActionResult> GetBatches()
@@ -26,6 +27,7 @@ public class BatchesController(IBatchService batchService) : DefaultController
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [SwaggerOperation(Summary = "Create a batch")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<BatchListItem>))]
     [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ApiResponse<object>))]
@@ -37,6 +39,7 @@ public class BatchesController(IBatchService batchService) : DefaultController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [SwaggerOperation(Summary = "Update a batch")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<BatchListItem>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -48,6 +51,7 @@ public class BatchesController(IBatchService batchService) : DefaultController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [SwaggerOperation(Summary = "Delete a batch")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

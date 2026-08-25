@@ -70,7 +70,8 @@ export interface StaffProfileResponse {
   lastName: string;
   email: string;
   role: string;
-  graduationYear?: number;
+  yearGroups?: number[];
+  communityIds?: string[];
 }
 
 export async function getStaffProfile(): Promise<StaffProfileResponse> {

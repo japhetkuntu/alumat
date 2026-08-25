@@ -26,8 +26,9 @@ public class CampaignService(
         try
         {
             logger.LogInformation("GetCampaigns request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
 
             CampaignStatus? status = null;
             if (!string.IsNullOrWhiteSpace(filter.Status) && Enum.TryParse<CampaignStatus>(filter.Status, true, out var parsedStatus))
@@ -38,7 +39,9 @@ public class CampaignService(
             var result = await campaignRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 c => (!status.HasValue || c.Status == status.Value)
-                  && (isSuper || (yearGroup.HasValue && c.YearGroups != null && c.YearGroups.Contains(yearGroup.Value))));
+                  && (isSuper || c.CreatedBy == admin.Id
+                      || (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                      || (c.CommunityId != null && communityIds.Contains(c.CommunityId))));
 
             var dtos = result.Results.Select(c => c.ToDto()).ToList();
 
@@ -78,16 +81,11 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-            if (!isSuper)
+            if (!admin.CanViewScopedItem(campaign.YearGroups, campaign.CommunityId, campaign.CreatedBy))
             {
-                if (!yearGroup.HasValue || campaign.YearGroups == null || !campaign.YearGroups.Contains(yearGroup.Value))
-                {
-                    logger.LogWarning("Denied campaign view access for admin {AdminId} to campaign {CampaignId} (adminYear={AdminYear}, campaignYears={CampaignYears})",
-                        admin.Id, campaignId, admin.GraduationYear, campaign.YearGroups ?? new List<int>());
-                    return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
-                }
+                logger.LogWarning("Denied campaign view access for admin {AdminId} to campaign {CampaignId} (campaignYears={CampaignYears})",
+                    admin.Id, campaignId, campaign.YearGroups ?? new List<int>());
+                return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
             }
 
             var dto = campaign.ToDto();
@@ -113,7 +111,7 @@ public class CampaignService(
         {
             logger.LogInformation("CreateCampaign request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
 
-            if (request.IsMembershipCampaign && admin.Role != "SuperAdmin")
+            if (request.IsMembershipCampaign && admin.Role != StaffRoles.SuperAdmin)
                 return ApiResponseExtensions.ToForbiddenApiResponse<CampaignDto>("Only super admins can create membership campaigns.");
             if (request.IsMembershipCampaign && !request.MembershipYear.HasValue)
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Membership campaigns must set a valid membership year.");
@@ -124,7 +122,7 @@ public class CampaignService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Deadline must be a future date/time.");
             var campaign = new Campaign
             {
-                CommunityId = request.CommunityId,
+                CommunityId = admin.ResolveCommunityForCreation(request.CommunityId),
                 Title = request.Title,
                 Description = request.Description,
                 TargetAmount = request.TargetAmount,
@@ -194,21 +192,21 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
 
-            var canModify = admin.CanModifyYearGroupScopedItem(campaign.YearGroups, campaign.CreatedBy);
-            if (!canModify && !(admin.Role == "SuperAdmin" && request.Status == CampaignStatus.Closed.ToString()))
+            var canModify = admin.CanModifyScopedItem(campaign.YearGroups, campaign.CreatedBy, campaign.CommunityId);
+            if (!canModify && !(admin.Role == StaffRoles.SuperAdmin && request.Status == CampaignStatus.Closed.ToString()))
             {
-                logger.LogWarning("Denied campaign update access for admin {AdminId} to campaign {CampaignId} (adminYear={AdminYear}, campaignYears={CampaignYears}, createdBy={CreatedBy})",
-                    admin.Id, request.CampaignId, admin.GraduationYear, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
+                logger.LogWarning("Denied campaign update access for admin {AdminId} to campaign {CampaignId} (campaignYears={CampaignYears}, createdBy={CreatedBy})",
+                    admin.Id, request.CampaignId, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
             }
 
-            if (request.IsMembershipCampaign && admin.Role != "SuperAdmin")
+            if (request.IsMembershipCampaign && admin.Role != StaffRoles.SuperAdmin)
                 return ApiResponseExtensions.ToForbiddenApiResponse<CampaignDto>("Only super admins can mark campaigns as membership campaigns.");
 
             if (request.IsMembershipCampaign && !request.MembershipYear.HasValue)
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Membership campaigns must set a valid membership year.");
 
-            campaign.CommunityId = request.CommunityId;
+            campaign.CommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
             campaign.Title = request.Title;
             campaign.Description = request.Description;
             campaign.Deadline = DateTime.SpecifyKind(request.Deadline, DateTimeKind.Utc);
@@ -308,16 +306,12 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Campaign not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-            var canModify = isSuper
-                ? (campaign.YearGroups == null || campaign.YearGroups.Count == 0 || campaign.CreatedBy == admin.Id)
-                : (yearGroup.HasValue && campaign.YearGroups != null && campaign.YearGroups.Contains(yearGroup.Value));
+            var canModify = admin.CanModifyScopedItem(campaign.YearGroups, campaign.CreatedBy, campaign.CommunityId);
 
             if (!canModify)
             {
                 logger.LogWarning("Denied campaign delete access for admin {AdminId} to campaign {CampaignId} (adminYear={AdminYear}, campaignYears={CampaignYears}, createdBy={CreatedBy})",
-                    admin.Id, campaignId, admin.GraduationYear, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
+                    admin.Id, campaignId, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Campaign not found");
             }
 
@@ -343,11 +337,7 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-            var canModify = isSuper
-                ? (campaign.YearGroups == null || campaign.YearGroups.Count == 0 || campaign.CreatedBy == admin.Id)
-                : (yearGroup.HasValue && campaign.YearGroups != null && campaign.YearGroups.Contains(yearGroup.Value));
+            var canModify = admin.CanModifyScopedItem(campaign.YearGroups, campaign.CreatedBy, campaign.CommunityId);
 
             if (!canModify)
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
@@ -376,16 +366,12 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-            var canModify = isSuper
-                ? (campaign.YearGroups == null || campaign.YearGroups.Count == 0 || campaign.CreatedBy == admin.Id)
-                : (yearGroup.HasValue && campaign.YearGroups != null && campaign.YearGroups.Contains(yearGroup.Value));
+            var canModify = admin.CanModifyScopedItem(campaign.YearGroups, campaign.CreatedBy, campaign.CommunityId);
 
             if (!canModify)
             {
                 logger.LogWarning("Denied campaign unarchive access for admin {AdminId} to campaign {CampaignId} (adminYear={AdminYear}, campaignYears={CampaignYears}, createdBy={CreatedBy})",
-                    admin.Id, campaignId, admin.GraduationYear, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
+                    admin.Id, campaignId, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
             }
 
@@ -413,16 +399,12 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
-            var canModify = isSuper
-                ? (campaign.YearGroups == null || campaign.YearGroups.Count == 0 || campaign.CreatedBy == admin.Id)
-                : (yearGroup.HasValue && campaign.YearGroups != null && campaign.YearGroups.Contains(yearGroup.Value));
+            var canModify = admin.CanModifyScopedItem(campaign.YearGroups, campaign.CreatedBy, campaign.CommunityId);
 
             if (!canModify)
             {
                 logger.LogWarning("Denied campaign activate access for admin {AdminId} to campaign {CampaignId} (adminYear={AdminYear}, campaignYears={CampaignYears}, createdBy={CreatedBy})",
-                    admin.Id, campaignId, admin.GraduationYear, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
+                    admin.Id, campaignId, campaign.YearGroups ?? new List<int>(), campaign.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
             }
 
@@ -453,7 +435,7 @@ public class CampaignService(
             if (campaign is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<PaystackDisbursementSummaryDto>("Campaign not found");
 
-            if (admin.Role != "SuperAdmin" && (admin.GraduationYear == null || campaign.YearGroups == null || !campaign.YearGroups.Contains(admin.GraduationYear.Value)) && campaign.CreatedBy != admin.Id)
+            if (!admin.CanViewScopedItem(campaign.YearGroups, campaign.CommunityId, campaign.CreatedBy))
             {
                 logger.LogWarning("Denied campaign paystack summary access for admin {AdminId} to campaign {CampaignId}", admin.Id, campaignId);
                 return ApiResponseExtensions.ToNotFoundApiResponse<PaystackDisbursementSummaryDto>("Campaign not found");
@@ -490,7 +472,7 @@ public class CampaignService(
         {
             logger.LogInformation("MarkCampaignPaystackDisbursed request for campaignId: {CampaignId} (admin: {AdminId})", campaignId, admin.Id);
 
-            if (admin.Role != "SuperAdmin")
+            if (admin.Role != StaffRoles.SuperAdmin)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Only super admins can perform this action");
 
             var campaign = await campaignRepo.GetByIdAsync(campaignId);
@@ -536,11 +518,16 @@ public class ContributionService(
         {
             logger.LogInformation("GetContributions request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
             var search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim();
-            var isSuper = admin.Role == "SuperAdmin";
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
 
             var adminCampaignIds = isSuper
                 ? new List<string>()
-                : (await campaignRepo.GetAllAsync(c => c.CreatedBy == admin.Id)).Select(c => c.Id).ToList();
+                : (await campaignRepo.GetAllAsync(c => c.CreatedBy == admin.Id
+                    || (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (c.CommunityId != null && communityIds.Contains(c.CommunityId))))
+                  .Select(c => c.Id).ToList();
 
             var result = await contributionRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
@@ -708,7 +695,7 @@ public class ContributionService(
             if (contribution is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Contribution not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             if (!isSuper && contribution.CreatedBy != admin.Id)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Contribution not found");
 
@@ -760,7 +747,7 @@ public class ContributionService(
             if (contribution is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Contribution not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             if (!isSuper && contribution.CreatedBy != admin.Id)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Contribution not found");
 

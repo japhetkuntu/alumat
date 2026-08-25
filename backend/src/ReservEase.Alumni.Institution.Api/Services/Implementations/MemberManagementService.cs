@@ -44,13 +44,13 @@ public class MemberManagementService(
         {
             logger.LogInformation("GetMembers request with filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
 
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
 
             var result = await memberRepo.GetPagedAsync(
                 filter.Page, filter.PageSize,
                 sortColumn: filter.SortColumn ?? "CreatedAt", sortDir: filter.SortDir ?? "desc",
-                f => (isSuper || (yearGroup.HasValue && f.GraduationYear == yearGroup.Value))
+                f => (isSuper || yearGroups.Contains(f.GraduationYear))
                   && (string.IsNullOrEmpty(filter.Status) || f.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.DepartmentId) || f.DepartmentId == filter.DepartmentId)
                   && (string.IsNullOrEmpty(filter.Search) ||
@@ -92,12 +92,8 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MemberDetailItem>("Member not found");
 
-            var isSuper = admin.Role == "SuperAdmin";
-            if (!isSuper)
-            {
-                if (!admin.GraduationYear.HasValue || member.GraduationYear != admin.GraduationYear.Value)
-                    return ApiResponseExtensions.ToNotFoundApiResponse<MemberDetailItem>("Member not found");
-            }
+            if (!admin.CanViewScopedItem(new List<int> { member.GraduationYear }))
+                return ApiResponseExtensions.ToNotFoundApiResponse<MemberDetailItem>("Member not found");
 
             var detail = new MemberDetailItem(
                 member.Id, member.FirstName, member.LastName, member.Email, member.Phone,
@@ -124,6 +120,9 @@ public class MemberManagementService(
 
             var member = await memberRepo.GetByIdAsync(memberId);
             if (member is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
+            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             // Generate unique readable member number: SLUG-YEAR-NNNN
@@ -164,6 +163,9 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
+            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
             member.RejectionCount += 1;
             member.Status = member.RejectionCount >= MaxRejections ? "Blocked" : "Suspended";
             member.UpdatedAt = DateTime.UtcNow;
@@ -193,6 +195,9 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
+            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
             member.Status = "Banned";
             member.BanReason = reason;
             member.UpdatedAt = DateTime.UtcNow;
@@ -217,6 +222,9 @@ public class MemberManagementService(
 
             var member = await memberRepo.GetByIdAsync(memberId);
             if (member is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
+            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             member.Status = "Active";
@@ -249,6 +257,13 @@ public class MemberManagementService(
             {
                 try
                 {
+                    if (!admin.CanModifyScopedItem(new List<int> { item.GraduationYear }, createdBy: null))
+                    {
+                        skipped++;
+                        errors.Add($"{item.Email}: outside your assigned scope");
+                        continue;
+                    }
+
                     var email = item.Email.ToLower().Trim();
                     var existing = await memberRepo.GetOneAsync(m => m.Email == email);
                     if (existing is not null)
@@ -351,6 +366,9 @@ public class MemberManagementService(
 
             var member = await memberRepo.GetByIdAsync(memberId);
             if (member is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
+            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             var activatedCount = 0;

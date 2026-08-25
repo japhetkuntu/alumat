@@ -15,14 +15,34 @@ import { SearchModal } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { YearGroupPicker } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
-import { getInstitutionStaff, createInstitutionStaff, updateInstitutionStaff } from "@/lib/institution-api";
+import { getInstitutionStaff, createInstitutionStaff, updateInstitutionStaff, getCommunities, type CommunityListItem } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@alumni/ui";
 import type { InstitutionStaffUser, CreateInstitutionStaffRequest, UpdateInstitutionStaffRequest } from "@/types";
 import { TableSkeleton } from "@alumni/ui";
 
-const roles = ["SuperAdmin", "Admin"] as const;
+const roles = ["SuperAdmin", "Admin", "ScopedAdmin"] as const;
+
+function CommunityCheckboxList({ communities, selected, onChange }: { communities: CommunityListItem[]; selected: string[]; onChange: (ids: string[]) => void }) {
+  if (communities.length === 0) {
+    return <p className="text-xs text-muted-foreground">No communities exist yet.</p>;
+  }
+  return (
+    <div className="space-y-1.5 max-h-32 overflow-y-auto border border-border rounded-md p-2">
+      {communities.map((c) => (
+        <label key={c.id} className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={selected.includes(c.id)}
+            onChange={(e) => onChange(e.target.checked ? [...selected, c.id] : selected.filter((id) => id !== c.id))}
+          />
+          {c.name}
+        </label>
+      ))}
+    </div>
+  );
+}
 
 function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInstitutionStaffRequest) => void; onCancel: () => void; saving: boolean }) {
   const [firstName, setFirstName] = useState("");
@@ -30,13 +50,20 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<typeof roles[number]>("Admin");
-  const [yearGroup, setYearGroup] = useState<number | undefined>(undefined);
+  const [yearGroups, setYearGroups] = useState<number[]>([]);
+  const [communityIds, setCommunityIds] = useState<string[]>([]);
+
+  const { data: communities = [] } = useQuery({
+    queryKey: ["admin-communities-for-staff-form"],
+    queryFn: getCommunities,
+    enabled: role === "ScopedAdmin",
+  });
 
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">Add institution admin</CardTitle></CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, password, role, graduationYear: yearGroup }); }}>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, password, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>First name</Label>
@@ -55,16 +82,27 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Year group (optional)</Label>
-              <YearGroupPicker value={yearGroup ? [yearGroup] : []} onChange={(years) => setYearGroup(years[0])} />
-            </div>
+          <div className="space-y-2">
+            <Label>Role</Label>
+            <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
+            <p className="text-xs text-muted-foreground">
+              {role === "SuperAdmin" && "Full access, including managing other admins."}
+              {role === "Admin" && "Full access to institution data, except managing other admins."}
+              {role === "ScopedAdmin" && "Restricted to the year-groups/batches and communities selected below."}
+            </p>
           </div>
+          {role === "ScopedAdmin" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Year groups</Label>
+                <YearGroupPicker value={yearGroups} onChange={setYearGroups} />
+              </div>
+              <div className="space-y-2">
+                <Label>Communities</Label>
+                <CommunityCheckboxList communities={communities} selected={communityIds} onChange={setCommunityIds} />
+              </div>
+            </div>
+          )}
           <div className="flex gap-3">
             <Button type="submit" size="sm" isLoading={saving} loadingText="Creating">Create admin</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -89,8 +127,15 @@ function EditAdminForm({
   const [firstName, setFirstName] = useState(admin.firstName);
   const [lastName, setLastName] = useState(admin.lastName);
   const [role, setRole] = useState<typeof roles[number]>(admin.role as typeof roles[number]);
-  const [yearGroup, setYearGroup] = useState<number | undefined>(admin.graduationYear);
+  const [yearGroups, setYearGroups] = useState<number[]>(admin.yearGroups ?? []);
+  const [communityIds, setCommunityIds] = useState<string[]>(admin.communityIds ?? []);
   const [isDisabled, setIsDisabled] = useState(!!admin.isDisabled);
+
+  const { data: communities = [] } = useQuery({
+    queryKey: ["admin-communities-for-staff-form"],
+    queryFn: getCommunities,
+    enabled: role === "ScopedAdmin",
+  });
 
   return (
     <Card>
@@ -100,7 +145,7 @@ function EditAdminForm({
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            onSave({ firstName, lastName, role, graduationYear: yearGroup, isDisabled });
+            onSave({ firstName, lastName, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined, isDisabled });
           }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -112,15 +157,23 @@ function EditAdminForm({
               <Label>Last name</Label>
               <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
             </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Year group (optional)</Label>
-              <YearGroupPicker value={yearGroup ? [yearGroup] : []} onChange={(years) => setYearGroup(years[0])} />
-            </div>
           </div>
+          <div className="space-y-2">
+            <Label>Role</Label>
+            <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
+          </div>
+          {role === "ScopedAdmin" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Year groups</Label>
+                <YearGroupPicker value={yearGroups} onChange={setYearGroups} />
+              </div>
+              <div className="space-y-2">
+                <Label>Communities</Label>
+                <CommunityCheckboxList communities={communities} selected={communityIds} onChange={setCommunityIds} />
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2">
@@ -176,7 +229,8 @@ export default function AdminsPage() {
       firstName: admin.firstName,
       lastName: admin.lastName,
       role: admin.role,
-      graduationYear: admin.graduationYear,
+      yearGroups: admin.yearGroups,
+      communityIds: admin.communityIds,
       isDisabled: !admin.isDisabled,
     }] as [string, UpdateInstitutionStaffRequest]);
   };
@@ -271,7 +325,7 @@ export default function AdminsPage() {
               <TableRow>
                 <TableHead>Staff account</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Year-group scope</TableHead>
+                <TableHead>Scope</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead />
@@ -289,7 +343,18 @@ export default function AdminsPage() {
                     <p className="text-[12px] text-muted-foreground">{a.email}</p>
                   </TableCell>
                   <TableCell>{a.role}</TableCell>
-                  <TableCell>{a.graduationYear ? `Class of ${a.graduationYear}` : "All institution records"}</TableCell>
+                  <TableCell>
+                    {a.role !== "ScopedAdmin" ? (
+                      "All institution records"
+                    ) : (a.yearGroups?.length || a.communityIds?.length) ? (
+                      [
+                        a.yearGroups?.length ? `Years: ${a.yearGroups.join(", ")}` : null,
+                        a.communityIds?.length ? `${a.communityIds.length} ${a.communityIds.length === 1 ? "community" : "communities"}` : null,
+                      ].filter(Boolean).join(" · ")
+                    ) : (
+                      <span className="text-destructive">No scope configured</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={a.isDisabled ? "neutral" : "success"}>
                       {a.isDisabled ? "Disabled" : "Active"}

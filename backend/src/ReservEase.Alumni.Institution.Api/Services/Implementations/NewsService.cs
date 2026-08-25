@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -23,8 +24,8 @@ public class NewsService(
         try
         {
             logger.LogInformation("GetPosts request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
-            var isSuper = admin.Role == "SuperAdmin";
-            var yearGroup = admin.GraduationYear;
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
 
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
@@ -32,7 +33,7 @@ public class NewsService(
                   && (string.IsNullOrEmpty(filter.Search)
                       || p.Title.Contains(filter.Search)
                       || p.Content.Contains(filter.Search))
-                  && (isSuper || (yearGroup.HasValue && p.YearGroups != null && p.YearGroups.Contains(yearGroup.Value))));
+                  && (isSuper || (p.YearGroups != null && p.YearGroups.Any(__y => yearGroups.Contains(__y)))));
 
             await PopulateMissingAuthorsAsync(result.Results);
 
@@ -65,7 +66,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
 
-            if (!admin.CanViewYearGroupScopedItem(post.YearGroups))
+            if (!admin.CanViewScopedItem(post.YearGroups))
             {
                 logger.LogWarning("Denied news post view access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears})",
                     admin.Id, postId, admin.GraduationYear, post.YearGroups ?? new List<int>());
@@ -135,7 +136,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(post.YearGroups, post.CreatedBy))
+            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy))
             {
                 logger.LogWarning("Denied news post update access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears}, createdBy={CreatedBy})",
                     admin.Id, request.PostId, admin.GraduationYear, post.YearGroups ?? new List<int>(), post.CreatedBy);
@@ -182,7 +183,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(post.YearGroups, post.CreatedBy))
+            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy))
             {
                 logger.LogWarning("Denied news post publish access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears}, createdBy={CreatedBy})",
                     admin.Id, postId, admin.GraduationYear, post.YearGroups ?? new List<int>(), post.CreatedBy);
@@ -215,7 +216,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Post not found");
 
-            if (!admin.CanModifyYearGroupScopedItem(post.YearGroups, post.CreatedBy))
+            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy))
             {
                 logger.LogWarning("Denied news post delete access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears}, createdBy={CreatedBy})",
                     admin.Id, postId, admin.GraduationYear, post.YearGroups ?? new List<int>(), post.CreatedBy);
