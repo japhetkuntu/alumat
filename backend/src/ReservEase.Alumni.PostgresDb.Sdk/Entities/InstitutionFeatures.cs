@@ -26,6 +26,8 @@ public static class InstitutionFeatures
     public const string Referrals = "Referrals";     // member portal only
     public const string ClassNotes = "ClassNotes";   // member portal only
     public const string Directory = "Directory";     // member portal only
+    public const string AlumniMap = "AlumniMap";     // member portal only — opt-in location map
+    public const string Calendar = "Calendar";       // member portal only — unified events/payments calendar view
     public const string Communities = "Communities"; // member-created sub-communities with scoped forum/events/resources/campaigns
     /// <summary>Institution staff manually recording an offline/cash/bank-transfer payment — independent of online (Contributions) payments.</summary>
     public const string ManualPayments = "ManualPayments";
@@ -34,7 +36,7 @@ public static class InstitutionFeatures
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
-        Communities, ManualPayments,
+        Communities, ManualPayments, AlumniMap, Calendar,
     ];
 
     /// <summary>
@@ -58,6 +60,8 @@ public static class InstitutionFeatures
         (Referrals, "Referrals", "Member-to-member referral invites."),
         (ClassNotes, "Class notes", "The class-year social wall."),
         (Directory, "Alumni directory", "Searchable member directory."),
+        (AlumniMap, "Alumni map", "Opt-in world map plotting alumni by location."),
+        (Calendar, "Calendar", "Unified view of upcoming events and payment deadlines."),
         (Communities, "Communities", "Member-created sub-communities with their own forum, events, resources, and campaigns."),
     ];
 }

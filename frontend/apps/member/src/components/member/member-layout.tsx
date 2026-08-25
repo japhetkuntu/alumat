@@ -30,6 +30,7 @@ import {
   StickyNote,
   UsersRound,
   Globe,
+  CalendarDays,
 } from "lucide-react";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -40,6 +41,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     section: null,
     items: [
       { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
     ],
   },
   {
@@ -93,7 +95,8 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/jobs": "Jobs",
   "/events": "Events",
   "/directory": "Directory",
-  "/alumni-map": "Directory",
+  "/alumni-map": "AlumniMap",
+  "/calendar": "Calendar",
   "/news": "News",
   "/forum": "Forum",
   "/mentorship": "Mentorship",
