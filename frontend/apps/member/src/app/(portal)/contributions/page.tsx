@@ -257,7 +257,7 @@ function CampaignCard({
           <div className="min-w-0 flex-1">
             {!c.bannerImageUrl && isMembership && (
               <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
-                Membership campaign
+                Membership dues
               </p>
             )}
             <h3
@@ -511,7 +511,7 @@ export default function MemberContributionsPage() {
         <PageHeader
           eyebrow="Financial overview"
           title="My Contributions"
-          description="Support active campaigns and track your payment history."
+          description="Support active fundraisers and track your payment history."
         />
       </div>
 
@@ -520,7 +520,7 @@ export default function MemberContributionsPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
-              Active campaigns
+              Active fundraisers &amp; dues
             </h2>
             <span
               className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
@@ -598,7 +598,7 @@ export default function MemberContributionsPage() {
             <table className="w-full min-w-[600px] border-collapse">
               <thead>
                 <tr style={{ background: "var(--secondary)", borderBottom: "1px solid var(--border)" }}>
-                  {["Campaign", "Amount", "Method", "Status", "Date"].map((h) => (
+                  {["Fundraiser / Dues", "Amount", "Method", "Status", "Date"].map((h) => (
                     <th
                       key={h}
                       className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-[0.08em]"
@@ -630,7 +630,7 @@ export default function MemberContributionsPage() {
                           No payments yet
                         </p>
                         <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-                          Support a campaign above to get started.
+                          Support a fundraiser or pay your dues above to get started.
                         </p>
                       </div>
                     </td>
@@ -697,7 +697,7 @@ export default function MemberContributionsPage() {
               </div>
               <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>No payments yet</p>
               <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-                Support a campaign above to get started.
+                Support a fundraiser or pay your dues above to get started.
               </p>
             </div>
           ) : contributions.map((c) => (

@@ -178,7 +178,7 @@ export default function CalendarPage() {
         <EmptyState
           icon={<CalendarDays size={26} />}
           title="No activity yet"
-          description="New events and campaigns will appear here as they're published."
+          description="New events, fundraisers, and dues will appear here as they're published."
         />
       ) : (
         <Card>

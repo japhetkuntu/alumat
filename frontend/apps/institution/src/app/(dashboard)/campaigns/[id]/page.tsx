@@ -91,7 +91,7 @@ export default function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin-contributions", id] });
       qc.invalidateQueries({ queryKey: ["admin-campaign-paystack-summary", id] });
       setConfirmCampaignDisburseOpen(false);
-      toast.success("Campaign online payment contributions marked as disbursed.");
+      toast.success(`${campaign?.isMembershipCampaign ? "Membership dues" : "Fundraiser"} online payment contributions marked as disbursed.`);
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -102,7 +102,7 @@ export default function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin-campaign", id] });
       qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setEditing(false);
-      toast.success("Campaign updated");
+      toast.success(`${campaign?.isMembershipCampaign ? "Membership dues" : "Fundraiser"} updated`);
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -111,9 +111,9 @@ export default function CampaignDetailPage() {
   if (!campaign) return (
     <div className="p-[26px] max-w-[1240px] mx-auto">
       <Link href="/campaigns">
-        <Button size="sm" variant="ghost" className="mb-6"><ArrowLeft size={14} />Back to Campaigns</Button>
+        <Button size="sm" variant="ghost" className="mb-6"><ArrowLeft size={14} />Back</Button>
       </Link>
-      <EmptyState icon={<XCircle size={48} />} title="Campaign not found" description="This campaign may have been removed or the link is incorrect." />
+      <EmptyState icon={<XCircle size={48} />} title="Not found" description="This may have been removed or the link is incorrect." />
     </div>
   );
 
@@ -128,7 +128,7 @@ export default function CampaignDetailPage() {
         <Link href={backLink}>
           <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-bold group">
             <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            {campaign.isMembershipCampaign ? "Membership" : "Campaigns"}
+            {campaign.isMembershipCampaign ? "Membership" : "Fundraisers"}
           </Button>
         </Link>
         <ChevronRight size={14} className="text-muted-foreground/50" />
@@ -150,10 +150,10 @@ export default function CampaignDetailPage() {
 
       {editing && <CampaignEditForm campaign={campaign} isSuperAdmin={isSuperAdmin} saving={updateMut.isPending} onSave={(body) => updateMut.mutate(body)} onCancel={() => setEditing(false)} />}
 
-      {/* Campaign summary */}
+      {/* Fundraiser/dues summary */}
       <Card>
         <CardContent className="p-[18px] space-y-4">
-          <h2 className="text-[15px] font-semibold m-0">Campaign progress</h2>
+          <h2 className="text-[15px] font-semibold m-0">{campaign.isMembershipCampaign ? "Membership dues progress" : "Fundraiser progress"}</h2>
           {campaign.description && <p className="text-[13px] text-muted-foreground">{campaign.description}</p>}
           <Progress value={pct} className="h-2.5" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
@@ -166,7 +166,7 @@ export default function CampaignDetailPage() {
             <p className="text-xs text-muted-foreground tabular-nums">{pct}% of target reached</p>
           )}
           <div className="rounded-[6px] p-3 text-[12.5px]" style={{ background: "var(--brand-accent-light)", color: "var(--brand-accent-dark)", border: "1px solid #FED7AA" }}>
-            Members may contribute any positive amount (including less than the campaign suggested base amount). They can also contribute additional payments over time to reach their target.
+            Members may contribute any positive amount (including less than the suggested base amount). They can also contribute additional payments over time to reach their target.
           </div>
 
           <div className="mt-1 rounded-[6px] border border-border p-4">
@@ -207,11 +207,11 @@ export default function CampaignDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Campaign Media */}
+      {/* Media */}
       {(campaign.bannerImageUrl || campaign.youtubeVideoUrl) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Campaign Media</CardTitle>
+            <CardTitle className="text-base">{campaign.isMembershipCampaign ? "Membership Dues Media" : "Fundraiser Media"}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className={campaign.bannerImageUrl && campaign.youtubeVideoUrl
@@ -254,7 +254,7 @@ export default function CampaignDetailPage() {
           onClick={() => setLightboxOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-label="Campaign banner image"
+          aria-label="Banner image"
         >
           <button
             className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/30 rounded-full p-1.5 transition-colors"
@@ -334,7 +334,7 @@ export default function CampaignDetailPage() {
       <ConfirmModal
         open={confirmCampaignDisburseOpen}
         title="Mark online payments as disbursed"
-        message="This will mark all confirmed online payment contributions for this campaign as disbursed. Continue?"
+        message="This will mark all confirmed online payment contributions for this fundraiser as disbursed. Continue?"
         confirmLabel="Mark as disbursed"
         variant="destructive"
         isLoading={campaignDisburseMut.isPending}
@@ -401,15 +401,15 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
 
   return (
     <Card className="animate-in fade-in slide-in-from-top-4 duration-500 border-primary/30">
-      <CardHeader><CardTitle className="text-base">{isMembershipCampaign ? "Edit Membership Campaign" : "Edit Campaign"}</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base">{isMembershipCampaign ? "Edit Membership Dues" : "Edit Fundraiser"}</CardTitle></CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
           {isMembershipCampaign ? (
-            /* ── Membership campaign layout (matches create form) ── */
+            /* ── Membership dues layout (matches create form) ── */
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Campaign title</Label>
+                  <Label>Title</Label>
                   <Input placeholder="e.g. Membership Renewal 2026" value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
@@ -467,10 +467,10 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
               </div>
             </>
           ) : (
-            /* ── Regular campaign layout ── */
+            /* ── Regular fundraiser layout ── */
             <>
               <div className="space-y-2">
-                <Label>Campaign title</Label>
+                <Label>Fundraiser title</Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
               </div>
               <div className="space-y-2">
@@ -505,7 +505,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                     {!yearGroupsAll ? (
                       <YearGroupPicker value={yearGroups} onChange={setYearGroups} />
                     ) : (
-                      <p className="text-xs text-muted-foreground">This campaign will be visible to members of all year groups.</p>
+                      <p className="text-xs text-muted-foreground">This fundraiser will be visible to members of all year groups.</p>
                     )}
                   </>
                 ) : (
@@ -541,12 +541,12 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Membership Campaign</Label>
+                  <Label>Membership dues</Label>
                   {isSuperAdmin ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <input id="edit-membership" type="checkbox" checked={isMembershipCampaign} onChange={(e) => setIsMembershipCampaign(e.target.checked)} className="h-4 w-4" />
-                        <label htmlFor="edit-membership" className="text-sm">Mark as membership campaign</label>
+                        <label htmlFor="edit-membership" className="text-sm">Mark as membership dues</label>
                       </div>
                       {isMembershipCampaign && (
                         <div className="flex items-center gap-2">

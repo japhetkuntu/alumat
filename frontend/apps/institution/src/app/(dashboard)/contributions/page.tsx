@@ -121,7 +121,7 @@ export default function AdminContributionsPage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[25px] font-bold m-0">Contributions</h1>
-          <p className="text-muted-foreground text-[13px] mt-1.5">A complete ledger for campaign and membership payments.</p>
+          <p className="text-muted-foreground text-[13px] mt-1.5">A complete ledger for fundraiser and membership dues payments.</p>
           <p className="text-muted-foreground text-[12px] mt-1">This platform takes a small percentage of each online payment to run the service — the rest pays out directly to your institution&apos;s account. Manual payments incur no fee.</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
@@ -142,8 +142,8 @@ export default function AdminContributionsPage() {
             <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); recordMut.mutate(); }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Campaign</Label>
-                  <FormSelect placeholder="Select campaign" value={form.campaignId} onValueChange={(v) => setForm({ ...form, campaignId: v })} options={(campaignsData?.results ?? []).filter((c) => c.status === "Active").map((c) => ({ value: c.id, label: c.title }))} />
+                  <Label>Fundraiser / dues</Label>
+                  <FormSelect placeholder="Select fundraiser or dues" value={form.campaignId} onValueChange={(v) => setForm({ ...form, campaignId: v })} options={(campaignsData?.results ?? []).filter((c) => c.status === "Active").map((c) => ({ value: c.id, label: c.title }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Member Number</Label>
@@ -258,7 +258,7 @@ export default function AdminContributionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
-                <TableHead>Campaign</TableHead>
+                <TableHead>Fundraiser / Dues</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Net to institution</TableHead>
                 <TableHead>Ref</TableHead>
@@ -289,7 +289,7 @@ export default function AdminContributionsPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className={`text-sm max-w-[220px] ${densityCellClass}`}><p className="truncate">{c.campaignTitle ?? "Unknown Campaign"}</p></TableCell>
+                  <TableCell className={`text-sm max-w-[220px] ${densityCellClass}`}><p className="truncate">{c.campaignTitle ?? "Unknown"}</p></TableCell>
                   <TableCell className={`font-medium whitespace-nowrap ${densityCellClass}`}>{formatCurrency(c.amount)}</TableCell>
                   <TableCell className={`whitespace-nowrap ${densityCellClass}`}>
                     <p className="font-medium">{formatCurrency(netAmountFor(c))}</p>

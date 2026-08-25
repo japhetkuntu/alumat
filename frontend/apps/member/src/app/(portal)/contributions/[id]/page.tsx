@@ -88,12 +88,12 @@ export default function CampaignDetailPage() {
   if (!campaign) return (
     <div className="p-6 lg:p-10 max-w-5xl mx-auto">
       <Button variant="ghost" size="sm" className="mb-6 font-semibold gap-2" onClick={() => router.push("/contributions")}>
-        <ArrowLeft size={15} /> Back to campaigns
+        <ArrowLeft size={15} /> Back
       </Button>
       <EmptyState
         icon={<CreditCard size={40} />}
-        title="Campaign not found"
-        description="This campaign may have ended or the link is incorrect."
+        title="Not found"
+        description="This may have ended or the link is incorrect."
       />
     </div>
   );
@@ -138,7 +138,7 @@ export default function CampaignDetailPage() {
           className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
           style={{ color: "var(--muted-foreground)" }}
         >
-          <ArrowLeft size={15} /> Back to campaigns
+          <ArrowLeft size={15} /> Back
         </button>
         <Badge variant={isActive ? "success" : "secondary"} className="text-[11px] font-bold uppercase tracking-wide">
           {campaign.status}
@@ -156,7 +156,7 @@ export default function CampaignDetailPage() {
           <div>
             {isMembership && (
               <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
-                Membership campaign
+                Membership dues
               </p>
             )}
             <h1
@@ -211,13 +211,13 @@ export default function CampaignDetailPage() {
               className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b"
               style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
             >
-              About this campaign
+              {isMembership ? "About these dues" : "About this fundraiser"}
             </h2>
             <p
               className="whitespace-pre-wrap leading-[1.85]"
               style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
             >
-              {campaign.description || "No details have been provided for this campaign yet. Please contact the alumni office for more information."}
+              {campaign.description || `No details have been provided for this ${isMembership ? "membership dues item" : "fundraiser"} yet. Please contact the alumni office for more information.`}
             </p>
           </div>
 
@@ -235,7 +235,7 @@ export default function CampaignDetailPage() {
               </div>
               <div>
                 <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  Share this campaign
+                  Share this {isMembership ? "dues link" : "fundraiser"}
                 </p>
                 <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                   Anyone with this link can contribute — no sign-in needed
@@ -351,7 +351,7 @@ export default function CampaignDetailPage() {
                 >
                   <CheckCircle2 size={14} style={{ color: "var(--primary)" }} className="shrink-0" />
                   <p className="text-[13px] font-semibold" style={{ color: "var(--color-text-info)" }}>
-                    You&apos;ve contributed to this campaign before.
+                    You&apos;ve contributed to this fundraiser before.
                   </p>
                 </div>
               )}
@@ -432,7 +432,7 @@ export default function CampaignDetailPage() {
                 >
                   <AlertCircle size={16} style={{ color: "var(--muted-foreground)" }} className="shrink-0" />
                   <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
-                    This campaign is no longer accepting contributions.
+                    This {isMembership ? "membership dues item" : "fundraiser"} is no longer accepting contributions.
                   </p>
                 </div>
               )}

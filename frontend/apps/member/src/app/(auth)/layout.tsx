@@ -57,7 +57,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             {[
               "Find and reconnect with classmates",
               "Get first access to jobs and mentorship",
-              "Support campaigns that matter to you",
+              "Support fundraisers that matter to you",
             ].map(item => (
               <li key={item} className="flex items-center gap-3">
                 <div

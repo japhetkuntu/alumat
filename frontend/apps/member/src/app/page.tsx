@@ -90,18 +90,18 @@ const NAV_LINKS = [
 const FEATURES = [
   { icon: Briefcase,  label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true },
   { icon: Users,      label: "Directory",     title: "Find any grad in seconds",      desc: "Search by class year, department, company, or country." },
-  { icon: CreditCard, label: "Contributions", title: "Fund what matters",             desc: "Alumni-led campaigns for labs, scholarships, and campus improvements." },
+  { icon: CreditCard, label: "Contributions", title: "Fund what matters",             desc: "Alumni-led fundraisers for labs, scholarships, and campus improvements." },
   { icon: BookOpen,   label: "Class Notes",   title: "Keep the conversation going",   desc: "Post milestones, share knowledge, trade stories by graduation year." },
   { icon: Globe,      label: "Events",        title: "Never miss a reunion",          desc: "Homecomings, webinars, networking nights — RSVP in one place." },
   { icon: Heart,      label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true },
   { icon: Trophy,     label: "Spotlights",    title: "Celebrate the wins",            desc: "Recognition for alumni making a difference in their fields." },
-  { icon: Bell,       label: "Notifications", title: "Hear about what you care about", desc: "Jobs, campaigns, event invites — you choose what reaches you." },
+  { icon: Bell,       label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you." },
 ];
 
 const STATS = [
   { end: 5000, suffix: "+",    label: "Alumni registered",     desc: "Verified graduates"          },
   { end: 120,  suffix: "+",    label: "Countries represented", desc: "A truly global network"            },
-  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised in campaigns", desc: "Funding labs & scholarships" },
+  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised in fundraisers", desc: "Funding labs & scholarships" },
   { end: 300,  suffix: "+",    label: "Jobs posted",           desc: "Roles shared by alumni employers"  },
 ];
 
@@ -117,8 +117,8 @@ const USE_CASES = [
     icon: CreditCard,
     eyebrow: "Giving",
     image: IMG.storyGiving,
-    scenario: "The campaign that needed 200 people",
-    desc: "From lab equipment to student bursaries, alumni-led campaigns pool contributions from graduates across the world.",
+    scenario: "The fundraiser that needed 200 people",
+    desc: "From lab equipment to student bursaries, alumni-led fundraisers pool contributions from graduates across the world.",
   },
   {
     icon: Heart,
@@ -132,7 +132,7 @@ const USE_CASES = [
 const HOW_IT_WORKS = [
   { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your alumni details. No long forms, no waiting for approval emails." },
   { n: "02", icon: MapPin,  title: "Build out your profile",        desc: "Add your career, company, location. The more context you give, the easier it is for the right people to find you." },
-  { n: "03", icon: Zap,    title: "Use it",                         desc: "Browse jobs, back a campaign, request a mentor, or just show up in the directory so others can reach you." },
+  { n: "03", icon: Zap,    title: "Use it",                         desc: "Browse jobs, back a fundraiser, request a mentor, or just show up in the directory so others can reach you." },
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -484,7 +484,7 @@ export default function LandingPage() {
               </h1>
               <p className="mb-10 max-w-[46ch]"
                 style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-                One place for jobs, campaigns, mentorship, events, and verified connections —
+                One place for jobs, fundraisers, mentorship, events, and verified connections —
                 built to feel modern, reliable, and easy for graduates at every stage of their career.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-12">
@@ -506,7 +506,7 @@ export default function LandingPage() {
                   { icon: GraduationCap, text: "Verified access"    },
                   { icon: Briefcase,     text: "Jobs from grads"    },
                   { icon: Heart,         text: "Mentor matching"    },
-                  { icon: Globe,         text: "Events & campaigns" },
+                  { icon: Globe,         text: "Events & fundraisers" },
                 ].map(item => (
                   <div key={item.text} className="flex items-center gap-2 cursor-default">
                     <item.icon size={15} style={{ color: "var(--primary)" }} />
@@ -588,7 +588,7 @@ export default function LandingPage() {
               One portal for every alumni need.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              From jobs and mentorship to campaigns, events, and community connections.
+              From jobs and mentorship to fundraisers, events, and community connections.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">

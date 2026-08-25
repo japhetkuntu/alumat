@@ -67,7 +67,7 @@ export default function PlanBillingPage() {
             <p className="font-semibold text-[14px] mb-3">Usage against limits</p>
             <UsageBar label="Members" used={8420} limit={15000} />
             <UsageBar label="Storage" used={42} limit={100} unit=" GB" />
-            <UsageBar label="Active campaigns" used={4} limit={10} />
+            <UsageBar label="Active fundraisers" used={4} limit={10} />
             <p className="text-[12.5px] rounded-md p-3 mt-2" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
               Usage is healthy. You have 6,580 member records remaining on this plan.
             </p>

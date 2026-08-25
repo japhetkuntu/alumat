@@ -613,7 +613,7 @@ export default function MemberDashboardPage() {
           : (
             <>
               <DashStat
-                label="Active campaigns"
+                label="Active fundraisers &amp; dues"
                 value={activeCampaigns.length}
                 sub="Open for contributions"
                 icon={TrendingUp}
@@ -706,9 +706,9 @@ export default function MemberDashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <div>
-                <CardTitle className="text-[15px] font-bold">Open campaigns</CardTitle>
+                <CardTitle className="text-[15px] font-bold">Open fundraisers</CardTitle>
                 <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                  Alumni-led campaigns you can contribute to
+                  Alumni-led fundraisers you can contribute to
                 </p>
               </div>
               <Link href="/contributions">
@@ -758,10 +758,10 @@ export default function MemberDashboardPage() {
               <div>
                 <CardTitle className="text-[15px] font-bold flex items-center gap-2">
                   <UsersRound size={15} style={{ color: "var(--primary)" }} />
-                  Community campaigns
+                  Community fundraisers
                 </CardTitle>
                 <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                  Contribution campaigns from communities you've joined
+                  Fundraisers from communities you've joined
                 </p>
               </div>
               <Link href="/communities">
@@ -949,7 +949,7 @@ export default function MemberDashboardPage() {
                 </p>
                 <Link href="/contributions">
                   <Button size="sm" variant="outline" className="mt-1 font-semibold">
-                    Browse campaigns
+                    Go to Give
                   </Button>
                 </Link>
               </div>

@@ -223,7 +223,7 @@ function MembershipCampaignSection({ email }: { email: string }) {
       <div className="rounded-xl border p-5 flex items-center gap-3 text-[13px]"
         style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
         <Loader2 size={15} className="animate-spin shrink-0" />
-        Checking for active campaigns…
+        Checking for active membership dues…
       </div>
     );
   }
@@ -235,7 +235,7 @@ function MembershipCampaignSection({ email }: { email: string }) {
           Membership activation
         </p>
         <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-          No active campaign for {currentYear} yet. You can activate your membership from your
+          No active membership dues for {currentYear} yet. You can activate your membership from your
           dashboard once approved, or contact the alumni office directly.
         </p>
       </div>
@@ -347,7 +347,14 @@ function RegisterForm() {
   // Institutions that haven't set up their own batches yet fall back to the
   // platform's generic year range, so registration never breaks for them.
   const graduationYearOptions = batches.length > 0
-    ? batches.map((b) => ({ value: String(b.year), label: b.name }))
+    ? batches.map((b) => ({
+        value: String(b.year),
+        // Always surface the year alongside the batch name — a member who's
+        // forgotten what their institution called their batch can still find
+        // themselves by year. Skip the suffix if the name already contains
+        // the year (e.g. "Batch of 2020") to avoid "Batch of 2020 (2020)".
+        label: b.name.includes(String(b.year)) ? b.name : `${b.name} (${b.year})`,
+      }))
     : gradYears.map((y) => ({ value: String(y), label: String(y) }));
 
   // Whether Student ID is required is per-institution config (RequireStudentId),

@@ -102,7 +102,7 @@ export default function AdminMembershipPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setShowCreate(false);
-      toast.success("Membership renewal campaign created");
+      toast.success("Membership renewal created");
       setBannerImage(null);
       setForm((prev) => ({ ...prev, title: `Membership Renewal ${prev.membershipYear}`, description: "", amountPerMember: "", pensionerAmountPerMember: "", deadline: "" }));
     },
@@ -116,7 +116,7 @@ export default function AdminMembershipPage() {
         <div>
           <h1 className="text-[25px] font-bold m-0">Membership Renewal</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5 max-w-2xl">
-            Recurring dues cycles that determine active membership. Members must pay <strong>current year</strong> campaigns to remain active — future years are optional early payment.
+            Recurring dues cycles that determine active membership. Members must pay the <strong>current year&apos;s</strong> dues to remain active — future years are optional early payment.
           </p>
         </div>
         {isSuperAdmin && (
@@ -140,8 +140,8 @@ export default function AdminMembershipPage() {
           <span className="text-[12px] text-muted-foreground">Unpaid this period</span>
           <b className="block text-[24px] mt-1 tabular-nums">{currentYearActive ? Math.max(0, currentYearEligible - currentYearPaidCount) : 0}</b>
           {!currentYearActive && (
-            <small className="block text-[11px] text-muted-foreground mt-1" title={`No membership campaign for ${currentYear} yet, so there's nothing to be unpaid on.`}>
-              No {currentYear} campaign yet
+            <small className="block text-[11px] text-muted-foreground mt-1" title={`No membership dues for ${currentYear} yet, so there's nothing to be unpaid on.`}>
+              No {currentYear} dues yet
             </small>
           )}
         </div>
@@ -155,13 +155,13 @@ export default function AdminMembershipPage() {
       {showCreate && isSuperAdmin && (
         <Card className="animate-in fade-in slide-in-from-top-4 duration-500 border-primary/30">
           <CardHeader>
-            <CardTitle className="text-base">Create Membership Renewal Campaign</CardTitle>
+            <CardTitle className="text-base">Create Membership Renewal</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Campaign title</Label>
+                  <Label>Title</Label>
                   <Input placeholder="e.g. Membership Renewal 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
@@ -237,7 +237,7 @@ export default function AdminMembershipPage() {
               )}
 
               <div className="flex gap-3 pt-2">
-                <Button type="submit" size="sm" isLoading={createMut.isPending} loadingText="Creating">Create Campaign</Button>
+                <Button type="submit" size="sm" isLoading={createMut.isPending} loadingText="Creating">Create</Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
               </div>
             </form>
@@ -257,11 +257,11 @@ export default function AdminMembershipPage() {
         ) : currentYearCampaigns.length === 0 ? (
           <Card className="border-dashed border-2 border-border/60">
             <CardContent className="p-8 text-center space-y-3">
-              <p className="text-muted-foreground font-medium">No membership campaign for {currentYear} yet.</p>
-              <p className="text-sm text-muted-foreground">Members will retain their previous active status until a current-year campaign is created.</p>
+              <p className="text-muted-foreground font-medium">No membership dues for {currentYear} yet.</p>
+              <p className="text-sm text-muted-foreground">Members will retain their previous active status until the current-year dues are created.</p>
               {isSuperAdmin && (
                 <Button onClick={() => { setForm((prev) => ({ ...prev, membershipYear: currentYear, title: `Membership Renewal ${currentYear}` })); setShowCreate(true); }} variant="outline">
-                  <Plus size={14} />Create {currentYear} Campaign
+                  <Plus size={14} />Create {currentYear} Dues
                 </Button>
               )}
             </CardContent>
@@ -284,17 +284,17 @@ export default function AdminMembershipPage() {
           </div>
 
           <p className="text-[13px] text-muted-foreground max-w-2xl">
-            Future membership campaigns allow members to pay ahead. However, <strong>not paying</strong> a future campaign does <strong>not</strong> affect a member&apos;s active status.
-            Only the current year&apos;s campaign determines membership activity.
+            Future membership dues allow members to pay ahead. However, <strong>not paying</strong> future dues does <strong>not</strong> affect a member&apos;s active status.
+            Only the current year&apos;s dues determine membership activity.
           </p>
 
           {futureYearCampaigns.length === 0 ? (
             <Card className="border-dashed border-2 border-border/60">
               <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground font-medium">No future membership campaigns created.</p>
+                <p className="text-muted-foreground font-medium">No future membership dues created.</p>
                 {isSuperAdmin && (
                   <Button onClick={() => { setForm((prev) => ({ ...prev, membershipYear: currentYear + 1, title: `Membership Renewal ${currentYear + 1}` })); setShowCreate(true); }} variant="outline" className="mt-3">
-                    <Plus size={14} />Create {currentYear + 1} Campaign
+                    <Plus size={14} />Create {currentYear + 1} Dues
                   </Button>
                 )}
               </CardContent>
@@ -409,7 +409,7 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
 
         {isCurrent && (
           <div className="rounded-lg bg-success/10 border border-success/30 p-3 text-xs text-success font-medium">
-            <strong>Active status:</strong> Members must pay this campaign to be considered active for {c.membershipYear}.
+            <strong>Active status:</strong> Members must pay these dues to be considered active for {c.membershipYear}.
           </div>
         )}
 

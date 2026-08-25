@@ -113,7 +113,7 @@ export default function PublicCampaignContributionPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <div className="w-10 h-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-          <p className="text-sm font-medium">Loading campaign…</p>
+          <p className="text-sm font-medium">Loading…</p>
         </div>
       </div>
     );
@@ -124,8 +124,8 @@ export default function PublicCampaignContributionPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-3 p-8">
           <div className="text-5xl mb-4">🔍</div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold">Campaign not found</h1>
-          <p className="text-muted-foreground max-w-sm mx-auto">This campaign may have ended or the link might be incorrect. Check with the organiser for the correct link.</p>
+          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold">Not found</h1>
+          <p className="text-muted-foreground max-w-sm mx-auto">This may have ended or the link might be incorrect. Check with the organiser for the correct link.</p>
         </div>
       </div>
     );
@@ -297,7 +297,7 @@ export default function PublicCampaignContributionPage() {
                     <Share2 size={15} className="text-success" />
                   </div>
                   <div>
-                    <p className="font-black text-[15px]">Share this campaign</p>
+                    <p className="font-black text-[15px]">Share {isMembershipFixed ? "these dues" : "this fundraiser"}</p>
                     <p className="text-[12px] text-muted-foreground">Help spread the word — every share counts</p>
                   </div>
                 </div>
@@ -324,7 +324,7 @@ export default function PublicCampaignContributionPage() {
 
                 {isClosed ? (
                   <div className="rounded-xl bg-muted/40 border border-border/40 p-5 text-center space-y-2">
-                    <p className="font-bold text-muted-foreground">This campaign is no longer accepting contributions.</p>
+                    <p className="font-bold text-muted-foreground">{isMembershipFixed ? "These dues are" : "This fundraiser is"} no longer accepting contributions.</p>
                     <p className="text-sm text-muted-foreground">Thank you to everyone who supported!</p>
                   </div>
                 ) : !campaign.allowOnlinePayments ? (
@@ -444,7 +444,7 @@ export default function PublicCampaignContributionPage() {
                     <Share2 size={15} className="text-success" />
                   </div>
                   <div>
-                    <p className="font-black text-[15px]">Share this campaign</p>
+                    <p className="font-black text-[15px]">Share {isMembershipFixed ? "these dues" : "this fundraiser"}</p>
                     <p className="text-[12px] text-muted-foreground">Help spread the word — every share counts</p>
                   </div>
                 </div>
@@ -463,7 +463,7 @@ export default function PublicCampaignContributionPage() {
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent size="default">
           <DialogHeader>
-            <DialogTitle>Share this campaign</DialogTitle>
+            <DialogTitle>Share {isMembershipFixed ? "these dues" : "this fundraiser"}</DialogTitle>
             <DialogDescription>{shareTextPlain}</DialogDescription>
           </DialogHeader>
           <div className="mt-1">{shareGrid}</div>

@@ -161,10 +161,10 @@ export default function MembershipCertificatePage() {
             No certificates yet
           </p>
           <p className="text-[14px] max-w-sm mx-auto" style={{ color: "var(--muted-foreground)" }}>
-            Once you pay a membership campaign, your certificate will be available here.
+            Once you pay your membership dues, your certificate will be available here.
           </p>
           <Link href="/contributions">
-            <Button variant="outline" className="font-semibold mt-2">Browse campaigns</Button>
+            <Button variant="outline" className="font-semibold mt-2">Go to Give</Button>
           </Link>
         </div>
       </div>
@@ -400,7 +400,7 @@ export default function MembershipCertificatePage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Campaign",          value: selected.campaign.title,                          wide: false },
+              { label: "Membership dues",   value: selected.campaign.title,                          wide: false },
               { label: "Membership year",   value: String(selected.campaign.membershipYear ?? "—"),  wide: false },
               { label: "Amount paid",       value: formatCurrency(selected.contribution.amount),     wide: false, green: true },
               { label: "Payment method",    value: contributionMethodLabel(selected.contribution.paymentMethod), wide: false },

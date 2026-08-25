@@ -68,7 +68,7 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     if (summaryQuery.isError) toast.error("Unable to load report summary metrics");
-    if (campaignsQuery.isError) toast.error("Unable to load campaign details");
+    if (campaignsQuery.isError) toast.error("Unable to load fundraiser details");
     if (membersQuery.isError) toast.error("Unable to load member metrics");
     if (contributionsQuery.isError) toast.error("Unable to load contribution metrics");
     if (eventsQuery.isError) toast.error("Unable to load event metrics");
@@ -216,7 +216,7 @@ export default function AdminReportsPage() {
           { label: "Total Members", value: totalMembers.toLocaleString(), icon: Users, color: "text-blue-600" },
           { label: "Total Contributions", value: totalContributions.toLocaleString(), icon: Activity, color: "text-teal-500" },
           { label: "Total Collected", value: formatCurrency(totalCollected), icon: DollarSign, color: "text-success" },
-          { label: "Campaigns", value: totalCampaigns.toLocaleString(), icon: Layers, color: "text-purple-600" },
+          { label: "Fundraisers", value: totalCampaigns.toLocaleString(), icon: Layers, color: "text-purple-600" },
           { label: "Events", value: totalEvents.toLocaleString(), icon: Calendar, color: "text-indigo-600" },
         ].map((s, i) => (
           <Card key={s.label} className="stagger-item hover:shadow-md transition-shadow" style={{ animationDelay: `${i * 50}ms` }}>
@@ -233,16 +233,16 @@ export default function AdminReportsPage() {
 
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base">Campaign Performance</CardTitle>
+          <CardTitle className="text-base">Fundraiser &amp; Dues Performance</CardTitle>
           <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5 w-full sm:w-auto" onClick={exportCampaigns}>
-            <Download size={13} />Export Campaigns CSV
+            <Download size={13} />Export Fundraisers CSV
           </Button>
         </CardHeader>
         <CardContent className="space-y-3.5">
           {campaignsQuery.isLoading ? (
             <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           ) : campaigns.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No campaigns yet</p>
+            <p className="text-muted-foreground text-center py-4">No fundraisers or dues yet</p>
           ) : (
             campaigns.map((c) => {
               const isMembership = !!c.isMembershipCampaign;
@@ -265,11 +265,11 @@ export default function AdminReportsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Campaign Status Breakdown</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Fundraiser &amp; Dues Status Breakdown</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           <p className="text-sm">Active: <strong>{activeCampaigns}</strong> · Closed: <strong>{closedCampaigns}</strong> · Total: <strong>{totalCampaigns}</strong></p>
           <Progress value={totalCampaigns > 0 ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0} />
-          <p className="text-xs text-muted-foreground">Active campaign share: {totalCampaigns ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0}%</p>
+          <p className="text-xs text-muted-foreground">Active share: {totalCampaigns ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0}%</p>
         </CardContent>
       </Card>
 
@@ -277,7 +277,7 @@ export default function AdminReportsPage() {
         <CardHeader><CardTitle className="text-base">Data Exports</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap gap-2.5">
           <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={exportCampaigns}>
-            <Download size={13} />Campaigns CSV
+            <Download size={13} />Fundraisers CSV
           </Button>
           <Button
             size="sm"

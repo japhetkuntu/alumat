@@ -39,7 +39,7 @@ function safeDate(value: string | null | undefined): string {
   return formatDate(value);
 }
 
-const TABS = ["Discussion", "Events", "Resources", "Wall", "Campaigns", "Members", "Requests"] as const;
+const TABS = ["Discussion", "Events", "Resources", "Wall", "Fundraisers", "Members", "Requests"] as const;
 
 const TAB_CAPTIONS: Partial<Record<(typeof TABS)[number], string>> = {
   Discussion: "Threaded Q&A and longer conversations",
@@ -111,7 +111,7 @@ export default function CommunityDetailPage() {
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery({
     queryKey: ["m-community-campaigns", id],
     queryFn: async () => (await getMyCampaigns(1, 50, id)).results,
-    enabled: isApproved && tab === "Campaigns",
+    enabled: isApproved && tab === "Fundraisers",
   });
 
   const rsvpMut = useMutation({
@@ -480,13 +480,13 @@ export default function CommunityDetailPage() {
             </div>
           )}
 
-          {tab === "Campaigns" && (
+          {tab === "Fundraisers" && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {campaignsLoading ? (
                 Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
               ) : campaigns.length === 0 ? (
                 <div className="md:col-span-2 xl:col-span-3">
-                  <EmptyState icon={<HandCoins size={36} />} title="No campaigns yet" description="Contribution campaigns for this community will show up here." />
+                  <EmptyState icon={<HandCoins size={36} />} title="No fundraisers yet" description="Fundraisers for this community will show up here." />
                 </div>
               ) : (
                 campaigns.map((c) => {
@@ -568,7 +568,7 @@ export default function CommunityDetailPage() {
       <ConfirmModal
         open={confirmLeave}
         title="Leave this community?"
-        message="You'll lose access to its discussions, wall, resources, and campaigns unless a leader approves your request to rejoin."
+        message="You'll lose access to its discussions, wall, resources, and fundraisers unless a leader approves your request to rejoin."
         confirmLabel="Leave community"
         variant="destructive"
         isLoading={leaveMut.isPending}

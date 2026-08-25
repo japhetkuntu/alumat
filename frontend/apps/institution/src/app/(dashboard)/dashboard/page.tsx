@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
             </small>
           </div>
           <div className="card p-4">
-            <span className="text-[12px] text-muted-foreground">Active campaigns</span>
+            <span className="text-[12px] text-muted-foreground">Active fundraisers &amp; dues</span>
             <b className="block text-[25px] my-2 tabular-nums">{activeCampaigns.length}</b>
             <small className="text-[12px]" style={{ color: approachingDeadline > 0 ? "var(--warning)" : "var(--muted-foreground)" }}>{approachingDeadline} approaching deadline</small>
           </div>
@@ -165,14 +165,14 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
         <section className="card p-[18px]">
-          <h2 className="text-[15px] font-semibold m-0 mb-3.5">Active campaigns</h2>
+          <h2 className="text-[15px] font-semibold m-0 mb-3.5">Active fundraisers &amp; dues</h2>
           {isLoading ? (
             <div className="space-y-3 py-1">
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14" />)}
             </div>
           ) : (
             <>
-              {activeCampaigns.length === 0 && <p className="text-[13px] text-muted-foreground py-4">No active campaigns.</p>}
+              {activeCampaigns.length === 0 && <p className="text-[13px] text-muted-foreground py-4">No active fundraisers or dues.</p>}
               {activeCampaigns.map((c) => {
                 const isMembership = !!c.isMembershipCampaign;
                 const pct = isMembership && c.totalEligibleMembers

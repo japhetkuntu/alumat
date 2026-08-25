@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           In most cases, the Institution decides why and how Members&apos; data is collected — for example, which
-          fields are required at registration, or which campaigns are run — which makes the Institution the
+          fields are required at registration, or which fundraisers are run — which makes the Institution the
           data controller for its own Members&apos; records. We act as the data processor that stores and runs
           that data on the Institution&apos;s behalf, and we are separately the controller for platform-level
           records like billing and security logs. If you are unsure which applies to a specific piece of data,
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           <li>Location, only if you turn on the Alumni Map — the city/country you entered, nothing more precise;</li>
           <li>Activity data — event RSVPs, forum and class-note posts, job applications, mentorship requests,
             community memberships;</li>
-          <li>Payment records — the amount, date, campaign, and status of a contribution or membership payment.
+          <li>Payment records — the amount, date, fundraiser or membership dues item, and status of a contribution or payment.
             We do not receive or store your card number, CVV, or mobile money PIN; those go directly to
             Paystack, our payment processor;</li>
           <li>Notification preferences — whether you&apos;ve opted in to SMS alerts, and the number they&apos;re sent
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         </ul>
         <p><strong style={{ color: "var(--foreground)" }}>From Institution staff:</strong> name, work email, and role,
           used to manage staff access to the admin console.</p>
-        <p><strong style={{ color: "var(--foreground)" }}>From guest payers:</strong> if you pay a campaign without
+        <p><strong style={{ color: "var(--foreground)" }}>From guest payers:</strong> if you pay a fundraiser or membership dues item without
           an account, we collect the payment amount, reference, and — only if you choose to provide one — an
           email address to receive a receipt.</p>
       </Section>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
             pilot, and this policy will be updated before it is turned on.)</li>
           <li><strong style={{ color: "var(--foreground)" }}>Cloud hosting and storage providers</strong>{" "}
             (including DigitalOcean) — store the Platform&apos;s database and uploaded files (like profile photos
-            and campaign banners) securely;</li>
+            and fundraiser banners) securely;</li>
           <li><strong style={{ color: "var(--foreground)" }}>Your own Institution&apos;s staff</strong> — the staff
             of the Institution whose portal you registered on can see the profile and activity data needed to
             run that portal (for example, to approve your membership or confirm a manual payment). Staff at one

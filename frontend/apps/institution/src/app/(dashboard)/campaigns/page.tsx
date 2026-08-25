@@ -82,12 +82,12 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
       <CardContent>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <div className="space-y-2">
-            <Label>Campaign title</Label>
+            <Label>Fundraiser title</Label>
             <Input placeholder="e.g. Alumni Development Fund 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea placeholder="Describe the purpose of this campaign..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} />
+            <Textarea placeholder="Describe the purpose of this fundraiser..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} />
           </div>
           {communities.length > 0 && (
             <div className="space-y-2">
@@ -97,7 +97,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
                 onValueChange={(v) => f("communityId", v)}
                 options={[{ value: "", label: "Institution-wide (all members)" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
               />
-              <p className="text-xs text-muted-foreground">Restricts this campaign to one community's approved members instead of the whole institution.</p>
+              <p className="text-xs text-muted-foreground">Restricts this fundraiser to one community's approved members instead of the whole institution.</p>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -136,11 +136,11 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
                     onChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
                   />
                 ) : (
-                  <p className="text-xs text-muted-foreground">This campaign will be visible to members of all year groups.</p>
+                  <p className="text-xs text-muted-foreground">This fundraiser will be visible to members of all year groups.</p>
                 )}
               </>
             ) : (
-              <p className="text-xs text-muted-foreground">Regular admins cannot choose year groups. Campaigns will be restricted to your assigned year group.</p>
+              <p className="text-xs text-muted-foreground">Regular admins cannot choose year groups. Fundraisers will be restricted to your assigned year group.</p>
             )}
           </div>
 
@@ -246,7 +246,7 @@ export default function AdminCampaignsPage() {
       mobileMoneyName: f.mobileMoneyName || undefined,
       mobileMoneyProvider: f.mobileMoneyProvider || undefined,
     }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setShowCreate(false); toast.success("Campaign created"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setShowCreate(false); toast.success("Fundraiser created"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -267,31 +267,31 @@ export default function AdminCampaignsPage() {
       mobileMoneyName: f.mobileMoneyName || undefined,
       mobileMoneyProvider: f.mobileMoneyProvider || undefined,
     }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setEditCampaign(null); toast.success("Campaign updated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setEditCampaign(null); toast.success("Fundraiser updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   const closeMut = useMutation({
     mutationFn: (id: string) => updateCampaign(id, { status: "Closed" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setCloseTarget(null); toast.success("Campaign closed"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setCloseTarget(null); toast.success("Fundraiser closed"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   const archiveMut = useMutation({
     mutationFn: (id: string) => archiveCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setArchiveTarget(null); toast.success("Campaign archived"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setArchiveTarget(null); toast.success("Fundraiser archived"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   const unarchiveMut = useMutation({
     mutationFn: (id: string) => unarchiveCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setUnarchiveTarget(null); toast.success("Campaign restored"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); setUnarchiveTarget(null); toast.success("Fundraiser restored"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   const activateMut = useMutation({
     mutationFn: (id: string) => activateCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); toast.success("Campaign activated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-campaigns"] }); toast.success("Fundraiser activated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -302,17 +302,17 @@ export default function AdminCampaignsPage() {
     <div className="p-[26px] max-w-[1240px] mx-auto space-y-4">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Campaigns</h1>
+          <h1 className="text-[25px] font-bold m-0">Fundraisers</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Initiatives outside standard membership dues.</p>
         </div>
         <Button onClick={() => setShowCreate(!showCreate)}>
-          <Plus size={16} />Create campaign
+          <Plus size={16} />Create fundraiser
         </Button>
       </header>
 
       {showCreate && (
         <CampaignForm
-          title="Create New Campaign"
+          title="Create New Fundraiser"
           init={emptyForm}
           saving={createMut.isPending}
           isSuperAdmin={isSuperAdmin}
@@ -374,7 +374,7 @@ export default function AdminCampaignsPage() {
           {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : campaigns.length === 0 ? (
-        <EmptyState icon={<Plus size={40} />} title="No campaigns yet" description="Create a contribution campaign to start collecting funds." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Create campaign</Button>} />
+        <EmptyState icon={<Plus size={40} />} title="No fundraisers yet" description="Create a fundraiser to start collecting funds." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Create fundraiser</Button>} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {campaigns.map((c) => {
@@ -452,9 +452,9 @@ export default function AdminCampaignsPage() {
 
       <ConfirmModal
         open={!!closeTarget}
-        title="Close Campaign"
-        message={`Close "${closeTarget?.title}"? This is irreversible: once closed, the campaign cannot be reopened. Please confirm that you want to finalize and disburse online payment contributions now.`}
-        confirmLabel="Close Campaign"
+        title="Close Fundraiser"
+        message={`Close "${closeTarget?.title}"? This is irreversible: once closed, the fundraiser cannot be reopened. Please confirm that you want to finalize and disburse online payment contributions now.`}
+        confirmLabel="Close Fundraiser"
         variant="destructive"
         isLoading={closeMut.isPending}
         onConfirm={() => closeTarget && closeMut.mutate(closeTarget.id)}
@@ -462,7 +462,7 @@ export default function AdminCampaignsPage() {
       />
       <ConfirmModal
         open={!!archiveTarget}
-        title="Archive Campaign"
+        title="Archive Fundraiser"
         message={`Archive "${archiveTarget?.title}"? It will be hidden from members but can be restored later.`}
         confirmLabel="Archive"
         variant="default"
@@ -472,7 +472,7 @@ export default function AdminCampaignsPage() {
       />
       <ConfirmModal
         open={!!unarchiveTarget}
-        title="Restore Campaign"
+        title="Restore Fundraiser"
         message={`Restore "${unarchiveTarget?.title}" from archive? It will be set back to Closed.`}
         confirmLabel="Restore"
         variant="default"

@@ -48,7 +48,7 @@ const TYPE_META: Record<string, {
   label: string;
 }> = {
   JobAlert:              { icon: Briefcase,     bg: "rgba(59,130,246,0.12)",  color: "#2563eb", label: "Job"          },
-  CampaignAlert:         { icon: Megaphone,     bg: "rgba(139,92,246,0.12)",  color: "#7c3aed", label: "Campaign"     },
+  CampaignAlert:         { icon: Megaphone,     bg: "rgba(139,92,246,0.12)",  color: "#7c3aed", label: "Fundraiser"   },
   EventReminder:         { icon: Calendar,      bg: "rgba(245,158,11,0.12)",  color: "#d97706", label: "Event"        },
   SpotlightUpdate:       { icon: Star,          bg: "rgba(234,179,8,0.12)",   color: "#ca8a04", label: "Spotlight"    },
   ContributionConfirmed: { icon: CreditCard,    bg: "rgba(16,185,129,0.12)",  color: "#059669", label: "Confirmed"    },
@@ -152,11 +152,11 @@ function NotifRow({
 /* ─────────────────────────────────────────────────────────────────────────
    FILTER TABS
    ───────────────────────────────────────────────────────────────────────── */
-const FILTER_TABS = ["All", "Unread", "Jobs", "Events", "Campaigns", "Contributions", "Class notes"] as const;
+const FILTER_TABS = ["All", "Unread", "Jobs", "Events", "Fundraisers", "Contributions", "Class notes"] as const;
 const TAB_TYPES: Record<string, string[]> = {
   Jobs:          ["JobAlert"],
   Events:        ["EventReminder"],
-  Campaigns:     ["CampaignAlert"],
+  Fundraisers:   ["CampaignAlert"],
   Contributions: ["ContributionConfirmed", "ContributionRejected"],
   "Class notes": ["ClassNoteAlert"],
 };

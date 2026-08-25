@@ -172,8 +172,8 @@ export default function MemberSettingsPage() {
           <Toggle
             checked={notifPrefs?.campaignAlerts ?? true}
             onChange={(v) => toggleNotif("campaignAlerts", v)}
-            label="Campaign Alerts"
-            description="Notifications when new campaigns are launched"
+            label="Fundraiser Alerts"
+            description="Notifications when new fundraisers are launched"
           />
           <Toggle
             checked={notifPrefs?.eventReminders ?? true}

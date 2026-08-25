@@ -16,7 +16,7 @@ export default function TermsPage() {
         <p>
           These Terms apply to everyone who uses the Platform: Institutions that sign up to run a portal, staff
           members who administer one, Members who register on a portal, and guests who make a one-off payment
-          through a public campaign link. By creating an account, logging in, or making a payment through the
+          through a public fundraiser or membership dues link. By creating an account, logging in, or making a payment through the
           Platform, you agree to these Terms. If you are agreeing on behalf of an Institution, you confirm you
           have the authority to bind that Institution.
         </p>
@@ -28,12 +28,12 @@ export default function TermsPage() {
           alumunion.com or the Institution&apos;s own custom domain) and a staff-facing admin console. Depending on
           what the Institution turns on, a portal may include: a searchable alumni directory, an opt-in world
           map showing where alumni are based, class notes and forum discussions, events with RSVP, a job board,
-          mentorship matching, news and announcements, membership renewal, and fundraising or dues campaigns
+          mentorship matching, news and announcements, membership renewal, and fundraisers or membership dues
           collected online (through our payment partner, Paystack) or recorded manually by staff.
         </p>
         <p>
           Institutions control which of these features are switched on for their own portal, and are responsible
-          for the content, events, and campaigns they publish. We provide the software and infrastructure; we do
+          for the content, events, and fundraisers they publish. We provide the software and infrastructure; we do
           not review or endorse an Institution&apos;s content before it is published.
         </p>
       </Section>
@@ -55,7 +55,7 @@ export default function TermsPage() {
 
       <Section heading="4. Guest payments">
         <p>
-          Some campaign links can be paid without creating an account (&quot;guest payment&quot;). If you pay as a
+          Some fundraiser or membership dues links can be paid without creating an account (&quot;guest payment&quot;). If you pay as a
           guest through a link that was shared by a registered Member, the contribution may be recorded against
           that Member&apos;s account for the Institution&apos;s records, but is clearly marked as paid by a guest — it is
           never shown as if the sharer paid it themselves. If you are logged in when you pay, the payment is
@@ -73,8 +73,7 @@ export default function TermsPage() {
             unsolicited marketing;</li>
           <li>Interfere with the normal operation of the Platform, including by introducing malware or
             attempting to bypass rate limits, authentication, or feature restrictions;</li>
-          <li>Use the payment or campaign features to collect money for a purpose other than the one stated in
-            the campaign.</li>
+          <li>Use the payment or fundraiser features to collect money for a purpose other than the one stated.</li>
         </ul>
         <p>
           Content you post in forums, class notes, communities, or your profile (&quot;User Content&quot;) remains
@@ -87,15 +86,15 @@ export default function TermsPage() {
 
       <Section heading="6. Payments">
         <p>
-          Online payments (membership dues, campaign contributions) are processed by Paystack, a licensed
+          Online payments (membership dues, fundraiser contributions) are processed by Paystack, a licensed
           payment service provider. We do not receive or store your full card or mobile money PIN details —
           Paystack handles that directly. A processing fee, disclosed at checkout, may apply on top of the
           amount you choose to pay. Amounts already paid are generally non-refundable except where required by
           law or at an Institution&apos;s discretion; refund requests should go to the Institution that ran the
-          campaign, since they hold the funds and the record of what was collected.
+          fundraiser or dues cycle, since they hold the funds and the record of what was collected.
         </p>
         <p>
-          Institutions set their own campaign amounts, deadlines, and (for membership) yearly dues. We are not a
+          Institutions set their own fundraiser amounts, deadlines, and (for membership) yearly dues. We are not a
           party to the underlying reason a payment is being collected — that relationship is between you and the
           Institution.
         </p>
@@ -103,7 +102,7 @@ export default function TermsPage() {
 
       <Section heading="7. Notifications">
         <p>
-          With your consent, an Institution can reach you by email or SMS for things like campaign reminders,
+          With your consent, an Institution can reach you by email or SMS for things like fundraiser reminders,
           event updates, or membership renewal notices, using the phone number and preferences you provide in
           your profile. You can turn SMS notifications off at any time from your notification settings; some
           account-critical emails (like password resets or payment receipts) cannot be turned off, since they
@@ -136,7 +135,7 @@ export default function TermsPage() {
           The Platform is provided on an &quot;as is&quot; and &quot;as available&quot; basis. We work to keep it reliable and
           secure, but we do not guarantee it will be uninterrupted or error-free. We are not responsible for the
           accuracy of content an Institution or its Members post, or for disputes between an Institution and its
-          Members (for example, over how collected campaign funds are used).
+          Members (for example, over how collected fundraiser or dues funds are used).
         </p>
         <p>
           To the fullest extent permitted by Ghanaian law, our total liability to you arising out of your use of

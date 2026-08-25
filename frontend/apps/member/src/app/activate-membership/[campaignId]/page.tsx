@@ -75,7 +75,7 @@ function ActivateMembershipContent() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <Loader2 size={32} className="animate-spin text-primary" />
-          <p className="text-sm">Loading campaign details…</p>
+          <p className="text-sm">Loading membership dues details…</p>
         </div>
       </div>
     );
@@ -88,9 +88,9 @@ function ActivateMembershipContent() {
           <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto">
             <AlertCircle size={28} className="text-destructive" />
           </div>
-          <h2 className="text-xl font-bold text-foreground">Campaign not found</h2>
+          <h2 className="text-xl font-bold text-foreground">Not found</h2>
           <p className="text-sm text-muted-foreground">
-            This membership campaign may no longer be active or the link is invalid.
+            These membership dues may no longer be active or the link is invalid.
           </p>
           <Link
             href="/login"
@@ -134,7 +134,7 @@ function ActivateMembershipContent() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch">
 
-          {/* Campaign panel */}
+          {/* Membership dues panel */}
           <section className="rounded-[22px] bg-primary text-primary-foreground p-7 sm:p-10 flex flex-col">
             {campaign.bannerImageUrl && (
               <div className="relative -mx-7 sm:-mx-10 -mt-7 sm:-mt-10 mb-6 h-36 sm:h-44 overflow-hidden rounded-t-[22px]">
@@ -184,7 +184,7 @@ function ActivateMembershipContent() {
             {isExpired && (
               <div className="flex items-center gap-2 px-3 py-2 mt-6 rounded-xl bg-white/10 text-xs font-medium">
                 <AlertCircle size={13} />
-                This campaign has closed. Contact the alumni office for assistance.
+                These dues are closed. Contact the alumni office for assistance.
               </div>
             )}
           </section>
@@ -260,7 +260,7 @@ function ActivateMembershipContent() {
             {!campaign.allowOnlinePayments && (
               <div className="flex items-start gap-2 px-3 py-3 rounded-xl bg-warning/10 border border-warning/20 text-warning text-xs">
                 <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-                <span>Online payments are currently disabled for this campaign. Please contact the alumni office.</span>
+                <span>Online payments are currently disabled for these dues. Please contact the alumni office.</span>
               </div>
             )}
 

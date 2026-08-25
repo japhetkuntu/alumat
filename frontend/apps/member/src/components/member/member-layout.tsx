@@ -305,7 +305,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   if (isLoading || !isMember) return null;
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden selection:bg-primary/10">
+    <div className="flex h-dvh bg-background overflow-hidden overscroll-none selection:bg-primary/10">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex shrink-0">
         <Sidebar />
@@ -333,13 +333,19 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           <NotificationPanel />
         </div>
 
-        {/* Mobile header - Refined and compact. transform/backfaceVisibility force this
-            onto its own compositor layer — WebKit can otherwise fail to repaint a
-            fixed/sticky + backdrop-blur layer after a sibling blur layer (a modal
-            overlay, the notification panel) unmounts, leaving the header invisible
-            until a manual scroll/refresh forces a repaint. */}
+        {/* Mobile header — `fixed`, not `sticky`: this div's actual ancestor is
+            NOT a scrolling container (that's <main>, a sibling below it), so
+            `sticky` never had a scroll box to stick within and was already
+            behaving as a plain static element. On iOS Safari that's exactly
+            what lets the whole page rubber-band/shift during a scroll gesture
+            or address-bar collapse, visually dragging a "static" header out of
+            view. `fixed` pins it to the true viewport regardless of any of
+            that. transform/backfaceVisibility force it onto its own compositor
+            layer, which also avoids a separate WebKit repaint bug where a
+            fixed + backdrop-blur layer can fail to redraw after a sibling blur
+            layer (a modal overlay, the notification panel) unmounts. */}
         <div
-          className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl"
+          className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl"
           style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
         >
           <div className="flex items-center gap-2.5">
@@ -366,7 +372,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative pb-24 lg:pb-0 scroll-touch">
+        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-primary/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
               {children}

@@ -57,7 +57,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
 const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { label: "Money", isHeader: true },
-  { href: "/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/campaigns", label: "Fundraisers", icon: Megaphone },
   { href: "/membership", label: "Membership", icon: CreditCard },
   { href: "/contributions", label: "Contributions", icon: CreditCard },
   { label: "People", isHeader: true },
