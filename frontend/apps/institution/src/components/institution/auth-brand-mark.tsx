@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getInitials } from "@alumni/ui";
 import { institutionClient } from "@/lib/api-client";
@@ -51,16 +52,20 @@ export function AuthMobileBrand() {
   const { data: theme } = useAuthTheme();
   const displayName = theme?.displayName || "Institution Portal";
   return (
-    <div className="mb-10 md:hidden flex flex-col items-center gap-3">
+    <Link href="/" className="mb-10 md:hidden flex flex-col items-center gap-3 transition-opacity hover:opacity-80">
       <Mark size={48} />
       <div className="text-center">
         <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>{displayName}</p>
         <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Institution Portal</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
 export function AuthDesktopMark() {
-  return <Mark size={52} className="hidden md:flex mb-6" />;
+  return (
+    <Link href="/" className="hidden md:flex mb-6 w-fit transition-opacity hover:opacity-80">
+      <Mark size={52} />
+    </Link>
+  );
 }

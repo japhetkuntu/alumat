@@ -179,6 +179,11 @@ services:
       PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY}
       PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY}
       PaystackConfig__CallbackUrl: ${PAYSTACK_CALLBACK_URL}
+      # Zero-Deduction gross-up inputs — must track Paystack's real published
+      # GHS fee schedule (paystack.com/gh/pricing). Safe defaults below.
+      PaystackConfig__GatewayFeePercentage: ${PAYSTACK_GATEWAY_FEE_PERCENTAGE:-1.95}
+      PaystackConfig__GatewayFixedFeeSubunit: ${PAYSTACK_GATEWAY_FIXED_FEE_SUBUNIT:-0}
+      PaystackConfig__GatewayFeeSafetyBufferSubunit: ${PAYSTACK_GATEWAY_FEE_SAFETY_BUFFER_SUBUNIT:-2}
       MailtrapConfig__ApiKey: ${MAILTRAP_API_KEY}
       MailtrapConfig__DefaultMessageSource__Name: ${MAIL_SENDER_NAME}
       MailtrapConfig__DefaultMessageSource__Email: ${MAIL_SENDER_EMAIL}

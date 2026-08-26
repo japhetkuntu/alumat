@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getInitials } from "@alumni/ui";
 import { memberClient } from "@/lib/api-client";
@@ -34,14 +35,16 @@ export function AuthMobileBrand({ fallbackTagline }: { fallbackTagline: string }
 
   return (
     <div className="mb-10 text-center md:hidden">
-      <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-border flex items-center justify-center bg-primary/10">
-        {markImage ? (
-          <img src={markImage} alt={displayName} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-[18px] font-bold text-primary">{getInitials(displayName)}</span>
-        )}
-      </div>
-      <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
+      <Link href="/" className="inline-block transition-opacity hover:opacity-80">
+        <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-border flex items-center justify-center bg-primary/10">
+          {markImage ? (
+            <img src={markImage} alt={displayName} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[18px] font-bold text-primary">{getInitials(displayName)}</span>
+          )}
+        </div>
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
+      </Link>
       <p className="text-muted-foreground text-sm mt-1">{theme?.tagline || fallbackTagline}</p>
     </div>
   );

@@ -180,10 +180,9 @@ function useCounter(end: number, active: boolean) {
    ───────────────────────────────────────────────────────────────────────── */
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 mb-5"
-      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--primary)" }} />
-      <span className="text-[11px] font-semibold tracking-[0.1em] uppercase" style={{ color: "var(--color-text-info)" }}>
+    <div className="inline-flex items-center gap-2.5 mb-5">
+      <span className="h-px w-6" style={{ background: "var(--primary)" }} />
+      <span className="text-[12.5px] font-semibold tracking-wide" style={{ color: "var(--primary)" }}>
         {children}
       </span>
     </div>
@@ -523,12 +522,6 @@ export default function LandingPage() {
                   className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0"
                   style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.72) 100%)" }} />
-
-                <div className="hidden sm:flex absolute top-5 left-5 items-center gap-2 rounded-full px-3 py-1.5"
-                  style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.25)" }}>
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#fff" }} />
-                  <span className="text-[10.5px] font-semibold tracking-[0.08em] uppercase text-white">Built around alumni needs</span>
-                </div>
 
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <p className="text-white font-[family-name:var(--font-display)] leading-snug mb-3" style={{ fontSize: "1.35rem" }}>
