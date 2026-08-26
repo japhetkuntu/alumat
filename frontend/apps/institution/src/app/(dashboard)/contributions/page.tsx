@@ -81,19 +81,6 @@ export default function AdminContributionsPage() {
   });
 
 
-  // Manual/offline payments never route through the online split, so their
-  // net to the institution is always the full amount. For online payments,
-  // netAmountToInstitution/platformFeeAmount are 0 for contributions confirmed
-  // before this feature existed — treat those as pre-fee (full amount, no fee)
-  // rather than showing a misleading GHS 0.00 net.
-  const isOnlinePayment = (c: { paymentMethod: string }) => c.paymentMethod === "Paystack";
-  const hasFeeData = (c: { platformFeeAmount: number; netAmountToInstitution: number }) =>
-    c.platformFeeAmount > 0 || c.netAmountToInstitution > 0;
-  const netAmountFor = (c: { paymentMethod: string; amount: number; platformFeeAmount: number; netAmountToInstitution: number }) =>
-    isOnlinePayment(c) && hasFeeData(c) ? c.netAmountToInstitution : c.amount;
-  const feeAmountFor = (c: { paymentMethod: string; platformFeeAmount: number; netAmountToInstitution: number }) =>
-    isOnlinePayment(c) && hasFeeData(c) ? c.platformFeeAmount : 0;
-
   const items = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
   const densityCellClass = compactRows ? "py-2" : "py-2.5";
@@ -260,7 +247,6 @@ export default function AdminContributionsPage() {
                 <TableHead>Member</TableHead>
                 <TableHead>Fundraiser / Dues</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Net to institution</TableHead>
                 <TableHead>Ref</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead>Status</TableHead>
@@ -269,9 +255,9 @@ export default function AdminContributionsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton rows={8} cols={8} />
+                <TableSkeleton rows={8} cols={7} />
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No contributions found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No contributions found</TableCell></TableRow>
               ) : items.map((c) => (
                 <TableRow key={c.id} className={densityRowClass}>
                   <TableCell className={densityCellClass}>
@@ -291,12 +277,6 @@ export default function AdminContributionsPage() {
                   </TableCell>
                   <TableCell className={`text-sm max-w-[220px] ${densityCellClass}`}><p className="truncate">{c.campaignTitle ?? "Unknown"}</p></TableCell>
                   <TableCell className={`font-medium whitespace-nowrap ${densityCellClass}`}>{formatCurrency(c.amount)}</TableCell>
-                  <TableCell className={`whitespace-nowrap ${densityCellClass}`}>
-                    <p className="font-medium">{formatCurrency(netAmountFor(c))}</p>
-                    {feeAmountFor(c) > 0 && (
-                      <p className="text-[11px] text-muted-foreground">−{formatCurrency(feeAmountFor(c))} fee</p>
-                    )}
-                  </TableCell>
                   <TableCell className={`text-xs text-muted-foreground max-w-[170px] ${densityCellClass}`}><p className="truncate">{c.transactionRef ?? "—"}</p></TableCell>
                   <TableCell className={`whitespace-nowrap ${densityCellClass}`}><Badge variant={c.paymentMethod === "Paystack" ? "info" : "secondary"}>{paymentMethodLabel(c.paymentMethod)}</Badge></TableCell>
                   <TableCell className={`whitespace-nowrap ${densityCellClass}`}><Badge variant={statusVariant[c.status]}>{c.status}</Badge></TableCell>

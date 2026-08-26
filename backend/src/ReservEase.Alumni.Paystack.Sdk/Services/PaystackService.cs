@@ -22,6 +22,8 @@ public class PaystackService(PaystackConfig config, IHttpClientFactory httpClien
             callback_url = request.CallbackUrl,
             metadata = request.Metadata,
             subaccount = request.Subaccount,
+            transaction_charge = request.TransactionCharge,
+            bearer = request.Bearer,
         }), Encoding.UTF8, "application/json");
 
         var response = await client.PostAsync("/transaction/initialize", body);

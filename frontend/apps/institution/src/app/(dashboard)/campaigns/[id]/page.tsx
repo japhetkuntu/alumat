@@ -171,15 +171,13 @@ export default function CampaignDetailPage() {
 
           <div className="mt-1 rounded-[6px] border border-border p-4">
             <h3 className="text-[13.5px] font-semibold">Online payment overview</h3>
-            <p className="text-xs text-muted-foreground mt-1">This platform takes a small percentage of each online payment to run the service — the rest pays out directly to your institution&apos;s account.</p>
+            <p className="text-xs text-muted-foreground mt-1">Online payments are processed via Paystack — your institution receives the full amount members pay.</p>
             {loadingPaystackSummary ? (
               <p className="text-sm text-muted-foreground mt-2">Loading payment summary…</p>
             ) : paystackSummary ? (
               <>
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                  <div><p className="text-muted-foreground">Gross collected online</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPaidToPaystack)}</p></div>
-                  <div><p className="text-muted-foreground">Platform fee</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPlatformFee)}</p></div>
-                  <div><p className="text-muted-foreground">Net settled to institution</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalNetToInstitution)}</p></div>
+                  <div><p className="text-muted-foreground">Collected online</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPaidToPaystack)}</p></div>
                 </div>
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
                   <div><p className="text-muted-foreground">Total disbursed</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalDisbursed)}</p></div>

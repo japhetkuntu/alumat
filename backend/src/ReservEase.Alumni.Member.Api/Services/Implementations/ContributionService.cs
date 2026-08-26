@@ -8,6 +8,7 @@ using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Options;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.Paystack.Sdk.Models;
+using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
@@ -30,6 +31,7 @@ public class ContributionService : IContributionService
     private readonly ICurrentTenantService currentTenant;
     private readonly AlumniDbContext db;
     private readonly IPaystackService paystackService;
+    private readonly PaystackConfig paystackConfig;
     private readonly IRedisService<MemberRedisConfig> redis;
     private readonly INotificationActor notificationActor;
     private readonly ILogger<ContributionService> logger;
@@ -64,6 +66,42 @@ public class ContributionService : IContributionService
 
     private async Task<Institution?> GetCurrentInstitutionAsync() =>
         string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+
+    /// <summary>
+    /// Zero-Deduction pricing: builds the InitializePaymentRequest fields so the
+    /// institution nets 100% of schoolAmount and our platform fee is collected
+    /// from the payer's grossed-up charge — never deducted from the institution.
+    /// Falls back to a plain, unsplit charge when the institution has no Paystack
+    /// subaccount configured yet (onboarding not complete), preserving today's
+    /// behavior for those institutions rather than blocking payment.
+    /// </summary>
+    private (long amountSubunit, long? transactionCharge, string? bearer, decimal platformFee, decimal gatewayFee, decimal transactionChargeAmount, decimal grossCharge)
+        BuildZeroDeductionCharge(decimal schoolAmount, Institution? institution)
+    {
+        var schoolAmountSubunit = (long)Math.Round(schoolAmount * 100m, MidpointRounding.AwayFromZero);
+
+        if (institution is null || string.IsNullOrEmpty(institution.PaystackSubaccountCode))
+        {
+            return (schoolAmountSubunit, null, null, 0m, 0m, 0m, schoolAmount);
+        }
+
+        var charge = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            schoolAmountSubunit,
+            institution.PlatformFeePercentage,
+            paystackConfig.GatewayFeePercentage,
+            paystackConfig.GatewayFixedFeeSubunit,
+            paystackConfig.GatewayFeeCapSubunit,
+            paystackConfig.GatewayFeeSafetyBufferSubunit);
+
+        return (
+            charge.ChargeAmountSubunit,
+            charge.TransactionChargeSubunit,
+            "account", // Paystack's fee must come from our share, never the institution's.
+            charge.PlatformFeeSubunit / 100m,
+            charge.GatewayFeeSubunit / 100m,
+            charge.TransactionChargeSubunit / 100m,
+            charge.ChargeAmountSubunit / 100m);
+    }
 
     public async Task<IApiResponse<PgPagedResult<ContributionDto>>> GetMyContributionsAsync(
         string memberId, ContributionFilter filter)
@@ -130,6 +168,7 @@ public class ContributionService : IContributionService
         ICurrentTenantService currentTenant,
         AlumniDbContext db,
         IPaystackService paystackService,
+        PaystackConfig paystackConfig,
         IRedisService<MemberRedisConfig> redis,
         INotificationActor notificationActor,
         IConfiguration configuration,
@@ -143,6 +182,7 @@ public class ContributionService : IContributionService
         this.currentTenant = currentTenant;
         this.db = db;
         this.paystackService = paystackService;
+        this.paystackConfig = paystackConfig;
         this.redis = redis;
         this.notificationActor = notificationActor;
         this.logger = logger;
@@ -235,13 +275,13 @@ public class ContributionService : IContributionService
             if (request.Amount <= 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Amount must be greater than zero.");
 
-            var amountInKobo = (long)(request.Amount * 100);
             var currentInstitution = await GetCurrentInstitutionAsync();
+            var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution);
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
                 Email = memberEmail,
-                Amount = amountInKobo,
+                Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
                 Metadata = new Dictionary<string, string>
                 {
@@ -249,6 +289,8 @@ public class ContributionService : IContributionService
                     { "campaignId", request.CampaignId },
                 },
                 Subaccount = currentInstitution?.PaystackSubaccountCode,
+                TransactionCharge = charge.transactionCharge,
+                Bearer = charge.bearer,
             });
 
             if (!response.Status)
@@ -281,6 +323,10 @@ public class ContributionService : IContributionService
                 CreatedBy = string.IsNullOrEmpty(memberId) ? "anonymous" : memberId,
                 IsGuestPayment = isGuestPayment,
                 SharedByMemberId = sharedByMemberId,
+                PlatformFeeAmount = charge.platformFee,
+                GatewayFeeAmount = charge.gatewayFee,
+                TransactionChargeAmount = charge.transactionChargeAmount,
+                GrossChargeAmount = charge.grossCharge,
             };
 
             await paymentTransactionRepo.AddAsync(transaction);
@@ -371,12 +417,12 @@ public class ContributionService : IContributionService
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Online payments are not enabled for membership.");
 
             var amount = amountPerYear * request.Years;
-            var amountInKobo = (long)(amount * 100);
             var currentInstitution = await GetCurrentInstitutionAsync();
+            var charge = BuildZeroDeductionCharge(amount, currentInstitution);
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
                 Email = member.Email,
-                Amount = amountInKobo,
+                Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
                 Metadata = new Dictionary<string, string>
                 {
@@ -385,6 +431,8 @@ public class ContributionService : IContributionService
                     { "membershipYears", request.Years.ToString() }
                 },
                 Subaccount = currentInstitution?.PaystackSubaccountCode,
+                TransactionCharge = charge.transactionCharge,
+                Bearer = charge.bearer,
             });
 
             if (!response.Status)
@@ -411,6 +459,10 @@ public class ContributionService : IContributionService
                 PaymentMethod = "Paystack",
                 MembershipYears = request.Years,
                 CreatedBy = member.Id,
+                PlatformFeeAmount = charge.platformFee,
+                GatewayFeeAmount = charge.gatewayFee,
+                TransactionChargeAmount = charge.transactionChargeAmount,
+                GrossChargeAmount = charge.grossCharge,
             };
 
             await paymentTransactionRepo.AddAsync(transaction);
@@ -460,6 +512,12 @@ public class ContributionService : IContributionService
         // Attempt to load an existing transaction record.
         var transaction = await db.Set<PaymentTransaction>().IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Reference == reference);
+        // Whether this transaction already had its Zero-Deduction fee breakdown
+        // computed at initiation — false only in the rare fallback path where the
+        // PaymentTransaction record is missing (e.g. Redis reference metadata
+        // outlived the record) and we have no choice but to trust Paystack's
+        // gross-reported amount as-is, with no fee breakdown available.
+        var hadFeeBreakdown = transaction is not null;
         PaystackReferenceInfo? referenceInfo = null;
 
         if (transaction is null)
@@ -518,7 +576,57 @@ public class ContributionService : IContributionService
         }
 
         var paystackStatus = verifyResponse.Data?.Status?.ToLowerInvariant() ?? "unknown";
-        transaction.Amount = (verifyResponse.Data?.Amount ?? 0) / 100m;
+        var verifiedGrossAmount = (verifyResponse.Data?.Amount ?? 0) / 100m;
+
+        if (hadFeeBreakdown)
+        {
+            // transaction.Amount already holds the school-intended amount set at
+            // initiation — never overwrite it with Paystack's gross (grossed-up)
+            // figure, or the institution's ledger would show the wrong number.
+            // Reconcile against Paystack's real reported fee when available;
+            // fall back to our own estimate from initiation otherwise, and flag
+            // any material mismatch for investigation rather than silently
+            // trusting either side.
+            transaction.GrossChargeAmount = verifiedGrossAmount;
+            var actualGatewayFee = verifyResponse.Data?.Fees.HasValue == true
+                ? verifyResponse.Data!.Fees!.Value / 100m
+                : transaction.GatewayFeeAmount;
+
+            var expectedGross = transaction.Amount + transaction.PlatformFeeAmount + actualGatewayFee;
+            if (Math.Abs(expectedGross - verifiedGrossAmount) > 0.02m)
+            {
+                logger.LogWarning(
+                    "Zero-Deduction reconciliation mismatch for {Reference}: expected gross {Expected}, Paystack reported {Actual}. Institution amount is unaffected.",
+                    reference, expectedGross, verifiedGrossAmount);
+            }
+
+            // Our actual net revenue: the fixed transaction_charge we told Paystack
+            // to route to our main account, minus whatever Paystack's real fee
+            // (bearer="account") actually deducted from it. The safety buffer
+            // baked into TransactionChargeAmount at initiation should keep this
+            // at or above PlatformFeeAmount — if it doesn't, the buffer wasn't
+            // big enough and needs raising, so flag it loudly rather than
+            // silently letting the platform net less than its exact fee.
+            var actualPlatformNet = transaction.TransactionChargeAmount - actualGatewayFee;
+            if (transaction.TransactionChargeAmount > 0 && actualPlatformNet < transaction.PlatformFeeAmount)
+            {
+                logger.LogWarning(
+                    "Zero-Deduction safety buffer insufficient for {Reference}: platform netted {ActualNet}, target was {TargetFee}. Consider raising PaystackConfig.GatewayFeeSafetyBufferSubunit.",
+                    reference, actualPlatformNet, transaction.PlatformFeeAmount);
+            }
+
+            transaction.GatewayFeeAmount = actualGatewayFee;
+        }
+        else
+        {
+            // No fee breakdown was recorded at initiation — best effort, matches
+            // pre-Zero-Deduction behavior. Do not fabricate a fee split we can't
+            // actually verify.
+            transaction.Amount = verifiedGrossAmount;
+            transaction.GrossChargeAmount = verifiedGrossAmount;
+            logger.LogWarning("No Zero-Deduction fee breakdown available for {Reference}; recording Paystack's gross amount as-is.", reference);
+        }
+
         transaction.GatewayResponse = verifyResponse.Data?.GatewayResponse;
         transaction.ProcessedAt = DateTime.UtcNow;
 
@@ -581,13 +689,15 @@ public class ContributionService : IContributionService
                 }
 
                 var contributionInstitutionId = campaign?.InstitutionId ?? transaction.InstitutionId;
-                var institution = !string.IsNullOrEmpty(contributionInstitutionId)
-                    ? await db.Set<Institution>().IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == contributionInstitutionId)
-                    : null;
-                var feeAmount = institution is not null
-                    ? Math.Round(transaction.Amount * institution.PlatformFeePercentage / 100m, 2)
-                    : 0m;
 
+                // Zero-Deduction model: the institution's Amount is never reduced by a
+                // fee. PlatformFeeAmount/NetAmountToInstitution stay 0-deduction (0 and
+                // == Amount respectively) so every institution-facing view — which reads
+                // exactly these two fields — shows the full intended amount with nothing
+                // subtracted. Our actual revenue and Paystack's fee, both collected from
+                // the payer's grossed-up charge at initiation, are recorded separately on
+                // PlatformRevenueAmount/GatewayFeeAmount/GrossChargeAmount, which are
+                // never surfaced via ContributionDto.
                 var contribution = new Contribution
                 {
                     InstitutionId = contributionInstitutionId,
@@ -602,8 +712,15 @@ public class ContributionService : IContributionService
                     ConfirmedAt = DateTime.UtcNow,
                     ConfirmedBy = "Paystack",
                     CreatedBy = transaction.MemberId,
-                    PlatformFeeAmount = feeAmount,
-                    NetAmountToInstitution = transaction.Amount - feeAmount,
+                    PlatformFeeAmount = 0m,
+                    NetAmountToInstitution = transaction.Amount,
+                    // Actual net revenue, not the initiation-time estimate: the fixed
+                    // transaction_charge minus Paystack's real fee. The safety buffer
+                    // baked into TransactionChargeAmount means this is normally >=
+                    // transaction.PlatformFeeAmount (our target %), never less.
+                    PlatformRevenueAmount = transaction.TransactionChargeAmount - transaction.GatewayFeeAmount,
+                    GatewayFeeAmount = transaction.GatewayFeeAmount,
+                    GrossChargeAmount = transaction.GrossChargeAmount,
                     IsGuestPayment = transaction.IsGuestPayment,
                     SharedByMemberId = transaction.SharedByMemberId,
                 };

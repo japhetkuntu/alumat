@@ -454,8 +454,6 @@ public class CampaignService(
                 TotalOutstanding = totalOutstanding,
                 ConfirmedCount = paystackContributions.Count(),
                 DisbursedCount = campaign.IsPaystackDisbursed ? paystackContributions.Count() : 0,
-                TotalPlatformFee = paystackContributions.Sum(c => c.PlatformFeeAmount),
-                TotalNetToInstitution = paystackContributions.Sum(c => c.NetAmountToInstitution),
             };
             return summary.ToOkApiResponse();
         }

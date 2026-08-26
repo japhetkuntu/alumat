@@ -76,9 +76,13 @@ public class InstitutionManagementService(
         foreach (var i in institutions)
         {
             var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
+            // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
+            // (collected from the payer's grossed-up charge), not PlatformFeeAmount
+            // (which is always 0 for online payments now — nothing is deducted
+            // from the institution).
             var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
                 .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
-                .SumAsync(c => c.PlatformFeeAmount);
+                .SumAsync(c => c.PlatformRevenueAmount);
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
                 i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt,
@@ -152,7 +156,13 @@ public class InstitutionManagementService(
                     BusinessName = institution.Name,
                     SettlementBank = request.SettlementBankCode,
                     AccountNumber = request.SettlementAccountNumber,
-                    PercentageCharge = request.PlatformFeePercentage,
+                    // Zero-Deduction model: every payment now sends an explicit
+                    // transaction_charge computed per-transaction from
+                    // PlatformFeePercentage (see ContributionService), which
+                    // overrides this subaccount-level default. Leaving this at 0
+                    // prevents a double-deduction if any future code path ever
+                    // initializes a payment without setting transaction_charge.
+                    PercentageCharge = 0,
                 });
                 if (subaccount.Status)
                     institution.PaystackSubaccountCode = subaccount.Data?.SubaccountCode;
@@ -287,7 +297,9 @@ public class InstitutionManagementService(
             BusinessName = institution.Name,
             SettlementBank = request.SettlementBankCode,
             AccountNumber = request.SettlementAccountNumber,
-            PercentageCharge = request.PlatformFeePercentage,
+            // Zero-Deduction model: kept at 0 — see CreateInstitutionAsync's
+            // matching comment. The real split is computed per-transaction.
+            PercentageCharge = 0,
         };
 
         // A subaccount code stored locally can go stale if someone deletes it
@@ -342,7 +354,9 @@ public class InstitutionManagementService(
             .ToListAsync();
 
         var gross = confirmed.Sum(c => c.Amount);
-        var fee = confirmed.Sum(c => c.PlatformFeeAmount);
+        // Zero-Deduction model: our actual revenue is PlatformRevenueAmount; net
+        // to the institution is always equal to gross now (nothing deducted).
+        var fee = confirmed.Sum(c => c.PlatformRevenueAmount);
         var net = confirmed.Sum(c => c.NetAmountToInstitution);
 
         return new InstitutionRevenueResponse(id, gross, fee, net, confirmed.Count).ToOkApiResponse();
@@ -386,7 +400,7 @@ public class InstitutionManagementService(
 
         var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.Status == "Confirmed")
-            .SumAsync(c => c.PlatformFeeAmount);
+            .SumAsync(c => c.PlatformRevenueAmount);
 
         var growthCounts = new List<int>();
         var growthLabels = new List<string>();
@@ -501,7 +515,7 @@ public class InstitutionManagementService(
         var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
         var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
-            .SumAsync(c => c.PlatformFeeAmount);
+            .SumAsync(c => c.PlatformRevenueAmount);
         return new InstitutionDetailResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain,
             i.PortalName, i.Tagline, i.ContactName, i.ContactEmail, i.SupportEmail,

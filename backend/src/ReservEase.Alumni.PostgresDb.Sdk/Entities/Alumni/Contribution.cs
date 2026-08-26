@@ -20,16 +20,33 @@ public class Contribution : BaseEntity, ITenantScoped
     public string? ConfirmedBy { get; set; }
 
     /// <summary>
-    /// The platform's cut of this contribution, computed and stored at
-    /// confirmation time from the institution's PlatformFeePercentage at that
-    /// moment — never recomputed later, so revenue reporting stays accurate
-    /// even after an institution's fee percentage is later edited. Zero for
-    /// contributions confirmed before this field existed, and for manual
-    /// (offline) payments, which never route through Paystack's split.
+    /// Under the Zero-Deduction model this is always 0 for online (Paystack)
+    /// payments — our platform fee is collected from the payer's grossed-up
+    /// charge (see PlatformRevenueAmount), never deducted from the
+    /// institution's Amount. Kept for historical contributions recorded
+    /// before this model existed, and untouched for manual (offline)
+    /// payments, which never route through Paystack's split.
     /// </summary>
     public decimal PlatformFeeAmount { get; set; }
-    /// <summary>Amount - PlatformFeeAmount — what actually settles to the institution.</summary>
+    /// <summary>Amount - PlatformFeeAmount — always equal to Amount for Zero-Deduction (Paystack) payments, since nothing is ever deducted from the institution.</summary>
     public decimal NetAmountToInstitution { get; set; }
+
+    /// <summary>
+    /// What the platform actually earned on this contribution, collected from
+    /// the payer's grossed-up charge — never deducted from Amount or
+    /// NetAmountToInstitution. Zero for manual/offline payments and for
+    /// contributions confirmed before the Zero-Deduction model existed.
+    /// Internal accounting only — never exposed via ContributionDto.
+    /// </summary>
+    public decimal PlatformRevenueAmount { get; set; }
+    /// <summary>
+    /// The total amount actually charged to the payer via Paystack (Amount +
+    /// PlatformRevenueAmount + GatewayFeeAmount). Internal reconciliation
+    /// only — never exposed via ContributionDto.
+    /// </summary>
+    public decimal GrossChargeAmount { get; set; }
+    /// <summary>Paystack's own processing fee for this transaction, absorbed entirely by the payer. Internal reconciliation only.</summary>
+    public decimal GatewayFeeAmount { get; set; }
 
     /// <summary>True when the payer was not logged in at the time of payment.</summary>
     public bool IsGuestPayment { get; set; }
