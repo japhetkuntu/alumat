@@ -46,15 +46,6 @@ export default function PlatformLoginPage() {
 
   return (
     <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8 md:hidden flex flex-col items-center gap-3">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary">
-          <span className="text-white text-[16px] font-bold">P</span>
-        </div>
-        <div className="text-center">
-          <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Platform Portal</p>
-        </div>
-      </div>
-
       <div className="space-y-7">
         <div className="space-y-2">
           <p className="text-[11.5px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>

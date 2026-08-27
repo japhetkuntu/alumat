@@ -14,7 +14,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
-import { AuthMobileBrand, AuthDesktopMark } from "@/components/institution/auth-brand-mark";
+import { AuthMobileBrand } from "@/components/institution/auth-brand-mark";
 
 const schema = z.object({
   email:    z.string().email("Enter a valid email"),
@@ -82,7 +82,6 @@ export default function AdminLoginPage() {
     <div className="w-full max-w-[460px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       <AuthMobileBrand />
-      <AuthDesktopMark />
 
       <div className="space-y-3">
         <p

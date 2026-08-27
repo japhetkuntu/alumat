@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RedirectIfAuthenticated } from "@/components/platform/redirect-if-authenticated";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -5,64 +6,86 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-screen bg-background">
       {/* ── Left — branding panel ── */}
       <aside
-        className="hidden md:flex md:w-[42%] lg:w-[46%] flex-col justify-between px-10 lg:px-14 py-10"
-        style={{ background: "var(--sidebar)" }}
+        className="hidden md:flex md:w-[42%] lg:w-[46%] relative flex-col justify-center overflow-hidden px-10 lg:px-14 py-10"
+        style={{
+          background: `
+            radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--primary) 45%, transparent) 0%, transparent 55%),
+            radial-gradient(110% 70% at -10% 110%, color-mix(in oklch, var(--primary) 25%, black) 0%, transparent 60%),
+            color-mix(in oklch, var(--sidebar) 85%, black)
+          `,
+        }}
       >
-        <div className="space-y-10">
-          <div className="flex items-center gap-3">
+        {/* Dot-grid texture — the same kind of quiet depth a flat fill can't give */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.12]"
+          style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px)", backgroundSize: "26px 26px" }}
+        />
+
+        <div className="relative space-y-10 w-full">
+          <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
             <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-primary">
               <span className="text-[13px] font-bold text-white tracking-tight">P</span>
             </div>
-            <span className="text-[13.5px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <span className="text-[15px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
               Platform Portal
             </span>
-          </div>
+          </Link>
 
-          <div className="max-w-[360px] space-y-4">
+          {/* Headline + body — spans most of the panel's width instead of a
+              narrow fixed column, so it fills the section instead of hugging
+              the left edge with dead space beside it. */}
+          <div className="max-w-[92%] xl:max-w-[480px] space-y-5">
             <h1
-              className="font-[family-name:var(--font-display)] leading-[1.1] text-white"
-              style={{ fontSize: "clamp(2rem, 3.5vw, 2.75rem)", fontWeight: 700, letterSpacing: "-0.02em" }}
+              className="font-[family-name:var(--font-display)] leading-[1.12]"
+              style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}
             >
               Onboard institutions. Keep every tenant healthy.
             </h1>
-            <p className="text-[15px] font-medium leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
+            <p className="text-[18px] font-medium leading-relaxed max-w-[440px]" style={{ color: "rgba(255,255,255,0.7)" }}>
               Provision new institutions, track subscriptions, and support every tenant from one governance workspace.
             </p>
           </div>
 
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {[
               "Onboard and provision institutions",
               "Track subscriptions and plan usage",
               "Support and audit every tenant",
             ].map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.15)" }}>
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+              <li key={item} className="flex items-center gap-3.5">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <svg width="12" height="10" viewBox="0 0 10 8" fill="none">
                     <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.8)" }}>{item}</span>
+                <span className="text-[16px] font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{item}</span>
               </li>
             ))}
           </ul>
-        </div>
 
-        <div className="border-t pt-6 space-y-1" style={{ borderColor: "rgba(255,255,255,0.15)" }}>
-          <p className="text-[14px] font-medium leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
-            &ldquo;One workspace to see every institution&apos;s health at a glance.&rdquo;
-          </p>
-          <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-            — Maya C., Platform Operations
-          </p>
-          <p className="text-[11px] pt-3" style={{ color: "rgba(255,255,255,0.4)" }}>
-            Internal tool &middot; Platform staff access only
-          </p>
+          {/* Footer line — plain and honest for an internal tool, no fabricated testimonial */}
+          <div className="border-t pt-6" style={{ borderColor: "rgba(255,255,255,0.15)" }}>
+            <p className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Internal tool &middot; Platform staff access only
+            </p>
+          </div>
         </div>
       </aside>
 
+      {/* ── Right — form panel ── */}
       <main className="flex-1 flex items-center justify-center p-6 sm:p-8 md:p-12 overflow-auto">
-        <div className="w-full max-w-[420px]"><RedirectIfAuthenticated>{children}</RedirectIfAuthenticated></div>
+        <div className="w-full max-w-[420px]">
+          {/* Mobile-only brand mark — the aside above is hidden below md, so
+              small screens need their own compact header, matching member
+              and institution's auth pages. */}
+          <Link href="/" className="mb-8 md:hidden flex flex-col items-center gap-3 transition-opacity hover:opacity-80">
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-primary">
+              <span className="text-[16px] font-bold text-white tracking-tight">P</span>
+            </div>
+            <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Platform Portal</p>
+          </Link>
+          <RedirectIfAuthenticated>{children}</RedirectIfAuthenticated>
+        </div>
       </main>
     </div>
   );

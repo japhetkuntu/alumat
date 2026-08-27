@@ -386,11 +386,11 @@ svg {
 :root {
   --radius: 8px;
 
-  /* ── Base ── */
-  --background: #f8fafc;
+  /* ── Base — warm ivory canvas, true-white cards (matches Member Portal) ── */
+  --background: #f8f6f1;
   --foreground: #1c2024;
 
-  --card: #f9f9fb;
+  --card: #ffffff;
   --card-foreground: #1c2024;
 
   --popover: #ffffff;
@@ -416,11 +416,11 @@ svg {
   --primary: var(--brand-primary);
   --primary-foreground: #ffffff;
 
-  /* ── Secondary / surface ── */
-  --secondary: #f8fafc;
+  /* ── Secondary / surface — warm neutral, not cool-grey ── */
+  --secondary: #f0eee8;
   --secondary-foreground: #1c2024;
 
-  --muted: #f1f5f9;
+  --muted: #f0eee8;
   --muted-foreground: #64748b;
 
   --accent: var(--brand-accent);

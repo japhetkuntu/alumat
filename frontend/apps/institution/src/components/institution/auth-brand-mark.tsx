@@ -62,10 +62,3 @@ export function AuthMobileBrand() {
   );
 }
 
-export function AuthDesktopMark() {
-  return (
-    <Link href="/" className="hidden md:flex mb-6 w-fit transition-opacity hover:opacity-80">
-      <Mark size={52} />
-    </Link>
-  );
-}
