@@ -61,7 +61,7 @@ function MembershipCard({
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-6 sm:p-8"
+      className="relative overflow-hidden rounded-2xl p-4 sm:p-8"
       style={{
         background: isActive
           ? "linear-gradient(135deg, var(--primary) 0%, color-mix(in oklch, var(--primary) 75%, black) 100%)"
@@ -70,23 +70,23 @@ function MembershipCard({
       }}
     >
       {/* Subtle texture rings */}
-      <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full border border-white/10" />
-      <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full border border-white/10" />
+      <div className="absolute -right-10 -top-10 w-36 h-36 sm:-right-16 sm:-top-16 sm:w-64 sm:h-64 rounded-full border border-white/10" />
+      <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-40 sm:h-40 rounded-full border border-white/10" />
 
-      <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+      <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
 
         {/* Left — identity */}
-        <div className="space-y-1">
-          <p className="text-white/60 text-[12px] font-semibold tracking-[0.1em] uppercase">
+        <div className="space-y-0.5 sm:space-y-1">
+          <p className="text-white/60 text-[11px] sm:text-[12px] font-semibold tracking-[0.1em] uppercase">
             Alumni · Member card
           </p>
-          <p className="text-[22px] sm:text-[26px] font-bold leading-tight">
+          <p className="text-[18px] sm:text-[26px] font-bold leading-tight">
             {profile?.firstName
               ? `${profile.firstName} ${profile.lastName ?? ""}`
               : "—"}
           </p>
           {profile?.graduationYear && (
-            <p className="text-white/70 text-[14px]">
+            <p className="text-white/70 text-[12.5px] sm:text-[14px]">
               Class of {profile.graduationYear}
               {profile.departmentName ? ` · ${profile.departmentName}` : ""}
             </p>
@@ -94,57 +94,59 @@ function MembershipCard({
         </div>
 
         {/* Right — status */}
-        <div className="flex flex-col items-start sm:items-end gap-3 shrink-0">
+        <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-3 shrink-0">
           <div
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold",
+              "inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[12px] sm:text-[13px] font-bold",
               isActive
                 ? "bg-white/20 text-white"
                 : "bg-white/15 text-white/80",
             )}
           >
             {isActive
-              ? <><CheckCircle2 size={13} /> Active</>
-              : <><Clock size={13} /> Inactive</>}
+              ? <><CheckCircle2 size={12} /> Active</>
+              : <><Clock size={12} /> Inactive</>}
           </div>
-          {isActive && expiry && (
-            <p className="text-white/60 text-[12px]">
-              Valid until {formatDate(expiry)}
-            </p>
-          )}
-          {/* Certificate link — only when active */}
-          {isActive && (
-            <Link href="/membership-certificate">
-              <button className="flex items-center gap-1.5 text-[12px] text-white/70 hover:text-white transition-colors">
-                <Award size={13} /> View certificate
-              </button>
-            </Link>
-          )}
+          <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
+            {isActive && expiry && (
+              <p className="text-white/60 text-[11px] sm:text-[12px]">
+                Valid until {formatDate(expiry)}
+              </p>
+            )}
+            {/* Certificate link — only when active */}
+            {isActive && (
+              <Link href="/membership-certificate">
+                <button className="flex items-center gap-1.5 text-[11px] sm:text-[12px] text-white/70 hover:text-white transition-colors whitespace-nowrap">
+                  <Award size={12} /> Certificate
+                </button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Action area — unpaid dues */}
       {membershipCampaign && !isActive && (
-        <div className="relative mt-6 pt-5 border-t border-white/20">
-          <p className="text-white/80 text-[14px] mb-3">
+        <div className="relative mt-4 pt-4 sm:mt-6 sm:pt-5 border-t border-white/20">
+          <p className="text-white/80 text-[13px] sm:text-[14px] mb-2.5 sm:mb-3">
             Your membership is inactive. Pay your dues to activate it.
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-white font-bold text-[18px]">
+              <p className="text-white font-bold text-[16px] sm:text-[18px]">
                 {formatCurrency(getMemberAmount(membershipCampaign))}
                 {isPensioner ? (
                   <span className="text-white/60 text-[12px] font-normal ml-1.5">pensioner rate</span>
                 ) : null}
               </p>
-              <p className="text-white/60 text-[12px]">
+              <p className="text-white/60 text-[11px] sm:text-[12px]">
                 Due {formatDate(membershipCampaign.deadline)}
               </p>
             </div>
             <Link href={`/contributions/${membershipCampaign.id}`}>
               <Button
                 className="bg-white font-bold gap-2 hover:bg-white/90"
-                style={{ color: "var(--primary)", height: 44 }}
+                style={{ color: "var(--primary)", height: 40 }}
               >
                 Pay now <ArrowRight size={15} />
               </Button>
@@ -155,13 +157,13 @@ function MembershipCard({
 
       {/* Expiry warning — active but expiring soon */}
       {isActive && expiryDaysLeft !== null && (
-        <div className="relative mt-5 pt-5 border-t border-white/20 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-white/80 text-[14px]">
+        <div className="relative mt-4 pt-4 sm:mt-5 sm:pt-5 border-t border-white/20 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-white/80 text-[13px] sm:text-[14px]">
             Expires in <span className="font-bold text-white">{expiryDaysLeft} day{expiryDaysLeft !== 1 ? "s" : ""}</span>. Renew now to stay active.
           </p>
           {membershipCampaign && (
             <Link href={`/contributions/${membershipCampaign.id}`}>
-              <Button className="bg-white font-bold hover:bg-white/90" style={{ color: "var(--primary)", height: 40 }}>
+              <Button className="bg-white font-bold hover:bg-white/90" style={{ color: "var(--primary)", height: 36 }}>
                 Renew
               </Button>
             </Link>
@@ -171,8 +173,8 @@ function MembershipCard({
 
       {/* Active + all good */}
       {isActive && expiryDaysLeft === null && !membershipCampaign && (
-        <div className="relative mt-5 pt-5 border-t border-white/20">
-          <p className="text-white/70 text-[14px] flex items-center gap-2">
+        <div className="relative mt-4 pt-4 sm:mt-5 sm:pt-5 border-t border-white/20">
+          <p className="text-white/70 text-[13px] sm:text-[14px] flex items-center gap-2">
             <CheckCircle2 size={15} className="text-white/60" />
             You&apos;re all set for this year.
           </p>

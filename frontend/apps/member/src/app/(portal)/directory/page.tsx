@@ -186,7 +186,7 @@ export default function MemberDirectoryPage() {
       {/* ── Profile drawer ── */}
       {selected && (
         <div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:justify-end"
+          className="fixed mobile-sheet-overlay z-[60] flex items-end sm:items-center justify-center sm:justify-end"
           onClick={() => setSelected(null)}
         >
           {/* Backdrop */}

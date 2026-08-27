@@ -159,7 +159,7 @@ function SubmitDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed mobile-sheet-overlay z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
         onClick={onClose} />
       <div

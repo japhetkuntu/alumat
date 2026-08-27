@@ -92,7 +92,7 @@ export default function AlumniMapPage() {
       </div>
 
       {isLoading ? (
-        <div className="h-[560px] rounded-2xl bg-muted animate-pulse" />
+        <div className="h-[360px] sm:h-[460px] lg:h-[560px] rounded-2xl bg-muted animate-pulse" />
       ) : members.length === 0 ? (
         <EmptyState
           icon={<Globe size={26} />}
@@ -100,7 +100,7 @@ export default function AlumniMapPage() {
           description="The map fills in as members opt in from their profile settings and share where they're based."
         />
       ) : (
-        <div className="h-[560px] rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
+        <div className="h-[360px] sm:h-[460px] lg:h-[560px] rounded-2xl overflow-hidden border shadow-sm" style={{ borderColor: "var(--border)" }}>
           <AlumniMapView members={filtered} />
         </div>
       )}
