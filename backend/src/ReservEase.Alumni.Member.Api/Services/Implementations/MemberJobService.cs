@@ -14,19 +14,31 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class MemberJobService(
     IAlumniPgRepository<Job> jobRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
+    IAlumniPgRepository<CommunityMembership> membershipRepo,
     ILogger<MemberJobService> logger) : IMemberJobService
 {
+    private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
+    {
+        var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
+        return membership is not null && membership.Status == "Approved";
+    }
+
     public async Task<IApiResponse<PgPagedResult<JobDto>>> GetJobsAsync(JobFilter filter, string memberId)
     {
         try
         {
             logger.LogInformation("GetJobs request — filter: {Filter}", filter.Serialize());
+
+            if (!string.IsNullOrEmpty(filter.CommunityId) && !await IsApprovedCommunityMemberAsync(filter.CommunityId, memberId))
+                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<JobDto>>("You must be an approved member of this community to view its job postings");
+
             var member = await memberRepo.GetByIdAsync(memberId);
             var memberYear = member?.GraduationYear;
 
             var result = await jobRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 j => j.Status == "Active"
+                  && (string.IsNullOrEmpty(filter.CommunityId) ? j.CommunityId == null : j.CommunityId == filter.CommunityId)
                   && (j.YearGroups == null || j.YearGroups.Count == 0 || (memberYear.HasValue && j.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Type) || j.Type == filter.Type)
                   && (string.IsNullOrEmpty(filter.Location) || j.Location.Contains(filter.Location))

@@ -50,6 +50,10 @@ interface LandingContent {
   newsBanner: DynamicNewsBanner | null;
   displayName?: string | null;
   logoUrl?: string | null;
+  /** Overrides the hero photo — falls back to IMG.heroPanel (generic stock photo) when unset. */
+  heroImageUrl?: string | null;
+  /** Overrides the short headline overlaid on the hero photo. */
+  heroHeadline?: string | null;
 }
 
 function useLandingContent() {
@@ -522,18 +526,21 @@ export default function LandingPage() {
 
             {/* Right — single photo, overlaid stat badge, no nested card list */}
             <div className="relative">
-              <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: "min(72vh, 560px)", boxShadow: "0 8px 40px color-mix(in oklch, var(--primary) 12%, transparent)" }}>
-                <img src={IMG.heroPanel} alt="Students collaborating"
+              <div className="relative w-full overflow-hidden rounded-2xl h-[300px] sm:h-[400px] lg:h-[min(72vh,560px)]" style={{ boxShadow: "0 8px 40px color-mix(in oklch, var(--primary) 12%, transparent)" }}>
+                <img src={content?.heroImageUrl || IMG.heroPanel} alt="Students collaborating"
                   className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0"
                   style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.72) 100%)" }} />
 
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-white font-[family-name:var(--font-display)] leading-snug mb-3" style={{ fontSize: "1.35rem" }}>
-                    One network.<br />Every graduate, wherever they are.
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+                  <p className="text-white font-[family-name:var(--font-display)] leading-snug mb-2.5 sm:mb-3 text-[1.05rem] sm:text-[1.35rem]">
+                    {content?.heroHeadline || "One network. Every graduate, wherever they are."}
                   </p>
                   <Link href="/register">
-                    <Button className="gap-2 font-semibold">
+                    <Button size="sm" className="gap-2 font-semibold sm:hidden">
+                      Create free account <ArrowRight size={13} />
+                    </Button>
+                    <Button className="gap-2 font-semibold hidden sm:inline-flex">
                       Create your free account <ArrowRight size={14} />
                     </Button>
                   </Link>
@@ -541,10 +548,10 @@ export default function LandingPage() {
               </div>
 
               {/* Floating stat card — inset on the photo at mobile widths, floating clear of it from sm+ */}
-              <div className="absolute right-3 top-3 sm:-right-6 sm:-top-6 rounded-xl px-4 py-3 sm:px-5 sm:py-4"
+              <div className="absolute left-3 top-3 sm:-right-6 sm:-top-6 sm:left-auto rounded-xl px-3 py-2 sm:px-5 sm:py-4"
                 style={{ background: "var(--background)", border: "1px solid var(--card-border)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)" }}>
-                <p className="font-[family-name:var(--font-display)] leading-none mb-1 text-[1.3rem] sm:text-[1.6rem]" style={{ fontWeight: 700, color: "var(--primary)" }}>5,000+</p>
-                <p className="text-[10.5px] sm:text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)" }}>Verified graduates</p>
+                <p className="font-[family-name:var(--font-display)] leading-none mb-0.5 sm:mb-1 text-[1.05rem] sm:text-[1.6rem]" style={{ fontWeight: 700, color: "var(--primary)" }}>5,000+</p>
+                <p className="text-[9.5px] sm:text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)" }}>Verified graduates</p>
               </div>
             </div>
 

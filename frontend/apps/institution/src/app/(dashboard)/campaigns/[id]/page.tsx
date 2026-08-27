@@ -365,7 +365,6 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
   const [bannerImage, setBannerImage] = useState<File | null>(null);
   const [existingBannerUrl, setExistingBannerUrl] = useState(campaign.bannerImageUrl ?? "");
   const [youtubeVideoUrl, setYoutubeVideoUrl] = useState(campaign.youtubeVideoUrl ?? "");
-  const [allowOnlinePayments, setAllowOnlinePayments] = useState(campaign.allowOnlinePayments);
   const [allowManualPayments, setAllowManualPayments] = useState(campaign.allowManualPayments);
   const [isMembershipCampaign, setIsMembershipCampaign] = useState(campaign.isMembershipCampaign ?? false);
   const [membershipYear, setMembershipYear] = useState(campaign.membershipYear ?? new Date().getFullYear());
@@ -385,7 +384,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
       pensionerAmountPerMember: isMembershipCampaign && pensionerAmountPerMember ? Number(pensionerAmountPerMember) : undefined,
       yearGroups: isSuperAdmin ? (yearGroupsAll ? undefined : yearGroups) : undefined,
       bannerImage: bannerImage || undefined, youtubeVideoUrl: youtubeVideoUrl || undefined,
-      allowOnlinePayments, allowManualPayments,
+      allowManualPayments,
       isMembershipCampaign, membershipYear,
       bankAccountNumber: bankAccountNumber || undefined,
       bankAccountName: bankAccountName || undefined,
@@ -449,24 +448,15 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 <ImageUpload file={bannerImage} existingUrl={existingBannerUrl} onChange={setBannerImage} onClearExisting={() => setExistingBannerUrl("")} label="Upload banner image" />
               </div>
 
-              <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled && "sm:grid-cols-2")}>
+              {manualPaymentsEnabled && (
                 <div className="space-y-2">
-                  <Label>Allow Online Payments</Label>
+                  <Label>Allow Manual Payments</Label>
                   <div className="flex items-center gap-2">
-                    <input id="edit-online-pay-membership" type="checkbox" checked={allowOnlinePayments} onChange={(e) => setAllowOnlinePayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-online-pay-membership" className="text-sm">Enable online payments</label>
+                    <input id="edit-manual-pay-membership" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
+                    <label htmlFor="edit-manual-pay-membership" className="text-sm">Bank/Mobile money transfers</label>
                   </div>
                 </div>
-                {manualPaymentsEnabled && (
-                  <div className="space-y-2">
-                    <Label>Allow Manual Payments</Label>
-                    <div className="flex items-center gap-2">
-                      <input id="edit-manual-pay-membership" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                      <label htmlFor="edit-manual-pay-membership" className="text-sm">Bank/Mobile money transfers</label>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </>
           ) : (
             /* ── Regular fundraiser layout ── */
@@ -527,14 +517,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 </div>
               </div>
 
-              <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
-                <div className="space-y-2">
-                  <Label>Allow Online Payments</Label>
-                  <div className="flex items-center gap-2">
-                    <input id="edit-online-pay-regular" type="checkbox" checked={allowOnlinePayments} onChange={(e) => setAllowOnlinePayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-online-pay-regular" className="text-sm">Enable online payments</label>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {manualPaymentsEnabled && (
                   <div className="space-y-2">
                     <Label>Allow Manual Payments</Label>

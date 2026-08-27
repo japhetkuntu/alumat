@@ -423,9 +423,6 @@ public class ContributionService : IContributionService
             if (!request.PaymentMethod.Equals("online", StringComparison.OrdinalIgnoreCase))
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid payment method. Use 'online' or 'manual'.");
 
-            if (!campaign.AllowOnlinePayments)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Online payments are not enabled for membership.");
-
             var amount = amountPerYear * request.Years;
             var currentInstitution = await GetCurrentInstitutionAsync();
             var charge = BuildZeroDeductionCharge(amount, currentInstitution);

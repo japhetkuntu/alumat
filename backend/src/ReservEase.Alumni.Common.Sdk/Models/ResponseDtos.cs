@@ -3,6 +3,7 @@ namespace ReservEase.Alumni.Common.Sdk.Models;
 public class JobDto
 {
     public string Id { get; set; } = string.Empty;
+    public string? CommunityId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Company { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
@@ -41,6 +42,7 @@ public class AlumniEventDto
 public class NewsPostDto
 {
     public string Id { get; set; } = string.Empty;
+    public string? CommunityId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
@@ -89,7 +91,6 @@ public class CampaignDto
     public bool IsPaystackDisbursed { get; set; }
     public DateTime? PaystackDisbursedAt { get; set; }
     public string? PaystackDisbursedBy { get; set; }
-    public bool AllowOnlinePayments { get; set; }
     public bool AllowManualPayments { get; set; }
     public bool IsMembershipCampaign { get; set; }
     public int? MembershipYear { get; set; }

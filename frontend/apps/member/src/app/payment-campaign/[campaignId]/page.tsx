@@ -327,11 +327,6 @@ export default function PublicCampaignContributionPage() {
                     <p className="font-bold text-muted-foreground">{isMembershipFixed ? "These dues are" : "This fundraiser is"} no longer accepting contributions.</p>
                     <p className="text-sm text-muted-foreground">Thank you to everyone who supported!</p>
                   </div>
-                ) : !campaign.allowOnlinePayments ? (
-                  <div className="rounded-xl bg-warning/10 border border-warning/30 p-5 text-center space-y-2">
-                    <p className="font-bold text-warning">Online payments are not enabled for this campaign.</p>
-                    <p className="text-sm text-warning/80">Please contact the organiser for alternative payment instructions.</p>
-                  </div>
                 ) : (
                   <div className="space-y-4">
                     {/* Amount */}

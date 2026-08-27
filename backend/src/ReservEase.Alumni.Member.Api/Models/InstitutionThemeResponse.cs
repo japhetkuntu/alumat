@@ -17,4 +17,6 @@ public record InstitutionThemeResponse(
     bool RequireStudentId,
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
-    NewsBanner? NewsBanner);
+    NewsBanner? NewsBanner,
+    string? HeroImageUrl,
+    string? HeroHeadline);

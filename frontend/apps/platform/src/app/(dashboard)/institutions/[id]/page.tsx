@@ -237,9 +237,11 @@ export default function InstitutionDetailPage() {
 
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroHeadline, setHeroHeadline] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
   const contentMutation = useMutation({
-    mutationFn: () => updateInstitutionLandingContent(id, stories ?? [], banner?.enabled ? banner : null),
+    mutationFn: () => updateInstitutionLandingContent(id, stories ?? [], banner?.enabled ? banner : null, heroImageUrl || undefined, heroHeadline || undefined),
     onSuccess: () => {
       toast.success("Landing content updated");
       invalidate();
@@ -296,6 +298,12 @@ export default function InstitutionDetailPage() {
   }
   if (banner === null) {
     setBanner(inst.newsBanner ?? EMPTY_BANNER);
+  }
+  if (heroImageUrl === null) {
+    setHeroImageUrl(inst.heroImageUrl ?? "");
+  }
+  if (heroHeadline === null) {
+    setHeroHeadline(inst.heroHeadline ?? "");
   }
 
   const badge = statusBadge[inst.status] ?? statusBadge.Trial;
@@ -629,6 +637,28 @@ export default function InstitutionDetailPage() {
 
       {tab === "Content" && stories && banner && (
         <div className="space-y-4">
+          <Card>
+            <div className="px-5 py-4 border-b border-border">
+              <p className="text-[14px] font-semibold">Hero photo</p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">The large photo and headline at the top of the Member Portal landing page. This institution&apos;s own admins can also edit this.</p>
+            </div>
+            <CardContent className="p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ImageUrlField
+                  label="Hero photo"
+                  value={heroImageUrl ?? ""}
+                  onChange={setHeroImageUrl}
+                  placeholder="https://…"
+                  institutionSlug={inst.slug}
+                />
+                <div className="space-y-1.5">
+                  <Label>Headline</Label>
+                  <Textarea rows={3} value={heroHeadline ?? ""} onChange={(e) => setHeroHeadline(e.target.value)} placeholder="One network. Every graduate, wherever they are." />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-4 items-start">
             <Card>
               <div className="px-5 py-4 border-b border-border">

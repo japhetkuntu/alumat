@@ -41,11 +41,11 @@ public class UploadsController(
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("Image exceeds 5MB limit").ToActionResult();
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        await storageService.UploadFileAsync(file, objectName, FolderName, currentTenant.InstitutionSlug ?? "");
+        var url = await storageService.UploadFileAsync(file, objectName, FolderName, currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("Image uploaded by member: {ObjectName}", objectName);
-        return new UploadResult(objectName).ToOkApiResponse().ToActionResult();
+        return new UploadResult(url).ToOkApiResponse().ToActionResult();
     }
 }
 
-public record UploadResult(string FileName);
+public record UploadResult(string Url);

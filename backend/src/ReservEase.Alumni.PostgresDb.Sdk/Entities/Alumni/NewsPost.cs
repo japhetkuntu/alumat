@@ -6,6 +6,9 @@ public class NewsPost : BaseEntity, ITenantScoped
 {
     public string InstitutionId { get; set; } = string.Empty;
 
+    /// <summary>Null = institution-wide news post. Set = belongs to one Community; only its approved members/leaders can see it.</summary>
+    public string? CommunityId { get; set; }
+
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;

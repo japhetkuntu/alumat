@@ -15,9 +15,10 @@ import { Avatar, AvatarFallback } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { getInitials, cn } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
+import { ImageUpload } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
-  STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
+  uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
@@ -98,13 +99,22 @@ export default function BrandingSettingsPage() {
 
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
+  const [heroHeadline, setHeroHeadline] = useState<string | null>(null);
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+  const [heroExistingImageUrl, setHeroExistingImageUrl] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
   const contentMutation = useMutation({
-    mutationFn: () => updateLandingContent(stories ?? [], banner?.enabled ? banner : null),
+    mutationFn: async () => {
+      const heroImageUrl = heroImageFile
+        ? (await uploadImage(heroImageFile)).url
+        : heroExistingImageUrl || undefined;
+      return updateLandingContent(stories ?? [], banner?.enabled ? banner : null, heroImageUrl, heroHeadline || undefined);
+    },
     onSuccess: () => {
       toast.success("Landing content updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
       setContentError(null);
+      setHeroImageFile(null);
     },
     onError: (e) => {
       const msg = handleApiError(e);
@@ -114,6 +124,8 @@ export default function BrandingSettingsPage() {
   });
   if (institution && stories === null) setStories(institution.landingPageStories);
   if (institution && banner === null) setBanner(institution.newsBanner ?? EMPTY_BANNER);
+  if (institution && heroHeadline === null) setHeroHeadline(institution.heroHeadline ?? "");
+  if (institution && heroExistingImageUrl === null) setHeroExistingImageUrl(institution.heroImageUrl ?? "");
 
   const policyMutation = useMutation({
     mutationFn: (policy: "DuesRequired" | "ApprovedOnly") => updateMemberActivePolicy(policy),
@@ -271,6 +283,37 @@ export default function BrandingSettingsPage() {
 
       {tab === "Landing content" && stories && banner && (
         <div className="space-y-4">
+          <Card className="border-border/40">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Globe size={16} className="text-primary" />
+                <p className="font-semibold text-[15px]">Hero photo</p>
+              </div>
+              <p className="text-[12.5px] text-muted-foreground -mt-2">The large photo and headline at the top of your Member Portal landing page. Leave empty for the generic default.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Photo</Label>
+                  <ImageUpload
+                    file={heroImageFile}
+                    existingUrl={heroExistingImageUrl ?? ""}
+                    onChange={setHeroImageFile}
+                    onClearExisting={() => setHeroExistingImageUrl("")}
+                    label="Upload hero photo"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Headline</Label>
+                  <Textarea
+                    rows={3}
+                    value={heroHeadline ?? ""}
+                    onChange={(e) => setHeroHeadline(e.target.value)}
+                    placeholder="One network. Every graduate, wherever they are."
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
             <Card className="border-border/40">
               <CardContent className="p-6 space-y-4">

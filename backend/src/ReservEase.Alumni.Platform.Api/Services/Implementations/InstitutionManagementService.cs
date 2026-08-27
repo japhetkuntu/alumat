@@ -375,6 +375,8 @@ public class InstitutionManagementService(
 
         institution.LandingPageStories = request.LandingPageStories;
         institution.NewsBanner = request.NewsBanner;
+        institution.HeroImageUrl = request.HeroImageUrl;
+        institution.HeroHeadline = request.HeroHeadline;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
         await db.SaveChangesAsync();
@@ -532,6 +534,7 @@ public class InstitutionManagementService(
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.HeroImageUrl, i.HeroHeadline,
             i.Status, memberCount,
             i.OnboardedAt, i.TrialEndsAt,
             i.PlatformFeePercentage, i.PaystackSubaccountCode,

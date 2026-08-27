@@ -13,11 +13,17 @@ public class JobFilter : BaseFilter
     public string? Location { get; set; }
     public DateTime? PostedAfter { get; set; }
     public DateTime? PostedBefore { get; set; }
+
+    /// <summary>When set, list this community's job postings instead of the institution-wide feed — caller must be an approved member/leader.</summary>
+    public string? CommunityId { get; set; }
 }
 
 public class NewsFilter : BaseFilter
 {
     public string? Category { get; set; }
+
+    /// <summary>When set, list this community's posts instead of the institution-wide feed — caller must be an approved member/leader.</summary>
+    public string? CommunityId { get; set; }
 }
 
 public class ForumThreadFilter : BaseFilter

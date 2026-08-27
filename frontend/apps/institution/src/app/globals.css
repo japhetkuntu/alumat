@@ -457,14 +457,16 @@ svg {
   --chart-4: #64748b;
   --chart-5: #1c2024;
 
-  /* ── Sidebar (deep navy rail — matches Platform Portal) ── */
-  --sidebar: #0f172a;
+  /* ── Sidebar (deep rail, derived from the institution's own primary color
+     when they have a theme — --brand-primary-dark defaults to the same navy
+     used here, so an untheemed institution renders exactly as before) ── */
+  --sidebar: color-mix(in oklch, var(--brand-primary-dark, #0f172a) 55%, black);
   --sidebar-foreground: #cbd5e1;
   --sidebar-primary: #1e3a8a;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1e293b;
+  --sidebar-border: color-mix(in oklch, var(--brand-primary-dark, #1e293b) 40%, black);
   --sidebar-ring: rgba(37, 99, 235, 0.4);
 }
 

@@ -108,7 +108,7 @@ function ActivateMembershipContent() {
     Math.ceil((new Date(campaign.deadline).getTime() - now) / 86_400_000),
   );
   const isExpired = daysLeft === 0;
-  const canPay = campaign.allowOnlinePayments && !isExpired && !payMutation.isPending && Boolean(email);
+  const canPay = !isExpired && !payMutation.isPending && Boolean(email);
 
   return (
     <div className="min-h-screen bg-background">
@@ -256,13 +256,6 @@ function ActivateMembershipContent() {
                 Fixed membership activation fee for {campaign.membershipYear ?? "this year"}.
               </p>
             </div>
-
-            {!campaign.allowOnlinePayments && (
-              <div className="flex items-start gap-2 px-3 py-3 rounded-xl bg-warning/10 border border-warning/20 text-warning text-xs">
-                <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-                <span>Online payments are currently disabled for these dues. Please contact the alumni office.</span>
-              </div>
-            )}
 
             <Button
               className="w-full h-14 text-base font-bold gap-2 rounded-xl shadow"

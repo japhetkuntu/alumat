@@ -56,7 +56,6 @@ public class Campaign : BaseEntity, ITenantScoped
     public DateTime? PaystackDisbursedAt { get; set; }
     public string? PaystackDisbursedBy { get; set; }
 
-    public bool AllowOnlinePayments { get; set; } = true;
     public bool AllowManualPayments { get; set; } = true;
 
     // Special campaign used for membership renewal (context: this is handled by SuperAdmin and can be scaled by years).

@@ -374,7 +374,7 @@ function CampaignCard({
             </Link>
           )}
 
-          {c.allowOnlinePayments && !membershipPaid && (
+          {!membershipPaid && (
             <Button
               className="flex-1 min-w-[8rem] font-bold text-[13.5px] gap-2"
               style={{ height: 42 }}

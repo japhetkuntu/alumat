@@ -77,6 +77,10 @@ export interface InstitutionDetail {
   disabledFeatures: string[];
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
+  /** Overrides the Member Portal landing page's hero photo — falls back to generic stock art when unset. */
+  heroImageUrl?: string | null;
+  /** Overrides the short headline overlaid on the hero photo. */
+  heroHeadline?: string | null;
   status: string;
   memberCount: number;
   onboardedAt: string;
@@ -300,8 +304,14 @@ export const STORY_ICON_OPTIONS = [
   "Bell", "GraduationCap", "Shield", "MapPin", "Zap", "Star", "Award",
 ] as const;
 
-export async function updateInstitutionLandingContent(id: string, landingPageStories: LandingPageStory[], newsBanner: NewsBanner | null) {
-  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/landing-content`, { landingPageStories, newsBanner });
+export async function updateInstitutionLandingContent(
+  id: string,
+  landingPageStories: LandingPageStory[],
+  newsBanner: NewsBanner | null,
+  heroImageUrl?: string,
+  heroHeadline?: string,
+) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/landing-content`, { landingPageStories, newsBanner, heroImageUrl, heroHeadline });
   return res.data.data!;
 }
 

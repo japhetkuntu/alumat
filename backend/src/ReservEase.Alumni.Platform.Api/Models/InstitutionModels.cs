@@ -62,6 +62,7 @@ public record InstitutionDetailResponse(
     string? MemberPortalTitle, string? MemberAuthHeadline, string? MemberAuthSubtext,
     bool RequireStudentId, string MemberActivePolicy, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
+    string? HeroImageUrl, string? HeroHeadline,
     string Status, int MemberCount,
     DateTime OnboardedAt, DateTime? TrialEndsAt,
     decimal PlatformFeePercentage, string? PaystackSubaccountCode,
@@ -127,6 +128,8 @@ public class UpdateInstitutionLandingContentRequest
 {
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
     public NewsBanner? NewsBanner { get; set; }
+    public string? HeroImageUrl { get; set; }
+    public string? HeroHeadline { get; set; }
 }
 
 /// <summary>

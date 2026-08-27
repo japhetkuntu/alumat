@@ -16,19 +16,31 @@ public class MemberNewsService(
     IAlumniPgRepository<NewsPost> newsRepo,
     IAlumniPgRepository<StaffEntity> adminRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
+    IAlumniPgRepository<CommunityMembership> membershipRepo,
     ILogger<MemberNewsService> logger) : IMemberNewsService
 {
+    private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
+    {
+        var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
+        return membership is not null && membership.Status == "Approved";
+    }
+
     public async Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter, string memberId)
     {
         try
         {
             logger.LogInformation("GetPosts request — filter: {Filter}", filter.Serialize());
+
+            if (!string.IsNullOrEmpty(filter.CommunityId) && !await IsApprovedCommunityMemberAsync(filter.CommunityId, memberId))
+                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<NewsPostDto>>("You must be an approved member of this community to view its posts");
+
             var member = await memberRepo.GetByIdAsync(memberId);
             var memberYear = member?.GraduationYear;
 
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "PublishedAt", filter.SortDir ?? "desc",
                 p => p.Status == "Published"
+                  && (string.IsNullOrEmpty(filter.CommunityId) ? p.CommunityId == null : p.CommunityId == filter.CommunityId)
                   && (p.YearGroups == null || p.YearGroups.Count == 0 || (memberYear.HasValue && p.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Category) || p.Category == filter.Category)
                   && (string.IsNullOrEmpty(filter.Search)

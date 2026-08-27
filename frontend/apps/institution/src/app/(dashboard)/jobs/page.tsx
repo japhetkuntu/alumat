@@ -14,7 +14,7 @@ import { Badge } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getJobs, createJob, updateJob, deleteJob } from "@/lib/institution-api";
+import { getJobs, createJob, updateJob, deleteJob, getCommunities } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
@@ -50,10 +50,11 @@ interface FormState {
   deadline: string;
   audienceMode: AudienceMode;
   yearGroups: number[];
+  communityId: string;
   bannerImage: File | null;
   existingBannerUrl: string;
 }
-const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", yearGroups: [], bannerImage: null, existingBannerUrl: "" };
+const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", yearGroups: [], communityId: "", bannerImage: null, existingBannerUrl: "" };
 const statusOptions = ["Active", "Closed", "Draft"];
 
 function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdmin }: {
@@ -62,6 +63,7 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
 }) {
   const [form, setForm] = useState({ status: "Active", ...init });
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+  const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -85,13 +87,13 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
             <AudienceScopePicker
               mode={form.audienceMode}
               onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
-              communityId=""
-              onCommunityChange={() => {}}
-              communities={[]}
+              communityId={form.communityId}
+              onCommunityChange={(v) => f("communityId", v)}
+              communities={communities}
               yearGroups={form.yearGroups}
               onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
-              supportsCommunity={false}
-              restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience; this job will use your year group automatically." } : undefined}
+              supportsCommunity
+              restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience; this job will use your year group or community automatically." } : undefined}
             />
             <div className="space-y-2"><Label>Deadline (optional)</Label>
               <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} /></div>
@@ -151,6 +153,7 @@ export default function AdminJobsPage() {
 
   const createMut = useMutation({
     mutationFn: (f: FormState) => createJob({
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, company: f.company, location: f.location, type: f.type,
       description: f.description || undefined, applyUrl: f.applyUrl || undefined,
       deadline: f.deadline || undefined, yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
@@ -162,6 +165,7 @@ export default function AdminJobsPage() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, f }: { id: string; f: FormState & { status: string } }) => updateJob(id, {
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, company: f.company, location: f.location, type: f.type,
       description: f.description || undefined, applyUrl: f.applyUrl || undefined,
       deadline: f.deadline || undefined, status: f.status,
@@ -204,7 +208,7 @@ export default function AdminJobsPage() {
           title={`Edit — ${editJob.title}`}
           init={{ title: editJob.title, company: editJob.company, location: editJob.location, type: editJob.type,
             description: editJob.description ?? "", applyUrl: editJob.applyUrl ?? "",
-            deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(null, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], bannerImage: null,
+            deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(editJob.communityId, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], communityId: editJob.communityId ?? "", bannerImage: null,
             existingBannerUrl: editJob.bannerImageUrl ?? "",
             status: editJob.status }}
           saving={updateMut.isPending} showStatus isSuperAdmin={isSuperAdmin}

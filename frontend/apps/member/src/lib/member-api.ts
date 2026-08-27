@@ -474,7 +474,7 @@ export async function uploadImage(file: File) {
   const res = await memberClient.post("/uploads/image", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return res.data.data! as { fileName: string };
+  return res.data.data! as { url: string };
 }
 
 // ── Directory ────────────────────────────────────────────────────────────────

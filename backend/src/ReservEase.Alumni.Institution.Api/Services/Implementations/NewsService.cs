@@ -28,6 +28,7 @@ public class NewsService(
             logger.LogInformation("GetPosts request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
 
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
@@ -35,7 +36,9 @@ public class NewsService(
                   && (string.IsNullOrEmpty(filter.Search)
                       || p.Title.Contains(filter.Search)
                       || p.Content.Contains(filter.Search))
-                  && (isSuper || (p.YearGroups != null && p.YearGroups.Any(__y => yearGroups.Contains(__y)))));
+                  && (isSuper || p.CreatedBy == admin.Id
+                      || (p.YearGroups != null && p.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                      || (p.CommunityId != null && communityIds.Contains(p.CommunityId))));
 
             await PopulateMissingAuthorsAsync(result.Results);
 
@@ -68,7 +71,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
 
-            if (!admin.CanViewScopedItem(post.YearGroups))
+            if (!admin.CanViewScopedItem(post.YearGroups, post.CommunityId))
             {
                 logger.LogWarning("Denied news post view access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears})",
                     admin.Id, postId, admin.GraduationYear, post.YearGroups ?? new List<int>());
@@ -93,8 +96,13 @@ public class NewsService(
         try
         {
             logger.LogInformation("CreatePost request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
+            var resolvedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
+
             var post = new NewsPost
             {
+                CommunityId = resolvedCommunityId,
                 Title = request.Title,
                 Content = request.Content,
                 Category = request.Category,
@@ -110,7 +118,7 @@ public class NewsService(
                     Email = admin.Email,
                     ProfilePictureUrl = null,
                 },
-                YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups),
+                YearGroups = resolvedYearGroups,
                 YoutubeVideoUrls = request.YoutubeVideoUrls,
                 CreatedBy = admin.Id,
             };
@@ -138,12 +146,17 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
 
-            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy))
+            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy, post.CommunityId))
             {
                 logger.LogWarning("Denied news post update access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears}, createdBy={CreatedBy})",
                     admin.Id, request.PostId, admin.GraduationYear, post.YearGroups ?? new List<int>(), post.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
             }
+
+            var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
+            post.CommunityId = updatedCommunityId;
 
             post.Title = request.Title;
             post.Content = request.Content;
@@ -152,7 +165,7 @@ public class NewsService(
             if (request.Status == "Published" && post.Status != "Published")
                 post.PublishedAt = DateTime.UtcNow;
             post.Status = request.Status;
-            post.YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            post.YearGroups = updatedYearGroups;
             post.YoutubeVideoUrls = request.YoutubeVideoUrls;
 
             var imageUrls = new List<string>();
@@ -185,7 +198,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
 
-            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy))
+            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy, post.CommunityId))
             {
                 logger.LogWarning("Denied news post publish access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears}, createdBy={CreatedBy})",
                     admin.Id, postId, admin.GraduationYear, post.YearGroups ?? new List<int>(), post.CreatedBy);
@@ -218,7 +231,7 @@ public class NewsService(
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Post not found");
 
-            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy))
+            if (!admin.CanModifyScopedItem(post.YearGroups, post.CreatedBy, post.CommunityId))
             {
                 logger.LogWarning("Denied news post delete access for admin {AdminId} to post {PostId} (adminYear={AdminYear}, postYears={PostYears}, createdBy={CreatedBy})",
                     admin.Id, postId, admin.GraduationYear, post.YearGroups ?? new List<int>(), post.CreatedBy);

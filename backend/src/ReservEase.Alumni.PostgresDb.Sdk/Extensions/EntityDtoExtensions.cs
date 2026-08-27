@@ -8,6 +8,7 @@ public static class EntityDtoExtensions
     public static JobDto ToDto(this Job job) => new()
     {
         Id = job.Id,
+        CommunityId = job.CommunityId,
         Title = job.Title,
         Company = job.Company,
         Location = job.Location,
@@ -46,6 +47,7 @@ public static class EntityDtoExtensions
     public static NewsPostDto ToDto(this NewsPost post) => new()
     {
         Id = post.Id,
+        CommunityId = post.CommunityId,
         Title = post.Title,
         Content = post.Content,
         Category = post.Category,
@@ -91,7 +93,6 @@ public static class EntityDtoExtensions
         PaidCount = c.PaidCount,
         BannerImageUrl = c.BannerImageUrl,
         YoutubeVideoUrl = c.YoutubeVideoUrl,
-        AllowOnlinePayments = c.AllowOnlinePayments,
         AllowManualPayments = c.AllowManualPayments,
         BankAccount = c.BankAccount != null ? new ManualPaymentBankAccountDto
         {

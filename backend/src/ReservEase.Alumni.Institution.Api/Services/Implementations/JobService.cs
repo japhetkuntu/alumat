@@ -28,6 +28,7 @@ public class JobService(
             logger.LogInformation("GetJobs request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
 
             var result = await jobRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
@@ -40,7 +41,9 @@ public class JobService(
                       || j.Title.Contains(filter.Search)
                       || j.Company.Contains(filter.Search)
                       || j.Location.Contains(filter.Search))
-                  && (isSuper || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))));
+                  && (isSuper || j.CreatedBy == admin.Id
+                      || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                      || (j.CommunityId != null && communityIds.Contains(j.CommunityId))));
             var dtoResult = new PgPagedResult<JobDto>
             {
                 PageIndex = result.PageIndex,
@@ -66,8 +69,13 @@ public class JobService(
         try
         {
             logger.LogInformation("CreateJob request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
+            var resolvedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
+
             var job = new Job
             {
+                CommunityId = resolvedCommunityId,
                 Title = request.Title,
                 Company = request.Company,
                 Location = request.Location,
@@ -78,7 +86,7 @@ public class JobService(
                 Status = "Active",
                 PostedBy = admin.Id,
                 CreatedBy = admin.Id,
-                YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups),
+                YearGroups = resolvedYearGroups,
             };
 
             if (request.BannerImage is not null)
@@ -108,12 +116,17 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
 
-            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy))
+            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy, job.CommunityId))
             {
                 logger.LogWarning("Denied job update access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears}, createdBy={CreatedBy})",
                     admin.Id, job.Id, admin.GraduationYear, job.YearGroups ?? new List<int>(), job.CreatedBy);
                 return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
             }
+
+            var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
+            job.CommunityId = updatedCommunityId;
 
             job.Title = request.Title;
             job.Company = request.Company;
@@ -123,7 +136,7 @@ public class JobService(
             job.ApplyUrl = request.ApplyUrl;
             job.Deadline = request.Deadline.HasValue ? DateTime.SpecifyKind(request.Deadline.Value, DateTimeKind.Utc) : (DateTime?)null;
             job.Status = request.Status;
-            job.YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            job.YearGroups = updatedYearGroups;
 
             if (request.BannerImage is not null)
             {
@@ -153,7 +166,7 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Job not found");
 
-            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy))
+            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy, job.CommunityId))
             {
                 logger.LogWarning("Denied job delete access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears}, createdBy={CreatedBy})",
                     admin.Id, jobId, admin.GraduationYear, job.YearGroups ?? new List<int>(), job.CreatedBy);
@@ -180,7 +193,7 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<JobDto>("Job not found");
 
-            if (!admin.CanViewScopedItem(job.YearGroups, createdBy: job.CreatedBy))
+            if (!admin.CanViewScopedItem(job.YearGroups, job.CommunityId, job.CreatedBy))
             {
                 logger.LogWarning("Denied job view access for admin {AdminId} to job {JobId} (jobYears={JobYears})",
                     admin.Id, jobId, job.YearGroups ?? new List<int>());
@@ -205,7 +218,7 @@ public class JobService(
             if (job is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Job not found");
 
-            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy))
+            if (!admin.CanModifyScopedItem(job.YearGroups, job.CreatedBy, job.CommunityId))
             {
                 logger.LogWarning("Denied job close access for admin {AdminId} to job {JobId} (adminYear={AdminYear}, jobYears={JobYears}, createdBy={CreatedBy})",
                     admin.Id, jobId, admin.GraduationYear, job.YearGroups ?? new List<int>(), job.CreatedBy);

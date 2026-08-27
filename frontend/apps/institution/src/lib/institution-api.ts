@@ -133,6 +133,10 @@ export interface InstitutionProfileResponse {
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
+  /** Overrides the Member Portal landing page's hero photo — falls back to generic stock art when unset. */
+  heroImageUrl?: string | null;
+  /** Overrides the short headline overlaid on the hero photo. */
+  heroHeadline?: string | null;
   /** Shareable Member Portal URL for this institution — null if the backend has no MemberPortalBaseDomain configured. */
   memberPortalUrl?: string | null;
 }
@@ -147,8 +151,13 @@ export async function getInstitutionProfile(): Promise<InstitutionProfileRespons
 }
 
 /** The one piece of content institution admins can edit themselves — everything else is platform-staff-only. */
-export async function updateLandingContent(landingPageStories: LandingPageStory[], newsBanner: NewsBanner | null): Promise<InstitutionProfileResponse> {
-  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/landing-content", { landingPageStories, newsBanner });
+export async function updateLandingContent(
+  landingPageStories: LandingPageStory[],
+  newsBanner: NewsBanner | null,
+  heroImageUrl?: string | null,
+  heroHeadline?: string | null,
+): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/landing-content", { landingPageStories, newsBanner, heroImageUrl, heroHeadline });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -358,7 +367,6 @@ export interface CreateCampaignBody {
   yearGroups?: number[];
   bannerImage?: File;
   youtubeVideoUrl?: string;
-  allowOnlinePayments?: boolean;
   allowManualPayments?: boolean;
   bankAccountNumber?: string;
   bankAccountName?: string;
@@ -390,7 +398,6 @@ export interface UpdateCampaignBody {
   yearGroups?: number[];
   bannerImage?: File;
   youtubeVideoUrl?: string;
-  allowOnlinePayments?: boolean;
   allowManualPayments?: boolean;
   bankAccountNumber?: string;
   bankAccountName?: string;
@@ -493,6 +500,7 @@ export async function getReportSummary() {
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
 
 export interface CreateJobBody {
+  communityId?: string;
   title: string;
   company: string;
   location: string;
@@ -505,6 +513,7 @@ export interface CreateJobBody {
 }
 
 export interface UpdateJobBody {
+  communityId?: string;
   title: string;
   company: string;
   location: string;
@@ -646,6 +655,7 @@ export async function reopenRsvp(eventId: string, rsvpId: string) {
 // ─── News ─────────────────────────────────────────────────────────────────────
 
 export interface CreateNewsPostBody {
+  communityId?: string;
   title: string;
   content: string;
   category: string;
@@ -657,6 +667,7 @@ export interface CreateNewsPostBody {
 }
 
 export interface UpdateNewsPostBody {
+  communityId?: string;
   title: string;
   content: string;
   category: string;
@@ -836,7 +847,7 @@ export async function updateResource(id: string, body: UpdateResourceBody) {
 export async function uploadImage(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await institutionClient.post<ApiResponse<{ fileName: string }>>("/uploads/image", formData, {
+  const res = await institutionClient.post<ApiResponse<{ url: string }>>("/uploads/image", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data.data!;
@@ -845,7 +856,7 @@ export async function uploadImage(file: File) {
 export async function uploadFile(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await institutionClient.post<ApiResponse<{ fileName: string }>>("/uploads/file", formData, {
+  const res = await institutionClient.post<ApiResponse<{ url: string }>>("/uploads/file", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data.data!;

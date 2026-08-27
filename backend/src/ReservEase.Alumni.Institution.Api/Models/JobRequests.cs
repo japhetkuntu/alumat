@@ -2,6 +2,8 @@ namespace ReservEase.Alumni.Institution.Api.Models;
 
 public class CreateJobRequest
 {
+    /// <summary>Optional — scopes this job posting to one Community instead of the whole institution.</summary>
+    public string? CommunityId { get; set; }
     public string Title { get; set; } = "";
     public string Company { get; set; } = "";
     public string Location { get; set; } = "";
@@ -16,6 +18,7 @@ public class CreateJobRequest
 public class UpdateJobRequest
 {
     public string JobId { get; set; } = "";
+    public string? CommunityId { get; set; }
     public string Title { get; set; } = "";
     public string Company { get; set; } = "";
     public string Location { get; set; } = "";

@@ -18,7 +18,7 @@ import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alum
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getNewsPosts, createNewsPost, publishNewsPost, updateNewsPost } from "@/lib/institution-api";
+import { getNewsPosts, createNewsPost, publishNewsPost, updateNewsPost, getCommunities } from "@/lib/institution-api";
 import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
@@ -37,12 +37,13 @@ interface FormState {
   isPinned: string;
   audienceMode: AudienceMode;
   yearGroups: number[];
+  communityId: string;
   images: File[];
   existingImageUrls: string[];
   youtubeVideoUrls: string;
 }
 
-const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", audienceMode: "everyone", yearGroups: [], images: [], existingImageUrls: [], youtubeVideoUrls: "" };
+const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", audienceMode: "everyone", yearGroups: [], communityId: "", images: [], existingImageUrls: [], youtubeVideoUrls: "" };
 
 function commaToArray(s: string): string[] | undefined {
   const arr = s.split(",").map(x => x.trim()).filter(Boolean);
@@ -59,6 +60,7 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
 }) {
   const [form, setForm] = useState(init);
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+  const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -87,13 +89,13 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
           <AudienceScopePicker
             mode={form.audienceMode}
             onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
-            communityId=""
-            onCommunityChange={() => {}}
-            communities={[]}
+            communityId={form.communityId}
+            onCommunityChange={(v) => f("communityId", v)}
+            communities={communities}
             yearGroups={form.yearGroups}
             onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
-            supportsCommunity={false}
-            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned year group." } : undefined}
+            supportsCommunity
+            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned year group or community." } : undefined}
           />
           <div className="space-y-2"><Label>Content</Label>
             <RichTextEditor value={form.content} onChange={(html) => f("content", html)} placeholder="Write your post content here..." /></div>
@@ -161,6 +163,7 @@ export default function AdminNewsPage() {
 
   const createMut = useMutation({
     mutationFn: (f: FormState) => createNewsPost({
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, content: f.content, category: f.category, status: f.status,
       isPinned: f.isPinned === "true",
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
@@ -172,6 +175,7 @@ export default function AdminNewsPage() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, f }: { id: string; f: FormState }) => updateNewsPost(id, {
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, content: f.content, category: f.category, status: f.status,
       isPinned: f.isPinned === "true",
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
@@ -275,8 +279,9 @@ export default function AdminNewsPage() {
               category: editPost.category || "News",
               status: editPost.status || "Draft",
               isPinned: editPost.isPinned ? "true" : "false",
-              audienceMode: inferAudienceMode(null, editPost.yearGroups),
+              audienceMode: inferAudienceMode(editPost.communityId, editPost.yearGroups),
               yearGroups: editPost.yearGroups ?? [],
+              communityId: editPost.communityId ?? "",
               images: [],
               existingImageUrls: editPost.imageUrls ?? [],
               youtubeVideoUrls: arrayToComma(editPost.youtubeVideoUrls),

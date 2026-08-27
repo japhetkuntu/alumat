@@ -115,7 +115,7 @@ export default function CampaignDetailPage() {
   const numericAmount  = Number(displayAmount);
   const isValidAmount  = numericAmount > 0;
   const isActive       = campaign.status === "Active";
-  const canPay         = isActive && isValidAmount && campaign.allowOnlinePayments && !membershipPaid;
+  const canPay         = isActive && isValidAmount && !membershipPaid;
 
   const publicLink = typeof window !== "undefined"
     ? `${window.location.origin}/payment-campaign/${id}`
@@ -404,7 +404,7 @@ export default function CampaignDetailPage() {
               )}
 
               {/* Pay button */}
-              {isActive && campaign.allowOnlinePayments && (
+              {isActive && (
                 <Button
                   className="w-full font-bold text-[15px] gap-2"
                   style={{ height: 48 }}

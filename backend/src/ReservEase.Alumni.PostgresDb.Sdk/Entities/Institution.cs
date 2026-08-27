@@ -79,6 +79,21 @@ public class Institution : BaseEntity
     /// </summary>
     public NewsBanner? NewsBanner { get; set; }
 
+    /// <summary>
+    /// Overrides the Member Portal landing page's hero photo. Null by
+    /// default — the frontend falls back to a generic stock photo until the
+    /// institution (or platform staff) uploads their own. Editable by both
+    /// platform staff and this institution's own admins.
+    /// </summary>
+    public string? HeroImageUrl { get; set; }
+
+    /// <summary>
+    /// Overrides the short headline overlaid on the landing page's hero
+    /// photo (default: "One network. Every graduate, wherever they are.").
+    /// Editable by both platform staff and this institution's own admins.
+    /// </summary>
+    public string? HeroHeadline { get; set; }
+
     public string Status { get; set; } = "Trial";  // Trial, Active, Suspended, Cancelled
     public DateTime? TrialEndsAt { get; set; }
     public DateTime OnboardedAt { get; set; } = DateTime.UtcNow;

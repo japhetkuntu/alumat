@@ -45,7 +45,6 @@ interface FormState {
   bannerImage: File | null;
   existingBannerUrl: string;
   youtubeVideoUrl: string;
-  allowOnlinePayments: boolean;
   allowManualPayments: boolean;
   bankAccountNumber: string;
   bankAccountName: string;
@@ -60,7 +59,6 @@ const emptyForm: FormState = {
   title: "", description: "", targetAmount: "", minContribution: "", deadline: "",
   audienceMode: "everyone", yearGroups: [],
   bannerImage: null, existingBannerUrl: "", youtubeVideoUrl: "",
-  allowOnlinePayments: true,
   allowManualPayments: false,
   bankAccountNumber: "",
   bankAccountName: "",
@@ -135,24 +133,15 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             </div>
           </div>
 
-          <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled && "sm:grid-cols-2")}>
+          {manualPaymentsEnabled && (
             <div className="space-y-2">
-              <Label>Allow Online Payments</Label>
+              <Label>Allow Manual Payments</Label>
               <div className="flex items-center gap-2">
-                <input id="online-pay" type="checkbox" checked={form.allowOnlinePayments} onChange={(e) => f("allowOnlinePayments", e.target.checked)} className="h-4 w-4" />
-                <label htmlFor="online-pay" className="text-sm">Enable online payments</label>
+                <input id="manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
+                <label htmlFor="manual-pay" className="text-sm">Allow bank/mobile money transfers</label>
               </div>
             </div>
-            {manualPaymentsEnabled && (
-              <div className="space-y-2">
-                <Label>Allow Manual Payments</Label>
-                <div className="flex items-center gap-2">
-                  <input id="manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
-                  <label htmlFor="manual-pay" className="text-sm">Allow bank/mobile money transfers</label>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           {manualPaymentsEnabled && form.allowManualPayments && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -211,7 +200,6 @@ export default function AdminCampaignsPage() {
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
       youtubeVideoUrl: f.youtubeVideoUrl || undefined,
-      allowOnlinePayments: f.allowOnlinePayments,
       allowManualPayments: f.allowManualPayments,
       bankAccountNumber: f.bankAccountNumber || undefined,
       bankAccountName: f.bankAccountName || undefined,
@@ -232,7 +220,6 @@ export default function AdminCampaignsPage() {
       targetAmount: Number(f.targetAmount), amountPerMember: Number(f.minContribution),
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined, youtubeVideoUrl: f.youtubeVideoUrl || undefined,
-      allowOnlinePayments: f.allowOnlinePayments,
       allowManualPayments: f.allowManualPayments,
       bankAccountNumber: f.bankAccountNumber || undefined,
       bankAccountName: f.bankAccountName || undefined,
@@ -310,7 +297,6 @@ export default function AdminCampaignsPage() {
             bannerImage: null,
             existingBannerUrl: editCampaign.bannerImageUrl ?? "",
             youtubeVideoUrl: editCampaign.youtubeVideoUrl ?? "",
-            allowOnlinePayments: editCampaign.allowOnlinePayments,
             allowManualPayments: editCampaign.allowManualPayments,
             bankAccountNumber: editCampaign.bankAccount?.accountNumber ?? "",
             bankAccountName: editCampaign.bankAccount?.accountName ?? "",
@@ -372,7 +358,7 @@ export default function AdminCampaignsPage() {
                         ? (c.yearGroups.length === 1 ? `Class of ${c.yearGroups[0]}` : `Classes ${c.yearGroups.slice(0, 2).join(", ")}${c.yearGroups.length > 2 ? "…" : ""}`)
                         : "All members"}
                       {" · "}
-                      {c.allowOnlinePayments && c.allowManualPayments ? "Online + manual payments" : c.allowOnlinePayments ? "Online payments" : "Manual payments"}
+                      {c.allowManualPayments ? "Online + manual payments" : "Online payments"}
                     </p>
                   </div>
 

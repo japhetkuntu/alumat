@@ -6,6 +6,9 @@ public class Job : BaseEntity, ITenantScoped
 {
     public string InstitutionId { get; set; } = string.Empty;
 
+    /// <summary>Null = institution-wide job posting. Set = belongs to one Community; only its approved members/leaders can see it.</summary>
+    public string? CommunityId { get; set; }
+
     public string Title { get; set; } = string.Empty;
     public string Company { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;

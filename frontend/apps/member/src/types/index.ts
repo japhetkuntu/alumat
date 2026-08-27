@@ -170,7 +170,6 @@ export interface Campaign {
   createdAt: string;
   bannerImageUrl?: string;
   youtubeVideoUrl?: string;
-  allowOnlinePayments: boolean;
   allowManualPayments: boolean;
   bankAccount?: {
     accountNumber: string;

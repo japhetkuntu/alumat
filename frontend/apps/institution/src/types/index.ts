@@ -188,7 +188,6 @@ export interface Campaign {
   createdAt: string;
   bannerImageUrl?: string;
   youtubeVideoUrl?: string;
-  allowOnlinePayments: boolean;
   allowManualPayments: boolean;
   membershipYear?: number;
   bankAccount?: {
@@ -210,7 +209,6 @@ export interface CreateCampaignRequest {
   targetAmount: number;
   amountPerMember: number;
   deadline: string;
-  allowOnlinePayments?: boolean;
   allowManualPayments?: boolean;
   bankAccountNumber?: string;
   bankAccountName?: string;
@@ -301,6 +299,7 @@ export type JobStatus = "Active" | "Closed" | "Draft";
 
 export interface Job {
   id: string;
+  communityId?: string | null;
   postedBy: string;
   title: string;
   company: string;
@@ -365,6 +364,7 @@ export type NewsStatus = "Draft" | "Published" | "Archived";
 
 export interface NewsPost {
   id: string;
+  communityId?: string | null;
   authorId: string;
   authorName?: string;
   title: string;

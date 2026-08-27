@@ -14,7 +14,6 @@ public class CreateCampaignRequest
     public IFormFile? BannerImage { get; set; }
     public string? YoutubeVideoUrl { get; set; }
 
-    public bool AllowOnlinePayments { get; set; } = true;
     public bool AllowManualPayments { get; set; } = false;
     public bool IsMembershipCampaign { get; set; } = false;
     public int? MembershipYear { get; set; }
@@ -44,7 +43,6 @@ public class UpdateCampaignRequest
     public IFormFile? BannerImage { get; set; }
     public string? YoutubeVideoUrl { get; set; }
 
-    public bool AllowOnlinePayments { get; set; } = true;
     public bool AllowManualPayments { get; set; } = false;
     public bool IsMembershipCampaign { get; set; } = false;
     public int? MembershipYear { get; set; }

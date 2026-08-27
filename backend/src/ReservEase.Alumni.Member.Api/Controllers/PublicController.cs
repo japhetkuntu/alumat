@@ -46,7 +46,9 @@ public class PublicController : DefaultController
             institution.RequireStudentId,
             institution.DisabledFeatures,
             institution.LandingPageStories,
-            institution.NewsBanner);
+            institution.NewsBanner,
+            institution.HeroImageUrl,
+            institution.HeroHeadline);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }

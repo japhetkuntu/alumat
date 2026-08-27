@@ -138,7 +138,6 @@ public class CampaignService(
                 Status = CampaignStatus.Active,
                 YearGroups = resolvedYearGroups,
                 YoutubeVideoUrl = request.YoutubeVideoUrl,
-                AllowOnlinePayments = request.AllowOnlinePayments,
                 AllowManualPayments = request.AllowManualPayments,
                 IsMembershipCampaign = request.IsMembershipCampaign,
                 MembershipYear = request.MembershipYear,
@@ -250,7 +249,6 @@ public class CampaignService(
 
             campaign.YearGroups = updatedYearGroups;
             campaign.YoutubeVideoUrl = request.YoutubeVideoUrl;
-            campaign.AllowOnlinePayments = request.AllowOnlinePayments;
             campaign.AllowManualPayments = request.AllowManualPayments;
 
             if (!string.IsNullOrWhiteSpace(request.BankAccountNumber) && !string.IsNullOrWhiteSpace(request.BankAccountName) && !string.IsNullOrWhiteSpace(request.BankName))

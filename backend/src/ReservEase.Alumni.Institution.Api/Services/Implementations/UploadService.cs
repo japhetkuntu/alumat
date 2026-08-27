@@ -31,10 +31,10 @@ public class UploadService(
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("Image exceeds 5MB limit");
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        await storageService.UploadFileAsync(file, objectName, institutionSlug: currentTenant.InstitutionSlug ?? "");
+        var url = await storageService.UploadFileAsync(file, objectName, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("Image uploaded: {ObjectName}", objectName);
-        return new UploadResult(objectName).ToOkApiResponse();
+        return new UploadResult(url).ToOkApiResponse();
     }
 
     public async Task<IApiResponse<UploadResult>> UploadFileAsync(IFormFile file)
@@ -46,9 +46,9 @@ public class UploadService(
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("File exceeds 50MB limit");
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        await storageService.UploadFileAsync(file, objectName, institutionSlug: currentTenant.InstitutionSlug ?? "");
+        var url = await storageService.UploadFileAsync(file, objectName, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("File uploaded: {ObjectName}", objectName);
-        return new UploadResult(objectName).ToOkApiResponse();
+        return new UploadResult(url).ToOkApiResponse();
     }
 }
