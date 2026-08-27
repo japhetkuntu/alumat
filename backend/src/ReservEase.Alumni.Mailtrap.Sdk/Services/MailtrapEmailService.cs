@@ -149,18 +149,21 @@ public class MailtrapEmailService(
         var logo = variables.GetValueOrDefault("brand_logo");
         var brandName = Sanitize(variables.GetValueOrDefault("brand_name", "Alumni Portal"));
 
+        // No margin baked in here — every template now places this inline in
+        // a flex header row (mark beside the brand name) rather than stacked
+        // above it, so spacing is the template's own job via its layout CSS.
         if (!string.IsNullOrWhiteSpace(logo))
         {
-            return $"<img src=\"{Sanitize(logo)}\" alt=\"{brandName}\" width=\"44\" height=\"44\" " +
-                   "style=\"width:44px;height:44px;border-radius:12px;object-fit:cover;margin-bottom:20px;display:block\" />";
+            return $"<img src=\"{Sanitize(logo)}\" alt=\"{brandName}\" width=\"40\" height=\"40\" " +
+                   "style=\"width:40px;height:40px;border-radius:11px;object-fit:cover;display:block\" />";
         }
 
         var brandColor = variables.GetValueOrDefault("brand_color", "#0e7143");
         var brandColorDark = variables.GetValueOrDefault("brand_color_dark", brandColor);
         var initial = variables.GetValueOrDefault("brand_initial", "A");
-        return "<div style=\"width:44px;height:44px;border-radius:12px;" +
+        return "<div style=\"width:40px;height:40px;border-radius:11px;" +
                $"background:linear-gradient(135deg,{brandColor},{brandColorDark});color:#ffffff;" +
-               "font-size:18px;font-weight:800;text-align:center;line-height:44px;margin-bottom:20px\">" +
+               "font-size:16px;font-weight:800;text-align:center;line-height:40px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">" +
                $"{initial}</div>";
     }
 
