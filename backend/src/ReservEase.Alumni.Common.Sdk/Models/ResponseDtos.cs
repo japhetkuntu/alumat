@@ -276,6 +276,9 @@ public class AlumniMapMemberDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string? Location { get; set; }
+    /// <summary>Real (but ~11km-rounded) geolocation coordinates — what the map actually plots by. Location above is only ever shown as text, never used for placement.</summary>
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
     public int GraduationYear { get; set; }
     public string? ProfilePictureUrl { get; set; }
 }

@@ -69,6 +69,8 @@ export interface MemberProfileResponse {
   membershipYearsPaid?: number;
   lastMembershipPaidAt?: string;
   showOnAlumniMap?: boolean;
+  mapLatitude?: number;
+  mapLongitude?: number;
 }
 
 export interface MembershipStatusResponse {
@@ -98,6 +100,8 @@ export interface UpdateProfileBody {
   phone?: string;
   employmentStatus?: string;
   showOnAlumniMap?: boolean;
+  mapLatitude?: number;
+  mapLongitude?: number;
   profilePicture?: File;
 }
 
@@ -113,6 +117,8 @@ export interface AlumniMapMember {
   firstName: string;
   lastName: string;
   location?: string;
+  latitude: number;
+  longitude: number;
   graduationYear: number;
   profilePictureUrl?: string;
 }

@@ -9,7 +9,6 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { getInitials } from "@alumni/ui";
 import type { AlumniMapMember } from "@/lib/member-api";
-import { centroidForLocation } from "@/lib/country-centroids";
 
 // Reads the app's actual brand color at render time (set as a CSS var on
 // :root) so pins/clusters match whatever institution this portal belongs
@@ -45,15 +44,17 @@ function pinIcon(member: AlumniMapMember): L.DivIcon {
   });
 }
 
-// Deterministic small offset (not true random) so re-renders don't jitter
-// markers around — just enough spread that alumni in the same country don't
-// all sit on exactly one point.
+// Pins now come from each member's own real (privacy-rounded) coordinates
+// rather than a shared country centroid, so they're already spread out —
+// this only needs to nudge apart the rare case of two members rounding to
+// the exact same 0.1°-precision cell, not spread an entire country's worth
+// of people apart the way it used to.
 function jitter(seed: string): [number, number] {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
   const a = ((hash % 1000) / 1000) * 2 - 1;
   const b = (((hash >> 8) % 1000) / 1000) * 2 - 1;
-  return [a * 1.4, b * 1.4];
+  return [a * 0.05, b * 0.05];
 }
 
 type Pin = { member: AlumniMapMember; position: [number, number] };
@@ -116,14 +117,10 @@ function ClusterLayer({ pins }: { pins: Pin[] }) {
 
 export function AlumniMapView({ members }: { members: AlumniMapMember[] }) {
   const pins = useMemo(() => {
-    return members
-      .map((m) => {
-        const centroid = centroidForLocation(m.location);
-        if (!centroid) return null;
-        const [dLat, dLng] = jitter(m.id);
-        return { member: m, position: [centroid[0] + dLat, centroid[1] + dLng] as [number, number] };
-      })
-      .filter((p): p is Pin => p !== null);
+    return members.map((m) => {
+      const [dLat, dLng] = jitter(m.id);
+      return { member: m, position: [m.latitude + dLat, m.longitude + dLng] as [number, number] };
+    });
   }, [members]);
 
   return (

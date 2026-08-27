@@ -13,6 +13,7 @@ import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { getMyProfile, updateMyProfile, changePassword, getMyBadges, getCurrentMembershipCampaign } from "@/lib/member-api";
+import { getRoundedLocation } from "@/lib/geolocation";
 import { formatCurrency } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -149,12 +150,40 @@ export default function MemberProfilePage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  // Turning the map on requires a fresh, real location — captured from the
+  // browser's geolocation API and rounded to ~11km precision before it ever
+  // leaves the device (see getRoundedLocation), not guessed from the
+  // free-text "location" field above. Turning it off needs no location at
+  // all; the backend clears any stored coordinates as soon as this is false.
   const mapToggleMut = useMutation({
-    mutationFn: (value: boolean) => updateMyProfile({ showOnAlumniMap: value }),
-    onSuccess: (_, value) => {
+    mutationFn: async (value: boolean) => {
+      if (!value) {
+        await updateMyProfile({ showOnAlumniMap: false });
+        return false;
+      }
+      const { latitude, longitude } = await getRoundedLocation();
+      await updateMyProfile({ showOnAlumniMap: true, mapLatitude: latitude, mapLongitude: longitude });
+      return true;
+    },
+    onSuccess: (value) => {
       setShowOnAlumniMap(value);
       qc.invalidateQueries({ queryKey: ["m-profile"] });
       toast.success(value ? "You're now visible on the Alumni Map." : "Removed from the Alumni Map.");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  // Re-captures location without touching the toggle — lets an already-visible
+  // member refresh their pin any time (e.g. after moving), per the "should
+  // be able to change their location anytime" requirement.
+  const updateLocationMut = useMutation({
+    mutationFn: async () => {
+      const { latitude, longitude } = await getRoundedLocation();
+      await updateMyProfile({ showOnAlumniMap: true, mapLatitude: latitude, mapLongitude: longitude });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-profile"] });
+      toast.success("Your location on the Alumni Map has been updated.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -385,27 +414,39 @@ export default function MemberProfilePage() {
               </div>
             </div>
 
-            <div className="flex items-start justify-between gap-4 rounded-xl p-3.5" style={{ background: "var(--muted)" }}>
-              <div>
-                <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">
-                  Plots your name and location on the alumni world map, visible to fellow members. Off by default — your location stays private unless you turn this on.
-                </p>
+            <div className="rounded-xl p-3.5 space-y-2.5" style={{ background: "var(--muted)" }}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
+                    Uses your device's real location — rounded to roughly your city/region, never your exact address — to plot a pin, visible to fellow members. Off by default — your location stays private, and nothing is stored unless you turn this on.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showOnAlumniMap}
+                  disabled={mapToggleMut.isPending}
+                  onClick={() => mapToggleMut.mutate(!showOnAlumniMap)}
+                  className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ background: showOnAlumniMap ? "var(--primary)" : "var(--border)" }}
+                >
+                  <span
+                    className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300"
+                    style={{ transform: showOnAlumniMap ? "translateX(20px)" : "translateX(0)" }}
+                  />
+                </button>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showOnAlumniMap}
-                disabled={mapToggleMut.isPending}
-                onClick={() => mapToggleMut.mutate(!showOnAlumniMap)}
-                className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ background: showOnAlumniMap ? "var(--primary)" : "var(--border)" }}
-              >
-                <span
-                  className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300"
-                  style={{ transform: showOnAlumniMap ? "translateX(20px)" : "translateX(0)" }}
-                />
-              </button>
+              {showOnAlumniMap && (
+                <button
+                  type="button"
+                  disabled={updateLocationMut.isPending}
+                  onClick={() => updateLocationMut.mutate()}
+                  className="text-[12px] font-semibold text-primary hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {updateLocationMut.isPending ? "Updating location…" : "Update my location"}
+                </button>
+              )}
             </div>
 
             <div className="space-y-1.5">

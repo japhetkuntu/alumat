@@ -462,6 +462,26 @@ public class MemberAuthService(
             member.Phone = request.Phone ?? member.Phone;
             member.ShowOnAlumniMap = request.ShowOnAlumniMap ?? member.ShowOnAlumniMap;
 
+            if (!member.ShowOnAlumniMap)
+            {
+                // Opted out (or never opted in) — no location data should linger.
+                member.MapLatitude = null;
+                member.MapLongitude = null;
+            }
+            else if (request.MapLatitude.HasValue && request.MapLongitude.HasValue)
+            {
+                // Round again server-side (defense in depth — the client already
+                // rounds before sending) to ~11km precision (1 decimal degree),
+                // so this reads as "roughly this city/region," never an exact address.
+                member.MapLatitude = Math.Round(request.MapLatitude.Value, 1);
+                member.MapLongitude = Math.Round(request.MapLongitude.Value, 1);
+            }
+            else if (member.MapLatitude is null || member.MapLongitude is null)
+            {
+                return ApiResponseExtensions.ToBadRequestApiResponse<MemberProfileResponse>(
+                    "Location is required to appear on the Alumni Map. Please allow location access and try again.");
+            }
+
             if (request.EmploymentStatus is "Employed" or "Pensioner")
             {
                 if (member.EmploymentStatus == "Pensioner" && request.EmploymentStatus == "Employed")
@@ -671,5 +691,5 @@ public class MemberAuthService(
         m.Location, m.LinkedInUrl, m.Bio,
         m.ProfilePictureUrl, m.Status, m.EmploymentStatus,
         m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,
-        m.ShowOnAlumniMap);
+        m.ShowOnAlumniMap, m.MapLatitude, m.MapLongitude);
 }

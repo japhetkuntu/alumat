@@ -66,7 +66,7 @@ public class DirectoryService(
         try
         {
             var members = await memberRepo.GetAllAsync(m =>
-                m.Status == "Active" && m.ShowOnAlumniMap && m.Location != null && m.Location != "");
+                m.Status == "Active" && m.ShowOnAlumniMap && m.MapLatitude != null && m.MapLongitude != null);
 
             var dtos = members.Select(m => new AlumniMapMemberDto
             {
@@ -74,6 +74,8 @@ public class DirectoryService(
                 FirstName = m.FirstName,
                 LastName = m.LastName,
                 Location = m.Location,
+                Latitude = m.MapLatitude!.Value,
+                Longitude = m.MapLongitude!.Value,
                 GraduationYear = m.GraduationYear,
                 ProfilePictureUrl = m.ProfilePictureUrl,
             }).ToList();

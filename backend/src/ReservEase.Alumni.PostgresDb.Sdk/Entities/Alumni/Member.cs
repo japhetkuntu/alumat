@@ -17,8 +17,16 @@ public class Member : BaseEntity, ITenantScoped
     public string? Company { get; set; }
     public string? JobTitle { get; set; }
     public string? Location { get; set; }
-    // Opt-in: member must explicitly choose to appear on the Alumni Map (plotted by their Location).
+    // Opt-in: member must explicitly choose to appear on the Alumni Map. Plotted by
+    // MapLatitude/MapLongitude (captured from the browser's geolocation API, not
+    // guessed from the free-text Location above) — rounded to ~11km precision
+    // (1 decimal degree) both client- and server-side before storage, so the pin
+    // reads as "roughly this city/region" rather than the member's exact address.
+    // Both null whenever ShowOnAlumniMap is false — cleared on opt-out rather than
+    // just hidden, so no location data lingers once a member turns this off.
     public bool ShowOnAlumniMap { get; set; }
+    public double? MapLatitude { get; set; }
+    public double? MapLongitude { get; set; }
     public string? LinkedInUrl { get; set; }
     public string? Bio { get; set; }
     public string? ProfilePictureUrl { get; set; }

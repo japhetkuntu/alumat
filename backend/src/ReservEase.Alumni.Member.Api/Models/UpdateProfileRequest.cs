@@ -10,5 +10,8 @@ public class UpdateProfileRequest
     public string? Phone { get; set; }
     public string? EmploymentStatus { get; set; }
     public bool? ShowOnAlumniMap { get; set; }
+    /// <summary>Real browser-geolocation coordinates, rounded client-side before sending — required whenever ShowOnAlumniMap is being turned on; ignored otherwise.</summary>
+    public double? MapLatitude { get; set; }
+    public double? MapLongitude { get; set; }
     public IFormFile? ProfilePicture { get; set; }
 }
