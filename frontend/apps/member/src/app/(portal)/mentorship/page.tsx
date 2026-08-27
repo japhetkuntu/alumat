@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   UserCheck, Plus, CheckCircle, XCircle, Clock,
   Inbox, Users, ChevronDown, Linkedin, MessageCircle, Phone,
+  Sparkles, GraduationCap, HeartHandshake,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -391,81 +392,84 @@ export default function MemberMentorshipPage() {
           MY REQUESTS
       ══════════════════════════════════════════════ */}
       {view === "requests" && (
-        <div className="space-y-2">
+        <div>
           {requests.length === 0 ? (
             <EmptyState
               icon={<Clock size={40} />}
               title="No requests sent yet"
               description="Browse available mentors and send a request."
             />
-          ) : requests.map(r => (
-            <div
-              key={r.id}
-              className="card p-4 sm:p-5 flex flex-wrap items-start justify-between gap-4"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  {r.area}
-                </p>
-                <p className="text-[12.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                  {r.mentorProfileName ? `To: ${r.mentorProfileName}` : ""}
-                  {r.mentorProfileName && " · "}
-                  {formatDate(r.createdAt)}
-                </p>
-                {r.message && (
-                  <p className="text-[12.5px] mt-1.5 italic" style={{ color: "var(--muted-foreground)" }}>
-                    &ldquo;{r.message}&rdquo;
-                  </p>
-                )}
-                {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactWhatsAppNumber || r.contactPhoneNumber) && (
-                  <div
-                    className="mt-3 p-3 rounded-xl space-y-2"
-                    style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
-                  >
-                    <p className="text-[12px] font-semibold" style={{ color: "var(--foreground)" }}>
-                      Contact your mentor
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {r.contactLinkedInUrl && (
-                        <a
-                          href={r.contactLinkedInUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
-                          style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
-                        >
-                          <Linkedin size={13} /> LinkedIn
-                        </a>
-                      )}
-                      {r.contactWhatsAppNumber && (
-                        <a
-                          href={`https://wa.me/${r.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
-                          style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
-                        >
-                          <MessageCircle size={13} /> WhatsApp
-                        </a>
-                      )}
-                      {r.contactPhoneNumber && (
-                        <a
-                          href={`tel:${r.contactPhoneNumber}`}
-                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
-                          style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
-                        >
-                          <Phone size={13} /> Call
-                        </a>
-                      )}
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {requests.map(r => (
+                <div key={r.id} className="card p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[14.5px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+                        {r.area}
+                      </p>
+                      <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                        {r.mentorProfileName ? `To: ${r.mentorProfileName}` : ""}
+                        {r.mentorProfileName && " · "}
+                        {formatDate(r.createdAt)}
+                      </p>
                     </div>
+                    <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold shrink-0">
+                      {r.status}
+                    </Badge>
                   </div>
-                )}
-              </div>
-              <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold shrink-0">
-                {r.status}
-              </Badge>
+                  {r.message && (
+                    <p className="text-[13px] leading-relaxed italic" style={{ color: "var(--muted-foreground)" }}>
+                      &ldquo;{r.message}&rdquo;
+                    </p>
+                  )}
+                  {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactWhatsAppNumber || r.contactPhoneNumber) && (
+                    <div
+                      className="p-3 rounded-xl space-y-2"
+                      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                    >
+                      <p className="text-[12px] font-semibold" style={{ color: "var(--foreground)" }}>
+                        Contact your mentor
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {r.contactLinkedInUrl && (
+                          <a
+                            href={r.contactLinkedInUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                            style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+                          >
+                            <Linkedin size={13} /> LinkedIn
+                          </a>
+                        )}
+                        {r.contactWhatsAppNumber && (
+                          <a
+                            href={`https://wa.me/${r.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                            style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+                          >
+                            <MessageCircle size={13} /> WhatsApp
+                          </a>
+                        )}
+                        {r.contactPhoneNumber && (
+                          <a
+                            href={`tel:${r.contactPhoneNumber}`}
+                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                            style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+                          >
+                            <Phone size={13} /> Call
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -473,73 +477,75 @@ export default function MemberMentorshipPage() {
           INCOMING REQUESTS
       ══════════════════════════════════════════════ */}
       {view === "incoming" && (
-        <div className="space-y-2">
+        <div>
           {incoming.length === 0 ? (
             <EmptyState
               icon={<Inbox size={40} />}
               title="No incoming requests"
               description="Mentorship requests from other alumni will appear here."
             />
-          ) : incoming.map(r => (
-            <div
-              key={r.id}
-              className="card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4"
-            >
-              {/* Mentee info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar size="sm" className="shrink-0">
-                  {r.menteeProfilePictureUrl && (
-                    <AvatarImage src={r.menteeProfilePictureUrl} alt={r.menteeName ?? "M"} />
-                  )}
-                  <AvatarFallback name={r.menteeName ?? "M"}>
-                    {getInitials(r.menteeName ?? "M")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    {r.menteeName ?? "Unknown member"}
-                  </p>
-                  <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
-                    {r.area} · {formatDate(r.createdAt)}
-                  </p>
-                  {r.message && (
-                    <p className="text-[12.5px] mt-1 italic" style={{ color: "var(--muted-foreground)" }}>
-                      &ldquo;{r.message}&rdquo;
-                    </p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {incoming.map(r => (
+                <div key={r.id} className="card p-5 space-y-4">
+                  {/* Mentee info */}
+                  <div className="flex items-start gap-3">
+                    <Avatar size="default" className="shrink-0">
+                      {r.menteeProfilePictureUrl && (
+                        <AvatarImage src={r.menteeProfilePictureUrl} alt={r.menteeName ?? "M"} />
+                      )}
+                      <AvatarFallback name={r.menteeName ?? "M"}>
+                        {getInitials(r.menteeName ?? "M")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[14.5px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+                          {r.menteeName ?? "Unknown member"}
+                        </p>
+                        {r.status !== "Pending" && (
+                          <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold shrink-0">
+                            {r.status}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                        {r.area} · {formatDate(r.createdAt)}
+                      </p>
+                      {r.message && (
+                        <p className="text-[12.5px] mt-1.5 italic leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                          &ldquo;{r.message}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  {r.status === "Pending" && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-1.5 font-semibold text-[13px]"
+                        style={{ height: 38 }}
+                        onClick={() => setConfirmAction({ type: "accept", id: r.id })}
+                      >
+                        <CheckCircle size={13} /> Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1.5 font-semibold text-[13px]"
+                        style={{ height: 38, borderColor: "var(--destructive)", color: "var(--destructive)" }}
+                        onClick={() => setConfirmAction({ type: "reject", id: r.id })}
+                      >
+                        <XCircle size={13} /> Decline
+                      </Button>
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* Actions / status */}
-              <div className="flex items-center gap-2 shrink-0">
-                {r.status === "Pending" ? (
-                  <>
-                    <Button
-                      size="sm"
-                      className="gap-1.5 font-semibold text-[13px]"
-                      style={{ height: 36 }}
-                      onClick={() => setConfirmAction({ type: "accept", id: r.id })}
-                    >
-                      <CheckCircle size={13} /> Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 font-semibold text-[13px]"
-                      style={{ height: 36, borderColor: "var(--destructive)", color: "var(--destructive)" }}
-                      onClick={() => setConfirmAction({ type: "reject", id: r.id })}
-                    >
-                      <XCircle size={13} /> Decline
-                    </Button>
-                  </>
-                ) : (
-                  <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold">
-                    {r.status}
-                  </Badge>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -547,10 +553,10 @@ export default function MemberMentorshipPage() {
           BECOME A MENTOR
       ══════════════════════════════════════════════ */}
       {view === "become" && (
-        <div className="max-w-lg">
+        <div className="max-w-[1100px] mx-auto">
           {myProfile && myProfile.status !== "Rejected" ? (
             <div
-              className="card p-6 text-center space-y-3"
+              className="card p-8 text-center space-y-3 max-w-md mx-auto"
             >
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
@@ -571,6 +577,7 @@ export default function MemberMentorshipPage() {
               )}
             </div>
           ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-5 items-start">
             <div
               className="card p-5 sm:p-6 space-y-5"
             >
@@ -678,6 +685,45 @@ export default function MemberMentorshipPage() {
                     : "Submit application"}
                 </Button>
               </div>
+            </div>
+
+            {/* Why mentor sidebar */}
+            <div className="card p-5 sm:p-6 space-y-5" style={{ background: "var(--secondary)" }}>
+              <div>
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-3"
+                  style={{ background: "var(--color-background-info)" }}
+                >
+                  <HeartHandshake size={20} style={{ color: "var(--primary)" }} />
+                </div>
+                <h3 className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Why alumni mentor
+                </h3>
+                <p className="text-[13px] mt-1 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                  A few hours of your time can change the direction of a fellow graduate&apos;s career.
+                </p>
+              </div>
+              <ul className="space-y-3.5">
+                <li className="flex items-start gap-2.5">
+                  <GraduationCap size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
+                  <span className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                    Guide recent graduates through career decisions, further study, or industry moves.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Sparkles size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
+                  <span className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                    Set your own capacity — you choose how many mentees to take on at once.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Users size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
+                  <span className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                    Your contact details stay private until you personally accept a mentee&apos;s request.
+                  </span>
+                </li>
+              </ul>
+            </div>
             </div>
           )}
         </div>
