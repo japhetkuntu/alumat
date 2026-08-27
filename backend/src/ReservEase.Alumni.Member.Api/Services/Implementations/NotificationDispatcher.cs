@@ -19,11 +19,9 @@ public class NotificationDispatcher(
     ICurrentTenantService currentTenant,
     ISmsService smsService,
     IWhatsAppService whatsAppService,
+    IConfiguration configuration,
     ILogger<NotificationDispatcher> logger) : INotificationDispatcher
 {
-    private const string PortalBaseUrl = "http://localhost:3001";
-    private const string AdminPortalBaseUrl = "http://localhost:3000";
-
     /// <summary>
     /// WhatsApp is wired up end to end but switched off for the pilot — SMS
     /// and email only for now. Flip this back on (and re-surface the
@@ -32,26 +30,45 @@ public class NotificationDispatcher(
     private const bool WhatsAppEnabled = false;
 
     /// <summary>
-    /// Arkesel sender IDs are fixed and pre-registered per platform account —
-    /// an institution's own name can't become the "from" field without a
-    /// separate registration process outside this codebase — so
-    /// personalization happens in the message body instead: every SMS is
-    /// prefixed with the institution's name, cached per-dispatch so a batch
-    /// send (e.g. a class-note alert to a whole year group) only queries it
-    /// once rather than once per recipient.
+    /// The current institution, fetched once per dispatch and reused for the
+    /// SMS name-prefix, the member portal URL, and the admin portal URL below
+    /// — avoids querying it once per recipient in a batch fan-out.
     /// </summary>
-    private string? cachedInstitutionName;
-    private bool institutionNameLoaded;
-    private async Task<string?> GetInstitutionNameAsync()
+    private Institution? cachedInstitution;
+    private bool institutionLoaded;
+    private async Task<Institution?> GetInstitutionAsync()
     {
-        if (institutionNameLoaded) return cachedInstitutionName;
-        institutionNameLoaded = true;
+        if (institutionLoaded) return cachedInstitution;
+        institutionLoaded = true;
         if (!string.IsNullOrEmpty(currentTenant.InstitutionId))
-        {
-            var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-            cachedInstitutionName = institution?.Name;
-        }
-        return cachedInstitutionName;
+            cachedInstitution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        return cachedInstitution;
+    }
+
+    private async Task<string?> GetInstitutionNameAsync() => (await GetInstitutionAsync())?.Name;
+
+    /// <summary>
+    /// Builds this institution's live subdomain URL from its slug + the
+    /// configured base domain instead of a hardcoded localhost literal.
+    /// Falls back to an empty string if the domain isn't configured, rather
+    /// than ever pointing a notification at a dev-only address in production.
+    /// </summary>
+    private async Task<string> GetMemberPortalUrlAsync()
+    {
+        var institution = await GetInstitutionAsync();
+        var domain = configuration["PlatformBaseDomain"];
+        return institution is null || string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{institution.Slug}.{domain}";
+    }
+
+    /// <summary>
+    /// Institution admins get linked to their own institution's admin portal,
+    /// which lives on the separate "admin." subdomain — see AdminBaseDomain.
+    /// </summary>
+    private async Task<string> GetAdminPortalUrlAsync()
+    {
+        var institution = await GetInstitutionAsync();
+        var domain = configuration["AdminBaseDomain"];
+        return institution is null || string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{institution.Slug}.{domain}";
     }
 
     /// <summary>
@@ -98,6 +115,7 @@ public class NotificationDispatcher(
             foreach (var m in members)
                 await SendExternalAlertsAsync(m, prefsById.GetValueOrDefault(m.Id), alertMessage);
 
+            var portalUrl = await GetMemberPortalUrlAsync();
             var notifications = members.Select(m => new Notification
             {
                 RecipientId = m.Id,
@@ -107,7 +125,7 @@ public class NotificationDispatcher(
                 Type = "ClassNoteAlert",
                 RelatedEntityId = note.Id,
                 RelatedEntityType = "ClassNote",
-                ActionUrl = $"{PortalBaseUrl}/class-notes",
+                ActionUrl = $"{portalUrl}/class-notes",
                 CreatedBy = "system",
             }).ToList();
 
@@ -129,6 +147,7 @@ public class NotificationDispatcher(
         {
             var admins = (await adminRepo.GetAllAsync(a => !a.IsDisabled)).ToList();
             var body = $"{memberName} ({memberEmail}) submitted a payment of GHS {amount:N2} for the campaign \"{campaignTitle}\". Please review and confirm.";
+            var portalUrl = await GetAdminPortalUrlAsync();
 
             var notifications = admins.Select(a => new Notification
             {
@@ -139,7 +158,7 @@ public class NotificationDispatcher(
                 Type = "PaymentReceived",
                 RelatedEntityId = contributionId,
                 RelatedEntityType = "Contribution",
-                ActionUrl = $"{AdminPortalBaseUrl}/contributions",
+                ActionUrl = $"{portalUrl}/contributions",
                 CreatedBy = "system",
             }).ToList();
 
@@ -170,7 +189,7 @@ public class NotificationDispatcher(
                 Type = "ContributionConfirmed",
                 RelatedEntityId = contributionId,
                 RelatedEntityType = "Contribution",
-                ActionUrl = $"{PortalBaseUrl}/contributions",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/contributions",
                 CreatedBy = "system",
             };
 
@@ -209,7 +228,7 @@ public class NotificationDispatcher(
                 Type = "ContributionRejected",
                 RelatedEntityId = contributionId,
                 RelatedEntityType = "Contribution",
-                ActionUrl = $"{PortalBaseUrl}/contributions",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/contributions",
                 CreatedBy = "system",
             };
 

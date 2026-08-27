@@ -128,7 +128,7 @@ export default function CampaignDetailPage() {
         <Link href={backLink}>
           <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-bold group">
             <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            {campaign.isMembershipCampaign ? "Membership" : "Fundraisers"}
+            {campaign.isMembershipCampaign ? "Dues" : "Fundraisers"}
           </Button>
         </Link>
         <ChevronRight size={14} className="text-muted-foreground/50" />
@@ -408,11 +408,11 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
-                  <Input placeholder="e.g. Membership Renewal 2026" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                  <Input placeholder="e.g. Dues 2026" value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Membership Year</Label>
-                  <Input type="number" value={membershipYear} onChange={(e) => { const y = Number(e.target.value); setMembershipYear(y); setTitle(`Membership Renewal ${y}`); }} required />
+                  <Label>Dues Year</Label>
+                  <Input type="number" value={membershipYear} onChange={(e) => { const y = Number(e.target.value); setMembershipYear(y); setTitle(`Dues ${y}`); }} required />
                   <p className="text-xs text-muted-foreground">
                     {membershipYear === currentYear
                       ? "Current year — members must pay this to stay active."
@@ -424,7 +424,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
               </div>
               <div className="space-y-2">
                 <Label>Description (optional)</Label>
-                <Textarea placeholder="Describe the purpose of this membership renewal..." rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+                <Textarea placeholder="Describe the purpose of this dues period..." rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -548,7 +548,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                       </div>
                       {isMembershipCampaign && (
                         <div className="flex items-center gap-2">
-                          <Label className="min-w-max">Membership Year</Label>
+                          <Label className="min-w-max">Dues Year</Label>
                           <Input type="number" value={membershipYear} onChange={(e) => setMembershipYear(Number(e.target.value))} className="w-32" />
                         </div>
                       )}

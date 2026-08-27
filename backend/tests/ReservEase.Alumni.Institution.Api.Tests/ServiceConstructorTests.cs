@@ -56,10 +56,10 @@ public class ServiceConstructorTests
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
             redisService.Object, tokenOptions, mailtrapOptions, emailService.Object, new NullLogger<InstitutionAuthService>());
         var __ = new InstitutionStaffService(adminRepo.Object, new NullLogger<InstitutionStaffService>());
-        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<CampaignService>());
-        var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<EventService>());
+        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<CampaignService>());
+        var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<EventService>());
         var _____ = new ForumService(forumCategoryRepo.Object, forumThreadRepo.Object, new NullLogger<ForumService>());
-        var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, new NullLogger<JobService>());
+        var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<JobService>());
         var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, currentTenant.Object, new NullLogger<MemberManagementService>());
         var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, new NullLogger<MentorshipService>());
         var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, new NullLogger<NewsService>());

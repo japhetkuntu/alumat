@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { BrandPreview } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import {
-  getInstitution, updateInstitutionBranding, updateInstitutionPlan, updateInstitutionStatus,
+  getInstitution, updateInstitutionBranding, updateInstitutionStatus,
   updateInstitutionFeatures, getFeatureCatalog,
   updateInstitutionPayments, getInstitutionRevenue,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -128,30 +128,6 @@ export default function InstitutionDetailPage() {
       invalidate();
     },
     onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const [planOpen, setPlanOpen] = useState(false);
-  const [planForm, setPlanForm] = useState({ plan: "", memberLimit: "", storageLimitGb: "" });
-  const [planError, setPlanError] = useState<string | null>(null);
-  const planMutation = useMutation({
-    mutationFn: () =>
-      updateInstitutionPlan(
-        id,
-        planForm.plan,
-        planForm.memberLimit ? Number(planForm.memberLimit) : undefined,
-        planForm.storageLimitGb ? Number(planForm.storageLimitGb) : undefined
-      ),
-    onSuccess: () => {
-      toast.success("Capacity limits updated");
-      invalidate();
-      setPlanOpen(false);
-      setPlanError(null);
-    },
-    onError: (e) => {
-      const msg = handleApiError(e);
-      setPlanError(msg);
-      toast.error(msg);
-    },
   });
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -790,16 +766,6 @@ export default function InstitutionDetailPage() {
               <Limit label="Members" used={inst.memberCount} limit={inst.memberLimit} />
               <Limit label="Storage" used={inst.storageUsedGb} limit={inst.storageLimitGb} unit=" GB" />
             </div>
-            <Button
-              variant="outline"
-              className="mt-2"
-              onClick={() => {
-                setPlanForm({ plan: inst.plan, memberLimit: String(inst.memberLimit), storageLimitGb: String(inst.storageLimitGb) });
-                setPlanOpen(true);
-              }}
-            >
-              Change limits
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -868,33 +834,6 @@ export default function InstitutionDetailPage() {
           </Button>
         </div>
       )}
-
-      <Dialog open={planOpen} onOpenChange={(o) => { setPlanOpen(o); if (!o) setPlanError(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update capacity limits</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Member limit</Label>
-                <Input type="number" value={planForm.memberLimit} onChange={(e) => setPlanForm((f) => ({ ...f, memberLimit: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Storage GB</Label>
-                <Input type="number" value={planForm.storageLimitGb} onChange={(e) => setPlanForm((f) => ({ ...f, storageLimitGb: e.target.value }))} />
-              </div>
-            </div>
-            <FormError message={planError} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPlanOpen(false)}>Cancel</Button>
-            <Button onClick={() => planMutation.mutate()} disabled={planMutation.isPending || !planForm.plan}>
-              {planMutation.isPending ? "Saving…" : "Save limits"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o) setInviteError(null); }}>
         <DialogContent>

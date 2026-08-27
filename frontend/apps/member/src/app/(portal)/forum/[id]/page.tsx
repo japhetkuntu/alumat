@@ -60,7 +60,7 @@ export default function ThreadDetailPage() {
   /* ── Loading ── */
   if (threadLoading || postsLoading) {
     return (
-      <div className="p-6 lg:p-10 max-w-3xl mx-auto space-y-6 animate-pulse">
+      <div className="p-6 lg:p-10 max-w-[1400px] mx-auto space-y-6 animate-pulse">
         <div className="h-6 w-24 rounded-lg" style={{ background: "var(--secondary)" }} />
         <CardSkeleton />
         <CardSkeleton />
@@ -69,7 +69,7 @@ export default function ThreadDetailPage() {
   }
 
   if (!thread) return (
-    <div className="p-6 lg:p-10 max-w-3xl mx-auto">
+    <div className="p-6 lg:p-10 max-w-[1400px] mx-auto">
       <button
         onClick={() => router.push("/forum")}
         className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-6 transition-colors hover:underline"
@@ -86,7 +86,7 @@ export default function ThreadDetailPage() {
   );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-20 space-y-6 sm:space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20 space-y-6 sm:space-y-8">
 
       {/* ── Nav ── */}
       <button

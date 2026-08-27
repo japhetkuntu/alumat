@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard, Calendar, TrendingUp, ChevronRight, Award,
-  AlertTriangle, CheckCircle2, Clock, ArrowRight, Heart,
-  Briefcase, Star, Sparkles, UsersRound,
+  AlertTriangle, CheckCircle2, Clock, ArrowRight,
+  Briefcase, Star, UsersRound,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -16,7 +16,6 @@ import { PageHeader } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { formatDistanceToNow } from "date-fns";
 import { cn } from "@alumni/ui";
 import {
   getMyCampaigns,
@@ -26,10 +25,8 @@ import {
   getMyMembershipStatus,
   getMyCurrentYearUnpaidMembershipCampaigns,
   getMyProfile,
-  getClassNotes,
   getJobs,
   getSpotlights,
-  toggleClassNoteLike,
   getMyCommunities,
 } from "@/lib/member-api";
 import type { Community } from "@/lib/member-api";
@@ -193,6 +190,7 @@ function ArrearsBanner({
 }: {
   membershipStatus: MembershipStatusResponse | undefined;
 }) {
+  if (membershipStatus?.activePolicy === "ApprovedOnly") return null;
   if (!membershipStatus?.isMembershipActive || !membershipStatus?.hasArrears) return null;
   return (
     <div className="rounded-2xl p-5 sm:p-6 space-y-4 bg-warning/10 border border-warning/30">
@@ -367,56 +365,6 @@ function PulseEmpty({ label }: { label: string }) {
   );
 }
 
-function ClassNotesPulse() {
-  const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["m-dash-class-notes"],
-    queryFn: () => getClassNotes(1, 3),
-  });
-  const likeMut = useMutation({
-    mutationFn: (id: string) => toggleClassNoteLike(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["m-dash-class-notes"] }),
-  });
-  const notes = data?.results ?? [];
-
-  return (
-    <PulseCard icon={Sparkles} title="Class notes" href="/class-notes">
-      {isLoading ? (
-        <div className="space-y-3 py-1">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-10 rounded-lg animate-pulse bg-secondary" />)}</div>
-      ) : notes.length === 0 ? (
-        <PulseEmpty label="No posts yet — be the first to share an update." />
-      ) : (
-        notes.map((n) => (
-          <div key={n.id} className="flex gap-3 p-2.5 rounded-xl transition-colors hover:bg-secondary">
-            <UserAvatar name={n.authorName ?? "Member"} size="sm" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] leading-snug" style={{ color: "var(--foreground)" }}>
-                <span className="font-semibold">{n.authorName ?? "Member"}</span>{" "}
-                <span style={{ color: "var(--muted-foreground)" }}>{n.content}</span>
-              </p>
-              <div className="flex items-center gap-3 mt-1">
-                <button
-                  onClick={() => likeMut.mutate(n.id)}
-                  className={cn(
-                    "flex items-center gap-1 text-[11.5px] font-semibold transition-colors",
-                    n.isLikedByMe ? "text-destructive" : "hover:text-destructive"
-                  )}
-                  style={{ color: n.isLikedByMe ? undefined : "var(--muted-foreground)" }}
-                >
-                  <Heart size={11} className={cn(n.isLikedByMe && "fill-current")} />
-                  {n.likeCount > 0 ? n.likeCount : "Like"}
-                </button>
-                <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                  {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-    </PulseCard>
-  );
-}
 
 function JobsPulse() {
   const { data, isLoading } = useQuery({
@@ -822,8 +770,7 @@ export default function MemberDashboardPage() {
             Since you last checked in
           </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <ClassNotesPulse />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <JobsPulse />
           <SpotlightPulse />
         </div>

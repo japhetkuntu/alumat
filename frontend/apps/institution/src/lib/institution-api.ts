@@ -129,6 +129,8 @@ export interface InstitutionProfileResponse {
   memberAuthHeadline?: string | null;
   memberAuthSubtext?: string | null;
   requireStudentId: boolean;
+  /** "DuesRequired" (default) — active only once dues are paid. "ApprovedOnly" — any approved member is active regardless of dues. */
+  memberActivePolicy: "DuesRequired" | "ApprovedOnly";
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
   /** Shareable Member Portal URL for this institution — null if the backend has no MemberPortalBaseDomain configured. */
@@ -147,6 +149,16 @@ export async function getInstitutionProfile(): Promise<InstitutionProfileRespons
 /** The one piece of content institution admins can edit themselves — everything else is platform-staff-only. */
 export async function updateLandingContent(landingPageStories: LandingPageStory[], newsBanner: NewsBanner | null): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/landing-content", { landingPageStories, newsBanner });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** How "active member" status is determined — this institution's own operational choice. */
+export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly"): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -911,5 +923,28 @@ export async function getBroadcastRecipientCount(filter: BroadcastFilter): Promi
 
 export async function sendBroadcast(body: SendBroadcastBody): Promise<BroadcastResult> {
   const res = await institutionClient.post<ApiResponse<BroadcastResult>>("/broadcast", body);
+  return res.data.data!;
+}
+
+// ─── Support tickets ─────────────────────────────────────────────────────
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  severity: string;
+  status: string;
+  message: string;
+  internalNote: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export async function getSupportTickets(): Promise<SupportTicket[]> {
+  const res = await institutionClient.get<ApiResponse<SupportTicket[]>>("/support-tickets");
+  return res.data.data ?? [];
+}
+
+export async function createSupportTicket(body: { subject: string; severity?: string; message: string }): Promise<SupportTicket> {
+  const res = await institutionClient.post<ApiResponse<SupportTicket>>("/support-tickets", body);
   return res.data.data!;
 }

@@ -6,6 +6,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -14,6 +15,7 @@ public class InstitutionSpotlightService(
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<InstitutionSpotlightService> logger) : IInstitutionSpotlightService
 {
     public async Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetSpotlightsAsync(int page, int pageSize, string? status)
@@ -84,7 +86,7 @@ public class InstitutionSpotlightService(
 
             await spotlightRepo.AddAsync(spotlight);
 
-            notificationActor.Tell(new DispatchSpotlightAlertCommand(spotlight));
+            notificationActor.Tell(new DispatchSpotlightAlertCommand(currentTenant.InstitutionId!, spotlight));
 
             var dto = spotlight.ToDto();
             dto.MemberGraduationYear = member.GraduationYear;

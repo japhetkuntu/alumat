@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Eye, EyeOff, ArrowLeft, CheckCircle2, Clock,
@@ -52,7 +52,6 @@ function buildSchema(requireStudentId: boolean) {
       studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
       graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
       departmentId: z.string().optional(),
-      referralCode: z.string().optional(),
       password: z.string().min(8, "Password must be at least 8 characters"),
       confirmPassword: z.string(),
     })
@@ -301,7 +300,6 @@ function PasswordInput({
    ───────────────────────────────────────────────────────────────────────── */
 function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState<Step>("form");
@@ -317,7 +315,6 @@ function RegisterForm() {
   // syncs from any previously-saved workspace slug once mounted client-side.
   const [workspaceSlug, setWorkspaceSlug] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const refCode = searchParams.get("ref") ?? "";
 
   useEffect(() => {
     if (SHOW_WORKSPACE_FIELD) {
@@ -382,7 +379,6 @@ function RegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { referralCode: refCode },
   });
 
   async function onSubmit(data: FormData) {
@@ -615,20 +611,6 @@ function RegisterForm() {
                         options={departments.map((d) => ({ value: d.id, label: d.name }))}
                       />
                     </div>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="referralCode" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Referral code{" "}
-                    <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
-                  </Label>
-                  <Input id="referralCode" placeholder="e.g. KWAMEN-A1B2C3"
-                    readOnly={!!refCode} className={cn("h-11 text-[14px]", refCode && "bg-secondary")}
-                    {...register("referralCode")} />
-                  {refCode && (
-                    <p className="text-[12px]" style={{ color: "var(--primary)" }}>
-                      You were referred by a fellow alumnus.
-                    </p>
                   )}
                 </div>
                 <div className="flex gap-3 mt-1">

@@ -176,15 +176,6 @@ export async function updateInstitutionStatus(id: string, status: string) {
   return res.data.data!;
 }
 
-export async function updateInstitutionPlan(id: string, plan: string, memberLimit?: number, storageLimitGb?: number) {
-  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/plan`, {
-    plan,
-    memberLimit,
-    storageLimitGb,
-  });
-  return res.data.data!;
-}
-
 export interface UpdateInstitutionBrandingRequest {
   portalName: string;
   tagline?: string;

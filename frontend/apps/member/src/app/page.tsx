@@ -91,10 +91,9 @@ const FEATURES = [
   { icon: Briefcase,  label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true },
   { icon: Users,      label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora." },
   { icon: CreditCard, label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support." },
-  { icon: BookOpen,   label: "Class Notes",   title: "Keep your Year Group active",   desc: "Share milestones, discuss dues, and organize your specific graduating class under one private feed." },
   { icon: Globe,      label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions." },
   { icon: Heart,      label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true },
-  { icon: Trophy,     label: "Roll of Honour", title: "Celebrate the wins",           desc: "A virtual roll of honour recognizing old students making waves globally and giving back to the school." },
+  { icon: Trophy,     label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school." },
   { icon: Bell,       label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you." },
 ];
 

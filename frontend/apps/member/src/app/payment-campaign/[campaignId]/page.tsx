@@ -345,7 +345,7 @@ export default function PublicCampaignContributionPage() {
                             <Lock size={15} className="text-muted-foreground shrink-0" />
                             <span className="text-xl font-black text-foreground">{formatCurrency(campaign.amountPerMember)}</span>
                           </div>
-                          <p className="mt-1.5 text-[11px] text-muted-foreground">Fixed membership fee set by the association.</p>
+                          <p className="mt-1.5 text-[11px] text-muted-foreground">Fixed dues amount set by the association.</p>
                         </div>
                       ) : (
                         <div className="relative">

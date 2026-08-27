@@ -107,7 +107,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
         {/* Title */}
         {!featured && (
           <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
-            Roll of Honour
+            Spotlight
           </p>
         )}
         <h3
@@ -163,7 +163,7 @@ function SubmitDrawer({
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
         onClick={onClose} />
       <div
-        className="relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom-4 duration-300 bottom-sheet-scroll-90"
         style={{ background: "var(--background)", border: "1px solid var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.2)" }}
       >
         {/* Handle */}
@@ -285,8 +285,8 @@ export default function SpotlightsPage() {
       {/* ── Header ── */}
       <PageHeader
         eyebrow="Stories that stay with us"
-        title="Alumni Roll of Honour"
-        description="Celebrate the wins. A virtual roll of honour recognizing old students making waves globally and giving back to the school."
+        title="Spotlight"
+        description="Celebrate the wins. A spotlight on old students making waves globally and giving back to the school."
       >
         <Button
           onClick={() => setShowSubmit(true)}

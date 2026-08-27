@@ -3,9 +3,11 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -14,6 +16,8 @@ public class SpotlightService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
+    IAlumniPgRepository<Institution> institutionRepo,
+    ICurrentTenantService currentTenant,
     ILogger<SpotlightService> logger) : ISpotlightService
 {
     public async Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetApprovedSpotlightsAsync(int page, int pageSize)
@@ -84,22 +88,34 @@ public class SpotlightService(
             if (memberEntity is null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<SpotlightDto>("Member not found.");
 
-            // Compute active membership dynamically: paid all campaigns from grad year through current year
+            // Compute dues-paid dynamically: paid all campaigns from grad year through current year
             var currentYear = DateTime.UtcNow.Year;
             var requiredCampaigns = await campaignRepo.GetAllAsync(c =>
                 c.IsMembershipCampaign && c.MembershipYear.HasValue
                 && c.MembershipYear.Value >= memberEntity.GraduationYear
                 && c.MembershipYear.Value <= currentYear);
+            bool duesRequirementMet;
             if (requiredCampaigns.Any())
             {
                 var requiredIds = requiredCampaigns.Select(c => c.Id).ToHashSet();
                 var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Confirmed");
                 var paidCount = confirmed.Count(c => requiredIds.Contains(c.CampaignId));
-                if (paidCount < requiredIds.Count)
-                    return ApiResponseExtensions.ToBadRequestApiResponse<SpotlightDto>("Active membership is required to submit a spotlight.");
+                duesRequirementMet = paidCount >= requiredIds.Count;
             }
-            else if (!memberEntity.IsMembershipActive)
-                return ApiResponseExtensions.ToBadRequestApiResponse<SpotlightDto>("Active membership is required to submit a spotlight.");
+            else
+            {
+                duesRequirementMet = memberEntity.IsMembershipActive;
+            }
+
+            var institutionForPolicy = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var isActive = MembershipActivityCalculator.ResolveActive(institutionForPolicy?.MemberActivePolicy, memberEntity.Status, duesRequirementMet);
+            if (!isActive)
+            {
+                var message = institutionForPolicy?.MemberActivePolicy == MembershipActivityCalculator.ApprovedOnlyPolicy
+                    ? "Your membership must be approved to submit a spotlight."
+                    : "Active membership is required to submit a spotlight.";
+                return ApiResponseExtensions.ToBadRequestApiResponse<SpotlightDto>(message);
+            }
 
             var spotlight = new Spotlight
             {

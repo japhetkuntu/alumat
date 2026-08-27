@@ -51,7 +51,6 @@ export default function AdminMembersPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<MemberStatus | "">("");
-  const [compactRows, setCompactRows] = useState(false);
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<ModalState>(null);
   const [reasonText, setReasonText] = useState("");
@@ -134,8 +133,8 @@ export default function AdminMembersPage() {
   const members = data?.results ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = data?.totalPages ?? 1;
-  const densityCellClass = compactRows ? "py-2" : "py-2.5";
-  const densityRowClass = compactRows ? "h-[46px]" : "h-[52px]";
+  const densityCellClass = "py-2.5";
+  const densityRowClass = "h-[52px]";
   const actionFocusClass = "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-1";
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -219,14 +218,6 @@ export default function AdminMembersPage() {
             </button>
           );
         })}
-        <button
-          onClick={() => setCompactRows((v) => !v)}
-          className="ml-auto text-[12.5px] text-muted-foreground hover:text-foreground font-medium"
-        >
-          <span className={cn(!compactRows && "text-primary font-bold")}>Comfortable</span>
-          {" · "}
-          <span className={cn(compactRows && "text-primary font-bold")}>Compact</span>
-        </button>
       </div>
 
       <Card className="overflow-hidden">

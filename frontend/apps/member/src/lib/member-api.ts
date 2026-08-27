@@ -80,6 +80,8 @@ export interface MembershipStatusResponse {
   hasArrears: boolean;
   arrearsCount: number;
   arrearsYears: number[];
+  /** "DuesRequired" (default) or "ApprovedOnly" — the institution's active-member policy. */
+  activePolicy: "DuesRequired" | "ApprovedOnly";
 }
 
 export async function getMyProfile(): Promise<MemberProfileResponse> {
@@ -389,7 +391,7 @@ export async function getThreadPosts(threadId: string, page = 1, pageSize = 30):
 }
 
 export async function getForumThread(threadId: string): Promise<ForumThread> {
-  const res = await memberClient.get(`/forum/threads/${threadId}/posts`);
+  const res = await memberClient.get(`/forum/threads/${threadId}`);
   return res.data.data ?? res.data;
 }
 
@@ -412,7 +414,14 @@ export async function getMentors(page = 1, pageSize = 20, search?: string): Prom
   return res.data.data!;
 }
 
-export interface RegisterAsMentorBody { area: string; bio?: string; maxMentees?: number; }
+export interface RegisterAsMentorBody {
+  area: string;
+  bio?: string;
+  maxMentees?: number;
+  contactLinkedInUrl?: string;
+  contactWhatsAppNumber?: string;
+  contactPhoneNumber?: string;
+}
 
 export async function registerAsMentor(body: RegisterAsMentorBody) {
   const res = await memberClient.post("/mentorship/mentor-profile", body);

@@ -27,8 +27,6 @@ import {
   X,
   Trophy,
   Star,
-  UserPlus,
-  StickyNote,
   UsersRound,
   Globe,
   CalendarDays,
@@ -63,7 +61,6 @@ const navGroups: { section: string | null; items: { href: string; label: string;
   {
     section: "Community",
     items: [
-      { href: "/class-notes", label: "Class Notes", icon: StickyNote },
       { href: "/forum", label: "Forum", icon: MessageSquare },
       { href: "/communities", label: "Communities", icon: UsersRound },
       { href: "/events", label: "Events", icon: Calendar },
@@ -75,8 +72,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     section: "Recognition",
     items: [
       { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-      { href: "/spotlights", label: "Roll of Honour", icon: Star },
-      { href: "/referrals", label: "Referrals", icon: UserPlus },
+      { href: "/spotlights", label: "Spotlight", icon: Star },
     ],
   },
   {
@@ -104,8 +100,6 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/resources": "Resources",
   "/leaderboard": "Leaderboard",
   "/spotlights": "Spotlights",
-  "/referrals": "Referrals",
-  "/class-notes": "ClassNotes",
 };
 
 interface NavThemeData {

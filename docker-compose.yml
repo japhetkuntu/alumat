@@ -161,6 +161,7 @@ services:
         Host=postgres;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};SearchPath=alumni
       PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      AdminBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__MemberRedisConfig__ConnectionString: redis:6379
       Redis__MemberRedisConfig__DbNumber: 1

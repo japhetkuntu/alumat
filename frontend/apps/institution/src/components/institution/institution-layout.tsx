@@ -19,7 +19,7 @@ import {
   ShieldCheck,
   Star,
   Bell,
-  Wallet,
+  LifeBuoy,
   X,
   Layers,
   Users2,
@@ -59,7 +59,7 @@ const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { label: "Money", isHeader: true },
   { href: "/campaigns", label: "Fundraisers", icon: Megaphone },
-  { href: "/membership", label: "Membership", icon: CreditCard },
+  { href: "/membership", label: "Dues", icon: CreditCard },
   { href: "/contributions", label: "Contributions", icon: CreditCard },
   { label: "People", isHeader: true },
   { href: "/members", label: "Members", icon: Users },
@@ -79,7 +79,7 @@ const baseNavItems = [
   { href: "/broadcast", label: "Broadcast", icon: Radio },
   { label: "Institution", isHeader: true },
   { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/billing", label: "Billing", icon: Wallet },
+  { href: "/support", label: "Support", icon: LifeBuoy },
 ];
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {

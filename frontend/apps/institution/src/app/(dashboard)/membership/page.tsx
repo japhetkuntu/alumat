@@ -29,7 +29,7 @@ export default function AdminMembershipPage() {
 
   // Form state for creating membership campaign
   const [form, setForm] = useState({
-    title: `Membership Renewal ${currentYear}`,
+    title: `Dues ${currentYear}`,
     description: "",
     amountPerMember: "",
     pensionerAmountPerMember: "",
@@ -102,9 +102,9 @@ export default function AdminMembershipPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setShowCreate(false);
-      toast.success("Membership renewal created");
+      toast.success("Dues period created");
       setBannerImage(null);
-      setForm((prev) => ({ ...prev, title: `Membership Renewal ${prev.membershipYear}`, description: "", amountPerMember: "", pensionerAmountPerMember: "", deadline: "" }));
+      setForm((prev) => ({ ...prev, title: `Dues ${prev.membershipYear}`, description: "", amountPerMember: "", pensionerAmountPerMember: "", deadline: "" }));
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -114,7 +114,7 @@ export default function AdminMembershipPage() {
       {/* Header */}
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Membership Renewal</h1>
+          <h1 className="text-[25px] font-bold m-0">Dues</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5 max-w-2xl">
             Recurring dues cycles that determine active membership. Members must pay the <strong>current year&apos;s</strong> dues to remain active — future years are optional early payment.
           </p>
@@ -155,18 +155,18 @@ export default function AdminMembershipPage() {
       {showCreate && isSuperAdmin && (
         <Card className="animate-in fade-in slide-in-from-top-4 duration-500 border-primary/30">
           <CardHeader>
-            <CardTitle className="text-base">Create Membership Renewal</CardTitle>
+            <CardTitle className="text-base">Create Dues Period</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Title</Label>
-                  <Input placeholder="e.g. Membership Renewal 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
+                  <Input placeholder="e.g. Dues 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Membership Year</Label>
-                  <Input type="number" value={form.membershipYear} onChange={(e) => { const y = Number(e.target.value); f("membershipYear", y); f("title", `Membership Renewal ${y}`); }} required />
+                  <Label>Dues Year</Label>
+                  <Input type="number" value={form.membershipYear} onChange={(e) => { const y = Number(e.target.value); f("membershipYear", y); f("title", `Dues ${y}`); }} required />
                   <p className="text-xs text-muted-foreground">
                     {form.membershipYear === currentYear
                       ? "Current year — members must pay this to stay active."
@@ -178,7 +178,7 @@ export default function AdminMembershipPage() {
               </div>
               <div className="space-y-2">
                 <Label>Description (optional)</Label>
-                <Textarea placeholder="Describe the purpose of this membership renewal..." rows={2} value={form.description} onChange={(e) => f("description", e.target.value)} />
+                <Textarea placeholder="Describe the purpose of this dues period..." rows={2} value={form.description} onChange={(e) => f("description", e.target.value)} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -260,7 +260,7 @@ export default function AdminMembershipPage() {
               <p className="text-muted-foreground font-medium">No membership dues for {currentYear} yet.</p>
               <p className="text-sm text-muted-foreground">Members will retain their previous active status until the current-year dues are created.</p>
               {isSuperAdmin && (
-                <Button onClick={() => { setForm((prev) => ({ ...prev, membershipYear: currentYear, title: `Membership Renewal ${currentYear}` })); setShowCreate(true); }} variant="outline">
+                <Button onClick={() => { setForm((prev) => ({ ...prev, membershipYear: currentYear, title: `Dues ${currentYear}` })); setShowCreate(true); }} variant="outline">
                   <Plus size={14} />Create {currentYear} Dues
                 </Button>
               )}
@@ -293,7 +293,7 @@ export default function AdminMembershipPage() {
               <CardContent className="p-6 text-center">
                 <p className="text-muted-foreground font-medium">No future membership dues created.</p>
                 {isSuperAdmin && (
-                  <Button onClick={() => { setForm((prev) => ({ ...prev, membershipYear: currentYear + 1, title: `Membership Renewal ${currentYear + 1}` })); setShowCreate(true); }} variant="outline" className="mt-3">
+                  <Button onClick={() => { setForm((prev) => ({ ...prev, membershipYear: currentYear + 1, title: `Dues ${currentYear + 1}` })); setShowCreate(true); }} variant="outline" className="mt-3">
                     <Plus size={14} />Create {currentYear + 1} Dues
                   </Button>
                 )}

@@ -197,7 +197,7 @@ export default function MemberDirectoryPage() {
 
           {/* Panel */}
           <div
-            className="relative z-[61] w-full sm:w-[360px] sm:m-4 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 duration-300"
+            className="relative z-[61] w-full sm:w-[360px] sm:m-4 bottom-sheet-scroll rounded-t-2xl sm:rounded-2xl border animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 duration-300"
             style={{ background: "var(--background)", borderColor: "var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.15)" }}
             onClick={e => e.stopPropagation()}
           >

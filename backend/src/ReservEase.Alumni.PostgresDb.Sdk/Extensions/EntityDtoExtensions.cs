@@ -137,7 +137,12 @@ public static class EntityDtoExtensions
         SharedByMemberId = c.SharedByMemberId,
     };
 
-    public static MentorProfileDto ToDto(this MentorProfile p) => new()
+    /// <summary>
+    /// includeContact defaults to false — a mentor's contact info must never
+    /// leak into the public browse list. Only pass true for a mentor viewing
+    /// their own profile (they already know their own contact info).
+    /// </summary>
+    public static MentorProfileDto ToDto(this MentorProfile p, bool includeContact = false) => new()
     {
         Id = p.Id,
         MemberId = p.MemberId,
@@ -150,9 +155,17 @@ public static class EntityDtoExtensions
         Status = p.Status,
         YearGroups = p.YearGroups,
         CreatedAt = p.CreatedAt,
+        ContactLinkedInUrl = includeContact ? p.ContactLinkedInUrl : null,
+        ContactWhatsAppNumber = includeContact ? p.ContactWhatsAppNumber : null,
+        ContactPhoneNumber = includeContact ? p.ContactPhoneNumber : null,
     };
 
-    public static MentorshipRequestDto ToDto(this MentorshipRequest r) => new()
+    /// <summary>
+    /// includeContact defaults to false — a mentee must never see the
+    /// matched mentor's contact info before their request is Accepted. Only
+    /// GetMyRequestsAsync passes true, and only when r.Status == "Accepted".
+    /// </summary>
+    public static MentorshipRequestDto ToDto(this MentorshipRequest r, bool includeContact = false) => new()
     {
         Id = r.Id,
         MentorProfileId = r.MentorProfileId,
@@ -164,6 +177,9 @@ public static class EntityDtoExtensions
         Message = r.Message,
         Status = r.Status,
         CreatedAt = r.CreatedAt,
+        ContactLinkedInUrl = includeContact ? r.MentorProfile?.ContactLinkedInUrl : null,
+        ContactWhatsAppNumber = includeContact ? r.MentorProfile?.ContactWhatsAppNumber : null,
+        ContactPhoneNumber = includeContact ? r.MentorProfile?.ContactPhoneNumber : null,
     };
 
     public static ForumCategoryDto ToDto(this ForumCategory c) => new()

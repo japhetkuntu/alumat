@@ -73,14 +73,6 @@ public class UpdateInstitutionStatusRequest
     public string Status { get; set; } = string.Empty; // Trial, Active, Suspended, Cancelled
 }
 
-public class UpdateInstitutionPlanRequest
-{
-    [Required]
-    public string Plan { get; set; } = string.Empty;
-    public int? MemberLimit { get; set; }
-    public int? StorageLimitGb { get; set; }
-}
-
 public class UpdateInstitutionBrandingRequest
 {
     [Required, MaxLength(200)]

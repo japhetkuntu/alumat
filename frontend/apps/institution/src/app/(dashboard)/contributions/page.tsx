@@ -30,7 +30,6 @@ export default function AdminContributionsPage() {
   const [showManualForm, setShowManualForm] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [compactRows, setCompactRows] = useState(false);
   const [form, setForm] = useState({ campaignId: "", memberNumber: "", memberName: "", memberEmail: "", amount: "", paymentMethod: "Manual", transactionRef: "", notes: "", confirmed: true, paidAt: new Date().toISOString().slice(0, 16) });
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -83,8 +82,8 @@ export default function AdminContributionsPage() {
 
   const items = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
-  const densityCellClass = compactRows ? "py-2" : "py-2.5";
-  const densityRowClass = compactRows ? "h-[46px]" : "h-[52px]";
+  const densityCellClass = "py-2.5";
+  const densityRowClass = "h-[52px]";
 
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -109,12 +108,9 @@ export default function AdminContributionsPage() {
         <div>
           <h1 className="text-[25px] font-bold m-0">Contributions</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">A complete ledger for fundraiser and membership dues payments.</p>
-          <p className="text-muted-foreground text-[12px] mt-1">This platform takes a small percentage of each online payment to run the service — the rest pays out directly to your institution&apos;s account. Manual payments incur no fee.</p>
+          <p className="text-muted-foreground text-[12px] mt-1">Online payments are processed via Paystack — your institution receives the full amount members pay.</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={() => setCompactRows((v) => !v)}>
-            {compactRows ? "Comfortable Rows" : "Compact Rows"}
-          </Button>
           <Button variant="outline" onClick={() => setShowManualForm(!showManualForm)}><Plus size={14} />Record payment</Button>
           <Button variant="outline" disabled={exportLoading} onClick={handleExportCsv}>
             {exportLoading ? <><Loader2 size={14} className="animate-spin" />Exporting…</> : <><Download size={14} />Export</>}

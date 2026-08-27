@@ -848,3 +848,25 @@ html {
   max-height: calc(100dvh - 80px);
   overflow-y: auto;
 }
+
+/* ─── Bottom-sheet helpers (dynamic viewport, mobile browser chrome) ────── */
+/* Plain vh is computed against the largest possible viewport (address bar
+   hidden), so on mobile it can exceed what's actually visible and clip
+   content at the bottom of a sheet — dvh tracks the real visible viewport. */
+.bottom-sheet-scroll {
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+}
+@media (min-width: 640px) {
+  .bottom-sheet-scroll {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+}
+
+.bottom-sheet-scroll-90 {
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+}

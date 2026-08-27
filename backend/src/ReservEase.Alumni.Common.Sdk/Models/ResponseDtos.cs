@@ -173,6 +173,10 @@ public class MentorProfileDto
     public string Status { get; set; } = string.Empty;
     public List<int>? YearGroups { get; set; }
     public DateTime CreatedAt { get; set; }
+    // Only populated by ToDto(includeContact: true) — see EntityDtoExtensions.
+    public string? ContactLinkedInUrl { get; set; }
+    public string? ContactWhatsAppNumber { get; set; }
+    public string? ContactPhoneNumber { get; set; }
 }
 
 public class MentorshipRequestDto
@@ -187,6 +191,11 @@ public class MentorshipRequestDto
     public string? Message { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    // Only populated for the mentee once their request is Accepted — see
+    // MemberMentorshipService.GetMyRequestsAsync and EntityDtoExtensions.
+    public string? ContactLinkedInUrl { get; set; }
+    public string? ContactWhatsAppNumber { get; set; }
+    public string? ContactPhoneNumber { get; set; }
 }
 
 public class ForumCategoryDto

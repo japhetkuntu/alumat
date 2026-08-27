@@ -2,22 +2,32 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 
 namespace ReservEase.Alumni.Member.Api.Actors;
 
-/// <summary>Marker base for all notification dispatch commands.</summary>
-public abstract record NotificationCommand;
+/// <summary>
+/// Marker base for all notification dispatch commands. Every command carries the
+/// originating InstitutionId — the actor that handles it runs in a fresh DI scope
+/// with no HttpContext, so ICurrentTenantService can't resolve the tenant on its
+/// own the way it does for a normal request; the actor must call
+/// ICurrentTenantService.SetInstitutionId(cmd.InstitutionId) itself before doing
+/// any tenant-scoped work, using this value.
+/// </summary>
+public abstract record NotificationCommand(string InstitutionId);
 
-public sealed record DispatchClassNoteAlertCommand(ClassNote Note, string AuthorName) : NotificationCommand;
+/// <summary>Deprecated feature — Class Notes are no longer surfaced anywhere in the member portal UI, this command is dead but left in place rather than touching the still-live backend entity/controller.</summary>
+public sealed record DispatchClassNoteAlertCommand(string InstitutionId, ClassNote Note, string AuthorName) : NotificationCommand(InstitutionId);
 
 public sealed record DispatchPaymentReceivedCommand(
+    string InstitutionId,
     string MemberName,
     string MemberEmail,
     decimal Amount,
     string CampaignTitle,
-    string ContributionId) : NotificationCommand;
+    string ContributionId) : NotificationCommand(InstitutionId);
 
 public sealed record DispatchContributionConfirmedCommand(
+    string InstitutionId,
     string MemberId,
     string MemberEmail,
     string MemberFirstName,
     decimal Amount,
     string CampaignTitle,
-    string ContributionId) : NotificationCommand;
+    string ContributionId) : NotificationCommand(InstitutionId);

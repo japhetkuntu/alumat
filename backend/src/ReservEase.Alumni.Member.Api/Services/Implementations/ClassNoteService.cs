@@ -8,6 +8,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -19,6 +20,7 @@ public class ClassNoteService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<ClassNoteService> logger) : IClassNoteService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
@@ -146,7 +148,7 @@ public class ClassNoteService(
             if (string.IsNullOrEmpty(request.CommunityId))
             {
                 var authorName = $"{member.FirstName} {member.LastName}";
-                notificationActor.Tell(new DispatchClassNoteAlertCommand(note, authorName));
+                notificationActor.Tell(new DispatchClassNoteAlertCommand(currentTenant.InstitutionId!, note, authorName));
             }
             return note.ToDto().ToCreatedApiResponse("Class note posted.");
         }

@@ -72,6 +72,9 @@ public class MemberMentorshipService(
                     existing.Area = request.Area;
                     existing.Bio = request.Bio;
                     existing.MaxMentees = request.MaxMentees;
+                    existing.ContactLinkedInUrl = request.ContactLinkedInUrl;
+                    existing.ContactWhatsAppNumber = request.ContactWhatsAppNumber;
+                    existing.ContactPhoneNumber = request.ContactPhoneNumber;
                     existing.Status = "Pending";
                     existing.UpdatedAt = DateTime.UtcNow;
                     existing.UpdatedBy = member.Id;
@@ -93,6 +96,9 @@ public class MemberMentorshipService(
                 Area = request.Area,
                 Bio = request.Bio,
                 MaxMentees = request.MaxMentees,
+                ContactLinkedInUrl = request.ContactLinkedInUrl,
+                ContactWhatsAppNumber = request.ContactWhatsAppNumber,
+                ContactPhoneNumber = request.ContactPhoneNumber,
                 Status = "Pending",
                 CreatedBy = member.Id,
             };
@@ -142,6 +148,9 @@ public class MemberMentorshipService(
                     MaxMentees = mentor.MaxMentees,
                     CurrentMenteeCount = mentor.CurrentMenteeCount,
                     Status = mentor.Status,
+                    ContactLinkedInUrl = mentor.ContactLinkedInUrl,
+                    ContactWhatsAppNumber = mentor.ContactWhatsAppNumber,
+                    ContactPhoneNumber = mentor.ContactPhoneNumber,
                 },
                 MenteeId = member.Id,
                 Mentee = new MemberSnapshot { Id = member.Id, FirstName = member.FirstName, LastName = member.LastName, Email = member.Email, ProfilePictureUrl = member.ProfilePictureUrl },
@@ -181,7 +190,7 @@ public class MemberMentorshipService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(r => r.ToDto()).ToList(),
+                Results = result.Results.Select(r => r.ToDto(includeContact: r.Status == "Accepted")).ToList(),
             };
             return dtoResult.ToOkApiResponse();
         }
@@ -200,7 +209,7 @@ public class MemberMentorshipService(
             var profile = await profileRepo.GetOneAsync(p => p.MemberId == memberId);
             if (profile is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MentorProfileDto>("You don't have a mentor profile");
-            return profile.ToDto().ToOkApiResponse();
+            return profile.ToDto(includeContact: true).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -266,6 +275,15 @@ public class MemberMentorshipService(
             request.Status = "Accepted";
             request.UpdatedAt = DateTime.UtcNow;
             request.UpdatedBy = mentor.Id;
+            // Refresh the embedded snapshot's contact fields from the live profile —
+            // a mentor who fills in contact info after the request was sent should
+            // still have it shared once they accept, not whatever was captured then.
+            if (request.MentorProfile is not null)
+            {
+                request.MentorProfile.ContactLinkedInUrl = profile.ContactLinkedInUrl;
+                request.MentorProfile.ContactWhatsAppNumber = profile.ContactWhatsAppNumber;
+                request.MentorProfile.ContactPhoneNumber = profile.ContactPhoneNumber;
+            }
             await requestRepo.UpdateAsync(request);
 
             profile.CurrentMenteeCount += 1;

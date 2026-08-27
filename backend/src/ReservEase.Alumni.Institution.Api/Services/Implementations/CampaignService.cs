@@ -8,6 +8,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
@@ -19,6 +20,7 @@ public class CampaignService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IStorageService storageService,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<CampaignService> logger) : ICampaignService
 {
     public async Task<IApiResponse<PgPagedResult<CampaignDto>>> GetCampaignsAsync(CampaignFilter filter, AuthData admin)
@@ -172,7 +174,7 @@ public class CampaignService(
             await campaignRepo.AddAsync(campaign);
 
             logger.LogInformation("Campaign {CampaignId} created by admin {AdminId}", campaign.Id, admin.Id);
-            notificationActor.Tell(new DispatchCampaignAlertCommand(campaign));
+            notificationActor.Tell(new DispatchCampaignAlertCommand(currentTenant.InstitutionId!, campaign));
             return campaign.ToDto().ToCreatedApiResponse("Campaign created");
         }
         catch (Exception e)
@@ -508,6 +510,7 @@ public class ContributionService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<ContributionService> logger) : IContributionService
 {
     public async Task<IApiResponse<PgPagedResult<ContributionDto>>> GetContributionsAsync(ContributionInstitutionStaffFilter filter, AuthData admin)
@@ -673,7 +676,7 @@ public class ContributionService(
                 await campaignRepo.UpdateAsync(campaign);
 
                 notificationActor.Tell(new DispatchContributionConfirmedCommand(
-                    memberSnapshot.Id, memberSnapshot.Email ?? string.Empty, memberSnapshot.FirstName, contribution.Amount, campaign.Title, contribution.Id));
+                    currentTenant.InstitutionId!, memberSnapshot.Id, memberSnapshot.Email ?? string.Empty, memberSnapshot.FirstName, contribution.Amount, campaign.Title, contribution.Id));
             }
 
             logger.LogInformation("Contribution {ContributionId} recorded by admin {AdminId} (confirmed={Confirmed})", contribution.Id, admin.Id, request.Confirmed);
@@ -726,7 +729,7 @@ public class ContributionService(
             {
                 var campaignTitle = campaign?.Title ?? contribution.Campaign?.Title ?? "campaign";
                 notificationActor.Tell(new DispatchContributionConfirmedCommand(
-                    member.Id, member.Email, member.FirstName, contribution.Amount, campaignTitle, contributionId));
+                    currentTenant.InstitutionId!, member.Id, member.Email, member.FirstName, contribution.Amount, campaignTitle, contributionId));
             }
 
             return new object().ToOkApiResponse("Contribution confirmed");
@@ -768,7 +771,7 @@ public class ContributionService(
                 var campaignForReject = await campaignRepo.GetByIdAsync(rejectedContrib.CampaignId);
                 var campaignTitle = campaignForReject?.Title ?? rejectedContrib.Campaign?.Title ?? "campaign";
                 notificationActor.Tell(new DispatchContributionRejectedCommand(
-                    memberForReject.Id, memberForReject.Email, memberForReject.FirstName, campaignTitle, reason, contributionId));
+                    currentTenant.InstitutionId!, memberForReject.Id, memberForReject.Email, memberForReject.FirstName, campaignTitle, reason, contributionId));
             }
 
             return new object().ToOkApiResponse("Contribution rejected");

@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   ArrowLeft, Users, Lock, Plus, MessageSquare, Clock, Crown, Check, X, UserMinus,
-  Calendar, MapPin, FileText, ExternalLink, HandCoins, Heart, Send,
+  Calendar, MapPin, FileText, ExternalLink, HandCoins,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
@@ -26,7 +26,6 @@ import {
   getForumThreads, createThread,
   getEvents, rsvpEvent, getMyRsvps,
   getResources,
-  getClassNotes, createClassNote, toggleClassNoteLike,
   getMyCampaigns,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
@@ -39,11 +38,10 @@ function safeDate(value: string | null | undefined): string {
   return formatDate(value);
 }
 
-const TABS = ["Discussion", "Events", "Resources", "Wall", "Fundraisers", "Members", "Requests"] as const;
+const TABS = ["Discussion", "Events", "Resources", "Fundraisers", "Members", "Requests"] as const;
 
 const TAB_CAPTIONS: Partial<Record<(typeof TABS)[number], string>> = {
   Discussion: "Threaded Q&A and longer conversations",
-  Wall: "Quick updates and photos, like a group feed",
 };
 
 export default function CommunityDetailPage() {
@@ -54,7 +52,6 @@ export default function CommunityDetailPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Discussion");
   const [showNewThread, setShowNewThread] = useState(false);
   const [form, setForm] = useState({ title: "", content: "" });
-  const [newNote, setNewNote] = useState("");
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const { data: community, isLoading } = useQuery({
@@ -102,12 +99,6 @@ export default function CommunityDetailPage() {
     enabled: isApproved && tab === "Resources",
   });
 
-  const { data: notes = [], isLoading: notesLoading } = useQuery({
-    queryKey: ["m-community-notes", id],
-    queryFn: async () => (await getClassNotes(1, 50, id)).results,
-    enabled: isApproved && tab === "Wall",
-  });
-
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery({
     queryKey: ["m-community-campaigns", id],
     queryFn: async () => (await getMyCampaigns(1, 50, id)).results,
@@ -121,22 +112,6 @@ export default function CommunityDetailPage() {
       qc.invalidateQueries({ queryKey: ["m-community-events", id] });
       toast.success("You're in!");
     },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const postNoteMut = useMutation({
-    mutationFn: () => createClassNote({ content: newNote, communityId: id }),
-    onSuccess: () => {
-      setNewNote("");
-      qc.invalidateQueries({ queryKey: ["m-community-notes", id] });
-      toast.success("Posted");
-    },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const likeNoteMut = useMutation({
-    mutationFn: (noteId: string) => toggleClassNoteLike(noteId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["m-community-notes", id] }),
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -425,57 +400,6 @@ export default function CommunityDetailPage() {
                     </div>
                   </Link>
                 ))
-              )}
-            </div>
-          )}
-
-          {tab === "Wall" && (
-            <div className="max-w-[720px] mx-auto space-y-4">
-              <div className="card p-4 space-y-3">
-                <div className="flex gap-3">
-                  <UserAvatar name={user?.name ?? "M"} size="sm" />
-                  <Textarea
-                    rows={3}
-                    placeholder="Share an update with this community..."
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    className="resize-none"
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button size="sm" className="gap-1.5" disabled={!newNote.trim()} onClick={() => postNoteMut.mutate()} isLoading={postNoteMut.isPending}>
-                    <Send size={13} /> Post
-                  </Button>
-                </div>
-              </div>
-
-              {notesLoading ? (
-                <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>
-              ) : notes.length === 0 ? (
-                <EmptyState icon={<MessageSquare size={36} />} title="No posts yet" description="Be the first to post to this community's wall." />
-              ) : (
-                <div className="space-y-2">
-                  {notes.map((n) => (
-                    <div key={n.id} className="card p-4">
-                      <div className="flex items-center gap-2">
-                        <UserAvatar name={n.authorName ?? "Member"} size="sm" />
-                        <span className="text-[13.5px] font-semibold">{n.authorName ?? "Member"}</span>
-                        {safeDate(n.createdAt) && <span className="text-[11.5px] text-muted-foreground">{safeDate(n.createdAt)}</span>}
-                      </div>
-                      <p className="text-[13.5px] mt-2 whitespace-pre-wrap">{n.content}</p>
-                      <button
-                        onClick={() => likeNoteMut.mutate(n.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 text-[12px] font-semibold rounded-full px-2 py-1 mt-2 transition-colors",
-                          n.isLikedByMe ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"
-                        )}
-                      >
-                        <Heart size={12} className={cn(n.isLikedByMe && "fill-current")} />
-                        {n.likeCount > 0 && n.likeCount} {n.isLikedByMe ? "Liked" : "Like"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
           )}

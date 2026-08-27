@@ -399,6 +399,10 @@ export interface MentorProfile {
   currentMenteeCount: number;
   status: MentorProfileStatus;
   createdAt: string;
+  /** Only present when explicitly requested (e.g. viewing your own mentor profile). */
+  contactLinkedInUrl?: string;
+  contactWhatsAppNumber?: string;
+  contactPhoneNumber?: string;
 }
 
 export type MentorshipStatus = "Pending" | "Accepted" | "Rejected" | "Completed";
@@ -414,6 +418,10 @@ export interface MentorshipRequest {
   message?: string;
   status: MentorshipStatus;
   createdAt: string;
+  /** Only present once this request is Accepted — the matched mentor's contact info. */
+  contactLinkedInUrl?: string;
+  contactWhatsAppNumber?: string;
+  contactPhoneNumber?: string;
 }
 
 // ─── Resource ─────────────────────────────────────────────────────────────────

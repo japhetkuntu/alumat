@@ -12,7 +12,7 @@ import { UserAvatar } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
-import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns } from "@/lib/institution-api";
+import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -54,6 +54,12 @@ export default function MemberDetailPage() {
     queryKey: ["admin-member", id],
     queryFn: () => getMember(id),
   });
+
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
+  });
+  const duesRequired = institution?.memberActivePolicy !== "ApprovedOnly";
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-member", id] });
 
@@ -202,13 +208,18 @@ export default function MemberDetailPage() {
                 {member.isMembershipActive ? "Active" : "Inactive"}
               </Badge>
             </div>
-            {member.membershipYearsPaid != null && member.membershipYearsPaid > 0 && (
+            {!duesRequired && (
+              <p className="text-[11px] text-muted-foreground">
+                This institution&apos;s active-member policy doesn&apos;t require dues — approved members are active regardless of payment.
+              </p>
+            )}
+            {duesRequired && member.membershipYearsPaid != null && member.membershipYearsPaid > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-[12px] text-muted-foreground">Years paid</span>
                 <span className="text-sm font-semibold">{member.membershipYearsPaid}</span>
               </div>
             )}
-            {member.status === "Active" && membershipCampaigns.length > 0 && (
+            {duesRequired && member.status === "Active" && membershipCampaigns.length > 0 && (
               <>
                 <Button size="sm" className="w-full" onClick={() => { setSelectedYears([]); setModal({ type: "activate-membership" }); }}>
                   <CreditCard size={13} />Activate membership

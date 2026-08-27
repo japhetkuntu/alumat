@@ -9,6 +9,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -17,6 +18,7 @@ public class JobService(
     IAlumniPgRepository<Job> jobRepo,
     IStorageService storageService,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<JobService> logger) : IJobService
 {
     public async Task<IApiResponse<PgPagedResult<JobDto>>> GetJobsAsync(JobFilter filter, AuthData admin)
@@ -87,7 +89,7 @@ public class JobService(
 
             await jobRepo.AddAsync(job);
             logger.LogInformation("Job {JobId} created by admin {AdminId}", job.Id, admin.Id);
-            notificationActor.Tell(new DispatchJobAlertCommand(job));
+            notificationActor.Tell(new DispatchJobAlertCommand(currentTenant.InstitutionId!, job));
             return job.ToDto().ToCreatedApiResponse("Job posted");
         }
         catch (Exception e)

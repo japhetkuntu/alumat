@@ -6,6 +6,7 @@ using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -13,6 +14,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class BroadcastService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<BroadcastService> logger) : IBroadcastService
 {
     private static Expression<Func<MemberEntity, bool>> BuildPredicate(BroadcastFilter filter, AuthData admin)
@@ -57,7 +59,7 @@ public class BroadcastService(
 
             if (recipients.Count > 0)
             {
-                notificationActor.Tell(new SendBroadcastCommand(recipients, request.Title, request.Message, channels));
+                notificationActor.Tell(new SendBroadcastCommand(currentTenant.InstitutionId!, recipients, request.Title, request.Message, channels));
             }
 
             logger.LogInformation("Broadcast queued by admin {AdminId} to {Count} recipients via [{Channels}]",

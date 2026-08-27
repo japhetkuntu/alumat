@@ -169,6 +169,9 @@ services:
       # Bare domain — the member-facing, memorable one. Institution.Api gets
       # the "admin." prefixed variant above so the two never collide.
       PlatformBaseDomain: ${PLATFORM_BASE_DOMAIN:-yourplatform.example}
+      # Used to link institution admins (payment-received alerts) to their
+      # own institution admin portal — same "admin." prefix as Institution.Api.
+      AdminBaseDomain: admin.${PLATFORM_BASE_DOMAIN:-yourplatform.example}
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__MemberRedisConfig__ConnectionString: redis:6379
       Redis__MemberRedisConfig__DbNumber: 1

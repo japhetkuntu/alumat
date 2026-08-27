@@ -10,4 +10,8 @@ public class MentorProfileSnapshot
     public int MaxMentees { get; set; }
     public int CurrentMenteeCount { get; set; }
     public string Status { get; set; } = string.Empty;
+
+    public string? ContactLinkedInUrl { get; set; }
+    public string? ContactWhatsAppNumber { get; set; }
+    public string? ContactPhoneNumber { get; set; }
 }

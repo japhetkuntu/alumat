@@ -118,17 +118,6 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
-    [Authorize(Roles = "SuperAdmin,Billing")]
-    [HttpPatch("{id}/plan")]
-    [SwaggerOperation(Summary = "Update institution plan/limits")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
-    public async Task<IActionResult> UpdatePlan(string id, [FromBody] UpdateInstitutionPlanRequest request)
-    {
-        var acct = User.GetAccount();
-        var result = await institutionService.UpdatePlanAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
-        return result.ToActionResult();
-    }
-
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/branding")]
     [SwaggerOperation(Summary = "Update institution branding")]

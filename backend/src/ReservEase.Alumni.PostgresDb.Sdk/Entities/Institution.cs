@@ -42,6 +42,16 @@ public class Institution : BaseEntity
     public bool RequireStudentId { get; set; } = true;
 
     /// <summary>
+    /// How "active member" status is determined for this institution.
+    /// "DuesRequired" (default) — a member is active only once current and
+    /// past required dues are paid. "ApprovedOnly" — any approved member
+    /// (Member.Status == "Active") counts as active regardless of dues.
+    /// Institution's own operational choice, editable by its own admins —
+    /// see InstitutionController.UpdateMemberActivePolicy, not Platform.Api.
+    /// </summary>
+    public string MemberActivePolicy { get; set; } = "DuesRequired";
+
+    /// <summary>
     /// Product features platform staff have turned off for this institution — see
     /// <see cref="InstitutionFeatures"/> for the canonical key list. Empty by
     /// default, meaning every feature is enabled; adding a key here disables it.

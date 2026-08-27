@@ -21,6 +21,7 @@ public record InstitutionResponse(
     string? MemberAuthHeadline,
     string? MemberAuthSubtext,
     bool RequireStudentId,
+    string MemberActivePolicy,
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
@@ -42,3 +43,10 @@ public class UpdateLandingContentRequest
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
     public NewsBanner? NewsBanner { get; set; }
 }
+
+/// <summary>
+/// Another institution-editable-themselves carve-out — how "active member"
+/// status is determined is this institution's own operational choice, not
+/// platform staff's, so it's edited here rather than via Platform.Api.
+/// </summary>
+public record UpdateMemberActivePolicyRequest(string MemberActivePolicy);

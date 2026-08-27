@@ -45,6 +45,17 @@ public class ForumController(IMemberForumService forumService) : DefaultControll
         return result.ToActionResult();
     }
 
+    [HttpGet("threads/{threadId}")]
+    [SwaggerOperation(Summary = "Get thread", Description = "Get a single forum thread by ID")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ForumThreadDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetThread(string threadId)
+    {
+        var member = User.GetAccount();
+        var result = await forumService.GetThreadByIdAsync(threadId, member);
+        return result.ToActionResult();
+    }
+
     [HttpGet("threads/{threadId}/posts")]
     [SwaggerOperation(Summary = "List thread posts", Description = "Get a paginated list of posts in a specific forum thread")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<ForumPostDto>>))]

@@ -16,7 +16,7 @@ import { FormError } from "@alumni/ui";
 import { getInitials, cn } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
 import {
-  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent,
+  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
   STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -114,6 +114,15 @@ export default function BrandingSettingsPage() {
   });
   if (institution && stories === null) setStories(institution.landingPageStories);
   if (institution && banner === null) setBanner(institution.newsBanner ?? EMPTY_BANNER);
+
+  const policyMutation = useMutation({
+    mutationFn: (policy: "DuesRequired" | "ApprovedOnly") => updateMemberActivePolicy(policy),
+    onSuccess: () => {
+      toast.success("Active-member policy updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
 
   const pwMut = useMutation({
     mutationFn: () => changeStaffPassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
@@ -234,6 +243,27 @@ export default function BrandingSettingsPage() {
                   <Button size="sm" className="w-full">Explore community</Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/40 lg:col-span-2">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield size={16} className="text-primary" />
+                <p className="font-semibold text-[15px]">Active member policy</p>
+              </div>
+              <p className="text-[12.5px] text-muted-foreground -mt-1">
+                Decide what makes a member &quot;active&quot; across both portals — this changes the messages and restrictions members see.
+              </p>
+              <Toggle
+                checked={institution?.memberActivePolicy === "DuesRequired"}
+                onChange={(checked) => policyMutation.mutate(checked ? "DuesRequired" : "ApprovedOnly")}
+                label="Require dues payment for active status"
+                description={
+                  institution?.memberActivePolicy === "ApprovedOnly"
+                    ? "Off — any approved member is active regardless of dues paid."
+                    : "On — a member is active only once current and past dues are paid."
+                }
+              />
             </CardContent>
           </Card>
         </div>

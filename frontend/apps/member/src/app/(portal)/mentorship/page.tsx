@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   UserCheck, Plus, CheckCircle, XCircle, Clock,
-  Inbox, Users, ChevronDown,
+  Inbox, Users, ChevronDown, Linkedin, MessageCircle, Phone,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -145,7 +145,10 @@ function RequestForm({
 export default function MemberMentorshipPage() {
   const [view,          setView]          = useState<View>("find");
   const [requestForm,   setRequestForm]   = useState({ mentorProfileId: "", area: "", message: "" });
-  const [mentorForm,    setMentorForm]    = useState({ area: "", bio: "", maxMentees: "3" });
+  const [mentorForm,    setMentorForm]    = useState({
+    area: "", bio: "", maxMentees: "3",
+    contactLinkedInUrl: "", contactWhatsAppNumber: "", contactPhoneNumber: "",
+  });
   const [confirmAction, setConfirmAction] = useState<{ type: "accept" | "reject"; id: string } | null>(null);
   const qc = useQueryClient();
 
@@ -187,13 +190,16 @@ export default function MemberMentorshipPage() {
 
   const becomeMut = useMutation({
     mutationFn: () => registerAsMentor({
-      area:       mentorForm.area,
-      bio:        mentorForm.bio || undefined,
-      maxMentees: Number(mentorForm.maxMentees),
+      area:                  mentorForm.area,
+      bio:                   mentorForm.bio || undefined,
+      maxMentees:            Number(mentorForm.maxMentees),
+      contactLinkedInUrl:    mentorForm.contactLinkedInUrl || undefined,
+      contactWhatsAppNumber: mentorForm.contactWhatsAppNumber || undefined,
+      contactPhoneNumber:    mentorForm.contactPhoneNumber || undefined,
     }),
     onSuccess: () => {
       toast.success("Application submitted. You'll be notified once approved.");
-      setMentorForm({ area: "", bio: "", maxMentees: "3" });
+      setMentorForm({ area: "", bio: "", maxMentees: "3", contactLinkedInUrl: "", contactWhatsAppNumber: "", contactPhoneNumber: "" });
       qc.invalidateQueries({ queryKey: ["m-my-mentor-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -411,6 +417,49 @@ export default function MemberMentorshipPage() {
                     &ldquo;{r.message}&rdquo;
                   </p>
                 )}
+                {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactWhatsAppNumber || r.contactPhoneNumber) && (
+                  <div
+                    className="mt-3 p-3 rounded-xl space-y-2"
+                    style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                  >
+                    <p className="text-[12px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      Contact your mentor
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {r.contactLinkedInUrl && (
+                        <a
+                          href={r.contactLinkedInUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                          style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+                        >
+                          <Linkedin size={13} /> LinkedIn
+                        </a>
+                      )}
+                      {r.contactWhatsAppNumber && (
+                        <a
+                          href={`https://wa.me/${r.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                          style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+                        >
+                          <MessageCircle size={13} /> WhatsApp
+                        </a>
+                      )}
+                      {r.contactPhoneNumber && (
+                        <a
+                          href={`tel:${r.contactPhoneNumber}`}
+                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                          style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+                        >
+                          <Phone size={13} /> Call
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold shrink-0">
                 {r.status}
@@ -587,6 +636,33 @@ export default function MemberMentorshipPage() {
                     onChange={e => setMentorForm(f => ({ ...f, maxMentees: e.target.value }))}
                     className="h-11 text-[14px] w-28"
                     required
+                  />
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    How should mentees reach you?{" "}
+                    <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
+                  </Label>
+                  <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+                    Shared only with a mentee once you accept their request — fill in whichever you&apos;re comfortable sharing.
+                  </p>
+                  <Input
+                    placeholder="LinkedIn profile URL"
+                    value={mentorForm.contactLinkedInUrl}
+                    onChange={e => setMentorForm(f => ({ ...f, contactLinkedInUrl: e.target.value }))}
+                    className="h-11 text-[14px]"
+                  />
+                  <Input
+                    placeholder="WhatsApp number"
+                    value={mentorForm.contactWhatsAppNumber}
+                    onChange={e => setMentorForm(f => ({ ...f, contactWhatsAppNumber: e.target.value }))}
+                    className="h-11 text-[14px]"
+                  />
+                  <Input
+                    placeholder="Phone number"
+                    value={mentorForm.contactPhoneNumber}
+                    onChange={e => setMentorForm(f => ({ ...f, contactPhoneNumber: e.target.value }))}
+                    className="h-11 text-[14px]"
                   />
                 </div>
                 <Button

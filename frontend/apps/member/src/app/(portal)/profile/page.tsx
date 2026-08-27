@@ -148,6 +148,16 @@ export default function MemberProfilePage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const mapToggleMut = useMutation({
+    mutationFn: (value: boolean) => updateMyProfile({ showOnAlumniMap: value }),
+    onSuccess: (_, value) => {
+      setShowOnAlumniMap(value);
+      qc.invalidateQueries({ queryKey: ["m-profile"] });
+      toast.success(value ? "You're now visible on the Alumni Map." : "Removed from the Alumni Map.");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   const employmentMut = useMutation({
     mutationFn: (status: string) => updateMyProfile({ employmentStatus: status }),
     onSuccess: (_, status) => {
@@ -377,8 +387,9 @@ export default function MemberProfilePage() {
                 type="button"
                 role="switch"
                 aria-checked={showOnAlumniMap}
-                onClick={() => setShowOnAlumniMap(v => !v)}
-                className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                disabled={mapToggleMut.isPending}
+                onClick={() => mapToggleMut.mutate(!showOnAlumniMap)}
+                className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: showOnAlumniMap ? "var(--primary)" : "var(--border)" }}
               >
                 <span

@@ -10,10 +10,11 @@ public record MembershipStatusResponse(
     bool IsCurrentYearPaid,
     bool HasArrears,
     int ArrearsCount,
-    List<int> ArrearsYears)
+    List<int> ArrearsYears,
+    string ActivePolicy = "DuesRequired")
 {
     // Backwards-compat constructor used in fallback path (no campaign data)
-    public MembershipStatusResponse(bool isMembershipActive, DateTime? membershipExpiry, int membershipYearsPaid, DateTime? lastMembershipPaidAt)
+    public MembershipStatusResponse(bool isMembershipActive, DateTime? membershipExpiry, int membershipYearsPaid, DateTime? lastMembershipPaidAt, string activePolicy = "DuesRequired")
         : this(isMembershipActive, membershipExpiry, membershipYearsPaid, lastMembershipPaidAt,
-               isMembershipActive, false, 0, []) { }
+               isMembershipActive, false, 0, [], activePolicy) { }
 }

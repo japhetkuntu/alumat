@@ -60,6 +60,31 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Landing content updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>How "active member" status is determined — this institution's own operational choice.</summary>
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [HttpPatch("me/member-policy")]
+    [SwaggerOperation(Summary = "Update the active-member policy")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateMemberActivePolicy([FromBody] UpdateMemberActivePolicyRequest request)
+    {
+        if (request.MemberActivePolicy != MembershipActivityCalculator.DuesRequiredPolicy
+            && request.MemberActivePolicy != MembershipActivityCalculator.ApprovedOnlyPolicy)
+        {
+            return BadRequest(new ApiResponse<object> { Message = "MemberActivePolicy must be either \"DuesRequired\" or \"ApprovedOnly\"", Code = 400 });
+        }
+
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        institution.MemberActivePolicy = request.MemberActivePolicy;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Active-member policy updated", Code = 200, Data = ToDto(institution) });
+    }
+
     private async Task<InstitutionEntity?> GetResolvedInstitutionAsync() =>
         string.IsNullOrEmpty(currentTenant.InstitutionId)
             ? null
@@ -85,7 +110,7 @@ public class InstitutionController(
             i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.Plan, i.Status, i.MemberLimit, i.StorageLimitGb, memberPortalUrl);
     }
 }

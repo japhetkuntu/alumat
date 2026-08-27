@@ -93,6 +93,28 @@ public class MemberForumService(
         }
     }
 
+    public async Task<IApiResponse<ForumThreadDto>> GetThreadByIdAsync(string threadId, AuthData member)
+    {
+        try
+        {
+            logger.LogInformation("GetThreadById request for thread {ThreadId} by member {MemberId}", threadId, member.Id);
+
+            var thread = await threadRepo.GetByIdAsync(threadId);
+            if (thread is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<ForumThreadDto>("Thread not found");
+
+            if (!string.IsNullOrEmpty(thread.CommunityId) && !await IsApprovedCommunityMemberAsync(thread.CommunityId, member.Id))
+                return ApiResponseExtensions.ToForbiddenApiResponse<ForumThreadDto>("You must be an approved member of this community to view its forum");
+
+            return thread.ToDto().ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving thread {ThreadId}", threadId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<ForumThreadDto>("Failed to retrieve thread");
+        }
+    }
+
     public async Task<IApiResponse<ForumThreadDto>> CreateThreadAsync(CreateThreadRequest request, AuthData member)
     {
         try

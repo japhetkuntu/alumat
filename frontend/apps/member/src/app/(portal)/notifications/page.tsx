@@ -152,13 +152,12 @@ function NotifRow({
 /* ─────────────────────────────────────────────────────────────────────────
    FILTER TABS
    ───────────────────────────────────────────────────────────────────────── */
-const FILTER_TABS = ["All", "Unread", "Jobs", "Events", "Fundraisers", "Contributions", "Class notes"] as const;
+const FILTER_TABS = ["All", "Unread", "Jobs", "Events", "Fundraisers", "Contributions"] as const;
 const TAB_TYPES: Record<string, string[]> = {
   Jobs:          ["JobAlert"],
   Events:        ["EventReminder"],
   Fundraisers:   ["CampaignAlert"],
   Contributions: ["ContributionConfirmed", "ContributionRejected"],
-  "Class notes": ["ClassNoteAlert"],
 };
 
 /* ─────────────────────────────────────────────────────────────────────────

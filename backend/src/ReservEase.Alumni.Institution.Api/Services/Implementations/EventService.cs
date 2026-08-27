@@ -9,6 +9,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -19,6 +20,7 @@ public class EventService(
     IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
     INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<EventService> logger) : IEventService
 {
     public async Task<IApiResponse<PgPagedResult<AlumniEventDto>>> GetEventsAsync(EventFilter filter, AuthData admin)
@@ -135,7 +137,7 @@ public class EventService(
 
             await eventRepo.AddAsync(ev);
             logger.LogInformation("Event {EventId} created by admin {AdminId}", ev.Id, admin.Id);
-            notificationActor.Tell(new DispatchEventReminderCommand(ev));
+            notificationActor.Tell(new DispatchEventReminderCommand(currentTenant.InstitutionId!, ev));
             return ev.ToDto().ToCreatedApiResponse("Event created");
         }
         catch (Exception e)

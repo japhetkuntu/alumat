@@ -217,24 +217,6 @@ public class InstitutionManagementService(
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Status updated");
     }
 
-    public async Task<IApiResponse<InstitutionDetailResponse>> UpdatePlanAsync(string id, UpdateInstitutionPlanRequest request, string updatedBy, string actorName)
-    {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
-        if (institution is null)
-            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
-
-        institution.Plan = request.Plan;
-        if (request.MemberLimit.HasValue) institution.MemberLimit = request.MemberLimit.Value;
-        if (request.StorageLimitGb.HasValue) institution.StorageLimitGb = request.StorageLimitGb.Value;
-        institution.UpdatedAt = DateTime.UtcNow;
-        institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
-
-        await auditLog.LogAsync(updatedBy, actorName, $"changed institution plan to {request.Plan}", institution.Name);
-
-        return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Plan updated");
-    }
-
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName)
     {
         var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);

@@ -20,7 +20,6 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
 {
     public DbSet<Institution> Institutions => Set<Institution>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
-    public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<SupportCase> SupportCases => Set<SupportCase>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
@@ -294,10 +293,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // ── PlatformStaff (global, not tenant-scoped) ───────────────────────
         modelBuilder.Entity<PlatformStaff>().HasIndex(p => p.Email).IsUnique();
 
-        // ── Plan catalog / support / announcements / audit log (global) ─────
-        modelBuilder.Entity<Plan>().HasIndex(p => p.Name).IsUnique();
-        modelBuilder.Entity<Plan>().Property(p => p.Modules).HasColumnType("jsonb")
-            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        // ── Support / announcements / audit log (global) ─────
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.Status);
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.InstitutionId);
         modelBuilder.Entity<Announcement>().HasIndex(a => a.SentAt);

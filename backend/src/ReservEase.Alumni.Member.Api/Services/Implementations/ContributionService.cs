@@ -728,6 +728,7 @@ public class ContributionService : IContributionService
                 await contributionRepo.AddAsync(contribution);
 
                 notificationActor.Tell(new DispatchContributionConfirmedCommand(
+                    contributionInstitutionId,
                     contribution.MemberId,
                     contribution.Member?.Email ?? string.Empty,
                     contribution.Member?.FirstName ?? string.Empty,
@@ -768,7 +769,11 @@ public class ContributionService : IContributionService
                             var paidCampaignIds = new HashSet<string>(confirmedContributions.Select(c => c.CampaignId));
                             var allPaid = requiredCampaigns.All(c => paidCampaignIds.Contains(c.Id));
 
-                            memberToUpdate.IsMembershipActive = allPaid;
+                            var institutionForPolicy = await db.Set<Institution>().IgnoreQueryFilters()
+                                .FirstOrDefaultAsync(i => i.Id == institutionId);
+                            var isActive = MembershipActivityCalculator.ResolveActive(institutionForPolicy?.MemberActivePolicy, memberToUpdate.Status, allPaid);
+
+                            memberToUpdate.IsMembershipActive = isActive;
                             memberToUpdate.MembershipExpiry = allPaid
                                 ? new DateTime(currentYear, 12, 31, 23, 59, 59, DateTimeKind.Utc)
                                 : null;
@@ -866,6 +871,9 @@ public class ContributionService : IContributionService
             if (m is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MembershipStatusResponse>("Member not found");
 
+            var institutionForPolicy = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var memberActivePolicy = institutionForPolicy?.MemberActivePolicy;
+
             var currentYear = DateTime.UtcNow.Year;
             var memberGradYear = m.GraduationYear;
 
@@ -901,21 +909,23 @@ public class ContributionService : IContributionService
                     .OrderBy(y => y)
                     .ToList();
 
-                var active = isCurrentYearPaid;
-                var expiry = active ? new DateTime(currentYear, 12, 31, 23, 59, 59, DateTimeKind.Utc) : (DateTime?)null;
+                var active = MembershipActivityCalculator.ResolveActive(memberActivePolicy, m.Status, isCurrentYearPaid);
+                var expiry = isCurrentYearPaid ? new DateTime(currentYear, 12, 31, 23, 59, 59, DateTimeKind.Utc) : (DateTime?)null;
                 var yearsPaid = paidCampaignIds.Count;
 
                 var status = new MembershipStatusResponse(active, expiry, yearsPaid, m.LastMembershipPaidAt,
-                    isCurrentYearPaid, hasArrears, unpaidPastCampaigns.Count, arrearsYears);
+                    isCurrentYearPaid, hasArrears, unpaidPastCampaigns.Count, arrearsYears,
+                    memberActivePolicy ?? MembershipActivityCalculator.DuesRequiredPolicy);
                 return status.ToOkApiResponse();
             }
 
             // No campaigns configured yet — fall back to member entity fields
             var fallbackStatus = new MembershipStatusResponse(
-                m.IsMembershipActive,
+                MembershipActivityCalculator.ResolveActive(memberActivePolicy, m.Status, m.IsMembershipActive),
                 m.MembershipExpiry,
                 m.MembershipYearsPaid,
-                m.LastMembershipPaidAt);
+                m.LastMembershipPaidAt,
+                memberActivePolicy ?? MembershipActivityCalculator.DuesRequiredPolicy);
 
             return fallbackStatus.ToOkApiResponse();
         }
@@ -1170,7 +1180,7 @@ public class ContributionService : IContributionService
             var uploadingMember = await memberRepo.GetByIdAsync(member.Id);
             var memberName = uploadingMember is not null ? $"{uploadingMember.FirstName} {uploadingMember.LastName}" : member.Email;
             notificationActor.Tell(new DispatchPaymentReceivedCommand(
-                memberName, member.Email, 0, campaign.Title, contribution.Id));
+                currentTenant.InstitutionId!, memberName, member.Email, 0, campaign.Title, contribution.Id));
 
             logger.LogInformation("Proof uploaded, contribution {ContributionId} created for member {MemberId}", contribution.Id, member.Id);
             return contribution.ToDto().ToCreatedApiResponse("Proof uploaded. Awaiting admin confirmation.");

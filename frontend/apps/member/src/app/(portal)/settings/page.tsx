@@ -188,12 +188,6 @@ export default function MemberSettingsPage() {
             description="Notifications for new job postings"
           />
           <Toggle
-            checked={notifPrefs?.classNoteAlerts ?? true}
-            onChange={(v) => toggleNotif("classNoteAlerts", v)}
-            label="Class Notes"
-            description="Notifications when classmates post to your year group wall"
-          />
-          <Toggle
             checked={notifPrefs?.spotlightAlerts ?? true}
             onChange={(v) => toggleNotif("spotlightAlerts", v)}
             label="Spotlight Updates"
