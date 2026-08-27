@@ -60,10 +60,10 @@ public class ServiceConstructorTests
         var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<JobService>());
         var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, currentTenant.Object, new NullLogger<MemberManagementService>());
         var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, new NullLogger<MentorshipService>());
-        var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, new NullLogger<NewsService>());
+        var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, currentTenant.Object, new NullLogger<NewsService>());
         var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, new NullLogger<ReportService>());
-        var ___________ = new ResourceService(resourceRepo.Object, storageService.Object, new NullLogger<ResourceService>());
-        var ____________ = new UploadService(storageService.Object, new NullLogger<UploadService>());
+        var ___________ = new ResourceService(resourceRepo.Object, storageService.Object, currentTenant.Object, new NullLogger<ResourceService>());
+        var ____________ = new UploadService(storageService.Object, currentTenant.Object, new NullLogger<UploadService>());
 
         Assert.NotNull(_);
         Assert.NotNull(__);

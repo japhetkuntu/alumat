@@ -44,12 +44,12 @@ const statusBadge: Record<string, { label: string; variant: "info" | "success" |
 };
 
 /** A URL text field with an "Upload" button beside it — uploads to S3-backed storage and fills the field, instead of requiring a hand-pasted hosted URL. */
-function ImageUrlField({ label, hint, value, onChange, placeholder }: {
-  label: string; hint?: string; value: string; onChange: (url: string) => void; placeholder: string;
+function ImageUrlField({ label, hint, value, onChange, placeholder, institutionSlug }: {
+  label: string; hint?: string; value: string; onChange: (url: string) => void; placeholder: string; institutionSlug?: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadPlatformImage(file),
+    mutationFn: (file: File) => uploadPlatformImage(file, institutionSlug),
     onSuccess: (url) => { onChange(url); toast.success("Image uploaded"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -497,6 +497,7 @@ export default function InstitutionDetailPage() {
                   value={branding.logoUrl}
                   onChange={(url) => setBranding((b) => ({ ...b!, logoUrl: url }))}
                   placeholder="https://…/logo.svg"
+                  institutionSlug={inst.slug}
                 />
                 <ImageUrlField
                   label="Icon URL"
@@ -504,6 +505,7 @@ export default function InstitutionDetailPage() {
                   value={branding.iconUrl}
                   onChange={(url) => setBranding((b) => ({ ...b!, iconUrl: url }))}
                   placeholder="https://…/icon.png"
+                  institutionSlug={inst.slug}
                 />
               </div>
             </CardContent>
@@ -715,6 +717,7 @@ export default function InstitutionDetailPage() {
                         value={story.imageUrl ?? ""}
                         onChange={(url) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: url } : it)))}
                         placeholder="https://…"
+                        institutionSlug={inst.slug}
                       />
                     </div>
                   ))}

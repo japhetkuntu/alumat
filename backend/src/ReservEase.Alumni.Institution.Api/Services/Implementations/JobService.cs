@@ -84,7 +84,7 @@ public class JobService(
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                job.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                job.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             await jobRepo.AddAsync(job);
@@ -128,7 +128,7 @@ public class JobService(
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                job.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                job.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             job.UpdatedAt = DateTime.UtcNow;

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Member.Api.Controllers;
@@ -11,7 +12,8 @@ namespace ReservEase.Alumni.Member.Api.Controllers;
 /// File upload endpoints for members.
 /// </summary>
 [Authorize]
-public class UploadsController(IStorageService storageService, ILogger<UploadsController> logger) : DefaultController
+public class UploadsController(
+    IStorageService storageService, ICurrentTenantService currentTenant, ILogger<UploadsController> logger) : DefaultController
 {
     private const string FolderName = "alumni";
     private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -39,7 +41,7 @@ public class UploadsController(IStorageService storageService, ILogger<UploadsCo
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("Image exceeds 5MB limit").ToActionResult();
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        await storageService.UploadFileAsync(file, objectName, FolderName);
+        await storageService.UploadFileAsync(file, objectName, FolderName, currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("Image uploaded by member: {ObjectName}", objectName);
         return new UploadResult(objectName).ToOkApiResponse().ToActionResult();

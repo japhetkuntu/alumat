@@ -480,7 +480,7 @@ public class MemberAuthService(
                     return ApiResponseExtensions.ToBadRequestApiResponse<MemberProfileResponse>("Profile picture must be under 5 MB.");
 
                 var name = $"{Guid.NewGuid():N}{ext}";
-                member.ProfilePictureUrl = await storageService.UploadFileAsync(request.ProfilePicture, name);
+                member.ProfilePictureUrl = await storageService.UploadFileAsync(request.ProfilePicture, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             member.UpdatedAt = DateTime.UtcNow;

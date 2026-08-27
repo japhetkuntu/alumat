@@ -8,6 +8,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 
@@ -17,6 +18,7 @@ public class NewsService(
     IAlumniPgRepository<NewsPost> newsRepo,
     IAlumniPgRepository<StaffEntity> adminRepo,
     IStorageService storageService,
+    ICurrentTenantService currentTenant,
     ILogger<NewsService> logger) : INewsService
 {
     public async Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter, AuthData admin)
@@ -114,7 +116,7 @@ public class NewsService(
             };
 
             if (request.Images is { Count: > 0 })
-                post.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images);
+                post.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
             await newsRepo.AddAsync(post);
             logger.LogInformation("Post {PostId} created by admin {AdminId}", post.Id, admin.Id);
@@ -157,7 +159,7 @@ public class NewsService(
             if (request.ExistingImageUrls is { Count: > 0 })
                 imageUrls.AddRange(request.ExistingImageUrls);
             if (request.Images is { Count: > 0 })
-                imageUrls.AddRange(await storageService.BulkUploadFilesAsync(request.Images));
+                imageUrls.AddRange(await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? ""));
             post.ImageUrls = imageUrls.Count > 0 ? imageUrls : null;
 
             post.UpdatedAt = DateTime.UtcNow;

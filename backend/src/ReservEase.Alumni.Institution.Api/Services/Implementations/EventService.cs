@@ -133,11 +133,11 @@ public class EventService(
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                ev.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                ev.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             if (request.Images is { Count: > 0 })
-                ev.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images);
+                ev.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
             await eventRepo.AddAsync(ev);
             logger.LogInformation("Event {EventId} created by admin {AdminId}", ev.Id, admin.Id);
@@ -192,7 +192,7 @@ public class EventService(
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                ev.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                ev.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             var imageUrls = new List<string>();

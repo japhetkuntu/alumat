@@ -172,7 +172,7 @@ public class CampaignService(
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                campaign.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                campaign.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             await campaignRepo.AddAsync(campaign);
@@ -288,7 +288,7 @@ public class CampaignService(
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                campaign.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                campaign.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             campaign.UpdatedAt = DateTime.UtcNow;

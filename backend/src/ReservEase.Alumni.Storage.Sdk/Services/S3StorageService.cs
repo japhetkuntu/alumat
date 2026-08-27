@@ -26,20 +26,25 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
         return new AmazonS3Client(_settings.AccessKey, _settings.SecretKey, config);
     }
 
-    /// <summary>Joins RootFolder + folderName + objectName, skipping any blank segment.</summary>
-    private string BuildKey(string folderName, string objectName)
+    /// <summary>Joins RootFolder + folderName + institutionSlug + objectName, skipping any blank segment — the slug sits as its own subfolder beneath the category folder.</summary>
+    private string BuildKey(string folderName, string institutionSlug, string objectName)
     {
         var folder = string.IsNullOrEmpty(folderName) ? _settings.FolderName : folderName;
-        var segments = new[] { _settings.RootFolder, folder, objectName }
+        var segments = new[] { _settings.RootFolder, folder, institutionSlug, objectName }
             .Where(s => !string.IsNullOrEmpty(s));
         return string.Join("/", segments);
     }
 
-    public async Task<string> UploadFileAsync(IFormFile file, string objectName, string folderName = "")
+    /// <summary>Prefixes the slug onto the object name itself too, so the file is identifiable by institution from its filename alone, not just its storage path.</summary>
+    private static string PrefixedObjectName(string objectName, string institutionSlug) =>
+        string.IsNullOrEmpty(institutionSlug) ? objectName : $"{institutionSlug}-{objectName}";
+
+    public async Task<string> UploadFileAsync(IFormFile file, string objectName, string folderName = "", string institutionSlug = "")
     {
         using var client = CreateClient();
         using var stream = file.OpenReadStream();
-        var newObjectName = BuildKey(folderName, objectName);
+        var prefixedObjectName = PrefixedObjectName(objectName, institutionSlug);
+        var newObjectName = BuildKey(folderName, institutionSlug, prefixedObjectName);
 
         var uploadRequest = new TransferUtilityUploadRequest
         {
@@ -54,34 +59,35 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
         var transferUtility = new TransferUtility(client);
         await transferUtility.UploadAsync(uploadRequest);
 
-        return GetFileUrl(objectName, folderName);
+        return GetFileUrl(prefixedObjectName, folderName, institutionSlug);
     }
 
-    public string GetFileUrl(string fileName, string folderName = "")
+    public string GetFileUrl(string fileName, string folderName = "", string institutionSlug = "")
     {
        if( string.IsNullOrEmpty(fileName)) return string.Empty;
-        var key = BuildKey(folderName, fileName);
+        var key = BuildKey(folderName, institutionSlug, fileName);
         return _settings.CdnUrlIncludesBucket
             ? $"{_settings.CdnEndpoint}/{_settings.BucketName}/{key}"
             : $"{_settings.CdnEndpoint}/{key}";
     }
 
-    public async Task<List<string>> BulkUploadFilesAsync(List<IFormFile> files)
+    public async Task<List<string>> BulkUploadFilesAsync(List<IFormFile> files, string folderName = "", string institutionSlug = "")
     {
         var urls = new List<string>();
         foreach (var file in files)
         {
             var uniqueName = $"{Guid.NewGuid()}_{file.FileName}";
-            var url = await UploadFileAsync(file, uniqueName);
+            var url = await UploadFileAsync(file, uniqueName, folderName, institutionSlug);
             urls.Add(url);
         }
         return urls;
     }
-    
-    public async Task<string> UploadFileAsync(Stream fileStream, string objectName, string folderName = "", string contentType = "application/pdf")
+
+    public async Task<string> UploadFileAsync(Stream fileStream, string objectName, string folderName = "", string institutionSlug = "", string contentType = "application/pdf")
     {
         using var client = CreateClient();
-        var newObjectName = BuildKey(folderName, objectName);
+        var prefixedObjectName = PrefixedObjectName(objectName, institutionSlug);
+        var newObjectName = BuildKey(folderName, institutionSlug, prefixedObjectName);
 
         var uploadRequest = new TransferUtilityUploadRequest
         {
@@ -95,7 +101,7 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
         var transferUtility = new TransferUtility(client);
         await transferUtility.UploadAsync(uploadRequest);
 
-        return objectName;
+        return prefixedObjectName;
     }
 }
 

@@ -1,12 +1,14 @@
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class UploadService(
     IStorageService storageService,
+    ICurrentTenantService currentTenant,
     ILogger<UploadService> logger) : IUploadService
 {
     private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -15,7 +17,7 @@ public class UploadService(
     };
 
     private const long MaxImageSize = 5 * 1024 * 1024;
-    private const long MaxFileSize = 20 * 1024 * 1024;
+    private const long MaxFileSize = 50 * 1024 * 1024;
 
     public async Task<IApiResponse<UploadResult>> UploadImageAsync(IFormFile file)
     {
@@ -29,7 +31,7 @@ public class UploadService(
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("Image exceeds 5MB limit");
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        await storageService.UploadFileAsync(file, objectName);
+        await storageService.UploadFileAsync(file, objectName, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("Image uploaded: {ObjectName}", objectName);
         return new UploadResult(objectName).ToOkApiResponse();
@@ -41,10 +43,10 @@ public class UploadService(
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("No file provided");
 
         if (file.Length > MaxFileSize)
-            return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("File exceeds 20MB limit");
+            return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("File exceeds 50MB limit");
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        await storageService.UploadFileAsync(file, objectName);
+        await storageService.UploadFileAsync(file, objectName, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("File uploaded: {ObjectName}", objectName);
         return new UploadResult(objectName).ToOkApiResponse();

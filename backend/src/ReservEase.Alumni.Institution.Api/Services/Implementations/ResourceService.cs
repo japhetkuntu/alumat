@@ -8,6 +8,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -15,6 +16,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class ResourceService(
     IAlumniPgRepository<Resource> resourceRepo,
     IStorageService storageService,
+    ICurrentTenantService currentTenant,
     ILogger<ResourceService> logger) : IResourceService
 {
     public async Task<IApiResponse<PgPagedResult<ResourceDto>>> GetResourcesAsync(ResourceFilter filter, AuthData admin)
@@ -103,13 +105,13 @@ public class ResourceService(
             if (request.File is not null)
             {
                 var fileName = $"{Guid.NewGuid():N}{Path.GetExtension(request.File.FileName)}";
-                resource.FileUrl = await storageService.UploadFileAsync(request.File, fileName);
+                resource.FileUrl = await storageService.UploadFileAsync(request.File, fileName, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                resource.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                resource.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             await resourceRepo.AddAsync(resource);
@@ -150,13 +152,13 @@ public class ResourceService(
             if (request.File is not null)
             {
                 var fileName = $"{Guid.NewGuid():N}{Path.GetExtension(request.File.FileName)}";
-                resource.FileUrl = await storageService.UploadFileAsync(request.File, fileName);
+                resource.FileUrl = await storageService.UploadFileAsync(request.File, fileName, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                resource.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name);
+                resource.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
             resource.UpdatedAt = DateTime.UtcNow;

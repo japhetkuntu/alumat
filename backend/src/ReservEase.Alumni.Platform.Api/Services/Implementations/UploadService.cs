@@ -23,7 +23,7 @@ public class UploadService(
 
     private const long MaxImageSize = 5 * 1024 * 1024;
 
-    public async Task<IApiResponse<UploadResult>> UploadImageAsync(IFormFile file)
+    public async Task<IApiResponse<UploadResult>> UploadImageAsync(IFormFile file, string? institutionSlug = null)
     {
         if (file is null || file.Length == 0)
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("No file provided");
@@ -35,7 +35,7 @@ public class UploadService(
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("Image exceeds 5MB limit");
 
         var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-        var url = await storageService.UploadFileAsync(file, objectName);
+        var url = await storageService.UploadFileAsync(file, objectName, institutionSlug: institutionSlug ?? "");
 
         logger.LogInformation("Platform image uploaded: {ObjectName}", objectName);
         return new UploadResult(url).ToOkApiResponse();

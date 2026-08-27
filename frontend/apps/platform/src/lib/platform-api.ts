@@ -307,10 +307,11 @@ export async function updateInstitutionLandingContent(id: string, landingPageSto
 
 // ─── Uploads ─────────────────────────────────────────────────────────────
 
-/** Upload a logo/icon image (max 5MB) and get back its public URL — used instead of hand-pasting a hosted URL. */
-export async function uploadPlatformImage(file: File): Promise<string> {
+/** Upload a logo/icon image (max 5MB) and get back its public URL — used instead of hand-pasting a hosted URL. Pass institutionSlug when the image belongs to one institution (e.g. editing its branding), so it's filed under that institution's own storage subfolder. */
+export async function uploadPlatformImage(file: File, institutionSlug?: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
+  if (institutionSlug) formData.append("institutionSlug", institutionSlug);
   // No explicit Content-Type — letting axios set it (with the multipart
   // boundary) from the FormData body itself; a hardcoded "multipart/form-data"
   // header here would drop the boundary parameter and break parsing server-side.

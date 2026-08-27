@@ -15,14 +15,14 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 [Authorize(Roles = "SuperAdmin,Support,Sales")]
 public class UploadsController(IUploadService uploadService) : DefaultController
 {
-    /// <summary>Upload a single image file (max 5MB). Returns its public URL.</summary>
+    /// <summary>Upload a single image file (max 5MB). Returns its public URL. Pass institutionSlug when the image belongs to a specific institution (e.g. editing its branding), so it's filed under that institution's own subfolder.</summary>
     [HttpPost("image")]
     [SwaggerOperation(Summary = "Upload image")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<UploadResult>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public async Task<IActionResult> UploadImage(IFormFile file)
+    public async Task<IActionResult> UploadImage(IFormFile file, [FromForm] string? institutionSlug = null)
     {
-        var result = await uploadService.UploadImageAsync(file);
+        var result = await uploadService.UploadImageAsync(file, institutionSlug);
         return result.ToActionResult();
     }
 }

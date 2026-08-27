@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using ReservEase.Alumni.Institution.Api.Services.Implementations;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using Xunit;
 
@@ -17,7 +18,8 @@ public class UploadServiceTests
     public async Task UploadImageAsync_ReturnsBadRequest_WhenFileIsNull()
     {
         var storageMock = new Mock<IStorageService>();
-        var service = new UploadService(storageMock.Object, new NullLogger<UploadService>());
+        var currentTenantMock = new Mock<ICurrentTenantService>();
+        var service = new UploadService(storageMock.Object, currentTenantMock.Object, new NullLogger<UploadService>());
 
         var response = await service.UploadImageAsync(null!);
 
@@ -29,9 +31,10 @@ public class UploadServiceTests
     public async Task UploadFileAsync_ReturnsBadRequest_WhenFileTooLarge()
     {
         var storageMock = new Mock<IStorageService>();
-        var service = new UploadService(storageMock.Object, new NullLogger<UploadService>());
+        var currentTenantMock = new Mock<ICurrentTenantService>();
+        var service = new UploadService(storageMock.Object, currentTenantMock.Object, new NullLogger<UploadService>());
 
-        var longBytes = new byte[21 * 1024 * 1024];
+        var longBytes = new byte[51 * 1024 * 1024];
         using var stream = new MemoryStream(longBytes);
         var file = new FormFile(stream, 0, longBytes.Length, "id", "large.bin")
         {
@@ -42,6 +45,6 @@ public class UploadServiceTests
         var response = await service.UploadFileAsync(file);
 
         Assert.Equal(400, response.Code);
-        Assert.Equal("File exceeds 20MB limit", response.Message);
+        Assert.Equal("File exceeds 50MB limit", response.Message);
     }
 }

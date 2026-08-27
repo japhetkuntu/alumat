@@ -60,7 +60,7 @@ builder.Services.AddScoped<ISupportCaseService, SupportCaseService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IUploadService, UploadService>();
 
-builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 50 * 1024 * 1024);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHealthChecks();

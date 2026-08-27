@@ -75,8 +75,8 @@ builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddScoped<IBroadcastService, BroadcastService>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 
-// Request body size limit (10 MB)
-builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 10 * 1024 * 1024);
+// Request body size limit (50 MB)
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 50 * 1024 * 1024);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHealthChecks();

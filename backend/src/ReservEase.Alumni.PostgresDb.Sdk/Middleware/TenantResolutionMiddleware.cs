@@ -99,7 +99,7 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
         if (institution is not null)
         {
-            currentTenant.SetInstitutionId(institution.Id);
+            currentTenant.SetInstitutionId(institution.Id, institution.Slug);
             context.Items["Institution"] = institution;
         }
 
