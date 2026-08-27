@@ -19,6 +19,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Akka" Version="1.5.52" />
+    <PackageReference Include="Akka.Cluster" Version="1.5.52" />
+    <PackageReference Include="Akka.Cluster.Tools" Version="1.5.52" />
+    <PackageReference Include="Akka.DependencyInjection" Version="1.5.52" />
   </ItemGroup>
 
   <ItemGroup>

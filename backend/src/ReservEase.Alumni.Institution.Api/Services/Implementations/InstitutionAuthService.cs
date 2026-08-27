@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Options;
@@ -12,7 +13,6 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
@@ -29,7 +29,7 @@ public class InstitutionAuthService(
     IRedisService<InstitutionRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    IEmailService emailService,
+    INotificationActor notificationActor,
     ILogger<InstitutionAuthService> logger) : IInstitutionAuthService
 {
     private const string PictureClaimType = "picture";
@@ -55,23 +55,18 @@ public class InstitutionAuthService(
 
     private async Task SendResetPasswordEmailAsync(string firstName, string email, string token, string baseUrl)
     {
-        try
-        {
-            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-            var brand = await GetBrandVarsAsync();
-            await emailService.SendEmailAsync(new SendEmailRequest
+        var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+        var brand = await GetBrandVarsAsync();
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
                     ? "reset-password"
                     : mailtrapConfig.Templates.ResetPassword,
                 TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
-            });
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to send reset password email to {Email}", email);
-        }
+            },
+            $"reset password email to {email}"));
     }
 
     public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -88,7 +83,7 @@ public class InstitutionAuthService(
             admin.PasswordResetSentAt = DateTime.UtcNow;
             await adminRepo.UpdateAsync(admin);
 
-            _ = SendResetPasswordEmailAsync(admin.FirstName, admin.Email, token, GetRequestBaseUrl());
+            await SendResetPasswordEmailAsync(admin.FirstName, admin.Email, token, GetRequestBaseUrl());
             return new object().ToOkApiResponse("Password reset instructions sent to your email.");
         }
         catch (Exception e)

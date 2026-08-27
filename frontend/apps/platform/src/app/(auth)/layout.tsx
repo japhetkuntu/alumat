@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           background: `
             radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--primary) 45%, transparent) 0%, transparent 55%),
             radial-gradient(110% 70% at -10% 110%, color-mix(in oklch, var(--primary) 25%, black) 0%, transparent 60%),
-            color-mix(in oklch, var(--sidebar) 85%, black)
+            color-mix(in oklch, #0f172a 85%, black)
           `,
         }}
       >

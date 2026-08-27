@@ -79,13 +79,7 @@ public class Institution : BaseEntity
     /// </summary>
     public NewsBanner? NewsBanner { get; set; }
 
-    // Plan & status — Plan/pricing tiers are not surfaced in any UI for now
-    // (revenue comes from PlatformFeePercentage below instead); MemberLimit/
-    // StorageLimitGb remain live as plain capacity limits, decoupled from Plan.
-    public string Plan { get; set; } = "Starter"; // Starter, Growth, Enterprise
     public string Status { get; set; } = "Trial";  // Trial, Active, Suspended, Cancelled
-    public int MemberLimit { get; set; } = 500;
-    public int StorageLimitGb { get; set; } = 5;
     public DateTime? TrialEndsAt { get; set; }
     public DateTime OnboardedAt { get; set; } = DateTime.UtcNow;
 

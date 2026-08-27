@@ -17,6 +17,7 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
+import { PhoneInput } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { memberClient, publicMemberClient, handleApiError, applyServerFieldErrors } from "@/lib/api-client";
 import { getDepartments, getBatches, getCurrentMembershipCampaign, type Department, type Batch } from "@/lib/member-api";
@@ -560,11 +561,12 @@ function RegisterForm() {
                   <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                     Mobile number
                   </Label>
-                  <Input id="phone" type="tel" placeholder="+233 XX XXX XXXX" error={!!errors.phone}
-                    className="h-11 text-[14px]" {...register("phone")} />
+                  <PhoneInput id="phone" error={!!errors.phone}
+                    value={watch("phone") ?? ""}
+                    onChange={(val) => setValue("phone", val, { shouldValidate: true })} />
                   <FieldError message={errors.phone?.message} />
                   <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
-                    Used to reach you by SMS for important updates.
+                    Used to reach you by SMS & WhatsApp for important updates.
                   </p>
                 </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}

@@ -214,6 +214,9 @@ services:
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__PlatformRedisConfig__ConnectionString: redis:6379
       Redis__PlatformRedisConfig__DbNumber: 2
+      MailtrapConfig__ApiKey: ${MAILTRAP_API_KEY}
+      MailtrapConfig__DefaultMessageSource__Name: ${MAIL_SENDER_NAME}
+      MailtrapConfig__DefaultMessageSource__Email: ${MAIL_SENDER_EMAIL}
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__PlatformSigningKey: ${PLATFORM_SIGNING_KEY}

@@ -63,8 +63,8 @@ export default function InstitutionsPage() {
         return;
       }
       const headers: (keyof InstitutionListItem)[] = [
-        "name", "slug", "plan", "status", "contactName", "contactEmail",
-        "memberCount", "memberLimit", "platformFeePercentage", "revenue", "onboardedAt",
+        "name", "slug", "status", "contactName", "contactEmail",
+        "memberCount", "platformFeePercentage", "revenue", "onboardedAt",
       ];
       const csv = [
         headers.join(","),
@@ -135,7 +135,6 @@ export default function InstitutionsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Institution</TableHead>
-              <TableHead>Plan</TableHead>
               <TableHead>Members</TableHead>
               <TableHead>Revenue</TableHead>
               <TableHead>Status</TableHead>
@@ -144,12 +143,12 @@ export default function InstitutionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!isLoading && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={7} />}
+            {!isLoading && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={6} />}
             {results.map((inst) => (
               <TableRow key={inst.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <UserAvatar name={inst.name} size="sm" />
+                    <UserAvatar src={inst.logoUrl} name={inst.name} size="sm" />
                     <div className="min-w-0">
                       <p className="font-semibold truncate">{inst.name}</p>
                       <p className="text-[12px] text-muted-foreground font-mono truncate">
@@ -158,7 +157,6 @@ export default function InstitutionsPage() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{inst.plan}</TableCell>
                 <TableCell>{inst.memberCount.toLocaleString()}</TableCell>
                 <TableCell>{formatCurrency(inst.revenue, "GHS")}</TableCell>
                 <TableCell>

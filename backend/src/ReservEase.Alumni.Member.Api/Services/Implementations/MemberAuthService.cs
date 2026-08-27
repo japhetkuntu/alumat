@@ -8,7 +8,7 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Mailtrap.Sdk.Services;
+using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Options;
@@ -32,7 +32,7 @@ public class MemberAuthService(
     IRedisService<MemberRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    IEmailService emailService,
+    INotificationActor notificationActor,
     IStorageService storageService,
     ILogger<MemberAuthService> logger) : IMemberAuthService
 {
@@ -107,8 +107,9 @@ public class MemberAuthService(
 
             await redis.SetAsync($"reg:otp:{email}", cached, TimeSpan.FromMinutes(15));
 
-            // Send OTP email (fire-and-forget)
-            _ = SendOtpEmailAsync(cached.FirstName, email, otp);
+            // The actual send happens off-request in the notification actor —
+            // this just resolves brand vars and enqueues it.
+            await SendOtpEmailAsync(cached.FirstName, email, otp);
 
             logger.LogInformation("OTP sent for registration, email: {Email}", email);
             return new object().ToOkApiResponse("Verification code sent to your email. Please check your inbox.");
@@ -210,8 +211,9 @@ public class MemberAuthService(
 
             await redis.SetAsync($"reg:otp:{email}", cached, TimeSpan.FromMinutes(15));
 
-            // Send OTP email (fire-and-forget)
-            _ = SendOtpEmailAsync(cached.FirstName, email, otp);
+            // The actual send happens off-request in the notification actor —
+            // this just resolves brand vars and enqueues it.
+            await SendOtpEmailAsync(cached.FirstName, email, otp);
 
             var remaining = 3 - cached.ResendCount;
             logger.LogInformation("OTP resent for email: {Email}, remaining attempts: {Remaining}", email, remaining);
@@ -241,7 +243,7 @@ public class MemberAuthService(
             member.EmailVerificationSentAt = DateTime.UtcNow;
             await memberRepo.UpdateAsync(member);
 
-            _ = SendVerificationLinkEmailAsync(member.FirstName, member.Email, token, GetRequestBaseUrl());
+            await SendVerificationLinkEmailAsync(member.FirstName, member.Email, token, GetRequestBaseUrl());
             return new object().ToOkApiResponse("Verification link sent to your email.");
         }
         catch (Exception e)
@@ -265,7 +267,7 @@ public class MemberAuthService(
             member.EmailVerificationSentAt = DateTime.UtcNow;
             await memberRepo.UpdateAsync(member);
 
-            _ = SendResetPasswordEmailAsync(member.FirstName, member.Email, token, GetRequestBaseUrl());
+            await SendResetPasswordEmailAsync(member.FirstName, member.Email, token, GetRequestBaseUrl());
             return new object().ToOkApiResponse("Password reset instructions sent to your email.");
         }
         catch (Exception e)
@@ -315,44 +317,34 @@ public class MemberAuthService(
 
     private async Task SendVerificationLinkEmailAsync(string firstName, string email, string token, string baseUrl)
     {
-        try
-        {
-            var link = $"{baseUrl}/auth/verify-email?token={token}&email={Uri.EscapeDataString(email)}";
-            var brand = await GetBrandVarsAsync();
-            await emailService.SendEmailAsync(new SendEmailRequest
+        var link = $"{baseUrl}/auth/verify-email?token={token}&email={Uri.EscapeDataString(email)}";
+        var brand = await GetBrandVarsAsync();
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.EmailVerificationLink)
                     ? "email-verification-link"
                     : mailtrapConfig.Templates.EmailVerificationLink,
                 TemplateVariables = new { first_name = firstName, verify_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
-            });
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to send verification link email to {Email}", email);
-        }
+            },
+            $"verification link email to {email}"));
     }
 
     private async Task SendResetPasswordEmailAsync(string firstName, string email, string token, string baseUrl)
     {
-        try
-        {
-            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-            var brand = await GetBrandVarsAsync();
-            await emailService.SendEmailAsync(new SendEmailRequest
+        var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+        var brand = await GetBrandVarsAsync();
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
                     ? "reset-password"
                     : mailtrapConfig.Templates.ResetPassword,
                 TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
-            });
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to send reset password email to {Email}", email);
-        }
+            },
+            $"reset password email to {email}"));
     }
 
     public async Task<IApiResponse<MemberTokenResponse>> LoginAsync(LoginRequest request)
@@ -622,20 +614,15 @@ public class MemberAuthService(
 
     private async Task SendOtpEmailAsync(string firstName, string email, string otp)
     {
-        try
-        {
-            var brand = await GetBrandVarsAsync();
-            await emailService.SendEmailAsync(new SendEmailRequest
+        var brand = await GetBrandVarsAsync();
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = mailtrapConfig.Templates.EmailVerification,
                 TemplateVariables = new { first_name = firstName, otp_code = otp, brand_name = brand.Name, brand_color = brand.Color, brand_logo = brand.Logo },
-            });
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to send OTP email to {Email}", email);
-        }
+            },
+            $"OTP email to {email}"));
     }
 
     private MemberAuthClaimData BuildClaimData(MemberEntity member) => new()

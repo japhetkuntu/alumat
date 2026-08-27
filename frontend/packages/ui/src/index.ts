@@ -1,5 +1,6 @@
 export * from "./lib/utils";
 export * from "./lib/brand-palette";
+export * from "./lib/countries";
 export * from "./hooks/use-debounce";
 
 export * from "./components/audience-scope-picker";
@@ -21,6 +22,7 @@ export * from "./components/media-gallery";
 export * from "./components/multi-image-upload";
 export * from "./components/page-shell";
 export * from "./components/pagination";
+export * from "./components/phone-input";
 export * from "./components/progress";
 export * from "./components/rich-text-editor";
 export * from "./components/search-modal";

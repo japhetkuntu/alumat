@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Event;
 using Microsoft.Extensions.DependencyInjection;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
+using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Actors;
@@ -133,6 +134,22 @@ public class NotificationDispatcherActor : ReceiveActor
             catch (Exception ex)
             {
                 _log.Error(ex, "Error dispatching broadcast to {0} recipients", cmd.Recipients.Count);
+            }
+        });
+
+        ReceiveAsync<SendEmailCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                var result = await emailService.SendEmailAsync(cmd.Request);
+                if (!result.Success)
+                    _log.Error("Email not delivered ({0}): {1}", cmd.Context, result.Error);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error sending email ({0})", cmd.Context);
             }
         });
     }

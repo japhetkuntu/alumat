@@ -7,6 +7,7 @@ import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
+import { PhoneInput } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -356,7 +357,6 @@ export default function MemberProfilePage() {
                 { id: "company",  label: "Company",  placeholder: "Where you work",    type: "text"  },
                 { id: "jobTitle", label: "Job title", placeholder: "Your current role", type: "text"  },
                 { id: "location", label: "Location",  placeholder: "City, Country",     type: "text"  },
-                { id: "phone",    label: "Phone",     placeholder: "+233 xx xxx xxxx",  type: "tel"   },
               ].map(({ id, label, placeholder, type }) => (
                 <div key={id} className="space-y-1.5">
                   <Label htmlFor={id} className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
@@ -365,8 +365,7 @@ export default function MemberProfilePage() {
                   <Input
                     id={id}
                     type={type}
-                    inputMode={type === "tel" ? "tel" : undefined}
-                    autoComplete={id === "phone" ? "tel" : id === "company" ? "organization" : undefined}
+                    autoComplete={id === "company" ? "organization" : undefined}
                     placeholder={placeholder}
                     value={profileForm[id as keyof typeof profileForm]}
                     onChange={e => setProfileForm(f => ({ ...f, [id]: e.target.value }))}
@@ -374,6 +373,16 @@ export default function MemberProfilePage() {
                   />
                 </div>
               ))}
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Phone
+                </Label>
+                <PhoneInput
+                  id="phone"
+                  value={profileForm.phone}
+                  onChange={val => setProfileForm(f => ({ ...f, phone: val }))}
+                />
+              </div>
             </div>
 
             <div className="flex items-start justify-between gap-4 rounded-xl p-3.5" style={{ background: "var(--muted)" }}>

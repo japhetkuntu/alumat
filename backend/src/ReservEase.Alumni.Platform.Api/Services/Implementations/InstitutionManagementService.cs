@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
+using ReservEase.Alumni.Platform.Api.Actors;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -25,7 +25,7 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// </summary>
 public class InstitutionManagementService(
     AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
-    IConfiguration config, IEmailService emailService, IOptions<MailtrapConfig> mailtrapConfigOptions,
+    IConfiguration config, INotificationActor notificationActor, IOptions<MailtrapConfig> mailtrapConfigOptions,
     ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
@@ -86,7 +86,7 @@ public class InstitutionManagementService(
                 .SumAsync(c => c.PlatformRevenueAmount);
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
-                i.Plan, i.Status, memberCount, i.MemberLimit, i.OnboardedAt,
+                i.LogoUrl, i.Status, memberCount, i.OnboardedAt,
                 i.PlatformFeePercentage, revenue, MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug)));
         }
 
@@ -122,8 +122,6 @@ public class InstitutionManagementService(
             return ApiResponseExtensions.ToConflictApiResponse<InstitutionDetailResponse>("Slug is already taken");
 
         var email = request.AdminEmail.Trim().ToLowerInvariant();
-        if (await db.Set<StaffEntity>().IgnoreQueryFilters().AnyAsync(a => a.Email == email))
-            return ApiResponseExtensions.ToConflictApiResponse<InstitutionDetailResponse>("An admin with that email already exists");
 
         if (request.MemberActivePolicy != MembershipActivityCalculator.ApprovedOnlyPolicy
             && request.MemberActivePolicy != MembershipActivityCalculator.DuesRequiredPolicy)
@@ -142,7 +140,6 @@ public class InstitutionManagementService(
                 SupportEmail = request.SupportEmail,
                 PrimaryColorHex = request.PrimaryColorHex,
                 SecondaryColorHex = request.SecondaryColorHex,
-                Plan = request.Plan,
                 MemberActivePolicy = request.MemberActivePolicy,
                 Status = "Trial",
                 TrialEndsAt = DateTime.UtcNow.AddDays(14),
@@ -445,7 +442,7 @@ public class InstitutionManagementService(
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Institution not found");
 
         var email = request.Email.Trim().ToLowerInvariant();
-        if (await db.Set<StaffEntity>().IgnoreQueryFilters().AnyAsync(s => s.Email == email))
+        if (await db.Set<StaffEntity>().IgnoreQueryFilters().AnyAsync(s => s.Email == email && s.InstitutionId == institutionId))
             return ApiResponseExtensions.ToConflictApiResponse<InstitutionStaffDto>("An admin with that email already exists");
 
         // No password is ever set or transmitted here — the invitee gets a
@@ -468,7 +465,7 @@ public class InstitutionManagementService(
         db.Set<StaffEntity>().Add(staff);
         await db.SaveChangesAsync();
 
-        _ = SendStaffInviteEmailAsync(staff.FirstName, staff.Email, staff.PasswordResetToken, institution.Name, InstitutionPortalUrl(institution.Slug));
+        SendStaffInviteEmailAsync(staff.FirstName, staff.Email, staff.PasswordResetToken, institution.Name, InstitutionPortalUrl(institution.Slug));
 
         logger.LogInformation("Invited staff {Email} to institution {InstitutionId}", email, institutionId);
         await auditLog.LogAsync(createdBy, actorName, $"invited admin {email}", institution.Name);
@@ -497,25 +494,20 @@ public class InstitutionManagementService(
             .ToOkApiResponse();
     }
 
-    private async Task SendStaffInviteEmailAsync(string firstName, string email, string token, string institutionName, string portalUrl)
+    private void SendStaffInviteEmailAsync(string firstName, string email, string token, string institutionName, string portalUrl)
     {
-        try
-        {
-            var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
-            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-            await emailService.SendEmailAsync(new SendEmailRequest
+        var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
+        var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
                     ? "reset-password"
                     : mailtrapConfig.Templates.ResetPassword,
                 TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = institutionName },
-            });
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to send staff invite email to {Email}", email);
-        }
+            },
+            $"staff invite email to {email}"));
     }
 
     private async Task<InstitutionDetailResponse> ToDetailDtoAsync(Institution i)
@@ -531,7 +523,7 @@ public class InstitutionManagementService(
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
-            i.Plan, i.Status, memberCount, i.MemberLimit, 0, i.StorageLimitGb,
+            i.Status, memberCount,
             i.OnboardedAt, i.TrialEndsAt,
             i.PlatformFeePercentage, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,

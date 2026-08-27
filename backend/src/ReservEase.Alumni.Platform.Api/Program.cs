@@ -49,6 +49,7 @@ builder.Services.AddPlatformBearerAuth(tokenConfig);
 builder.Services.AddApiVersioning(1);
 builder.Services.AddSwagger("Platform API");
 builder.Services.AddPlatformControllers();
+builder.Services.AddActorSystem();
 
 // Application services
 builder.Services.AddScoped<IPlatformAuthService, PlatformAuthService>();
@@ -98,6 +99,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
+app.UseActorSystem();
 
 await PostgresExtensionService.ApplyMigrationsAsync(app.Services);
 await DataSeeder.SeedAsync(app.Services);

@@ -53,12 +53,8 @@ export interface Institution {
   customDomain?: string;
   contactName: string;
   contactEmail: string;
-  plan: string;
   status: InstitutionStatus;
   memberCount: number;
-  memberLimit: number;
-  storageUsedGb: number;
-  storageLimitGb: number;
   onboardedAt: string;
   lastActivityAt: string;
   featureOverrides: { feature: string; planDefault: boolean; enabled: boolean; note?: string }[];

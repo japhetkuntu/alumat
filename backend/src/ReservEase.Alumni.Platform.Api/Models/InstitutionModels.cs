@@ -17,8 +17,6 @@ public class CreateInstitutionRequest
     [Required, EmailAddress]
     public string ContactEmail { get; set; } = string.Empty;
 
-    public string Plan { get; set; } = "Starter";
-
     /// <summary>"ApprovedOnly" (default) or "DuesRequired" — see Institution.MemberActivePolicy. The institution's own admins can change this later; this just sets the starting value at onboarding.</summary>
     [RegularExpression("^(ApprovedOnly|DuesRequired)$")]
     public string MemberActivePolicy { get; set; } = "ApprovedOnly";
@@ -51,8 +49,8 @@ public class CreateInstitutionRequest
 
 public record InstitutionListItemResponse(
     string Id, string Name, string Slug, string? CustomDomain,
-    string ContactName, string ContactEmail, string Plan, string Status,
-    int MemberCount, int MemberLimit, DateTime OnboardedAt,
+    string ContactName, string ContactEmail, string? LogoUrl, string Status,
+    int MemberCount, DateTime OnboardedAt,
     decimal PlatformFeePercentage, decimal Revenue,
     string MemberPortalUrl, string InstitutionPortalUrl);
 
@@ -64,7 +62,7 @@ public record InstitutionDetailResponse(
     string? MemberPortalTitle, string? MemberAuthHeadline, string? MemberAuthSubtext,
     bool RequireStudentId, string MemberActivePolicy, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
-    string Plan, string Status, int MemberCount, int MemberLimit, int StorageUsedGb, int StorageLimitGb,
+    string Status, int MemberCount,
     DateTime OnboardedAt, DateTime? TrialEndsAt,
     decimal PlatformFeePercentage, string? PaystackSubaccountCode,
     string? SettlementBankCode, string? SettlementBankName,

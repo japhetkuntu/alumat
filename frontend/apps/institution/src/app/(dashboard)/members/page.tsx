@@ -15,6 +15,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
+import { PhoneInput } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
 import { getMembers, approveMember, rejectMember, banMember, unbanMember, importMembers, type ImportMemberItem } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -511,7 +512,7 @@ export default function AdminMembersPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Mobile number</Label>
-                <Input placeholder="+233 XX XXX XXXX" value={addMemberForm.phone} onChange={(e) => setAddMemberForm((f) => ({ ...f, phone: e.target.value }))} />
+                <PhoneInput value={addMemberForm.phone} onChange={(val) => setAddMemberForm((f) => ({ ...f, phone: val }))} />
               </div>
             </div>
             <div className="space-y-1.5">

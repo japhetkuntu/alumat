@@ -19,7 +19,7 @@ export default function PlatformDashboardPage() {
   });
   const institutions = institutionsPage?.results ?? [];
 
-  const attentionList = institutions.filter((i) => i.status === "Suspended" || i.memberCount / i.memberLimit > 0.85);
+  const attentionList = institutions.filter((i) => i.status === "Suspended");
   const recentSignups = [...institutions].sort((a, b) => +new Date(b.onboardedAt) - +new Date(a.onboardedAt)).slice(0, 3);
 
   return (
@@ -110,13 +110,9 @@ export default function PlatformDashboardPage() {
               <div key={inst.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold truncate">{inst.name}</p>
-                  <p className="text-[12px] text-muted-foreground truncate">
-                    {inst.status === "Suspended" ? "Suspended" : `${Math.round((inst.memberCount / inst.memberLimit) * 100)}% of member limit`}
-                  </p>
+                  <p className="text-[12px] text-muted-foreground truncate">Suspended</p>
                 </div>
-                <Badge variant={inst.status === "Suspended" ? "destructive" : "warning"}>
-                  {inst.status === "Suspended" ? "Suspended" : "Usage risk"}
-                </Badge>
+                <Badge variant="destructive">Suspended</Badge>
               </div>
             ))}
           </CardContent>

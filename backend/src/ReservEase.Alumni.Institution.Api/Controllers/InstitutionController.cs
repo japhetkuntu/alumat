@@ -111,6 +111,6 @@ public class InstitutionController(
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
-            i.Plan, i.Status, i.MemberLimit, i.StorageLimitGb, memberPortalUrl);
+            i.Status, memberPortalUrl);
     }
 }

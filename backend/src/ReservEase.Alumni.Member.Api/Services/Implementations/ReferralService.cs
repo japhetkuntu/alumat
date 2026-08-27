@@ -3,7 +3,7 @@ using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Mailtrap.Sdk.Services;
+using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
@@ -22,7 +22,7 @@ public class ReferralService(
     ICurrentTenantService currentTenant,
     IHttpContextAccessor httpContextAccessor,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    IEmailService emailService,
+    INotificationActor notificationActor,
     ILogger<ReferralService> logger) : IReferralService
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
@@ -128,11 +128,10 @@ public class ReferralService(
 
             await referralRepo.AddAsync(referral);
 
-            // Send invitation email
-            try
-            {
-                var brand = await GetBrandVarsAsync();
-                await emailService.SendEmailAsync(new SendEmailRequest
+            // The actual send happens off-request in the notification actor.
+            var brand = await GetBrandVarsAsync();
+            notificationActor.Tell(new SendEmailCommand(
+                new SendEmailRequest
                 {
                     To = [new EmailContact { Email = normalizedEmail }],
                     TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ReferralInvitation)
@@ -147,12 +146,8 @@ public class ReferralService(
                         brand_color = brand.Color,
                         brand_logo = brand.Logo,
                     },
-                });
-            }
-            catch (Exception emailEx)
-            {
-                logger.LogWarning(emailEx, "Failed to send referral email to {Email}", normalizedEmail);
-            }
+                },
+                $"referral invitation email to {normalizedEmail}"));
 
             return ((object)new { Message = "Invitation sent successfully." }).ToCreatedApiResponse("Invitation sent.");
         }

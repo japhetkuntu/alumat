@@ -43,10 +43,7 @@ public static class DataSeeder
                 ContactEmail = seed["ContactEmail"] ?? "alumni.office@example.com",
                 SupportEmail = seed["SupportEmail"] ?? "support@example.com",
                 PrimaryColorHex = seed["PrimaryColorHex"] ?? "#0e7143",
-                Plan = seed["Plan"] ?? "Enterprise",
                 Status = "Active",
-                MemberLimit = int.TryParse(seed["MemberLimit"], out var limit) ? limit : 100_000,
-                StorageLimitGb = int.TryParse(seed["StorageLimitGb"], out var storage) ? storage : 500,
                 OnboardedAt = DateTime.UtcNow,
                 CreatedBy = "seeder",
             };

@@ -8,7 +8,7 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Mailtrap.Sdk.Services;
+using ReservEase.Alumni.Platform.Api.Actors;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
@@ -23,7 +23,7 @@ public class PlatformAuthService(
     IRedisService<PlatformRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    IEmailService emailService,
+    INotificationActor notificationActor,
     IHttpContextAccessor httpContextAccessor,
     ILogger<PlatformAuthService> logger) : IPlatformAuthService
 {
@@ -39,24 +39,19 @@ public class PlatformAuthService(
 
     private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
 
-    private async Task SendResetPasswordEmailAsync(string name, string email, string token, string baseUrl)
+    private void SendResetPasswordEmailAsync(string name, string email, string token, string baseUrl)
     {
-        try
-        {
-            var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-            await emailService.SendEmailAsync(new SendEmailRequest
+        var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = name }],
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
                     ? "reset-password"
                     : mailtrapConfig.Templates.ResetPassword,
                 TemplateVariables = new { first_name = name, reset_url = link },
-            });
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Failed to send reset password email to {Email}", email);
-        }
+            },
+            $"reset password email to {email}"));
     }
 
     public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -73,7 +68,7 @@ public class PlatformAuthService(
             staff.PasswordResetSentAt = DateTime.UtcNow;
             await staffRepo.UpdateAsync(staff);
 
-            _ = SendResetPasswordEmailAsync(staff.Name, staff.Email, token, GetRequestBaseUrl());
+            SendResetPasswordEmailAsync(staff.Name, staff.Email, token, GetRequestBaseUrl());
             return new object().ToOkApiResponse("Password reset instructions sent to your email.");
         }
         catch (Exception e)

@@ -25,10 +25,7 @@ public record InstitutionResponse(
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
-    string Plan,
     string Status,
-    int MemberLimit,
-    int StorageLimitGb,
     // Shareable Member Portal URL for this institution — null if MemberPortalBaseDomain isn't configured.
     string? MemberPortalUrl);
 

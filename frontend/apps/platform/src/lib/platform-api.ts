@@ -41,10 +41,9 @@ export interface InstitutionListItem {
   customDomain?: string | null;
   contactName: string;
   contactEmail: string;
-  plan: string;
+  logoUrl?: string | null;
   status: string;
   memberCount: number;
-  memberLimit: number;
   onboardedAt: string;
   platformFeePercentage: number;
   revenue: number;
@@ -78,12 +77,8 @@ export interface InstitutionDetail {
   disabledFeatures: string[];
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
-  plan: string;
   status: string;
   memberCount: number;
-  memberLimit: number;
-  storageUsedGb: number;
-  storageLimitGb: number;
   onboardedAt: string;
   trialEndsAt?: string | null;
   platformFeePercentage: number;
@@ -102,7 +97,6 @@ export interface CreateInstitutionRequest {
   slug: string;
   contactName: string;
   contactEmail: string;
-  plan?: string;
   memberActivePolicy?: "ApprovedOnly" | "DuesRequired";
   portalName?: string;
   supportEmail?: string;

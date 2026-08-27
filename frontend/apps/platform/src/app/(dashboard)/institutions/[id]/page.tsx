@@ -31,7 +31,7 @@ import {
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
 
-const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Usage & Limits", "Payments"] as const;
+const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments"] as const;
 
 const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario: "", description: "", imageUrl: "" };
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
@@ -42,21 +42,6 @@ const statusBadge: Record<string, { label: string; variant: "info" | "success" |
   Suspended: { label: "Suspended", variant: "destructive" },
   Cancelled: { label: "Cancelled", variant: "warning" },
 };
-
-function Limit({ label, used, limit, unit = "" }: { label: string; used: number; limit: number; unit?: string }) {
-  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-  return (
-    <div className="mb-4">
-      <div className="flex justify-between text-[13px] mb-1.5">
-        <span className="font-semibold">{label}</span>
-        <span className="text-muted-foreground">{used.toLocaleString()}{unit} / {limit.toLocaleString()}{unit}</span>
-      </div>
-      <div className="h-[7px] bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${pct > 85 ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
 
 /** A URL text field with an "Upload" button beside it — uploads to S3-backed storage and fills the field, instead of requiring a hand-pasted hosted URL. */
 function ImageUrlField({ label, hint, value, onChange, placeholder }: {
@@ -331,7 +316,7 @@ export default function InstitutionDetailPage() {
                 <Badge variant={badge.variant}>{badge.label}</Badge>
               </h1>
               <p className="text-[13px] text-muted-foreground font-mono mt-1">
-                {inst.customDomain ?? inst.memberPortalUrl.replace(/^https?:\/\//, "")} &middot; {inst.plan} plan &middot; {inst.memberCount.toLocaleString()} members
+                {inst.customDomain ?? inst.memberPortalUrl.replace(/^https?:\/\//, "")} &middot; {inst.memberCount.toLocaleString()} members
               </p>
             </div>
           </div>
@@ -384,7 +369,6 @@ export default function InstitutionDetailPage() {
             <CardContent className="p-5 space-y-3 text-[13.5px]">
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Primary contact</span><span className="font-semibold">{inst.contactName}</span></div>
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Contact email</span><span className="font-semibold">{inst.contactEmail}</span></div>
-              <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Plan</span><span className="font-semibold">{inst.plan}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Onboarded</span><span className="font-semibold">{formatDate(inst.onboardedAt)}</span></div>
             </CardContent>
           </Card>
@@ -787,17 +771,6 @@ export default function InstitutionDetailPage() {
                 </div>
               ))
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {tab === "Usage & Limits" && (
-        <Card className="max-w-[900px]">
-          <CardContent className="p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
-              <Limit label="Members" used={inst.memberCount} limit={inst.memberLimit} />
-              <Limit label="Storage" used={inst.storageUsedGb} limit={inst.storageLimitGb} unit=" GB" />
-            </div>
           </CardContent>
         </Card>
       )}

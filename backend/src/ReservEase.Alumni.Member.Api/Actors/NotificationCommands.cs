@@ -1,6 +1,17 @@
+using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 
 namespace ReservEase.Alumni.Member.Api.Actors;
+
+/// <summary>
+/// Sends one email off the HTTP request path. Unlike NotificationCommand, this
+/// carries no InstitutionId and needs none — the caller resolves any
+/// tenant-branded content (brand name/color/logo) in its own request-scoped
+/// GetBrandVarsAsync() before building Request, so the actor's job is purely
+/// "make the outbound HTTP call to Mailtrap, catch and log any failure, never
+/// let it surface back to the caller."
+/// </summary>
+public sealed record SendEmailCommand(SendEmailRequest Request, string Context);
 
 /// <summary>
 /// Marker base for all notification dispatch commands. Every command carries the

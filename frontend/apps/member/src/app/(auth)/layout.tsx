@@ -28,9 +28,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         className="hidden md:flex md:w-[42%] lg:w-[46%] relative flex-col justify-center overflow-hidden px-10 lg:px-14 py-10"
         style={{
           background: `
-            radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--primary) 55%, transparent) 0%, transparent 55%),
-            radial-gradient(110% 70% at -10% 110%, color-mix(in oklch, var(--primary) 35%, black) 0%, transparent 60%),
-            color-mix(in oklch, var(--primary) 78%, black)
+            radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--primary) 45%, transparent) 0%, transparent 55%),
+            radial-gradient(110% 70% at -10% 110%, color-mix(in oklch, var(--primary) 25%, black) 0%, transparent 60%),
+            color-mix(in oklch, #0f172a 85%, black)
           `,
         }}
       >
@@ -63,7 +63,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
               the left edge with dead space beside it. */}
           <div className="max-w-[92%] xl:max-w-[480px] space-y-5">
             <h1
-              className="leading-[1.12]"
+              className="font-[family-name:var(--font-display)] leading-[1.12]"
               style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}
             >
               {headline}
