@@ -12,7 +12,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          "flex h-11 w-full rounded-[10px] border border-input bg-background px-3 text-[14px] text-foreground shadow-sm transition-all duration-150",
+          // 16px below md: iOS Safari auto-zooms the whole page on focus for
+          // any input with a computed font-size under 16px, forcing the user
+          // to manually zoom back out afterward — 14px only kicks in once a
+          // pointer-driven layout (md+) makes that non-issue.
+          "flex h-11 w-full rounded-[10px] border border-input bg-background px-3 text-[16px] md:text-[14px] text-foreground shadow-sm transition-all duration-150",
           "placeholder:text-muted-foreground/65",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:border-ring/60",
           "disabled:cursor-not-allowed disabled:opacity-55 disabled:bg-muted/40",

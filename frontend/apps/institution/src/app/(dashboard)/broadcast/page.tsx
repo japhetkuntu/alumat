@@ -65,9 +65,9 @@ export default function BroadcastPage() {
   const canSend = message.trim().length > 0 && channelsSelected;
 
   return (
-    <div className="p-[26px] max-w-[820px] mx-auto">
+    <div className="p-4 sm:p-[26px] max-w-[820px] mx-auto">
       <div>
-        <h1 className="text-[25px] font-bold m-0">Broadcast</h1>
+        <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Broadcast</h1>
         <p className="text-muted-foreground text-[13px] mt-1.5">
           Send an urgent announcement (e.g. a funeral notice or school emergency) to a filtered group of members via SMS and/or in-app notification.
         </p>

@@ -20,7 +20,7 @@ export function PageHeader({ eyebrow, title, description, children, className }:
           <p className="text-[12.5px] font-medium text-muted-foreground mb-1">{eyebrow}</p>
         )}
         <h1
-          className="font-[family-name:var(--font-display)] tracking-tight"
+          className="tracking-tight"
           style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}
         >
           {title}

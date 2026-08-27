@@ -343,6 +343,18 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
         >
           <div className="flex items-center gap-2.5">
+            {/* Menu button sits on the left, matching the drawer it opens —
+                the drawer itself slides in from the left, so the control for
+                it belongs on the same side rather than opposite it. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 -ml-1"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open full menu"
+            >
+              <Menu size={20} className="text-muted-foreground" />
+            </Button>
             {brandMark ? (
               <img src={brandMark} alt={brandName} className="w-8 h-8 rounded-lg object-cover shrink-0" />
             ) : (
@@ -350,19 +362,10 @@ export function MemberLayout({ children }: { children: ReactNode }) {
                 <span className="text-[12px] font-bold text-white">{getInitials(brandName)}</span>
               </div>
             )}
-            <span className="font-bold text-[14.5px] leading-tight tracking-tight truncate max-w-[180px]">{brandName}</span>
+            <span className="font-bold text-[14.5px] leading-tight tracking-tight truncate max-w-[140px]">{brandName}</span>
           </div>
           <div className="flex items-center gap-1">
             <NotificationPanel />
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-10 w-10 p-0 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95" 
-              onClick={() => setMobileOpen(true)}
-              aria-label="Open full menu"
-            >
-              <Menu size={20} className="text-muted-foreground" />
-            </Button>
           </div>
         </div>
 

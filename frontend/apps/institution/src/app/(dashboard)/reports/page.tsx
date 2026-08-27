@@ -230,9 +230,9 @@ export default function AdminReportsPage() {
   };
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       <div>
-        <h1 className="text-[25px] font-bold m-0">Reports &amp; Exports</h1>
+        <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Reports &amp; Exports</h1>
         <p className="text-muted-foreground text-[13px] mt-1.5">Evidence for community health, fundraising, and operational follow-up.</p>
       </div>
 

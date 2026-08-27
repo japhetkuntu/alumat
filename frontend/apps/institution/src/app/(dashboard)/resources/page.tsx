@@ -182,10 +182,10 @@ export default function AdminResourcesPage() {
   const totalPages = data?.totalPages ?? 1;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
-      <div className="flex items-end justify-between gap-4">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Resources</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Resources</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Keep institutional knowledge easy to find and reuse.</p>
         </div>
         <Button onClick={() => setShowCreate(!showCreate)}><Plus size={14} />Add resource</Button>

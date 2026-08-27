@@ -160,7 +160,7 @@ export default function AdminJobDetailPage() {
   const sc = statusConfig[job.status] ?? statusConfig.Active;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-6 pb-16">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-6 pb-16">
       {/* Breadcrumb */}
       <nav className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex items-center gap-1.5 text-sm">

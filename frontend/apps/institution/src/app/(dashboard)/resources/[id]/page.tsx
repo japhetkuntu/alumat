@@ -54,7 +54,7 @@ export default function AdminResourceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-[26px] space-y-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-[26px] space-y-6 max-w-4xl mx-auto">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -63,7 +63,7 @@ export default function AdminResourceDetailPage() {
 
   if (!resource) {
     return (
-      <div className="p-[26px] max-w-4xl mx-auto">
+      <div className="p-4 sm:p-[26px] max-w-4xl mx-auto">
         <Link href="/resources">
           <Button variant="ghost" size="sm" className="mb-6"><ArrowLeft size={14} />Back to Resources</Button>
         </Link>
@@ -75,7 +75,7 @@ export default function AdminResourceDetailPage() {
   const colorCls = categoryColor[resource.category] ?? "bg-muted text-muted-foreground";
 
   return (
-    <div className="p-[26px] space-y-8 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-[26px] space-y-8 max-w-4xl mx-auto">
       {/* Breadcrumb */}
       <nav className="flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex items-center gap-1.5 text-sm">

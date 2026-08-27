@@ -465,7 +465,10 @@ public class InstitutionManagementService(
         db.Set<StaffEntity>().Add(staff);
         await db.SaveChangesAsync();
 
-        SendStaffInviteEmailAsync(staff.FirstName, staff.Email, staff.PasswordResetToken, institution.Name, InstitutionPortalUrl(institution.Slug));
+        var institutionDisplayName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+        SendStaffInviteEmailAsync(
+            staff.FirstName, staff.Email, staff.PasswordResetToken, institutionDisplayName, InstitutionPortalUrl(institution.Slug),
+            institution.PrimaryColorHex, institution.SecondaryColorHex, institution.LogoUrl);
 
         logger.LogInformation("Invited staff {Email} to institution {InstitutionId}", email, institutionId);
         await auditLog.LogAsync(createdBy, actorName, $"invited admin {email}", institution.Name);
@@ -494,7 +497,9 @@ public class InstitutionManagementService(
             .ToOkApiResponse();
     }
 
-    private void SendStaffInviteEmailAsync(string firstName, string email, string token, string institutionName, string portalUrl)
+    private void SendStaffInviteEmailAsync(
+        string firstName, string email, string token, string institutionName, string portalUrl,
+        string? primaryColor, string? secondaryColor, string? logoUrl)
     {
         var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
         var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
@@ -505,7 +510,11 @@ public class InstitutionManagementService(
                 TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
                     ? "reset-password"
                     : mailtrapConfig.Templates.ResetPassword,
-                TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = institutionName },
+                TemplateVariables = new
+                {
+                    first_name = firstName, reset_url = link, brand_name = institutionName,
+                    brand_color = primaryColor, brand_secondary_color = secondaryColor, brand_logo = logoUrl,
+                },
             },
             $"staff invite email to {email}"));
     }

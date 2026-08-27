@@ -91,10 +91,10 @@ export default function AdminMentorshipPage() {
   }
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Mentorship</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Mentorship</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Review mentor capacity and help pairing requests move forward.</p>
           {isAdmin && !isSuperAdmin && (
             <p className="text-xs text-muted-foreground mt-1">You are scoped to your graduation year group; Super Admins can manage all year groups.</p>

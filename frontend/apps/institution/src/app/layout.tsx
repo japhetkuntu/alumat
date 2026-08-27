@@ -48,7 +48,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export async function generateViewport(): Promise<Viewport> {
   const theme = await getInstitutionTheme();
-  return { themeColor: theme?.primaryColorHex || "#2563eb" };
+  // A custom `generateViewport` REPLACES Next.js's default viewport meta tag
+  // rather than merging with it — omitting width/initialScale here meant no
+  // `width=device-width, initial-scale=1` was ever rendered at all, so mobile
+  // browsers fell back to a ~980px desktop layout viewport and scaled the
+  // whole page down, which is exactly what "have to manually zoom in/out to
+  // align it" looks like.
+  return { width: "device-width", initialScale: 1, themeColor: theme?.primaryColorHex || "#2563eb" };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

@@ -274,10 +274,10 @@ export default function AdminCampaignsPage() {
   const totalPages = data?.totalPages ?? 1;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-4">
-      <header className="flex items-end justify-between gap-4">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-4">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Fundraisers</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Fundraisers</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Initiatives outside standard membership dues.</p>
         </div>
         <Button onClick={() => setShowCreate(!showCreate)}>

@@ -105,10 +105,10 @@ export default function AdminContributionsPage() {
   };
 
   return (
-    <div className="p-[26px] max-w-[1250px] mx-auto space-y-4">
-      <div className="flex items-end justify-between gap-4">
+    <div className="p-4 sm:p-[26px] max-w-[1250px] mx-auto space-y-4">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Contributions</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Contributions</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">A complete ledger for fundraiser and membership dues payments.</p>
           <p className="text-muted-foreground text-[12px] mt-1">Online payments are processed via Paystack — your institution receives the full amount members pay.</p>
         </div>

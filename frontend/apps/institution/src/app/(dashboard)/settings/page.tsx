@@ -161,10 +161,10 @@ export default function BrandingSettingsPage() {
   const tenantHost = useHostname();
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto">
-      <header className="flex items-end justify-between gap-4 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-700">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto">
+      <header className="flex items-end justify-between gap-4 mb-6 flex-wrap animate-in fade-in slide-in-from-bottom-3 duration-700">
         <div className="space-y-1">
-          <h1 className="text-[25px] font-bold m-0">Branding &amp; Settings</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Branding &amp; Settings</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Manage the identity and operating preferences for this institution.</p>
         </div>
       </header>

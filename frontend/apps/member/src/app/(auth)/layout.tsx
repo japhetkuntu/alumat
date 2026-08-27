@@ -25,13 +25,14 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
 
       {/* ── Left — branding panel ── */}
       <aside
-        className="hidden md:flex md:w-[42%] lg:w-[46%] relative flex-col justify-center overflow-hidden px-10 lg:px-14 py-10"
+        className="hidden md:flex md:w-[42%] lg:w-[46%] relative flex-col justify-center overflow-y-auto px-10 lg:px-14 py-10"
         style={{
-          background: `
-            radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--primary) 45%, transparent) 0%, transparent 55%),
-            radial-gradient(110% 70% at -10% 110%, color-mix(in oklch, var(--primary) 25%, black) 0%, transparent 60%),
-            color-mix(in oklch, #0f172a 85%, black)
-          `,
+          // Flat solid fill, no gradient — blending two brand colors into
+          // each other risks exactly the low-contrast, muddy look a hard
+          // gradient produces for an unpredictable pair. Secondary shows up
+          // instead as a small solid-fill badge below, never mixed into a
+          // background or behind text.
+          background: "var(--brand-primary-dark, var(--primary))",
         }}
       >
         {/* Dot-grid texture — the same kind of quiet depth a flat brand-color fill can't give */}
@@ -40,7 +41,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px)", backgroundSize: "26px 26px" }}
         />
 
-        <div className="relative space-y-10 w-full">
+        <div className="relative space-y-7 w-full">
           {/* Logo mark — the institution's own icon, or an initials badge as fallback */}
           <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
             {markImage ? (
@@ -48,7 +49,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             ) : (
               <div
                 className="h-9 w-9 rounded-lg flex items-center justify-center"
-                style={{ background: "rgba(255,255,255,0.12)" }}
+                style={{ background: "var(--brand-accent, rgba(255,255,255,0.12))" }}
               >
                 <span className="text-[13px] font-bold text-white tracking-tight">{getInitials(displayName)}</span>
               </div>
@@ -77,7 +78,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           </div>
 
           {/* Feature list */}
-          <ul className="space-y-4">
+          <ul className="space-y-3">
             {[
               "Find and reconnect with classmates",
               "Get first access to jobs and mentorship",

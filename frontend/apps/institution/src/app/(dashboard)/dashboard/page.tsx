@@ -6,6 +6,8 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
+import { StatCard, StatCardSkeleton } from "@alumni/ui";
+import { Users, TrendingUp, Wallet, CalendarDays } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -64,10 +66,10 @@ export default function AdminDashboardPage() {
   const todayLabel = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
 
   return (
-    <div className="p-[26px] pt-[26px] max-w-[1240px] mx-auto">
-      <div className="flex items-end justify-between gap-4 mb-5">
+    <div className="p-4 sm:p-[26px] pt-[26px] max-w-[1240px] mx-auto">
+      <div className="flex items-end justify-between gap-4 mb-5 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">{greeting}</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">{greeting}</h1>
           <p className="mt-1.5 text-muted-foreground text-[13px]">{todayLabel} &middot; Institution operations overview</p>
         </div>
         <span className="shrink-0 whitespace-nowrap px-2.5 py-2 rounded-[6px] text-[12px] font-bold" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
@@ -88,34 +90,48 @@ export default function AdminDashboardPage() {
       )}
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[92px]" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-start">
+          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="card p-4">
-            <span className="text-[12px] text-muted-foreground">Total members</span>
-            <b className="block text-[25px] my-2 tabular-nums">{totalMembers.toLocaleString()}</b>
-            <small className="text-[12px]" style={{ color: "var(--success)" }}>
-              +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
-              <Link href="/members" className="underline">{pendingApprovals} pending</Link>
-            </small>
-          </div>
-          <div className="card p-4">
-            <span className="text-[12px] text-muted-foreground">Active fundraisers &amp; dues</span>
-            <b className="block text-[25px] my-2 tabular-nums">{activeCampaigns.length}</b>
-            <small className="text-[12px]" style={{ color: approachingDeadline > 0 ? "var(--warning)" : "var(--muted-foreground)" }}>{approachingDeadline} approaching deadline</small>
-          </div>
-          <div className="card p-4">
-            <span className="text-[12px] text-muted-foreground">Total collected</span>
-            <b className="block text-[25px] my-2 tabular-nums">{formatCurrency(totalAmountCollected)}</b>
-            <small className="text-[12px]" style={{ color: "var(--success)" }}>{totalContributions} contributions</small>
-          </div>
-          <div className="card p-4">
-            <span className="text-[12px] text-muted-foreground">Upcoming events</span>
-            <b className="block text-[25px] my-2 tabular-nums">{upcomingEvents}</b>
-            <small className="text-[12px] text-muted-foreground">+ {openJobs} open job postings</small>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-start">
+          <StatCard
+            icon={Users}
+            tone="primary"
+            label="Total members"
+            value={totalMembers.toLocaleString()}
+            sub={
+              <span style={{ color: "var(--success)" }}>
+                +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
+                <Link href="/members" className="underline">{pendingApprovals} pending</Link>
+              </span>
+            }
+          />
+          <StatCard
+            icon={TrendingUp}
+            tone="accent"
+            label="Active fundraisers & dues"
+            value={activeCampaigns.length}
+            sub={
+              <span style={{ color: approachingDeadline > 0 ? "var(--warning)" : undefined }}>
+                {approachingDeadline} approaching deadline
+              </span>
+            }
+          />
+          <StatCard
+            icon={Wallet}
+            tone="primary"
+            label="Total collected"
+            value={formatCurrency(totalAmountCollected)}
+            sub={<span style={{ color: "var(--success)" }}>{totalContributions} contributions</span>}
+          />
+          <StatCard
+            icon={CalendarDays}
+            tone="accent"
+            label="Upcoming events"
+            value={upcomingEvents}
+            sub={`+ ${openJobs} open job postings`}
+          />
         </div>
       )}
 

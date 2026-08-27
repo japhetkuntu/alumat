@@ -24,14 +24,24 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 /// Host-header-only, exactly as before.
 ///
 /// Separately, an "X-Internal-Tenant-Host" header is honored in every
-/// environment, but ONLY from loopback-originated requests — this exists
+/// environment, but ONLY from requests originating on a private/internal
+/// address (loopback, or Docker's own bridge-network ranges) — this exists
 /// because Node's fetch() (used by each frontend's server-side tenant-theme
 /// fetch, see apps/*/src/lib/theme.ts) silently ignores any caller-supplied
 /// "Host" header and always sends the request URL's own host instead, so the
-/// browser's real subdomain has to be forwarded some other way for that one
-/// internal, same-machine call. Safe to trust unconditionally because these
-/// loopback ports are never reachable from the internet (nginx/firewall only
-/// expose 80/443) — nothing external can ever forge this header.
+/// browser's real subdomain has to be forwarded some other way for that
+/// internal call. In the actual docker-compose deployment this call is
+/// frontend-container-to-api-container over the "alumni-net" bridge network
+/// (not loopback — loopback only covers same-machine/same-container calls,
+/// e.g. local dev with everything on one host), so loopback-only trust never
+/// actually matched in production and every such request silently fell
+/// through to DefaultInstitutionSlug instead — this is what made every
+/// institution's login page render one fixed institution's branding
+/// regardless of which one was actually being visited. Safe to trust the
+/// wider private range unconditionally because institution-api/member-api
+/// publish no host ports at all ("nginx routes all external traffic
+/// internally" — see docker-compose.yml) — nothing outside our own
+/// containers can ever reach these services to forge this header.
 ///
 /// Falls back to a configured "DefaultInstitutionSlug" when nothing else
 /// matches — this is what keeps every existing request (today's fixed
@@ -68,7 +78,7 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         var institution = await ResolveByHostAsync(host);
 
         var remoteIp = context.Connection.RemoteIpAddress;
-        if (institution is null && remoteIp is not null && System.Net.IPAddress.IsLoopback(remoteIp) &&
+        if (institution is null && remoteIp is not null && IsPrivateOrLoopback(remoteIp) &&
             context.Request.Headers.TryGetValue(InternalTenantHostHeader, out var internalHostValues))
         {
             var internalHost = internalHostValues.ToString().Trim().ToLowerInvariant();
@@ -104,6 +114,30 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         }
 
         await next(context);
+    }
+
+    /// <summary>Loopback, or one of the RFC1918/ULA private ranges Docker's default bridge networks draw from — never a publicly routable address.</summary>
+    private static bool IsPrivateOrLoopback(System.Net.IPAddress ip)
+    {
+        if (System.Net.IPAddress.IsLoopback(ip)) return true;
+
+        if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+
+        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            var b = ip.GetAddressBytes();
+            return b[0] == 10
+                || (b[0] == 172 && b[1] is >= 16 and <= 31)
+                || (b[0] == 192 && b[1] == 168);
+        }
+
+        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+        {
+            var b = ip.GetAddressBytes();
+            return (b[0] & 0xfe) == 0xfc; // fc00::/7 (unique local)
+        }
+
+        return false;
     }
 }
 

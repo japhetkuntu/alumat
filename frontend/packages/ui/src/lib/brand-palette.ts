@@ -104,6 +104,23 @@ function fromOklch(l: number, c: number, h: number): string {
 /** Hue (radians) of the platform's own default green (#0e7143) — used when a seed has no real hue to preserve. */
 const DEFAULT_HUE = toOklch("#0e7143").h;
 
+// Below this hue separation, primary and secondary render close enough to
+// the same color that a "duotone" surface built from both would just look
+// like primary rendered twice — not wrong, just pointless. Institutions
+// that pick two shades of the same hue (common when they only really have
+// one color in mind) fall back to a single-tone treatment instead.
+const MIN_ACCENT_HUE_SEPARATION_DEG = 20;
+
+function hueDegrees(hRadians: number): number {
+  const deg = (hRadians * 180) / Math.PI;
+  return ((deg % 360) + 360) % 360;
+}
+
+function hueDistanceDeg(h1: number, h2: number): number {
+  const diff = Math.abs(hueDegrees(h1) - hueDegrees(h2)) % 360;
+  return diff > 180 ? 360 - diff : diff;
+}
+
 /** Softly clamps a seed color into a workable saturation/lightness band before any derivation happens. */
 export function clampSeed(hex: string): string {
   const { l, c, h } = toOklch(hex);
@@ -169,11 +186,16 @@ export interface BrandPalette {
   /** rgba(...) string at the given alpha — for ring/border tokens that use a translucent brand tint. */
   ring: (alpha: number) => string;
   /**
-   * Present only when a secondary hex was supplied. Institutions with a real
-   * two-color identity (e.g. navy + gold) get their accent family (the
+   * Present only when a secondary hex was supplied AND it's far enough in
+   * hue from primary to read as a real second color (see
+   * MIN_ACCENT_HUE_SEPARATION_DEG) — institutions with a real two-color
+   * identity (e.g. navy + gold) get their accent family (the
    * `--brand-accent*`/`--accent*` tokens, previously a flat generic gold for
    * every institution) derived from this instead — same shade pipeline as
-   * primary, so it looks intentional rather than mismatched.
+   * primary, so it looks intentional rather than mismatched. A secondary
+   * that's just a lighter/darker shade of the same hue as primary is
+   * treated the same as no secondary at all, rather than rendering a
+   * "duotone" that's actually just primary twice.
    */
   accent?: {
     color: string;
@@ -199,13 +221,16 @@ export function generateBrandPalette(seedHex: string, secondaryHex?: string): Br
 
   if (secondaryHex) {
     const accent = clampSeed(secondaryHex);
-    palette.accent = {
-      color: accent,
-      dark: darkShade(accent),
-      light: lightShade(accent),
-      soft: softShade(accent),
-      textOnAccent: textOn(accent),
-    };
+    const isDistinct = hueDistanceDeg(toOklch(primary).h, toOklch(accent).h) >= MIN_ACCENT_HUE_SEPARATION_DEG;
+    if (isDistinct) {
+      palette.accent = {
+        color: accent,
+        dark: darkShade(accent),
+        light: lightShade(accent),
+        soft: softShade(accent),
+        textOnAccent: textOn(accent),
+      };
+    }
   }
 
   return palette;

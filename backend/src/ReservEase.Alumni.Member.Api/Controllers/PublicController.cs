@@ -34,7 +34,7 @@ public class PublicController : DefaultController
         var theme = new InstitutionThemeResponse(
             institution.Slug,
             institution.PortalName,
-            institution.Name,
+            string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName,
             institution.PrimaryColorHex,
             institution.SecondaryColorHex,
             institution.LogoUrl,

@@ -211,10 +211,10 @@ function StatRow({ stat, active, delay, index }: { stat: typeof STATS[number]; a
     <div ref={ref} style={{ transitionDelay: delay }}
       className={cn("px-5 py-1 sm:px-8 transition-all duration-700", index === 0 && "pl-0", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
       <p className="font-[family-name:var(--font-display)] leading-none tabular-nums break-words mb-2"
-        style={{ fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, color: "var(--background)", letterSpacing: "-0.02em" }}>
+        style={{ fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
         {stat.prefix}{count.toLocaleString()}{stat.suffix}
       </p>
-      <p className="text-[12.5px] font-medium" style={{ color: "color-mix(in oklch, var(--background) 65%, transparent)" }}>{stat.label}</p>
+      <p className="text-[12.5px] font-medium" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
     </div>
   );
 }
@@ -222,9 +222,15 @@ function StatRow({ stat, active, delay, index }: { stat: typeof STATS[number]; a
 /* ─────────────────────────────────────────────────────────────────────────
    FEATURE CARD
    ───────────────────────────────────────────────────────────────────────── */
-function FeatureCard({ feature, delay }: { feature: typeof FEATURES[number]; delay: string }) {
+function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEATURES[number]; delay: string; tone?: "primary" | "accent" }) {
   const { ref, visible } = useFadeUp();
   const big = "big" in feature && feature.big;
+  // Alternates primary/accent across the grid — the same flat, solid-fill
+  // pattern as the dashboard stat cards, so a real secondary color shows up
+  // as a genuinely distinct icon tone, never blended into a background.
+  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--color-background-info))" : "var(--color-background-info)";
+  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--color-border-info))" : "var(--color-border-info)";
+  const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
       className={cn(
@@ -235,11 +241,11 @@ function FeatureCard({ feature, delay }: { feature: typeof FEATURES[number]; del
       <div className={cn("card__content", big && "sm:flex sm:items-center sm:gap-6")}>
         <div className={cn("w-10 h-10 rounded-[10px] flex items-center justify-center transition-colors duration-200 shrink-0",
           big ? "sm:w-14 sm:h-14 mb-4 sm:mb-0" : "mb-4")}
-          style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-          <feature.icon size={big ? 20 : 17} className={big ? "sm:size-6" : ""} style={{ color: "var(--primary)" }} />
+          style={{ background: iconBg, border: `1px solid ${iconBorder}` }}>
+          <feature.icon size={big ? 20 : 17} className={big ? "sm:size-6" : ""} style={{ color: iconColor }} />
         </div>
         <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
+          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: iconColor }}>
             {feature.label}
           </p>
           <h3 className={cn("font-semibold leading-snug mb-2 group-hover:text-primary transition-colors duration-200", big ? "text-[17px]" : "text-[14px]")}
@@ -505,9 +511,9 @@ export default function LandingPage() {
                   { icon: Briefcase,     text: "Jobs from grads"    },
                   { icon: Heart,         text: "Mentor matching"    },
                   { icon: Globe,         text: "Events & fundraisers" },
-                ].map(item => (
+                ].map((item, i) => (
                   <div key={item.text} className="flex items-center gap-2 cursor-default">
-                    <item.icon size={15} style={{ color: "var(--primary)" }} />
+                    <item.icon size={15} style={{ color: i % 2 === 0 ? "var(--primary)" : "var(--brand-accent, var(--primary))" }} />
                     <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>{item.text}</p>
                   </div>
                 ))}
@@ -549,18 +555,18 @@ export default function LandingPage() {
       {/* ════════════════════════════════════════════════════════════════
           STATS — full-bleed banded row, not a card grid
       ════════════════════════════════════════════════════════════════ */}
-      <div className="border-b" style={{ background: "var(--foreground)", borderColor: "var(--border)" }}>
+      <div className="border-b" style={{ background: "var(--brand-primary-dark, var(--primary))", borderColor: "var(--border)" }}>
         <div className="section__inner--wide">
           <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0 py-14">
             <div className="lg:w-[280px] lg:pr-10 shrink-0">
-              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, var(--background) 55%, transparent)" }}>
+              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, white 55%, transparent)" }}>
                 Alumni impact
               </p>
-              <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--background)", fontSize: "clamp(1.5rem,2.4vw,2rem)", lineHeight: 1.15 }}>
+              <h2 className="font-[family-name:var(--font-display)]" style={{ color: "white", fontSize: "clamp(1.5rem,2.4vw,2rem)", lineHeight: 1.15 }}>
                 What alumni are already doing here.
               </h2>
             </div>
-            <div ref={statsRef} className="flex-1 grid grid-cols-2 md:grid-cols-4 divide-x" style={{ borderColor: "color-mix(in oklch, var(--background) 15%, transparent)" }}>
+            <div ref={statsRef} className="flex-1 grid grid-cols-2 md:grid-cols-4 divide-x" style={{ borderColor: "color-mix(in oklch, white 15%, transparent)" }}>
               {STATS.map((stat, i) => (
                 <StatRow key={stat.label} stat={stat} active={statsActive} delay={`${i * 75}ms`} index={i} />
               ))}
@@ -585,7 +591,7 @@ export default function LandingPage() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
             {FEATURES.map((feature, i) => (
-              <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} />
+              <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
             ))}
             {/* Filler tile — closes out the bento row instead of leaving a gap */}
             <Link href="/register" className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 transition-all duration-500 hover:-translate-y-1"

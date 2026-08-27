@@ -128,6 +128,34 @@ public class MailtrapEmailService(
         variables["brand_color_soft"] = EmailColorPalette.Soft(brandColor);
         variables["brand_text_on_color"] = EmailColorPalette.TextOn(brandColor);
 
+        // Accent family, derived from the institution's own SecondaryColorHex
+        // the same way the live UI derives --brand-accent* (see
+        // packages/ui/src/lib/brand-palette.ts) — same clamp/shade functions,
+        // just seeded from the secondary color instead of the primary one.
+        // Falls back to the primary color's own shades when no secondary is
+        // set, so a template can always reference {{brand_accent_color}}
+        // etc. without a blank/missing substitution for single-color
+        // institutions — it just quietly equals the primary in that case.
+        if (variables.TryGetValue("brand_secondary_color", out var secondaryColor)
+            && !string.IsNullOrWhiteSpace(secondaryColor)
+            && EmailColorPalette.IsDistinctAccent(brandColor, secondaryColor))
+        {
+            var accentColor = EmailColorPalette.ClampSeed(secondaryColor);
+            variables["brand_accent_color"] = accentColor;
+            variables["brand_accent_dark"] = EmailColorPalette.Dark(accentColor);
+            variables["brand_accent_light"] = EmailColorPalette.Light(accentColor);
+            variables["brand_accent_soft"] = EmailColorPalette.Soft(accentColor);
+            variables["brand_text_on_accent"] = EmailColorPalette.TextOn(accentColor);
+        }
+        else
+        {
+            variables["brand_accent_color"] = brandColor;
+            variables["brand_accent_dark"] = variables["brand_color_dark"];
+            variables["brand_accent_light"] = variables["brand_color_light"];
+            variables["brand_accent_soft"] = variables["brand_color_soft"];
+            variables["brand_text_on_accent"] = variables["brand_text_on_color"];
+        }
+
         // The institution's own logo when they have one, otherwise the same
         // colored-initial mark as before — one fragment templates can drop
         // in wherever they currently render `<div class="mark">{{brand_initial}}</div>`.

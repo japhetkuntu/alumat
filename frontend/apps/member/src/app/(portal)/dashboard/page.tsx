@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
-import { StatSkeleton } from "@alumni/ui";
+import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import Link from "next/link";
@@ -63,14 +63,20 @@ function MembershipCard({
     <div
       className="relative overflow-hidden rounded-2xl p-4 sm:p-8"
       style={{
+        // Flat solid fill, no gradient — a hard blend between two brand
+        // colors risks the same muddy, low-contrast look for an
+        // unpredictable color pair. Secondary shows up instead as a solid
+        // accent-colored ring below, never mixed into the background.
         background: isActive
-          ? "linear-gradient(135deg, var(--primary) 0%, color-mix(in oklch, var(--primary) 75%, black) 100%)"
-          : "linear-gradient(135deg, #4b5563 0%, #1f2937 100%)",
+          ? "var(--brand-primary-dark, var(--primary))"
+          : "#1f2937",
         color: "white",
       }}
     >
-      {/* Subtle texture rings */}
-      <div className="absolute -right-10 -top-10 w-36 h-36 sm:-right-16 sm:-top-16 sm:w-64 sm:h-64 rounded-full border border-white/10" />
+      {/* Subtle texture rings — the outer one picks up the institution's
+          accent color as a solid stroke when they have one, so secondary
+          shows up as a clean flat outline rather than blended into the fill. */}
+      <div className="absolute -right-10 -top-10 w-36 h-36 sm:-right-16 sm:-top-16 sm:w-64 sm:h-64 rounded-full border-2" style={{ borderColor: "var(--brand-accent, rgba(255,255,255,0.1))" }} />
       <div className="absolute -right-5 -top-5 w-24 h-24 sm:-right-8 sm:-top-8 sm:w-40 sm:h-40 rounded-full border border-white/10" />
 
       <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
@@ -185,6 +191,26 @@ function MembershipCard({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   MEMBERSHIP CARD SKELETON — a themeless shimmer, never the fixed gray of
+   the settled "inactive" state, so a still-loading card can't be mistaken
+   for an institution with no brand color of its own.
+   ───────────────────────────────────────────────────────────────────────── */
+function MembershipCardSkeleton() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl p-4 sm:p-8 border border-border bg-card">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
+        <div className="space-y-2 sm:space-y-2.5">
+          <div className="skeleton h-3 w-32 rounded-[6px]" />
+          <div className="skeleton h-6 w-40 rounded-[6px]" />
+          <div className="skeleton h-3.5 w-28 rounded-[6px]" />
+        </div>
+        <div className="skeleton h-7 w-24 rounded-full shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    ARREARS BANNER
    ───────────────────────────────────────────────────────────────────────── */
 function ArrearsBanner({
@@ -235,53 +261,23 @@ function ArrearsBanner({
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   DASH STAT — self-contained tile, no overflow surprises
-   ───────────────────────────────────────────────────────────────────────── */
+/* Local helper kept only as a value-adapter — the actual tile is the shared
+   @alumni/ui StatCard (also used by the institution dashboard). */
 function DashStat({
   label,
   value,
   sub,
-  icon: Icon,
+  icon,
+  tone,
 }: {
   label: string;
   value: string | number;
   sub: string;
   icon: React.ElementType;
+  tone?: "primary" | "accent";
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 flex flex-col gap-3 min-w-0 shadow-[var(--card-shadow)] transition-shadow hover:shadow-[var(--card-shadow-hover)]">
-      {/* Icon */}
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
-      >
-        <Icon size={16} style={{ color: "var(--primary)" }} />
-      </div>
-
-      {/* Value — clamps to one line, scales down if needed */}
-      <p
-        className="font-[family-name:var(--font-display)] font-bold leading-none tabular-nums text-foreground"
-        style={{
-          fontSize: "clamp(1.25rem, 3.5vw, 1.65rem)",
-          letterSpacing: "-0.02em",
-          wordBreak: "break-word",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {value}
-      </p>
-
-      {/* Label + sub */}
-      <div className="mt-auto pt-2 border-t border-border">
-        <p className="text-[13px] font-semibold leading-tight text-foreground">
-          {label}
-        </p>
-        <p className="text-[11.5px] mt-0.5 text-muted-foreground">
-          {sub}
-        </p>
-      </div>
-    </div>
+    <StatCard icon={icon} label={label} value={value} sub={sub} tone={tone} />
   );
 }
 
@@ -542,13 +538,17 @@ export default function MemberDashboardPage() {
 
       {/* ── Membership card ── */}
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-75">
-        <MembershipCard
-          profile={profile}
-          membershipStatus={membershipStatus.data}
-          membershipCampaign={membershipCampaign}
-          isPensioner={isPensioner}
-          getMemberAmount={getMemberAmount}
-        />
+        {membershipStatus.isLoading ? (
+          <MembershipCardSkeleton />
+        ) : (
+          <MembershipCard
+            profile={profile}
+            membershipStatus={membershipStatus.data}
+            membershipCampaign={membershipCampaign}
+            isPensioner={isPensioner}
+            getMemberAmount={getMemberAmount}
+          />
+        )}
       </div>
 
       {/* ── Arrears banner ── */}
@@ -557,9 +557,9 @@ export default function MemberDashboardPage() {
       )}
 
       {/* ── Stat tiles ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-in fade-in duration-500 delay-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100">
         {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
+          ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
           : (
             <>
               <DashStat
@@ -567,24 +567,28 @@ export default function MemberDashboardPage() {
                 value={activeCampaigns.length}
                 sub="Open for contributions"
                 icon={TrendingUp}
+                tone="primary"
               />
               <DashStat
                 label="Total contributed"
                 value={formatCurrency(totalPaid)}
                 sub="All-time confirmed"
                 icon={CreditCard}
+                tone="accent"
               />
               <DashStat
                 label="This year"
                 value={formatCurrency(totalPaidThisYear)}
                 sub={`Contributed in ${currentYear}`}
                 icon={TrendingUp}
+                tone="primary"
               />
               <DashStat
                 label="Upcoming events"
                 value={upcomingEventsCount}
                 sub="Events you can join"
                 icon={Calendar}
+                tone="accent"
               />
             </>
           )}

@@ -31,7 +31,7 @@ export default function EventRsvpsPage() {
   const totalPages = data?.totalPages ?? 1;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link href="/events">

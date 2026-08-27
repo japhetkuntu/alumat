@@ -35,6 +35,7 @@ import { Button } from "@alumni/ui";
 import { getInitials } from "@alumni/ui";
 import { NotificationPanel } from "@/components/institution/notification-panel";
 import { institutionClient } from "@/lib/api-client";
+import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 
 // Maps each gateable nav item to the backend feature key that can disable it
 // (see InstitutionFeatures in ReservEase.Alumni.PostgresDb.Sdk). Items not
@@ -240,10 +241,21 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile header */}
-        <div className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border bg-background/80 backdrop-blur-xl">
+        {/* Mobile header — `fixed`, not `sticky`: this div's actual ancestor
+            is NOT a scrolling container (that's <main>, a sibling below
+            it), so `sticky` never had a scroll box to stick within — on iOS
+            Safari's dynamic viewport (address bar collapsing/expanding),
+            that's exactly what let the header scroll away with the page
+            instead of staying put. `fixed` pins it to the true viewport
+            regardless. GPU_LAYER_STYLE avoids a WebKit repaint bug where a
+            fixed + backdrop-blur layer can fail to redraw after a sibling
+            blur layer (the mobile drawer overlay) unmounts. */}
+        <div
+          className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14 border-b border-border bg-background/80 backdrop-blur-xl"
+          style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
+        >
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg hover:bg-muted -ml-1" onClick={() => setMobileOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </Button>
             <span className="font-bold text-[15px] tracking-tight">Institution Portal</span>
@@ -256,7 +268,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative">
+        <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative pt-14 lg:pt-0">
           <div className="max-w-[1800px] mx-auto min-h-full">
             {children}
           </div>

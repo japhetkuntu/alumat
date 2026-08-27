@@ -29,6 +29,7 @@ export * from "./components/search-modal";
 export * from "./components/select";
 export * from "./components/separator";
 export * from "./components/skeleton";
+export * from "./components/stat-card";
 export * from "./components/table";
 export * from "./components/textarea";
 export * from "./components/tooltip";

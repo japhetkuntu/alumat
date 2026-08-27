@@ -35,6 +35,27 @@ public static class EmailColorPalette
     /// <summary>Hue (radians) of the platform's own default green (#0e7143) — used when a seed has no real hue to preserve (see <see cref="ClampSeed"/>).</summary>
     private static readonly double DefaultHue = ToOklch("#0e7143").h;
 
+    // Mirrors MIN_ACCENT_HUE_SEPARATION_DEG in brand-palette.ts — below this
+    // hue separation, primary and secondary render close enough to the same
+    // color that an "accent" derived from secondary would just look like
+    // primary again, not a real second color.
+    private const double MinAccentHueSeparationDeg = 20.0;
+
+    /// <summary>True when <paramref name="secondaryHex"/> is far enough in hue from <paramref name="primaryHex"/> to read as a real second color, not just a lighter/darker shade of the same one.</summary>
+    public static bool IsDistinctAccent(string primaryHex, string secondaryHex)
+    {
+        var primaryHue = ToOklch(ClampSeed(primaryHex)).h;
+        var secondaryHue = ToOklch(ClampSeed(secondaryHex)).h;
+        return HueDistanceDeg(primaryHue, secondaryHue) >= MinAccentHueSeparationDeg;
+    }
+
+    private static double HueDistanceDeg(double h1Radians, double h2Radians)
+    {
+        double ToDeg(double r) => ((r * 180.0 / Math.PI) % 360.0 + 360.0) % 360.0;
+        var diff = Math.Abs(ToDeg(h1Radians) - ToDeg(h2Radians)) % 360.0;
+        return diff > 180.0 ? 360.0 - diff : diff;
+    }
+
     public static string Dark(string hex) => WithLightness(hex, l => Math.Max(0.0, l - 0.16));
     public static string Light(string hex) => WithLightness(hex, _ => 0.94, chromaScale: 0.35);
     public static string Soft(string hex) => WithLightness(hex, _ => 0.86, chromaScale: 0.55);

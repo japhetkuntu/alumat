@@ -108,9 +108,9 @@ export default function CampaignDetailPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  if (loadingCampaign) return <div className="p-[26px] max-w-[1240px] mx-auto space-y-6 page-enter"><CardSkeleton /><CardSkeleton /></div>;
+  if (loadingCampaign) return <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-6 page-enter"><CardSkeleton /><CardSkeleton /></div>;
   if (!campaign) return (
-    <div className="p-[26px] max-w-[1240px] mx-auto">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto">
       <Link href="/campaigns">
         <Button size="sm" variant="ghost" className="mb-6"><ArrowLeft size={14} />Back</Button>
       </Link>
@@ -124,7 +124,7 @@ export default function CampaignDetailPage() {
   const backLink = campaign.isMembershipCampaign ? "/membership" : "/campaigns";
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-4">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-4">
       <nav className="flex items-center gap-1.5 text-sm">
         <Link href={backLink}>
           <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-bold group">

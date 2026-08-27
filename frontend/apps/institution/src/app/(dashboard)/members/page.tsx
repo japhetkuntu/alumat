@@ -172,10 +172,10 @@ export default function AdminMembersPage() {
   };
 
   return (
-    <div className="p-[26px] max-w-[1300px] mx-auto">
+    <div className="p-4 sm:p-[26px] max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Members</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Members</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
             {totalCount.toLocaleString()} {totalCount === 1 ? "record" : "records"} &middot;{" "}
             {user?.role === "ScopedAdmin" && user.yearGroups?.length

@@ -251,10 +251,10 @@ export default function AdminsPage() {
   const disabledCount = admins.filter((a) => a.isDisabled).length;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
-      <header className="flex items-end justify-between gap-4">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Institution Admins</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Institution Admins</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Maintain staff access for this institution.</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>

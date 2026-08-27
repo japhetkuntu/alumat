@@ -182,11 +182,11 @@ export default function AdminJobsPage() {
   const totalPages = data?.totalPages ?? 1;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       {/* Header */}
-      <header className="flex items-end justify-between gap-4">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Job Board</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Job Board</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Publish relevant opportunities and keep deadlines current.</p>
         </div>
         <Button onClick={() => setShowCreate(!showCreate)}>

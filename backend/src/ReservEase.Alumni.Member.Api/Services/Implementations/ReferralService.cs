@@ -28,11 +28,12 @@ public class ReferralService(
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
 
     /// <summary>The current tenant's own name/color/logo for tenant-branded email — falls back to the platform default when unset.</summary>
-    private async Task<(string? Name, string? Color, string? Logo)> GetBrandVarsAsync()
+    private async Task<(string? Name, string? Color, string? SecondaryColor, string? Logo)> GetBrandVarsAsync()
     {
-        if (string.IsNullOrEmpty(currentTenant.InstitutionId)) return (null, null, null);
+        if (string.IsNullOrEmpty(currentTenant.InstitutionId)) return (null, null, null, null);
         var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-        return (institution?.Name, institution?.PrimaryColorHex, institution?.LogoUrl);
+        var name = string.IsNullOrWhiteSpace(institution?.PortalName) ? institution?.Name : institution.PortalName;
+        return (name, institution?.PrimaryColorHex, institution?.SecondaryColorHex, institution?.LogoUrl);
     }
 
     /// <summary>
@@ -144,6 +145,7 @@ public class ReferralService(
                         register_url = $"{GetRequestBaseUrl()}/register?ref={memberEntity.ReferralCode}",
                         brand_name = brand.Name,
                         brand_color = brand.Color,
+                        brand_secondary_color = brand.SecondaryColor,
                         brand_logo = brand.Logo,
                     },
                 },

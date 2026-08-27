@@ -96,9 +96,9 @@ export default function MemberDetailPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  if (isLoading) return <div className="p-[26px] max-w-[1240px] mx-auto space-y-6 page-enter"><CardSkeleton /><CardSkeleton /></div>;
+  if (isLoading) return <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-6 page-enter"><CardSkeleton /><CardSkeleton /></div>;
   if (!member) return (
-    <div className="p-[26px] max-w-[1240px] mx-auto">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto">
       <Link href="/members" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft size={14} /> Back to Members
       </Link>
@@ -109,7 +109,7 @@ export default function MemberDetailPage() {
   const fullName = `${member.firstName} ${member.lastName}`;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-6 page-enter">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-6 page-enter">
       {/* Breadcrumb */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <nav className="flex items-center gap-1.5 text-sm">

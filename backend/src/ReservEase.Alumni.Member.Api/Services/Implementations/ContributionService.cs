@@ -278,6 +278,16 @@ public class ContributionService : IContributionService
             var currentInstitution = await GetCurrentInstitutionAsync();
             var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution);
 
+            // The subaccount's own dashboard config always shows a static
+            // 0%-platform/100%-institution split (deliberate — see
+            // InstitutionManagementService's Zero-Deduction comments); the
+            // real per-payment split only ever exists here, in what we
+            // actually send Paystack. Logged so it's independently
+            // verifiable from our own logs, not just trusted from code.
+            logger.LogInformation(
+                "Zero-Deduction charge for campaign {CampaignId}, institution {InstitutionId}: schoolAmount={SchoolAmount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}, subaccount={Subaccount}, bearer={Bearer}",
+                request.CampaignId, currentInstitution?.Id, request.Amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, currentInstitution?.PaystackSubaccountCode, charge.bearer);
+
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
                 Email = memberEmail,
@@ -419,6 +429,15 @@ public class ContributionService : IContributionService
             var amount = amountPerYear * request.Years;
             var currentInstitution = await GetCurrentInstitutionAsync();
             var charge = BuildZeroDeductionCharge(amount, currentInstitution);
+
+            // See the matching log in InitiatePaystackPaymentAsync — the
+            // subaccount's dashboard config always shows a static
+            // 0%-platform/100%-institution split by design; this is the
+            // actual per-payment split, independently verifiable here.
+            logger.LogInformation(
+                "Zero-Deduction charge for membership renewal, campaign {CampaignId}, institution {InstitutionId}: schoolAmount={SchoolAmount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}, subaccount={Subaccount}, bearer={Bearer}",
+                campaign.Id, currentInstitution?.Id, amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, currentInstitution?.PaystackSubaccountCode, charge.bearer);
+
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
                 Email = member.Email,

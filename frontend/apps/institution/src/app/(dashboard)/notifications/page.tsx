@@ -147,11 +147,11 @@ export default function AdminNotificationsPage() {
   const unreadCount = unreadQuery.data ?? 0;
 
   return (
-    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       {/* Header */}
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[25px] font-bold m-0">Notifications</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Notifications</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
             {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "You're all caught up!"}
           </p>

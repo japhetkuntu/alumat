@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-screen bg-background">
       {/* ── Left — branding panel ── */}
       <aside
-        className="hidden md:flex md:w-[42%] lg:w-[46%] relative flex-col justify-center overflow-hidden px-10 lg:px-14 py-10"
+        className="hidden md:flex md:w-[42%] lg:w-[46%] relative flex-col justify-center overflow-y-auto px-10 lg:px-14 py-10"
         style={{
           background: `
             radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--primary) 45%, transparent) 0%, transparent 55%),
@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px)", backgroundSize: "26px 26px" }}
         />
 
-        <div className="relative space-y-10 w-full">
+        <div className="relative space-y-7 w-full">
           <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
             <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-primary">
               <span className="text-[13px] font-bold text-white tracking-tight">P</span>
@@ -46,7 +46,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </p>
           </div>
 
-          <ul className="space-y-4">
+          <ul className="space-y-3">
             {[
               "Onboard and provision institutions",
               "Track institution activity and platform revenue",

@@ -26,7 +26,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         className={cn(
-          "flex min-h-[96px] w-full rounded-[10px] border border-input bg-background px-3 py-2.5 text-[14px] text-foreground shadow-sm transition-all duration-150 ease-out",
+          // 16px below md — see Input's matching comment (iOS Safari
+          // auto-zoom-on-focus for any field under 16px).
+          "flex min-h-[96px] w-full rounded-[10px] border border-input bg-background px-3 py-2.5 text-[16px] md:text-[14px] text-foreground shadow-sm transition-all duration-150 ease-out",
           "placeholder:text-muted-foreground/65",
           "focus-visible:outline-none focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20",
           "disabled:cursor-not-allowed disabled:opacity-55 disabled:bg-muted/40",

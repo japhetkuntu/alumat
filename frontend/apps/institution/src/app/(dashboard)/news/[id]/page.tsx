@@ -56,7 +56,7 @@ export default function AdminNewsDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-[26px] space-y-6 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-[26px] space-y-6 max-w-4xl mx-auto">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -65,7 +65,7 @@ export default function AdminNewsDetailPage() {
 
   if (!post) {
     return (
-      <div className="p-[26px] max-w-4xl mx-auto">
+      <div className="p-4 sm:p-[26px] max-w-4xl mx-auto">
         <Link href="/news">
           <Button variant="ghost" size="sm" className="mb-6"><ArrowLeft size={14} />Back to News</Button>
         </Link>
@@ -75,7 +75,7 @@ export default function AdminNewsDetailPage() {
   }
 
   return (
-    <div className="p-[26px] space-y-8 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-[26px] space-y-8 max-w-4xl mx-auto">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
         <Link href="/news">
