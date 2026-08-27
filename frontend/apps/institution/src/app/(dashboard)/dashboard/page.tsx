@@ -3,13 +3,14 @@
 import { useQueries } from "@tanstack/react-query";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getCampaigns, getContributions, getMembers, getEvents, getJobs } from "@/lib/institution-api";
+import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminDashboardPage() {
@@ -22,10 +23,12 @@ export default function AdminDashboardPage() {
       { queryKey: ["dash-contributions"], queryFn: () => getContributions({ pageSize: 500 }) },
       { queryKey: ["dash-events"], queryFn: () => getEvents(1, 1) },
       { queryKey: ["dash-jobs"], queryFn: () => getJobs(1, 1) },
+      { queryKey: ["dash-batches"], queryFn: getBatches },
     ],
   });
 
-  const [membersTotal, membersPending, campaigns, contributions, events, jobs] = results;
+  const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches] = results;
+  const hasNoBatches = !batches.isLoading && (batches.data?.length ?? 0) === 0;
   const isLoading = results.some((r) => r.isLoading);
 
   const totalMembers = membersTotal.data?.totalCount ?? 0;
@@ -71,6 +74,18 @@ export default function AdminDashboardPage() {
           All institution records
         </span>
       </div>
+
+      {hasNoBatches && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/50 px-4 py-3 mb-4">
+          <div>
+            <p className="text-[13px] font-semibold">Set up your graduating-class batches</p>
+            <p className="text-[12px] text-muted-foreground">Unlock year-group targeting and better member organization by defining your batches.</p>
+          </div>
+          <Link href="/batches">
+            <Button size="sm">Set up batches</Button>
+          </Link>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">

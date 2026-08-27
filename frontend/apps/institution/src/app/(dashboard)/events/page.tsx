@@ -18,7 +18,7 @@ import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommu
 import { ImageUpload } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
-import { YearGroupPicker } from "@alumni/ui";
+import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,7 +41,7 @@ interface FormState {
   capacity: string;
   googleLocationUrl: string;
   status: string;
-  yearGroupsAll: boolean;
+  audienceMode: AudienceMode;
   yearGroups: number[];
   bannerImage: File | null;
   existingBannerUrl: string;
@@ -54,7 +54,7 @@ interface FormState {
 const emptyForm: FormState = {
   title: "", description: "", startDate: "", endDate: "", venue: "", capacity: "",
   googleLocationUrl: "", status: "Upcoming",
-  yearGroupsAll: true, yearGroups: [],
+  audienceMode: "everyone", yearGroups: [],
   bannerImage: null, existingBannerUrl: "", images: [], existingImageUrls: [], youtubeVideoUrls: "",
   communityId: "",
 };
@@ -84,17 +84,6 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
             <Input placeholder="e.g. Alumni Homecoming 2027" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
           <div className="space-y-2"><Label>Description</Label>
             <Textarea placeholder="Describe the event..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
-          {communities.length > 0 && (
-            <div className="space-y-2">
-              <Label>Community (optional)</Label>
-              <FormSelect
-                value={form.communityId}
-                onValueChange={(v) => f("communityId", v)}
-                options={[{ value: "", label: "Institution-wide (all members)" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
-              />
-              <p className="text-xs text-muted-foreground">Restricts this event to one community's approved members instead of the whole institution.</p>
-            </div>
-          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2"><Label>Start Date</Label>
               <Input type="datetime-local" value={form.startDate} onChange={(e) => f("startDate", e.target.value)} required /></div>
@@ -112,34 +101,17 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
               <p className="text-sm font-semibold">Free event only</p>
               <p className="text-xs text-muted-foreground">Paid / ticketed events are not supported yet.</p>
             </div>
-            <div className="space-y-2">
-              {isSuperAdmin ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label>Target year groups</Label>
-                    <label className="flex items-center gap-2 text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        checked={form.yearGroupsAll}
-                        onChange={(e) => setForm((prev) => ({ ...prev, yearGroupsAll: e.target.checked }))}
-                        className="h-4 w-4 rounded border border-muted-foreground"
-                      />
-                      All years
-                    </label>
-                  </div>
-                  {!form.yearGroupsAll ? (
-                    <YearGroupPicker
-                      value={form.yearGroups}
-                      onChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
-                    />
-                  ) : (
-                    <p className="text-xs text-muted-foreground">This event will be visible to all year groups.</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">For regular admins, this event will be restricted to your graduation year group.</p>
-              )}
-            </div>
+            <AudienceScopePicker
+              mode={form.audienceMode}
+              onModeChange={(mode) => f("audienceMode", mode)}
+              communityId={form.communityId}
+              onCommunityChange={(v) => f("communityId", v)}
+              communities={communities}
+              yearGroups={form.yearGroups}
+              onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
+              supportsCommunity
+              restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This event will be restricted to your assigned year group or community." } : undefined}
+            />
             {showStatus && (
               <div className="space-y-2"><Label>Status</Label>
                 <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
@@ -182,7 +154,7 @@ function toFormState(e: AlumniEvent): FormState {
     capacity: e.capacity != null ? String(e.capacity) : "",
     googleLocationUrl: e.googleLocationUrl ?? "",
     status: e.status,
-    yearGroupsAll: !e.yearGroups || e.yearGroups.length === 0,
+    audienceMode: inferAudienceMode(e.communityId, e.yearGroups),
     yearGroups: e.yearGroups ?? [],
     bannerImage: null,
     existingBannerUrl: e.bannerImageUrl ?? "",
@@ -212,14 +184,14 @@ export default function AdminEventsPage() {
 
   const createMut = useMutation({
     mutationFn: (f: FormState) => createEvent({
-      communityId: f.communityId || undefined,
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, description: f.description || undefined,
       startDate: f.startDate, endDate: f.endDate || undefined, venue: f.venue,
       capacity: f.capacity ? Number(f.capacity) : undefined,
       isTicketed: false,
       ticketPrice: undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
-      yearGroups: isSuperAdmin ? (f.yearGroupsAll ? undefined : f.yearGroups) : undefined,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
       images: f.images.length > 0 ? f.images : undefined,
       youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
@@ -230,7 +202,7 @@ export default function AdminEventsPage() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, f }: { id: string; f: FormState }) => updateEvent(id, {
-      communityId: f.communityId || undefined,
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, description: f.description || undefined,
       startDate: f.startDate, endDate: f.endDate || undefined, venue: f.venue,
       capacity: f.capacity ? Number(f.capacity) : undefined,
@@ -238,7 +210,7 @@ export default function AdminEventsPage() {
       isTicketed: false,
       ticketPrice: undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
-      yearGroups: isSuperAdmin ? (f.yearGroupsAll ? undefined : f.yearGroups) : undefined,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
       images: f.images.length > 0 ? f.images : undefined,
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,

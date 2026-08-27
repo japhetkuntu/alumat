@@ -19,6 +19,10 @@ public class CreateInstitutionRequest
 
     public string Plan { get; set; } = "Starter";
 
+    /// <summary>"ApprovedOnly" (default) or "DuesRequired" — see Institution.MemberActivePolicy. The institution's own admins can change this later; this just sets the starting value at onboarding.</summary>
+    [RegularExpression("^(ApprovedOnly|DuesRequired)$")]
+    public string MemberActivePolicy { get; set; } = "ApprovedOnly";
+
     // Branding (from the onboarding wizard's Branding step)
     public string? PortalName { get; set; }
     public string? SupportEmail { get; set; }
@@ -58,7 +62,7 @@ public record InstitutionDetailResponse(
     string? LogoUrl, string? IconUrl, string PrimaryColorHex, string? SecondaryColorHex,
     string? InstitutionPortalTitle, string? InstitutionAuthHeadline, string? InstitutionAuthSubtext,
     string? MemberPortalTitle, string? MemberAuthHeadline, string? MemberAuthSubtext,
-    bool RequireStudentId, List<string> DisabledFeatures,
+    bool RequireStudentId, string MemberActivePolicy, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
     string Plan, string Status, int MemberCount, int MemberLimit, int StorageUsedGb, int StorageLimitGb,
     DateTime OnboardedAt, DateTime? TrialEndsAt,
@@ -105,6 +109,13 @@ public class UpdateInstitutionBrandingRequest
     public string? MemberAuthSubtext { get; set; }
 
     public bool RequireStudentId { get; set; } = true;
+}
+
+/// <summary>How "active member" status is determined — platform staff can set this on the institution's behalf (e.g. during setup, or a support request), though it's normally the institution's own choice (see Institution.Api's InstitutionController.UpdateMemberActivePolicy).</summary>
+public class UpdateInstitutionMemberPolicyRequest
+{
+    [Required, RegularExpression("^(ApprovedOnly|DuesRequired)$")]
+    public string MemberActivePolicy { get; set; } = string.Empty;
 }
 
 public class UpdateInstitutionFeaturesRequest

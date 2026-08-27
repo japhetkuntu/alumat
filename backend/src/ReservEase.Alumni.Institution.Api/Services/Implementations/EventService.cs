@@ -108,9 +108,13 @@ public class EventService(
             if (request.TicketPrice.HasValue && request.TicketPrice.Value > 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("Paid events are not supported yet. Please create a free event.");
 
+            var resolvedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
+
             var ev = new AlumniEvent
             {
-                CommunityId = request.CommunityId,
+                CommunityId = resolvedCommunityId,
                 Title = request.Title,
                 Description = request.Description,
                 Venue = request.Venue,
@@ -121,7 +125,7 @@ public class EventService(
                 GoogleLocationUrl = request.GoogleLocationUrl,
                 Capacity = request.Capacity,
                 Status = "Upcoming",
-                YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups),
+                YearGroups = resolvedYearGroups,
                 YoutubeVideoUrls = request.YoutubeVideoUrls,
                 CreatedBy = admin.Id,
             };
@@ -168,7 +172,10 @@ public class EventService(
             if (request.TicketPrice.HasValue && request.TicketPrice.Value > 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("Paid events are not supported yet. Please create a free event.");
 
-            ev.CommunityId = request.CommunityId;
+            var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
+            ev.CommunityId = updatedCommunityId;
             ev.Title = request.Title;
             ev.Description = request.Description;
             ev.Venue = request.Venue;
@@ -179,7 +186,7 @@ public class EventService(
             ev.GoogleLocationUrl = request.GoogleLocationUrl;
             ev.Capacity = request.Capacity;
             ev.Status = request.Status;
-            ev.YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ev.YearGroups = updatedYearGroups;
             ev.YoutubeVideoUrls = request.YoutubeVideoUrls;
 
             if (request.BannerImage is not null)

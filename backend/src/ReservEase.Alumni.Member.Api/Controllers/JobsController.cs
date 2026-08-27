@@ -21,7 +21,8 @@ public class JobsController(IMemberJobService jobService) : DefaultController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<JobDto>>))]
     public async Task<IActionResult> GetJobs([FromQuery] JobFilter filter)
     {
-        var result = await jobService.GetJobsAsync(filter);
+        var member = User.GetAccount();
+        var result = await jobService.GetJobsAsync(filter, member.Id);
         return result.ToActionResult();
     }
 
@@ -31,7 +32,8 @@ public class JobsController(IMemberJobService jobService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetJob(string jobId)
     {
-        var result = await jobService.GetJobByIdAsync(jobId);
+        var member = User.GetAccount();
+        var result = await jobService.GetJobByIdAsync(jobId, member.Id);
         return result.ToActionResult();
     }
 }

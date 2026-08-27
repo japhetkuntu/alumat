@@ -14,7 +14,7 @@ import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { YearGroupPicker } from "@alumni/ui";
+import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -35,14 +35,14 @@ interface FormState {
   category: string;
   status: string;
   isPinned: string;
-  yearGroupsAll: boolean;
+  audienceMode: AudienceMode;
   yearGroups: number[];
   images: File[];
   existingImageUrls: string[];
   youtubeVideoUrls: string;
 }
 
-const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", yearGroupsAll: true, yearGroups: [], images: [], existingImageUrls: [], youtubeVideoUrls: "" };
+const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", audienceMode: "everyone", yearGroups: [], images: [], existingImageUrls: [], youtubeVideoUrls: "" };
 
 function commaToArray(s: string): string[] | undefined {
   const arr = s.split(",").map(x => x.trim()).filter(Boolean);
@@ -84,34 +84,17 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
                   { value: "true", label: "Yes (Pinned)" },
                 ]} /></div>
           </div>
-          <div className="space-y-2">
-            {isSuperAdmin ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <Label>Target year groups</Label>
-                  <label className="flex items-center gap-2 text-sm font-medium">
-                    <input
-                      type="checkbox"
-                      checked={form.yearGroupsAll}
-                      onChange={(e) => setForm((prev) => ({ ...prev, yearGroupsAll: e.target.checked }))}
-                      className="h-4 w-4 rounded border border-muted-foreground"
-                    />
-                    All years
-                  </label>
-                </div>
-                {!form.yearGroupsAll ? (
-                  <YearGroupPicker
-                    value={form.yearGroups}
-                    onChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
-                  />
-                ) : (
-                  <p className="text-xs text-muted-foreground">This post will be visible to members of all year groups.</p>
-                )}
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">Regular admins cannot select year groups. Posts are restricted to your assigned year group.</p>
-            )}
-          </div>
+          <AudienceScopePicker
+            mode={form.audienceMode}
+            onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
+            communityId=""
+            onCommunityChange={() => {}}
+            communities={[]}
+            yearGroups={form.yearGroups}
+            onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
+            supportsCommunity={false}
+            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned year group." } : undefined}
+          />
           <div className="space-y-2"><Label>Content</Label>
             <RichTextEditor value={form.content} onChange={(html) => f("content", html)} placeholder="Write your post content here..." /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -180,7 +163,7 @@ export default function AdminNewsPage() {
     mutationFn: (f: FormState) => createNewsPost({
       title: f.title, content: f.content, category: f.category, status: f.status,
       isPinned: f.isPinned === "true",
-      yearGroups: f.yearGroupsAll ? undefined : f.yearGroups,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       images: f.images.length > 0 ? f.images : undefined, youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-news"] }); setShowCreate(false); toast.success("Post created"); },
@@ -191,7 +174,7 @@ export default function AdminNewsPage() {
     mutationFn: ({ id, f }: { id: string; f: FormState }) => updateNewsPost(id, {
       title: f.title, content: f.content, category: f.category, status: f.status,
       isPinned: f.isPinned === "true",
-      yearGroups: isSuperAdmin ? (f.yearGroupsAll ? undefined : f.yearGroups) : undefined,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       images: f.images.length > 0 ? f.images : undefined,
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,
       youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
@@ -292,7 +275,7 @@ export default function AdminNewsPage() {
               category: editPost.category || "News",
               status: editPost.status || "Draft",
               isPinned: editPost.isPinned ? "true" : "false",
-              yearGroupsAll: !editPost.yearGroups || editPost.yearGroups.length === 0,
+              audienceMode: inferAudienceMode(null, editPost.yearGroups),
               yearGroups: editPost.yearGroups ?? [],
               images: [],
               existingImageUrls: editPost.imageUrls ?? [],

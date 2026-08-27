@@ -2,6 +2,7 @@ export * from "./lib/utils";
 export * from "./lib/brand-palette";
 export * from "./hooks/use-debounce";
 
+export * from "./components/audience-scope-picker";
 export * from "./components/avatar";
 export * from "./components/badge";
 export * from "./components/brand-preview";

@@ -147,7 +147,7 @@ export default function AdminNotificationsPage() {
   const unreadCount = unreadQuery.data ?? 0;
 
   return (
-    <div className="p-[26px] max-w-[950px] mx-auto space-y-5">
+    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
       {/* Header */}
       <header className="flex items-start justify-between gap-4">
         <div>

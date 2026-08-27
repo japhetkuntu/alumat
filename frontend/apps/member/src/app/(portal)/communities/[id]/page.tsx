@@ -161,7 +161,7 @@ export default function CommunityDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto space-y-6 animate-pulse">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 animate-pulse">
         <div className="h-44 rounded-3xl bg-secondary" />
         <CardSkeleton />
       </div>
@@ -170,7 +170,7 @@ export default function CommunityDetailPage() {
 
   if (!community) {
     return (
-      <div className="p-6 lg:p-10 max-w-[1200px] mx-auto">
+      <div className="p-6 lg:p-10 max-w-[1400px] mx-auto">
         <EmptyState icon={<Users size={40} />} title="Community not found" description="This community may have been removed." />
       </div>
     );
@@ -179,7 +179,7 @@ export default function CommunityDetailPage() {
   const previewMembers = members.slice(0, 6);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto pb-20 space-y-6 sm:space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20 space-y-6 sm:space-y-8">
       <Link href="/communities" className="flex items-center gap-1.5 text-[13.5px] font-semibold hover:underline w-fit" style={{ color: "var(--muted-foreground)" }}>
         <ArrowLeft size={15} /> Back to communities
       </Link>

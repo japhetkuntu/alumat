@@ -8,22 +8,28 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
+using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
 public class MemberNewsService(
     IAlumniPgRepository<NewsPost> newsRepo,
     IAlumniPgRepository<StaffEntity> adminRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
     ILogger<MemberNewsService> logger) : IMemberNewsService
 {
-    public async Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter)
+    public async Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter, string memberId)
     {
         try
         {
             logger.LogInformation("GetPosts request — filter: {Filter}", filter.Serialize());
+            var member = await memberRepo.GetByIdAsync(memberId);
+            var memberYear = member?.GraduationYear;
+
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "PublishedAt", filter.SortDir ?? "desc",
                 p => p.Status == "Published"
+                  && (p.YearGroups == null || p.YearGroups.Count == 0 || (memberYear.HasValue && p.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Category) || p.Category == filter.Category)
                   && (string.IsNullOrEmpty(filter.Search)
                       || p.Title.Contains(filter.Search)
@@ -51,7 +57,7 @@ public class MemberNewsService(
         }
     }
 
-    public async Task<IApiResponse<NewsPostDto>> GetPostByIdAsync(string postId)
+    public async Task<IApiResponse<NewsPostDto>> GetPostByIdAsync(string postId, string memberId)
     {
         try
         {
@@ -60,6 +66,13 @@ public class MemberNewsService(
             var post = await newsRepo.GetByIdAsync(postId);
             if (post is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
+
+            if (post.YearGroups is { Count: > 0 })
+            {
+                var member = await memberRepo.GetByIdAsync(memberId);
+                if (member is null || !post.YearGroups.Contains(member.GraduationYear))
+                    return ApiResponseExtensions.ToNotFoundApiResponse<NewsPostDto>("Post not found");
+            }
 
             if (post.Author is null)
             {

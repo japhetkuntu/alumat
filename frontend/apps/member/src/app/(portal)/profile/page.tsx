@@ -182,7 +182,7 @@ export default function MemberProfilePage() {
 
   if (isLoading || !profile) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px] mx-auto">
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -190,7 +190,7 @@ export default function MemberProfilePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
 
       <PageHeader eyebrow="Account" title="My profile" description="Update your information visible to fellow alumni." />
 

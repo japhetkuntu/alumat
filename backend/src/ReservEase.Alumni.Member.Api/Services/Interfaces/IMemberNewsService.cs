@@ -7,6 +7,6 @@ namespace ReservEase.Alumni.Member.Api.Services.Interfaces;
 
 public interface IMemberNewsService
 {
-    Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter);
-    Task<IApiResponse<NewsPostDto>> GetPostByIdAsync(string postId);
+    Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter, string memberId);
+    Task<IApiResponse<NewsPostDto>> GetPostByIdAsync(string postId, string memberId);
 }

@@ -122,9 +122,13 @@ public class CampaignService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Target amount and amount per member must be greater than zero.");
             if (!request.IsMembershipCampaign && request.Deadline <= DateTime.UtcNow)
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Deadline must be a future date/time.");
+            var resolvedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
+
             var campaign = new Campaign
             {
-                CommunityId = admin.ResolveCommunityForCreation(request.CommunityId),
+                CommunityId = resolvedCommunityId,
                 Title = request.Title,
                 Description = request.Description,
                 TargetAmount = request.TargetAmount,
@@ -132,7 +136,7 @@ public class CampaignService(
                 PensionerAmountPerMember = request.IsMembershipCampaign ? request.PensionerAmountPerMember : null,
                 Deadline = DateTime.SpecifyKind(request.Deadline, DateTimeKind.Utc),
                 Status = CampaignStatus.Active,
-                YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups),
+                YearGroups = resolvedYearGroups,
                 YoutubeVideoUrl = request.YoutubeVideoUrl,
                 AllowOnlinePayments = request.AllowOnlinePayments,
                 AllowManualPayments = request.AllowManualPayments,
@@ -208,7 +212,10 @@ public class CampaignService(
             if (request.IsMembershipCampaign && !request.MembershipYear.HasValue)
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Membership campaigns must set a valid membership year.");
 
-            campaign.CommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
+            campaign.CommunityId = updatedCommunityId;
             campaign.Title = request.Title;
             campaign.Description = request.Description;
             campaign.Deadline = DateTime.SpecifyKind(request.Deadline, DateTimeKind.Utc);
@@ -241,7 +248,7 @@ public class CampaignService(
                 campaign.AmountPerMember = request.AmountPerMember.Value;
             }
 
-            campaign.YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            campaign.YearGroups = updatedYearGroups;
             campaign.YoutubeVideoUrl = request.YoutubeVideoUrl;
             campaign.AllowOnlinePayments = request.AllowOnlinePayments;
             campaign.AllowManualPayments = request.AllowManualPayments;

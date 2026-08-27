@@ -49,4 +49,17 @@ public static class ScopeAuthorizationExtensions
 
         return admin.CommunityIds is { Count: 1 } ? admin.CommunityIds[0] : null;
     }
+
+    /// <summary>
+    /// Audience targeting is a single choice — "everyone" / "a community" /
+    /// "specific year groups" — never a combination (combining the two
+    /// silently intersects into a much narrower, unindicated audience). Call
+    /// after resolving each field so a community-scoped item never also
+    /// carries a stale year-group value from the same request.
+    /// </summary>
+    public static void NormalizeAudience(ref List<int>? yearGroups, ref string? communityId)
+    {
+        if (communityId != null)
+            yearGroups = null;
+    }
 }

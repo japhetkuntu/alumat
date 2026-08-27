@@ -251,7 +251,7 @@ export default function AdminsPage() {
   const disabledCount = admins.filter((a) => a.isDisabled).length;
 
   return (
-    <div className="p-[26px] max-w-[1100px] mx-auto space-y-5">
+    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[25px] font-bold m-0">Institution Admins</h1>

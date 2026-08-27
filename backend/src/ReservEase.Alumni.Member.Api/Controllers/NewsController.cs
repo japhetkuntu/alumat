@@ -21,7 +21,8 @@ public class NewsController(IMemberNewsService newsService) : DefaultController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<NewsPostDto>>))]
     public async Task<IActionResult> GetPosts([FromQuery] NewsFilter filter)
     {
-        var result = await newsService.GetPostsAsync(filter);
+        var member = User.GetAccount();
+        var result = await newsService.GetPostsAsync(filter, member.Id);
         return result.ToActionResult();
     }
 
@@ -31,7 +32,8 @@ public class NewsController(IMemberNewsService newsService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetPost(string postId)
     {
-        var result = await newsService.GetPostByIdAsync(postId);
+        var member = User.GetAccount();
+        var result = await newsService.GetPostByIdAsync(postId, member.Id);
         return result.ToActionResult();
     }
 }

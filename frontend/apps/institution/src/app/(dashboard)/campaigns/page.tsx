@@ -10,13 +10,13 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { FormSelect } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { getCampaigns, createCampaign, updateCampaign, archiveCampaign, unarchiveCampaign, activateCampaign, getCommunities } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
+import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -24,7 +24,7 @@ import { Progress } from "@alumni/ui";
 import type { Campaign, CampaignStatus } from "@/types";
 import { ImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
-import { YearGroupPicker } from "@alumni/ui";
+import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 
 const statusVariant: Record<CampaignStatus, "success" | "info" | "secondary" | "warning"> = {
   Active: "success",
@@ -40,7 +40,7 @@ interface FormState {
   targetAmount: string;
   minContribution: string;
   deadline: string;
-  yearGroupsAll: boolean;
+  audienceMode: AudienceMode;
   yearGroups: number[];
   bannerImage: File | null;
   existingBannerUrl: string;
@@ -58,7 +58,7 @@ interface FormState {
 }
 const emptyForm: FormState = {
   title: "", description: "", targetAmount: "", minContribution: "", deadline: "",
-  yearGroupsAll: true, yearGroups: [],
+  audienceMode: "everyone", yearGroups: [],
   bannerImage: null, existingBannerUrl: "", youtubeVideoUrl: "",
   allowOnlinePayments: true,
   allowManualPayments: false,
@@ -76,6 +76,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
   const [form, setForm] = useState(init);
   const f = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
+  const manualPaymentsEnabled = useFeatureEnabled("ManualPayments");
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -89,17 +90,6 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             <Label>Description</Label>
             <Textarea placeholder="Describe the purpose of this fundraiser..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} />
           </div>
-          {communities.length > 0 && (
-            <div className="space-y-2">
-              <Label>Community (optional)</Label>
-              <FormSelect
-                value={form.communityId}
-                onValueChange={(v) => f("communityId", v)}
-                options={[{ value: "", label: "Institution-wide (all members)" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
-              />
-              <p className="text-xs text-muted-foreground">Restricts this fundraiser to one community's approved members instead of the whole institution.</p>
-            </div>
-          )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Target amount (GHS)</Label>
@@ -115,34 +105,17 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             </div>
           </div>
 
-          <div className="space-y-2">
-            {isSuperAdmin ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <Label>Target year groups</Label>
-                  <label className="flex items-center gap-2 text-sm font-medium">
-                    <input
-                      type="checkbox"
-                      checked={form.yearGroupsAll}
-                      onChange={(e) => setForm((prev) => ({ ...prev, yearGroupsAll: e.target.checked }))}
-                      className="h-4 w-4 rounded border border-muted-foreground"
-                    />
-                    All years
-                  </label>
-                </div>
-                {!form.yearGroupsAll ? (
-                  <YearGroupPicker
-                    value={form.yearGroups}
-                    onChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
-                  />
-                ) : (
-                  <p className="text-xs text-muted-foreground">This fundraiser will be visible to members of all year groups.</p>
-                )}
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">Regular admins cannot choose year groups. Fundraisers will be restricted to your assigned year group.</p>
-            )}
-          </div>
+          <AudienceScopePicker
+            mode={form.audienceMode}
+            onModeChange={(mode) => f("audienceMode", mode)}
+            communityId={form.communityId}
+            onCommunityChange={(v) => f("communityId", v)}
+            communities={communities}
+            yearGroups={form.yearGroups}
+            onYearGroupsChange={(years) => f("yearGroups", years)}
+            supportsCommunity
+            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This fundraiser will be restricted to your assigned year group or community." } : undefined}
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -162,7 +135,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled && "sm:grid-cols-2")}>
             <div className="space-y-2">
               <Label>Allow Online Payments</Label>
               <div className="flex items-center gap-2">
@@ -170,16 +143,18 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
                 <label htmlFor="online-pay" className="text-sm">Enable online payments</label>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Allow Manual Payments</Label>
-              <div className="flex items-center gap-2">
-                <input id="manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
-                <label htmlFor="manual-pay" className="text-sm">Allow bank/mobile money transfers</label>
+            {manualPaymentsEnabled && (
+              <div className="space-y-2">
+                <Label>Allow Manual Payments</Label>
+                <div className="flex items-center gap-2">
+                  <input id="manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
+                  <label htmlFor="manual-pay" className="text-sm">Allow bank/mobile money transfers</label>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {form.allowManualPayments && (
+          {manualPaymentsEnabled && form.allowManualPayments && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="p-4 border border-border rounded-lg space-y-2">
                 <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
@@ -229,11 +204,11 @@ export default function AdminCampaignsPage() {
 
   const createMut = useMutation({
     mutationFn: (f: FormState) => createCampaign({
-      communityId: f.communityId || undefined,
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, description: f.description,
       targetAmount: Number(f.targetAmount), amountPerMember: Number(f.minContribution),
       deadline: f.deadline,
-      yearGroups: isSuperAdmin ? (f.yearGroupsAll ? undefined : f.yearGroups) : undefined,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
       youtubeVideoUrl: f.youtubeVideoUrl || undefined,
       allowOnlinePayments: f.allowOnlinePayments,
@@ -252,10 +227,10 @@ export default function AdminCampaignsPage() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, f, status }: { id: string; f: FormState; status: string }) => updateCampaign(id, {
-      communityId: f.communityId || undefined,
+      communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, description: f.description || undefined, deadline: f.deadline, status,
       targetAmount: Number(f.targetAmount), amountPerMember: Number(f.minContribution),
-      yearGroups: isSuperAdmin ? (f.yearGroupsAll ? undefined : f.yearGroups) : undefined,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined, youtubeVideoUrl: f.youtubeVideoUrl || undefined,
       allowOnlinePayments: f.allowOnlinePayments,
       allowManualPayments: f.allowManualPayments,
@@ -330,7 +305,7 @@ export default function AdminCampaignsPage() {
             targetAmount: String(editCampaign.targetAmount),
             minContribution: String(editCampaign.amountPerMember),
             deadline: editCampaign.deadline.split("T")[0],
-            yearGroupsAll: !editCampaign.yearGroups || editCampaign.yearGroups.length === 0,
+            audienceMode: inferAudienceMode(editCampaign.communityId, editCampaign.yearGroups),
             yearGroups: editCampaign.yearGroups ?? [],
             bannerImage: null,
             existingBannerUrl: editCampaign.bannerImageUrl ?? "",

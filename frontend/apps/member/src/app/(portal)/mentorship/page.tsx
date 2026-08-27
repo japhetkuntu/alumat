@@ -26,6 +26,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 import type { MentorProfileStatus, MentorshipStatus } from "@/types";
 
 const reqStatusVariant: Record<MentorshipStatus, "success" | "warning" | "destructive" | "secondary"> = {
@@ -152,6 +153,7 @@ export default function MemberMentorshipPage() {
   });
   const [confirmAction, setConfirmAction] = useState<{ type: "accept" | "reject"; id: string } | null>(null);
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   const { data: mentorsData, isLoading } = useQuery({
     queryKey: ["m-mentors"],
@@ -302,6 +304,7 @@ export default function MemberMentorshipPage() {
                 const mentorName = m.memberName ?? "Alumni Mentor";
                 const isFull     = m.currentMenteeCount >= m.maxMentees;
                 const isSelected = requestForm.mentorProfileId === m.id;
+                const isSelf     = m.memberId === user?.id;
 
                 return (
                   <div
@@ -354,18 +357,18 @@ export default function MemberMentorshipPage() {
 
                     <Button
                       size="sm"
-                      variant={isFull || isSelected ? "outline" : "default"}
+                      variant={isFull || isSelected || isSelf ? "outline" : "default"}
                       className="w-full font-semibold text-[13.5px]"
                       style={{ height: 40 }}
-                      disabled={isFull}
+                      disabled={isFull || isSelf}
                       onClick={() => {
-                        if (isFull) return;
+                        if (isFull || isSelf) return;
                         setRequestForm(isSelected
                           ? { mentorProfileId: "", area: "", message: "" }
                           : { mentorProfileId: m.id, area: m.area, message: "" });
                       }}
                     >
-                      {isFull ? "Mentor full" : isSelected ? "Cancel" : "Request mentorship"}
+                      {isSelf ? "This is you" : isFull ? "Mentor full" : isSelected ? "Cancel" : "Request mentorship"}
                     </Button>
                   </div>
                 );

@@ -73,6 +73,8 @@ export interface InstitutionDetail {
   memberAuthHeadline?: string | null;
   memberAuthSubtext?: string | null;
   requireStudentId: boolean;
+  /** "ApprovedOnly" (default) — any approved member is active regardless of dues. "DuesRequired" — a member must also have paid dues. */
+  memberActivePolicy: "ApprovedOnly" | "DuesRequired";
   disabledFeatures: string[];
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
@@ -101,6 +103,7 @@ export interface CreateInstitutionRequest {
   contactName: string;
   contactEmail: string;
   plan?: string;
+  memberActivePolicy?: "ApprovedOnly" | "DuesRequired";
   portalName?: string;
   supportEmail?: string;
   primaryColorHex?: string;
@@ -173,6 +176,11 @@ export async function createInstitution(req: CreateInstitutionRequest) {
 
 export async function updateInstitutionStatus(id: string, status: string) {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/status`, { status });
+  return res.data.data!;
+}
+
+export async function updateInstitutionMemberPolicy(id: string, memberActivePolicy: "ApprovedOnly" | "DuesRequired") {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/member-policy`, { memberActivePolicy });
   return res.data.data!;
 }
 

@@ -16,7 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatDate, cn } from "@alumni/ui";
+import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel } from "@/lib/institution-api";
 import { EmptyState } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
@@ -352,6 +353,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
   campaign: Campaign; isSuperAdmin: boolean; saving: boolean;
   onSave: (body: UpdateCampaignBody) => void; onCancel: () => void;
 }) {
+  const manualPaymentsEnabled = useFeatureEnabled("ManualPayments");
   const [title, setTitle] = useState(campaign.title);
   const [description, setDescription] = useState(campaign.description ?? "");
   const [targetAmount, setTargetAmount] = useState(String(campaign.targetAmount));
@@ -447,7 +449,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 <ImageUpload file={bannerImage} existingUrl={existingBannerUrl} onChange={setBannerImage} onClearExisting={() => setExistingBannerUrl("")} label="Upload banner image" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled && "sm:grid-cols-2")}>
                 <div className="space-y-2">
                   <Label>Allow Online Payments</Label>
                   <div className="flex items-center gap-2">
@@ -455,13 +457,15 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                     <label htmlFor="edit-online-pay-membership" className="text-sm">Enable online payments</label>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Allow Manual Payments</Label>
-                  <div className="flex items-center gap-2">
-                    <input id="edit-manual-pay-membership" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-manual-pay-membership" className="text-sm">Bank/Mobile money transfers</label>
+                {manualPaymentsEnabled && (
+                  <div className="space-y-2">
+                    <Label>Allow Manual Payments</Label>
+                    <div className="flex items-center gap-2">
+                      <input id="edit-manual-pay-membership" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
+                      <label htmlFor="edit-manual-pay-membership" className="text-sm">Bank/Mobile money transfers</label>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </>
           ) : (
@@ -523,7 +527,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
                 <div className="space-y-2">
                   <Label>Allow Online Payments</Label>
                   <div className="flex items-center gap-2">
@@ -531,13 +535,15 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                     <label htmlFor="edit-online-pay-regular" className="text-sm">Enable online payments</label>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Allow Manual Payments</Label>
-                  <div className="flex items-center gap-2">
-                    <input id="edit-manual-pay-regular" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-manual-pay-regular" className="text-sm">Bank/mobile money transfers</label>
+                {manualPaymentsEnabled && (
+                  <div className="space-y-2">
+                    <Label>Allow Manual Payments</Label>
+                    <div className="flex items-center gap-2">
+                      <input id="edit-manual-pay-regular" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
+                      <label htmlFor="edit-manual-pay-regular" className="text-sm">Bank/mobile money transfers</label>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="space-y-2">
                   <Label>Membership dues</Label>
                   {isSuperAdmin ? (
@@ -561,7 +567,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
             </>
           )}
 
-          {allowManualPayments && (
+          {manualPaymentsEnabled && allowManualPayments && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="p-4 border border-border rounded-lg space-y-2">
                 <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>

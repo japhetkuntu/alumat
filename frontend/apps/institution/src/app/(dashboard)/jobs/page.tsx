@@ -17,7 +17,7 @@ import { formatDate } from "@alumni/ui";
 import { getJobs, createJob, updateJob, deleteJob } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { YearGroupPicker } from "@alumni/ui";
+import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
@@ -48,11 +48,12 @@ interface FormState {
   description: string;
   applyUrl: string;
   deadline: string;
+  audienceMode: AudienceMode;
   yearGroups: number[];
   bannerImage: File | null;
   existingBannerUrl: string;
 }
-const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", yearGroups: [], bannerImage: null, existingBannerUrl: "" };
+const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", yearGroups: [], bannerImage: null, existingBannerUrl: "" };
 const statusOptions = ["Active", "Closed", "Draft"];
 
 function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdmin }: {
@@ -81,31 +82,17 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
                   { value: "Contract", label: "Contract" },
                   { value: "Internship", label: "Internship" },
                 ]} /></div>
-            <div className="space-y-2"><Label>Target year groups</Label>
-              {isSuperAdmin ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label></Label>
-                    <label className="flex items-center gap-2 text-sm font-medium">
-                      <input
-                        type="checkbox"
-                        checked={form.yearGroups.length === 0}
-                        onChange={(e) => setForm((prev) => ({ ...prev, yearGroups: e.target.checked ? [] : prev.yearGroups }))}
-                        className="h-4 w-4 rounded border border-muted-foreground"
-                      />
-                      All years
-                    </label>
-                  </div>
-                  {form.yearGroups.length > 0 ? (
-                    <YearGroupPicker value={form.yearGroups} onChange={(years) => setForm(prev => ({ ...prev, yearGroups: years }))} />
-                  ) : (
-                    <p className="text-xs text-muted-foreground">This job will be visible to members of all year groups.</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">Regular admins cannot choose year groups; this will use your year group automatically.</p>
-              )}
-            </div>
+            <AudienceScopePicker
+              mode={form.audienceMode}
+              onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
+              communityId=""
+              onCommunityChange={() => {}}
+              communities={[]}
+              yearGroups={form.yearGroups}
+              onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
+              supportsCommunity={false}
+              restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience; this job will use your year group automatically." } : undefined}
+            />
             <div className="space-y-2"><Label>Deadline (optional)</Label>
               <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} /></div>
             <div className="space-y-2"><Label>Apply URL (optional)</Label>
@@ -166,7 +153,7 @@ export default function AdminJobsPage() {
     mutationFn: (f: FormState) => createJob({
       title: f.title, company: f.company, location: f.location, type: f.type,
       description: f.description || undefined, applyUrl: f.applyUrl || undefined,
-      deadline: f.deadline || undefined, yearGroups: isSuperAdmin ? (f.yearGroups.length > 0 ? f.yearGroups : undefined) : undefined,
+      deadline: f.deadline || undefined, yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-jobs"] }); setShowCreate(false); toast.success("Job posted"); },
@@ -178,7 +165,7 @@ export default function AdminJobsPage() {
       title: f.title, company: f.company, location: f.location, type: f.type,
       description: f.description || undefined, applyUrl: f.applyUrl || undefined,
       deadline: f.deadline || undefined, status: f.status,
-      yearGroups: isSuperAdmin ? (f.yearGroups.length > 0 ? f.yearGroups : undefined) : undefined,
+      yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-jobs"] }); setEditJob(null); toast.success("Job updated"); },
@@ -217,7 +204,7 @@ export default function AdminJobsPage() {
           title={`Edit — ${editJob.title}`}
           init={{ title: editJob.title, company: editJob.company, location: editJob.location, type: editJob.type,
             description: editJob.description ?? "", applyUrl: editJob.applyUrl ?? "",
-            deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", yearGroups: editJob.yearGroups ?? [], bannerImage: null,
+            deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(null, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], bannerImage: null,
             existingBannerUrl: editJob.bannerImageUrl ?? "",
             status: editJob.status }}
           saving={updateMut.isPending} showStatus isSuperAdmin={isSuperAdmin}

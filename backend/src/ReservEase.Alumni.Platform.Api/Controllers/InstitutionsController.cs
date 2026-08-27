@@ -118,6 +118,18 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>How "active member" status is determined for this institution — normally the institution's own choice, but platform staff can set it too (e.g. at onboarding, or a support request).</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPatch("{id}/member-policy")]
+    [SwaggerOperation(Summary = "Update the institution's active-member policy")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdateMemberPolicy(string id, [FromBody] UpdateInstitutionMemberPolicyRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdateMemberActivePolicyAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/branding")]
     [SwaggerOperation(Summary = "Update institution branding")]

@@ -10,6 +10,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using Microsoft.Extensions.Options;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -124,6 +125,10 @@ public class InstitutionManagementService(
         if (await db.Set<StaffEntity>().IgnoreQueryFilters().AnyAsync(a => a.Email == email))
             return ApiResponseExtensions.ToConflictApiResponse<InstitutionDetailResponse>("An admin with that email already exists");
 
+        if (request.MemberActivePolicy != MembershipActivityCalculator.ApprovedOnlyPolicy
+            && request.MemberActivePolicy != MembershipActivityCalculator.DuesRequiredPolicy)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("MemberActivePolicy must be either \"ApprovedOnly\" or \"DuesRequired\"");
+
         await using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
@@ -138,6 +143,7 @@ public class InstitutionManagementService(
                 PrimaryColorHex = request.PrimaryColorHex,
                 SecondaryColorHex = request.SecondaryColorHex,
                 Plan = request.Plan,
+                MemberActivePolicy = request.MemberActivePolicy,
                 Status = "Trial",
                 TrialEndsAt = DateTime.UtcNow.AddDays(14),
                 OnboardedAt = DateTime.UtcNow,
@@ -215,6 +221,26 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"set institution status to {request.Status}", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Status updated");
+    }
+
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdateMemberActivePolicyAsync(string id, UpdateInstitutionMemberPolicyRequest request, string updatedBy, string actorName)
+    {
+        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+        if (request.MemberActivePolicy != MembershipActivityCalculator.ApprovedOnlyPolicy
+            && request.MemberActivePolicy != MembershipActivityCalculator.DuesRequiredPolicy)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("MemberActivePolicy must be either \"ApprovedOnly\" or \"DuesRequired\"");
+
+        institution.MemberActivePolicy = request.MemberActivePolicy;
+        institution.UpdatedAt = DateTime.UtcNow;
+        institution.UpdatedBy = updatedBy;
+        await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(updatedBy, actorName, $"set active-member policy to {request.MemberActivePolicy}", institution.Name);
+
+        return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Active-member policy updated");
     }
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName)
@@ -504,7 +530,7 @@ public class InstitutionManagementService(
             i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.Plan, i.Status, memberCount, i.MemberLimit, 0, i.StorageLimitGb,
             i.OnboardedAt, i.TrialEndsAt,
             i.PlatformFeePercentage, i.PaystackSubaccountCode,

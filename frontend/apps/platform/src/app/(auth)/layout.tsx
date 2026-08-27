@@ -42,14 +42,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               Onboard institutions. Keep every tenant healthy.
             </h1>
             <p className="text-[18px] font-medium leading-relaxed max-w-[440px]" style={{ color: "rgba(255,255,255,0.7)" }}>
-              Provision new institutions, track subscriptions, and support every tenant from one governance workspace.
+              Provision new institutions, track platform revenue, and support every tenant from one governance workspace.
             </p>
           </div>
 
           <ul className="space-y-4">
             {[
               "Onboard and provision institutions",
-              "Track subscriptions and plan usage",
+              "Track institution activity and platform revenue",
               "Support and audit every tenant",
             ].map((item) => (
               <li key={item} className="flex items-center gap-3.5">

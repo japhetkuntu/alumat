@@ -915,7 +915,7 @@ public class ContributionService : IContributionService
 
                 var status = new MembershipStatusResponse(active, expiry, yearsPaid, m.LastMembershipPaidAt,
                     isCurrentYearPaid, hasArrears, unpaidPastCampaigns.Count, arrearsYears,
-                    memberActivePolicy ?? MembershipActivityCalculator.DuesRequiredPolicy);
+                    memberActivePolicy ?? MembershipActivityCalculator.ApprovedOnlyPolicy);
                 return status.ToOkApiResponse();
             }
 
@@ -925,7 +925,7 @@ public class ContributionService : IContributionService
                 m.MembershipExpiry,
                 m.MembershipYearsPaid,
                 m.LastMembershipPaidAt,
-                memberActivePolicy ?? MembershipActivityCalculator.DuesRequiredPolicy);
+                memberActivePolicy ?? MembershipActivityCalculator.ApprovedOnlyPolicy);
 
             return fallbackStatus.ToOkApiResponse();
         }

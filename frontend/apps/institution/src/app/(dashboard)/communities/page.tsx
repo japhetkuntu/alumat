@@ -163,7 +163,7 @@ export default function CommunitiesPage() {
   const toggleActive = (c: CommunityListItem) => updateMut.mutate({ id: c.id, name: c.name, description: c.description ?? undefined, coverImageUrl: c.coverImageUrl ?? undefined, isActive: !c.isActive });
 
   return (
-    <div className="p-[26px] max-w-[1100px] mx-auto space-y-5">
+    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[25px] font-bold m-0">Communities</h1>

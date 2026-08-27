@@ -18,6 +18,7 @@ import { formatCurrency, formatDate } from "@alumni/ui";
 import { getContributions, getCampaigns, recordManualContribution, paymentMethodLabel } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { TableSkeleton } from "@alumni/ui";
+import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import type { ContributionStatus } from "@/types";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
@@ -27,6 +28,7 @@ const statusVariant: Record<ContributionStatus, "success" | "warning" | "destruc
 };
 
 export default function AdminContributionsPage() {
+  const manualPaymentsEnabled = useFeatureEnabled("ManualPayments");
   const [showManualForm, setShowManualForm] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -111,14 +113,16 @@ export default function AdminContributionsPage() {
           <p className="text-muted-foreground text-[12px] mt-1">Online payments are processed via Paystack — your institution receives the full amount members pay.</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={() => setShowManualForm(!showManualForm)}><Plus size={14} />Record payment</Button>
+          {manualPaymentsEnabled && (
+            <Button variant="outline" onClick={() => setShowManualForm(!showManualForm)}><Plus size={14} />Record payment</Button>
+          )}
           <Button variant="outline" disabled={exportLoading} onClick={handleExportCsv}>
             {exportLoading ? <><Loader2 size={14} className="animate-spin" />Exporting…</> : <><Download size={14} />Export</>}
           </Button>
         </div>
       </div>
 
-      {showManualForm && (
+      {manualPaymentsEnabled && showManualForm && (
         <Card>
           <CardHeader><CardTitle className="text-base">Record a manual payment</CardTitle></CardHeader>
           <CardContent>

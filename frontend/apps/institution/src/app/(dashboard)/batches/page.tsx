@@ -91,7 +91,7 @@ export default function BatchesPage() {
   const toggleActive = (b: Batch) => updateMut.mutate({ id: b.id, name: b.name, year: b.year, isActive: !b.isActive });
 
   return (
-    <div className="p-[26px] max-w-[1000px] mx-auto space-y-5">
+    <div className="p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[25px] font-bold m-0">Batches</h1>

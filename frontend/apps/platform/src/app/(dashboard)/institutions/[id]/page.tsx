@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { BrandPreview } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import {
-  getInstitution, updateInstitutionBranding, updateInstitutionStatus,
+  getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionMemberPolicy,
   updateInstitutionFeatures, getFeatureCatalog,
   updateInstitutionPayments, getInstitutionRevenue,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -125,6 +125,15 @@ export default function InstitutionDetailPage() {
     mutationFn: (status: string) => updateInstitutionStatus(id, status),
     onSuccess: (updated) => {
       toast.success(`Institution status set to ${updated.status}`);
+      invalidate();
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const memberPolicyMutation = useMutation({
+    mutationFn: (policy: "ApprovedOnly" | "DuesRequired") => updateInstitutionMemberPolicy(id, policy),
+    onSuccess: (updated) => {
+      toast.success(updated.memberActivePolicy === "DuesRequired" ? "Dues payment now required for active status" : "Dues payment no longer required for active status");
       invalidate();
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -385,6 +394,29 @@ export default function InstitutionDetailPage() {
               <p className="text-[13px] text-muted-foreground">
                 See the <Link href="/audit-log" className="text-primary hover:underline">platform audit log</Link> for actions taken on this institution.
               </p>
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-2">
+            <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Active member policy</p></div>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[13px] font-semibold">Require dues payment for active status</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
+                    Off (default) — any approved member is active regardless of dues paid. On — a member is only active once current and past dues are paid. Normally the institution's own choice, editable from their own settings too.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={inst.memberActivePolicy === "DuesRequired"}
+                  disabled={memberPolicyMutation.isPending}
+                  onClick={() => memberPolicyMutation.mutate(inst.memberActivePolicy === "DuesRequired" ? "ApprovedOnly" : "DuesRequired")}
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors disabled:opacity-60 ${inst.memberActivePolicy === "DuesRequired" ? "bg-primary" : "bg-muted"}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${inst.memberActivePolicy === "DuesRequired" ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
             </CardContent>
           </Card>
         </div>

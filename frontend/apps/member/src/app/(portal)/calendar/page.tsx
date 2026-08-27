@@ -131,7 +131,7 @@ export default function CalendarPage() {
   const pendingCount = items.filter((i) => i.mine && !i.done).length;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[900px] mx-auto space-y-6 sm:space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
       <PageHeader
         title="Calendar"
         description="Every event and payment deadline in one place, so nothing catches you by surprise."

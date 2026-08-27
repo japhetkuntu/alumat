@@ -45,7 +45,7 @@ export default function CommunitiesPage() {
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 xl:p-12 space-y-6 sm:space-y-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-[1400px] mx-auto">
       <PageHeader
         title="Communities"
         description="Find your people beyond the classroom — request to join the ones relevant to you."

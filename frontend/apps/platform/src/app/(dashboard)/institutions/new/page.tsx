@@ -47,6 +47,7 @@ export default function NewInstitutionPage() {
     adminLastName: "",
     adminEmail: "",
     adminPassword: generatePassword(),
+    requireDues: false,
   });
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -75,6 +76,7 @@ export default function NewInstitutionPage() {
           adminLastName: form.adminLastName || form.contactName.split(" ").slice(1).join(" ") || "User",
           adminEmail: form.adminEmail || form.contactEmail,
           adminPassword: form.adminPassword,
+          memberActivePolicy: form.requireDues ? "DuesRequired" : "ApprovedOnly",
         });
         toast.success("Institution created", {
           description: `${created.name} has been onboarded. First admin: ${form.adminEmail || form.contactEmail}.`,
@@ -148,6 +150,21 @@ export default function NewInstitutionPage() {
                     <Label>Primary contact email</Label>
                     <Input value={form.contactEmail} onChange={(e) => update("contactEmail", e.target.value)} placeholder="naomi.boateng@greenfield.edu.gh" />
                   </div>
+                </div>
+                <div className="flex items-start gap-2.5 pt-2">
+                  <input
+                    id="require-dues"
+                    type="checkbox"
+                    checked={form.requireDues}
+                    onChange={(e) => update("requireDues", e.target.checked)}
+                    className="h-4 w-4 mt-0.5"
+                  />
+                  <label htmlFor="require-dues" className="text-[13px]">
+                    <span className="font-semibold block">Require dues payment for active status</span>
+                    <span className="text-muted-foreground">
+                      Off by default — any approved member counts as active regardless of dues paid. The institution can change this later from its own settings.
+                    </span>
+                  </label>
                 </div>
               </>
             )}

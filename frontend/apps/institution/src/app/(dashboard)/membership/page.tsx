@@ -14,8 +14,9 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
+import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { CardSkeleton } from "@alumni/ui";
 import { ImageUpload } from "@alumni/ui";
 import type { Campaign } from "@/types";
@@ -23,6 +24,7 @@ import type { Campaign } from "@/types";
 export default function AdminMembershipPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
+  const manualPaymentsEnabled = useFeatureEnabled("ManualPayments");
   const qc = useQueryClient();
   const currentYear = new Date().getFullYear();
   const [showCreate, setShowCreate] = useState(false);
@@ -201,7 +203,7 @@ export default function AdminMembershipPage() {
                 <ImageUpload file={bannerImage} existingUrl="" onChange={setBannerImage} onClearExisting={() => {}} label="Upload banner image" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className={cn("grid grid-cols-1 gap-4", manualPaymentsEnabled && "sm:grid-cols-2")}>
                 <div className="space-y-2">
                   <Label>Allow Online Payments</Label>
                   <div className="flex items-center gap-2">
@@ -209,16 +211,18 @@ export default function AdminMembershipPage() {
                     <label htmlFor="m-online-pay" className="text-sm">Enable online payments</label>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Allow Manual Payments</Label>
-                  <div className="flex items-center gap-2">
-                    <input id="m-manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="m-manual-pay" className="text-sm">Bank/Mobile money transfers</label>
+                {manualPaymentsEnabled && (
+                  <div className="space-y-2">
+                    <Label>Allow Manual Payments</Label>
+                    <div className="flex items-center gap-2">
+                      <input id="m-manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
+                      <label htmlFor="m-manual-pay" className="text-sm">Bank/Mobile money transfers</label>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              {form.allowManualPayments && (
+              {manualPaymentsEnabled && form.allowManualPayments && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>

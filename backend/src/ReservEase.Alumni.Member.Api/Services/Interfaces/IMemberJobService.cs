@@ -7,6 +7,6 @@ namespace ReservEase.Alumni.Member.Api.Services.Interfaces;
 
 public interface IMemberJobService
 {
-    Task<IApiResponse<PgPagedResult<JobDto>>> GetJobsAsync(JobFilter filter);
-    Task<IApiResponse<JobDto>> GetJobByIdAsync(string jobId);
+    Task<IApiResponse<PgPagedResult<JobDto>>> GetJobsAsync(JobFilter filter, string memberId);
+    Task<IApiResponse<JobDto>> GetJobByIdAsync(string jobId, string memberId);
 }
