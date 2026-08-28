@@ -116,7 +116,13 @@ public static class EntityDtoExtensions
         CreatedAt = c.CreatedAt,
     };
 
-    public static StoreProductDto ToDto(this StoreProduct p) => new()
+    /// <summary>
+    /// <paramref name="variants"/> is optional — pass the product's loaded
+    /// <see cref="StoreProductVariant"/> rows (a separate table, not embedded)
+    /// when the caller wants the full variant picker in the DTO; omitted for
+    /// contexts (e.g. paged list rows) that only need the simple fields.
+    /// </summary>
+    public static StoreProductDto ToDto(this StoreProduct p, List<StoreProductVariant>? variants = null) => new()
     {
         Id = p.Id,
         Name = p.Name,
@@ -127,11 +133,24 @@ public static class EntityDtoExtensions
         DeliveryInfo = p.DeliveryInfo,
         Status = p.Status,
         CreatedAt = p.CreatedAt,
+        VariantOptionTypes = p.VariantOptionTypes,
+        Variants = (variants ?? []).Select(v => v.ToDto(p)).ToList(),
+    };
+
+    public static StoreProductVariantDto ToDto(this StoreProductVariant v, StoreProduct parentProduct) => new()
+    {
+        Id = v.Id,
+        Options = v.Options,
+        Sku = v.Sku,
+        Price = v.PriceOverride ?? parentProduct.Price,
+        QuantityAvailable = v.QuantityAvailable,
+        ImageUrl = v.ImageUrl,
     };
 
     public static StoreOrderDto ToDto(this StoreOrder o) => new()
     {
         Id = o.Id,
+        OrderNumber = o.OrderNumber,
         MemberId = o.MemberId,
         MemberName = o.Member != null ? $"{o.Member.FirstName} {o.Member.LastName}" : null,
         MemberEmail = o.Member?.Email,
@@ -143,12 +162,22 @@ public static class EntityDtoExtensions
             UnitPrice = i.UnitPrice,
             Quantity = i.Quantity,
             DeliveryInfo = i.DeliveryInfo,
+            VariantId = i.VariantId,
+            VariantOptions = i.VariantOptions,
+            Sku = i.Sku,
         }).ToList(),
         TotalAmount = o.TotalAmount,
         Status = o.Status,
         TransactionRef = o.TransactionRef,
         ConfirmedAt = o.ConfirmedAt,
         CreatedAt = o.CreatedAt,
+        DeliveryStatus = o.DeliveryStatus,
+        DeliveryStatusUpdatedAt = o.DeliveryStatusUpdatedAt,
+        DeliveryStatusHistory = o.DeliveryStatusHistory.Select(h => new StoreOrderDeliveryEventDto
+        {
+            Status = h.Status,
+            ChangedAt = h.ChangedAt,
+        }).ToList(),
     };
 
     public static ContributionDto ToDto(this Contribution c) => new()

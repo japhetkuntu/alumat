@@ -79,4 +79,6 @@ public class StoreProductFilter : BaseFilter
 public class StoreOrderFilter : BaseFilter
 {
     public string? Status { get; set; }
+    /// <summary>Optional exact-match filter on StoreOrder.DeliveryStatus — lets staff triage orders by fulfillment stage.</summary>
+    public string? DeliveryStatus { get; set; }
 }

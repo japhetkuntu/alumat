@@ -14,4 +14,5 @@ public interface IStoreService
     Task<IApiResponse<PgPagedResult<StoreOrderDto>>> GetOrdersAsync(StoreOrderFilter filter);
     Task<IApiResponse<StoreSettingsResponse>> GetSettingsAsync();
     Task<IApiResponse<StoreSettingsResponse>> UpdateSettingsAsync(UpdateStoreSettingsRequest request, AuthData admin);
+    Task<IApiResponse<StoreOrderDto>> UpdateDeliveryStatusAsync(string orderId, string? newStatus, AuthData admin);
 }

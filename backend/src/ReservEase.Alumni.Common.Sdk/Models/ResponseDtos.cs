@@ -118,6 +118,20 @@ public class StoreProductDto
     public string? DeliveryInfo { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    /// <summary>Empty means this is a simple product with no variants.</summary>
+    public List<string> VariantOptionTypes { get; set; } = [];
+    public List<StoreProductVariantDto> Variants { get; set; } = [];
+}
+
+public class StoreProductVariantDto
+{
+    public string Id { get; set; } = string.Empty;
+    public Dictionary<string, string> Options { get; set; } = new();
+    public string? Sku { get; set; }
+    /// <summary>Effective price — PriceOverride if set, otherwise the parent product's Price.</summary>
+    public decimal Price { get; set; }
+    public int QuantityAvailable { get; set; }
+    public string? ImageUrl { get; set; }
 }
 
 public class StoreOrderItemDto
@@ -128,11 +142,21 @@ public class StoreOrderItemDto
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
     public string? DeliveryInfo { get; set; }
+    public string? VariantId { get; set; }
+    public Dictionary<string, string>? VariantOptions { get; set; }
+    public string? Sku { get; set; }
+}
+
+public class StoreOrderDeliveryEventDto
+{
+    public string Status { get; set; } = string.Empty;
+    public DateTime ChangedAt { get; set; }
 }
 
 public class StoreOrderDto
 {
     public string Id { get; set; } = string.Empty;
+    public string OrderNumber { get; set; } = string.Empty;
     public string MemberId { get; set; } = string.Empty;
     public string? MemberName { get; set; }
     public string? MemberEmail { get; set; }
@@ -142,6 +166,9 @@ public class StoreOrderDto
     public string? TransactionRef { get; set; }
     public DateTime? ConfirmedAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? DeliveryStatus { get; set; }
+    public DateTime? DeliveryStatusUpdatedAt { get; set; }
+    public List<StoreOrderDeliveryEventDto> DeliveryStatusHistory { get; set; } = [];
 }
 
 public class ManualPaymentBankAccountDto

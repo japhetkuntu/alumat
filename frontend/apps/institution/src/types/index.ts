@@ -521,6 +521,16 @@ export interface NotificationItem {
 
 export type StoreProductStatus = "Active" | "Draft" | "Archived";
 
+export interface StoreProductVariant {
+  id: string;
+  options: Record<string, string>;
+  sku?: string;
+  /** Effective price — priceOverride if set on this variant, otherwise the parent product's price. */
+  price: number;
+  quantityAvailable: number;
+  imageUrl?: string;
+}
+
 export interface StoreProduct {
   id: string;
   name: string;
@@ -532,6 +542,9 @@ export interface StoreProduct {
   deliveryInfo?: string;
   status: StoreProductStatus;
   createdAt: string;
+  /** Empty means this is a simple product with no variants. */
+  variantOptionTypes?: string[];
+  variants?: StoreProductVariant[];
 }
 
 export interface StoreOrderItem {
@@ -541,10 +554,19 @@ export interface StoreOrderItem {
   unitPrice: number;
   quantity: number;
   deliveryInfo?: string;
+  variantId?: string;
+  variantOptions?: Record<string, string>;
+  sku?: string;
+}
+
+export interface StoreOrderDeliveryEvent {
+  status: string;
+  changedAt: string;
 }
 
 export interface StoreOrder {
   id: string;
+  orderNumber: string;
   memberId: string;
   memberName?: string;
   memberEmail?: string;
@@ -554,4 +576,7 @@ export interface StoreOrder {
   transactionRef?: string;
   confirmedAt?: string;
   createdAt: string;
+  deliveryStatus?: string;
+  deliveryStatusUpdatedAt?: string;
+  deliveryStatusHistory?: StoreOrderDeliveryEvent[];
 }

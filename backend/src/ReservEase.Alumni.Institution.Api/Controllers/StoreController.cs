@@ -99,4 +99,15 @@ public class StoreController(IStoreService storeService) : DefaultController
         var result = await storeService.UpdateSettingsAsync(request, admin);
         return result.ToActionResult();
     }
+
+    [HttpPatch("orders/{orderId}/delivery-status")]
+    [SwaggerOperation(Summary = "Update an order's delivery status", Description = "Status must be one of the institution's configured Store delivery stages, or null to clear tracking.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StoreOrderDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateDeliveryStatus(string orderId, [FromBody] UpdateStoreOrderDeliveryStatusRequest request)
+    {
+        var admin = User.GetAccount();
+        var result = await storeService.UpdateDeliveryStatusAsync(orderId, request.DeliveryStatus, admin);
+        return result.ToActionResult();
+    }
 }

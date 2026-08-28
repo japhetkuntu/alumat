@@ -16,6 +16,19 @@ public class StoreOrderItem
     public int Quantity { get; set; }
     /// <summary>Snapshot of the product's delivery instructions at purchase time.</summary>
     public string? DeliveryInfo { get; set; }
+
+    /// <summary>Null when the product was simple (no variants) at purchase time.</summary>
+    public string? VariantId { get; set; }
+    /// <summary>Snapshot of the variant's option values at purchase time, e.g. {"Size":"Medium"}.</summary>
+    public Dictionary<string, string>? VariantOptions { get; set; }
+    public string? Sku { get; set; }
+}
+
+/// <summary>One entry in a <see cref="StoreOrder"/>'s delivery status timeline.</summary>
+public class StoreOrderDeliveryEvent
+{
+    public string Status { get; set; } = string.Empty;
+    public DateTime ChangedAt { get; set; }
 }
 
 /// <summary>
@@ -29,6 +42,9 @@ public class StoreOrderItem
 public class StoreOrder : BaseEntity, ITenantScoped
 {
     public string InstitutionId { get; set; } = string.Empty;
+
+    /// <summary>Short human-friendly reference, e.g. "A1B2C3D4" — generated at creation from Id, shown to members/staff instead of the raw GUID/Paystack reference.</summary>
+    public string OrderNumber { get; set; } = string.Empty;
 
     public string MemberId { get; set; } = string.Empty;
     public MemberSnapshot? Member { get; set; }
@@ -53,4 +69,10 @@ public class StoreOrder : BaseEntity, ITenantScoped
 
     public DateTime? ConfirmedAt { get; set; }
     public string? FailureMessage { get; set; }
+
+    /// <summary>Null until an admin sets it — stays fully optional, institutions that don't track delivery just never touch these fields.</summary>
+    public string? DeliveryStatus { get; set; }
+    public DateTime? DeliveryStatusUpdatedAt { get; set; }
+    /// <summary>Timeline of every DeliveryStatus change — powers a member-facing tracking view.</summary>
+    public List<StoreOrderDeliveryEvent> DeliveryStatusHistory { get; set; } = [];
 }

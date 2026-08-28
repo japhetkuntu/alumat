@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -9,22 +9,56 @@ import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
+import { cn } from "@alumni/ui";
 import { getStoreProduct } from "@/lib/member-api";
 import { useStoreCart } from "@/hooks/use-store-cart";
+import type { StoreProduct, StoreProductVariant } from "@/types";
+
+/** Given the currently selected options, does at least one in-stock variant match `candidate` for `optionType`? */
+function optionValueIsAvailable(
+  product: StoreProduct,
+  optionType: string,
+  candidate: string,
+  selected: Record<string, string>
+) {
+  return product.variants.some((v) => {
+    if (v.options[optionType] !== candidate) return false;
+    if (v.quantityAvailable <= 0) return false;
+    return Object.entries(selected).every(([type, value]) => type === optionType || v.options[type] === value);
+  });
+}
+
+function resolveVariant(product: StoreProduct, selected: Record<string, string>): StoreProductVariant | undefined {
+  if (product.variantOptionTypes.some((t) => !selected[t])) return undefined;
+  return product.variants.find((v) => product.variantOptionTypes.every((t) => v.options[t] === selected[t]));
+}
 
 export default function StoreProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [activeImage, setActiveImage] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ["store-product", id],
     queryFn: () => getStoreProduct(id),
   });
 
+  const hasVariants = !!product && product.variantOptionTypes.length > 0;
+  const selectedVariant = useMemo(
+    () => (product && hasVariants ? resolveVariant(product, selectedOptions) : undefined),
+    [product, hasVariants, selectedOptions]
+  );
+
   const { cart, addToCart, updateQuantity } = useStoreCart();
-  const inCart = cart.find((l) => l.productId === id);
-  const soldOut = !!product && product.quantityAvailable <= 0;
+  const inCart = cart.find((l) => l.productId === id && (l.variantId ?? undefined) === (selectedVariant?.id ?? undefined));
+
+  const effectivePrice = product ? (hasVariants ? selectedVariant?.price : product.price) : undefined;
+  const effectiveStock = product ? (hasVariants ? selectedVariant?.quantityAvailable : product.quantityAvailable) : undefined;
+  const soldOut = hasVariants ? (selectedVariant ? selectedVariant.quantityAvailable <= 0 : false) : !!product && product.quantityAvailable <= 0;
+  const canAdd = hasVariants ? !!selectedVariant && selectedVariant.quantityAvailable > 0 : !soldOut;
+
+  const displayImage = (hasVariants && selectedVariant?.imageUrl) || undefined;
   const images = product?.imageUrls?.length ? product.imageUrls : [];
 
   if (isLoading) {
@@ -63,8 +97,8 @@ export default function StoreProductDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <div className="space-y-2">
           <div className="w-full aspect-square rounded-xl overflow-hidden bg-muted/40 flex items-center justify-center">
-            {images[activeImage] ? (
-              <img src={images[activeImage]} alt={product.name} className="w-full h-full object-cover" />
+            {displayImage || images[activeImage] ? (
+              <img src={displayImage ?? images[activeImage]} alt={product.name} className="w-full h-full object-cover" />
             ) : (
               <Package size={48} className="text-muted-foreground" />
             )}
@@ -88,8 +122,20 @@ export default function StoreProductDetailPage() {
         <div className="space-y-4">
           <div>
             <h1 className="text-[22px] font-bold leading-snug">{product.name}</h1>
-            <p className="text-[20px] font-bold text-primary mt-1">{formatCurrency(product.price)}</p>
-            {soldOut ? (
+            <p className="text-[20px] font-bold text-primary mt-1">
+              {effectivePrice !== undefined ? formatCurrency(effectivePrice) : hasVariants ? "Select options" : formatCurrency(product.price)}
+            </p>
+            {hasVariants ? (
+              selectedVariant ? (
+                soldOut ? (
+                  <p className="text-[12.5px] text-destructive font-medium mt-1">Sold out</p>
+                ) : (
+                  <p className="text-[12.5px] text-muted-foreground mt-1">{effectiveStock} available</p>
+                )
+              ) : (
+                <p className="text-[12.5px] text-muted-foreground mt-1">Choose options to see price and availability</p>
+              )
+            ) : soldOut ? (
               <p className="text-[12.5px] text-destructive font-medium mt-1">Sold out</p>
             ) : (
               <p className="text-[12.5px] text-muted-foreground mt-1">{product.quantityAvailable} available</p>
@@ -98,6 +144,42 @@ export default function StoreProductDetailPage() {
 
           {product.description && (
             <p className="text-[13.5px] text-muted-foreground leading-relaxed">{product.description}</p>
+          )}
+
+          {hasVariants && (
+            <div className="space-y-3">
+              {product.variantOptionTypes.map((optionType) => {
+                const values = Array.from(new Set(product.variants.map((v) => v.options[optionType]).filter(Boolean)));
+                return (
+                  <div key={optionType} className="space-y-1.5">
+                    <p className="text-[12px] font-semibold text-foreground">{optionType}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {values.map((value) => {
+                        const isSelected = selectedOptions[optionType] === value;
+                        const isAvailable = optionValueIsAvailable(product, optionType, value, selectedOptions);
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            disabled={!isAvailable}
+                            onClick={() => setSelectedOptions((prev) => ({ ...prev, [optionType]: value }))}
+                            className={cn(
+                              "h-9 min-w-[2.5rem] px-3 border text-[13px] font-medium transition-colors",
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-background text-foreground hover:bg-muted",
+                              !isAvailable && "opacity-40 cursor-not-allowed line-through hover:bg-background"
+                            )}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {product.deliveryInfo && (
@@ -115,16 +197,22 @@ export default function StoreProductDetailPage() {
           <div className="flex items-center gap-3 pt-2">
             {inCart ? (
               <div className="flex items-center gap-2">
-                <button className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted" onClick={() => updateQuantity(product.id, -1)}>
+                <button
+                  className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted"
+                  onClick={() => updateQuantity(product.id, selectedVariant?.id, -1)}
+                >
                   <Minus size={14} />
                 </button>
                 <span className="w-8 text-center text-[15px] font-semibold">{inCart.quantity}</span>
-                <button className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted" onClick={() => updateQuantity(product.id, 1)}>
+                <button
+                  className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted"
+                  onClick={() => updateQuantity(product.id, selectedVariant?.id, 1)}
+                >
                   <Plus size={14} />
                 </button>
               </div>
             ) : (
-              <Button className="gap-2 font-semibold" disabled={soldOut} onClick={() => addToCart(product)}>
+              <Button className="gap-2 font-semibold" disabled={!canAdd} onClick={() => addToCart(product, selectedVariant)}>
                 <ShoppingCart size={15} />
                 Add to cart
               </Button>

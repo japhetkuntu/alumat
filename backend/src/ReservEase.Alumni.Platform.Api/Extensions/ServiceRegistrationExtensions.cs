@@ -154,8 +154,13 @@ public static class ServiceRegistrationExtensions
             })
             .AddNewtonsoftJson(opts =>
             {
-                opts.SerializerSettings.ContractResolver =
-                    new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
+                // ProcessDictionaryKeys: false — see Institution.Api/Member.Api's identical
+                // change for why (CamelCasePropertyNamesContractResolver camel-cases
+                // Dictionary<string,T> keys by default, corrupting arbitrary user data).
+                opts.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+                {
+                    NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy { ProcessDictionaryKeys = false },
+                };
                 opts.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
                 opts.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
             })

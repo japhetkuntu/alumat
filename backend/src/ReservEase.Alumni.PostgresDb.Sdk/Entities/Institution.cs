@@ -122,4 +122,13 @@ public class Institution : BaseEntity
     /// pickup instructions on every product. Null until an admin sets one.
     /// </summary>
     public string? DefaultStoreDeliveryInfo { get; set; }
+
+    /// <summary>
+    /// Ordered list of delivery-status stage names an admin has defined for
+    /// this institution's Store (e.g. ["Processing","Shipped","Delivered"]).
+    /// Empty by default — no forced seed values — so an institution that
+    /// doesn't want delivery tracking just leaves this empty and the whole
+    /// feature stays invisible (StoreOrder.DeliveryStatus is never set).
+    /// </summary>
+    public List<string> StoreDeliveryStages { get; set; } = [];
 }

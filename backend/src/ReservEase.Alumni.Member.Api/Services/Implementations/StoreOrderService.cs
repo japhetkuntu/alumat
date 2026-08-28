@@ -31,6 +31,7 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class StoreOrderService(
     IAlumniPgRepository<StoreOrder> orderRepo,
     IAlumniPgRepository<StoreProduct> productRepo,
+    IAlumniPgRepository<StoreProductVariant> variantRepo,
     IAlumniPgRepository<Institution> institutionRepo,
     ICurrentTenantService currentTenant,
     AlumniDbContext db,
@@ -88,6 +89,11 @@ public class StoreOrderService(
                 p => p.Status == "Active"
                   && (string.IsNullOrEmpty(filter.Search) || p.Name.Contains(filter.Search)));
 
+            var productIds = result.Results.Select(p => p.Id).ToList();
+            var variantsByProduct = (await variantRepo.GetAllAsync(v => productIds.Contains(v.ProductId)))
+                .GroupBy(v => v.ProductId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
             var dtoResult = new PgPagedResult<StoreProductDto>
             {
                 PageIndex = result.PageIndex,
@@ -97,7 +103,7 @@ public class StoreOrderService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(p => p.ToDto()).ToList(),
+                Results = result.Results.Select(p => p.ToDto(variantsByProduct.GetValueOrDefault(p.Id))).ToList(),
             };
             return dtoResult.ToOkApiResponse();
         }
@@ -116,7 +122,8 @@ public class StoreOrderService(
             if (product is null || product.Status != "Active")
                 return ApiResponseExtensions.ToNotFoundApiResponse<StoreProductDto>("Product not found");
 
-            return product.ToDto().ToOkApiResponse();
+            var variants = (await variantRepo.GetAllAsync(v => v.ProductId == productId)).ToList();
+            return product.ToDto(variants).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -144,19 +151,50 @@ public class StoreOrderService(
                 var product = await productRepo.GetByIdAsync(line.ProductId);
                 if (product is null || product.Status != "Active")
                     return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"A product in your cart is no longer available.");
-                if (product.QuantityAvailable < line.Quantity)
-                    return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Only {product.QuantityAvailable} of \"{product.Name}\" left in stock.");
 
-                items.Add(new StoreOrderItem
+                if (product.VariantOptionTypes is { Count: > 0 })
                 {
-                    ProductId = product.Id,
-                    ProductName = product.Name,
-                    ProductImageUrl = product.ImageUrls?.FirstOrDefault(),
-                    UnitPrice = product.Price,
-                    Quantity = line.Quantity,
-                    DeliveryInfo = product.DeliveryInfo,
-                });
-                total += product.Price * line.Quantity;
+                    // Variant product — the line must name a specific variant, and stock/price come from that variant, not the product roll-up.
+                    if (string.IsNullOrWhiteSpace(line.VariantId))
+                        return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Please choose an option for \"{product.Name}\".");
+
+                    var variant = await variantRepo.GetByIdAsync(line.VariantId);
+                    if (variant is null || variant.ProductId != product.Id)
+                        return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"The selected option for \"{product.Name}\" is no longer available.");
+                    if (variant.QuantityAvailable < line.Quantity)
+                        return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Only {variant.QuantityAvailable} of \"{product.Name}\" left in stock.");
+
+                    var variantPrice = variant.PriceOverride ?? product.Price;
+                    items.Add(new StoreOrderItem
+                    {
+                        ProductId = product.Id,
+                        ProductName = product.Name,
+                        ProductImageUrl = variant.ImageUrl ?? product.ImageUrls?.FirstOrDefault(),
+                        UnitPrice = variantPrice,
+                        Quantity = line.Quantity,
+                        DeliveryInfo = product.DeliveryInfo,
+                        VariantId = variant.Id,
+                        VariantOptions = variant.Options,
+                        Sku = variant.Sku,
+                    });
+                    total += variantPrice * line.Quantity;
+                }
+                else
+                {
+                    if (product.QuantityAvailable < line.Quantity)
+                        return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Only {product.QuantityAvailable} of \"{product.Name}\" left in stock.");
+
+                    items.Add(new StoreOrderItem
+                    {
+                        ProductId = product.Id,
+                        ProductName = product.Name,
+                        ProductImageUrl = product.ImageUrls?.FirstOrDefault(),
+                        UnitPrice = product.Price,
+                        Quantity = line.Quantity,
+                        DeliveryInfo = product.DeliveryInfo,
+                    });
+                    total += product.Price * line.Quantity;
+                }
             }
 
             var currentInstitution = await GetCurrentInstitutionAsync();
@@ -184,6 +222,7 @@ public class StoreOrderService(
 
             var order = new StoreOrder
             {
+                OrderNumber = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(),
                 MemberId = member.Id,
                 Member = new MemberSnapshot
                 {
@@ -272,13 +311,40 @@ public class StoreOrderService(
             // Best-effort inventory decrement — clamped at zero rather than
             // blocking an already-paid order; simultaneous last-unit
             // checkouts are a known, accepted edge case for v1.
+            var touchedProductIds = new HashSet<string>();
             foreach (var item in order.Items)
             {
                 var product = await db.Set<StoreProduct>().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == item.ProductId);
                 if (product is null) continue;
-                product.QuantityAvailable = Math.Max(0, product.QuantityAvailable - item.Quantity);
-                if (product.QuantityAvailable < item.Quantity)
-                    logger.LogWarning("Store product {ProductId} oversold on order {OrderId}: requested {Requested}, had {Available}", product.Id, order.Id, item.Quantity, product.QuantityAvailable + item.Quantity);
+
+                if (!string.IsNullOrEmpty(item.VariantId))
+                {
+                    var variant = await db.Set<StoreProductVariant>().IgnoreQueryFilters().FirstOrDefaultAsync(v => v.Id == item.VariantId);
+                    if (variant is not null)
+                    {
+                        variant.QuantityAvailable = Math.Max(0, variant.QuantityAvailable - item.Quantity);
+                        if (variant.QuantityAvailable < item.Quantity)
+                            logger.LogWarning("Store product variant {VariantId} oversold on order {OrderId}: requested {Requested}, had {Available}", variant.Id, order.Id, item.Quantity, variant.QuantityAvailable + item.Quantity);
+                        touchedProductIds.Add(product.Id);
+                    }
+                }
+                else
+                {
+                    product.QuantityAvailable = Math.Max(0, product.QuantityAvailable - item.Quantity);
+                    if (product.QuantityAvailable < item.Quantity)
+                        logger.LogWarning("Store product {ProductId} oversold on order {OrderId}: requested {Requested}, had {Available}", product.Id, order.Id, item.Quantity, product.QuantityAvailable + item.Quantity);
+                }
+            }
+
+            // Roll the parent product's QuantityAvailable back up from its
+            // variants so grid-level stock displays stay correct after a
+            // variant-level decrement above.
+            foreach (var productId in touchedProductIds)
+            {
+                var product = await db.Set<StoreProduct>().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == productId);
+                if (product is null) continue;
+                var variants = await db.Set<StoreProductVariant>().IgnoreQueryFilters().Where(v => v.ProductId == productId).ToListAsync();
+                product.QuantityAvailable = variants.Sum(v => v.QuantityAvailable);
             }
         }
         else

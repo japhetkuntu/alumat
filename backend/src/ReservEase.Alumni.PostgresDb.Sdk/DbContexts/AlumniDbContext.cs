@@ -16,6 +16,13 @@ internal sealed class JsonbConverter<T>(JsonSerializerOptions opts) : ValueConve
     v => string.IsNullOrEmpty(v) ? null : JsonSerializer.Deserialize<T>(v!, opts))
     where T : class;
 
+/// <summary>Leaves dictionary keys exactly as given — used to opt Dictionary&lt;string,T&gt; properties out of PropertyNamingPolicy's camel-casing, which otherwise applies to dictionary keys just as it does to class property names.</summary>
+internal sealed class IdentityJsonNamingPolicy : JsonNamingPolicy
+{
+    public static readonly IdentityJsonNamingPolicy Instance = new();
+    public override string ConvertName(string name) => name;
+}
+
 public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrentTenantService currentTenant) : DbContext(options)
 {
     public DbSet<Institution> Institutions => Set<Institution>();
@@ -53,6 +60,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
+    public DbSet<StoreProductVariant> StoreProductVariants => Set<StoreProductVariant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,7 +69,11 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.HasDefaultSchema("alumni");
 
         // ── JSONB snapshot converters (no FK constraints anywhere) ──────────
-        var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        // PropertyNamingPolicy also camel-cases Dictionary<string,T> KEYS (not just
+        // class property names) unless DictionaryKeyPolicy says otherwise — without
+        // this, StoreProductVariant.Options / StoreOrderItem.VariantOptions keys like
+        // "Size"/"Color" would silently collapse to "size"/"color" on save.
+        var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DictionaryKeyPolicy = IdentityJsonNamingPolicy.Instance };
 
             var jsonStringListComparer = new ValueComparer<List<string>>(
                 (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
@@ -100,6 +112,30 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             l => l == null ? null : new List<StoreOrderItem>(l));
         modelBuilder.Entity<StoreOrder>().Property(o => o.Items).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<StoreOrderItem>>(jsonOpts)).Metadata.SetValueComparer(storeItemListComparer);
+
+        var deliveryHistoryComparer = new ValueComparer<List<StoreOrderDeliveryEvent>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<StoreOrderDeliveryEvent>(l));
+        modelBuilder.Entity<StoreOrder>().Property(o => o.DeliveryStatusHistory).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<StoreOrderDeliveryEvent>>(jsonOpts)).Metadata.SetValueComparer(deliveryHistoryComparer);
+
+        modelBuilder.Entity<StoreProduct>().Property(p => p.VariantOptionTypes).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+
+        modelBuilder.Entity<Institution>().Property(i => i.StoreDeliveryStages).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+
+        var stringDictComparer = new ValueComparer<Dictionary<string, string>>(
+            (d1, d2) => (d1 == null && d2 == null) || (d1 != null && d2 != null && d1.OrderBy(kv => kv.Key).SequenceEqual(d2.OrderBy(kv => kv.Key))),
+            d => d == null ? 0 : d.Aggregate(0, (a, kv) => HashCode.Combine(a, kv.Key.GetHashCode(), kv.Value == null ? 0 : kv.Value.GetHashCode())),
+            d => d == null ? null : new Dictionary<string, string>(d));
+
+        modelBuilder.Entity<StoreProductVariant>().Property(v => v.Options).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
+        // Note: VariantOptions on StoreOrderItem is nested inside StoreOrder.Items' jsonb blob above — no separate column needed.
+
+        modelBuilder.Entity<StoreProductVariant>().HasIndex(v => v.ProductId);
 
         // ── JSONB array columns ──────────────────────────────────────────────
         // YearGroups stored as integer array to allow efficient filtering by member graduation year.

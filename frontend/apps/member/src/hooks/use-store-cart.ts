@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CartItem } from "@/lib/member-api";
-import type { StoreProduct } from "@/types";
+import type { StoreProduct, StoreProductVariant } from "@/types";
 
 export interface CartLine extends CartItem {
   product: StoreProduct;
+  /** Snapshot of the selected variant, when the line is for a variant product. */
+  variant?: StoreProductVariant;
 }
 
-// Scoped by institution slug so switching tenants (or the dev workspace override)
-// never leaks one institution's cart into another's.
 function cartStorageKey() {
   if (typeof window === "undefined") return null;
   const slug = localStorage.getItem("institution_slug");
@@ -28,11 +28,26 @@ function loadCart(): CartLine[] {
   }
 }
 
-/** Shared cart state (localStorage-backed) used by both the store grid and a product's detail page, so adding an item from either place stays in sync. */
+function sameLine(a: { productId: string; variantId?: string }, b: { productId: string; variantId?: string }) {
+  return a.productId === b.productId && (a.variantId ?? null) === (b.variantId ?? null);
+}
+
+/** Effective unit price/stock for a line — the variant's if present, else the product's. */
+function lineStock(product: StoreProduct, variant?: StoreProductVariant) {
+  return variant ? variant.quantityAvailable : product.quantityAvailable;
+}
+
+export function lineUnitPrice(product: StoreProduct, variant?: StoreProductVariant) {
+  return variant ? variant.price : product.price;
+}
+
 export function useStoreCart(liveProducts?: StoreProduct[]) {
-  // Lazy-init from localStorage; SSR always starts empty and hydrates client-side
-  // via the effect below, avoiding a hydration mismatch.
   const [cart, setCart] = useState<CartLine[]>([]);
+  // Guards against a hydration race: on mount `cart` is still `[]` (the pre-restore
+  // value) in the same commit the restore effect below fires in — without this, the
+  // write-back effect runs first with that stale empty array and wipes localStorage
+  // out from under the restore that's about to land a render later.
+  const skipNextWrite = useRef(true);
 
   useEffect(() => {
     const restored = loadCart();
@@ -40,6 +55,10 @@ export function useStoreCart(liveProducts?: StoreProduct[]) {
   }, []);
 
   useEffect(() => {
+    if (skipNextWrite.current) {
+      skipNextWrite.current = false;
+      return;
+    }
     const key = cartStorageKey();
     if (!key) return;
     if (cart.length === 0) {
@@ -49,42 +68,52 @@ export function useStoreCart(liveProducts?: StoreProduct[]) {
     }
   }, [cart]);
 
-  // Reconcile a restored cart against live product data once it loads — drop
-  // lines for products that vanished, and clamp quantities to current stock.
   useEffect(() => {
     if (!liveProducts) return;
     setCart((prev) => prev
       .map((l) => {
         const live = liveProducts.find((p) => p.id === l.productId);
-        if (!live || live.quantityAvailable <= 0) return null;
-        const quantity = Math.min(l.quantity, live.quantityAvailable);
-        return { ...l, product: live, quantity };
+        if (!live) return null;
+        const liveVariant = l.variantId ? live.variants.find((v) => v.id === l.variantId) : undefined;
+        if (l.variantId && !liveVariant) return null;
+        const stock = lineStock(live, liveVariant);
+        if (stock <= 0) return null;
+        const quantity = Math.min(l.quantity, stock);
+        const updated: CartLine = { ...l, product: live, variant: liveVariant, quantity };
+        return updated;
       })
       .filter((l): l is CartLine => l !== null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveProducts]);
 
-  const addToCart = (product: StoreProduct) => {
+  const addToCart = (product: StoreProduct, variant?: StoreProductVariant) => {
     setCart((prev) => {
-      const existing = prev.find((l) => l.productId === product.id);
+      const key = { productId: product.id, variantId: variant?.id };
+      const existing = prev.find((l) => sameLine(l, key));
+      const stock = lineStock(product, variant);
       if (existing) {
-        if (existing.quantity >= product.quantityAvailable) {
-          toast.error(`Only ${product.quantityAvailable} available`);
+        if (existing.quantity >= stock) {
+          toast.error(`Only ${stock} available`);
           return prev;
         }
-        return prev.map((l) => (l.productId === product.id ? { ...l, quantity: l.quantity + 1 } : l));
+        return prev.map((l) => (sameLine(l, key) ? { ...l, quantity: l.quantity + 1 } : l));
       }
-      return [...prev, { productId: product.id, quantity: 1, product }];
+      if (stock <= 0) {
+        toast.error("Out of stock");
+        return prev;
+      }
+      return [...prev, { productId: product.id, variantId: variant?.id, quantity: 1, product, variant }];
     });
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (productId: string, variantId: string | undefined, delta: number) => {
     setCart((prev) => prev
       .map((l) => {
-        if (l.productId !== productId) return l;
+        if (!sameLine(l, { productId, variantId })) return l;
+        const stock = lineStock(l.product, l.variant);
         const next = l.quantity + delta;
-        if (next > l.product.quantityAvailable) {
-          toast.error(`Only ${l.product.quantityAvailable} available`);
+        if (next > stock) {
+          toast.error(`Only ${stock} available`);
           return l;
         }
         return { ...l, quantity: next };
@@ -92,9 +121,10 @@ export function useStoreCart(liveProducts?: StoreProduct[]) {
       .filter((l) => l.quantity > 0));
   };
 
-  const removeFromCart = (productId: string) => setCart((prev) => prev.filter((l) => l.productId !== productId));
+  const removeFromCart = (productId: string, variantId?: string) =>
+    setCart((prev) => prev.filter((l) => !sameLine(l, { productId, variantId })));
 
-  const cartTotal = cart.reduce((sum, l) => sum + l.product.price * l.quantity, 0);
+  const cartTotal = cart.reduce((sum, l) => sum + lineUnitPrice(l.product, l.variant) * l.quantity, 0);
   const cartCount = cart.reduce((sum, l) => sum + l.quantity, 0);
 
   return { cart, addToCart, updateQuantity, removeFromCart, cartTotal, cartCount };

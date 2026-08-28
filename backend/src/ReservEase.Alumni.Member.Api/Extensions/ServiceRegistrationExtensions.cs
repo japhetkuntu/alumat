@@ -162,8 +162,15 @@ public static class ServiceRegistrationExtensions
             })
             .AddNewtonsoftJson(opts =>
             {
-                opts.SerializerSettings.ContractResolver =
-                    new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
+                // ProcessDictionaryKeys: false — CamelCasePropertyNamesContractResolver
+                // camel-cases Dictionary<string,T> keys by default, same as class
+                // property names. That silently corrupts arbitrary user-provided keys
+                // (e.g. StoreOrderItem.VariantOptions: {"Size":"Medium"} -> {"size":"Medium"}),
+                // so dictionary keys are opted out while property names stay camelCase.
+                opts.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+                {
+                    NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy { ProcessDictionaryKeys = false },
+                };
                 opts.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
                 opts.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
             })

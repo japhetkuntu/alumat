@@ -16,11 +16,57 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class StoreService(
     IAlumniPgRepository<StoreProduct> productRepo,
     IAlumniPgRepository<StoreOrder> orderRepo,
+    IAlumniPgRepository<StoreProductVariant> variantRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
     ILogger<StoreService> logger) : IStoreService
 {
+    /// <summary>
+    /// Replaces the full variant set for a product (delete-existing-and-recreate,
+    /// matching the "admin submits the whole variant table each edit" UX — no
+    /// per-variant diffing/ID preservation across an edit) and rolls the
+    /// parent product's Price/QuantityAvailable up from the submitted variants:
+    /// Price becomes the lowest effective price (PriceOverride ?? submitted
+    /// product Price), QuantityAvailable becomes the sum of variant quantities.
+    /// When <paramref name="variantRequests"/> is empty, the product stays (or
+    /// becomes) a simple product and its Price/QuantityAvailable are left as
+    /// already set by the caller.
+    /// </summary>
+    private async Task<List<StoreProductVariant>> ReplaceVariantsAsync(StoreProduct product, List<string> variantOptionTypes, List<VariantRequest> variantRequests, string adminId)
+    {
+        var existing = (await variantRepo.GetAllAsync(v => v.ProductId == product.Id)).ToList();
+        if (existing.Count > 0)
+        {
+            foreach (var old in existing)
+                await variantRepo.RemoveAsync(old);
+        }
+
+        product.VariantOptionTypes = variantOptionTypes;
+
+        if (variantRequests is not { Count: > 0 })
+        {
+            return [];
+        }
+
+        var newVariants = variantRequests.Select(r => new StoreProductVariant
+        {
+            ProductId = product.Id,
+            Options = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(r.OptionsJson) ?? new(),
+            Sku = r.Sku,
+            PriceOverride = r.PriceOverride,
+            QuantityAvailable = r.QuantityAvailable,
+            CreatedBy = adminId,
+        }).ToList();
+
+        await variantRepo.AddRangeAsync(newVariants);
+
+        product.Price = newVariants.Min(v => v.PriceOverride ?? product.Price);
+        product.QuantityAvailable = newVariants.Sum(v => v.QuantityAvailable);
+
+        return newVariants;
+    }
+
     public async Task<IApiResponse<PgPagedResult<StoreProductDto>>> GetProductsAsync(StoreProductFilter filter)
     {
         try
@@ -31,6 +77,11 @@ public class StoreService(
                 p => (string.IsNullOrEmpty(filter.Status) || p.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.Search) || p.Name.Contains(filter.Search)));
 
+            var productIds = result.Results.Select(p => p.Id).ToList();
+            var variantsByProduct = (await variantRepo.GetAllAsync(v => productIds.Contains(v.ProductId)))
+                .GroupBy(v => v.ProductId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
             var dtoResult = new PgPagedResult<StoreProductDto>
             {
                 PageIndex = result.PageIndex,
@@ -40,7 +91,7 @@ public class StoreService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(p => p.ToDto()).ToList(),
+                Results = result.Results.Select(p => p.ToDto(variantsByProduct.GetValueOrDefault(p.Id))).ToList(),
             };
             return dtoResult.ToOkApiResponse();
         }
@@ -59,7 +110,8 @@ public class StoreService(
             if (product is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<StoreProductDto>("Product not found");
 
-            return product.ToDto().ToOkApiResponse();
+            var variants = (await variantRepo.GetAllAsync(v => v.ProductId == productId)).ToList();
+            return product.ToDto(variants).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -105,8 +157,16 @@ public class StoreService(
                 product.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
             await productRepo.AddAsync(product);
+
+            List<StoreProductVariant> variants = [];
+            if (request.VariantOptionTypes is { Count: > 0 })
+            {
+                variants = await ReplaceVariantsAsync(product, request.VariantOptionTypes, request.Variants, admin.Id);
+                await productRepo.UpdateAsync(product);
+            }
+
             logger.LogInformation("Store product {ProductId} created by admin {AdminId}", product.Id, admin.Id);
-            return product.ToDto().ToCreatedApiResponse("Product created");
+            return product.ToDto(variants).ToCreatedApiResponse("Product created");
         }
         catch (Exception e)
         {
@@ -143,11 +203,17 @@ public class StoreService(
                 imageUrls.AddRange(await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? ""));
             product.ImageUrls = imageUrls.Count > 0 ? imageUrls : null;
 
+            // Variants are always replaced wholesale from what's submitted this
+            // edit — an empty VariantOptionTypes clears any existing variants
+            // and reverts the product to simple (Price/QuantityAvailable above
+            // stay as the admin set them directly).
+            var variants = await ReplaceVariantsAsync(product, request.VariantOptionTypes, request.Variants, admin.Id);
+
             product.UpdatedAt = DateTime.UtcNow;
             product.UpdatedBy = admin.Id;
             await productRepo.UpdateAsync(product);
             logger.LogInformation("Store product {ProductId} updated by admin {AdminId}", product.Id, admin.Id);
-            return product.ToDto().ToOkApiResponse();
+            return product.ToDto(variants).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -163,6 +229,10 @@ public class StoreService(
             var product = await productRepo.GetByIdAsync(productId);
             if (product is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Product not found");
+
+            var variants = (await variantRepo.GetAllAsync(v => v.ProductId == productId)).ToList();
+            foreach (var variant in variants)
+                await variantRepo.RemoveAsync(variant);
 
             await productRepo.RemoveAsync(product);
             logger.LogInformation("Store product {ProductId} deleted", productId);
@@ -185,7 +255,8 @@ public class StoreService(
             // get shipped before payment actually clears).
             var result = await orderRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                o => o.Status == "Confirmed");
+                o => o.Status == "Confirmed"
+                  && (string.IsNullOrEmpty(filter.DeliveryStatus) || o.DeliveryStatus == filter.DeliveryStatus));
 
             var dtoResult = new PgPagedResult<StoreOrderDto>
             {
@@ -210,7 +281,7 @@ public class StoreService(
     public async Task<IApiResponse<StoreSettingsResponse>> GetSettingsAsync()
     {
         var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-        return new StoreSettingsResponse(institution?.DefaultStoreDeliveryInfo).ToOkApiResponse();
+        return new StoreSettingsResponse(institution?.DefaultStoreDeliveryInfo, institution?.StoreDeliveryStages ?? []).ToOkApiResponse();
     }
 
     public async Task<IApiResponse<StoreSettingsResponse>> UpdateSettingsAsync(UpdateStoreSettingsRequest request, AuthData admin)
@@ -220,10 +291,45 @@ public class StoreService(
             return ApiResponseExtensions.ToNotFoundApiResponse<StoreSettingsResponse>("Institution not found");
 
         institution.DefaultStoreDeliveryInfo = request.DefaultDeliveryInfo;
+        if (request.DeliveryStages is not null)
+            institution.StoreDeliveryStages = request.DeliveryStages;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = admin.Id;
         await institutionRepo.UpdateAsync(institution);
-        logger.LogInformation("Store default delivery info updated by admin {AdminId}", admin.Id);
-        return new StoreSettingsResponse(institution.DefaultStoreDeliveryInfo).ToOkApiResponse("Default delivery info updated");
+        logger.LogInformation("Store settings updated by admin {AdminId}", admin.Id);
+        return new StoreSettingsResponse(institution.DefaultStoreDeliveryInfo, institution.StoreDeliveryStages).ToOkApiResponse("Store settings updated");
+    }
+
+    public async Task<IApiResponse<StoreOrderDto>> UpdateDeliveryStatusAsync(string orderId, string? newStatus, AuthData admin)
+    {
+        try
+        {
+            var order = await orderRepo.GetByIdAsync(orderId);
+            if (order is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<StoreOrderDto>("Order not found");
+
+            if (newStatus is not null)
+            {
+                var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+                var validStages = institution?.StoreDeliveryStages ?? [];
+                if (!validStages.Contains(newStatus))
+                    return ApiResponseExtensions.ToBadRequestApiResponse<StoreOrderDto>($"\"{newStatus}\" is not one of this store's configured delivery stages.");
+
+                order.DeliveryStatusHistory.Add(new StoreOrderDeliveryEvent { Status = newStatus, ChangedAt = DateTime.UtcNow });
+            }
+
+            order.DeliveryStatus = newStatus;
+            order.DeliveryStatusUpdatedAt = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+            order.UpdatedBy = admin.Id;
+            await orderRepo.UpdateAsync(order);
+            logger.LogInformation("Store order {OrderId} delivery status set to {DeliveryStatus} by admin {AdminId}", orderId, newStatus, admin.Id);
+            return order.ToDto().ToOkApiResponse("Delivery status updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating delivery status for store order {OrderId} by admin {AdminId}", orderId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<StoreOrderDto>("Failed to update delivery status");
+        }
     }
 }

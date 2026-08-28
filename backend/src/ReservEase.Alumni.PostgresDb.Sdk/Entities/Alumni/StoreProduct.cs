@@ -23,4 +23,17 @@ public class StoreProduct : BaseEntity, ITenantScoped
     public string? DeliveryInfo { get; set; }
 
     public string Status { get; set; } = "Active"; // Active, Draft, Archived
+
+    /// <summary>
+    /// Names of the variant option axes this product is sold by, e.g.
+    /// ["Size","Color"]. Empty (the default) means this is a simple product
+    /// with no <see cref="StoreProductVariant"/> rows — every existing
+    /// product keeps working with zero behavior change.
+    /// When non-empty, <see cref="Price"/> and <see cref="QuantityAvailable"/>
+    /// stop being independently editable roll-ups: Price is recomputed as
+    /// the lowest effective variant price ("from" price) and
+    /// QuantityAvailable as the sum of all variant quantities, both
+    /// recalculated by the service whenever variants change.
+    /// </summary>
+    public List<string> VariantOptionTypes { get; set; } = [];
 }

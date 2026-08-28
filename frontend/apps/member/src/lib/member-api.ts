@@ -663,6 +663,8 @@ export async function markAllNotificationsRead(): Promise<void> {
 export interface CartItem {
   productId: string;
   quantity: number;
+  /** Set only for products with variants; identifies the exact variant purchased. */
+  variantId?: string;
 }
 
 export interface StoreCheckoutResponse {

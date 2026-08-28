@@ -872,6 +872,13 @@ export async function updateResource(id: string, body: UpdateResourceBody) {
 
 // ─── Store (SuperAdmin only) ────────────────────────────────────────────────
 
+export interface StoreVariantBody {
+  options: Record<string, string>;
+  sku?: string;
+  priceOverride?: number;
+  quantityAvailable: number;
+}
+
 export interface CreateStoreProductBody {
   name: string;
   description?: string;
@@ -880,6 +887,9 @@ export interface CreateStoreProductBody {
   deliveryInfo?: string;
   status: string;
   images?: File[];
+  /** Empty/omitted means a simple product with no variants. */
+  variantOptionTypes?: string[];
+  variants?: StoreVariantBody[];
 }
 
 export interface UpdateStoreProductBody {
@@ -891,6 +901,30 @@ export interface UpdateStoreProductBody {
   status: string;
   images?: File[];
   existingImageUrls?: string[];
+  /** Empty/omitted means a simple product with no variants. */
+  variantOptionTypes?: string[];
+  variants?: StoreVariantBody[];
+}
+
+// ASP.NET Core model binds List<T> from form fields using indexed/bracket key
+// names — appended manually since these are nested complex objects that the
+// generic toFormData() (scalars + flat arrays) can't express. Options is sent
+// as a single JSON string field rather than bracket-keyed entries
+// (`options[Size]=Medium`) — ASP.NET Core's Dictionary<string,string> form
+// binder was observed lowercasing the option-type keys on the way in (e.g.
+// "Size" -> "size"), which silently broke matching against
+// variantOptionTypes on the frontend. A JSON string sidesteps that binder
+// entirely and is parsed explicitly server-side, preserving casing exactly.
+function appendStoreVariantFields(fd: FormData, variantOptionTypes?: string[], variants?: StoreVariantBody[]) {
+  (variantOptionTypes ?? []).forEach((type, i) => fd.append(`variantOptionTypes[${i}]`, type));
+  (variants ?? []).forEach((v, i) => {
+    fd.append(`variants[${i}].optionsJson`, JSON.stringify(v.options));
+    if (v.sku) fd.append(`variants[${i}].sku`, v.sku);
+    if (v.priceOverride !== undefined && v.priceOverride !== null) {
+      fd.append(`variants[${i}].priceOverride`, String(v.priceOverride));
+    }
+    fd.append(`variants[${i}].quantityAvailable`, String(v.quantityAvailable));
+  });
 }
 
 export async function getStoreProducts(page = 1, pageSize = 20, status?: string, search?: string) {
@@ -906,14 +940,20 @@ export async function getStoreProduct(id: string) {
 }
 
 export async function createStoreProduct(body: CreateStoreProductBody) {
-  const res = await institutionClient.post<ApiResponse<StoreProduct>>("/store/products", toFormData(body), {
+  const { variantOptionTypes, variants, ...rest } = body;
+  const fd = toFormData(rest);
+  appendStoreVariantFields(fd, variantOptionTypes, variants);
+  const res = await institutionClient.post<ApiResponse<StoreProduct>>("/store/products", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data.data!;
 }
 
 export async function updateStoreProduct(id: string, body: UpdateStoreProductBody) {
-  const res = await institutionClient.put<ApiResponse<StoreProduct>>(`/store/products/${id}`, toFormData(body), {
+  const { variantOptionTypes, variants, ...rest } = body;
+  const fd = toFormData(rest);
+  appendStoreVariantFields(fd, variantOptionTypes, variants);
+  const res = await institutionClient.put<ApiResponse<StoreProduct>>(`/store/products/${id}`, fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data.data!;
@@ -924,15 +964,21 @@ export async function deleteStoreProduct(id: string) {
   return res.data;
 }
 
-export async function getStoreOrders(page = 1, pageSize = 20, status?: string) {
+export async function getStoreOrders(page = 1, pageSize = 20, status?: string, deliveryStatus?: string) {
   const res = await institutionClient.get<ApiResponse<PagedResult<StoreOrder>>>("/store/orders", {
-    params: { page, pageSize, status: status || undefined },
+    params: { page, pageSize, status: status || undefined, deliveryStatus: deliveryStatus || undefined },
   });
+  return res.data.data!;
+}
+
+export async function updateStoreOrderDeliveryStatus(orderId: string, deliveryStatus: string | null) {
+  const res = await institutionClient.patch<ApiResponse<StoreOrder>>(`/store/orders/${orderId}/delivery-status`, { deliveryStatus });
   return res.data.data!;
 }
 
 export interface StoreSettings {
   defaultDeliveryInfo?: string | null;
+  deliveryStages: string[];
 }
 
 export async function getStoreSettings() {
@@ -940,8 +986,8 @@ export async function getStoreSettings() {
   return res.data.data!;
 }
 
-export async function updateStoreSettings(defaultDeliveryInfo: string) {
-  const res = await institutionClient.patch<ApiResponse<StoreSettings>>("/store/settings", { defaultDeliveryInfo });
+export async function updateStoreSettings(body: { defaultDeliveryInfo?: string; deliveryStages?: string[] }) {
+  const res = await institutionClient.patch<ApiResponse<StoreSettings>>("/store/settings", body);
   return res.data.data!;
 }
 
