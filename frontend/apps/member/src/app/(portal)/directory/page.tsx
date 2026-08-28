@@ -80,7 +80,7 @@ export default function MemberDirectoryPage() {
         {hasFilters && (
           <button
             onClick={clearFilters}
-            className="flex items-center gap-1.5 self-center px-3.5 py-2 rounded-full text-[12.5px] font-semibold border transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 self-center px-3.5 py-2 text-[12.5px] font-semibold border transition-colors whitespace-nowrap"
             style={{ borderColor: "var(--destructive)", color: "var(--destructive)", background: "var(--background)" }}
           >
             <X size={12} /> Clear

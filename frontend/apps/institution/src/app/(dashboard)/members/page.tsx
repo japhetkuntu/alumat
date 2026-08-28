@@ -201,7 +201,7 @@ export default function AdminMembersPage() {
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search name, email, member number"
-          className="w-full sm:w-[260px] rounded-full h-9"
+          className="w-full sm:w-[260px] h-9"
         />
         {STATUS_FILTERS.map((f, i) => {
           const count = countQueries[i]?.data?.totalCount;
@@ -211,7 +211,7 @@ export default function AdminMembersPage() {
               key={f.label}
               onClick={() => { setStatusFilter(f.value); setPage(1); }}
               className={cn(
-                "px-3 py-2 rounded-full border text-[12.5px] font-semibold transition-colors",
+                "px-3 py-2 border text-[12.5px] font-semibold transition-colors",
                 active ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               )}
             >

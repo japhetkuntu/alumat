@@ -73,11 +73,11 @@ export function MultiImageUpload({
             onDragLeave={handleDragLeave}
           >
             {existingUrls.map((url, i) => (
-              <div key={`existing-${i}`} className="relative group aspect-square rounded-xl overflow-hidden border bg-muted/30">
+              <div key={`existing-${i}`} className="relative group aspect-square overflow-hidden border bg-muted/30">
                 <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
                 <button
                   type="button"
-                  className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  className="absolute top-1.5 right-1.5 h-6 w-6 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                   onClick={() => onRemoveExisting(i)}
                   aria-label="Remove image"
                 >
@@ -86,7 +86,7 @@ export function MultiImageUpload({
               </div>
             ))}
             {files.map((f, i) => (
-              <div key={`new-${i}`} className="relative group aspect-square rounded-xl overflow-hidden ring-2 ring-primary/40 bg-primary/5">
+              <div key={`new-${i}`} className="relative group aspect-square overflow-hidden ring-2 ring-primary/40 bg-primary/5">
                 {filePreviews[i] ? (
                   <img src={filePreviews[i]!} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -96,7 +96,7 @@ export function MultiImageUpload({
                 )}
                 <button
                   type="button"
-                  className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  className="absolute top-1.5 right-1.5 h-6 w-6 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                   onClick={() => onRemoveFile(i)}
                   aria-label="Remove image"
                 >
@@ -110,7 +110,7 @@ export function MultiImageUpload({
             <button
               type="button"
               className={cn(
-                "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all duration-150 cursor-pointer",
+                "aspect-square border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all duration-150 cursor-pointer",
                 dragOver
                   ? "border-primary bg-primary/5 scale-[1.02]"
                   : "border-muted-foreground/25 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5"
@@ -130,7 +130,7 @@ export function MultiImageUpload({
       {!hasItems && (
         <div
           className={cn(
-            "rounded-xl border-2 border-dashed transition-all duration-150 cursor-pointer",
+            "border-2 border-dashed transition-all duration-150 cursor-pointer",
             dragOver
               ? "border-primary bg-primary/5 scale-[1.01]"
               : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
@@ -142,7 +142,7 @@ export function MultiImageUpload({
         >
           <div className="flex flex-col items-center justify-center py-6 gap-2 pointer-events-none">
             <div className={cn(
-              "h-9 w-9 rounded-xl flex items-center justify-center transition-colors duration-150",
+              "h-9 w-9 flex items-center justify-center transition-colors duration-150",
               dragOver ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
             )}>
               <ImageIcon size={16} />

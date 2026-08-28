@@ -34,7 +34,7 @@ export function StatCard({ title, value, subtitle, icon: Icon, iconClassName, tr
             {trend && (
               <div
                 className={cn(
-                  "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold mt-2",
+                  "inline-flex items-center px-2 py-0.5 text-[10px] font-bold mt-2",
                   trend.value >= 0
                     ? "bg-success/10 text-success"
                     : "bg-destructive/10 text-destructive"

@@ -144,7 +144,7 @@ export function NotificationPanel() {
                 <Bell size={14} className="text-muted-foreground" />
                 <span className="font-semibold text-[13px]">Notifications</span>
                 {unreadCount > 0 && (
-                  <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 leading-none">
+                  <span className="text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 leading-none">
                     {unreadCount}
                   </span>
                 )}

@@ -103,7 +103,7 @@ export default function AdminResourceDetailPage() {
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-2">
-            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${colorCls}`}>
+            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest ${colorCls}`}>
               {resource.category}
             </span>
             <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-widest">{resource.type}</Badge>

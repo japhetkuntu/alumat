@@ -198,7 +198,7 @@ export default function AdminForumPage() {
                 <button
                   key={f}
                   onClick={() => { setThreadFilter(f); setThreadPage(1); }}
-                  className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${
+                  className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all ${
                     threadFilter === f ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   }`}
                 >
@@ -232,17 +232,17 @@ export default function AdminForumPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {t.categoryName && (
-                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider">
+                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider">
                               {t.categoryName}
                             </span>
                           )}
                           {t.isPinned && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-black">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-600 text-[10px] font-black">
                               <Pin size={9} />Pinned
                             </span>
                           )}
                           {t.isClosed && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-black">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground text-[10px] font-black">
                               <Lock size={9} />Closed
                             </span>
                           )}

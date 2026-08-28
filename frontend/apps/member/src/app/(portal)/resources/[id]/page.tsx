@@ -154,7 +154,7 @@ export default function MemberResourceDetailPage() {
       {/* Title + Meta */}
       <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide ${colorCls}`}>
+          <span className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wide ${colorCls}`}>
             {resource.category}
           </span>
           <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">{resource.type}</Badge>

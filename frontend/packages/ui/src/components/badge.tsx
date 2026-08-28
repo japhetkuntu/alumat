@@ -3,29 +3,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center border px-2 py-1 text-[10px] font-bold uppercase tracking-[.08em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default:
-          "border-transparent bg-primary/10 text-primary hover:bg-primary/20",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20",
+        default: "border-primary/40 text-primary hover:bg-primary/5",
+        secondary: "border-border text-secondary-foreground hover:bg-secondary/40",
+        destructive: "border-destructive/40 text-destructive hover:bg-destructive/10",
         outline: "text-foreground border-border/60 hover:bg-accent hover:text-accent-foreground",
-        success: 
-          "border-transparent bg-success/10 text-success hover:bg-success/20",
-        warning: 
-          "border-transparent bg-warning/10 text-warning hover:bg-warning/20",
-        info: 
-          "border-transparent bg-info/10 text-info hover:bg-info/20",
-        neutral: 
-          "border-transparent bg-muted text-muted-foreground hover:bg-muted/80",
+        success: "border-success/40 text-success hover:bg-success/10",
+        warning: "border-warning/40 text-warning hover:bg-warning/10",
+        info: "border-info/40 text-info hover:bg-info/10",
+        neutral: "border-border text-muted-foreground hover:bg-muted/40",
       },
       size: {
-        sm: "px-2 py-0 text-[10px] h-[18px]",
-        default: "px-2.5 py-0.5 text-[11px] h-[22px]",
+        sm: "px-1.5 py-0 text-[9px] h-[18px]",
+        default: "px-2 py-1 text-[10px] h-[22px]",
       },
     },
     defaultVariants: {

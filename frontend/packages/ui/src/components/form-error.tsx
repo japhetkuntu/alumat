@@ -8,7 +8,7 @@ export function FormError({ message, className }: { message?: string | null; cla
     <div
       role="alert"
       className={cn(
-        "flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive",
+        "flex items-start gap-2 border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive",
         className
       )}
     >

@@ -95,7 +95,7 @@ export function YearGroupPicker({
             <span className="font-semibold">{year}</span>
             <button
               type="button"
-              className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-muted/50"
+              className="flex h-5 w-5 items-center justify-center hover:bg-muted/50"
               onClick={() => removeYear(year)}
               aria-label={`Remove ${year}`}
             >
@@ -120,7 +120,7 @@ export function YearGroupPicker({
           type="button"
           onClick={() => addYearsFromString(input)}
           disabled={disabled}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
+          className="border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Add
         </button>

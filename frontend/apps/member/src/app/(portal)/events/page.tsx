@@ -101,7 +101,7 @@ export default function MemberEventsPage() {
             key={f.value}
             onClick={() => setFilter(f.value)}
             className={cn(
-              "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+              "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
               filter === f.value
                 ? "bg-primary text-primary-foreground border-transparent"
                 : "border-border text-muted-foreground hover:border-primary/40",

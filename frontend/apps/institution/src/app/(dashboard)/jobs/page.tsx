@@ -259,7 +259,7 @@ export default function AdminJobsPage() {
             <button
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full border text-[12.5px] font-semibold transition-colors ${
+              className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
                 statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               }`}
             >
@@ -272,7 +272,7 @@ export default function AdminJobsPage() {
             <button
               key={t}
               onClick={() => { setTypeFilter(t); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full border text-[12.5px] font-semibold transition-colors ${
+              className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
                 typeFilter === t ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               }`}
             >
@@ -304,7 +304,7 @@ export default function AdminJobsPage() {
                     <Briefcase size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <div className="flex gap-1.5 flex-wrap justify-end">
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${typeColors[j.type] ?? "bg-muted text-muted-foreground border-border"}`}>
+                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${typeColors[j.type] ?? "bg-muted text-muted-foreground border-border"}`}>
                       {j.type}
                     </span>
                     <Badge variant={statusVariant[j.status] ?? "neutral"} size="sm">{j.status}</Badge>

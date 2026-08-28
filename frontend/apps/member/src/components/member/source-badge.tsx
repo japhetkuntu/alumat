@@ -20,7 +20,7 @@ export function SourceBadge({ communityId, communityName, className }: {
   if (!communityId || !communityName) {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${className ?? ""}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-semibold ${className ?? ""}`}
         style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
       >
         <Building2 size={10} />
@@ -32,7 +32,7 @@ export function SourceBadge({ communityId, communityName, className }: {
   const hue = hueFor(communityId);
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${className ?? ""}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-semibold ${className ?? ""}`}
       style={{
         background: `hsl(${hue} 70% 95%)`,
         color: `hsl(${hue} 55% 32%)`,

@@ -261,7 +261,7 @@ export default function AdminStorePage() {
                 key={s}
                 onClick={() => { setStatusFilter(s); setPage(1); }}
                 className={cn(
-                  "px-3 py-1.5 rounded-full border text-[12.5px] font-semibold transition-colors",
+                  "px-3 py-1.5 border text-[12.5px] font-semibold transition-colors",
                   statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
                 )}
               >

@@ -100,7 +100,7 @@ export default function AdminSpotlightsPage() {
           <button
             key={s}
             onClick={() => { setStatusFilter(s); setPage(1); }}
-            className={`px-3 py-1.5 rounded-full border text-[12.5px] font-semibold transition-colors ${
+            className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
               statusFilter === s
                 ? "bg-primary/10 text-primary border-blue-300"
                 : "bg-white text-foreground border-border hover:bg-muted"
@@ -140,7 +140,7 @@ export default function AdminSpotlightsPage() {
                   {/* Colored top bar + gradient mini-banner */}
                   <div className={`relative h-20 sm:h-24 bg-gradient-to-br ${grad} px-5 sm:px-6 flex items-end pb-3`}>
                     <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
-                    <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-0.5 self-start mt-3">
+                    <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-2.5 py-0.5 self-start mt-3">
                       <span className="text-[10px] font-black text-white uppercase tracking-widest">{s.status}</span>
                     </div>
                     {/* Avatar overlapping */}

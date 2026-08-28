@@ -22,12 +22,12 @@ export function StatCard({ icon: Icon, label, value, sub, tone = "primary", clas
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border bg-card p-4 sm:p-5 flex flex-col gap-3 min-w-0 shadow-[var(--card-shadow)] transition-shadow hover:shadow-[var(--card-shadow-hover)]",
+        "border border-border bg-card p-4 sm:p-5 flex flex-col gap-3 min-w-0 shadow-[var(--card-shadow)] transition-shadow hover:shadow-[var(--card-shadow-hover)]",
         className
       )}
     >
       <div
-        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0"
+        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0"
         style={{ background: iconBg, border: `1px solid ${iconBorder}` }}
       >
         <Icon size={16} style={{ color: iconColor }} />
@@ -55,12 +55,12 @@ export function StatCard({ icon: Icon, label, value, sub, tone = "primary", clas
 
 export function StatCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 flex flex-col gap-3">
-      <div className="skeleton w-9 h-9 sm:w-10 sm:h-10 rounded-xl" />
-      <div className="skeleton h-6 w-16 rounded-[8px]" />
+    <div className="border border-border bg-card p-4 sm:p-5 flex flex-col gap-3">
+      <div className="skeleton w-9 h-9 sm:w-10 sm:h-10" />
+      <div className="skeleton h-6 w-16" />
       <div className="pt-2.5 border-t border-border space-y-1.5">
-        <div className="skeleton h-3.5 w-24 rounded-[6px]" />
-        <div className="skeleton h-3 w-32 rounded-[6px]" />
+        <div className="skeleton h-3.5 w-24" />
+        <div className="skeleton h-3 w-32" />
       </div>
     </div>
   );

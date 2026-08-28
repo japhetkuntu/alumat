@@ -61,7 +61,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
           {featured && (
-            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold"
+            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10.5px] font-semibold"
               style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)", color: "white" }}>
               <Star size={10} className="fill-white" /> Featured
             </div>
@@ -304,7 +304,7 @@ export default function SpotlightsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors",
+              "px-4 py-2 text-[13px] font-semibold border transition-colors",
               tab === t ? "text-white border-transparent" : "border-border hover:border-primary/40",
             )}
             style={tab === t

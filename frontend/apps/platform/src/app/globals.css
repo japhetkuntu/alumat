@@ -18,7 +18,7 @@
   --space-gap: 24px;
 
   /* Card / surface tokens */
-  --card-radius: 12px;
+  --card-radius: 0px;
   --card-border: rgba(14, 113, 67, 0.12);
   --card-shadow: none;
   --card-shadow-hover: none;
@@ -69,11 +69,11 @@
   --color-accent-gold: var(--accent-gold);
 
   /* Precise border radius scale (Linear focus) */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
 
   /* Sophisticated Shadow Scale (Figma natural depth) */
   --shadow-xs: none;
@@ -205,7 +205,7 @@ small, .text-small {
 
 /* Button reset to match Paystack */
 .btn {
-  border-radius: 10px;
+  border-radius: 0px;
   font-weight: 600;
   padding: 12px 24px;
   transition: var(--transition);
@@ -259,7 +259,7 @@ small, .text-small {
 /* Input styling */
 .input {
   border: 1.5px solid rgba(229, 231, 235, 1);
-  border-radius: 10px;
+  border-radius: 0px;
   padding: 10px 14px;
   background: rgba(255, 255, 255, 0.9);
   transition: var(--transition);
@@ -384,7 +384,7 @@ svg {
  */
 
 :root {
-  --radius: 8px;
+  --radius: 0px;
 
   /* ── Base — warm ivory canvas, true-white cards (matches Member Portal) ── */
   --background: #f8f6f1;

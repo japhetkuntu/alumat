@@ -32,7 +32,7 @@ export function SourceFilterChips({ value, onChange, divider = true }: {
   if (communities.length === 0) return null;
 
   const chipClass = (active: boolean) => cn(
-    "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all duration-200 border",
+    "px-3.5 py-1.5 text-[12.5px] font-semibold transition-all duration-200 border",
     active
       ? "bg-primary text-primary-foreground border-transparent"
       : "bg-background text-muted-foreground border-border hover:border-primary/40",
@@ -58,7 +58,7 @@ export function SourceFilterChips({ value, onChange, divider = true }: {
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "sm:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+              "sm:hidden inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-semibold border transition-colors",
               value !== null
                 ? "bg-primary text-primary-foreground border-transparent"
                 : "bg-background text-muted-foreground border-border",

@@ -75,7 +75,7 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
       {displayValue ? (
         <div className="relative group">
           {imageUrl && !imgError ? (
-            <div className="relative rounded-xl overflow-hidden border bg-muted/30">
+            <div className="relative overflow-hidden border bg-muted/30">
               <div className="aspect-[16/9]">
                 <img
                   src={imageUrl}
@@ -103,8 +103,8 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-3 border rounded-xl bg-muted/30">
-              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 p-3 border bg-muted/30">
+              <div className="h-9 w-9 bg-muted flex items-center justify-center shrink-0">
                 <FileIcon size={16} className="text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
@@ -120,7 +120,7 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
       ) : (
         <div
           className={cn(
-            "relative rounded-xl border-2 border-dashed transition-all duration-150 cursor-pointer",
+            "relative border-2 border-dashed transition-all duration-150 cursor-pointer",
             dragOver
               ? "border-primary bg-primary/5 scale-[1.01]"
               : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
@@ -132,7 +132,7 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
         >
           <div className="flex flex-col items-center justify-center py-8 gap-2 pointer-events-none">
             <div className={cn(
-              "h-10 w-10 rounded-xl flex items-center justify-center transition-colors duration-150",
+              "h-10 w-10 flex items-center justify-center transition-colors duration-150",
               dragOver ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
             )}>
               {isImage ? <ImageIcon size={18} /> : <Upload size={18} />}

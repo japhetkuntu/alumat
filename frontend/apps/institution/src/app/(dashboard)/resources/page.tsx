@@ -281,7 +281,7 @@ export default function AdminResourcesPage() {
                   </div>
                 )}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${typeColor[r.type] ?? "bg-primary text-primary-foreground"}`}>{r.type}</span>
+                  <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${typeColor[r.type] ?? "bg-primary text-primary-foreground"}`}>{r.type}</span>
                   <Badge variant="outline" className="bg-background/80 backdrop-blur-sm text-[10px]">{r.category}</Badge>
                 </div>
               </div>

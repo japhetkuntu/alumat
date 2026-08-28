@@ -191,7 +191,7 @@ export default function MemberForumPage() {
               key={f.value}
               onClick={() => { setThreadFilter(f.value); setThreadPage(1); }}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
                 threadFilter === f.value ? "text-white border-transparent" : "border-border hover:border-primary/40",
               )}
               style={threadFilter === f.value
@@ -210,7 +210,7 @@ export default function MemberForumPage() {
               <button
                 onClick={() => { setSelectedCategory(""); setThreadPage(1); }}
                 className={cn(
-                  "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                  "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
                   selectedCategory === "" ? "text-white border-transparent" : "border-border hover:border-primary/40",
                 )}
                 style={selectedCategory === ""
@@ -224,7 +224,7 @@ export default function MemberForumPage() {
                   key={c.id}
                   onClick={() => { setSelectedCategory(c.id); setThreadPage(1); }}
                   className={cn(
-                    "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                    "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
                     selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-primary/40",
                   )}
                   style={selectedCategory === c.id

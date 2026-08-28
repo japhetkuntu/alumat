@@ -48,7 +48,7 @@ function TabBtn({
     <button
       onClick={onClick}
       className={cn(
-        "px-4 py-2 rounded-full text-[13px] font-semibold flex items-center gap-1.5 transition-colors border",
+        "px-4 py-2 text-[13px] font-semibold flex items-center gap-1.5 transition-colors border",
         active ? "text-white border-transparent" : "border-border hover:border-primary/40",
       )}
       style={active
@@ -440,7 +440,7 @@ export default function MemberMentorshipPage() {
                             href={r.contactLinkedInUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border"
                             style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
                           >
                             <Linkedin size={13} /> LinkedIn
@@ -451,7 +451,7 @@ export default function MemberMentorshipPage() {
                             href={`https://wa.me/${r.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border"
                             style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
                           >
                             <MessageCircle size={13} /> WhatsApp
@@ -460,7 +460,7 @@ export default function MemberMentorshipPage() {
                         {r.contactPhoneNumber && (
                           <a
                             href={`tel:${r.contactPhoneNumber}`}
-                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 rounded-full border"
+                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border"
                             style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
                           >
                             <Phone size={13} /> Call

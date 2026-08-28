@@ -10,8 +10,8 @@ export function Skeleton({ className, variant = "rectangular", ...props }: Skele
       className={cn(
         "skeleton",
         variant === "circular" && "rounded-full",
-        variant === "text" && "h-4 rounded-[6px]",
-        variant === "rectangular" && "rounded-[10px]",
+        variant === "text" && "h-4",
+        variant === "rectangular" && "",
         className
       )}
       {...props}
@@ -21,7 +21,7 @@ export function Skeleton({ className, variant = "rectangular", ...props }: Skele
 
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("rounded-[16px] border border-border/40 bg-card p-5 space-y-3", className)}>
+    <div className={cn("border border-border/40 bg-card p-5 space-y-3", className)}>
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-full" variant="circular" />
         <div className="space-y-2 flex-1">
@@ -37,14 +37,14 @@ export function CardSkeleton({ className }: { className?: string }) {
 
 export function StatSkeleton() {
   return (
-    <div className="rounded-[16px] border border-border/40 bg-card p-6">
+    <div className="border border-border/40 bg-card p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2 flex-1">
           <Skeleton className="h-3 w-20" variant="text" />
           <Skeleton className="h-7 w-16" variant="text" />
           <Skeleton className="h-3 w-24" variant="text" />
         </div>
-        <Skeleton className="h-10 w-10 rounded-[10px]" />
+        <Skeleton className="h-10 w-10" />
       </div>
     </div>
   );

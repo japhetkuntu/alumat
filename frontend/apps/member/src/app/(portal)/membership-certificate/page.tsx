@@ -213,7 +213,7 @@ export default function MembershipCertificatePage() {
               key={p.campaign.membershipYear}
               onClick={() => setSelectedYear(p.campaign.membershipYear ?? null)}
               className={cn(
-                "px-4 py-2 rounded-full text-[13px] font-semibold border transition-colors",
+                "px-4 py-2 text-[13px] font-semibold border transition-colors",
                 p.campaign.membershipYear === activeYear ? "text-white border-transparent" : "border-border hover:border-primary/40",
               )}
               style={p.campaign.membershipYear === activeYear
@@ -363,7 +363,7 @@ export default function MembershipCertificatePage() {
 
             {/* Verified badge */}
             <div
-              className="flex items-center rounded-full bg-success/10 border border-success/30"
+              className="flex items-center bg-success/10 border border-success/30"
               style={{ gap: "clamp(2px, 0.9cqw, 8px)", padding: "clamp(2px, 0.9cqw, 8px) clamp(6px, 1.7cqw, 16px)" }}
             >
               <CheckCircle2 className="text-success"

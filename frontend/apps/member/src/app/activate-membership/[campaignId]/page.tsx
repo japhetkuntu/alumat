@@ -146,7 +146,7 @@ function ActivateMembershipContent() {
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
               </div>
             )}
-            <span className="inline-block self-start rounded-full px-3 py-1.5 bg-white/15 text-xs font-semibold">
+            <span className="inline-block self-start px-3 py-1.5 bg-white/15 text-xs font-semibold">
               Membership {campaign.membershipYear ?? ""}
             </span>
             <h1 className="font-[family-name:var(--font-display)] text-[28px] sm:text-[38px] font-bold leading-tight my-4">

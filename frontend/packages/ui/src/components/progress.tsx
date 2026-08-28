@@ -17,9 +17,9 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
   ({ className, value = 0, colorByValue = false, ...props }, ref) => {
     const clamped = Math.min(Math.max(value, 0), 100);
     return (
-      <div ref={ref} className={cn("relative h-2 w-full overflow-hidden rounded-full bg-primary/10", className)} {...props}>
+      <div ref={ref} className={cn("relative h-2 w-full overflow-hidden bg-primary/10", className)} {...props}>
         <div
-          className={cn("h-full rounded-full transition-all duration-500 ease-out", getBarColor(clamped, colorByValue))}
+          className={cn("h-full transition-all duration-500 ease-out", getBarColor(clamped, colorByValue))}
           style={{ width: `${clamped}%` }}
         />
       </div>

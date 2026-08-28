@@ -147,7 +147,7 @@ export default function MemberResourcesPage() {
               <button
                 key={c}
                 onClick={() => setCategoryFilter(c === "All" ? "" : c)}
-                className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all duration-200 border ${
+                className={`px-3.5 py-1.5 text-[12.5px] font-semibold transition-all duration-200 border ${
                   active
                     ? "bg-primary text-primary-foreground border-transparent"
                     : "bg-background text-muted-foreground border-border hover:border-primary/40"
@@ -160,7 +160,7 @@ export default function MemberResourcesPage() {
           {(search || categoryFilter || typeFilter || addedAfter || addedBefore) && (
             <button
               onClick={() => { setSearch(""); setCategoryFilter(""); setTypeFilter(""); setAddedAfter(""); setAddedBefore(""); setPage(1); }}
-              className="ml-2 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wide border border-destructive/40 text-destructive hover:bg-destructive/10 transition-all"
+              className="ml-2 flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide border border-destructive/40 text-destructive hover:bg-destructive/10 transition-all"
             >
               <X size={11} /> Clear filters
             </button>
@@ -206,10 +206,10 @@ export default function MemberResourcesPage() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                   <div className="absolute top-3 left-3 flex gap-1.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${colorCls}`}>
+                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${colorCls}`}>
                       {r.category}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-sm text-white border border-white/10">
+                    <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-sm text-white border border-white/10">
                       {r.type}
                     </span>
                   </div>

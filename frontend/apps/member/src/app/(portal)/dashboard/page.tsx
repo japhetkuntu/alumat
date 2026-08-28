@@ -103,7 +103,7 @@ function MembershipCard({
         <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-3 shrink-0">
           <div
             className={cn(
-              "inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[12px] sm:text-[13px] font-bold",
+              "inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-[12px] sm:text-[13px] font-bold",
               isActive
                 ? "bg-white/20 text-white"
                 : "bg-white/15 text-white/80",
@@ -204,7 +204,7 @@ function MembershipCardSkeleton() {
           <div className="skeleton h-6 w-40 rounded-[6px]" />
           <div className="skeleton h-3.5 w-28 rounded-[6px]" />
         </div>
-        <div className="skeleton h-7 w-24 rounded-full shrink-0" />
+        <div className="skeleton h-7 w-24 shrink-0" />
       </div>
     </div>
   );
@@ -242,7 +242,7 @@ function ArrearsBanner({
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
           {membershipStatus.arrearsYears.map((year: number) => (
-            <Badge key={year} variant="warning" className="text-[12px] font-bold px-3 py-1 rounded-full">
+            <Badge key={year} variant="warning" className="text-[12px] font-bold px-3 py-1">
               {year}
             </Badge>
           ))}

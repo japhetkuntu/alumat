@@ -146,7 +146,7 @@ export default function AdminMentorshipPage() {
                 <button
                   key={s}
                   onClick={() => { setMentorStatusFilter(s); setMentorPage(1); }}
-                  className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${
+                  className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all ${
                     mentorStatusFilter === s ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   }`}
                 >

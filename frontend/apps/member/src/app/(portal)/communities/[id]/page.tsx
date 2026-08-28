@@ -206,19 +206,19 @@ export default function CommunityDetailPage() {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5 mb-3">
               {isLeader && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-bold bg-white/15">
                   <Crown size={12} /> You lead this community
                 </span>
               )}
               {community.myStatus === "Pending" && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-bold bg-white/15">
                   <Clock size={12} /> Request pending
                 </span>
               )}
               {isLeader && joinRequests.length > 0 && (
                 <button
                   onClick={() => setRequestsOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15 hover:bg-white/25 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-bold bg-white/15 hover:bg-white/25 transition-colors"
                 >
                   <Bell size={12} /> {joinRequests.length} join {joinRequests.length === 1 ? "request" : "requests"}
                 </button>

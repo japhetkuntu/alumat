@@ -78,7 +78,7 @@ export default function MemberJobsPage() {
               key={t}
               onClick={() => { setTypeFilter(t); setPage(1); }}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
                 typeFilter === t
                   ? "text-white border-transparent"
                   : "border-border hover:border-primary/40",
@@ -94,7 +94,7 @@ export default function MemberJobsPage() {
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors"
               style={{ borderColor: "var(--destructive)", color: "var(--destructive)", background: "var(--background)" }}
             >
               <X size={12} /> Clear filters

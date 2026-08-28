@@ -16,12 +16,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           // any input with a computed font-size under 16px, forcing the user
           // to manually zoom back out afterward — 14px only kicks in once a
           // pointer-driven layout (md+) makes that non-issue.
-          "flex h-11 w-full rounded-[10px] border border-input bg-background px-3 text-[16px] md:text-[14px] text-foreground shadow-sm transition-all duration-150",
+          "flex h-11 w-full border border-input bg-background px-3 text-[16px] md:text-[14px] text-foreground transition-all duration-150",
           "placeholder:text-muted-foreground/65",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:border-ring/60",
+          "focus-visible:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25",
           "disabled:cursor-not-allowed disabled:opacity-55 disabled:bg-muted/40",
-          error && "border-destructive/60 focus-visible:border-destructive/60 focus-visible:ring-destructive/20",
-          success && "border-success/65 focus-visible:border-success/65 focus-visible:ring-success/20",
+          error && "border-destructive/70 focus-visible:border-destructive/70 focus-visible:ring-destructive/20",
+          success && "border-success/70 focus-visible:border-success/70 focus-visible:ring-success/20",
           className
         )}
         ref={ref}

@@ -30,7 +30,7 @@ export function YouTubeEmbed({ url, className }: YouTubeEmbedProps) {
   const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
   return (
-    <div className={cn("relative aspect-video rounded-xl overflow-hidden bg-black shadow-lg group", className)}>
+    <div className={cn("relative aspect-video overflow-hidden bg-black border border-border group", className)}>
       {playing ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&autoplay=1&modestbranding=1&iv_load_policy=3&playsinline=1`}
@@ -76,7 +76,7 @@ export function YouTubePreview({ url, className }: YouTubePreviewProps) {
   const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
   return (
-    <div className={cn("relative aspect-video rounded-xl overflow-hidden bg-black/5 border", className)}>
+    <div className={cn("relative aspect-video overflow-hidden bg-black/5 border", className)}>
       <img src={thumbnail} alt="Video thumbnail" className="w-full h-full object-cover" loading="lazy" />
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">

@@ -242,7 +242,7 @@ function CampaignCard({
           <div className="absolute bottom-3 left-4 flex items-center gap-2">
             {isMembership && (
               <span
-                className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide text-white"
+                className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
                 style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)" }}
               >
                 Membership

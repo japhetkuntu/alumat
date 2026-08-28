@@ -52,7 +52,7 @@ export default function MemberNewsPage() {
               key={c}
               onClick={() => { setCategory(c === "All" ? "" : c); setPage(1); }}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
                 active
                   ? "bg-primary text-primary-foreground border-transparent"
                   : "border-border text-muted-foreground hover:border-primary/40",
@@ -108,14 +108,14 @@ export default function MemberNewsPage() {
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
                   {p.isPinned && (
                     <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold backdrop-blur-sm"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm"
                       style={{ background: "var(--warning)", color: "var(--warning-foreground)" }}
                     >
                       <Pin size={9} /> Pinned
                     </span>
                   )}
                   <span
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold"
                     style={{
                       background: "rgba(0,0,0,0.35)",
                       backdropFilter: "blur(4px)",

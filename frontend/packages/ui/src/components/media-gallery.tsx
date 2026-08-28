@@ -70,7 +70,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
       {/* Banner */}
       {bannerUrl && (
         <div
-          className="relative aspect-[16/9] rounded-xl overflow-hidden cursor-pointer group border"
+          className="relative aspect-[16/9] overflow-hidden cursor-pointer group border"
           onClick={() => setLightboxIndex(0)}
         >
           <GalleryImage src={bannerUrl} alt="Banner" className="w-full h-full object-cover" />
@@ -93,7 +93,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
             return (
               <div
                 key={i}
-                className="relative aspect-[4/3] rounded-xl overflow-hidden cursor-pointer group border"
+                className="relative aspect-[4/3] overflow-hidden cursor-pointer group border"
                 onClick={() => setLightboxIndex(lightboxIdx)}
               >
                 <GalleryImage src={url} alt="" className="w-full h-full object-cover" />
@@ -125,7 +125,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
         >
           {/* Close button */}
           <button
-            className="absolute top-4 right-4 h-11 w-11 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            className="absolute top-4 right-4 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
             onClick={closeLightbox}
             aria-label="Close lightbox"
           >
@@ -143,14 +143,14 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
           {allImages.length > 1 && (
             <>
               <button
-                className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+                className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
                 onClick={(e) => { e.stopPropagation(); goPrev(); }}
                 aria-label="Previous image"
               >
                 <ChevronLeft size={22} />
               </button>
               <button
-                className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
                 onClick={(e) => { e.stopPropagation(); goNext(); }}
                 aria-label="Next image"
               >
@@ -163,7 +163,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
           <img
             src={allImages[lightboxIndex]}
             alt={`Image ${lightboxIndex + 1}`}
-            className="max-w-full max-h-[85vh] object-contain rounded-lg animate-scale-in"
+            className="max-w-full max-h-[85vh] object-contain animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           />
 
@@ -174,7 +174,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
                 <button
                   key={i}
                   className={cn(
-                    "h-2 rounded-full transition-all duration-150",
+                    "h-2 transition-all duration-150",
                     i === lightboxIndex ? "bg-white w-4" : "bg-white/40 w-2 hover:bg-white/60"
                   )}
                   onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}

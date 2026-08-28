@@ -98,7 +98,7 @@ export default function BroadcastPage() {
                 type="button"
                 onClick={() => setInApp((v) => !v)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-full border text-[12.5px] font-semibold transition-colors",
+                  "flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold transition-colors",
                   inApp ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
                 )}
               >
@@ -108,7 +108,7 @@ export default function BroadcastPage() {
                 type="button"
                 onClick={() => setSms((v) => !v)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-full border text-[12.5px] font-semibold transition-colors",
+                  "flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold transition-colors",
                   sms ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
                 )}
               >
@@ -118,7 +118,7 @@ export default function BroadcastPage() {
                 type="button"
                 disabled
                 title="Coming soon"
-                className="flex items-center gap-2 px-3 py-2 rounded-full border text-[12.5px] font-semibold opacity-50 cursor-not-allowed bg-white text-muted-foreground border-border"
+                className="flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold opacity-50 cursor-not-allowed bg-white text-muted-foreground border-border"
               >
                 <MessageSquare size={14} />WhatsApp (coming soon)
               </button>

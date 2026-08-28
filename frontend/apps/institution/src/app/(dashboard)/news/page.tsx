@@ -253,7 +253,7 @@ export default function AdminNewsPage() {
             <button
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full border text-[12.5px] font-semibold transition-colors ${
+              className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
                 statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
               }`}
             >
@@ -331,7 +331,7 @@ export default function AdminNewsPage() {
                       <Pin size={9} className="text-white" />
                     </div>
                   )}
-                  <span className="bg-white/90 dark:bg-black/60 backdrop-blur-sm text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full text-foreground">
+                  <span className="bg-white/90 dark:bg-black/60 backdrop-blur-sm text-[9px] font-black uppercase tracking-widest px-2.5 py-1 text-foreground">
                     {p.category}
                   </span>
                 </div>

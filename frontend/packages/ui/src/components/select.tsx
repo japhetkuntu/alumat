@@ -16,12 +16,12 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-11 w-auto max-w-[22rem] min-w-[10rem] items-center justify-between rounded-[10px] border border-input bg-background px-3 py-2 text-[14px] text-foreground shadow-sm",
+      "flex h-11 w-auto max-w-[22rem] min-w-[10rem] items-center justify-between border border-input bg-background px-3 py-2 text-[14px] text-foreground",
       "transition-all duration-150 ease-out cursor-pointer",
       "placeholder:text-muted-foreground/65",
-      "focus:outline-none focus:border-ring/60 focus:ring-2 focus:ring-ring/20",
+      "focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25",
       "disabled:cursor-not-allowed disabled:opacity-55 disabled:bg-muted/40",
-      error && "border-destructive/60 focus:border-destructive/60 focus:ring-destructive/20",
+      error && "border-destructive/70 focus:border-destructive/70 focus:ring-destructive/20",
       "[&>span]:truncate",
       className
     )}
@@ -43,7 +43,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-[9999] max-h-[280px] min-w-[8rem] overflow-hidden rounded-[12px] border border-border/60 bg-popover text-popover-foreground",
+        "relative z-[9999] max-h-[280px] min-w-[8rem] overflow-hidden border border-border/60 bg-popover text-popover-foreground",
         "shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
@@ -75,7 +75,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-[8px] py-2 pl-3 pr-8 text-[14px] outline-none",
+      "relative flex w-full cursor-pointer select-none items-center py-2 pl-3 pr-8 text-[14px] outline-none",
       "transition-colors duration-75",
       "hover:bg-accent/60 focus:bg-accent/60",
       "data-[highlighted]:bg-accent/60",

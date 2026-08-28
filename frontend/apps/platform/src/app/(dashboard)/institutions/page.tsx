@@ -112,7 +112,7 @@ export default function InstitutionsPage() {
               <button
                 key={f.value}
                 onClick={() => setStatus(f.value)}
-                className={`text-[12.5px] font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                className={`text-[12.5px] font-medium px-3 py-1.5 border transition-colors ${
                   status === f.value
                     ? "bg-primary/10 text-primary border-primary/30"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"

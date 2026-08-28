@@ -282,7 +282,7 @@ export default function CampaignDetailPage() {
               </h2>
               <div className="flex flex-wrap gap-3">
                 {wallOfSupport.map((entry, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-full pr-3 pl-1.5 py-1.5 border" style={{ borderColor: "var(--border)" }}>
+                  <div key={i} className="flex items-center gap-2 pr-3 pl-1.5 py-1.5 border" style={{ borderColor: "var(--border)" }}>
                     <UserAvatar name={entry.name} size="sm" />
                     <span className="text-[13px] font-medium" style={{ color: "var(--foreground)" }}>{entry.name}</span>
                   </div>

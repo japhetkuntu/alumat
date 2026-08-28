@@ -20,10 +20,10 @@
   --space-gap: 16px;
 
   /* Card / surface tokens — matched to Institution Portal's low-elevation, controlled-workspace look */
-  --card-radius: 8px;
+  --card-radius: 0px;
   --card-border: var(--border);
-  --card-shadow: 0 1px 2px rgba(30, 41, 59, 0.05);
-  --card-shadow-hover: 0 1px 2px rgba(30, 41, 59, 0.05);
+  --card-shadow: none;
+  --card-shadow-hover: none;
 
   /* Transition token */
   --transition: all 0.18s ease;
@@ -71,11 +71,11 @@
   --color-accent-gold: var(--accent-gold);
 
   /* Precise border radius scale (Linear focus) */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
 
   --bp-xs: 320px;
   --bp-sm: 480px;
@@ -271,7 +271,7 @@ small, .text-small {
 
 /* Button reset to match Paystack */
 .btn {
-  border-radius: 10px;
+  border-radius: 0px;
   font-weight: 500;
   padding: 12px 24px;
   transition: var(--transition);
@@ -325,7 +325,7 @@ small, .text-small {
 /* Input styling */
 .input {
   border: 1.5px solid rgba(229, 231, 235, 1);
-  border-radius: 10px;
+  border-radius: 0px;
   padding: 10px 14px;
   background: rgba(255, 255, 255, 0.9);
   transition: var(--transition);
@@ -447,7 +447,7 @@ svg {
  */
 
 :root {
-  --radius: 8px;
+  --radius: 0px;
   --bp-xs: 320px;
   --bp-sm: 480px;
   --bp-md: 768px;
@@ -955,7 +955,7 @@ html {
 .alumni-popup-wrapper .leaflet-popup-content-wrapper {
   background: var(--popover);
   color: var(--foreground);
-  border-radius: 14px;
+  border-radius: 0px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
   border: 1px solid var(--border);
   padding: 0;

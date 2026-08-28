@@ -259,7 +259,7 @@ export default function NotificationsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+              "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
               tab === t ? "text-white border-transparent" : "border-border hover:border-primary/40",
             )}
             style={tab === t
@@ -269,7 +269,7 @@ export default function NotificationsPage() {
             {t}
             {t === "Unread" && unreadCount > 0 && (
               <span
-                className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold"
                 style={{
                   background: tab === "Unread" ? "rgba(255,255,255,0.2)" : "var(--color-background-info)",
                   color:      tab === "Unread" ? "white" : "var(--primary)",

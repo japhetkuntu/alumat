@@ -21,7 +21,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-[9999] min-w-[200px] overflow-hidden rounded-xl border border-border/40 bg-popover/80 backdrop-blur-xl p-1.5 text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-200",
+        "z-[9999] min-w-[200px] overflow-hidden border border-border/40 bg-popover/80 backdrop-blur-xl p-1.5 text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-200",
         "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
         "data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2",
@@ -43,7 +43,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center gap-2 rounded-md px-3 py-2 text-sm outline-none transition-colors duration-200",
+      "relative flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm outline-none transition-colors duration-200",
       "focus:bg-accent focus:text-accent-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       inset && "pl-8",
@@ -64,7 +64,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-3 text-sm outline-none transition-colors duration-200",
+      "relative flex cursor-pointer select-none items-center py-2 pl-8 pr-3 text-sm outline-none transition-colors duration-200",
       "focus:bg-accent focus:text-accent-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
@@ -89,7 +89,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-3 text-sm outline-none transition-colors duration-200",
+      "relative flex cursor-pointer select-none items-center py-2 pl-8 pr-3 text-sm outline-none transition-colors duration-200",
       "focus:bg-accent focus:text-accent-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
@@ -145,7 +145,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-pointer select-none items-center gap-2 rounded-md px-3 py-2 text-sm outline-none transition-colors duration-200",
+      "flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm outline-none transition-colors duration-200",
       "focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent/50",
       inset && "pl-8",
       className
@@ -165,7 +165,7 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      "z-[9999] min-w-[180px] overflow-hidden rounded-xl border border-border/40 bg-popover/80 backdrop-blur-xl p-1.5 text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-200",
+      "z-[9999] min-w-[180px] overflow-hidden border border-border/40 bg-popover/80 backdrop-blur-xl p-1.5 text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-200",
       "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
       className
     )}

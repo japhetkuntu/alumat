@@ -199,7 +199,7 @@ export default function AdminNotificationsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all",
+              "px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all",
               tab === t
                 ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted",
@@ -207,7 +207,7 @@ export default function AdminNotificationsPage() {
           >
             {t}
             {t === "Unread" && unreadCount > 0 && (
-              <span className="ml-1.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[10px]">
+              <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 text-[10px]">
                 {unreadCount}
               </span>
             )}

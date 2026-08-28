@@ -71,7 +71,7 @@ export function AudienceScopePicker({
             type="button"
             onClick={() => onModeChange(opt.value)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+              "px-3 py-1.5 text-[11px] font-bold uppercase tracking-[.05em] border transition-colors",
               mode === opt.value
                 ? "text-white border-transparent"
                 : "border-border text-muted-foreground hover:border-primary/40"

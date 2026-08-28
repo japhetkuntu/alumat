@@ -28,12 +28,12 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         className={cn(
           // 16px below md — see Input's matching comment (iOS Safari
           // auto-zoom-on-focus for any field under 16px).
-          "flex min-h-[96px] w-full rounded-[10px] border border-input bg-background px-3 py-2.5 text-[16px] md:text-[14px] text-foreground shadow-sm transition-all duration-150 ease-out",
+          "flex min-h-[96px] w-full border border-input bg-background px-3 py-2.5 text-[16px] md:text-[14px] text-foreground transition-all duration-150 ease-out",
           "placeholder:text-muted-foreground/65",
-          "focus-visible:outline-none focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20",
+          "focus-visible:outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25",
           "disabled:cursor-not-allowed disabled:opacity-55 disabled:bg-muted/40",
           autoResize ? "resize-none overflow-hidden" : "resize-y",
-          error && "border-destructive/60 focus-visible:border-destructive/60 focus-visible:ring-destructive/20",
+          error && "border-destructive/70 focus-visible:border-destructive/70 focus-visible:ring-destructive/20",
           className
         )}
         ref={(el) => {
