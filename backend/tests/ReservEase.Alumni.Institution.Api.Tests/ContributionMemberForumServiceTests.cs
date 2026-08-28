@@ -591,7 +591,7 @@ public class ContributionMemberForumServiceTests
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateCampaignRequest
@@ -626,7 +626,7 @@ public class ContributionMemberForumServiceTests
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin", GraduationYear = 2025 };
 
         var request = new CreateCampaignRequest
@@ -656,7 +656,7 @@ public class ContributionMemberForumServiceTests
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
 
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateCampaignRequest

@@ -439,6 +439,32 @@ export async function activateCampaign(id: string) {
   return res.data.data!;
 }
 
+export interface CampaignUpdate {
+  id: string;
+  campaignId: string;
+  body: string;
+  imageUrl?: string | null;
+  postedByName?: string | null;
+  createdAt: string;
+}
+
+export async function getCampaignUpdates(campaignId: string) {
+  const res = await institutionClient.get<ApiResponse<CampaignUpdate[]>>(`/campaigns/${campaignId}/updates`);
+  return res.data.data ?? [];
+}
+
+export async function createCampaignUpdate(campaignId: string, body: { body: string; image?: File }) {
+  const res = await institutionClient.post<ApiResponse<CampaignUpdate>>(`/campaigns/${campaignId}/updates`, toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function deleteCampaignUpdate(campaignId: string, updateId: string) {
+  const res = await institutionClient.delete<ApiResponse<unknown>>(`/campaigns/${campaignId}/updates/${updateId}`);
+  return res.data;
+}
+
 // ─── Contributions ───────────────────────────────────────────────────────────
 
 export interface ContributionListParams {

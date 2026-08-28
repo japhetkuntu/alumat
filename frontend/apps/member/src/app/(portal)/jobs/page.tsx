@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { MapPin, Clock, Briefcase, ArrowRight, X, Search } from "lucide-react";
 import Link from "next/link";
 import { Pagination } from "@alumni/ui";
@@ -13,19 +14,23 @@ import { getJobs } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { SourceBadge } from "@/components/member/source-badge";
+import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 const JOB_TYPES = ["", "Full-time", "Part-time", "Contract", "Internship"];
 
 export default function MemberJobsPage() {
+  const searchParams = useSearchParams();
   const [search,         setSearch]         = useState("");
   const [typeFilter,     setTypeFilter]      = useState("");
   const [locationFilter, setLocationFilter]  = useState("");
+  const [communityId,    setCommunityId]     = useState<string | null>(() => searchParams.get("communityId"));
   const [page,           setPage]            = useState(1);
   const pageSize = 18;
 
   const { data, isLoading } = useQuery({
-    queryKey:        ["m-jobs", typeFilter, search, locationFilter, page],
-    queryFn:         () => getJobs(page, pageSize, typeFilter || undefined, search || undefined, locationFilter || undefined),
+    queryKey:        ["m-jobs", typeFilter, search, locationFilter, communityId, page],
+    queryFn:         () => getJobs(page, pageSize, typeFilter || undefined, search || undefined, locationFilter || undefined, undefined, undefined, communityId || undefined),
     placeholderData: (prev) => prev,
   });
 
@@ -95,6 +100,8 @@ export default function MemberJobsPage() {
             </button>
           )}
         </div>
+
+        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
 
       {/* ── Grid ── */}
@@ -136,6 +143,7 @@ export default function MemberJobsPage() {
 
                   {/* Title + company */}
                   <div className="flex-1 min-w-0">
+                    <SourceBadge communityId={j.communityId} communityName={j.communityName} className="mb-2" />
                     <h3
                       className="text-[15px] font-semibold leading-snug line-clamp-2 mb-1 transition-colors duration-200 group-hover:text-primary"
                       style={{ color: "var(--foreground)" }}

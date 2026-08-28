@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, XCircle, X, Expand, Pencil, ChevronRight } from "lucide-react";
+import { ArrowLeft, XCircle, X, Expand, Pencil, ChevronRight, Trash2, Megaphone } from "lucide-react";
 import { Pagination } from "@alumni/ui";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,7 +18,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ConfirmModal } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
-import { getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel } from "@/lib/institution-api";
+import {
+  getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel,
+  getCampaignUpdates, createCampaignUpdate, deleteCampaignUpdate,
+} from "@/lib/institution-api";
 import { EmptyState } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -269,6 +272,19 @@ export default function CampaignDetailPage() {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+      )}
+
+      {/* Updates — close the loop on what the money did, postable any time */}
+      {!campaign.isMembershipCampaign && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Megaphone size={16} className="text-primary" />Updates</CardTitle>
+            <p className="text-[12.5px] text-muted-foreground">Post progress here so givers see what their money did — not just at the end.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <CampaignUpdatesSection campaignId={id} />
+          </CardContent>
+        </Card>
       )}
 
       <Card>
@@ -575,5 +591,90 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+function CampaignUpdatesSection({ campaignId }: { campaignId: string }) {
+  const qc = useQueryClient();
+  const [body, setBody] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+
+  const { data: updates = [], isLoading } = useQuery({
+    queryKey: ["admin-campaign-updates", campaignId],
+    queryFn: () => getCampaignUpdates(campaignId),
+  });
+
+  const postMut = useMutation({
+    mutationFn: () => createCampaignUpdate(campaignId, { body, image: image ?? undefined }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-campaign-updates", campaignId] });
+      setBody("");
+      setImage(null);
+      toast.success("Update posted");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (updateId: string) => deleteCampaignUpdate(campaignId, updateId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-campaign-updates", campaignId] });
+      toast.success("Update deleted");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  return (
+    <div className="space-y-4">
+      <form
+        className="space-y-3"
+        onSubmit={(e) => { e.preventDefault(); postMut.mutate(); }}
+      >
+        <Textarea
+          rows={3}
+          placeholder="Foundation poured, roof's up, here's the finished classroom…"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          required
+        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <ImageUpload file={image} existingUrl="" onChange={setImage} onClearExisting={() => setImage(null)} label="Add a photo (optional)" />
+          <Button type="submit" size="sm" isLoading={postMut.isPending} loadingText="Posting" disabled={!body.trim()}>
+            Post update
+          </Button>
+        </div>
+      </form>
+
+      {isLoading ? (
+        <p className="text-[13px] text-muted-foreground">Loading updates…</p>
+      ) : updates.length === 0 ? (
+        <p className="text-[13px] text-muted-foreground">No updates posted yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {updates.map((u) => (
+            <div key={u.id} className="rounded-xl border border-border overflow-hidden">
+              {u.imageUrl && <img src={u.imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 220 }} />}
+              <div className="p-3.5 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[13.5px] whitespace-pre-wrap leading-relaxed">{u.body}</p>
+                  <p className="text-[11.5px] text-muted-foreground mt-1.5">
+                    {u.postedByName ? `${u.postedByName} · ` : ""}{formatDate(u.createdAt)}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0 text-destructive gap-1.5"
+                  onClick={() => deleteMut.mutate(u.id)}
+                  isLoading={deleteMut.isPending}
+                >
+                  <Trash2 size={13} />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

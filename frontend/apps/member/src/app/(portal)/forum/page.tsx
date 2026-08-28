@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Plus, MessageSquare, Pin, Lock, Clock, Search } from "lucide-react";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -20,6 +21,8 @@ import Link from "next/link";
 import { cn } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
+import { SourceBadge } from "@/components/member/source-badge";
+import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 /* Safe date formatter — never throws on bad input */
 function safeDate(value: string | null | undefined): string {
@@ -39,12 +42,14 @@ const FILTERS = [
 type ThreadFilter = typeof FILTERS[number]["value"];
 
 export default function MemberForumPage() {
+  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showNewThread,    setShowNewThread]     = useState(false);
   const [form,             setForm]              = useState({ categoryId: "", title: "", content: "" });
   const [search,           setSearch]            = useState("");
   const [threadFilter,     setThreadFilter]      = useState<ThreadFilter>("all");
   const [threadPage,       setThreadPage]        = useState(1);
+  const [communityId,      setCommunityId]       = useState<string | null>(() => searchParams.get("communityId"));
   const threadPageSize = 20;
   const qc = useQueryClient();
 
@@ -54,12 +59,13 @@ export default function MemberForumPage() {
   });
 
   const { data: threadsData, isLoading } = useQuery({
-    queryKey:        ["m-forum-threads", selectedCategory, search, threadFilter, threadPage],
+    queryKey:        ["m-forum-threads", selectedCategory, search, threadFilter, communityId, threadPage],
     queryFn:         () => getForumThreads(
       threadPage, threadPageSize,
       selectedCategory || undefined,
       search || undefined,
       threadFilter === "all" ? undefined : threadFilter,
+      communityId || undefined,
     ),
     placeholderData: (prev) => prev,
   });
@@ -229,6 +235,8 @@ export default function MemberForumPage() {
             ))}
           </div>
         )}
+
+        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setThreadPage(1); }} />
       </div>
 
       {/* ── Thread list ── */}
@@ -257,6 +265,7 @@ export default function MemberForumPage() {
 
                     {/* Labels */}
                     <div className="flex flex-wrap items-center gap-1.5">
+                      <SourceBadge communityId={t.communityId} communityName={t.communityName} />
                       {t.categoryName && (
                         <Badge variant="info" size="sm">{t.categoryName}</Badge>
                       )}

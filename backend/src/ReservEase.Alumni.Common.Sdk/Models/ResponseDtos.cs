@@ -4,6 +4,8 @@ public class JobDto
 {
     public string Id { get; set; } = string.Empty;
     public string? CommunityId { get; set; }
+    /// <summary>Denormalized for display in a merged feed — null for institution-wide items.</summary>
+    public string? CommunityName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Company { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
@@ -21,6 +23,7 @@ public class AlumniEventDto
 {
     public string Id { get; set; } = string.Empty;
     public string? CommunityId { get; set; }
+    public string? CommunityName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateTime StartDate { get; set; }
@@ -43,6 +46,7 @@ public class NewsPostDto
 {
     public string Id { get; set; } = string.Empty;
     public string? CommunityId { get; set; }
+    public string? CommunityName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
@@ -61,6 +65,7 @@ public class ResourceDto
 {
     public string Id { get; set; } = string.Empty;
     public string? CommunityId { get; set; }
+    public string? CommunityName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string Category { get; set; } = string.Empty;
@@ -77,6 +82,7 @@ public class CampaignDto
 {
     public string Id { get; set; } = string.Empty;
     public string? CommunityId { get; set; }
+    public string? CommunityName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public decimal TargetAmount { get; set; }
@@ -175,6 +181,26 @@ public class ContributionDto
     public bool IsGuestPayment { get; set; }
     /// <summary>The member who shared the campaign link this guest paid through, if any.</summary>
     public string? SharedByMemberId { get; set; }
+    /// <summary>Opt-in, set by the giver at payment time — whether their name may appear on the campaign's public Wall of support. Never implies the amount is shown.</summary>
+    public bool ShowOnWallOfSupport { get; set; }
+}
+
+/// <summary>An institution-staff-posted progress update on a campaign.</summary>
+public class CampaignUpdateDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string CampaignId { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
+    public string? PostedByName { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>One name-only entry on a campaign's public Wall of support — never carries an amount.</summary>
+public class WallOfSupportEntryDto
+{
+    public string Name { get; set; } = string.Empty;
+    public DateTime ContributedAt { get; set; }
 }
 
 public class PaystackDisbursementSummaryDto
@@ -251,6 +277,7 @@ public class ForumThreadDto
     public string CategoryId { get; set; } = string.Empty;
     public string? CategoryName { get; set; }
     public string? CommunityId { get; set; }
+    public string? CommunityName { get; set; }
     public string Title { get; set; } = string.Empty;
     public string AuthorId { get; set; } = string.Empty;
     public string? AuthorName { get; set; }

@@ -26,9 +26,15 @@ public class DbContextConfigurationTests
         var campaignRepo = new Mock<IAlumniPgRepository<Campaign>>();
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
         var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
+        var communityRepo = new Mock<IAlumniPgRepository<Community>>();
+        var updateRepo = new Mock<IAlumniPgRepository<CampaignUpdate>>();
+        var contributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
 
         var member = new MemberEntity { Id = "member-1", GraduationYear = 2025 };
         memberRepo.Setup(m => m.GetByIdAsync("member-1")).ReturnsAsync(member);
+        membershipRepo
+            .Setup(m => m.GetAllAsync(It.IsAny<Expression<Func<CommunityMembership, bool>>>()))
+            .ReturnsAsync(new List<CommunityMembership>());
 
         var activeCampaign = new Campaign
         {
@@ -66,7 +72,7 @@ public class DbContextConfigurationTests
                 Assert.False(predicate(closedCampaign));
             });
 
-        var campaignService = new CampaignService(campaignRepo.Object, memberRepo.Object, membershipRepo.Object, new NullLogger<CampaignService>());
+        var campaignService = new CampaignService(campaignRepo.Object, memberRepo.Object, membershipRepo.Object, communityRepo.Object, updateRepo.Object, contributionRepo.Object, new NullLogger<CampaignService>());
 
         var response = await campaignService.GetActiveCampaignsAsync(new BaseFilter { Page = 1, PageSize = 10 }, "member-1");
 

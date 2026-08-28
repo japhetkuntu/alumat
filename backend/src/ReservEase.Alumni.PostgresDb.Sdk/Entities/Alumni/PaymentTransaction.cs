@@ -20,6 +20,8 @@ public class PaymentTransaction : BaseEntity, ITenantScoped
     /// distinct from MemberId, which is who the payment is attributed to.
     /// </summary>
     public string? SharedByMemberId { get; set; }
+    /// <summary>Opt-in, set by the giver at initiation — carried onto the Contribution once confirmed. Never implies the amount is shown.</summary>
+    public bool ShowOnWallOfSupport { get; set; }
 
     public string CampaignId { get; set; } = string.Empty;
     public CampaignSnapshot? Campaign { get; set; }

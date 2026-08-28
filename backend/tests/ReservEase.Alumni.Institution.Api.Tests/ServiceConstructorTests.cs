@@ -42,6 +42,7 @@ public class ServiceConstructorTests
         var resourceRepo = new Mock<IAlumniPgRepository<Resource>>();
         var institutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var currentTenant = new Mock<ICurrentTenantService>();
+        var campaignUpdateRepo = new Mock<IAlumniPgRepository<CampaignUpdate>>();
         var storageService = new Mock<IStorageService>();
         var redisService = new Mock<IRedisService<ReservEase.Alumni.Institution.Api.Options.InstitutionRedisConfig>>();
         var tokenOptions = Microsoft.Extensions.Options.Options.Create(new BearerTokenConfig { InstitutionSigningKey = "x", Issuer = "x", Audience = "x", AccessTokenLifetime = 1, RefreshTokenLifetime = 1 });
@@ -54,7 +55,7 @@ public class ServiceConstructorTests
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
             redisService.Object, tokenOptions, mailtrapOptions, notificationActor.Object, new NullLogger<InstitutionAuthService>());
         var __ = new InstitutionStaffService(adminRepo.Object, new NullLogger<InstitutionStaffService>());
-        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<CampaignService>());
+        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, campaignUpdateRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<CampaignService>());
         var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<EventService>());
         var _____ = new ForumService(forumCategoryRepo.Object, forumThreadRepo.Object, new NullLogger<ForumService>());
         var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<JobService>());

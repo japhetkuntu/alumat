@@ -13,12 +13,30 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class MemberResourceService(
     IAlumniPgRepository<Resource> resourceRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<Community> communityRepo,
     ILogger<MemberResourceService> logger) : IMemberResourceService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
     {
         var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
         return membership is not null && membership.Status == "Approved";
+    }
+
+    private async Task<List<string>> GetApprovedCommunityIdsAsync(string memberId)
+    {
+        var memberships = await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved");
+        return memberships.Select(m => m.CommunityId).ToList();
+    }
+
+    private async Task EnrichCommunityNamesAsync(IEnumerable<ResourceDto> results)
+    {
+        var communityIds = results.Where(d => d.CommunityId != null).Select(d => d.CommunityId!).Distinct().ToList();
+        if (communityIds.Count == 0) return;
+        var communities = await communityRepo.GetAllAsync(c => communityIds.Contains(c.Id));
+        var nameById = communities.ToDictionary(c => c.Id, c => c.Name);
+        foreach (var dto in results)
+            if (dto.CommunityId != null && nameById.TryGetValue(dto.CommunityId, out var name))
+                dto.CommunityName = name;
     }
 
     public async Task<IApiResponse<PgPagedResult<ResourceDto>>> GetResourcesAsync(ResourceFilter filter, string memberId)
@@ -30,9 +48,13 @@ public class MemberResourceService(
             if (!string.IsNullOrEmpty(filter.CommunityId) && !await IsApprovedCommunityMemberAsync(filter.CommunityId, memberId))
                 return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<ResourceDto>>("You must be an approved member of this community to view its resources");
 
+            var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
+
             var result = await resourceRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                r => (string.IsNullOrEmpty(filter.CommunityId) ? r.CommunityId == null : r.CommunityId == filter.CommunityId)
+                r => (string.IsNullOrEmpty(filter.CommunityId)
+                      ? (r.CommunityId == null || approvedCommunityIds.Contains(r.CommunityId))
+                      : r.CommunityId == filter.CommunityId)
                   && (string.IsNullOrEmpty(filter.Category) || r.Category == filter.Category)
                   && (string.IsNullOrEmpty(filter.Type) || r.Type == filter.Type)
                   && (!filter.AddedAfter.HasValue || r.CreatedAt >= filter.AddedAfter.Value)
@@ -51,6 +73,7 @@ public class MemberResourceService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(r => r.ToDto()).ToList(),
             };
+            await EnrichCommunityNamesAsync(dtoResult.Results);
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

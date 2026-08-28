@@ -31,6 +31,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Community> Communities => Set<Community>();
     public DbSet<CommunityMembership> CommunityMemberships => Set<CommunityMembership>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<CampaignUpdate> CampaignUpdates => Set<CampaignUpdate>();
     public DbSet<Contribution> Contributions => Set<Contribution>();
     public DbSet<AlumniEvent> Events => Set<AlumniEvent>();
     public DbSet<EventRsvp> EventRsvps => Set<EventRsvp>();
@@ -171,6 +172,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasColumnType("jsonb").HasConversion(new JsonbConverter<ManualPaymentMobileMoneyAccount>(jsonOpts));
         modelBuilder.Entity<Campaign>()
             .HasIndex(c => c.Status);
+
+        // CampaignUpdate: list an individual campaign's updates, newest first
+        modelBuilder.Entity<CampaignUpdate>()
+            .HasIndex(u => u.CampaignId);
 
         // Contribution: member's contributions, filter by campaign, status
         modelBuilder.Entity<Contribution>()

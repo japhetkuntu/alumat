@@ -171,6 +171,17 @@ public static class EntityDtoExtensions
         CreatedAt = c.CreatedAt,
         IsGuestPayment = c.IsGuestPayment,
         SharedByMemberId = c.SharedByMemberId,
+        ShowOnWallOfSupport = c.ShowOnWallOfSupport,
+    };
+
+    public static CampaignUpdateDto ToDto(this CampaignUpdate u) => new()
+    {
+        Id = u.Id,
+        CampaignId = u.CampaignId,
+        Body = u.Body,
+        ImageUrl = u.ImageUrl,
+        PostedByName = u.PostedByName,
+        CreatedAt = u.CreatedAt,
     };
 
     /// <summary>

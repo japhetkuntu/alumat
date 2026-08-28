@@ -16,12 +16,30 @@ public class MemberEventService(
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<Community> communityRepo,
     ILogger<MemberEventService> logger) : IMemberEventService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
     {
         var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
         return membership is not null && membership.Status == "Approved";
+    }
+
+    private async Task<List<string>> GetApprovedCommunityIdsAsync(string memberId)
+    {
+        var memberships = await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved");
+        return memberships.Select(m => m.CommunityId).ToList();
+    }
+
+    private async Task EnrichCommunityNamesAsync(IEnumerable<AlumniEventDto> results)
+    {
+        var communityIds = results.Where(d => d.CommunityId != null).Select(d => d.CommunityId!).Distinct().ToList();
+        if (communityIds.Count == 0) return;
+        var communities = await communityRepo.GetAllAsync(c => communityIds.Contains(c.Id));
+        var nameById = communities.ToDictionary(c => c.Id, c => c.Name);
+        foreach (var dto in results)
+            if (dto.CommunityId != null && nameById.TryGetValue(dto.CommunityId, out var name))
+                dto.CommunityName = name;
     }
 
     public async Task<IApiResponse<PgPagedResult<AlumniEventDto>>> GetEventsAsync(EventFilter filter, string memberId)
@@ -39,10 +57,14 @@ public class MemberEventService(
             var status = string.IsNullOrWhiteSpace(filter.Status) ? "Upcoming" : filter.Status;
             var includeCancelled = status.Equals("All", StringComparison.OrdinalIgnoreCase);
 
+            var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
+
             var result = await eventRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "StartDate", filter.SortDir ?? "asc",
                 e => (includeCancelled || e.Status == status)
-                      && (string.IsNullOrEmpty(filter.CommunityId) ? e.CommunityId == null : e.CommunityId == filter.CommunityId)
+                      && (string.IsNullOrEmpty(filter.CommunityId)
+                          ? (e.CommunityId == null || approvedCommunityIds.Contains(e.CommunityId))
+                          : e.CommunityId == filter.CommunityId)
                       && (e.YearGroups == null || e.YearGroups.Count == 0 || (memberYear.HasValue && e.YearGroups.Contains(memberYear.Value))));
 
             // Keep rsvp counts in sync by recalculating from confirmed RSVPs.
@@ -70,6 +92,7 @@ public class MemberEventService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(e => e.ToDto()).ToList(),
             };
+            await EnrichCommunityNamesAsync(dtoResult.Results);
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

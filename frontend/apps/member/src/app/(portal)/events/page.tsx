@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Calendar, MapPin, Users, ArrowRight, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Pagination } from "@alumni/ui";
@@ -15,6 +16,8 @@ import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import type { EventStatus } from "@/types";
+import { SourceBadge } from "@/components/member/source-badge";
+import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 const statusVariant: Record<EventStatus, "info" | "success" | "secondary" | "destructive"> = {
   Upcoming:  "info",
@@ -33,15 +36,17 @@ const EVENT_FILTERS: { value: EventFilter; label: string }[] = [
 ];
 
 export default function MemberEventsPage() {
+  const searchParams = useSearchParams();
   const [page,      setPage]      = useState(1);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [filter,    setFilter]    = useState<EventFilter>("all");
+  const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const pageSize = 12;
   const qc = useQueryClient();
 
   const { data: eventsData, isLoading } = useQuery({
-    queryKey:        ["m-events-list", page],
-    queryFn:         () => getEvents(page, pageSize),
+    queryKey:        ["m-events-list", page, communityId],
+    queryFn:         () => getEvents(page, pageSize, undefined, communityId || undefined),
     placeholderData: (prev) => prev,
   });
 
@@ -106,6 +111,8 @@ export default function MemberEventsPage() {
           </button>
         ))}
       </div>
+
+      <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
 
       {/* ── Grid ── */}
       {isLoading ? (
@@ -183,6 +190,7 @@ export default function MemberEventsPage() {
 
                 {/* Body */}
                 <div className="flex flex-col flex-1 p-4 gap-3">
+                  <SourceBadge communityId={e.communityId} communityName={e.communityName} className="self-start" />
                   <Link href={`/events/${e.id}`}>
                     <h3
                       className="text-[15px] font-semibold leading-snug line-clamp-2 transition-colors duration-200 hover:text-primary"

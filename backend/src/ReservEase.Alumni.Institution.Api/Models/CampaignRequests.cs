@@ -56,3 +56,10 @@ public class UpdateCampaignRequest
     public string? MobileMoneyName { get; set; }
     public string? MobileMoneyProvider { get; set; }
 }
+
+/// <summary>A progress update posted to a campaign — "foundation poured", "here's the finished classroom" — postable any time, not just at completion.</summary>
+public class CreateCampaignUpdateRequest
+{
+    public string Body { get; set; } = "";
+    public IFormFile? Image { get; set; }
+}

@@ -52,4 +52,12 @@ public class Contribution : BaseEntity, ITenantScoped
     public bool IsGuestPayment { get; set; }
     /// <summary>The member who shared the campaign link this guest paid through, if any.</summary>
     public string? SharedByMemberId { get; set; }
+
+    /// <summary>
+    /// Opt-in only, set by the giver at payment time — never inferred. When
+    /// true, this contribution's giver name (never the amount) may appear on
+    /// the campaign's public "Wall of support". Amounts are never shown to
+    /// anyone but the giver and institution staff, regardless of this flag.
+    /// </summary>
+    public bool ShowOnWallOfSupport { get; set; }
 }

@@ -157,6 +157,9 @@ export type CampaignStatus = "Draft" | "Active" | "Closed" | "Completed" | "Arch
 
 export interface Campaign {
   id: string;
+  /** Set when this campaign belongs to a specific Community rather than the whole institution. */
+  communityId?: string | null;
+  communityName?: string | null;
   title: string;
   description?: string;
   targetAmount: number;
@@ -270,6 +273,8 @@ export type JobStatus = "Active" | "Closed" | "Draft";
 
 export interface Job {
   id: string;
+  communityId?: string | null;
+  communityName?: string | null;
   postedBy: string;
   title: string;
   company: string;
@@ -296,6 +301,8 @@ export type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
 export interface AlumniEvent {
   id: string;
+  communityId?: string | null;
+  communityName?: string | null;
   title: string;
   description?: string;
   startDate: string;
@@ -333,6 +340,8 @@ export type NewsStatus = "Draft" | "Published" | "Archived";
 
 export interface NewsPost {
   id: string;
+  communityId?: string | null;
+  communityName?: string | null;
   authorId: string;
   authorName?: string;
   title: string;
@@ -362,6 +371,7 @@ export interface ForumThread {
   categoryId: string;
   categoryName?: string;
   communityId?: string | null;
+  communityName?: string | null;
   authorId: string;
   authorName?: string;
   authorProfilePictureUrl?: string;
@@ -427,6 +437,8 @@ export interface MentorshipRequest {
 
 export interface Resource {
   id: string;
+  communityId?: string | null;
+  communityName?: string | null;
   title: string;
   description?: string;
   category: string;

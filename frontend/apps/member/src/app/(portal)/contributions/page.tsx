@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,6 +32,8 @@ import { handleApiError } from "@/lib/api-client";
 import type { Campaign, Contribution, ContributionStatus } from "@/types";
 import { contributionMethodLabel } from "@/types";
 import { PaymentRedirectOverlay } from "@/components/member/payment-redirect-overlay";
+import { SourceBadge } from "@/components/member/source-badge";
+import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
   Confirmed: "success",
@@ -255,6 +258,7 @@ function CampaignCard({
         {/* Title + status badge */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
+            <SourceBadge communityId={c.communityId} communityName={c.communityName} className="mb-1.5" />
             {!c.bannerImageUrl && isMembership && (
               <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
                 Membership dues
@@ -290,6 +294,11 @@ function CampaignCard({
             </span>
             <span className="font-semibold">{pct}%</span>
           </div>
+          {!isMembership && c.paidCount > 0 && (
+            <p className="text-[12px] font-medium" style={{ color: "var(--primary)" }}>
+              {c.paidCount} alumni {c.paidCount === 1 ? "has" : "have"} given
+            </p>
+          )}
         </div>
 
         {/* Amount + deadline row */}
@@ -396,7 +405,9 @@ function CampaignCard({
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
 export default function MemberContributionsPage() {
+  const searchParams = useSearchParams();
   const [page, setPage]               = useState(1);
+  const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const [payingCampaignId, setPaying] = useState<string | null>(null);
   const [payingContext, setPayingContext] = useState<{ title: string; amount: number } | null>(null);
   const [statusModalContext, setStatusModalContext] = useState<{ title: string; amount: number } | null>(null);
@@ -416,8 +427,8 @@ export default function MemberContributionsPage() {
   const qc = useQueryClient();
 
   const { data: campaignsData } = useQuery({
-    queryKey: ["m-campaigns"],
-    queryFn:  () => getMyCampaigns(1, 50),
+    queryKey: ["m-campaigns", communityId],
+    queryFn:  () => getMyCampaigns(1, 50, communityId || undefined),
   });
 
   const { data: contribData, isLoading } = useQuery({
@@ -516,12 +527,14 @@ export default function MemberContributionsPage() {
       </div>
 
       {/* ── Active campaigns ── */}
-      {activeCampaigns.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
-            Active fundraisers &amp; dues
-          </h2>
+      <section className="space-y-4">
+        <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
+          Active fundraisers &amp; dues
+        </h2>
 
+        <SourceFilterChips value={communityId} onChange={setCommunityId} />
+
+        {activeCampaigns.length > 0 && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {activeCampaigns.map((c) => {
               const myPayment = allContributions
@@ -552,8 +565,13 @@ export default function MemberContributionsPage() {
               );
             })}
           </div>
-        </section>
-      )}
+        )}
+        {activeCampaigns.length === 0 && (
+          <p className="text-[13px] py-2" style={{ color: "var(--muted-foreground)" }}>
+            No active fundraisers here right now.
+          </p>
+        )}
+      </section>
 
       {/* ── Payment history ── */}
       <section className="space-y-4">

@@ -139,4 +139,33 @@ public class CampaignsController(ICampaignService campaignService) : DefaultCont
         var admin = User.GetAccount();
         var result = await campaignService.MarkCampaignPaystackDisbursedAsync(campaignId, admin);
         return result.ToActionResult();
-    }}
+    }
+
+    [HttpGet("{campaignId}/updates")]
+    [SwaggerOperation(Summary = "Get campaign updates")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CampaignUpdateDto>>))]
+    public async Task<IActionResult> GetUpdates(string campaignId)
+    {
+        var result = await campaignService.GetUpdatesAsync(campaignId);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("{campaignId}/updates")]
+    [SwaggerOperation(Summary = "Post a campaign update")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<CampaignUpdateDto>))]
+    public async Task<IActionResult> CreateUpdate(string campaignId, [FromForm] CreateCampaignUpdateRequest request)
+    {
+        var admin = User.GetAccount();
+        var result = await campaignService.CreateUpdateAsync(campaignId, request, admin);
+        return result.ToActionResult();
+    }
+
+    [HttpDelete("{campaignId}/updates/{updateId}")]
+    [SwaggerOperation(Summary = "Delete a campaign update")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> DeleteUpdate(string campaignId, string updateId)
+    {
+        var result = await campaignService.DeleteUpdateAsync(campaignId, updateId);
+        return result.ToActionResult();
+    }
+}

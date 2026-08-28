@@ -8,4 +8,6 @@ public interface ICampaignService
     Task<IApiResponse<PgPagedResult<CampaignDto>>> GetActiveCampaignsAsync(BaseFilter filter, string memberId, string? communityId = null);
     Task<IApiResponse<CampaignDto>> GetCampaignByIdAsync(string campaignId, string? memberId = null);
     Task<IApiResponse<CampaignDto?>> GetCurrentMembershipCampaignAsync();
+    Task<IApiResponse<List<CampaignUpdateDto>>> GetUpdatesAsync(string campaignId);
+    Task<IApiResponse<List<WallOfSupportEntryDto>>> GetWallOfSupportAsync(string campaignId);
 }

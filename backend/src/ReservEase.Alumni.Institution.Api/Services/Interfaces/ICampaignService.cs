@@ -17,6 +17,9 @@ public interface ICampaignService
     Task<IApiResponse<CampaignDto>> ActivateCampaignAsync(string campaignId, AuthData admin);
     Task<IApiResponse<PaystackDisbursementSummaryDto>> GetCampaignPaystackSummaryAsync(string campaignId, AuthData admin);
     Task<IApiResponse<object>> MarkCampaignPaystackDisbursedAsync(string campaignId, AuthData admin);
+    Task<IApiResponse<List<CampaignUpdateDto>>> GetUpdatesAsync(string campaignId);
+    Task<IApiResponse<CampaignUpdateDto>> CreateUpdateAsync(string campaignId, CreateCampaignUpdateRequest request, AuthData admin);
+    Task<IApiResponse<object>> DeleteUpdateAsync(string campaignId, string updateId);
 }
 
 public interface IContributionService

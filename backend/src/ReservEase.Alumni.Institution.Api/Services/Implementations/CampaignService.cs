@@ -18,6 +18,7 @@ public class CampaignService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
+    IAlumniPgRepository<CampaignUpdate> updateRepo,
     IStorageService storageService,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
@@ -505,6 +506,70 @@ public class CampaignService(
         {
             logger.LogError(e, "Error marking campaign paystack contributions as disbursed for campaign {CampaignId}", campaignId);
             return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to mark campaign paystack contributions as disbursed");
+        }
+    }
+
+    public async Task<IApiResponse<List<CampaignUpdateDto>>> GetUpdatesAsync(string campaignId)
+    {
+        try
+        {
+            var updates = await updateRepo.GetAllAsync(u => u.CampaignId == campaignId);
+            var dtos = updates.OrderByDescending(u => u.CreatedAt).Select(u => u.ToDto()).ToList();
+            return dtos.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving updates for campaign {CampaignId}", campaignId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<CampaignUpdateDto>>("Failed to retrieve updates");
+        }
+    }
+
+    public async Task<IApiResponse<CampaignUpdateDto>> CreateUpdateAsync(string campaignId, CreateCampaignUpdateRequest request, AuthData admin)
+    {
+        try
+        {
+            var campaign = await campaignRepo.GetByIdAsync(campaignId);
+            if (campaign is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<CampaignUpdateDto>("Campaign not found");
+
+            var update = new CampaignUpdate
+            {
+                CampaignId = campaignId,
+                Body = request.Body,
+                PostedByStaffId = admin.Id,
+                PostedByName = $"{admin.FirstName} {admin.LastName}".Trim(),
+                CreatedBy = admin.Id,
+            };
+
+            if (request.Image is not null)
+                update.ImageUrl = (await storageService.BulkUploadFilesAsync([request.Image], institutionSlug: currentTenant.InstitutionSlug ?? "")).FirstOrDefault();
+
+            await updateRepo.AddAsync(update);
+            logger.LogInformation("Campaign update {UpdateId} posted on campaign {CampaignId} by admin {AdminId}", update.Id, campaignId, admin.Id);
+            return update.ToDto().ToCreatedApiResponse("Update posted");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error posting update on campaign {CampaignId} by admin {AdminId}", campaignId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<CampaignUpdateDto>("Failed to post update");
+        }
+    }
+
+    public async Task<IApiResponse<object>> DeleteUpdateAsync(string campaignId, string updateId)
+    {
+        try
+        {
+            var update = await updateRepo.GetByIdAsync(updateId);
+            if (update is null || update.CampaignId != campaignId)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Update not found");
+
+            await updateRepo.RemoveAsync(update);
+            return new object().ToOkApiResponse("Update deleted");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error deleting update {UpdateId} on campaign {CampaignId}", updateId, campaignId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to delete update");
         }
     }
 }

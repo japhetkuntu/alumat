@@ -122,6 +122,17 @@
     letter-spacing: 0.01em;
   }
 
+  /* iOS Safari auto-zooms into any focused form field smaller than 16px —
+     forcing 16px here stops the page from bulging/zooming on focus, so
+     nobody has to manually pinch back out. */
+  input, textarea, select, button {
+    font-size: 16px;
+  }
+
+  input, textarea, select {
+    min-height: 44px;
+  }
+
   h1, h2, h3, h4 {
     font-weight: 800;
     letter-spacing: -0.02em;

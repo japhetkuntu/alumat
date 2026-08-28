@@ -151,6 +151,32 @@ export async function getCurrentMembershipCampaign(): Promise<Campaign | null> {
   return res.data.data ?? null;
 }
 
+export interface CampaignUpdate {
+  id: string;
+  campaignId: string;
+  body: string;
+  imageUrl?: string | null;
+  postedByName?: string | null;
+  createdAt: string;
+}
+
+/** Newest first — progress updates the institution has posted on this campaign. Public, no auth required. */
+export async function getCampaignUpdates(campaignId: string): Promise<CampaignUpdate[]> {
+  const res = await publicMemberClient.get(`/campaigns/${campaignId}/updates`);
+  return res.data.data ?? [];
+}
+
+export interface WallOfSupportEntry {
+  name: string;
+  contributedAt: string;
+}
+
+/** Names only, opted in by the giver — never amounts. Public, no auth required. */
+export async function getWallOfSupport(campaignId: string): Promise<WallOfSupportEntry[]> {
+  const res = await publicMemberClient.get(`/campaigns/${campaignId}/wall-of-support`);
+  return res.data.data ?? [];
+}
+
 export async function getMyMembershipStatus(): Promise<MembershipStatusResponse> {
   const res = await memberClient.get("/contributions/membership/status");
   return res.data.data!;
@@ -173,8 +199,8 @@ export async function getMyContributions(params?: { page?: number; pageSize?: nu
   return res.data.data!;
 }
 
-export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; }
-export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; sharedByMemberId?: string; }
+export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; showOnWallOfSupport?: boolean; }
+export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; sharedByMemberId?: string; showOnWallOfSupport?: boolean; }
 
 export async function initiatePaystackPayment(body: InitiatePaystackBody) {
   const res = await memberClient.post("/contributions/paystack/initiate", body);
@@ -261,6 +287,7 @@ export async function getJobs(
   location?: string,
   postedAfter?: string,
   postedBefore?: string,
+  communityId?: string,
 ): Promise<PagedResult<Job>> {
   const res = await memberClient.get("/jobs", {
     params: {
@@ -271,6 +298,7 @@ export async function getJobs(
       location: location || undefined,
       postedAfter: postedAfter || undefined,
       postedBefore: postedBefore || undefined,
+      communityId: communityId || undefined,
     },
   });
   return res.data.data!;
@@ -283,8 +311,8 @@ export async function getJobById(jobId: string): Promise<Job> {
 
 // ── News ─────────────────────────────────────────────────────────────────────
 
-export async function getNewsPosts(page = 1, pageSize = 20, category?: string, search?: string): Promise<PagedResult<NewsPost>> {
-  const res = await memberClient.get("/news", { params: { page, pageSize, category: category || undefined, search: search || undefined } });
+export async function getNewsPosts(page = 1, pageSize = 20, category?: string, search?: string, communityId?: string): Promise<PagedResult<NewsPost>> {
+  const res = await memberClient.get("/news", { params: { page, pageSize, category: category || undefined, search: search || undefined, communityId: communityId || undefined } });
   return res.data.data!;
 }
 

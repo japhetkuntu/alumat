@@ -48,4 +48,24 @@ public class CampaignsController(ICampaignService campaignService) : DefaultCont
         var result = await campaignService.GetCurrentMembershipCampaignAsync();
         return result.ToActionResult();
     }
+
+    [AllowAnonymous]
+    [HttpGet("{campaignId}/updates")]
+    [SwaggerOperation(Summary = "Get campaign updates", Description = "Progress updates the institution has posted on this campaign, newest first")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CampaignUpdateDto>>))]
+    public async Task<IActionResult> GetUpdates(string campaignId)
+    {
+        var result = await campaignService.GetUpdatesAsync(campaignId);
+        return result.ToActionResult();
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{campaignId}/wall-of-support")]
+    [SwaggerOperation(Summary = "Get wall of support", Description = "Names of givers who opted in to be shown — never amounts")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<WallOfSupportEntryDto>>))]
+    public async Task<IActionResult> GetWallOfSupport(string campaignId)
+    {
+        var result = await campaignService.GetWallOfSupportAsync(campaignId);
+        return result.ToActionResult();
+    }
 }

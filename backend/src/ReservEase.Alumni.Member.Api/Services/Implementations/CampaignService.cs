@@ -14,12 +14,32 @@ public class CampaignService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<Community> communityRepo,
+    IAlumniPgRepository<CampaignUpdate> updateRepo,
+    IAlumniPgRepository<Contribution> contributionRepo,
     ILogger<CampaignService> logger) : ICampaignService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
     {
         var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
         return membership is not null && membership.Status == "Approved";
+    }
+
+    private async Task<List<string>> GetApprovedCommunityIdsAsync(string memberId)
+    {
+        var memberships = await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved");
+        return memberships.Select(m => m.CommunityId).ToList();
+    }
+
+    private async Task EnrichCommunityNamesAsync(List<CampaignDto> results)
+    {
+        var communityIds = results.Where(d => d.CommunityId != null).Select(d => d.CommunityId!).Distinct().ToList();
+        if (communityIds.Count == 0) return;
+        var communities = await communityRepo.GetAllAsync(c => communityIds.Contains(c.Id));
+        var nameById = communities.ToDictionary(c => c.Id, c => c.Name);
+        foreach (var dto in results)
+            if (dto.CommunityId != null && nameById.TryGetValue(dto.CommunityId, out var name))
+                dto.CommunityName = name;
     }
 
     public async Task<IApiResponse<PgPagedResult<CampaignDto>>> GetActiveCampaignsAsync(BaseFilter filter, string memberId, string? communityId = null)
@@ -34,10 +54,14 @@ public class CampaignService(
             var member = await memberRepo.GetByIdAsync(memberId);
             var memberYear = member?.GraduationYear;
 
+            var approvedCommunityIds = string.IsNullOrEmpty(communityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
+
             var result = await campaignRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 c => c.Status == CampaignStatus.Active
-                      && (string.IsNullOrEmpty(communityId) ? c.CommunityId == null : c.CommunityId == communityId)
+                      && (string.IsNullOrEmpty(communityId)
+                          ? (c.CommunityId == null || approvedCommunityIds.Contains(c.CommunityId))
+                          : c.CommunityId == communityId)
                       && (c.YearGroups == null || c.YearGroups.Count == 0 || (memberYear.HasValue && c.YearGroups.Contains(memberYear.Value)))
                       && (!c.IsMembershipCampaign || !c.MembershipYear.HasValue || !memberYear.HasValue || c.MembershipYear.Value >= memberYear.Value)
             );
@@ -50,6 +74,8 @@ public class CampaignService(
                 var year = dto.MembershipYear!.Value;
                 dto.TotalEligibleMembers = await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= year);
             }
+
+            await EnrichCommunityNamesAsync(dtos);
 
             var dtoResult = new PgPagedResult<CampaignDto>
             {
@@ -126,6 +152,45 @@ public class CampaignService(
         {
             logger.LogError(e, "Error retrieving current membership campaign");
             return ApiResponseExtensions.ToServerErrorApiResponse<CampaignDto?>("Failed to retrieve current membership campaign");
+        }
+    }
+
+    public async Task<IApiResponse<List<CampaignUpdateDto>>> GetUpdatesAsync(string campaignId)
+    {
+        try
+        {
+            var updates = await updateRepo.GetAllAsync(u => u.CampaignId == campaignId);
+            var dtos = updates.OrderByDescending(u => u.CreatedAt).Select(u => u.ToDto()).ToList();
+            return dtos.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving updates for campaign {CampaignId}", campaignId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<CampaignUpdateDto>>("Failed to retrieve updates");
+        }
+    }
+
+    public async Task<IApiResponse<List<WallOfSupportEntryDto>>> GetWallOfSupportAsync(string campaignId)
+    {
+        try
+        {
+            var contributions = await contributionRepo.GetAllAsync(
+                c => c.CampaignId == campaignId && c.Status == "Confirmed" && c.ShowOnWallOfSupport);
+            var entries = contributions
+                .Where(c => c.Member is not null)
+                .OrderByDescending(c => c.ConfirmedAt ?? c.CreatedAt)
+                .Select(c => new WallOfSupportEntryDto
+                {
+                    Name = $"{c.Member!.FirstName} {c.Member.LastName}".Trim(),
+                    ContributedAt = c.ConfirmedAt ?? c.CreatedAt,
+                })
+                .ToList();
+            return entries.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving wall of support for campaign {CampaignId}", campaignId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<WallOfSupportEntryDto>>("Failed to retrieve wall of support");
         }
     }
 }

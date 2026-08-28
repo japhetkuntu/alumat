@@ -15,6 +15,7 @@ public class MemberForumService(
     IAlumniPgRepository<ForumThread> threadRepo,
     IAlumniPgRepository<ForumPost> postRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<Community> communityRepo,
     ILogger<MemberForumService> logger) : IMemberForumService
 {
     /// <summary>True if this member is an approved member or leader of the given community.</summary>
@@ -22,6 +23,23 @@ public class MemberForumService(
     {
         var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
         return membership is not null && membership.Status == "Approved";
+    }
+
+    private async Task<List<string>> GetApprovedCommunityIdsAsync(string memberId)
+    {
+        var memberships = await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved");
+        return memberships.Select(m => m.CommunityId).ToList();
+    }
+
+    private async Task EnrichCommunityNamesAsync(IEnumerable<ForumThreadDto> results)
+    {
+        var communityIds = results.Where(d => d.CommunityId != null).Select(d => d.CommunityId!).Distinct().ToList();
+        if (communityIds.Count == 0) return;
+        var communities = await communityRepo.GetAllAsync(c => communityIds.Contains(c.Id));
+        var nameById = communities.ToDictionary(c => c.Id, c => c.Name);
+        foreach (var dto in results)
+            if (dto.CommunityId != null && nameById.TryGetValue(dto.CommunityId, out var name))
+                dto.CommunityName = name;
     }
 
     public async Task<IApiResponse<PgPagedResult<ForumCategoryDto>>> GetCategoriesAsync()
@@ -59,12 +77,16 @@ public class MemberForumService(
             if (!string.IsNullOrEmpty(filter.CommunityId) && !await IsApprovedCommunityMemberAsync(filter.CommunityId, member.Id))
                 return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<ForumThreadDto>>("You must be an approved member of this community to view its forum");
 
+            // No explicit CommunityId means "everything I can see" — institution-wide
+            // plus every community I'm an approved member of — never someone else's community.
+            var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(member.Id) : [];
+
             var result = await threadRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "IsPinned", filter.SortDir ?? "desc",
                 t => !t.IsClosed
-                  // Institution-wide feed (no CommunityId filter) never leaks community threads;
-                  // a CommunityId filter — already membership-checked above — scopes to just that community.
-                  && (string.IsNullOrEmpty(filter.CommunityId) ? t.CommunityId == null : t.CommunityId == filter.CommunityId)
+                  && (string.IsNullOrEmpty(filter.CommunityId)
+                      ? (t.CommunityId == null || approvedCommunityIds.Contains(t.CommunityId))
+                      : t.CommunityId == filter.CommunityId)
                   && (string.IsNullOrEmpty(filter.CategoryId) || t.CategoryId == filter.CategoryId)
                   && (string.IsNullOrEmpty(filter.Search) || t.Title.Contains(filter.Search))
                   && (string.IsNullOrEmpty(filter.Filter)
@@ -84,6 +106,7 @@ public class MemberForumService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(t => t.ToDto()).ToList(),
             };
+            await EnrichCommunityNamesAsync(dtoResult.Results);
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

@@ -17,12 +17,30 @@ public class MemberNewsService(
     IAlumniPgRepository<StaffEntity> adminRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<Community> communityRepo,
     ILogger<MemberNewsService> logger) : IMemberNewsService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
     {
         var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
         return membership is not null && membership.Status == "Approved";
+    }
+
+    private async Task<List<string>> GetApprovedCommunityIdsAsync(string memberId)
+    {
+        var memberships = await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved");
+        return memberships.Select(m => m.CommunityId).ToList();
+    }
+
+    private async Task EnrichCommunityNamesAsync(IEnumerable<NewsPostDto> results)
+    {
+        var communityIds = results.Where(d => d.CommunityId != null).Select(d => d.CommunityId!).Distinct().ToList();
+        if (communityIds.Count == 0) return;
+        var communities = await communityRepo.GetAllAsync(c => communityIds.Contains(c.Id));
+        var nameById = communities.ToDictionary(c => c.Id, c => c.Name);
+        foreach (var dto in results)
+            if (dto.CommunityId != null && nameById.TryGetValue(dto.CommunityId, out var name))
+                dto.CommunityName = name;
     }
 
     public async Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter, string memberId)
@@ -37,10 +55,14 @@ public class MemberNewsService(
             var member = await memberRepo.GetByIdAsync(memberId);
             var memberYear = member?.GraduationYear;
 
+            var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
+
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "PublishedAt", filter.SortDir ?? "desc",
                 p => p.Status == "Published"
-                  && (string.IsNullOrEmpty(filter.CommunityId) ? p.CommunityId == null : p.CommunityId == filter.CommunityId)
+                  && (string.IsNullOrEmpty(filter.CommunityId)
+                      ? (p.CommunityId == null || approvedCommunityIds.Contains(p.CommunityId))
+                      : p.CommunityId == filter.CommunityId)
                   && (p.YearGroups == null || p.YearGroups.Count == 0 || (memberYear.HasValue && p.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Category) || p.Category == filter.Category)
                   && (string.IsNullOrEmpty(filter.Search)
@@ -60,6 +82,7 @@ public class MemberNewsService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(p => p.ToDto()).ToList(),
             };
+            await EnrichCommunityNamesAsync(dtoResult.Results);
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

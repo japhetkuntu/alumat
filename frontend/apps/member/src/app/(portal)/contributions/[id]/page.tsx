@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   CreditCard, Loader2, ArrowLeft, Calendar, Target,
   Users, CheckCircle2, Award, Copy, Check,
-  Share2, ExternalLink, AlertCircle,
+  Share2, ExternalLink, AlertCircle, Megaphone, HeartHandshake,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -16,10 +16,12 @@ import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
+import { UserAvatar } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import {
   getCampaignById, getMyProfile,
   initiatePaystackPayment, renewMembership, getMyContributions,
+  getCampaignUpdates, getWallOfSupport,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
@@ -34,6 +36,7 @@ export default function CampaignDetailPage() {
   const [preset, setPreset]         = useState<number | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [showOnWall, setShowOnWall] = useState(false);
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["campaign", id],
@@ -50,6 +53,16 @@ export default function CampaignDetailPage() {
     queryFn:  getMyProfile,
   });
 
+  const { data: updates = [], isLoading: updatesLoading } = useQuery({
+    queryKey: ["campaign-updates", id],
+    queryFn:  () => getCampaignUpdates(id),
+  });
+
+  const { data: wallOfSupport = [] } = useQuery({
+    queryKey: ["campaign-wall", id],
+    queryFn:  () => getWallOfSupport(id),
+  });
+
   const payMut = useMutation({
     mutationFn: (payAmount: number) => {
       // Built client-side so the Paystack redirect lands back on THIS
@@ -57,7 +70,7 @@ export default function CampaignDetailPage() {
       const callbackUrl = `${window.location.origin}/contributions/callback`;
       return campaign?.isMembershipCampaign
         ? renewMembership(id, 1, "online", callbackUrl)
-        : initiatePaystackPayment({ campaignId: id, amount: payAmount, callbackUrl });
+        : initiatePaystackPayment({ campaignId: id, amount: payAmount, callbackUrl, showOnWallOfSupport: showOnWall });
     },
     onSuccess: (data: { authorizationUrl?: string }) => {
       if (data?.authorizationUrl) {
@@ -220,6 +233,63 @@ export default function CampaignDetailPage() {
               {campaign.description || `No details have been provided for this ${isMembership ? "membership dues item" : "fundraiser"} yet. Please contact the alumni office for more information.`}
             </p>
           </div>
+
+          {/* Updates — closes the loop on what the money actually did */}
+          {!isMembership && (
+            <div>
+              <h2
+                className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b flex items-center gap-2"
+                style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+              >
+                <Megaphone size={17} style={{ color: "var(--primary)" }} /> Updates
+              </h2>
+              {updatesLoading ? (
+                <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Loading updates…</p>
+              ) : updates.length === 0 ? (
+                <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  No updates yet — the alumni office will post progress here as this fundraiser moves forward.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {updates.map((u) => (
+                    <div key={u.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {u.imageUrl && (
+                        <img src={u.imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 280 }} />
+                      )}
+                      <div className="p-4">
+                        <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: "0.925rem", color: "var(--foreground)" }}>
+                          {u.body}
+                        </p>
+                        <p className="text-[12px] mt-2" style={{ color: "var(--muted-foreground)" }}>
+                          {u.postedByName ? `${u.postedByName} · ` : ""}{formatDate(u.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Wall of support — opt-in names only, never amounts */}
+          {!isMembership && wallOfSupport.length > 0 && (
+            <div>
+              <h2
+                className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b flex items-center gap-2"
+                style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
+              >
+                <HeartHandshake size={17} style={{ color: "var(--primary)" }} /> Wall of support
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {wallOfSupport.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-full pr-3 pl-1.5 py-1.5 border" style={{ borderColor: "var(--border)" }}>
+                    <UserAvatar name={entry.name} size="sm" />
+                    <span className="text-[13px] font-medium" style={{ color: "var(--foreground)" }}>{entry.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Share link */}
           <div
@@ -401,6 +471,22 @@ export default function CampaignDetailPage() {
                     placeholder={`Min. ${formatCurrency(campaign.amountPerMember)}`}
                   />
                 </div>
+              )}
+
+              {/* Wall of support opt-in — off by default; amounts are never shown regardless */}
+              {!isMembership && isActive && (
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showOnWall}
+                    onChange={(e) => setShowOnWall(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-input shrink-0"
+                  />
+                  <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
+                    Show my name on this fundraiser&apos;s wall of support
+                    <span className="block text-[11px] mt-0.5 opacity-75">Only your name — never the amount you gave.</span>
+                  </span>
+                </label>
               )}
 
               {/* Pay button */}

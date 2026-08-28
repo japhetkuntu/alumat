@@ -333,6 +333,7 @@ public class ContributionService : IContributionService
                 CreatedBy = string.IsNullOrEmpty(memberId) ? "anonymous" : memberId,
                 IsGuestPayment = isGuestPayment,
                 SharedByMemberId = sharedByMemberId,
+                ShowOnWallOfSupport = request.ShowOnWallOfSupport,
                 PlatformFeeAmount = charge.platformFee,
                 GatewayFeeAmount = charge.gatewayFee,
                 TransactionChargeAmount = charge.transactionChargeAmount,
@@ -739,6 +740,7 @@ public class ContributionService : IContributionService
                     GrossChargeAmount = transaction.GrossChargeAmount,
                     IsGuestPayment = transaction.IsGuestPayment,
                     SharedByMemberId = transaction.SharedByMemberId,
+                    ShowOnWallOfSupport = transaction.ShowOnWallOfSupport,
                 };
 
                 await contributionRepo.AddAsync(contribution);

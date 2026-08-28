@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Newspaper, Calendar, Pin } from "lucide-react";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -12,6 +13,8 @@ import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import Link from "next/link";
 import { cn } from "@alumni/ui";
+import { SourceBadge } from "@/components/member/source-badge";
+import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 const CATEGORIES = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity"];
 
@@ -20,13 +23,15 @@ function CategoryPill({ category }: { category: string }) {
 }
 
 export default function MemberNewsPage() {
+  const searchParams = useSearchParams();
   const [category, setCategory] = useState("");
+  const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const [page,     setPage]     = useState(1);
   const pageSize = 20;
 
   const { data, isLoading } = useQuery({
-    queryKey:        ["m-news", category, page],
-    queryFn:         () => getNewsPosts(page, pageSize, category || undefined),
+    queryKey:        ["m-news", category, communityId, page],
+    queryFn:         () => getNewsPosts(page, pageSize, category || undefined, undefined, communityId || undefined),
     placeholderData: (prev) => prev,
   });
 
@@ -58,6 +63,8 @@ export default function MemberNewsPage() {
           );
         })}
       </div>
+
+      <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
 
       {/* ── Grid ── */}
       {isLoading ? (
@@ -129,6 +136,7 @@ export default function MemberNewsPage() {
 
               {/* Body */}
               <div className="flex flex-col flex-1 p-4 gap-3">
+                <SourceBadge communityId={p.communityId} communityName={p.communityName} className="self-start" />
                 <h3
                   className="text-[14.5px] font-semibold leading-snug line-clamp-3 transition-colors duration-200 group-hover:text-primary"
                   style={{ color: "var(--foreground)" }}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Download, Link2, FileText, FolderOpen, ExternalLink, ArrowRight, X } from "lucide-react";
 import { Pagination } from "@alumni/ui";
@@ -15,6 +16,8 @@ import { getResources, trackResourceDownload } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
+import { SourceBadge } from "@/components/member/source-badge";
+import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 const categories = ["All", "Career", "Professional", "Scholarship", "Technical", "General", "Other"];
 
@@ -28,16 +31,18 @@ const categoryColor: Record<string, string> = {
 };
 
 export default function MemberResourcesPage() {
+  const searchParams = useSearchParams();
   const [categoryFilter, setCategoryFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [addedAfter, setAddedAfter] = useState("");
   const [addedBefore, setAddedBefore] = useState("");
   const [search, setSearch] = useState("");
+  const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const [page, setPage] = useState(1);
   const pageSize = 18;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["m-resources", categoryFilter, typeFilter, addedAfter, addedBefore, search, page],
+    queryKey: ["m-resources", categoryFilter, typeFilter, addedAfter, addedBefore, search, communityId, page],
     queryFn: () => getResources(
       page,
       pageSize,
@@ -46,6 +51,7 @@ export default function MemberResourcesPage() {
       typeFilter || undefined,
       addedAfter || undefined,
       addedBefore || undefined,
+      communityId || undefined,
     ),
     placeholderData: (prev) => prev,
   });
@@ -160,6 +166,8 @@ export default function MemberResourcesPage() {
             </button>
           )}
         </div>
+
+        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
 
       {isLoading ? (
@@ -210,6 +218,7 @@ export default function MemberResourcesPage() {
 
                 <CardContent className="flex-1 flex flex-col p-5 space-y-4">
                   <div className="flex-1 space-y-1">
+                    <SourceBadge communityId={r.communityId} communityName={r.communityName} className="mb-1.5" />
                     <h3 className="font-[family-name:var(--font-display)] text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-2">{r.title}</h3>
                     {r.description && (
                       <p className="text-[12px] text-muted-foreground line-clamp-2">{r.description}</p>
