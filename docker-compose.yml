@@ -125,6 +125,8 @@ services:
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
+      BearerTokenConfig__AccessTokenLifetime: ${JWT_ACCESS_TOKEN_LIFETIME_HOURS:-8}
+      BearerTokenConfig__RefreshTokenLifetime: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-30}
       MailtrapConfig__ApiKey: ${MAILTRAP_API_KEY}
       MailtrapConfig__DefaultMessageSource__Name: ${MAIL_SENDER_NAME}
       MailtrapConfig__DefaultMessageSource__Email: ${MAIL_SENDER_EMAIL}
@@ -169,6 +171,8 @@ services:
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
+      BearerTokenConfig__AccessTokenLifetime: ${JWT_ACCESS_TOKEN_LIFETIME_HOURS:-8}
+      BearerTokenConfig__RefreshTokenLifetime: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-30}
       PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY}
       PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY}
       PaystackConfig__CallbackUrl: ${PAYSTACK_CALLBACK_URL}
@@ -220,6 +224,8 @@ services:
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__PlatformSigningKey: ${PLATFORM_SIGNING_KEY}
+      BearerTokenConfig__AccessTokenLifetime: ${JWT_ACCESS_TOKEN_LIFETIME_HOURS:-8}
+      BearerTokenConfig__RefreshTokenLifetime: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-30}
       StorageConfig__AccessKey: ${STORAGE_ACCESS_KEY}
       StorageConfig__SecretKey: ${STORAGE_SECRET_KEY}
       StorageConfig__BucketName: ${STORAGE_BUCKET}

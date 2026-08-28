@@ -203,40 +203,41 @@ export default function MemberForumPage() {
           ))}
         </div>
 
-        {/* Category filter */}
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => { setSelectedCategory(""); setThreadPage(1); }}
-              className={cn(
-                "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
-                selectedCategory === "" ? "text-white border-transparent" : "border-border hover:border-primary/40",
-              )}
-              style={selectedCategory === ""
-                ? { background: "var(--primary)", color: "white" }
-                : { background: "var(--background)", color: "var(--muted-foreground)" }}
-            >
-              All categories
-            </button>
-            {categories.map(c => (
+        {/* Category + source filter */}
+        <div className="flex flex-wrap gap-2">
+          {categories.length > 0 && (
+            <>
               <button
-                key={c.id}
-                onClick={() => { setSelectedCategory(c.id); setThreadPage(1); }}
+                onClick={() => { setSelectedCategory(""); setThreadPage(1); }}
                 className={cn(
                   "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
-                  selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                  selectedCategory === "" ? "text-white border-transparent" : "border-border hover:border-primary/40",
                 )}
-                style={selectedCategory === c.id
+                style={selectedCategory === ""
                   ? { background: "var(--primary)", color: "white" }
                   : { background: "var(--background)", color: "var(--muted-foreground)" }}
               >
-                {c.name}
+                All categories
               </button>
-            ))}
-          </div>
-        )}
-
-        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setThreadPage(1); }} />
+              {categories.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => { setSelectedCategory(c.id); setThreadPage(1); }}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors",
+                    selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                  )}
+                  style={selectedCategory === c.id
+                    ? { background: "var(--primary)", color: "white" }
+                    : { background: "var(--background)", color: "var(--muted-foreground)" }}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </>
+          )}
+          <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setThreadPage(1); }} />
+        </div>
       </div>
 
       {/* ── Thread list ── */}

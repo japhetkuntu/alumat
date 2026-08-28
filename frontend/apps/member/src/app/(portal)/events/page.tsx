@@ -110,9 +110,8 @@ export default function MemberEventsPage() {
             {f.label}
           </button>
         ))}
+        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
-
-      <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
 
       {/* ── Grid ── */}
       {isLoading ? (

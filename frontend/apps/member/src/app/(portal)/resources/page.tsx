@@ -165,9 +165,8 @@ export default function MemberResourcesPage() {
               <X size={11} /> Clear filters
             </button>
           )}
+          <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
         </div>
-
-        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
 
       {isLoading ? (

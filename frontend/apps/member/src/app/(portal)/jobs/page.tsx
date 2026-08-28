@@ -90,6 +90,7 @@ export default function MemberJobsPage() {
               {t === "" ? "All" : t}
             </button>
           ))}
+          <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
           {hasFilters && (
             <button
               onClick={clearFilters}
@@ -100,8 +101,6 @@ export default function MemberJobsPage() {
             </button>
           )}
         </div>
-
-        <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
 
       {/* ── Grid ── */}

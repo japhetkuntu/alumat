@@ -532,7 +532,9 @@ export default function MemberContributionsPage() {
           Active fundraisers &amp; dues
         </h2>
 
-        <SourceFilterChips value={communityId} onChange={setCommunityId} />
+        <div className="flex flex-wrap items-center gap-2">
+          <SourceFilterChips value={communityId} onChange={setCommunityId} divider={false} />
+        </div>
 
         {activeCampaigns.length > 0 && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
