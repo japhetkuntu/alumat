@@ -16,6 +16,8 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 /// </summary>
 public class SupportTicketService(
     IAlumniPgRepository<SupportCase> supportRepo,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
+    IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
     ICurrentTenantService currentTenant,
     ILogger<SupportTicketService> logger) : ISupportTicketService
 {
@@ -53,6 +55,26 @@ public class SupportTicketService(
             };
             await supportRepo.AddAsync(ticket);
             logger.LogInformation("Support ticket {TicketId} created by admin {AdminId} for institution {InstitutionId}", ticket.Id, admin.Id, currentTenant.InstitutionId);
+
+            // Let the platform team know a new ticket needs attention — one row
+            // per active staff member so each person's read state is their own.
+            var staff = (await platformStaffRepo.GetAllAsync(s => !s.IsDisabled && (s.Role == "SuperAdmin" || s.Role == "Support"))).ToList();
+            if (staff.Count > 0)
+            {
+                var notifications = staff.Select(s => new PlatformNotification
+                {
+                    RecipientStaffId = s.Id,
+                    Title = "New support ticket",
+                    Body = $"\"{ticket.Subject}\" ({ticket.Severity}) — from {admin.Name}.",
+                    Type = "SupportTicketOpened",
+                    RelatedEntityId = ticket.Id,
+                    RelatedEntityType = "SupportCase",
+                    ActionUrl = "/support",
+                    CreatedBy = admin.Id,
+                }).ToList();
+                await platformNotificationRepo.AddRangeAsync(notifications);
+            }
+
             return ToDto(ticket).ToCreatedApiResponse("Support ticket submitted");
         }
         catch (Exception e)

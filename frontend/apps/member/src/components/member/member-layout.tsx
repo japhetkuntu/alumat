@@ -30,6 +30,7 @@ import {
   UsersRound,
   Globe,
   CalendarDays,
+  ShoppingBag,
 } from "lucide-react";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -47,6 +48,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     section: "Give",
     items: [
       { href: "/contributions", label: "Give", icon: CreditCard },
+      { href: "/store", label: "Store", icon: ShoppingBag },
     ],
   },
   {
@@ -89,6 +91,7 @@ const navItems = navGroups.flatMap((g) => g.items);
 // listed here are core plumbing and can never be disabled.
 const NAV_FEATURE_KEYS: Record<string, string> = {
   "/contributions": "Contributions",
+  "/store": "Store",
   "/jobs": "Jobs",
   "/events": "Events",
   "/directory": "Directory",

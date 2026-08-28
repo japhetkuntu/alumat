@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
-  Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight,
+  Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight, LifeBuoy,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -19,17 +19,19 @@ import { toast } from "sonner";
 import { handleApiError } from "@/lib/api-client";
 import Link from "next/link";
 
-const TYPE_META: Record<string, { color: string; label: string }> = {
-  PaymentReceived:      { color: "bg-success", label: "Payment" },
-  ContributionConfirmed:{ color: "bg-blue-500",    label: "Confirmed" },
-  ContributionRejected: { color: "bg-red-500",     label: "Rejected" },
+const TYPE_META: Record<string, { color: string; label: string; icon: React.ElementType }> = {
+  PaymentReceived:       { color: "bg-success",  label: "Payment",   icon: CreditCard },
+  ContributionConfirmed: { color: "bg-blue-500", label: "Confirmed", icon: CreditCard },
+  ContributionRejected:  { color: "bg-red-500",  label: "Rejected",  icon: CreditCard },
+  SupportTicketResolved: { color: "bg-primary",  label: "Support",   icon: LifeBuoy },
 };
 
 function NotifIcon({ type }: { type: string }) {
-  const meta = TYPE_META[type] ?? { color: "bg-primary", label: "Notification" };
+  const meta = TYPE_META[type] ?? { color: "bg-primary", label: "Notification", icon: CreditCard };
+  const Icon = meta.icon;
   return (
     <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0", meta.color)}>
-      <CreditCard size={16} />
+      <Icon size={16} />
     </div>
   );
 }
@@ -43,11 +45,27 @@ function NotifRow({
   onMarkRead: (id: string) => void;
   isPending: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const meta = TYPE_META[notif.type] ?? { label: "Notification" };
+
+  // A notification with a real destination navigates there on click; one
+  // without a destination expands its full body in place instead of being
+  // permanently clipped to two lines.
+  const toggle = () => {
+    if (notif.actionUrl) return;
+    setExpanded((v) => !v);
+    if (!notif.isRead) onMarkRead(notif.id);
+  };
+
   const content = (
     <div
+      role={notif.actionUrl ? undefined : "button"}
+      tabIndex={notif.actionUrl ? undefined : 0}
+      onClick={toggle}
+      onKeyDown={(e) => { if (!notif.actionUrl && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
       className={cn(
         "group flex items-start gap-4 px-4 sm:px-6 py-4 transition-colors border-b border-border/30 last:border-0",
+        !notif.actionUrl && "cursor-pointer",
         !notif.isRead ? "bg-primary/[0.03] hover:bg-primary/[0.06]" : "hover:bg-muted/40",
       )}
     >
@@ -70,14 +88,14 @@ function NotifRow({
         <p className={cn("text-[14px] leading-snug mt-1", !notif.isRead && "font-semibold text-foreground")}>
           {notif.title}
         </p>
-        <p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
+        <p className={cn("text-[13px] text-muted-foreground leading-relaxed mt-0.5", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
       </div>
 
       {!notif.isRead && (
         <button
-          onClick={(e) => { e.preventDefault(); onMarkRead(notif.id); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMarkRead(notif.id); }}
           disabled={isPending}
           className="opacity-0 group-hover:opacity-100 shrink-0 p-2 rounded-lg hover:bg-primary/10 text-primary transition-all"
           title="Mark as read"

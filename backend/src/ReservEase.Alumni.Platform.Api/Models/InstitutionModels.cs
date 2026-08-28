@@ -62,7 +62,7 @@ public record InstitutionDetailResponse(
     string? MemberPortalTitle, string? MemberAuthHeadline, string? MemberAuthSubtext,
     bool RequireStudentId, string MemberActivePolicy, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
-    string? HeroImageUrl, string? HeroHeadline,
+    List<string> HeroImageUrls, string? HeroHeadline,
     string Status, int MemberCount,
     DateTime OnboardedAt, DateTime? TrialEndsAt,
     decimal PlatformFeePercentage, string? PaystackSubaccountCode,
@@ -128,7 +128,7 @@ public class UpdateInstitutionLandingContentRequest
 {
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
     public NewsBanner? NewsBanner { get; set; }
-    public string? HeroImageUrl { get; set; }
+    public List<string> HeroImageUrls { get; set; } = [];
     public string? HeroHeadline { get; set; }
 }
 
@@ -156,6 +156,19 @@ public class UpdateInstitutionPaymentsRequest
 public record InstitutionRevenueResponse(
     string InstitutionId, decimal GrossCollected, decimal PlatformFeeTotal,
     decimal NetToInstitution, int ConfirmedPaymentCount);
+
+/// <summary>
+/// One payment record, normalized across both payment sources (Contributions
+/// and Store orders) so platform support staff can see everything an
+/// institution has collected — every status, not just Confirmed — in one
+/// place to help troubleshoot a member's payment issue.
+/// </summary>
+public record PlatformPaymentDto(
+    string Id, string Source, // "Contribution" | "StoreOrder"
+    string InstitutionId,
+    string? PayerName, string? PayerEmail, string Description,
+    decimal Amount, string Status, string PaymentMethod, string? TransactionRef,
+    DateTime CreatedAt, DateTime? ConfirmedAt);
 
 public record FeatureCatalogItem(string Key, string Label, string Description);
 

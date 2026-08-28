@@ -922,7 +922,7 @@ public class ContributionService : IContributionService
                 var arrearsYears = unpaidPastCampaigns
                     .Where(c => c.MembershipYear.HasValue)
                     .Select(c => c.MembershipYear!.Value)
-                    .OrderBy(y => y)
+                    .OrderByDescending(y => y)
                     .ToList();
 
                 var active = MembershipActivityCalculator.ResolveActive(memberActivePolicy, m.Status, isCurrentYearPaid);

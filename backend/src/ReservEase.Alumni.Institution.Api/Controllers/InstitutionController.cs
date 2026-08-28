@@ -54,7 +54,7 @@ public class InstitutionController(
 
         institution.LandingPageStories = request.LandingPageStories;
         institution.NewsBanner = request.NewsBanner;
-        institution.HeroImageUrl = request.HeroImageUrl;
+        institution.HeroImageUrls = request.HeroImageUrls;
         institution.HeroHeadline = request.HeroHeadline;
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
@@ -113,7 +113,7 @@ public class InstitutionController(
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
-            i.HeroImageUrl, i.HeroHeadline,
+            i.HeroImageUrls, i.HeroHeadline,
             i.Status, memberPortalUrl);
     }
 }

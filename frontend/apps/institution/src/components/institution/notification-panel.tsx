@@ -56,10 +56,21 @@ function NotificationRow({
   notif: NotificationItem;
   onMarkRead: (id: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggle = () => {
+    setExpanded((v) => !v);
+    if (!notif.isRead) onMarkRead(notif.id);
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={toggle}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       className={cn(
-        "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-default group",
+        "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
         !notif.isRead && "bg-primary/5"
       )}
     >
@@ -75,7 +86,7 @@ function NotificationRow({
         <p className={cn("text-[13px] leading-snug", !notif.isRead && "font-semibold")}>
           {notif.title}
         </p>
-        <p className="text-[12px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">
+        <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
         <p className="text-[10px] text-muted-foreground/60 mt-1">
@@ -84,7 +95,7 @@ function NotificationRow({
       </div>
       {!notif.isRead && (
         <button
-          onClick={() => onMarkRead(notif.id)}
+          onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
           className="opacity-0 group-hover:opacity-100 shrink-0 mt-1 p-1 rounded hover:bg-primary/10 text-primary transition-all"
           aria-label="Mark as read"
         >

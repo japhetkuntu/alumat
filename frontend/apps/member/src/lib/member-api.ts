@@ -1,5 +1,5 @@
 import { memberClient, publicMemberClient } from "@/lib/api-client";
-import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference, NotificationItem } from "@/types";
+import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder } from "@/types";
 
 function toFormData(data: object): FormData {
   const fd = new FormData();
@@ -628,4 +628,48 @@ export async function markNotificationRead(id: string): Promise<void> {
 
 export async function markAllNotificationsRead(): Promise<void> {
   await memberClient.put("/notifications/read-all");
+}
+
+// ── Store ────────────────────────────────────────────────────────────────────
+
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface StoreCheckoutResponse {
+  authorizationUrl?: string | null;
+  reference: string;
+}
+
+export interface StoreOrderStatusResponse {
+  reference: string;
+  status: string;
+  amount?: number;
+  message: string;
+}
+
+export async function getStoreProducts(page = 1, pageSize = 20): Promise<PagedResult<StoreProduct>> {
+  const res = await memberClient.get("/store/products", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+export async function getStoreProduct(id: string): Promise<StoreProduct> {
+  const res = await memberClient.get(`/store/products/${id}`);
+  return res.data.data!;
+}
+
+export async function checkoutStoreCart(items: CartItem[], callbackUrl?: string): Promise<StoreCheckoutResponse> {
+  const res = await memberClient.post("/store/checkout", { items, callbackUrl });
+  return res.data.data!;
+}
+
+export async function getStoreOrderStatus(reference: string): Promise<StoreOrderStatusResponse> {
+  const res = await memberClient.get(`/store/orders/${reference}/status`);
+  return res.data.data!;
+}
+
+export async function getMyStoreOrders(page = 1, pageSize = 20): Promise<PagedResult<StoreOrder>> {
+  const res = await memberClient.get("/store/orders", { params: { page, pageSize } });
+  return res.data.data!;
 }

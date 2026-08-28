@@ -47,7 +47,7 @@ public class PublicController : DefaultController
             institution.DisabledFeatures,
             institution.LandingPageStories,
             institution.NewsBanner,
-            institution.HeroImageUrl,
+            institution.HeroImageUrls,
             institution.HeroHeadline);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });

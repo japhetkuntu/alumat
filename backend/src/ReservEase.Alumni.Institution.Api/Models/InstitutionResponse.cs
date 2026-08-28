@@ -25,7 +25,7 @@ public record InstitutionResponse(
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
-    string? HeroImageUrl,
+    List<string> HeroImageUrls,
     string? HeroHeadline,
     string Status,
     // Shareable Member Portal URL for this institution — null if MemberPortalBaseDomain isn't configured.
@@ -41,7 +41,7 @@ public class UpdateLandingContentRequest
 {
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
     public NewsBanner? NewsBanner { get; set; }
-    public string? HeroImageUrl { get; set; }
+    public List<string> HeroImageUrls { get; set; } = [];
     public string? HeroHeadline { get; set; }
 }
 

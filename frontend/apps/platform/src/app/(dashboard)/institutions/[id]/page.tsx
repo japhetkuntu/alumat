@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Copy, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, X } from "lucide-react";
 import { notFound, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import { Textarea } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
+import { Pagination } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
@@ -23,7 +24,7 @@ import { formatCurrency } from "@alumni/ui";
 import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionMemberPolicy,
   updateInstitutionFeatures, getFeatureCatalog,
-  updateInstitutionPayments, getInstitutionRevenue,
+  updateInstitutionPayments, getInstitutionRevenue, getInstitutionPayments, type PlatformPayment,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   uploadPlatformImage,
   getInstitutionStaff, inviteInstitutionStaff, setInstitutionStaffDisabled,
@@ -79,6 +80,54 @@ function ImageUrlField({ label, hint, value, onChange, placeholder, institutionS
   );
 }
 
+/** Like ImageUrlField, but for a list of hero photos shown as a carousel — upload adds a new item instead of replacing the one value. */
+function HeroImagesField({ urls, onChange, institutionSlug }: {
+  urls: string[]; onChange: (urls: string[]) => void; institutionSlug?: string;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => uploadPlatformImage(file, institutionSlug),
+    onSuccess: (url) => { onChange([...urls, url]); toast.success("Image uploaded"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  return (
+    <div className="space-y-2">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) uploadMutation.mutate(file);
+          e.target.value = "";
+        }}
+      />
+      {urls.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {urls.map((url, i) => (
+            <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted/30">
+              <img src={url} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => onChange(urls.filter((_, idx) => idx !== i))}
+                aria-label="Remove image"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+        {uploadMutation.isPending ? "Uploading…" : "Add photo"}
+      </Button>
+    </div>
+  );
+}
+
 export default function InstitutionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -93,6 +142,14 @@ export default function InstitutionDetailPage() {
   const { data: revenue } = useQuery({
     queryKey: ["institution-revenue", id],
     queryFn: () => getInstitutionRevenue(id),
+    enabled: tab === "Payments",
+  });
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [paymentsSource, setPaymentsSource] = useState("");
+  const [paymentsStatus, setPaymentsStatus] = useState("");
+  const { data: paymentsList, isLoading: paymentsListLoading } = useQuery({
+    queryKey: ["institution-payments", id, paymentsPage, paymentsSource, paymentsStatus],
+    queryFn: () => getInstitutionPayments(id, paymentsPage, 20, paymentsStatus || undefined, paymentsSource || undefined),
     enabled: tab === "Payments",
   });
   const { data: staff = [], isLoading: staffLoading } = useQuery({
@@ -237,11 +294,11 @@ export default function InstitutionDetailPage() {
 
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
-  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroImageUrls, setHeroImageUrls] = useState<string[] | null>(null);
   const [heroHeadline, setHeroHeadline] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
   const contentMutation = useMutation({
-    mutationFn: () => updateInstitutionLandingContent(id, stories ?? [], banner?.enabled ? banner : null, heroImageUrl || undefined, heroHeadline || undefined),
+    mutationFn: () => updateInstitutionLandingContent(id, stories ?? [], banner?.enabled ? banner : null, heroImageUrls ?? [], heroHeadline || undefined),
     onSuccess: () => {
       toast.success("Landing content updated");
       invalidate();
@@ -299,8 +356,8 @@ export default function InstitutionDetailPage() {
   if (banner === null) {
     setBanner(inst.newsBanner ?? EMPTY_BANNER);
   }
-  if (heroImageUrl === null) {
-    setHeroImageUrl(inst.heroImageUrl ?? "");
+  if (heroImageUrls === null) {
+    setHeroImageUrls(inst.heroImageUrls ?? []);
   }
   if (heroHeadline === null) {
     setHeroHeadline(inst.heroHeadline ?? "");
@@ -640,17 +697,18 @@ export default function InstitutionDetailPage() {
           <Card>
             <div className="px-5 py-4 border-b border-border">
               <p className="text-[14px] font-semibold">Hero photo</p>
-              <p className="text-[12px] text-muted-foreground mt-0.5">The large photo and headline at the top of the Member Portal landing page. This institution&apos;s own admins can also edit this.</p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">The photo(s) and headline at the top of the Member Portal landing page. Add more than one to show a carousel. This institution&apos;s own admins can also edit this.</p>
             </div>
             <CardContent className="p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ImageUrlField
-                  label="Hero photo"
-                  value={heroImageUrl ?? ""}
-                  onChange={setHeroImageUrl}
-                  placeholder="https://…"
-                  institutionSlug={inst.slug}
-                />
+                <div className="space-y-1.5">
+                  <Label>Hero photos</Label>
+                  <HeroImagesField
+                    urls={heroImageUrls ?? []}
+                    onChange={setHeroImageUrls}
+                    institutionSlug={inst.slug}
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <Label>Headline</Label>
                   <Textarea rows={3} value={heroHeadline ?? ""} onChange={(e) => setHeroHeadline(e.target.value)} placeholder="One network. Every graduate, wherever they are." />
@@ -870,6 +928,83 @@ export default function InstitutionDetailPage() {
           <Button onClick={() => paymentsMutation.mutate()} disabled={paymentsMutation.isPending}>
             {paymentsMutation.isPending ? "Saving…" : "Save payments"}
           </Button>
+
+          <Card>
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-[14px] font-semibold">All payments</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Every Contribution and Store order this institution has collected — every status — for troubleshooting.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <FormSelect
+                  value={paymentsSource || "All"}
+                  onValueChange={(v) => { setPaymentsSource(v === "All" ? "" : v); setPaymentsPage(1); }}
+                  options={[
+                    { value: "All", label: "All sources" },
+                    { value: "Contribution", label: "Contributions" },
+                    { value: "StoreOrder", label: "Store orders" },
+                  ]}
+                  className="w-[150px]"
+                />
+                <FormSelect
+                  value={paymentsStatus || "All"}
+                  onValueChange={(v) => { setPaymentsStatus(v === "All" ? "" : v); setPaymentsPage(1); }}
+                  options={[
+                    { value: "All", label: "All statuses" },
+                    { value: "Confirmed", label: "Confirmed" },
+                    { value: "Pending", label: "Pending" },
+                    { value: "Failed", label: "Failed" },
+                    { value: "Rejected", label: "Rejected" },
+                  ]}
+                  className="w-[140px]"
+                />
+              </div>
+            </div>
+            <CardContent className="p-0">
+              {paymentsListLoading ? (
+                <div className="p-5 text-[13px] text-muted-foreground">Loading…</div>
+              ) : !paymentsList || paymentsList.results.length === 0 ? (
+                <div className="p-5 text-[13px] text-muted-foreground">No payments match this filter.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[13px]">
+                    <thead>
+                      <tr className="border-b border-border text-left text-[11.5px] text-muted-foreground uppercase tracking-wide">
+                        <th className="px-5 py-2.5 font-semibold">Payer</th>
+                        <th className="px-5 py-2.5 font-semibold">Description</th>
+                        <th className="px-5 py-2.5 font-semibold">Source</th>
+                        <th className="px-5 py-2.5 font-semibold">Amount</th>
+                        <th className="px-5 py-2.5 font-semibold">Status</th>
+                        <th className="px-5 py-2.5 font-semibold">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paymentsList.results.map((p: PlatformPayment) => (
+                        <tr key={p.id} className="border-b border-border/60 last:border-0">
+                          <td className="px-5 py-3">
+                            <p className="font-medium">{p.payerName ?? "—"}</p>
+                            <p className="text-[11.5px] text-muted-foreground">{p.payerEmail}</p>
+                          </td>
+                          <td className="px-5 py-3">{p.description}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : "Store order"}</td>
+                          <td className="px-5 py-3 font-semibold">{formatCurrency(p.amount, "GHS")}</td>
+                          <td className="px-5 py-3">
+                            <Badge variant={p.status === "Confirmed" ? "success" : p.status === "Pending" ? "warning" : "destructive"} size="sm">{p.status}</Badge>
+                          </td>
+                          <td className="px-5 py-3 text-muted-foreground">{formatDate(p.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+            {paymentsList && paymentsList.totalPages > 1 && (
+              <div className="p-4 border-t border-border">
+                <Pagination page={paymentsPage} totalPages={paymentsList.totalPages} onPageChange={setPaymentsPage} />
+              </div>
+            )}
+          </Card>
         </div>
       )}
 

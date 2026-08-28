@@ -83,10 +83,24 @@ function NotifRow({
   const meta = TYPE_META[notif.type] ?? DEFAULT_META;
   const path = toPath(notif.actionUrl);
   const time = relativeTime(notif.createdAt);
+  const [expanded, setExpanded] = useState(false);
+
+  // A notification with a real destination navigates there on click; one
+  // without a destination expands its full body in place instead of being
+  // permanently clipped to two lines.
+  const toggle = () => {
+    if (path) return;
+    setExpanded((v) => !v);
+    if (!notif.isRead) onMarkRead(notif.id);
+  };
 
   const inner = (
     <div
-      className="flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b transition-colors"
+      role={path ? undefined : "button"}
+      tabIndex={path ? undefined : 0}
+      onClick={toggle}
+      onKeyDown={(e) => { if (!path && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
+      className={cn("flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b transition-colors", !path && "cursor-pointer")}
       style={{
         borderColor: "var(--border)",
         background: notif.isRead ? "var(--background)" : "var(--color-background-info)",
@@ -122,7 +136,7 @@ function NotifRow({
 
         {/* Body */}
         {notif.body && (
-          <p className="text-[13px] leading-relaxed mt-0.5 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
+          <p className={cn("text-[13px] leading-relaxed mt-0.5", !expanded && "line-clamp-2")} style={{ color: "var(--muted-foreground)" }}>
             {notif.body}
           </p>
         )}
@@ -130,7 +144,7 @@ function NotifRow({
         {/* Mark read — always visible, not hover-only */}
         {!notif.isRead && (
           <button
-            onClick={e => { e.preventDefault(); onMarkRead(notif.id); }}
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onMarkRead(notif.id); }}
             disabled={isPending}
             className="flex items-center gap-1 mt-2 text-[12px] font-semibold transition-opacity hover:opacity-70"
             style={{ color: "var(--primary)" }}

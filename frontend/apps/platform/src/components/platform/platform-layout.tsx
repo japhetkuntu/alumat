@@ -12,7 +12,6 @@ import {
   ClipboardList,
   Settings,
   Menu,
-  Bell,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -21,6 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { getInitials } from "@alumni/ui";
+import { NotificationPanel } from "./notification-panel";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -122,7 +122,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 bg-background relative">
         <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <Bell size={18} className="text-muted-foreground" />
+            <NotificationPanel />
             <span className="text-[13px] font-semibold">
               {user?.name ?? "Platform staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
             </span>
@@ -136,7 +136,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <span className="font-bold text-[15px] tracking-tight">Platform Portal</span>
           </div>
-          <Bell size={18} className="text-muted-foreground" />
+          <NotificationPanel />
         </div>
 
         <main className="flex-1 overflow-y-auto bg-background relative">

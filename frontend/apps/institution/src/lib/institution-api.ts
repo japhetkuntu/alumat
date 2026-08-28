@@ -21,6 +21,8 @@ import type {
   UpdateInstitutionStaffRequest,
   Spotlight,
   NotificationItem,
+  StoreProduct,
+  StoreOrder,
 } from "@/types";
 
 /**
@@ -133,8 +135,8 @@ export interface InstitutionProfileResponse {
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
-  /** Overrides the Member Portal landing page's hero photo — falls back to generic stock art when unset. */
-  heroImageUrl?: string | null;
+  /** Overrides the Member Portal landing page's hero photo(s), shown as a carousel — falls back to generic stock art when empty. */
+  heroImageUrls: string[];
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
   /** Shareable Member Portal URL for this institution — null if the backend has no MemberPortalBaseDomain configured. */
@@ -154,10 +156,10 @@ export async function getInstitutionProfile(): Promise<InstitutionProfileRespons
 export async function updateLandingContent(
   landingPageStories: LandingPageStory[],
   newsBanner: NewsBanner | null,
-  heroImageUrl?: string | null,
+  heroImageUrls: string[],
   heroHeadline?: string | null,
 ): Promise<InstitutionProfileResponse> {
-  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/landing-content", { landingPageStories, newsBanner, heroImageUrl, heroHeadline });
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/landing-content", { landingPageStories, newsBanner, heroImageUrls, heroHeadline });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -839,6 +841,81 @@ export async function updateResource(id: string, body: UpdateResourceBody) {
   const res = await institutionClient.put<ApiResponse<Resource>>(`/resources/${id}`, toFormData(body), {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  return res.data.data!;
+}
+
+// ─── Store (SuperAdmin only) ────────────────────────────────────────────────
+
+export interface CreateStoreProductBody {
+  name: string;
+  description?: string;
+  price: number;
+  quantityAvailable: number;
+  deliveryInfo?: string;
+  status: string;
+  images?: File[];
+}
+
+export interface UpdateStoreProductBody {
+  name: string;
+  description?: string;
+  price: number;
+  quantityAvailable: number;
+  deliveryInfo?: string;
+  status: string;
+  images?: File[];
+  existingImageUrls?: string[];
+}
+
+export async function getStoreProducts(page = 1, pageSize = 20, status?: string, search?: string) {
+  const res = await institutionClient.get<ApiResponse<PagedResult<StoreProduct>>>("/store/products", {
+    params: { page, pageSize, status: status || undefined, search: search || undefined },
+  });
+  return res.data.data!;
+}
+
+export async function getStoreProduct(id: string) {
+  const res = await institutionClient.get<ApiResponse<StoreProduct>>(`/store/products/${id}`);
+  return res.data.data!;
+}
+
+export async function createStoreProduct(body: CreateStoreProductBody) {
+  const res = await institutionClient.post<ApiResponse<StoreProduct>>("/store/products", toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function updateStoreProduct(id: string, body: UpdateStoreProductBody) {
+  const res = await institutionClient.put<ApiResponse<StoreProduct>>(`/store/products/${id}`, toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function deleteStoreProduct(id: string) {
+  const res = await institutionClient.delete<ApiResponse<unknown>>(`/store/products/${id}`);
+  return res.data;
+}
+
+export async function getStoreOrders(page = 1, pageSize = 20, status?: string) {
+  const res = await institutionClient.get<ApiResponse<PagedResult<StoreOrder>>>("/store/orders", {
+    params: { page, pageSize, status: status || undefined },
+  });
+  return res.data.data!;
+}
+
+export interface StoreSettings {
+  defaultDeliveryInfo?: string | null;
+}
+
+export async function getStoreSettings() {
+  const res = await institutionClient.get<ApiResponse<StoreSettings>>("/store/settings");
+  return res.data.data!;
+}
+
+export async function updateStoreSettings(defaultDeliveryInfo: string) {
+  const res = await institutionClient.patch<ApiResponse<StoreSettings>>("/store/settings", { defaultDeliveryInfo });
   return res.data.data!;
 }
 

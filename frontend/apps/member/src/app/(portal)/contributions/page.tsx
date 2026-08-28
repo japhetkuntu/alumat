@@ -518,17 +518,9 @@ export default function MemberContributionsPage() {
       {/* ── Active campaigns ── */}
       {activeCampaigns.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
-              Active fundraisers &amp; dues
-            </h2>
-            <span
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
-              style={{ background: "var(--color-background-info)", color: "var(--primary)", border: "1px solid var(--color-border-info)" }}
-            >
-              {activeCampaigns.length}
-            </span>
-          </div>
+          <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
+            Active fundraisers &amp; dues
+          </h2>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {activeCampaigns.map((c) => {

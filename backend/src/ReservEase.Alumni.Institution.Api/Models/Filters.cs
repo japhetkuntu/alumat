@@ -70,3 +70,13 @@ public class ResourceFilter : BaseFilter
     public DateTime? AddedAfter { get; set; }
     public DateTime? AddedBefore { get; set; }
 }
+
+public class StoreProductFilter : BaseFilter
+{
+    public string? Status { get; set; }
+}
+
+public class StoreOrderFilter : BaseFilter
+{
+    public string? Status { get; set; }
+}

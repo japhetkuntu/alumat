@@ -210,6 +210,16 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>Every payment this institution has collected — Contributions and Store orders, every status — for support staff to troubleshoot a member's payment issue.</summary>
+    [HttpGet("{id}/payments")]
+    [SwaggerOperation(Summary = "Get institution payments (all sources, all statuses)")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<PlatformPaymentDto>>))]
+    public async Task<IActionResult> GetPayments(string id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null, [FromQuery] string? source = null)
+    {
+        var result = await institutionService.GetPaymentsAsync(id, page, pageSize, status, source);
+        return result.ToActionResult();
+    }
+
     /// <summary>Update this institution's Member Portal landing page Stories and news banner — institution admins can also edit this themselves (Institution.Api).</summary>
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/landing-content")]

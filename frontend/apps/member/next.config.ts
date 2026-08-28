@@ -3,6 +3,9 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // The dev-only route/build indicator badge (bottom-left corner) — not part
+  // of the app UI, never shown in production, but distracting during local dev.
+  devIndicators: false,
   // Trace files from the workspace root so the standalone output mirrors the
   // monorepo layout: apps/member/server.js — matching the Dockerfile CMD.
   outputFileTracingRoot: path.join(__dirname, "../../"),

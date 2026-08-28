@@ -31,12 +31,14 @@ public static class InstitutionFeatures
     public const string Communities = "Communities"; // member-created sub-communities with scoped forum/events/resources/campaigns
     /// <summary>Institution staff manually recording an offline/cash/bank-transfer payment — independent of online (Contributions) payments.</summary>
     public const string ManualPayments = "ManualPayments";
+    /// <summary>Institution SuperAdmins list physical/merch products with inventory; members buy them online. Same platform-fee model as Contributions.</summary>
+    public const string Store = "Store";
 
     public static readonly IReadOnlyList<string> All =
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
-        Communities, ManualPayments, AlumniMap, Calendar,
+        Communities, ManualPayments, AlumniMap, Calendar, Store,
     ];
 
     /// <summary>
@@ -63,5 +65,6 @@ public static class InstitutionFeatures
         (AlumniMap, "Alumni map", "Opt-in world map plotting alumni by location."),
         (Calendar, "Calendar", "Unified view of upcoming events and payment deadlines."),
         (Communities, "Communities", "Member-created sub-communities with their own forum, events, resources, and campaigns."),
+        (Store, "Store", "SuperAdmins list products with inventory; members buy them online, same platform-fee model as Contributions."),
     ];
 }

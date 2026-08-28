@@ -77,8 +77,8 @@ export interface InstitutionDetail {
   disabledFeatures: string[];
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
-  /** Overrides the Member Portal landing page's hero photo — falls back to generic stock art when unset. */
-  heroImageUrl?: string | null;
+  /** Overrides the Member Portal landing page's hero photo(s), shown as a carousel — falls back to generic stock art when empty. */
+  heroImageUrls: string[];
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
   status: string;
@@ -233,6 +233,37 @@ export async function getInstitutionRevenue(id: string) {
   return res.data.data!;
 }
 
+/** One payment, normalized across both payment sources — every status, not just Confirmed, so support staff can see the full picture. */
+export interface PlatformPayment {
+  id: string;
+  source: "Contribution" | "StoreOrder";
+  institutionId: string;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  description: string;
+  amount: number;
+  status: string;
+  paymentMethod: string;
+  transactionRef?: string | null;
+  createdAt: string;
+  confirmedAt?: string | null;
+}
+
+export async function getInstitutionPayments(id: string, page = 1, pageSize = 20, status?: string, source?: string) {
+  const res = await platformClient.get<ApiResponse<PagedResult<PlatformPayment>>>(`/institutions/${id}/payments`, {
+    params: { page, pageSize, status: status || undefined, source: source || undefined },
+  });
+  return res.data.data!;
+}
+
+/** Every payment across every institution — used for platform-wide analytics. */
+export async function getAllPayments(page = 1, pageSize = 20, status?: string, source?: string) {
+  const res = await platformClient.get<ApiResponse<PagedResult<PlatformPayment>>>("/dashboard/payments", {
+    params: { page, pageSize, status: status || undefined, source: source || undefined },
+  });
+  return res.data.data!;
+}
+
 // ─── Institution admins ─────────────────────────────────────────────────────
 
 export interface InstitutionStaffMember {
@@ -308,10 +339,10 @@ export async function updateInstitutionLandingContent(
   id: string,
   landingPageStories: LandingPageStory[],
   newsBanner: NewsBanner | null,
-  heroImageUrl?: string,
+  heroImageUrls: string[],
   heroHeadline?: string,
 ) {
-  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/landing-content`, { landingPageStories, newsBanner, heroImageUrl, heroHeadline });
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/landing-content`, { landingPageStories, newsBanner, heroImageUrls, heroHeadline });
   return res.data.data!;
 }
 
@@ -455,6 +486,40 @@ export interface AuditLogEntryItem {
 export async function getAuditLog(params: { page?: number; pageSize?: number; search?: string }) {
   const res = await platformClient.get<ApiResponse<PagedResult<AuditLogEntryItem>>>("/audit-log", { params });
   return res.data.data!;
+}
+
+// ── In-app Notifications (platform staff) ───────────────────────────────────
+// Currently only raised when an institution opens a support ticket.
+
+export interface PlatformNotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  isRead: boolean;
+  readAt?: string | null;
+  relatedEntityId?: string | null;
+  relatedEntityType?: string | null;
+  actionUrl?: string | null;
+  createdAt: string;
+}
+
+export async function getNotifications(page = 1, pageSize = 20): Promise<PagedResult<PlatformNotificationItem>> {
+  const res = await platformClient.get<ApiResponse<PagedResult<PlatformNotificationItem>>>("/notifications", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const res = await platformClient.get<ApiResponse<number>>("/notifications/unread-count");
+  return res.data.data ?? 0;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await platformClient.put(`/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await platformClient.put("/notifications/read-all");
 }
 
 export type { AuthTokens };

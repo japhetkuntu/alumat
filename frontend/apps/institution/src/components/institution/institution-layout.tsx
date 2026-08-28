@@ -24,6 +24,7 @@ import {
   Layers,
   Users2,
   Radio,
+  ShoppingBag,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -51,6 +52,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/mentorship": "Mentorship",
   "/resources": "Resources",
   "/spotlights": "Spotlights",
+  "/store": "Store",
 };
 
 // Grouped by job-to-be-done, money first — an institution's own admins care
@@ -62,6 +64,7 @@ const baseNavItems = [
   { href: "/campaigns", label: "Fundraisers", icon: Megaphone },
   { href: "/membership", label: "Dues", icon: CreditCard },
   { href: "/contributions", label: "Contributions", icon: CreditCard },
+  { href: "/store", label: "Store", icon: ShoppingBag },
   { label: "People", isHeader: true },
   { href: "/members", label: "Members", icon: Users },
   { href: "/batches", label: "Batches", icon: Layers },
@@ -107,6 +110,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       if (item.href === "/forum" || item.href === "/mentorship") {
         if (user?.role !== "SuperAdmin" && user?.role !== "Admin") return false;
       }
+      if (item.href === "/store" && user?.role !== "SuperAdmin") return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
       if (featureKey && disabledFeatures.has(featureKey)) return false;
       return true;

@@ -18,5 +18,5 @@ public record InstitutionThemeResponse(
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
-    string? HeroImageUrl,
+    List<string> HeroImageUrls,
     string? HeroHeadline);

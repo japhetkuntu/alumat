@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { getInitials, cn } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
-import { ImageUpload } from "@alumni/ui";
+import { MultiImageUpload } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -100,21 +100,20 @@ export default function BrandingSettingsPage() {
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
   const [heroHeadline, setHeroHeadline] = useState<string | null>(null);
-  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
-  const [heroExistingImageUrl, setHeroExistingImageUrl] = useState<string | null>(null);
+  const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
+  const [heroExistingImageUrls, setHeroExistingImageUrls] = useState<string[] | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
   const contentMutation = useMutation({
     mutationFn: async () => {
-      const heroImageUrl = heroImageFile
-        ? (await uploadImage(heroImageFile)).url
-        : heroExistingImageUrl || undefined;
-      return updateLandingContent(stories ?? [], banner?.enabled ? banner : null, heroImageUrl, heroHeadline || undefined);
+      const uploaded = await Promise.all(heroImageFiles.map((f) => uploadImage(f)));
+      const heroImageUrls = [...(heroExistingImageUrls ?? []), ...uploaded.map((u) => u.url)];
+      return updateLandingContent(stories ?? [], banner?.enabled ? banner : null, heroImageUrls, heroHeadline || undefined);
     },
     onSuccess: () => {
       toast.success("Landing content updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
       setContentError(null);
-      setHeroImageFile(null);
+      setHeroImageFiles([]);
     },
     onError: (e) => {
       const msg = handleApiError(e);
@@ -125,7 +124,7 @@ export default function BrandingSettingsPage() {
   if (institution && stories === null) setStories(institution.landingPageStories);
   if (institution && banner === null) setBanner(institution.newsBanner ?? EMPTY_BANNER);
   if (institution && heroHeadline === null) setHeroHeadline(institution.heroHeadline ?? "");
-  if (institution && heroExistingImageUrl === null) setHeroExistingImageUrl(institution.heroImageUrl ?? "");
+  if (institution && heroExistingImageUrls === null) setHeroExistingImageUrls(institution.heroImageUrls ?? []);
 
   const policyMutation = useMutation({
     mutationFn: (policy: "DuesRequired" | "ApprovedOnly") => updateMemberActivePolicy(policy),
@@ -197,7 +196,7 @@ export default function BrandingSettingsPage() {
       </div>
 
       {tab === "Institution profile" && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
           <Card className="border-border/40">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-2 mb-1">
@@ -221,14 +220,14 @@ export default function BrandingSettingsPage() {
                   <Label className="text-[13px] font-semibold">Portal name</Label>
                   <Input value={institution?.portalName ?? ""} disabled />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-semibold">Contact email</Label>
-                <Input value={institution?.contactEmail ?? ""} disabled />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-semibold">Tagline</Label>
-                <Input value={institution?.tagline ?? ""} disabled />
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold">Contact email</Label>
+                  <Input value={institution?.contactEmail ?? ""} disabled />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold">Tagline</Label>
+                  <Input value={institution?.tagline ?? ""} disabled />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[13px] font-semibold">Primary color</Label>
@@ -237,26 +236,17 @@ export default function BrandingSettingsPage() {
                   <Input value={institution?.primaryColorHex ?? ""} disabled className="w-[140px]" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-semibold">Preview</Label>
-                <BrandPreview color={institution?.primaryColorHex ?? "#2563eb"} name={institution?.portalName || institution?.name || "Institution"} className="pt-1" />
-              </div>
             </CardContent>
           </Card>
+
           <Card className="border-border/40 h-fit">
             <CardContent className="p-5">
-              <p className="font-semibold text-[14px] mb-3">Portal preview</p>
-              <div className="rounded-lg border border-border overflow-hidden">
-                <div className="text-white p-4" style={{ backgroundColor: institution?.primaryColorHex ?? "#2563eb" }}>
-                  <p className="font-bold">{institution?.portalName || "Portal name"}</p>
-                  <p className="text-[12px] text-white/80">{institution?.tagline || "Tagline"}</p>
-                </div>
-                <div className="p-4">
-                  <Button size="sm" className="w-full">Explore community</Button>
-                </div>
-              </div>
+              <p className="font-semibold text-[14px] mb-1">Brand preview</p>
+              <p className="text-[12px] text-muted-foreground mb-3">How your primary color reads across the portal.</p>
+              <BrandPreview color={institution?.primaryColorHex ?? "#2563eb"} name={institution?.portalName || institution?.name || "Institution"} />
             </CardContent>
           </Card>
+
           <Card className="border-border/40 lg:col-span-2">
             <CardContent className="p-6">
               <div className="flex items-center gap-2 mb-1">
@@ -289,16 +279,17 @@ export default function BrandingSettingsPage() {
                 <Globe size={16} className="text-primary" />
                 <p className="font-semibold text-[15px]">Hero photo</p>
               </div>
-              <p className="text-[12.5px] text-muted-foreground -mt-2">The large photo and headline at the top of your Member Portal landing page. Leave empty for the generic default.</p>
+              <p className="text-[12.5px] text-muted-foreground -mt-2">The photo(s) and headline at the top of your Member Portal landing page. Add more than one to show a carousel. Leave empty for the generic default.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Photo</Label>
-                  <ImageUpload
-                    file={heroImageFile}
-                    existingUrl={heroExistingImageUrl ?? ""}
-                    onChange={setHeroImageFile}
-                    onClearExisting={() => setHeroExistingImageUrl("")}
-                    label="Upload hero photo"
+                  <Label>Photos</Label>
+                  <MultiImageUpload
+                    files={heroImageFiles}
+                    existingUrls={heroExistingImageUrls ?? []}
+                    onAddFile={(f) => setHeroImageFiles((prev) => [...prev, f])}
+                    onRemoveFile={(i) => setHeroImageFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                    onRemoveExisting={(i) => setHeroExistingImageUrls((prev) => (prev ?? []).filter((_, idx) => idx !== i))}
+                    label="Upload hero photos"
                   />
                 </div>
                 <div className="space-y-1.5">

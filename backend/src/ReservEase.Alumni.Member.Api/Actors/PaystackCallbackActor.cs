@@ -25,6 +25,18 @@ public class PaystackCallbackActor : ReceiveActor
                 _log.Info("Processing Paystack callback for reference {0}", msg.Reference);
 
                 using var scope = _scopeFactory.CreateScope();
+
+                // StoreOrder rows are created synchronously at checkout initiation
+                // (unlike Contribution, which is only created once the webhook
+                // confirms) — so a cheap existence check reliably tells us which
+                // flow owns this reference, with no shared metadata lookup needed.
+                var storeOrderService = scope.ServiceProvider.GetRequiredService<IStoreOrderService>();
+                if (await storeOrderService.OwnsReferenceAsync(msg.Reference))
+                {
+                    await storeOrderService.ProcessPaystackCallbackAsync(msg.Reference, msg.RawBody);
+                    return;
+                }
+
                 var contributionService = scope.ServiceProvider.GetRequiredService<IContributionService>();
                 await contributionService.ProcessPaystackCallbackAsync(msg.Reference, msg.RawBody);
             }

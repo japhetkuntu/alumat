@@ -8,7 +8,7 @@ import {
   GraduationCap, Users, Briefcase, Heart, Globe,
   Menu, X, ArrowRight, ChevronRight,
   BookOpen, Trophy, CreditCard, Bell,
-  MapPin, Zap, Shield, Star, Award,
+  MapPin, Zap, Shield, Star, Award, ShoppingBag,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -50,10 +50,11 @@ interface LandingContent {
   newsBanner: DynamicNewsBanner | null;
   displayName?: string | null;
   logoUrl?: string | null;
-  /** Overrides the hero photo — falls back to IMG.heroPanel (generic stock photo) when unset. */
-  heroImageUrl?: string | null;
+  /** Overrides the hero photo(s), shown as a carousel when there's more than one — falls back to IMG.heroPanel (generic stock photo) when empty. */
+  heroImageUrls?: string[] | null;
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
+  disabledFeatures?: string[] | null;
 }
 
 function useLandingContent() {
@@ -82,6 +83,48 @@ const IMG = {
   storyMentor:  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80", // mentor and mentee at table
 };
 
+/** Auto-advancing hero photo carousel — falls back to a single static image when there's nothing (or only one photo) to rotate through. */
+function HeroCarousel({ images }: { images: string[] }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length < 2) return;
+    const timer = setInterval(() => setIndex((i) => (i + 1) % images.length), 5000);
+    return () => clearInterval(timer);
+  }, [images.length]);
+
+  return (
+    <>
+      {images.map((src, i) => (
+        <img
+          key={src + i}
+          src={src}
+          alt="Alumni community"
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+          style={{ opacity: i === index ? 1 : 0 }}
+        />
+      ))}
+      {images.length > 1 && (
+        <div className="absolute top-3 sm:top-4 left-0 right-0 flex items-center justify-center gap-1.5 z-10">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Show photo ${i + 1}`}
+              onClick={() => setIndex(i)}
+              className="h-1.5 rounded-full transition-all"
+              style={{
+                width: i === index ? "18px" : "6px",
+                background: i === index ? "white" : "rgba(255,255,255,0.5)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    DATA
    ───────────────────────────────────────────────────────────────────────── */
@@ -92,13 +135,14 @@ const NAV_LINKS = [
 ];
 
 const FEATURES = [
-  { icon: Briefcase,  label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true },
-  { icon: Users,      label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora." },
-  { icon: CreditCard, label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support." },
-  { icon: Globe,      label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions." },
-  { icon: Heart,      label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true },
-  { icon: Trophy,     label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school." },
-  { icon: Bell,       label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you." },
+  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true, featureKey: "Jobs" },
+  { icon: Users,        label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora.", featureKey: "Directory" },
+  { icon: CreditCard,   label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support.", featureKey: "Contributions" },
+  { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events" },
+  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship" },
+  { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association — pay online, pick up or receive your order.", featureKey: "Store" },
+  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights" },
+  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you.", featureKey: undefined },
 ];
 
 const STATS = [
@@ -208,17 +252,25 @@ function Section({ id, children, className, style }: {
 /* ─────────────────────────────────────────────────────────────────────────
    STAT ROW — for the dark full-bleed stats band (no card chrome)
    ───────────────────────────────────────────────────────────────────────── */
-function StatRow({ stat, active, delay, index }: { stat: typeof STATS[number]; active: boolean; delay: string; index: number }) {
+function StatRow({ stat, active, index }: { stat: typeof STATS[number]; active: boolean; index: number }) {
   const count = useCounter(stat.end, active);
-  const { ref, visible } = useFadeUp();
+  // Counting up is driven entirely by the parent band's own single
+  // IntersectionObserver (`active`, tied to `statsRef`) — each row used to run
+  // a second, per-item observer purely for its own fade-in, but that redundant
+  // observer could get "stuck" (never firing) on a fast/instant scroll, leaving
+  // some stats permanently invisible. Rows render immediately now; only the
+  // count-up animation is deferred until the band is on screen.
   return (
-    <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn("px-5 py-1 sm:px-8 transition-all duration-700", index === 0 && "pl-0", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
+    <div
+      className={cn(
+        "px-4 py-5 sm:px-8 sm:py-1 flex flex-col items-center text-center sm:items-start sm:text-left",
+        index === 0 && "sm:pl-0",
+      )}>
       <p className="font-[family-name:var(--font-display)] leading-none tabular-nums break-words mb-2"
         style={{ fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
         {stat.prefix}{count.toLocaleString()}{stat.suffix}
       </p>
-      <p className="text-[12.5px] font-medium" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
+      <p className="text-[12px] sm:text-[12.5px] font-medium leading-snug max-w-[16ch]" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
     </div>
   );
 }
@@ -527,8 +579,7 @@ export default function LandingPage() {
             {/* Right — single photo, overlaid stat badge, no nested card list */}
             <div className="relative">
               <div className="relative w-full overflow-hidden rounded-2xl h-[300px] sm:h-[400px] lg:h-[min(72vh,560px)]" style={{ boxShadow: "0 8px 40px color-mix(in oklch, var(--primary) 12%, transparent)" }}>
-                <img src={content?.heroImageUrl || IMG.heroPanel} alt="Students collaborating"
-                  className="absolute inset-0 w-full h-full object-cover" />
+                <HeroCarousel images={content?.heroImageUrls?.length ? content.heroImageUrls : [IMG.heroPanel]} />
                 <div className="absolute inset-0"
                   style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.72) 100%)" }} />
 
@@ -573,9 +624,9 @@ export default function LandingPage() {
                 What alumni are already doing here.
               </h2>
             </div>
-            <div ref={statsRef} className="flex-1 grid grid-cols-2 md:grid-cols-4 divide-x" style={{ borderColor: "color-mix(in oklch, white 15%, transparent)" }}>
+            <div ref={statsRef} className="flex-1 grid grid-cols-2 gap-y-2 sm:gap-y-0 rounded-xl sm:rounded-none divide-x divide-y sm:divide-y-0 md:grid-cols-4" style={{ borderColor: "color-mix(in oklch, white 15%, transparent)" }}>
               {STATS.map((stat, i) => (
-                <StatRow key={stat.label} stat={stat} active={statsActive} delay={`${i * 75}ms`} index={i} />
+                <StatRow key={stat.label} stat={stat} active={statsActive} index={i} />
               ))}
             </div>
           </div>
@@ -597,9 +648,11 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
-            {FEATURES.map((feature, i) => (
-              <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
-            ))}
+            {FEATURES
+              .filter((feature) => !feature.featureKey || !content?.disabledFeatures?.includes(feature.featureKey))
+              .map((feature, i) => (
+                <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
+              ))}
             {/* Filler tile — closes out the bento row instead of leaving a gap */}
             <Link href="/register" className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 transition-all duration-500 hover:-translate-y-1"
               style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>

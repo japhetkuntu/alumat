@@ -553,3 +553,37 @@ export interface NotificationItem {
   actionUrl?: string | null;
   createdAt: string;
 }
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+export interface StoreProduct {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrls?: string[];
+  quantityAvailable: number;
+  /** Delivery/pickup instructions from institution staff — fulfillment happens outside the platform. */
+  deliveryInfo?: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface StoreOrderItem {
+  productId: string;
+  productName: string;
+  productImageUrl?: string;
+  unitPrice: number;
+  quantity: number;
+  deliveryInfo?: string;
+}
+
+export interface StoreOrder {
+  id: string;
+  items: StoreOrderItem[];
+  totalAmount: number;
+  status: "Pending" | "Confirmed" | "Failed";
+  transactionRef?: string;
+  confirmedAt?: string;
+  createdAt: string;
+}

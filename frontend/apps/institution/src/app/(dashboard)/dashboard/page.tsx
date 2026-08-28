@@ -9,11 +9,19 @@ import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import { Users, TrendingUp, Wallet, CalendarDays } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell,
 } from "recharts";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches } from "@/lib/institution-api";
+import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
+
+const STATUS_COLORS: Record<string, string> = {
+  Confirmed: "var(--success, #16a34a)",
+  Pending: "var(--warning, #d97706)",
+  Failed: "var(--destructive, #dc2626)",
+  Rejected: "var(--destructive, #dc2626)",
+};
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -26,10 +34,11 @@ export default function AdminDashboardPage() {
       { queryKey: ["dash-events"], queryFn: () => getEvents(1, 1) },
       { queryKey: ["dash-jobs"], queryFn: () => getJobs(1, 1) },
       { queryKey: ["dash-batches"], queryFn: getBatches },
+      { queryKey: ["dash-store-orders"], queryFn: () => getStoreOrders(1, 500) },
     ],
   });
 
-  const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches] = results;
+  const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches, storeOrders] = results;
   const hasNoBatches = !batches.isLoading && (batches.data?.length ?? 0) === 0;
   const isLoading = results.some((r) => r.isLoading);
 
@@ -49,17 +58,35 @@ export default function AdminDashboardPage() {
   const upcomingEvents = events.data?.totalCount ?? 0;
   const openJobs = jobs.data?.totalCount ?? 0;
 
+  const allStoreOrders = storeOrders.data?.results ?? [];
+
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const trendMonths = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, amount: 0 };
+    return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0 };
   });
   allContributions.filter((c) => c.status === "Confirmed").forEach((c) => {
     const d = new Date(c.confirmedAt ?? c.createdAt);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     const slot = trendMonths.find((m) => m.key === key);
-    if (slot) slot.amount += c.amount;
+    if (slot) slot.Contributions += c.amount;
   });
+  allStoreOrders.forEach((o) => {
+    const d = new Date(o.confirmedAt ?? o.createdAt);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const slot = trendMonths.find((m) => m.key === key);
+    if (slot) slot.Store += o.totalAmount;
+  });
+  const hasTrendData = trendMonths.some((m) => m.Contributions > 0 || m.Store > 0);
+
+  const statusCounts = [
+    ...allContributions.map((c) => c.status),
+    ...allStoreOrders.map((o) => o.status),
+  ].reduce<Record<string, number>>((acc, status) => {
+    acc[status] = (acc[status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({ status, count }));
 
   const firstName = user?.name?.trim()?.split(" ")[0] || "";
   const greeting = firstName ? `Good morning, ${firstName}` : "Welcome back";
@@ -138,24 +165,26 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
         <section className="card p-[18px]">
           <h2 className="text-[15px] font-semibold m-0 mb-3.5">
-            Contribution trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months</span>
+            Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, Contributions + Store</span>
           </h2>
           {isLoading ? (
             <Skeleton className="h-[150px]" />
           ) : (
             <div className="relative">
               <ResponsiveContainer width="100%" height={150}>
-                <BarChart data={trendMonths} barSize={30}>
+                <BarChart data={trendMonths} barSize={22}>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                   <YAxis hide />
                   <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
-                  <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="Contributions" stackId="a" fill="var(--primary)" />
+                  <Bar dataKey="Store" stackId="a" fill="var(--brand-accent, #d97706)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              {trendMonths.every((m) => m.amount === 0) && (
+              {!hasTrendData && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <p className="text-[13px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md">
-                    No contributions recorded yet this period
+                    No payments recorded yet this period
                   </p>
                 </div>
               )}
@@ -163,6 +192,31 @@ export default function AdminDashboardPage() {
           )}
         </section>
 
+        <section className="card p-[18px]">
+          <h2 className="text-[15px] font-semibold m-0 mb-3.5">Payment status mix</h2>
+          {isLoading ? (
+            <Skeleton className="h-[150px]" />
+          ) : statusPieData.length === 0 ? (
+            <div className="h-[150px] flex items-center justify-center">
+              <p className="text-[13px] text-muted-foreground">No payments yet</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={150}>
+              <PieChart>
+                <Pie data={statusPieData} dataKey="count" nameKey="status" innerRadius={35} outerRadius={60} paddingAngle={2}>
+                  {statusPieData.map((entry) => (
+                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "var(--muted-foreground)"} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </section>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3.5 mt-3.5">
         <section className="card p-[18px]">
           <h2 className="text-[15px] font-semibold m-0 mb-3.5 flex items-center justify-between">
             Pending approvals

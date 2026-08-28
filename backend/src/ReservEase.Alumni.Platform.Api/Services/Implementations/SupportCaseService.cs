@@ -4,6 +4,8 @@ using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
+using NotificationEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Notification;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -45,12 +47,42 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
         if (supportCase is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<SupportCaseResponse>("Support case not found");
 
+        var wasAlreadyResolved = supportCase.Status == "Resolved";
         supportCase.Status = request.Status;
         supportCase.UpdatedAt = DateTime.UtcNow;
         supportCase.UpdatedBy = actorId;
         await db.SaveChangesAsync();
 
         await auditLog.LogAsync(actorId, actorName, $"set support case status to {request.Status}", supportCase.Subject);
+
+        // Let the institution that raised this ticket know it's been handled —
+        // direct DB write (this service isn't tenant-scoped, so IgnoreQueryFilters
+        // throughout) rather than going through Institution.Api's actor, which
+        // has no route in from here.
+        if (request.Status == "Resolved" && !wasAlreadyResolved && !string.IsNullOrEmpty(supportCase.InstitutionId))
+        {
+            var admins = await db.Set<StaffEntity>().IgnoreQueryFilters()
+                .Where(s => s.InstitutionId == supportCase.InstitutionId && (s.Role == "Admin" || s.Role == "SuperAdmin") && !s.IsDisabled)
+                .ToListAsync();
+
+            foreach (var admin in admins)
+            {
+                db.Set<NotificationEntity>().Add(new NotificationEntity
+                {
+                    InstitutionId = supportCase.InstitutionId,
+                    RecipientId = admin.Id,
+                    RecipientType = "Admin",
+                    Title = "Support ticket resolved",
+                    Body = $"\"{supportCase.Subject}\" has been resolved by the platform team.",
+                    Type = "SupportTicketResolved",
+                    RelatedEntityId = supportCase.Id,
+                    RelatedEntityType = "SupportCase",
+                    ActionUrl = "/support",
+                    CreatedBy = actorId,
+                });
+            }
+            await db.SaveChangesAsync();
+        }
 
         var dto = (await ToDtosAsync([supportCase])).Single();
         return dto.ToOkApiResponse("Status updated");

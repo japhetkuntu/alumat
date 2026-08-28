@@ -516,3 +516,42 @@ export interface NotificationItem {
   actionUrl?: string | null;
   createdAt: string;
 }
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+export type StoreProductStatus = "Active" | "Draft" | "Archived";
+
+export interface StoreProduct {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrls?: string[];
+  quantityAvailable: number;
+  /** Delivery/pickup instructions shown to buyers — fulfillment itself happens outside the platform. */
+  deliveryInfo?: string;
+  status: StoreProductStatus;
+  createdAt: string;
+}
+
+export interface StoreOrderItem {
+  productId: string;
+  productName: string;
+  productImageUrl?: string;
+  unitPrice: number;
+  quantity: number;
+  deliveryInfo?: string;
+}
+
+export interface StoreOrder {
+  id: string;
+  memberId: string;
+  memberName?: string;
+  memberEmail?: string;
+  items: StoreOrderItem[];
+  totalAmount: number;
+  status: "Pending" | "Confirmed" | "Failed";
+  transactionRef?: string;
+  confirmedAt?: string;
+  createdAt: string;
+}

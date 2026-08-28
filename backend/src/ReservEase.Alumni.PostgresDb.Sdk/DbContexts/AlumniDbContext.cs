@@ -21,6 +21,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Institution> Institutions => Set<Institution>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
     public DbSet<SupportCase> SupportCases => Set<SupportCase>();
+    public DbSet<PlatformNotification> PlatformNotifications => Set<PlatformNotification>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
     public DbSet<InstitutionStaff> InstitutionStaff => Set<InstitutionStaff>();
@@ -49,6 +50,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<ClassNoteLike> ClassNoteLikes => Set<ClassNoteLike>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
+    public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,6 +91,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<EventRsvp>().Ignore(r => r.Event);
         modelBuilder.Entity<EventRsvp>().Ignore(r => r.Member);
 
+        // StoreOrder: member snapshot + line-item list, same jsonb pattern as Contribution.
+        modelBuilder.Entity<StoreOrder>().Property(o => o.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
+        var storeItemListComparer = new ValueComparer<List<StoreOrderItem>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<StoreOrderItem>(l));
+        modelBuilder.Entity<StoreOrder>().Property(o => o.Items).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<StoreOrderItem>>(jsonOpts)).Metadata.SetValueComparer(storeItemListComparer);
+
         // ── JSONB array columns ──────────────────────────────────────────────
         // YearGroups stored as integer array to allow efficient filtering by member graduation year.
         modelBuilder.Entity<Campaign>().Property(c => c.YearGroups).HasColumnType("integer[]");
@@ -118,6 +130,11 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .Metadata
             .SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<NewsPost>().Property(e => e.YoutubeVideoUrls)
+            .HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts))
+            .Metadata
+            .SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<StoreProduct>().Property(p => p.ImageUrls)
             .HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts))
             .Metadata
@@ -289,6 +306,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<LandingPageStory>>(jsonOpts)).Metadata.SetValueComparer(landingStoryListComparer);
         modelBuilder.Entity<Institution>().Property(i => i.NewsBanner).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<NewsBanner>(jsonOpts));
+        modelBuilder.Entity<Institution>().Property(i => i.HeroImageUrls).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
 
         // ── PlatformStaff (global, not tenant-scoped) ───────────────────────
         modelBuilder.Entity<PlatformStaff>().HasIndex(p => p.Email).IsUnique();

@@ -101,6 +101,43 @@ public class CampaignDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class StoreProductDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Price { get; set; }
+    public List<string>? ImageUrls { get; set; }
+    public int QuantityAvailable { get; set; }
+    public string? DeliveryInfo { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class StoreOrderItemDto
+{
+    public string ProductId { get; set; } = string.Empty;
+    public string ProductName { get; set; } = string.Empty;
+    public string? ProductImageUrl { get; set; }
+    public decimal UnitPrice { get; set; }
+    public int Quantity { get; set; }
+    public string? DeliveryInfo { get; set; }
+}
+
+public class StoreOrderDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string MemberId { get; set; } = string.Empty;
+    public string? MemberName { get; set; }
+    public string? MemberEmail { get; set; }
+    public List<StoreOrderItemDto> Items { get; set; } = [];
+    public decimal TotalAmount { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? TransactionRef { get; set; }
+    public DateTime? ConfirmedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 public class ManualPaymentBankAccountDto
 {
     public string AccountNumber { get; set; } = string.Empty;

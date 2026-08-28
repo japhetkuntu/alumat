@@ -80,12 +80,13 @@ public class Institution : BaseEntity
     public NewsBanner? NewsBanner { get; set; }
 
     /// <summary>
-    /// Overrides the Member Portal landing page's hero photo. Null by
-    /// default — the frontend falls back to a generic stock photo until the
-    /// institution (or platform staff) uploads their own. Editable by both
-    /// platform staff and this institution's own admins.
+    /// Overrides the Member Portal landing page's hero photo(s) — one or more
+    /// images shown as a carousel. Empty by default — the frontend falls back
+    /// to a generic stock photo until the institution (or platform staff)
+    /// uploads their own. Editable by both platform staff and this
+    /// institution's own admins.
     /// </summary>
-    public string? HeroImageUrl { get; set; }
+    public List<string> HeroImageUrls { get; set; } = [];
 
     /// <summary>
     /// Overrides the short headline overlaid on the landing page's hero
@@ -113,4 +114,12 @@ public class Institution : BaseEntity
     public string? SettlementBankName { get; set; }
     public string? SettlementAccountNumber { get; set; }
     public string? SettlementAccountName { get; set; }
+
+    /// <summary>
+    /// Fallback delivery/pickup instructions for new Store products — a
+    /// product's own <c>DeliveryInfo</c> is used when set, otherwise this is
+    /// shown to buyers. Saves institution staff from retyping the same
+    /// pickup instructions on every product. Null until an admin sets one.
+    /// </summary>
+    public string? DefaultStoreDeliveryInfo { get; set; }
 }

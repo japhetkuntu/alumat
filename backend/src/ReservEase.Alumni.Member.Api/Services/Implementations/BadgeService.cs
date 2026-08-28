@@ -96,7 +96,7 @@ public class BadgeService(
                 .Select(c => c.CampaignId)
                 .ToListAsync();
 
-            var yearsPaid = membershipCampaignIds.Where(mc => paidMembershipYears.Contains(mc.Id)).Select(mc => mc.MembershipYear!.Value).Distinct().OrderBy(y => y).ToList();
+            var yearsPaid = membershipCampaignIds.Where(mc => paidMembershipYears.Contains(mc.Id)).Select(mc => mc.MembershipYear!.Value).Distinct().OrderByDescending(y => y).ToList();
             var streak = CalculateStreak(yearsPaid);
 
             if (streak >= 2 && !existingBadges.Contains("MembershipStreak2"))

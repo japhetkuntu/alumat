@@ -116,6 +116,41 @@ public static class EntityDtoExtensions
         CreatedAt = c.CreatedAt,
     };
 
+    public static StoreProductDto ToDto(this StoreProduct p) => new()
+    {
+        Id = p.Id,
+        Name = p.Name,
+        Description = p.Description,
+        Price = p.Price,
+        ImageUrls = p.ImageUrls,
+        QuantityAvailable = p.QuantityAvailable,
+        DeliveryInfo = p.DeliveryInfo,
+        Status = p.Status,
+        CreatedAt = p.CreatedAt,
+    };
+
+    public static StoreOrderDto ToDto(this StoreOrder o) => new()
+    {
+        Id = o.Id,
+        MemberId = o.MemberId,
+        MemberName = o.Member != null ? $"{o.Member.FirstName} {o.Member.LastName}" : null,
+        MemberEmail = o.Member?.Email,
+        Items = o.Items.Select(i => new StoreOrderItemDto
+        {
+            ProductId = i.ProductId,
+            ProductName = i.ProductName,
+            ProductImageUrl = i.ProductImageUrl,
+            UnitPrice = i.UnitPrice,
+            Quantity = i.Quantity,
+            DeliveryInfo = i.DeliveryInfo,
+        }).ToList(),
+        TotalAmount = o.TotalAmount,
+        Status = o.Status,
+        TransactionRef = o.TransactionRef,
+        ConfirmedAt = o.ConfirmedAt,
+        CreatedAt = o.CreatedAt,
+    };
+
     public static ContributionDto ToDto(this Contribution c) => new()
     {
         Id = c.Id,

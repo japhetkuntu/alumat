@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
+using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -367,6 +368,66 @@ public class InstitutionManagementService(
         return new InstitutionRevenueResponse(id, gross, fee, net, confirmed.Count).ToOkApiResponse();
     }
 
+    /// <summary>
+    /// Every payment an institution has ever collected — Contributions and
+    /// Store orders, every status — so platform support can see the full
+    /// picture when helping troubleshoot, not just the confirmed-and-settled
+    /// revenue figure GetRevenueAsync reports.
+    /// </summary>
+    public async Task<IApiResponse<PgPagedResult<PlatformPaymentDto>>> GetPaymentsAsync(string? id, int page, int pageSize, string? status, string? source)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 200) pageSize = 20;
+
+        var payments = new List<PlatformPaymentDto>();
+
+        if (string.IsNullOrEmpty(source) || source == "Contribution")
+        {
+            var contributions = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+                .Where(c => string.IsNullOrEmpty(id) || c.InstitutionId == id)
+                .ToListAsync();
+            payments.AddRange(contributions.Select(c => new PlatformPaymentDto(
+                c.Id, "Contribution", c.InstitutionId,
+                c.Member is null ? null : $"{c.Member.FirstName} {c.Member.LastName}", c.Member?.Email,
+                c.Campaign?.Title ?? "Contribution", c.Amount, c.Status, c.PaymentMethod, c.TransactionRef,
+                c.CreatedAt, c.ConfirmedAt)));
+        }
+
+        if (string.IsNullOrEmpty(source) || source == "StoreOrder")
+        {
+            var orders = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+                .Where(o => string.IsNullOrEmpty(id) || o.InstitutionId == id)
+                .ToListAsync();
+            payments.AddRange(orders.Select(o => new PlatformPaymentDto(
+                o.Id, "StoreOrder", o.InstitutionId,
+                o.Member is null ? null : $"{o.Member.FirstName} {o.Member.LastName}", o.Member?.Email,
+                o.Items.Count == 1 ? o.Items[0].ProductName : $"{o.Items.Count} items",
+                o.TotalAmount, o.Status, o.PaymentMethod, o.TransactionRef,
+                o.CreatedAt, o.ConfirmedAt)));
+        }
+
+        if (!string.IsNullOrEmpty(status))
+            payments = payments.Where(p => p.Status == status).ToList();
+
+        var ordered = payments.OrderByDescending(p => p.CreatedAt).ToList();
+        var totalCount = ordered.Count;
+        var pageItems = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var result = new PgPagedResult<PlatformPaymentDto>
+        {
+            PageIndex = page,
+            PageSize = pageSize,
+            Count = pageItems.Count,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            LowerBoundSize = pageItems.Count == 0 ? 0 : ((page - 1) * pageSize) + 1,
+            UpperBoundSize = Math.Min(page * pageSize, totalCount),
+            Results = pageItems,
+        };
+        return result.ToOkApiResponse();
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName)
     {
         var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
@@ -375,7 +436,7 @@ public class InstitutionManagementService(
 
         institution.LandingPageStories = request.LandingPageStories;
         institution.NewsBanner = request.NewsBanner;
-        institution.HeroImageUrl = request.HeroImageUrl;
+        institution.HeroImageUrls = request.HeroImageUrls;
         institution.HeroHeadline = request.HeroHeadline;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
@@ -427,7 +488,7 @@ public class InstitutionManagementService(
     {
         var staff = await db.Set<StaffEntity>().IgnoreQueryFilters()
             .Where(s => s.InstitutionId == institutionId)
-            .OrderBy(s => s.CreatedAt)
+            .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
 
         return staff
@@ -534,7 +595,7 @@ public class InstitutionManagementService(
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
             i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
-            i.HeroImageUrl, i.HeroHeadline,
+            i.HeroImageUrls, i.HeroHeadline,
             i.Status, memberCount,
             i.OnboardedAt, i.TrialEndsAt,
             i.PlatformFeePercentage, i.PaystackSubaccountCode,
