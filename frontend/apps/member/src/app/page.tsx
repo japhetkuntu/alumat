@@ -9,6 +9,7 @@ import {
   Menu, X, ArrowRight, ChevronRight,
   BookOpen, Trophy, CreditCard, Bell,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
+  Images, Building2,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -141,7 +142,9 @@ const FEATURES = [
   { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events" },
   { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship" },
   { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association — pay online, pick up or receive your order.", featureKey: "Store" },
+  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between — added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums" },
   { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights" },
+  { icon: Building2,    label: "Businesses",    title: "Support alumni-owned business", desc: "Browse businesses run by fellow graduates, or list your own and get discovered by the network.", featureKey: "BusinessDirectory" },
   { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you.", featureKey: undefined },
 ];
 
