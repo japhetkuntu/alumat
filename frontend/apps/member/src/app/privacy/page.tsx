@@ -7,9 +7,9 @@ export default function PrivacyPage() {
     <LegalPageShell title="Privacy Policy" effectiveDate="25 August 2026">
       <Section heading="1. Scope of this policy">
         <p>
-          This policy explains how AlumUnion [Legal entity name to be inserted], operating the Alumni Portal
-          platform (&quot;we&quot;, &quot;us&quot;), handles personal data when a school, university, or other institution
-          (&quot;Institution&quot;) uses the Platform to run an alumni network, and when their alumni, students, or
+          This policy explains how AlumUnion (&quot;we&quot;, &quot;us&quot;), a company registered in Ghana, handles
+          personal data when a school, university, alumni association, or other community organization
+          (&quot;Institution&quot;) uses the Platform to run an alumni network, and when their alumni, members, or
           staff (&quot;Members&quot;) use that network. It is written to meet Ghana&apos;s Data Protection Act, 2012
           (Act 843), and applies to every Institution portal hosted on the Platform.
         </p>

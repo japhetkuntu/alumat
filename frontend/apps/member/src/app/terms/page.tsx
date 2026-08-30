@@ -7,11 +7,10 @@ export default function TermsPage() {
     <LegalPageShell title="Terms of Service" effectiveDate="25 August 2026">
       <Section heading="1. Who these terms are between">
         <p>
-          Alumni Portal (&quot;the Platform&quot;, &quot;we&quot;, &quot;us&quot;) is operated by AlumUnion
-          [Legal entity name to be inserted — e.g. &quot;AlumUnion Ltd&quot;, a company registered in Ghana],
-          with its registered address at [registered address, Ghana]. We provide software that lets schools,
-          universities, and other educational or professional institutions (each an &quot;Institution&quot;) run
-          a branded alumni network for their own graduates and staff (each a &quot;Member&quot;).
+          AlumUnion (&quot;the Platform&quot;, &quot;we&quot;, &quot;us&quot;) is a company registered in Ghana. We provide software
+          that lets schools, universities, alumni associations, and other community organizations (each an
+          &quot;Institution&quot;) run a branded alumni network for their own members and staff (each a
+          &quot;Member&quot;).
         </p>
         <p>
           These Terms apply to everyone who uses the Platform: Institutions that sign up to run a portal, staff
