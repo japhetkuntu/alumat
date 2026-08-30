@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Mentorship">
+  <circle cx="16" cy="13" r="5.5" stroke="#0B1F3A" stroke-width="3.5"/>
+  <circle cx="33" cy="19" r="5.5" stroke="#0B1F3A" stroke-width="3.5"/>
+  <path d="M5 39c.7-7 4.4-11 11-11 4.2 0 7.4 1.6 9.3 4.7M26 39c.4-5.4 3-9 7-9 5.1 0 8.5 3.2 10 9" stroke="#0B1F3A" stroke-linecap="round" stroke-width="3.5"/>
+  <path d="m26 12 3 3 6-7" stroke="#20A6A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"/>
+  <path d="M35.5 34.5h0" stroke="#F6C85F" stroke-linecap="round" stroke-width="7"/>
+</svg>

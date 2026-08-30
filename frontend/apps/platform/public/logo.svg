@@ -1,4 +1,15 @@
-<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <rect width="120" height="120" rx="24" fill="#64748b" />
-  <circle cx="60" cy="60" r="26" fill="#fff" opacity="0.9" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">AlumUnion app mark</title>
+  <desc id="desc">A connected A and U monogram in navy, teal, and gold.</desc>
+  <defs>
+    <linearGradient id="unionBlue" x1="70" y1="56" x2="450" y2="456" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20A6A8"/>
+      <stop offset="1" stop-color="#1167A8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="132" fill="#0B1F3A"/>
+  <path d="M151 354 256 120l105 234" fill="none" stroke="#F6C85F" stroke-linecap="round" stroke-linejoin="round" stroke-width="47"/>
+  <path d="M188 277h136" fill="none" stroke="#F6C85F" stroke-linecap="round" stroke-width="47"/>
+  <path d="M144 247v85c0 70 50 116 112 116s112-46 112-116v-85" fill="none" stroke="url(#unionBlue)" stroke-linecap="round" stroke-width="47"/>
+  <circle cx="407" cy="133" r="31" fill="#F6C85F"/>
 </svg>

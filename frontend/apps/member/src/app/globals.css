@@ -470,20 +470,20 @@ svg {
      own branding, not an arbitrary member-portal color — themeStyleVars()
      overrides all of this per-institution at runtime regardless; this is
      only what shows before that resolves or when it's genuinely absent. */
-  --brand-primary: #2563eb;
-  --brand-primary-light: #eff6ff;
-  --brand-primary-mid: #2563eb;
-  --brand-primary-dark: #1e3a8a;
+  --brand-primary: #1167A8;
+  --brand-primary-light: #E8F1F8;
+  --brand-primary-mid: #1167A8;
+  --brand-primary-dark: #0B1F3A;
 
-  --brand-accent: #f59e0b;
-  --brand-accent-light: #fff7ed;
-  --brand-accent-mid: #f59e0b;
-  --brand-accent-dark: #c2410c;
+  --brand-accent: #F6C85F;
+  --brand-accent-light: #FDF3DC;
+  --brand-accent-mid: #F6C85F;
+  --brand-accent-dark: #59718D;
 
   --color-background-primary: #ffffff;
-  --color-background-info: #eff6ff;
-  --color-text-info: #1d4ed8;
-  --color-border-info: #2563eb;
+  --color-background-info: #E8F1F8;
+  --color-text-info: #0B1F3A;
+  --color-border-info: #1167A8;
 
   /* ── Primary / key actions ── */
   --primary: var(--brand-primary);
@@ -497,7 +497,7 @@ svg {
   --muted-foreground: #667085;
 
   --accent: var(--brand-accent);
-  --accent-foreground: #c2410c;
+  --accent-foreground: #59718D;
 
   /* ── Destructive — red semantic derived from red family ── */
   --destructive: #b94a48;
@@ -506,13 +506,13 @@ svg {
   /* ── Border & Input ── */
   --border: rgba(30, 41, 59, 0.12);
   --input: rgba(30, 41, 59, 0.18);
-  --ring: rgba(37, 99, 235, 0.4);
+  --ring: rgba(17, 103, 168, 0.4);
 
   /* ── Status palette */
   --success: var(--brand-primary);
   --success-foreground: #ffffff;
   --warning: var(--brand-accent);
-  --warning-foreground: #c2410c;
+  --warning-foreground: #59718D;
   --info: var(--brand-primary);
   --info-foreground: #ffffff;
 
@@ -535,9 +535,9 @@ svg {
   --sidebar-primary: var(--brand-primary);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--brand-accent-light);
-  --sidebar-accent-foreground: #c2410c;
+  --sidebar-accent-foreground: #59718D;
   --sidebar-border: rgba(30, 41, 59, 0.1);
-  --sidebar-ring: rgba(37, 99, 235, 0.25);
+  --sidebar-ring: rgba(17, 103, 168, 0.25);
 }
 
 .dark {
@@ -558,7 +558,7 @@ svg {
      tokens (background/card/popover/secondary/muted/border/input/
      destructive/accent-sky/accent-scarlet) keep this app's own warm-
      charcoal design language — only the brand color itself changes. */
-  --primary: #5dbf8e;
+  --primary: #20A6A8;
   --primary-foreground: #ffffff;
 
   --secondary: oklch(0.25 0.010 70);
@@ -567,7 +567,7 @@ svg {
   --muted: oklch(0.23 0.008 70);
   --muted-foreground: oklch(0.66 0.010 70);
 
-  --accent: #f5d06a;
+  --accent: #F6C85F;
   --accent-foreground: #3a2a01;
 
   /* ── Destructive ── */
@@ -577,25 +577,25 @@ svg {
   /* ── Border & Input ── */
   --border: oklch(0.30 0.010 70);
   --input: oklch(0.28 0.010 70);
-  --ring: rgba(93, 191, 142, 0.5);
+  --ring: rgba(32, 166, 168, 0.5);
 
   /* ── Status colors ── */
-  --success: #5dbf8e;
+  --success: #20A6A8;
   --success-foreground: #0b2014;
-  --warning: #f5d06a;
+  --warning: #F6C85F;
   --warning-foreground: #3a2a01;
-  --info: #5dbf8e;
+  --info: #20A6A8;
   --info-foreground: #0b2014;
 
   /* ── Accent Raw Tokens ── */
-  --accent-emerald: #5dbf8e;
+  --accent-emerald: #20A6A8;
   --accent-sky: oklch(0.68 0.160 240);
   --accent-scarlet: oklch(0.62 0.20 27);
-  --accent-gold: #f5d06a;
+  --accent-gold: #F6C85F;
 
   /* ── Chart colors ── */
-  --chart-1: #5dbf8e;
-  --chart-2: #f5d06a;
+  --chart-1: #20A6A8;
+  --chart-2: #F6C85F;
   --chart-3: oklch(0.80 0.155 68);
   --chart-4: oklch(0.62 0.20 27);
   --chart-5: oklch(0.70 0.01 0);
@@ -603,12 +603,12 @@ svg {
   /* ── Sidebar ── */
   --sidebar: oklch(0.18 0.010 70);
   --sidebar-foreground: oklch(0.90 0.005 70);
-  --sidebar-primary: #5dbf8e;
+  --sidebar-primary: #20A6A8;
   --sidebar-primary-foreground: #0b2014;
   --sidebar-accent: oklch(0.25 0.014 70);
-  --sidebar-accent-foreground: #f5d06a;
+  --sidebar-accent-foreground: #F6C85F;
   --sidebar-border: oklch(0.30 0.010 70);
-  --sidebar-ring: rgba(93, 191, 142, 0.5);
+  --sidebar-ring: rgba(32, 166, 168, 0.5);
 }
 
 /* ─── Base & Typography (Notion Hierarchy) ─────────────────────────── */

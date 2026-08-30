@@ -397,20 +397,20 @@ svg {
   --popover-foreground: #0f172a;
 
   /* ── Brand tokens (Platform Portal design language: controlled, auditable workspace) ── */
-  --brand-primary: #2563eb;
-  --brand-primary-light: #eff6ff;
-  --brand-primary-mid: #2563eb;
-  --brand-primary-dark: #1e3a8a;
+  --brand-primary: #1167A8;
+  --brand-primary-light: #E8F1F8;
+  --brand-primary-mid: #1167A8;
+  --brand-primary-dark: #0B1F3A;
 
-  --brand-accent: #f59e0b;
-  --brand-accent-light: #fff7ed;
-  --brand-accent-mid: #f59e0b;
-  --brand-accent-dark: #c2410c;
+  --brand-accent: #F6C85F;
+  --brand-accent-light: #FDF3DC;
+  --brand-accent-mid: #F6C85F;
+  --brand-accent-dark: #59718D;
 
   --color-background-primary: #ffffff;
-  --color-background-info: #eff6ff;
-  --color-text-info: #1d4ed8;
-  --color-border-info: #2563eb;
+  --color-background-info: #E8F1F8;
+  --color-text-info: #0B1F3A;
+  --color-border-info: #1167A8;
 
   /* ── Primary / key actions ── */
   --primary: var(--brand-primary);
@@ -424,7 +424,7 @@ svg {
   --muted-foreground: #64748b;
 
   --accent: var(--brand-accent);
-  --accent-foreground: #c2410c;
+  --accent-foreground: #59718D;
 
   /* ── Destructive — risk/rejection red ── */
   --destructive: #b91c1c;
@@ -433,13 +433,13 @@ svg {
   /* ── Border & Input ── */
   --border: #e2e8f0;
   --input: #cbd5e1;
-  --ring: rgba(37, 99, 235, 0.4);
+  --ring: rgba(17, 103, 168, 0.4);
 
   /* ── Status palette */
   --success: #047857;
   --success-foreground: #ffffff;
   --warning: var(--brand-accent);
-  --warning-foreground: #c2410c;
+  --warning-foreground: #59718D;
   --info: var(--brand-primary);
   --info-foreground: #ffffff;
 
@@ -459,12 +459,12 @@ svg {
   /* ── Sidebar (dark navy platform rail) ── */
   --sidebar: #0f172a;
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #1e3a8a;
+  --sidebar-primary: #0B1F3A;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1e293b;
-  --sidebar-ring: rgba(37, 99, 235, 0.4);
+  --sidebar-ring: rgba(17, 103, 168, 0.4);
 }
 
 .dark {
@@ -477,7 +477,7 @@ svg {
   --popover: #0f2718;
   --popover-foreground: #eef7ec;
 
-  --primary: #5dbf8e;
+  --primary: #20A6A8;
   --primary-foreground: #ffffff;
 
   --secondary: #122a1c;
@@ -486,42 +486,42 @@ svg {
   --muted: #102516;
   --muted-foreground: #9ca3af;
 
-  --accent: #f5d06a;
+  --accent: #F6C85F;
   --accent-foreground: #3a2a01;
 
   --destructive: #f87171;
   --destructive-foreground: #ffffff;
 
-  --border: rgba(93, 191, 142, 0.18);
+  --border: rgba(32, 166, 168, 0.18);
   --input: #122a1f;
-  --ring: rgba(93, 191, 142, 0.5);
+  --ring: rgba(32, 166, 168, 0.5);
 
-  --success: #5dbf8e;
+  --success: #20A6A8;
   --success-foreground: #0b2014;
-  --warning: #f5d06a;
+  --warning: #F6C85F;
   --warning-foreground: #3a2a01;
-  --info: #5dbf8e;
+  --info: #20A6A8;
   --info-foreground: #0b2014;
 
-  --accent-emerald: #5dbf8e;
+  --accent-emerald: #20A6A8;
   --accent-sky: #7c96f7;
   --accent-scarlet: #f87171;
-  --accent-gold: #f5d06a;
+  --accent-gold: #F6C85F;
 
-  --chart-1: #5dbf8e;
-  --chart-2: #f5d06a;
+  --chart-1: #20A6A8;
+  --chart-2: #F6C85F;
   --chart-3: #f87171;
   --chart-4: #9ca3af;
   --chart-5: #0f1f14;
 
   --sidebar: #102516;
   --sidebar-foreground: #eef7ec;
-  --sidebar-primary: #5dbf8e;
+  --sidebar-primary: #20A6A8;
   --sidebar-primary-foreground: #0b2014;
   --sidebar-accent: #122b1b;
-  --sidebar-accent-foreground: #f5d06a;
-  --sidebar-border: rgba(93, 191, 142, 0.18);
-  --sidebar-ring: rgba(93, 191, 142, 0.5);
+  --sidebar-accent-foreground: #F6C85F;
+  --sidebar-border: rgba(32, 166, 168, 0.18);
+  --sidebar-ring: rgba(32, 166, 168, 0.5);
 }
 
 

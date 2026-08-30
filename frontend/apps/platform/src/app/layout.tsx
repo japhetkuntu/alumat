@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "Platform Portal",
   description: "Onboard and manage every institution on the platform.",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
+  themeColor: "#1167A8",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

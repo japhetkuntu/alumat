@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AlumUnion">
+  <rect width="64" height="64" rx="16" fill="#0B1F3A"/>
+  <path d="M18 44 32 13l14 31M23 34h18" fill="none" stroke="#F6C85F" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.5"/>
+  <path d="M18 31v10c0 8 6.3 13 14 13s14-5 14-13V31" fill="none" stroke="#20A6A8" stroke-linecap="round" stroke-width="5.5"/>
+</svg>

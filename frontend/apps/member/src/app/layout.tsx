@@ -54,7 +54,7 @@ export async function generateViewport(): Promise<Viewport> {
   // browsers fell back to a ~980px desktop layout viewport and scaled the
   // whole page down, which is exactly what "have to manually zoom in/out to
   // align it" looks like.
-  return { width: "device-width", initialScale: 1, themeColor: theme?.primaryColorHex || "#4f46e5" };
+  return { width: "device-width", initialScale: 1, themeColor: theme?.primaryColorHex || "#1167A8" };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

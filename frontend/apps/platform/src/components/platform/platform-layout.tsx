@@ -48,9 +48,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground w-[248px] select-none">
       <div className="px-4 pt-5 pb-4 border-b border-sidebar-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-white text-[13px] font-bold shrink-0">
-            P
-          </div>
+          <img src="/alumunion-mark.svg" alt="" className="w-7 h-7 rounded-md shrink-0" />
           <span className="font-bold text-[15px] tracking-tight text-white">Platform Portal</span>
         </div>
         {onClose && (

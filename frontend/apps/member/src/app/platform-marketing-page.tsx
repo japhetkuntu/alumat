@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  GraduationCap, Menu, X, ArrowRight, ChevronRight, ChevronDown,
+  Menu, X, ArrowRight, ChevronRight, ChevronDown,
   Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell,
   Images, Building2, Gift, ShieldCheck, Rocket, SlidersHorizontal,
-  Mail, Phone, MapPin, CheckCircle2,
+  Mail, MapPin, CheckCircle2, MessageCircleOff, SearchX, ShieldAlert, UserX,
 } from "lucide-react";
 import { Button, Input, Label, Textarea, FormError, cn } from "@alumni/ui";
 import { publicPlatformClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/api-client";
+import { Eyebrow, Section, scrollToSection, useFadeUp } from "./_marketing/primitives";
+import { MarketingFooter } from "./_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DATA
@@ -50,52 +52,12 @@ const FAQS = [
   { q: "Is our alumni data secure?", a: "Every institution's data is isolated from every other institution's on the platform, with role-based access control for your admin team." },
 ];
 
-/* ─────────────────────────────────────────────────────────────────────────
-   HOOKS & PRIMITIVES — small local copies (not extracted/shared with the
-   institution landing page in landing-page.tsx): four tiny primitives used
-   by only these two pages isn't worth a shared file yet.
-   ───────────────────────────────────────────────────────────────────────── */
-function scrollToSection(id: string) {
-  document.getElementById(id.replace("#", ""))?.scrollIntoView({ behavior: "smooth" });
-}
-
-function useFadeUp(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold, rootMargin: "0px 0px -40px 0px" }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return { ref, visible };
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="inline-flex items-center gap-2.5 mb-5">
-      <span className="h-px w-6" style={{ background: "var(--primary)" }} />
-      <span className="text-[12.5px] font-semibold tracking-wide" style={{ color: "var(--primary)" }}>{children}</span>
-    </div>
-  );
-}
-
-function Section({ id, children, className, style }: {
-  id?: string; children: React.ReactNode; className?: string; style?: React.CSSProperties;
-}) {
-  const { ref, visible } = useFadeUp();
-  return (
-    <section id={id} ref={ref}
-      className={cn("transition-all duration-700 ease-out", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6", className)}
-      style={style}>
-      {children}
-    </section>
-  );
-}
+const WHATSAPP_PROBLEMS = [
+  { icon: UserX,           title: "Caps at 1,024 members", desc: "WhatsApp groups max out at 1,024 people — a Community stretches to 5,000, but that's still a ceiling a growing alumni base will hit." },
+  { icon: SearchX,         title: "No real search",        desc: "Find last year's fundraiser announcement? Good luck scrolling. WhatsApp only searches text in one chat at a time." },
+  { icon: ShieldAlert,     title: "Real fraud risk",        desc: "UK Action Fraud logged 636 reports of WhatsApp group-chat scams in H1 2024 alone — often someone impersonating a member to solicit money." },
+  { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, no engagement analytics — even in WhatsApp Communities." },
+];
 
 function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEATURES[number]; delay: string; tone?: "primary" | "accent" }) {
   const { ref, visible } = useFadeUp();
@@ -124,6 +86,23 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
             {feature.desc}
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function WhatsAppProblemCard({ item, delay }: { item: typeof WHATSAPP_PROBLEMS[number]; delay: string }) {
+  const { ref, visible } = useFadeUp();
+  return (
+    <div ref={ref} style={{ transitionDelay: delay }}
+      className={cn("card transition-all duration-500 hover:-translate-y-1 hover:shadow-sm", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
+      <div className="card__content">
+        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-4 shrink-0"
+          style={{ background: "color-mix(in oklch, var(--destructive) 12%, transparent)", border: "1px solid color-mix(in oklch, var(--destructive) 35%, transparent)" }}>
+          <item.icon size={17} style={{ color: "var(--destructive)" }} />
+        </div>
+        <h3 className="text-[14px] font-semibold leading-snug mb-2" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
       </div>
     </div>
   );
@@ -306,9 +285,7 @@ export default function PlatformMarketingPage() {
         style={{ background: "color-mix(in oklch, var(--background) 86%, transparent)", borderColor: "var(--border)" }}>
         <div className="section__inner flex items-center justify-between h-16 gap-4">
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-              <GraduationCap size={17} color="white" />
-            </div>
+            <img src="/alumunion-mark.svg" alt="" className="w-9 h-9 rounded-xl shrink-0" />
             <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>AlumUnion</p>
           </Link>
 
@@ -434,6 +411,34 @@ export default function PlatformMarketingPage() {
       </Section>
 
       {/* ════════════════════════════════════════════════════════════════
+          "SOUND FAMILIAR?" — WhatsApp teaser, links to /why-not-whatsapp
+      ════════════════════════════════════════════════════════════════ */}
+      <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+        <div className="section__inner section">
+          <div className="mb-12 max-w-[60ch]">
+            <Eyebrow>Sound familiar?</Eyebrow>
+            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
+              You&apos;re already running this over WhatsApp. It shows.
+            </h2>
+            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+              It&apos;s free and everyone already has it — but a chat app was never built to run a community. Here&apos;s
+              what that actually costs you.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)] mb-8">
+            {WHATSAPP_PROBLEMS.map((item, i) => (
+              <WhatsAppProblemCard key={item.title} item={item} delay={`${i * 65}ms`} />
+            ))}
+          </div>
+          <Link href="/why-not-whatsapp">
+            <Button variant="outline" className="h-11 px-6 font-semibold gap-2">
+              See the full comparison <ArrowRight size={14} />
+            </Button>
+          </Link>
+        </div>
+      </Section>
+
+      {/* ════════════════════════════════════════════════════════════════
           HOW IT WORKS
       ════════════════════════════════════════════════════════════════ */}
       <Section id="how-it-works" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
@@ -537,80 +542,7 @@ export default function PlatformMarketingPage() {
         </div>
       </Section>
 
-      {/* ════════════════════════════════════════════════════════════════
-          FOOTER
-      ════════════════════════════════════════════════════════════════ */}
-      <footer className="border-t" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-        <div className="section__inner--wide py-12 sm:py-16">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-x-8 lg:grid-cols-[1.3fr_1fr_1fr_1fr] pb-10 sm:pb-12">
-
-            {/* Brand column */}
-            <div className="col-span-2 lg:max-w-[36ch]">
-              <Link href="/" className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-                  <GraduationCap size={14} color="white" />
-                </div>
-                <span className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>AlumUnion</span>
-              </Link>
-              <p className="text-[13px] leading-relaxed mb-5 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
-                Free alumni portals for schools, universities, and any community that wants to stay connected.
-              </p>
-              <a href="mailto:hello@alumunion.com"
-                className="inline-flex items-center gap-2 text-[12.5px] font-medium transition-colors hover:text-primary"
-                style={{ color: "var(--muted-foreground)" }}>
-                <Mail size={13} /> hello@alumunion.com
-              </a>
-            </div>
-
-            {/* Platform column */}
-            <div>
-              <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: "var(--foreground)" }}>Platform</p>
-              <nav className="flex flex-col gap-3" aria-label="Platform links">
-                {NAV_LINKS.map((link) => (
-                  <button key={link.label} onClick={() => scrollToSection(link.href)}
-                    className="text-left text-[13px] font-medium transition-colors hover:text-primary w-fit"
-                    style={{ color: "var(--muted-foreground)" }}>
-                    {link.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Get started column */}
-            <div>
-              <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: "var(--foreground)" }}>Get started</p>
-              <nav className="flex flex-col gap-3 mb-4" aria-label="Get started links">
-                <button onClick={() => scrollToSection("#onboard")}
-                  className="text-left text-[13px] font-medium transition-colors hover:text-primary w-fit"
-                  style={{ color: "var(--muted-foreground)" }}>
-                  Onboard your institution
-                </button>
-              </nav>
-              <Button size="sm" className="text-[12.5px] font-semibold gap-1.5" onClick={() => scrollToSection("#onboard")}>
-                Get onboarded <ArrowRight size={12} />
-              </Button>
-            </div>
-
-            {/* Legal column */}
-            <div>
-              <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: "var(--foreground)" }}>Legal</p>
-              <nav className="flex flex-col gap-3" aria-label="Legal links">
-                <Link href="/terms" className="text-[13px] font-medium transition-colors hover:text-primary w-fit" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
-                <Link href="/privacy" className="text-[13px] font-medium transition-colors hover:text-primary w-fit" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
-              </nav>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 sm:pt-8 text-center sm:text-left" style={{ borderTop: "1px solid var(--border)" }}>
-            <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
-              © {new Date().getFullYear()} AlumUnion. All rights reserved.
-            </p>
-            <p className="text-[12px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
-              Built for alumni communities everywhere.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
 
     </div>
   );
