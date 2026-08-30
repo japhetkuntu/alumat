@@ -76,6 +76,20 @@ public class StoreProductFilter : BaseFilter
     public string? Status { get; set; }
 }
 
+public class PhotoAlbumFilter : BaseFilter
+{
+}
+
+public class AlbumPhotoFilter : BaseFilter
+{
+}
+
+public class BusinessListingFilter : BaseFilter
+{
+    /// <summary>Omitted means all statuses — Pending, Approved, Rejected, Blacklisted.</summary>
+    public string? Status { get; set; }
+}
+
 public class StoreOrderFilter : BaseFilter
 {
     public string? Status { get; set; }

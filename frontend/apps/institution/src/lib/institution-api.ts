@@ -1115,6 +1115,184 @@ export async function sendBroadcast(body: SendBroadcastBody): Promise<BroadcastR
   return res.data.data!;
 }
 
+// ─── Photo Albums ────────────────────────────────────────────────────────
+
+export interface PhotoAlbum {
+  id: string;
+  title: string;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  photoCount: number;
+  createdAt: string;
+}
+
+export interface AlbumPhoto {
+  id: string;
+  url: string;
+  caption?: string | null;
+  createdAt: string;
+}
+
+export interface AddAlbumPhotosResult {
+  album: PhotoAlbum;
+  addedPhotos: AlbumPhoto[];
+}
+
+export async function getAlbums(page = 1, pageSize = 20): Promise<PagedResult<PhotoAlbum>> {
+  const res = await institutionClient.get<ApiResponse<PagedResult<PhotoAlbum>>>("/albums", {
+    params: { page, pageSize },
+  });
+  return res.data.data!;
+}
+
+export async function getAlbum(id: string): Promise<PhotoAlbum> {
+  const res = await institutionClient.get<ApiResponse<PhotoAlbum>>(`/albums/${id}`);
+  return res.data.data!;
+}
+
+export async function createAlbum(body: { title: string; description?: string }): Promise<PhotoAlbum> {
+  const res = await institutionClient.post<ApiResponse<PhotoAlbum>>("/albums", body);
+  return res.data.data!;
+}
+
+export async function updateAlbum(id: string, body: { title: string; description?: string; coverImageUrl?: string }): Promise<PhotoAlbum> {
+  const res = await institutionClient.put<ApiResponse<PhotoAlbum>>(`/albums/${id}`, body);
+  return res.data.data!;
+}
+
+export async function deleteAlbum(id: string): Promise<void> {
+  await institutionClient.delete(`/albums/${id}`);
+}
+
+export async function getAlbumPhotos(id: string, page = 1, pageSize = 100): Promise<PagedResult<AlbumPhoto>> {
+  const res = await institutionClient.get<ApiResponse<PagedResult<AlbumPhoto>>>(`/albums/${id}/photos`, {
+    params: { page, pageSize },
+  });
+  return res.data.data!;
+}
+
+export async function addAlbumPhotos(id: string, files: File[]): Promise<AddAlbumPhotosResult> {
+  const fd = toFormData({ Photos: files });
+  const res = await institutionClient.post<ApiResponse<AddAlbumPhotosResult>>(`/albums/${id}/photos`, fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function deleteAlbumPhoto(albumId: string, photoId: string): Promise<void> {
+  await institutionClient.delete(`/albums/${albumId}/photos/${photoId}`);
+}
+
+// ─── Business Directory ─────────────────────────────────────────────────
+
+export type BusinessListingStatus = "Pending" | "Approved" | "Rejected" | "Blacklisted";
+
+export interface BusinessListingPendingChanges {
+  businessName?: string | null;
+  description?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  location?: string | null;
+  phoneNumber?: string | null;
+  email?: string | null;
+  websiteUrl?: string | null;
+  externalLinkUrl?: string | null;
+}
+
+export interface BusinessListing {
+  id: string;
+  memberId?: string | null;
+  memberName?: string | null;
+  memberEmail?: string | null;
+  businessName: string;
+  description: string;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  location: string;
+  phoneNumber?: string | null;
+  email?: string | null;
+  websiteUrl?: string | null;
+  externalLinkUrl?: string | null;
+  status: BusinessListingStatus;
+  adminNotes?: string | null;
+  isHiddenByMember: boolean;
+  hasPendingEdit: boolean;
+  pendingChanges?: BusinessListingPendingChanges | null;
+  createdAt: string;
+}
+
+export interface BusinessListingBody {
+  businessName: string;
+  description: string;
+  location: string;
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
+  externalLinkUrl?: string;
+  logo?: File;
+  banner?: File;
+}
+
+export async function getBusinessListings(status?: string, page = 1, pageSize = 20): Promise<PagedResult<BusinessListing>> {
+  const res = await institutionClient.get<ApiResponse<PagedResult<BusinessListing>>>("/business-directory", {
+    params: { page, pageSize, status: status || undefined },
+  });
+  return res.data.data!;
+}
+
+export async function getBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await institutionClient.get<ApiResponse<BusinessListing>>(`/business-directory/${id}`);
+  return res.data.data!;
+}
+
+export async function createBusinessListing(body: BusinessListingBody): Promise<BusinessListing> {
+  const res = await institutionClient.post<ApiResponse<BusinessListing>>("/business-directory", toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function updateBusinessListing(id: string, body: BusinessListingBody): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}`, toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function approveBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}/approve`);
+  return res.data.data!;
+}
+
+export async function rejectBusinessListing(id: string, adminNotes?: string): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}/reject`, { adminNotes });
+  return res.data.data!;
+}
+
+export async function approveBusinessListingEdit(id: string): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}/approve-edit`);
+  return res.data.data!;
+}
+
+export async function rejectBusinessListingEdit(id: string, adminNotes?: string): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}/reject-edit`, { adminNotes });
+  return res.data.data!;
+}
+
+export async function blacklistBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}/blacklist`);
+  return res.data.data!;
+}
+
+export async function unblacklistBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await institutionClient.put<ApiResponse<BusinessListing>>(`/business-directory/${id}/unblacklist`);
+  return res.data.data!;
+}
+
+export async function deleteBusinessListing(id: string): Promise<void> {
+  await institutionClient.delete(`/business-directory/${id}`);
+}
+
 // ─── Support tickets ─────────────────────────────────────────────────────
 
 export interface SupportTicket {

@@ -62,6 +62,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
     public DbSet<StoreProductVariant> StoreProductVariants => Set<StoreProductVariant>();
+    public DbSet<PhotoAlbum> PhotoAlbums => Set<PhotoAlbum>();
+    public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
+    public DbSet<BusinessListing> BusinessListings => Set<BusinessListing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -137,6 +140,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // Note: VariantOptions on StoreOrderItem is nested inside StoreOrder.Items' jsonb blob above — no separate column needed.
 
         modelBuilder.Entity<StoreProductVariant>().HasIndex(v => v.ProductId);
+
+        // AlbumPhoto: list a given album's photos
+        modelBuilder.Entity<AlbumPhoto>().HasIndex(p => p.AlbumId);
+
+        // BusinessListing: owner snapshot + pending-edit proposal, same jsonb pattern as MentorProfile/Contribution.
+        modelBuilder.Entity<BusinessListing>().Property(b => b.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
+        modelBuilder.Entity<BusinessListing>().Property(b => b.PendingChanges).HasColumnType("jsonb").HasConversion(new JsonbConverter<BusinessListingPendingChanges>(jsonOpts));
+        modelBuilder.Entity<BusinessListing>().HasIndex(b => b.MemberId);
+        modelBuilder.Entity<BusinessListing>().HasIndex(b => b.Status);
 
         // ── JSONB array columns ──────────────────────────────────────────────
         // YearGroups stored as integer array to allow efficient filtering by member graduation year.

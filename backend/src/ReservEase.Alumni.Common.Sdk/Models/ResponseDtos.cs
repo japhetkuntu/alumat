@@ -107,6 +107,63 @@ public class CampaignDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class PhotoAlbumDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? CoverImageUrl { get; set; }
+    public int PhotoCount { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class AlbumPhotoDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string? Caption { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+// ── Business Directory ──────────────────────────────────────────────────────
+
+public class BusinessListingPendingChangesDto
+{
+    public string? BusinessName { get; set; }
+    public string? Description { get; set; }
+    public string? LogoUrl { get; set; }
+    public string? BannerUrl { get; set; }
+    public string? Location { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? Email { get; set; }
+    public string? WebsiteUrl { get; set; }
+    public string? ExternalLinkUrl { get; set; }
+}
+
+public class BusinessListingDto
+{
+    public string Id { get; set; } = string.Empty;
+    /// <summary>Null when this listing was created directly by an admin.</summary>
+    public string? MemberId { get; set; }
+    public string? MemberName { get; set; }
+    public string? MemberEmail { get; set; }
+    public string BusinessName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
+    public string? BannerUrl { get; set; }
+    public string Location { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? Email { get; set; }
+    public string? WebsiteUrl { get; set; }
+    public string? ExternalLinkUrl { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? AdminNotes { get; set; }
+    public bool IsHiddenByMember { get; set; }
+    public bool HasPendingEdit { get; set; }
+    public BusinessListingPendingChangesDto? PendingChanges { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 public class StoreProductDto
 {
     public string Id { get; set; } = string.Empty;

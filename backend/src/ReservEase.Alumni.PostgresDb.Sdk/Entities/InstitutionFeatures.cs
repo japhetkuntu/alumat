@@ -33,12 +33,17 @@ public static class InstitutionFeatures
     public const string ManualPayments = "ManualPayments";
     /// <summary>Institution SuperAdmins list physical/merch products with inventory; members buy them online. Same platform-fee model as Contributions.</summary>
     public const string Store = "Store";
+    /// <summary>Institution admins create photo albums and add photos to them incrementally over time; members browse albums and view photos.</summary>
+    public const string PhotoAlbums = "PhotoAlbums";
+    /// <summary>Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable in a public directory.</summary>
+    public const string BusinessDirectory = "BusinessDirectory";
 
     public static readonly IReadOnlyList<string> All =
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
-        Communities, ManualPayments, AlumniMap, Calendar, Store,
+        Communities, ManualPayments, AlumniMap, Calendar, Store, PhotoAlbums,
+        BusinessDirectory,
     ];
 
     /// <summary>
@@ -66,5 +71,7 @@ public static class InstitutionFeatures
         (Calendar, "Calendar", "Unified view of upcoming events and payment deadlines."),
         (Communities, "Communities", "Member-created sub-communities with their own forum, events, resources, and campaigns."),
         (Store, "Store", "SuperAdmins list products with inventory; members buy them online, same platform-fee model as Contributions."),
+        (PhotoAlbums, "Photo albums", "Institution admins create albums and add photos to them over time; members browse albums and view photos."),
+        (BusinessDirectory, "Business directory", "Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable by other members."),
     ];
 }

@@ -32,6 +32,8 @@ import {
   CalendarDays,
   ShoppingBag,
   Receipt,
+  Images,
+  Building2,
 } from "lucide-react";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -70,6 +72,8 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/events", label: "Events", icon: Calendar },
       { href: "/news", label: "News", icon: Newspaper },
       { href: "/resources", label: "Resources", icon: FolderOpen },
+      { href: "/albums", label: "Photo Albums", icon: Images },
+      { href: "/business-directory", label: "Business Directory", icon: Building2 },
     ],
   },
   {
@@ -105,6 +109,8 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/resources": "Resources",
   "/leaderboard": "Leaderboard",
   "/spotlights": "Spotlights",
+  "/albums": "PhotoAlbums",
+  "/business-directory": "BusinessDirectory",
 };
 
 interface NavThemeData {

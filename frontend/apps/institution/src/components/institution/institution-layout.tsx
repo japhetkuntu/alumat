@@ -25,6 +25,8 @@ import {
   Users2,
   Radio,
   ShoppingBag,
+  Images,
+  Store,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -53,6 +55,8 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/resources": "Resources",
   "/spotlights": "Spotlights",
   "/store": "Store",
+  "/albums": "PhotoAlbums",
+  "/business-directory": "BusinessDirectory",
 };
 
 // Grouped by job-to-be-done, money first — an institution's own admins care
@@ -77,6 +81,8 @@ const baseNavItems = [
   { href: "/mentorship", label: "Mentorship", icon: GraduationCap },
   { href: "/resources", label: "Resources", icon: FolderOpen },
   { href: "/spotlights", label: "Spotlights", icon: Star },
+  { href: "/albums", label: "Photo Albums", icon: Images },
+  { href: "/business-directory", label: "Business Directory", icon: Store },
   { label: "Insights", isHeader: true },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/notifications", label: "Notifications", icon: Bell },
@@ -107,7 +113,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
 
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
-      if (item.href === "/forum" || item.href === "/mentorship") {
+      if (item.href === "/forum" || item.href === "/mentorship" || item.href === "/albums" || item.href === "/business-directory") {
         if (user?.role !== "SuperAdmin" && user?.role !== "Admin") return false;
       }
       if (item.href === "/store" && user?.role !== "SuperAdmin") return false;

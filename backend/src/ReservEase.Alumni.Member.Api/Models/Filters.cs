@@ -59,3 +59,16 @@ public class EventFilter : BaseFilter
     /// <summary>When set, list this community's events instead of the institution-wide list — caller must be an approved member/leader.</summary>
     public string? CommunityId { get; set; }
 }
+
+public class PhotoAlbumFilter : BaseFilter
+{
+}
+
+public class AlbumPhotoFilter : BaseFilter
+{
+}
+
+/// <summary>Search (by business name) is inherited from BaseFilter.</summary>
+public class BusinessListingFilter : BaseFilter
+{
+}

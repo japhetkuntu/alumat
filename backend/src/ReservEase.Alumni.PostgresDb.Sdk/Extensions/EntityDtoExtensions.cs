@@ -116,6 +116,58 @@ public static class EntityDtoExtensions
         CreatedAt = c.CreatedAt,
     };
 
+    public static PhotoAlbumDto ToDto(this PhotoAlbum a) => new()
+    {
+        Id = a.Id,
+        Title = a.Title,
+        Description = a.Description,
+        CoverImageUrl = a.CoverImageUrl,
+        PhotoCount = a.PhotoCount,
+        CreatedAt = a.CreatedAt,
+    };
+
+    public static AlbumPhotoDto ToDto(this AlbumPhoto p) => new()
+    {
+        Id = p.Id,
+        Url = p.Url,
+        Caption = p.Caption,
+        CreatedAt = p.CreatedAt,
+    };
+
+    public static BusinessListingDto ToDto(this BusinessListing b) => new()
+    {
+        Id = b.Id,
+        MemberId = b.MemberId,
+        MemberName = b.Member != null ? $"{b.Member.FirstName} {b.Member.LastName}" : null,
+        MemberEmail = b.Member?.Email,
+        BusinessName = b.BusinessName,
+        Description = b.Description,
+        LogoUrl = b.LogoUrl,
+        BannerUrl = b.BannerUrl,
+        Location = b.Location,
+        PhoneNumber = b.PhoneNumber,
+        Email = b.Email,
+        WebsiteUrl = b.WebsiteUrl,
+        ExternalLinkUrl = b.ExternalLinkUrl,
+        Status = b.Status,
+        AdminNotes = b.AdminNotes,
+        IsHiddenByMember = b.IsHiddenByMember,
+        HasPendingEdit = b.HasPendingEdit,
+        PendingChanges = b.PendingChanges != null ? new BusinessListingPendingChangesDto
+        {
+            BusinessName = b.PendingChanges.BusinessName,
+            Description = b.PendingChanges.Description,
+            LogoUrl = b.PendingChanges.LogoUrl,
+            BannerUrl = b.PendingChanges.BannerUrl,
+            Location = b.PendingChanges.Location,
+            PhoneNumber = b.PendingChanges.PhoneNumber,
+            Email = b.PendingChanges.Email,
+            WebsiteUrl = b.PendingChanges.WebsiteUrl,
+            ExternalLinkUrl = b.PendingChanges.ExternalLinkUrl,
+        } : null,
+        CreatedAt = b.CreatedAt,
+    };
+
     /// <summary>
     /// <paramref name="variants"/> is optional — pass the product's loaded
     /// <see cref="StoreProductVariant"/> rows (a separate table, not embedded)

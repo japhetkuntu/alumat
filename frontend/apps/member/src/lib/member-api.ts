@@ -703,3 +703,134 @@ export async function getMyStoreOrders(page = 1, pageSize = 20): Promise<PagedRe
   const res = await memberClient.get("/store/orders", { params: { page, pageSize } });
   return res.data.data!;
 }
+
+// ── Photo Albums ─────────────────────────────────────────────────────────────
+
+export interface PhotoAlbum {
+  id: string;
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  photoCount: number;
+  createdAt: string;
+}
+
+export interface AlbumPhoto {
+  id: string;
+  url: string;
+  caption?: string;
+  createdAt: string;
+}
+
+export async function getAlbums(page = 1, pageSize = 20): Promise<PagedResult<PhotoAlbum>> {
+  const res = await memberClient.get("/albums", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+export async function getAlbum(id: string): Promise<PhotoAlbum> {
+  const res = await memberClient.get(`/albums/${id}`);
+  return res.data.data!;
+}
+
+export async function getAlbumPhotos(albumId: string, page = 1, pageSize = 30): Promise<PagedResult<AlbumPhoto>> {
+  const res = await memberClient.get(`/albums/${albumId}/photos`, { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+// ── Business Directory ──────────────────────────────────────────────────────
+
+export type BusinessListingStatus = "Pending" | "Approved" | "Rejected" | "Blacklisted";
+
+export interface BusinessListingPendingChanges {
+  businessName?: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
+  externalLinkUrl?: string;
+}
+
+export interface BusinessListing {
+  id: string;
+  /** Null when this listing was created directly by an admin. */
+  memberId?: string;
+  memberName?: string;
+  memberEmail?: string;
+  businessName: string;
+  description: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  location: string;
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
+  externalLinkUrl?: string;
+  status: BusinessListingStatus;
+  adminNotes?: string;
+  isHiddenByMember: boolean;
+  hasPendingEdit: boolean;
+  /** Only populated when hasPendingEdit is true — the proposed values awaiting admin approval. */
+  pendingChanges?: BusinessListingPendingChanges;
+}
+
+export async function getBusinessListings(page = 1, pageSize = 20, search?: string): Promise<PagedResult<BusinessListing>> {
+  const res = await memberClient.get("/business-directory", { params: { page, pageSize, search: search || undefined } });
+  return res.data.data!;
+}
+
+export async function getBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await memberClient.get(`/business-directory/${id}`);
+  return res.data.data!;
+}
+
+/** A member has at most one listing. The backend's GET /mine returns a list (regardless of status/hidden-state) — this collapses it to the single listing, or null when the member has none. */
+export async function getMyBusinessListing(): Promise<BusinessListing | null> {
+  const res = await memberClient.get("/business-directory/mine");
+  const listings = (res.data.data ?? []) as BusinessListing[];
+  return listings[0] ?? null;
+}
+
+export interface SubmitBusinessListingBody {
+  businessName: string;
+  description: string;
+  location: string;
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
+  externalLinkUrl?: string;
+  logo?: File | null;
+  banner?: File | null;
+}
+
+export async function submitBusinessListing(body: SubmitBusinessListingBody): Promise<BusinessListing> {
+  const res = await memberClient.post("/business-directory", toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+/** If the listing is Approved, this creates a pending edit awaiting admin approval instead of going live immediately. Submitting again while an edit is already pending overwrites that proposal. Blocked (400) while Blacklisted. */
+export async function updateMyBusinessListing(id: string, body: SubmitBusinessListingBody): Promise<BusinessListing> {
+  const res = await memberClient.put(`/business-directory/${id}`, toFormData(body), {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function hideMyBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await memberClient.put(`/business-directory/${id}/hide`);
+  return res.data.data!;
+}
+
+export async function unhideMyBusinessListing(id: string): Promise<BusinessListing> {
+  const res = await memberClient.put(`/business-directory/${id}/unhide`);
+  return res.data.data!;
+}
+
+/** Only allowed while Status is Pending. */
+export async function deleteMyBusinessListing(id: string): Promise<void> {
+  await memberClient.delete(`/business-directory/${id}`);
+}
