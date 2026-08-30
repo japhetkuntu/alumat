@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { getInitials } from "@alumni/ui";
 import { memberClient } from "@/lib/api-client";
 
 interface MobileBrandTheme {
@@ -37,11 +36,7 @@ export function AuthMobileBrand({ fallbackTagline }: { fallbackTagline: string }
     <div className="mb-10 text-center md:hidden">
       <Link href="/" className="inline-block transition-opacity hover:opacity-80">
         <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-5 shadow-sm border border-border flex items-center justify-center bg-primary/10">
-          {markImage ? (
-            <img src={markImage} alt={displayName} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-[18px] font-bold text-primary">{getInitials(displayName)}</span>
-          )}
+          <img src={markImage || "/alumunion-mark.svg"} alt={displayName} className="w-full h-full object-cover" />
         </div>
         <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">{displayName}</h1>
       </Link>

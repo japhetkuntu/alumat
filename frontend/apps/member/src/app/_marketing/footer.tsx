@@ -18,8 +18,8 @@ const PLATFORM_LINKS = [
 export function MarketingFooter() {
   return (
     <footer className="border-t" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-      <div className="section__inner--wide py-12 sm:py-16">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-x-8 lg:grid-cols-[1.3fr_1fr_1fr_1fr] pb-10 sm:pb-12">
+      <div className="section__inner--wide py-12">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:gap-x-8 lg:grid-cols-[1.6fr_1fr_1fr] pb-8">
 
           {/* Brand column */}
           <div className="col-span-2 lg:max-w-[36ch]">
@@ -27,7 +27,7 @@ export function MarketingFooter() {
               <img src="/alumunion-mark.svg" alt="" className="w-8 h-8 rounded-xl shrink-0" />
               <span className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>AlumUnion</span>
             </Link>
-            <p className="text-[13px] leading-relaxed mb-5 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-[13px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
               Free alumni portals for schools, universities, and any community that wants to stay connected.
             </p>
             <a href="mailto:hello@alumunion.com"
@@ -39,8 +39,8 @@ export function MarketingFooter() {
 
           {/* Platform column */}
           <div>
-            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: "var(--foreground)" }}>Platform</p>
-            <nav className="flex flex-col gap-3" aria-label="Platform links">
+            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Platform</p>
+            <nav className="flex flex-col gap-2.5" aria-label="Platform links">
               {PLATFORM_LINKS.map((link) => (
                 <Link key={link.label} href={link.href}
                   className="text-[13px] font-medium transition-colors hover:text-primary w-fit"
@@ -58,38 +58,28 @@ export function MarketingFooter() {
 
           {/* Get started column */}
           <div>
-            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: "var(--foreground)" }}>Get started</p>
-            <nav className="flex flex-col gap-3 mb-4" aria-label="Get started links">
-              <Link href="/#onboard"
-                className="text-[13px] font-medium transition-colors hover:text-primary w-fit"
-                style={{ color: "var(--muted-foreground)" }}>
-                Onboard your institution
-              </Link>
-            </nav>
+            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Get started</p>
+            <Link href="/#onboard"
+              className="block mb-3 text-[13px] font-medium transition-colors hover:text-primary w-fit"
+              style={{ color: "var(--muted-foreground)" }}>
+              Onboard your institution
+            </Link>
             <Link href="/#onboard">
               <Button size="sm" className="text-[12.5px] font-semibold gap-1.5">
                 Get onboarded <ArrowRight size={12} />
               </Button>
             </Link>
           </div>
-
-          {/* Legal column */}
-          <div>
-            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-4" style={{ color: "var(--foreground)" }}>Legal</p>
-            <nav className="flex flex-col gap-3" aria-label="Legal links">
-              <Link href="/terms" className="text-[13px] font-medium transition-colors hover:text-primary w-fit" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
-              <Link href="/privacy" className="text-[13px] font-medium transition-colors hover:text-primary w-fit" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
-            </nav>
-          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 sm:pt-8 text-center sm:text-left" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-center sm:text-left" style={{ borderTop: "1px solid var(--border)" }}>
           <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
             © {new Date().getFullYear()} AlumUnion. All rights reserved.
           </p>
-          <p className="text-[12px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
-            Built for alumni communities everywhere.
-          </p>
+          <div className="flex items-center gap-5">
+            <Link href="/terms" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
+            <Link href="/privacy" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
+          </div>
         </div>
       </div>
     </footer>

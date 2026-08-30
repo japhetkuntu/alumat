@@ -228,17 +228,6 @@ function useCounter(end: number, active: boolean) {
 /* ─────────────────────────────────────────────────────────────────────────
    PRIMITIVES
    ───────────────────────────────────────────────────────────────────────── */
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="inline-flex items-center gap-2.5 mb-5">
-      <span className="h-px w-6" style={{ background: "var(--primary)" }} />
-      <span className="text-[12.5px] font-semibold tracking-wide" style={{ color: "var(--primary)" }}>
-        {children}
-      </span>
-    </div>
-  );
-}
-
 function Section({ id, children, className, style }: {
   id?: string; children: React.ReactNode; className?: string; style?: React.CSSProperties;
 }) {
@@ -470,13 +459,7 @@ export default function LandingPage() {
         <div className="section__inner flex items-center justify-between h-16 gap-4">
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            {content?.logoUrl ? (
-              <img src={content.logoUrl} alt={content.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-cover shrink-0" />
-            ) : (
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-                <GraduationCap size={17} color="white" />
-              </div>
-            )}
+            <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-cover shrink-0" />
             <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Alumni Portal"}</p>
           </Link>
 
@@ -535,7 +518,6 @@ export default function LandingPage() {
 
             {/* Left col */}
             <div className="lg:pr-6">
-              <Eyebrow>Verified alumni network</Eyebrow>
               <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[19ch]"
                 style={{ fontSize: "clamp(2.4rem,4.6vw,3.75rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
                 The alumni portal{" "}
@@ -642,7 +624,6 @@ export default function LandingPage() {
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[56ch]">
-            <Eyebrow>What&apos;s inside</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               One portal for every alumni need.
             </h2>
@@ -675,7 +656,6 @@ export default function LandingPage() {
       <Section id="stories" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[50ch]">
-            <Eyebrow>Real situations</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               The three reasons most alumni join.
             </h2>
@@ -706,7 +686,6 @@ export default function LandingPage() {
       <Section id="how-it-works" style={{ background: "var(--secondary)" }}>
         <div className="section__inner section">
           <div className="text-center mb-12">
-            <Eyebrow>Getting started</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] max-w-[28ch] mx-auto" style={{ color: "var(--foreground)" }}>
               Three steps. That&apos;s all it takes.
             </h2>
@@ -770,13 +749,7 @@ export default function LandingPage() {
       <footer className="border-t py-9" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner flex flex-col sm:flex-row items-center justify-between gap-5">
           <Link href="/" className="flex items-center gap-3">
-            {content?.logoUrl ? (
-              <img src={content.logoUrl} alt={content.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-cover shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--primary)" }}>
-                <GraduationCap size={14} color="white" />
-              </div>
-            )}
+            <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-cover shrink-0" />
             <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Alumni Portal"}</span>
           </Link>
 

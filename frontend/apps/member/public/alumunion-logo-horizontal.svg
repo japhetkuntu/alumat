@@ -3,20 +3,20 @@
   <desc id="desc">A connected A and U monogram with the AlumUnion wordmark.</desc>
   <defs>
     <linearGradient id="unionBlue" x1="18" y1="12" x2="134" y2="144" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#20A6A8"/>
-      <stop offset="1" stop-color="#1167A8"/>
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#2563EB"/>
     </linearGradient>
   </defs>
   <g transform="translate(8 8)">
-    <rect width="144" height="144" rx="38" fill="#0B1F3A"/>
-    <path d="M43 102.5 72 38l29 64.5" fill="none" stroke="#F6C85F" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-    <path d="M53 81h38" fill="none" stroke="#F6C85F" stroke-linecap="round" stroke-width="13"/>
+    <rect width="144" height="144" rx="38" fill="#0F172A"/>
+    <path d="M43 102.5 72 38l29 64.5" fill="none" stroke="#F59E0B" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+    <path d="M53 81h38" fill="none" stroke="#F59E0B" stroke-linecap="round" stroke-width="13"/>
     <path d="M41 73v24c0 19.3 13.8 32 31 32s31-12.7 31-32V73" fill="none" stroke="url(#unionBlue)" stroke-linecap="round" stroke-width="13"/>
-    <circle cx="115" cy="42" r="9" fill="#F6C85F"/>
+    <circle cx="115" cy="42" r="9" fill="#F59E0B"/>
   </g>
   <g font-family="Inter, Avenir Next, Arial, sans-serif" font-size="66" font-weight="700" letter-spacing="-2">
-    <text x="180" y="99" fill="#0B1F3A">Alum</text>
-    <text x="356" y="99" fill="#1167A8">Union</text>
+    <text x="180" y="99" fill="#0F172A">Alum</text>
+    <text x="356" y="99" fill="#2563EB">Union</text>
   </g>
-  <text x="184" y="129" fill="#59718D" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="3">CONNECTIONS THAT LAST</text>
+  <text x="184" y="129" fill="#0F172A" fill-opacity=".58" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="3">CONNECTIONS THAT LAST</text>
 </svg>

@@ -7,7 +7,7 @@ import {
   MessageCircleOff, PhoneOff, Check, X as XIcon, ExternalLink,
 } from "lucide-react";
 import { Button } from "@alumni/ui";
-import { Eyebrow, Section } from "../_marketing/primitives";
+import { Section } from "../_marketing/primitives";
 import { MarketingFooter } from "../_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -44,18 +44,19 @@ const SOURCES = [
 /* ─────────────────────────────────────────────────────────────────────────
    COMPONENTS
    ───────────────────────────────────────────────────────────────────────── */
-function LimitCard({ item }: { item: typeof LIMITS[number] }) {
+function LimitCard({ item, index }: { item: typeof LIMITS[number]; index: number }) {
   return (
-    <div className="card">
-      <div className="card__content">
-        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-4 shrink-0"
-          style={{ background: "color-mix(in oklch, var(--destructive) 12%, transparent)", border: "1px solid color-mix(in oklch, var(--destructive) 35%, transparent)" }}>
-          <item.icon size={17} style={{ color: "var(--destructive)" }} />
-        </div>
-        <h3 className="text-[15px] font-semibold leading-snug mb-2" style={{ color: "var(--foreground)" }}>{item.title}</h3>
-        <p className="text-[13.5px] leading-relaxed mb-3" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
-        <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "var(--muted-foreground)", opacity: 0.65 }}>— {item.source}</p>
+    <div className="pb-8 sm:pb-0">
+      <p className="font-[family-name:var(--font-display)] leading-none select-none mb-2.5"
+        style={{ fontSize: "2.75rem", fontWeight: 700, color: "var(--destructive)", opacity: 0.13 }} aria-hidden="true">
+        {String(index + 1).padStart(2, "0")}
+      </p>
+      <div className="flex items-center gap-2.5 mb-2 -mt-7">
+        <item.icon size={18} style={{ color: "var(--destructive)" }} />
+        <h3 className="text-[15.5px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.title}</h3>
       </div>
+      <p className="text-[13.5px] leading-relaxed mb-2.5 max-w-[46ch]" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
+      <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>Source: {item.source}</p>
     </div>
   );
 }
@@ -82,7 +83,6 @@ export default function WhyNotWhatsAppPage() {
       <div className="relative overflow-hidden" style={{ background: "var(--background)" }}>
         <div className="absolute inset-0 bg-subtle-pattern opacity-[0.45] pointer-events-none" />
         <div className="section__inner--wide relative pt-16 pb-16 text-center">
-          <Eyebrow>The honest comparison</Eyebrow>
           <h1 className="font-[family-name:var(--font-display)] mb-6 max-w-[26ch]"
             style={{ fontSize: "clamp(2.2rem,4.6vw,3.5rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)", margin: "0 auto 1.5rem" }}>
             WhatsApp wasn&apos;t built to run your alumni community.
@@ -95,19 +95,18 @@ export default function WhyNotWhatsAppPage() {
       </div>
 
       {/* ── The real limits ── */}
-      <Section className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
+      <Section className="border-b " style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
-          <div className="mb-12 max-w-[56ch]">
-            <Eyebrow>The real limits</Eyebrow>
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
+          <div className="mb-12 max-w-[56ch] text-center mx-auto">
+            <h2 className="font-[family-name:var(--font-display)] mb-4 " style={{ color: "var(--foreground)" }}>
               Five ways it actually holds your community back.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
               Not opinions — every point below is sourced. See the full list under Sources.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[var(--space-gap)]">
-            {LIMITS.map((item) => <LimitCard key={item.title} item={item} />)}
+          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-10 sm:gap-y-12">
+            {LIMITS.map((item, i) => <LimitCard key={item.title} item={item} index={i} />)}
           </div>
         </div>
       </Section>
@@ -116,7 +115,6 @@ export default function WhyNotWhatsAppPage() {
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-10 max-w-[56ch] mx-auto text-center">
-            <Eyebrow>Side by side</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", margin: "0 auto" }}>
               WhatsApp group vs. AlumUnion.
             </h2>
@@ -160,7 +158,6 @@ export default function WhyNotWhatsAppPage() {
         <div className="section__inner section">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
-              <Eyebrow>The wider picture</Eyebrow>
               <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[20ch]" style={{ color: "var(--foreground)" }}>
                 Alumni engagement is a national problem — not just a WhatsApp one.
               </h2>
@@ -187,15 +184,14 @@ export default function WhyNotWhatsAppPage() {
       {/* ── Sources ── */}
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
-          <Eyebrow>Sources</Eyebrow>
-          <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[26ch]" style={{ color: "var(--foreground)" }}>
+          <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[26ch] text-center" style={{ color: "var(--foreground)", margin: "0 auto 1rem" }}>
             Every claim on this page, sourced.
           </h2>
-          <p className="mb-10 max-w-[56ch]" style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+          <p className="mb-10 max-w-[56ch] mx-auto text-center" style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
             Nothing above is a guess. Here&apos;s exactly where each number and claim comes from — click through and check
             for yourself.
           </p>
-          <div className="grid sm:grid-cols-2 gap-4 max-w-4xl">
+          <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
             {SOURCES.map((s, i) => (
               <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
                 className="card group flex items-start gap-4 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/40">

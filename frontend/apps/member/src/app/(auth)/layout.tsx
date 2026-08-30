@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getInitials } from "@alumni/ui";
 import { getInstitutionTheme } from "@/lib/theme";
 import { RedirectIfAuthenticated } from "@/components/member/redirect-if-authenticated";
 
@@ -42,18 +41,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         />
 
         <div className="relative space-y-7 w-full">
-          {/* Logo mark — the institution's own icon, or an initials badge as fallback */}
+          {/* Logo mark — the institution's own icon, or the AlumUnion mark as fallback */}
           <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
-            {markImage ? (
-              <img src={markImage} alt={displayName} className="h-9 w-9 rounded-lg object-cover" />
-            ) : (
-              <div
-                className="h-9 w-9 rounded-lg flex items-center justify-center"
-                style={{ background: "var(--brand-accent, rgba(255,255,255,0.12))" }}
-              >
-                <span className="text-[13px] font-bold text-white tracking-tight">{getInitials(displayName)}</span>
-              </div>
-            )}
+            <img src={markImage || "/alumunion-mark.svg"} alt={displayName} className="h-9 w-9 rounded-lg object-cover" />
             <span className="text-[15px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
               {theme?.displayName || "Alumni Portal"}
             </span>

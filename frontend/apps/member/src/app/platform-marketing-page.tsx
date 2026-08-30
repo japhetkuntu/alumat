@@ -6,13 +6,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   Menu, X, ArrowRight, ChevronRight, ChevronDown,
   Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell,
-  Images, Building2, Gift, ShieldCheck, Rocket, SlidersHorizontal,
+  Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
   Mail, MapPin, CheckCircle2, MessageCircleOff, SearchX, ShieldAlert, UserX,
 } from "lucide-react";
-import { Button, Input, Label, Textarea, FormError, cn } from "@alumni/ui";
+import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
 import { publicPlatformClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/api-client";
-import { Eyebrow, Section, scrollToSection, useFadeUp } from "./_marketing/primitives";
+import { Section, scrollToSection, useFadeUp } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -91,19 +91,20 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
   );
 }
 
-function WhatsAppProblemCard({ item, delay }: { item: typeof WHATSAPP_PROBLEMS[number]; delay: string }) {
+function WhatsAppProblemCard({ item, index, delay }: { item: typeof WHATSAPP_PROBLEMS[number]; index: number; delay: string }) {
   const { ref, visible } = useFadeUp();
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn("card transition-all duration-500 hover:-translate-y-1 hover:shadow-sm", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
-      <div className="card__content">
-        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-4 shrink-0"
-          style={{ background: "color-mix(in oklch, var(--destructive) 12%, transparent)", border: "1px solid color-mix(in oklch, var(--destructive) 35%, transparent)" }}>
-          <item.icon size={17} style={{ color: "var(--destructive)" }} />
-        </div>
-        <h3 className="text-[14px] font-semibold leading-snug mb-2" style={{ color: "var(--foreground)" }}>{item.title}</h3>
-        <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
+      className={cn("relative pl-1 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
+      <p className="font-[family-name:var(--font-display)] leading-none select-none mb-2.5"
+        style={{ fontSize: "2.75rem", fontWeight: 700, color: "var(--destructive)", opacity: 0.13 }} aria-hidden="true">
+        {String(index + 1).padStart(2, "0")}
+      </p>
+      <div className="flex items-center gap-2 mb-2 -mt-7">
+        <item.icon size={16} style={{ color: "var(--destructive)" }} />
+        <h3 className="text-[14.5px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.title}</h3>
       </div>
+      <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
     </div>
   );
 }
@@ -160,6 +161,8 @@ interface LeadForm {
   estimatedMemberCount: string;
   message: string;
 }
+
+const MEMBER_COUNT_RANGES = ["0 – 100", "101 – 500", "501 – 999", "1,000+"];
 
 const EMPTY_LEAD: LeadForm = {
   institutionName: "", contactName: "", contactEmail: "", contactPhone: "",
@@ -247,7 +250,16 @@ function OnboardingForm() {
         </div>
         <div>
           <Label>Roughly how many alumni? (optional)</Label>
-          <Input value={form.estimatedMemberCount} onChange={(e) => set("estimatedMemberCount", e.target.value)} placeholder="e.g. 2,000+" />
+          <Select value={form.estimatedMemberCount || undefined} onValueChange={(v) => set("estimatedMemberCount", v)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a range" />
+            </SelectTrigger>
+            <SelectContent>
+              {MEMBER_COUNT_RANGES.map((range) => (
+                <SelectItem key={range} value={range}>{range}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div>
@@ -341,7 +353,7 @@ export default function PlatformMarketingPage() {
 
         <div className="section__inner--wide relative pt-16 pb-20 text-center">
 
-          <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[24ch] mx-auto section__inner--wide "
+          <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[24ch] mx-auto section__inner"
             style={{ fontSize: "clamp(2.5rem,5.2vw,4.1rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
             Give your alumni a home —{" "}
             <span className="relative whitespace-nowrap" style={{ color: "var(--primary)" }}>
@@ -385,7 +397,6 @@ export default function PlatformMarketingPage() {
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[56ch]">
-            <Eyebrow>Everything included</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               One portal. Every alumni need.
             </h2>
@@ -416,7 +427,6 @@ export default function PlatformMarketingPage() {
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[60ch]">
-            <Eyebrow>Sound familiar?</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               You&apos;re already running this over WhatsApp. It shows.
             </h2>
@@ -425,9 +435,11 @@ export default function PlatformMarketingPage() {
               what that actually costs you.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)] mb-8">
+          <div className="grid gap-10 sm:gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x mb-10" style={{ borderColor: "var(--border)" }}>
             {WHATSAPP_PROBLEMS.map((item, i) => (
-              <WhatsAppProblemCard key={item.title} item={item} delay={`${i * 65}ms`} />
+              <div key={item.title} className={i > 0 ? "lg:pl-8" : undefined}>
+                <WhatsAppProblemCard item={item} index={i} delay={`${i * 65}ms`} />
+              </div>
             ))}
           </div>
           <Link href="/why-not-whatsapp">
@@ -444,7 +456,6 @@ export default function PlatformMarketingPage() {
       <Section id="how-it-works" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="text-center mb-14">
-            <Eyebrow>Getting started</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] max-w-[30ch]" style={{ color: "var(--foreground)", margin: "0 auto" }}>
               From a form to a live portal, in a few simple steps.
             </h2>
@@ -495,7 +506,6 @@ export default function PlatformMarketingPage() {
         <div className="section__inner section">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] items-start">
             <div className="lg:sticky lg:top-24">
-              <Eyebrow>Get started</Eyebrow>
               <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[18ch]" style={{ color: "var(--foreground)" }}>
                 Let&apos;s get your institution onboarded.
               </h2>
@@ -529,7 +539,6 @@ export default function PlatformMarketingPage() {
       <Section id="faq" style={{ background: "var(--background)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[50ch] mx-auto text-center">
-            <Eyebrow>Questions</Eyebrow>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               Frequently asked questions.
             </h2>

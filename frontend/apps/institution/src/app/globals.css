@@ -409,20 +409,20 @@ svg {
   --popover-foreground: #1c2024;
 
   /* ── Brand tokens (Institution Portal design language — matches Platform Portal) ── */
-  --brand-primary: #1167A8;
-  --brand-primary-light: #E8F1F8;
-  --brand-primary-mid: #1167A8;
-  --brand-primary-dark: #0B1F3A;
+  --brand-primary: #2563EB;
+  --brand-primary-light: #E6F4FE;
+  --brand-primary-mid: #2563EB;
+  --brand-primary-dark: #0F172A;
 
-  --brand-accent: #F6C85F;
-  --brand-accent-light: #FDF3DC;
-  --brand-accent-mid: #F6C85F;
-  --brand-accent-dark: #59718D;
+  --brand-accent: #F59E0B;
+  --brand-accent-light: #FEF3C7;
+  --brand-accent-mid: #F59E0B;
+  --brand-accent-dark: #0F172A;
 
   --color-background-primary: #ffffff;
-  --color-background-info: #E8F1F8;
-  --color-text-info: #0B1F3A;
-  --color-border-info: #1167A8;
+  --color-background-info: #E6F4FE;
+  --color-text-info: #0F172A;
+  --color-border-info: #2563EB;
 
   /* ── Primary / key actions ── */
   --primary: var(--brand-primary);
@@ -436,7 +436,7 @@ svg {
   --muted-foreground: #64748b;
 
   --accent: var(--brand-accent);
-  --accent-foreground: #59718D;
+  --accent-foreground: #0F172A;
 
   /* ── Destructive — red semantic derived from red family ── */
   --destructive: #dc2626;
@@ -445,13 +445,13 @@ svg {
   /* ── Border & Input ── */
   --border: #cbd5e1;
   --input: #cbd5e1;
-  --ring: rgba(17, 103, 168, 0.4);
+  --ring: rgba(37, 99, 235, 0.4);
 
   /* ── Status palette */
   --success: #047857;
   --success-foreground: #ffffff;
   --warning: var(--brand-accent);
-  --warning-foreground: #59718D;
+  --warning-foreground: #0F172A;
   --info: var(--brand-primary);
   --info-foreground: #ffffff;
 
@@ -473,12 +473,12 @@ svg {
      used here, so an untheemed institution renders exactly as before) ── */
   --sidebar: color-mix(in oklch, var(--brand-primary-dark, #0f172a) 55%, black);
   --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #0B1F3A;
+  --sidebar-primary: #0F172A;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: color-mix(in oklch, var(--brand-primary-dark, #1e293b) 40%, black);
-  --sidebar-ring: rgba(17, 103, 168, 0.4);
+  --sidebar-ring: rgba(37, 99, 235, 0.4);
 }
 
 .dark {
@@ -491,7 +491,7 @@ svg {
   --popover: #0f2718;
   --popover-foreground: #eef7ec;
 
-  --primary: #20A6A8;
+  --primary: #3B82F6;
   --primary-foreground: #ffffff;
 
   --secondary: #122a1c;
@@ -500,42 +500,42 @@ svg {
   --muted: #102516;
   --muted-foreground: #9ca3af;
 
-  --accent: #F6C85F;
+  --accent: #F59E0B;
   --accent-foreground: #3a2a01;
 
   --destructive: #f87171;
   --destructive-foreground: #ffffff;
 
-  --border: rgba(32, 166, 168, 0.18);
+  --border: rgba(59, 130, 246, 0.18);
   --input: #122a1f;
-  --ring: rgba(32, 166, 168, 0.5);
+  --ring: rgba(59, 130, 246, 0.5);
 
-  --success: #20A6A8;
+  --success: #3B82F6;
   --success-foreground: #0b2014;
-  --warning: #F6C85F;
+  --warning: #F59E0B;
   --warning-foreground: #3a2a01;
-  --info: #20A6A8;
+  --info: #3B82F6;
   --info-foreground: #0b2014;
 
-  --accent-emerald: #20A6A8;
+  --accent-emerald: #3B82F6;
   --accent-sky: #7c96f7;
   --accent-scarlet: #f87171;
-  --accent-gold: #F6C85F;
+  --accent-gold: #F59E0B;
 
-  --chart-1: #20A6A8;
-  --chart-2: #F6C85F;
+  --chart-1: #3B82F6;
+  --chart-2: #F59E0B;
   --chart-3: #f87171;
   --chart-4: #9ca3af;
   --chart-5: #0f1f14;
 
   --sidebar: #102516;
   --sidebar-foreground: #eef7ec;
-  --sidebar-primary: #20A6A8;
+  --sidebar-primary: #3B82F6;
   --sidebar-primary-foreground: #0b2014;
   --sidebar-accent: #122b1b;
-  --sidebar-accent-foreground: #F6C85F;
-  --sidebar-border: rgba(32, 166, 168, 0.18);
-  --sidebar-ring: rgba(32, 166, 168, 0.5);
+  --sidebar-accent-foreground: #F59E0B;
+  --sidebar-border: rgba(59, 130, 246, 0.18);
+  --sidebar-ring: rgba(59, 130, 246, 0.5);
 }
 
 
