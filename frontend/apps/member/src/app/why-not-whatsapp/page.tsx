@@ -35,10 +35,10 @@ const COMPARISON: { row: string; whatsapp: string; alumunion: string }[] = [
 ];
 
 const SOURCES = [
-  { name: "WhatsApp group & Community size limits", org: "WhatsApp / Meta", url: "https://faq.whatsapp.com/" },
-  { name: "WhatsApp group-chat scam alert, H1 2024 (636 reports)", org: "UK Action Fraud", url: "https://www.actionfraud.police.uk/" },
-  { name: "Rethinking Participation Rates", org: "CASE, citing the CAE Voluntary Support of Education Survey", url: "https://www.case.org/resources/issues/september-october-2023/rethinking-participation-rates" },
-  { name: "The Ultimate Collection of Statistics for Alumni Engagement, Giving and Membership", org: "AlumniAccess", url: "https://blog.alumniaccess.com/member_marketing_statistics_ultimate_collection_alumni-2015" },
+  { name: "WhatsApp group & Community size limits", org: "WhatsApp / Meta", backs: "The 1,024-member group cap and 5,000-member Community cap", url: "https://faq.whatsapp.com/" },
+  { name: "WhatsApp group-chat scam alert, H1 2024", org: "UK Action Fraud (government body)", backs: "The 636 reported group-chat scam cases", url: "https://www.actionfraud.police.uk/" },
+  { name: "Rethinking Participation Rates", org: "CASE, citing the CAE Voluntary Support of Education Survey", backs: "The 7.8% / 8.5% / ~20% alumni giving participation figures", url: "https://www.case.org/resources/issues/september-october-2023/rethinking-participation-rates" },
+  { name: "The Ultimate Collection of Statistics for Alumni Engagement, Giving and Membership", org: "AlumniAccess", backs: "The 75% mobile-access preference figure", url: "https://blog.alumniaccess.com/member_marketing_statistics_ultimate_collection_alumni-2015" },
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -188,18 +188,31 @@ export default function WhyNotWhatsAppPage() {
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <Eyebrow>Sources</Eyebrow>
-          <h2 className="font-[family-name:var(--font-display)] mb-6" style={{ color: "var(--foreground)" }}>
+          <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[26ch]" style={{ color: "var(--foreground)" }}>
             Every claim on this page, sourced.
           </h2>
-          <div className="grid sm:grid-cols-2 gap-3 max-w-3xl">
-            {SOURCES.map((s) => (
+          <p className="mb-10 max-w-[56ch]" style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+            Nothing above is a guess. Here&apos;s exactly where each number and claim comes from — click through and check
+            for yourself.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-4xl">
+            {SOURCES.map((s, i) => (
               <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
-                className="card group flex items-start gap-3 p-4 transition-colors hover:border-primary/40">
-                <ExternalLink size={14} className="shrink-0 mt-0.5" style={{ color: "var(--muted-foreground)" }} />
-                <span>
-                  <span className="block text-[13px] font-semibold leading-snug group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>{s.name}</span>
-                  <span className="block text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{s.org}</span>
-                </span>
+                className="card group flex items-start gap-4 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/40">
+                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
+                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)", color: "var(--primary)" }}>
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-semibold leading-snug mb-1 group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
+                    {s.name}
+                  </p>
+                  <p className="text-[11.5px] font-medium mb-2" style={{ color: "var(--muted-foreground)" }}>{s.org}</p>
+                  <p className="text-[12px] leading-relaxed mb-2.5" style={{ color: "var(--muted-foreground)", opacity: 0.85 }}>Backs: {s.backs}</p>
+                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>
+                    View source <ExternalLink size={12} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </span>
+                </div>
               </a>
             ))}
           </div>
