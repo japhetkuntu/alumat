@@ -6,8 +6,8 @@ import {
   ArrowLeft, ArrowRight, UserX, SearchX, ShieldAlert,
   MessageCircleOff, PhoneOff, Check, X as XIcon, ExternalLink,
 } from "lucide-react";
-import { Button } from "@alumni/ui";
-import { Section } from "../_marketing/primitives";
+import { Button, cn } from "@alumni/ui";
+import { Section, ScrollProgressBar, useScrolled, useTilt, useCountUp } from "../_marketing/primitives";
 import { MarketingFooter } from "../_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -44,6 +44,43 @@ const SOURCES = [
 /* ─────────────────────────────────────────────────────────────────────────
    COMPONENTS
    ───────────────────────────────────────────────────────────────────────── */
+function SourceCard({ s, index }: { s: typeof SOURCES[number]; index: number }) {
+  const tilt = useTilt<HTMLAnchorElement>(4);
+  return (
+    <a ref={tilt.ref} href={s.url} target="_blank" rel="noopener noreferrer"
+      onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave}
+      style={tilt.style}
+      className="card group flex items-start gap-4 p-5 transition-shadow duration-300 hover:shadow-sm hover:border-primary/40">
+      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
+        style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)", color: "var(--primary)" }}>
+        {String(index + 1).padStart(2, "0")}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[13.5px] font-semibold leading-snug mb-1 group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
+          {s.name}
+        </p>
+        <p className="text-[11.5px] font-medium mb-2" style={{ color: "var(--muted-foreground)" }}>{s.org}</p>
+        <p className="text-[12px] leading-relaxed mb-2.5" style={{ color: "var(--muted-foreground)", opacity: 0.85 }}>Backs: {s.backs}</p>
+        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>
+          View source <ExternalLink size={12} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </span>
+      </div>
+    </a>
+  );
+}
+
+function StatCard({ end, decimals, suffix, desc }: { end: number; decimals: number; suffix: string; desc: string }) {
+  const { ref, value } = useCountUp(end, decimals);
+  return (
+    <div ref={ref} className="card p-5">
+      <p className="font-[family-name:var(--font-display)] leading-none mb-1.5" style={{ fontSize: "2rem", fontWeight: 700, color: "var(--foreground)" }}>
+        {value}{suffix}
+      </p>
+      <p className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>{desc}</p>
+    </div>
+  );
+}
+
 function LimitCard({ item, index }: { item: typeof LIMITS[number]; index: number }) {
   return (
     <div className="pb-8 sm:pb-0">
@@ -62,15 +99,21 @@ function LimitCard({ item, index }: { item: typeof LIMITS[number]; index: number
 }
 
 export default function WhyNotWhatsAppPage() {
+  const scrolled = useScrolled(24);
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+      <ScrollProgressBar />
 
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-50 border-b backdrop-blur-xl"
-        style={{ background: "color-mix(in oklch, var(--background) 86%, transparent)", borderColor: "var(--border)" }}>
-        <div className="section__inner flex items-center justify-between h-16 gap-4">
+      {/* ── Header — shrinks slightly once the page has scrolled, matching the homepage ── */}
+      <header className="sticky top-0 z-50 border-b backdrop-blur-xl transition-shadow duration-300"
+        style={{
+          background: "color-mix(in oklch, var(--background) 86%, transparent)",
+          borderColor: "var(--border)",
+          boxShadow: scrolled ? "0 4px 20px rgba(0,0,0,0.05)" : "none",
+        }}>
+        <div className={cn("section__inner flex items-center justify-between gap-4 transition-[height] duration-300 ease-out", scrolled ? "h-14" : "h-16")}>
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img src="/alumunion-mark.svg" alt="" className="w-8 h-8 rounded-lg shrink-0" />
+            <img src="/alumunion-mark.svg" alt="" className={cn("rounded-lg shrink-0 transition-all duration-300", scrolled ? "w-7 h-7" : "w-8 h-8")} />
             <span className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>AlumUnion</span>
           </Link>
           <Link href="/" className="flex items-center gap-1.5 text-[13px] font-medium hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>
@@ -131,7 +174,7 @@ export default function WhyNotWhatsAppPage() {
               </thead>
               <tbody>
                 {COMPARISON.map((r) => (
-                  <tr key={r.row} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <tr key={r.row} className="transition-colors duration-150 hover:bg-muted/60" style={{ borderBottom: "1px solid var(--border)" }}>
                     <td className="p-4 text-[13px] font-semibold whitespace-nowrap" style={{ color: "var(--foreground)" }}>{r.row}</td>
                     <td className="p-4 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
                       <span className="flex items-start gap-2">
@@ -168,14 +211,8 @@ export default function WhyNotWhatsAppPage() {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-5">
-              <div className="card p-5">
-                <p className="font-[family-name:var(--font-display)] leading-none mb-1.5" style={{ fontSize: "2rem", fontWeight: 700, color: "var(--foreground)" }}>7.8%</p>
-                <p className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>Average alumni giving participation in 2023 — down from 8.5% in 2016, and ~20% in the 1980s.</p>
-              </div>
-              <div className="card p-5">
-                <p className="font-[family-name:var(--font-display)] leading-none mb-1.5" style={{ fontSize: "2rem", fontWeight: 700, color: "var(--foreground)" }}>75%</p>
-                <p className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>Of alumni say they&apos;d engage more if access to their association were mobile-friendly.</p>
-              </div>
+              <StatCard end={7.8} decimals={1} suffix="%" desc="Average alumni giving participation in 2023 — down from 8.5% in 2016, and ~20% in the 1980s." />
+              <StatCard end={75} decimals={0} suffix="%" desc="Of alumni say they'd engage more if access to their association were mobile-friendly." />
             </div>
           </div>
         </div>
@@ -192,25 +229,7 @@ export default function WhyNotWhatsAppPage() {
             for yourself.
           </p>
           <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            {SOURCES.map((s, i) => (
-              <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
-                className="card group flex items-start gap-4 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm hover:border-primary/40">
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
-                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)", color: "var(--primary)" }}>
-                  {String(i + 1).padStart(2, "0")}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[13.5px] font-semibold leading-snug mb-1 group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
-                    {s.name}
-                  </p>
-                  <p className="text-[11.5px] font-medium mb-2" style={{ color: "var(--muted-foreground)" }}>{s.org}</p>
-                  <p className="text-[12px] leading-relaxed mb-2.5" style={{ color: "var(--muted-foreground)", opacity: 0.85 }}>Backs: {s.backs}</p>
-                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>
-                    View source <ExternalLink size={12} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </span>
-                </div>
-              </a>
-            ))}
+            {SOURCES.map((s, i) => <SourceCard key={s.name} s={s} index={i} />)}
           </div>
         </div>
       </Section>

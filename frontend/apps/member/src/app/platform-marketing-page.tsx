@@ -7,12 +7,12 @@ import {
   Menu, X, ArrowRight, ChevronRight, ChevronDown,
   Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell,
   Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
-  Mail, MapPin, CheckCircle2, MessageCircleOff, SearchX, ShieldAlert, UserX,
+  Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
 } from "lucide-react";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
 import { publicPlatformClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/api-client";
-import { Section, scrollToSection, useFadeUp } from "./_marketing/primitives";
+import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
       )}>
       <div className={cn("card__content", feature.big && "sm:flex sm:items-center sm:gap-6")}>
-        <div className={cn("w-10 h-10 rounded-[10px] flex items-center justify-center transition-colors duration-200 shrink-0",
+        <div className={cn("w-10 h-10 rounded-[10px] flex items-center justify-center transition-all duration-300 ease-out shrink-0 group-hover:-rotate-6 group-hover:scale-110",
           feature.big ? "sm:w-14 sm:h-14 mb-4 sm:mb-0" : "mb-4")}
           style={{ background: iconBg, border: `1px solid ${iconBorder}` }}>
           <feature.icon size={feature.big ? 20 : 17} className={feature.big ? "sm:size-6" : ""} style={{ color: iconColor }} />
@@ -211,12 +211,16 @@ function OnboardingForm() {
     return (
       <div className="card p-8 sm:p-12 text-center flex flex-col items-center">
         <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-          <CheckCircle2 size={26} style={{ color: "var(--primary)" }} />
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <path d="M6 13.5L11 18.5L20 8" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              pathLength={1} style={{ strokeDasharray: 1, strokeDashoffset: 1, animation: "draw-check 500ms 150ms ease-out forwards" }} />
+          </svg>
         </div>
         <h3 className="font-[family-name:var(--font-display)] mb-2.5" style={{ fontSize: "1.35rem", color: "var(--foreground)" }}>Thanks — we&apos;ve got it.</h3>
         <p className="max-w-[42ch]" style={{ color: "var(--muted-foreground)", fontSize: "0.925rem", lineHeight: 1.7 }}>
           Our team will reach out to <strong style={{ color: "var(--foreground)" }}>{form.contactEmail}</strong> within one business day to get {form.institutionName} set up — free, as always.
         </p>
+        <style jsx>{`@keyframes draw-check { to { stroke-dashoffset: 0; } }`}</style>
       </div>
     );
   }
@@ -281,23 +285,40 @@ function OnboardingForm() {
 export default function PlatformMarketingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const scrolled = useScrolled(24);
+  const heroCta = useMagnetic(0.25);
+  const [heroSpotlightVars, setHeroSpotlightVars] = useState<React.CSSProperties>({ background: "var(--background)", "--hx": "50%", "--hy": "0%" } as React.CSSProperties);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  const onHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHeroSpotlightVars({
+      background: "var(--background)",
+      "--hx": `${e.clientX - rect.left}px`,
+      "--hy": `${e.clientY - rect.top}px`,
+    } as React.CSSProperties);
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+      <ScrollProgressBar />
 
       {/* ════════════════════════════════════════════════════════════════
-          NAVBAR
+          NAVBAR — shrinks slightly once the page has scrolled
       ════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b backdrop-blur-xl"
-        style={{ background: "color-mix(in oklch, var(--background) 86%, transparent)", borderColor: "var(--border)" }}>
-        <div className="section__inner flex items-center justify-between h-16 gap-4">
+      <header className="sticky top-0 z-50 border-b backdrop-blur-xl transition-shadow duration-300"
+        style={{
+          background: "color-mix(in oklch, var(--background) 86%, transparent)",
+          borderColor: "var(--border)",
+          boxShadow: scrolled ? "0 4px 20px rgba(0,0,0,0.05)" : "none",
+        }}>
+        <div className={cn("section__inner flex items-center justify-between gap-4 transition-[height] duration-300 ease-out", scrolled ? "h-14" : "h-16")}>
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img src="/alumunion-mark.svg" alt="" className="w-9 h-9 rounded-xl shrink-0" />
+            <img src="/alumunion-mark.svg" alt="" className={cn("rounded-xl shrink-0 transition-all duration-300", scrolled ? "w-7 h-7" : "w-9 h-9")} />
             <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>AlumUnion</p>
           </Link>
 
@@ -346,10 +367,13 @@ export default function PlatformMarketingPage() {
       {/* ════════════════════════════════════════════════════════════════
           HERO
       ════════════════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden" style={{ background: "var(--background)" }}>
+      <div className="relative overflow-hidden" style={heroSpotlightVars} onMouseMove={onHeroMouseMove}>
         <div className="absolute inset-0 bg-subtle-pattern opacity-[0.45] pointer-events-none" />
         <div className="absolute -top-40 -right-40 w-[640px] h-[640px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--primary) 6%, transparent) 0%, transparent 65%)" }} />
+        {/* Cursor-tracked glow — a quiet, premium touch behind the headline rather than a decorative badge */}
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-500"
+          style={{ background: "radial-gradient(500px circle at var(--hx) var(--hy), color-mix(in oklch, var(--primary) 7%, transparent), transparent 70%)" }} />
 
         <div className="section__inner--wide relative pt-16 pb-20 text-center">
 
@@ -368,7 +392,9 @@ export default function PlatformMarketingPage() {
             Built for schools, universities, and any community that wants to stay connected.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
-            <Button size="lg" className="h-12 px-8 text-[15px] font-semibold gap-2" onClick={() => scrollToSection("#onboard")}>
+            <Button ref={heroCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="h-12 px-8 text-[15px] font-semibold gap-2"
+              style={heroCta.style} onMouseMove={heroCta.onMouseMove} onMouseLeave={heroCta.onMouseLeave}
+              onClick={() => scrollToSection("#onboard")}>
               Get your institution onboarded <ArrowRight size={15} />
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 text-[15px] font-medium" onClick={() => scrollToSection("#how-it-works")}>
