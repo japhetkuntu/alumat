@@ -28,6 +28,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Institution> Institutions => Set<Institution>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
     public DbSet<SupportCase> SupportCases => Set<SupportCase>();
+    public DbSet<OnboardingLead> OnboardingLeads => Set<OnboardingLead>();
     public DbSet<PlatformNotification> PlatformNotifications => Set<PlatformNotification>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
@@ -372,6 +373,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // ── Support / announcements / audit log (global) ─────
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.Status);
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.InstitutionId);
+        modelBuilder.Entity<OnboardingLead>().HasIndex(l => l.Status);
         modelBuilder.Entity<Announcement>().HasIndex(a => a.SentAt);
         modelBuilder.Entity<AuditLogEntry>().HasIndex(a => a.CreatedAt);
 

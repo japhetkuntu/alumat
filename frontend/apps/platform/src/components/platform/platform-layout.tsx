@@ -13,6 +13,7 @@ import {
   Settings,
   Menu,
   X,
+  Inbox,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@alumni/ui";
@@ -25,6 +26,7 @@ import { NotificationPanel } from "./notification-panel";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/institutions", label: "Institutions", icon: Building2 },
+  { href: "/onboarding-leads", label: "Onboarding Requests", icon: Inbox },
   { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
   { href: "/staff", label: "Platform Staff", icon: Users },
   { href: "/support", label: "Support", icon: LifeBuoy },

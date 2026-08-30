@@ -26,7 +26,17 @@ export interface InstitutionTheme {
 // correct tenant regardless of which URL was used to reach the service.
 const API_URL = process.env.MEMBER_API_INTERNAL_URL || "http://localhost:5200/api/v1";
 
-export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
+export type TenantThemeStatus = "ok" | "not-found" | "error";
+
+// Shared by getInstitutionTheme() (used throughout <html>/metadata plumbing,
+// which only ever wants "give me a theme or null") and
+// getInstitutionThemeStatus() (used once, by the root page, to tell "no
+// institution resolved for this host" apart from a transient backend error —
+// only the former should ever render the platform marketing site; the latter
+// must keep degrading to the existing generic-fallback landing page, exactly
+// as it already does today, so an outage never misclassifies a real
+// institution visitor as a marketing-site visitor).
+async function fetchTheme(): Promise<{ status: TenantThemeStatus; theme: InstitutionTheme | null }> {
   try {
     const requestHeaders = await headers();
     const host = requestHeaders.get("host") ?? "";
@@ -47,16 +57,30 @@ export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
       headers: Object.keys(fetchHeaders).length ? fetchHeaders : undefined,
       cache: "no-store",
     });
+    if (res.status === 404) {
+      return { status: "not-found", theme: null };
+    }
     if (!res.ok) {
       console.error(`[theme] ${API_URL}/public/institution/theme -> ${res.status} for Host="${host}"`);
-      return null;
+      return { status: "error", theme: null };
     }
     const body = await res.json();
-    return body?.data ?? null;
+    return { status: "ok", theme: body?.data ?? null };
   } catch (err) {
     console.error(`[theme] fetch to ${API_URL}/public/institution/theme failed:`, err);
-    return null;
+    return { status: "error", theme: null };
   }
+}
+
+export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
+  return (await fetchTheme()).theme;
+}
+
+/** Distinguishes "no institution resolved for this host" (404 — the bare/main
+ * domain) from a transient error, so the root page can route between the
+ * platform marketing site and the normal institution landing page. */
+export async function getInstitutionThemeStatus() {
+  return fetchTheme();
 }
 
 // In :root (light mode), --primary/--success/--info/--chart-1/--sidebar-primary/

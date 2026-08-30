@@ -563,4 +563,43 @@ export async function markAllNotificationsRead(): Promise<void> {
   await platformClient.put("/notifications/read-all");
 }
 
+// ─── Onboarding leads ────────────────────────────────────────────────────
+
+export interface OnboardingLead {
+  id: string;
+  institutionName: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  country?: string;
+  estimatedMemberCount?: string;
+  message?: string;
+  status: "New" | "Contacted" | "Approved" | "Rejected";
+  assigneeStaffId?: string;
+  assigneeName?: string;
+  internalNote?: string;
+  approvedInstitutionId?: string;
+  ageHours: number;
+}
+
+export async function getOnboardingLeads(status?: string) {
+  const res = await platformClient.get<ApiResponse<OnboardingLead[]>>("/onboardingleads", { params: { status } });
+  return res.data.data!;
+}
+
+export async function getOnboardingLead(id: string) {
+  const res = await platformClient.get<ApiResponse<OnboardingLead>>(`/onboardingleads/${id}`);
+  return res.data.data!;
+}
+
+export async function updateOnboardingLeadStatus(id: string, req: { status: string; approvedInstitutionId?: string }) {
+  const res = await platformClient.patch<ApiResponse<OnboardingLead>>(`/onboardingleads/${id}/status`, req);
+  return res.data.data!;
+}
+
+export async function addOnboardingLeadNote(id: string, note: string) {
+  const res = await platformClient.post<ApiResponse<OnboardingLead>>(`/onboardingleads/${id}/notes`, { note });
+  return res.data.data!;
+}
+
 export type { AuthTokens };

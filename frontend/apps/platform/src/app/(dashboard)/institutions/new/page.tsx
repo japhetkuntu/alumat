@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
@@ -9,7 +9,7 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
-import { createInstitution, getBaseDomains } from "@/lib/platform-api";
+import { createInstitution, getBaseDomains, getOnboardingLead, updateOnboardingLeadStatus } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
 
@@ -24,10 +24,26 @@ function generatePassword() {
 }
 
 export default function NewInstitutionPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewInstitutionPageContent />
+    </Suspense>
+  );
+}
+
+function NewInstitutionPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromLead = searchParams.get("fromLead") ?? undefined;
   const { data: baseDomains } = useQuery({ queryKey: ["base-domains"], queryFn: getBaseDomains, staleTime: Infinity });
+  const { data: lead } = useQuery({
+    queryKey: ["onboarding-lead", fromLead],
+    queryFn: () => getOnboardingLead(fromLead!),
+    enabled: !!fromLead,
+  });
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [leadPrefilled, setLeadPrefilled] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -53,6 +69,20 @@ export default function NewInstitutionPage() {
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
+
+  // Prefill from an onboarding lead when arriving via /institutions/new?fromLead=<id>.
+  useEffect(() => {
+    if (!lead || leadPrefilled) return;
+    setForm((f) => ({
+      ...f,
+      name: lead.institutionName,
+      slug: slugify(lead.institutionName),
+      country: lead.country || "Ghana",
+      contactName: lead.contactName,
+      contactEmail: lead.contactEmail,
+    }));
+    setLeadPrefilled(true);
+  }, [lead, leadPrefilled]);
 
   async function next() {
     if (step === STEPS.length - 1) {
@@ -81,6 +111,13 @@ export default function NewInstitutionPage() {
         toast.success("Institution created", {
           description: `${created.name} has been onboarded. First admin: ${form.adminEmail || form.contactEmail}.`,
         });
+        if (fromLead) {
+          // Fire-and-forget — linking the lead to the new institution is secondary
+          // and must not block navigation to the newly created institution.
+          updateOnboardingLeadStatus(fromLead, { status: "Approved", approvedInstitutionId: created.id }).catch((err) => {
+            toast.error("Institution created, but the onboarding request could not be updated", { description: handleApiError(err) });
+          });
+        }
         router.push(`/institutions/${created.id}`);
       } catch (error) {
         toast.error("Could not create institution", { description: handleApiError(error) });

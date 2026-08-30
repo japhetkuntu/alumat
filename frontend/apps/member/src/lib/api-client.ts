@@ -130,6 +130,16 @@ publicMemberClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Platform.Api is a separate service from member-api and isn't reachable via
+// the same-origin proxy above (no tenant to resolve — this call is asking the
+// platform to create one), so it needs its own absolute base URL.
+const PLATFORM_API_URL = process.env.NEXT_PUBLIC_PLATFORM_API_URL || "http://localhost:5300/api/v1";
+
+/** Unauthenticated client for the platform marketing site's public endpoints
+ * (currently just onboarding-lead submission) — no auth header, no tenant
+ * slug (not tenant-scoped). */
+export const publicPlatformClient = axios.create({ baseURL: PLATFORM_API_URL, timeout: 15000 });
+
 export function handleApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as ApiResponse<unknown> | undefined;
