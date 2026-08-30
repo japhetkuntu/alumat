@@ -14,6 +14,7 @@ public class NotificationDispatcher(
     IAlumniPgRepository<Notification> notifRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<NotificationPreference> prefRepo,
+    IAlumniPgRepository<AdminNotificationPreference> adminPrefRepo,
     IAlumniPgRepository<StaffEntity> adminRepo,
     IAlumniPgRepository<Institution> institutionRepo,
     ICurrentTenantService currentTenant,
@@ -145,7 +146,11 @@ public class NotificationDispatcher(
     {
         try
         {
-            var admins = (await adminRepo.GetAllAsync(a => !a.IsDisabled)).ToList();
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude admins who have explicitly opted out.
+            var optedOut = await adminPrefRepo.GetAllAsync(p => !p.PaymentReceivedAlerts);
+            var optedOutIds = optedOut.Select(p => p.StaffId).ToHashSet();
+            var admins = (await adminRepo.GetAllAsync(a => !a.IsDisabled && !optedOutIds.Contains(a.Id))).ToList();
             var body = $"{memberName} ({memberEmail}) submitted a payment of GHS {amount:N2} for the campaign \"{campaignTitle}\". Please review and confirm.";
             var portalUrl = await GetAdminPortalUrlAsync();
 
@@ -207,6 +212,86 @@ public class NotificationDispatcher(
         catch (Exception e)
         {
             logger.LogError(e, "Failed to dispatch ContributionConfirmed for contribution {ContributionId}", contributionId);
+        }
+    }
+
+    public async Task DispatchMentorshipRequestReceivedAsync(string mentorMemberId, string menteeName, string area, string requestId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                RecipientId = mentorMemberId,
+                RecipientType = "Member",
+                Title = "New Mentorship Request",
+                Body = $"{menteeName} has requested mentorship from you in {area}.",
+                Type = "MentorshipRequestReceived",
+                RelatedEntityId = requestId,
+                RelatedEntityType = "MentorshipRequest",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/mentorship",
+                CreatedBy = "system",
+            };
+            await notifRepo.AddAsync(notification);
+
+            logger.LogInformation("Dispatched MentorshipRequestReceived to mentor {MentorMemberId} for request {RequestId}", mentorMemberId, requestId);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to dispatch MentorshipRequestReceived for request {RequestId}", requestId);
+        }
+    }
+
+    public async Task DispatchMentorshipRequestDecisionAsync(string menteeId, bool accepted, string area, string requestId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                RecipientId = menteeId,
+                RecipientType = "Member",
+                Title = accepted ? "Mentorship Request Accepted" : "Mentorship Request Declined",
+                Body = accepted
+                    ? $"Your mentorship request in {area} was accepted. You can now connect with your mentor."
+                    : $"Your mentorship request in {area} was declined.",
+                Type = "MentorshipRequestDecision",
+                RelatedEntityId = requestId,
+                RelatedEntityType = "MentorshipRequest",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/mentorship",
+                CreatedBy = "system",
+            };
+            await notifRepo.AddAsync(notification);
+
+            logger.LogInformation("Dispatched MentorshipRequestDecision ({Accepted}) to mentee {MenteeId} for request {RequestId}", accepted, menteeId, requestId);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to dispatch MentorshipRequestDecision for request {RequestId}", requestId);
+        }
+    }
+
+    public async Task DispatchForumReplyAsync(string threadAuthorId, string replierName, string threadTitle, string threadId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                RecipientId = threadAuthorId,
+                RecipientType = "Member",
+                Title = "New Reply to Your Thread",
+                Body = $"{replierName} replied to \"{threadTitle}\".",
+                Type = "ForumReply",
+                RelatedEntityId = threadId,
+                RelatedEntityType = "ForumThread",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/forum/{threadId}",
+                CreatedBy = "system",
+            };
+            await notifRepo.AddAsync(notification);
+
+            logger.LogInformation("Dispatched ForumReply to thread author {ThreadAuthorId} for thread {ThreadId}", threadAuthorId, threadId);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to dispatch ForumReply for thread {ThreadId}", threadId);
         }
     }
 

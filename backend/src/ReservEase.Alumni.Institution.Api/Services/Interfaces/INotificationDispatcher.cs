@@ -30,6 +30,12 @@ public interface INotificationDispatcher
     /// <summary>Notify the member that their contribution was rejected.</summary>
     Task DispatchContributionRejectedAsync(string memberId, string memberEmail, string memberFirstName, string campaignTitle, string? reason, string contributionId);
 
+    /// <summary>Notify the applicant member that their mentor-profile application was approved or rejected. Always delivered — personal/transactional, not preference-gated.</summary>
+    Task DispatchMentorProfileDecisionAsync(string memberId, bool approved, string profileId);
+
+    /// <summary>Notify the order's buyer that its delivery status changed. Always delivered — personal/transactional, not preference-gated.</summary>
+    Task DispatchStoreDeliveryStatusUpdatedAsync(string memberId, string orderId, string orderNumber, string newStatus);
+
     /// <summary>
     /// Fan-out an admin-composed broadcast to a pre-resolved set of recipients.
     /// Unlike the other Dispatch* methods, this ignores each member's SMS

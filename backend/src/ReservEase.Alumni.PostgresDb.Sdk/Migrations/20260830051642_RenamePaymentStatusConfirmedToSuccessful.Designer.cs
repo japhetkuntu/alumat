@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260830051642_RenamePaymentStatusConfirmedToSuccessful")]
+    partial class RenamePaymentStatusConfirmedToSuccessful
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1842,12 +1845,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
-                    b.Property<string>("CallbackPayload")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Channel")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("ConfirmedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1873,9 +1870,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<decimal>("GatewayFeeAmount")
                         .HasColumnType("numeric");
-
-                    b.Property<string>("GatewayResponse")
-                        .HasColumnType("text");
 
                     b.Property<decimal>("GrossChargeAmount")
                         .HasColumnType("numeric");

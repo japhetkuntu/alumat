@@ -11,7 +11,7 @@ import { formatCurrency, formatDate } from "@alumni/ui";
 import { getMyStoreOrders } from "@/lib/member-api";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
-  Confirmed: "success",
+  Successful: "success",
   Pending: "warning",
   Failed: "destructive",
 };
@@ -73,7 +73,7 @@ export default function MyStoreOrdersPage() {
                           </span>
                           <span className="text-muted-foreground">{formatCurrency(item.unitPrice * item.quantity)}</span>
                         </div>
-                        {o.status === "Confirmed" && item.deliveryInfo && (
+                        {o.status === "Successful" && item.deliveryInfo && (
                           <p className="text-[11.5px] text-muted-foreground leading-relaxed">{item.deliveryInfo}</p>
                         )}
                       </div>

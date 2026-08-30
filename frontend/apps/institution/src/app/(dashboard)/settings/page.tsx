@@ -19,6 +19,7 @@ import { MultiImageUpload } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
+  getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,8 +28,6 @@ import { toast } from "sonner";
 
 const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario: "", description: "", imageUrl: "" };
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
-
-const NOTIF_KEY = "alumniAdminNotifications";
 
 const defaultNotifPrefs = {
   newMemberRegistrations: true,
@@ -39,12 +38,22 @@ const defaultNotifPrefs = {
 
 type NotifPrefs = typeof defaultNotifPrefs;
 
-function loadNotifPrefs(): NotifPrefs {
-  try {
-    const stored = localStorage.getItem(NOTIF_KEY);
-    if (stored) return { ...defaultNotifPrefs, ...JSON.parse(stored) };
-  } catch { /* silent */ }
-  return defaultNotifPrefs;
+function toNotifPrefs(dto: AdminNotificationPreferences): NotifPrefs {
+  return {
+    newMemberRegistrations: dto.newMemberRegistrationAlerts,
+    pendingApprovals: dto.pendingApprovalAlerts,
+    newContributions: dto.paymentReceivedAlerts,
+    systemAlerts: dto.systemAlerts,
+  };
+}
+
+function fromNotifPrefs(prefs: NotifPrefs) {
+  return {
+    newMemberRegistrationAlerts: prefs.newMemberRegistrations,
+    pendingApprovalAlerts: prefs.pendingApprovals,
+    paymentReceivedAlerts: prefs.newContributions,
+    systemAlerts: prefs.systemAlerts,
+  };
 }
 
 function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }) {
@@ -78,13 +87,12 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "Security"] as const;
 
 export default function BrandingSettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isScopedAdmin } = useAuth();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Institution profile");
   const queryClient = useQueryClient();
 
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
   const [showPw, setShowPw] = useState(false);
-  const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(() => loadNotifPrefs());
   const [notifSaved, setNotifSaved] = useState(false);
 
   const { data: profile } = useQuery({
@@ -157,11 +165,25 @@ export default function BrandingSettingsPage() {
     pwMut.mutate();
   }
 
+  const { data: notifPrefsDto } = useQuery({
+    queryKey: ["admin-notification-preferences"],
+    queryFn: getAdminNotificationPreferences,
+  });
+
+  const notifPrefs: NotifPrefs = notifPrefsDto ? toNotifPrefs(notifPrefsDto) : defaultNotifPrefs;
+
+  const notifMutation = useMutation({
+    mutationFn: (prefs: NotifPrefs) => updateAdminNotificationPreferences(fromNotifPrefs(prefs)),
+    onSuccess: (dto) => {
+      queryClient.setQueryData(["admin-notification-preferences"], dto);
+      setNotifSaved(true);
+      setTimeout(() => setNotifSaved(false), 2500);
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   function saveNotifPrefs(prefs: NotifPrefs) {
-    setNotifPrefs(prefs);
-    localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs));
-    setNotifSaved(true);
-    setTimeout(() => setNotifSaved(false), 2500);
+    notifMutation.mutate(prefs);
   }
 
   const fullName = profile
@@ -253,25 +275,43 @@ export default function BrandingSettingsPage() {
                 <Shield size={16} className="text-primary" />
                 <p className="font-semibold text-[15px]">Active member policy</p>
               </div>
-              <p className="text-[12.5px] text-muted-foreground -mt-1">
-                Decide what makes a member &quot;active&quot; across both portals — this changes the messages and restrictions members see.
-              </p>
-              <Toggle
-                checked={institution?.memberActivePolicy === "DuesRequired"}
-                onChange={(checked) => policyMutation.mutate(checked ? "DuesRequired" : "ApprovedOnly")}
-                label="Require dues payment for active status"
-                description={
-                  institution?.memberActivePolicy === "ApprovedOnly"
-                    ? "Off — any approved member is active regardless of dues paid."
-                    : "On — a member is active only once current and past dues are paid."
-                }
-              />
+              {isScopedAdmin ? (
+                <p className="text-muted-foreground mt-2">Only Admin and SuperAdmin users can manage the active member policy.</p>
+              ) : (
+                <>
+                  <p className="text-[12.5px] text-muted-foreground -mt-1">
+                    Decide what makes a member &quot;active&quot; across both portals — this changes the messages and restrictions members see.
+                  </p>
+                  <Toggle
+                    checked={institution?.memberActivePolicy === "DuesRequired"}
+                    onChange={(checked) => policyMutation.mutate(checked ? "DuesRequired" : "ApprovedOnly")}
+                    label="Require dues payment for active status"
+                    description={
+                      institution?.memberActivePolicy === "ApprovedOnly"
+                        ? "Off — any approved member is active regardless of dues paid."
+                        : "On — a member is active only once current and past dues are paid."
+                    }
+                  />
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
       )}
 
-      {tab === "Landing content" && stories && banner && (
+      {tab === "Landing content" && isScopedAdmin && (
+        <Card className="border-border/40">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Globe size={16} className="text-primary" />
+              <p className="font-semibold text-[15px]">Landing content</p>
+            </div>
+            <p className="text-muted-foreground mt-2">Only Admin and SuperAdmin users can manage landing page content.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {tab === "Landing content" && !isScopedAdmin && stories && banner && (
         <div className="space-y-4">
           <Card className="border-border/40">
             <CardContent className="p-6 space-y-4">
@@ -459,17 +499,19 @@ export default function BrandingSettingsPage() {
             <div className="flex items-center gap-2 mb-1">
               <Bell size={16} className="text-primary" />
               <p className="font-semibold text-[15px]">Notifications</p>
-              {notifSaved && (
+              {notifMutation.isPending && (
+                <span className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                  <Loader2 size={13} className="animate-spin" /> Saving…
+                </span>
+              )}
+              {!notifMutation.isPending && notifSaved && (
                 <span className="ml-auto flex items-center gap-1 text-[11px] text-success font-bold animate-in fade-in duration-300">
                   <CheckCircle2 size={13} /> Saved
                 </span>
               )}
             </div>
             <p className="text-[12.5px] text-muted-foreground mb-2">Choose what platform events trigger alerts.</p>
-            <p className="text-[11px] text-muted-foreground bg-muted/50 border border-border/40 rounded-lg px-3 py-2 mb-2">
-              These preferences are saved to your browser. They will reset if you clear your browser data.
-            </p>
-            <div className="divide-y divide-border/40">
+            <div className={cn("divide-y divide-border/40", notifMutation.isPending && "opacity-60 pointer-events-none")}>
               <Toggle
                 checked={notifPrefs.newMemberRegistrations}
                 onChange={(v) => saveNotifPrefs({ ...notifPrefs, newMemberRegistrations: v })}

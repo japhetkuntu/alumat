@@ -17,7 +17,7 @@ import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatc
 import { useAuth } from "@/hooks/use-auth";
 
 const STATUS_COLORS: Record<string, string> = {
-  Confirmed: "var(--success, #16a34a)",
+  Successful: "var(--success, #16a34a)",
   Pending: "var(--warning, #d97706)",
   Failed: "var(--destructive, #dc2626)",
   Rejected: "var(--destructive, #dc2626)",
@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0 };
   });
-  allContributions.filter((c) => c.status === "Confirmed").forEach((c) => {
+  allContributions.filter((c) => c.status === "Successful").forEach((c) => {
     const d = new Date(c.confirmedAt ?? c.createdAt);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     const slot = trendMonths.find((m) => m.key === key);
@@ -304,7 +304,7 @@ export default function AdminDashboardPage() {
                     <td className="px-[18px] py-2.5 border-t border-border font-medium">{c.memberName ?? "Unknown"}</td>
                     <td className="px-2 py-2.5 border-t border-border tabular-nums">{formatCurrency(c.amount)}</td>
                     <td className="px-[18px] py-2.5 border-t border-border">
-                      <Badge variant={c.status === "Confirmed" ? "success" : c.status === "Rejected" ? "destructive" : "warning"}>{c.status}</Badge>
+                      <Badge variant={c.status === "Successful" ? "success" : c.status === "Rejected" ? "destructive" : "warning"}>{c.status}</Badge>
                     </td>
                   </tr>
                 ))}

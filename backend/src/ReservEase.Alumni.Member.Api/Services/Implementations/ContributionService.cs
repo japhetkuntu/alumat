@@ -370,7 +370,7 @@ public class ContributionService : IContributionService
             if (campaign is null || !campaign.IsMembershipCampaign)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Membership campaign not found");
 
-            var alreadyPaid = await contributionRepo.GetOneAsync(c => c.CampaignId == campaign.Id && c.MemberId == member.Id && c.Status == "Confirmed");
+            var alreadyPaid = await contributionRepo.GetOneAsync(c => c.CampaignId == campaign.Id && c.MemberId == member.Id && c.Status == "Successful");
             if (alreadyPaid is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("You have already paid this membership campaign.");
 
@@ -663,7 +663,7 @@ public class ContributionService : IContributionService
 
         if (paystackStatus == "success")
         {
-            transaction.Status = "Confirmed";
+            transaction.Status = "Successful";
 
             var existingContribution = await db.Set<Contribution>().IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.TransactionRef == reference && c.MemberId == transaction.MemberId);
@@ -675,7 +675,7 @@ public class ContributionService : IContributionService
                 if (campaign is not null && campaign.IsMembershipCampaign)
                 {
                     var priorMembership = await db.Set<Contribution>().IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(c => c.CampaignId == campaign.Id && c.MemberId == transaction.MemberId && c.Status == "Confirmed");
+                        .FirstOrDefaultAsync(c => c.CampaignId == campaign.Id && c.MemberId == transaction.MemberId && c.Status == "Successful");
                     if (priorMembership is not null)
                     {
                         transaction.Status = "Failed";
@@ -725,7 +725,7 @@ public class ContributionService : IContributionService
                     Amount = transaction.Amount,
                     PaymentMethod = "Paystack",
                     TransactionRef = reference,
-                    Status = "Confirmed",
+                    Status = "Successful",
                     ConfirmedAt = DateTime.UtcNow,
                     ConfirmedBy = "Paystack",
                     CreatedBy = transaction.MemberId,
@@ -782,7 +782,7 @@ public class ContributionService : IContributionService
 
                             var confirmedContributions = await db.Set<Contribution>().IgnoreQueryFilters()
                                 .Where(c => c.InstitutionId == institutionId
-                                    && c.MemberId == transaction.MemberId && c.Status == "Confirmed")
+                                    && c.MemberId == transaction.MemberId && c.Status == "Successful")
                                 .ToListAsync();
                             var paidCampaignIds = new HashSet<string>(confirmedContributions.Select(c => c.CampaignId));
                             var allPaid = requiredCampaigns.All(c => paidCampaignIds.Contains(c.Id));
@@ -905,7 +905,7 @@ public class ContributionService : IContributionService
             if (requiredCampaigns.Count > 0)
             {
                 var requiredIds = requiredCampaigns.Select(c => c.Id).ToList();
-                var allConfirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Confirmed");
+                var allConfirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Successful");
                 var paidCampaignIds = allConfirmed
                     .Where(c => requiredIds.Contains(c.CampaignId))
                     .Select(c => c.CampaignId)
@@ -969,7 +969,7 @@ public class ContributionService : IContributionService
                 && c.MembershipYear.Value >= memberGradYear
                 && c.MembershipYear.Value <= currentYear);
 
-            var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Confirmed" && c.Campaign != null);
+            var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Successful" && c.Campaign != null);
             var paidIds = new HashSet<string>(confirmed.Select(c => c.CampaignId));
 
             var unpaid = campaigns
@@ -1029,7 +1029,7 @@ public class ContributionService : IContributionService
                     Status = transaction.Status,
                     Amount = transaction.Amount,
                     PaymentMethod = transaction.PaymentMethod,
-                    Message = transaction.Status == "Confirmed"
+                    Message = transaction.Status == "Successful"
                         ? "Payment confirmed"
                         : transaction.FailureMessage ?? "Payment failed or rejected",
                 }
@@ -1046,7 +1046,7 @@ public class ContributionService : IContributionService
                     Status = contribution.Status,
                     Amount = contribution.Amount,
                     PaymentMethod = contribution.PaymentMethod,
-                    Message = contribution.Status == "Confirmed" ? "Payment confirmed" : "Payment failed or rejected",
+                    Message = contribution.Status == "Successful" ? "Payment confirmed" : "Payment failed or rejected",
                 }
                 .ToOkApiResponse("Payment status retrieved");
             }
@@ -1073,7 +1073,7 @@ public class ContributionService : IContributionService
                 return new ContributionStatusResponse
                 {
                     Reference = reference,
-                    Status = "Confirmed",
+                    Status = "Successful",
                     Amount = (verifyResponse.Data?.Amount ?? 0) / 100m,
                     PaymentMethod = "Paystack",
                     Message = "Payment confirmed",
@@ -1132,9 +1132,9 @@ public class ContributionService : IContributionService
 
             return transaction.Status switch
             {
-                "Confirmed" => new ActivationStatusResponse
+                "Successful" => new ActivationStatusResponse
                 {
-                    Status = "Confirmed",
+                    Status = "Successful",
                     Email = email,
                     MemberNumber = memberNumber,
                     Message = "Your membership has been activated successfully.",

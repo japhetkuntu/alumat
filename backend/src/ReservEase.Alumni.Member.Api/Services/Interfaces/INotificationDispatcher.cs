@@ -17,4 +17,13 @@ public interface INotificationDispatcher
 
     /// <summary>Notify the member that their contribution was rejected.</summary>
     Task DispatchContributionRejectedAsync(string memberId, string memberEmail, string memberFirstName, string campaignTitle, string? reason, string contributionId);
+
+    /// <summary>Notify a mentor that they've received a new mentorship pairing request. Always delivered — personal/transactional, not preference-gated.</summary>
+    Task DispatchMentorshipRequestReceivedAsync(string mentorMemberId, string menteeName, string area, string requestId);
+
+    /// <summary>Notify a mentee of the mentor's decision on their pairing request. Always delivered — personal/transactional, not preference-gated.</summary>
+    Task DispatchMentorshipRequestDecisionAsync(string menteeId, bool accepted, string area, string requestId);
+
+    /// <summary>Notify a thread's original author when someone else replies to it. Always delivered — personal/transactional, not preference-gated.</summary>
+    Task DispatchForumReplyAsync(string threadAuthorId, string replierName, string threadTitle, string threadId);
 }

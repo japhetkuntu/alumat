@@ -32,7 +32,7 @@ import { YearGroupPicker } from "@alumni/ui";
 import type { ContributionStatus } from "@/types";
 
 const contribStatusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
-  Confirmed: "success",
+  Successful: "success",
   Pending: "warning",
   Rejected: "destructive",
 };
@@ -186,7 +186,7 @@ export default function CampaignDetailPage() {
                 <div className="flex flex-wrap gap-4 mt-3 text-sm">
                   <div><p className="text-muted-foreground">Total disbursed</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalDisbursed)}</p></div>
                   <div><p className="text-muted-foreground">Outstanding</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalOutstanding)}</p></div>
-                  <div><p className="text-muted-foreground">Confirmed contributions</p><p className="font-semibold tabular-nums">{paystackSummary.confirmedCount}</p></div>
+                  <div><p className="text-muted-foreground">Successful contributions</p><p className="font-semibold tabular-nums">{paystackSummary.confirmedCount}</p></div>
                   <div><p className="text-muted-foreground">Disbursed count</p><p className="font-semibold tabular-nums">{paystackSummary.disbursedCount}</p></div>
                 </div>
               </>

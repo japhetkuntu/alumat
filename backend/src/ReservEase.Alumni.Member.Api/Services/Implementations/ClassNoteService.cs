@@ -39,7 +39,7 @@ public class ClassNoteService(
         if (requiredCampaigns.Any())
         {
             var requiredIds = requiredCampaigns.Select(c => c.Id).ToHashSet();
-            var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == memberId && c.Status == "Confirmed");
+            var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == memberId && c.Status == "Successful");
             return confirmed.Count(c => requiredIds.Contains(c.CampaignId)) >= requiredIds.Count;
         }
         var member = await memberRepo.GetByIdAsync(memberId);

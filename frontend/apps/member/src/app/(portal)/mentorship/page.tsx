@@ -305,6 +305,9 @@ export default function MemberMentorshipPage() {
                 const isFull     = m.currentMenteeCount >= m.maxMentees;
                 const isSelected = requestForm.mentorProfileId === m.id;
                 const isSelf     = m.memberId === user?.id;
+                const existingRequest = requests.find(
+                  r => r.mentorProfileId === m.id && (r.status === "Pending" || r.status === "Accepted")
+                );
 
                 return (
                   <div
@@ -357,18 +360,28 @@ export default function MemberMentorshipPage() {
 
                     <Button
                       size="sm"
-                      variant={isFull || isSelected || isSelf ? "outline" : "default"}
+                      variant={isFull || isSelected || isSelf || existingRequest ? "outline" : "default"}
                       className="w-full font-semibold text-[13.5px]"
                       style={{ height: 40 }}
-                      disabled={isFull || isSelf}
+                      disabled={isFull || isSelf || !!existingRequest}
                       onClick={() => {
-                        if (isFull || isSelf) return;
+                        if (isFull || isSelf || existingRequest) return;
                         setRequestForm(isSelected
                           ? { mentorProfileId: "", area: "", message: "" }
                           : { mentorProfileId: m.id, area: m.area, message: "" });
                       }}
                     >
-                      {isSelf ? "This is you" : isFull ? "Mentor full" : isSelected ? "Cancel" : "Request mentorship"}
+                      {isSelf
+                        ? "This is you"
+                        : existingRequest?.status === "Accepted"
+                        ? "Your mentor"
+                        : existingRequest?.status === "Pending"
+                        ? "Requested"
+                        : isFull
+                        ? "Mentor full"
+                        : isSelected
+                        ? "Cancel"
+                        : "Request mentorship"}
                     </Button>
                   </div>
                 );

@@ -112,7 +112,7 @@ export default function CampaignDetailPage() {
   );
 
   /* ── Derived values ── */
-  const hasPaid        = myContributions?.results.some(c => c.status === "Confirmed" || c.status === "Pending");
+  const hasPaid        = myContributions?.results.some(c => c.status === "Successful" || c.status === "Pending");
   const isMembership   = !!campaign.isMembershipCampaign;
   const membershipPaid = isMembership && hasPaid;
   const isPensioner    = profile?.employmentStatus === "Pensioner";

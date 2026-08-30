@@ -25,12 +25,14 @@ import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionMemberPolicy,
   updateInstitutionFeatures, getFeatureCatalog,
   updateInstitutionPayments, getInstitutionRevenue, getInstitutionPayments, type PlatformPayment,
+  getPaymentDetail, type PaymentDetail,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   uploadPlatformImage,
   getInstitutionStaff, inviteInstitutionStaff, setInstitutionStaffDisabled,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
+import { useAuth } from "@/hooks/use-auth";
 
 const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments"] as const;
 
@@ -129,6 +131,7 @@ function HeroImagesField({ urls, onChange, institutionSlug }: {
 }
 
 export default function InstitutionDetailPage() {
+  const { isSuperAdmin } = useAuth();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
@@ -151,6 +154,12 @@ export default function InstitutionDetailPage() {
     queryKey: ["institution-payments", id, paymentsPage, paymentsSource, paymentsStatus],
     queryFn: () => getInstitutionPayments(id, paymentsPage, 20, paymentsStatus || undefined, paymentsSource || undefined),
     enabled: tab === "Payments",
+  });
+  const [selectedPayment, setSelectedPayment] = useState<{ id: string; source: string } | null>(null);
+  const { data: paymentDetail, isLoading: paymentDetailLoading } = useQuery({
+    queryKey: ["payment-detail", id, selectedPayment?.id, selectedPayment?.source],
+    queryFn: () => getPaymentDetail(id, selectedPayment!.id, selectedPayment!.source),
+    enabled: !!selectedPayment,
   });
   const { data: staff = [], isLoading: staffLoading } = useQuery({
     queryKey: ["institution-staff", id],
@@ -872,7 +881,7 @@ export default function InstitutionDetailPage() {
             <Card>
               <div className="px-5 py-4 border-b border-border">
                 <p className="text-[14px] font-semibold">Revenue</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Real figures from this institution&apos;s confirmed payments.</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Real figures from this institution&apos;s successful payments.</p>
               </div>
               <CardContent className="p-5">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -889,7 +898,7 @@ export default function InstitutionDetailPage() {
                     <p className="text-[20px] font-bold mt-1">{formatCurrency(revenue?.netToInstitution ?? 0, "GHS")}</p>
                   </div>
                 </div>
-                <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} confirmed payments</p>
+                <p className="text-[12px] text-muted-foreground mt-3">{(revenue?.confirmedPaymentCount ?? 0).toLocaleString()} successful payments</p>
               </CardContent>
             </Card>
 
@@ -897,7 +906,7 @@ export default function InstitutionDetailPage() {
               <div className="px-5 py-4 border-b border-border">
                 <p className="text-[14px] font-semibold">Fee &amp; settlement</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5">
-                  The platform&apos;s cut of each confirmed payment, and the bank account this institution&apos;s share settles to.
+                  The platform&apos;s cut of each successful payment, and the bank account this institution&apos;s share settles to.
                 </p>
               </div>
               <CardContent className="p-5 space-y-4">
@@ -913,7 +922,7 @@ export default function InstitutionDetailPage() {
                       onChange={(e) => setPayments((p) => ({ ...p!, platformFeePercentage: e.target.value }))}
                       className="w-[120px]"
                     />
-                    <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
+                    <span className="text-[13px] text-muted-foreground">% of each successful payment</span>
                   </div>
                 </div>
                 <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} />
@@ -951,7 +960,7 @@ export default function InstitutionDetailPage() {
                   onValueChange={(v) => { setPaymentsStatus(v === "All" ? "" : v); setPaymentsPage(1); }}
                   options={[
                     { value: "All", label: "All statuses" },
-                    { value: "Confirmed", label: "Confirmed" },
+                    { value: "Successful", label: "Successful" },
                     { value: "Pending", label: "Pending" },
                     { value: "Failed", label: "Failed" },
                     { value: "Rejected", label: "Rejected" },
@@ -974,13 +983,19 @@ export default function InstitutionDetailPage() {
                         <th className="px-5 py-2.5 font-semibold">Description</th>
                         <th className="px-5 py-2.5 font-semibold">Source</th>
                         <th className="px-5 py-2.5 font-semibold">Amount</th>
+                        <th className="px-5 py-2.5 font-semibold">Platform fee</th>
+                        <th className="px-5 py-2.5 font-semibold">Provider fee</th>
                         <th className="px-5 py-2.5 font-semibold">Status</th>
                         <th className="px-5 py-2.5 font-semibold">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paymentsList.results.map((p: PlatformPayment) => (
-                        <tr key={p.id} className="border-b border-border/60 last:border-0">
+                        <tr
+                          key={p.id}
+                          className="border-b border-border/60 last:border-0 cursor-pointer hover:bg-muted/40"
+                          onClick={() => setSelectedPayment({ id: p.id, source: p.source })}
+                        >
                           <td className="px-5 py-3">
                             <p className="font-medium">{p.payerName ?? "—"}</p>
                             <p className="text-[11.5px] text-muted-foreground">{p.payerEmail}</p>
@@ -988,8 +1003,10 @@ export default function InstitutionDetailPage() {
                           <td className="px-5 py-3">{p.description}</td>
                           <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : "Store order"}</td>
                           <td className="px-5 py-3 font-semibold">{formatCurrency(p.amount, "GHS")}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.platformFeeAmount, "GHS")}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.gatewayFeeAmount, "GHS")}</td>
                           <td className="px-5 py-3">
-                            <Badge variant={p.status === "Confirmed" ? "success" : p.status === "Pending" ? "warning" : "destructive"} size="sm">{p.status}</Badge>
+                            <Badge variant={p.status === "Successful" ? "success" : p.status === "Pending" ? "warning" : "destructive"} size="sm">{p.status}</Badge>
                           </td>
                           <td className="px-5 py-3 text-muted-foreground">{formatDate(p.createdAt)}</td>
                         </tr>
@@ -1035,7 +1052,7 @@ export default function InstitutionDetailPage() {
                 onValueChange={(role) => setInviteForm((f) => ({ ...f, role }))}
                 options={[
                   { value: "Admin", label: "Admin" },
-                  { value: "SuperAdmin", label: "SuperAdmin" },
+                  ...(isSuperAdmin ? [{ value: "SuperAdmin", label: "SuperAdmin" }] : []),
                 ]}
               />
             </div>
@@ -1052,6 +1069,119 @@ export default function InstitutionDetailPage() {
             >
               {inviteMutation.isPending ? "Inviting…" : "Send invite"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedPayment} onOpenChange={(o) => { if (!o) setSelectedPayment(null); }}>
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle>Payment detail</DialogTitle>
+          </DialogHeader>
+          {paymentDetailLoading || !paymentDetail ? (
+            <div className="p-5 text-[13px] text-muted-foreground">Loading…</div>
+          ) : (
+            <div className="space-y-5 mt-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Payer</p>
+                  <p className="text-[13px] font-medium mt-0.5">{paymentDetail.payerName ?? "—"}</p>
+                  <p className="text-[12px] text-muted-foreground">{paymentDetail.payerEmail ?? "—"}</p>
+                  {paymentDetail.memberNumber && (
+                    <p className="text-[12px] text-muted-foreground">Member #{paymentDetail.memberNumber}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Status</p>
+                  <div className="mt-0.5">
+                    <Badge variant={paymentDetail.status === "Successful" ? "success" : paymentDetail.status === "Pending" ? "warning" : "destructive"} size="sm">
+                      {paymentDetail.status}
+                    </Badge>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground mt-1">Created {formatDate(paymentDetail.createdAt)}</p>
+                  {paymentDetail.confirmedAt && (
+                    <p className="text-[12px] text-muted-foreground">Confirmed {formatDate(paymentDetail.confirmedAt)}</p>
+                  )}
+                </div>
+              </div>
+
+              {paymentDetail.campaignTitle && (
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Campaign</p>
+                  <p className="text-[13px] font-medium mt-0.5">{paymentDetail.campaignTitle}</p>
+                </div>
+              )}
+
+              {paymentDetail.items && paymentDetail.items.length > 0 && (
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide mb-1.5">Items</p>
+                  <div className="border border-border rounded-lg divide-y divide-border">
+                    {paymentDetail.items.map((item, idx) => (
+                      <div key={idx} className="px-3 py-2 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[13px] font-medium">{item.productName}</p>
+                          {item.variantOptions && Object.keys(item.variantOptions).length > 0 && (
+                            <p className="text-[11.5px] text-muted-foreground">
+                              {Object.entries(item.variantOptions).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right text-[12.5px] text-muted-foreground shrink-0">
+                          <p>{item.quantity} × {formatCurrency(item.unitPrice, "GHS")}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide mb-1.5">Fee breakdown</p>
+                <div className="border border-border rounded-lg divide-y divide-border text-[13px]">
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="text-muted-foreground">Amount institution receives</span>
+                    <span className="font-semibold">{formatCurrency(paymentDetail.amount, "GHS")}</span>
+                  </div>
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="text-muted-foreground">Platform fee</span>
+                    <span>{formatCurrency(paymentDetail.platformFeeAmount, "GHS")}</span>
+                  </div>
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="text-muted-foreground">Payment provider fee</span>
+                    <span>{formatCurrency(paymentDetail.gatewayFeeAmount, "GHS")}</span>
+                  </div>
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="text-muted-foreground">Transaction charge</span>
+                    <span>{formatCurrency(paymentDetail.transactionChargeAmount, "GHS")}</span>
+                  </div>
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="font-medium">Gross amount charged to payer</span>
+                    <span className="font-semibold">{formatCurrency(paymentDetail.grossChargeAmount, "GHS")}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Payment method</p>
+                  <p className="text-[13px] mt-0.5">{paymentDetail.paymentMethod}{paymentDetail.channel ? ` · ${paymentDetail.channel}` : ""}</p>
+                </div>
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Transaction ref</p>
+                  <p className="text-[13px] mt-0.5 font-mono">{paymentDetail.transactionRef ?? "—"}</p>
+                </div>
+              </div>
+
+              {paymentDetail.gatewayResponse && (
+                <div>
+                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Gateway response</p>
+                  <p className="text-[13px] mt-0.5">{paymentDetail.gatewayResponse}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedPayment(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

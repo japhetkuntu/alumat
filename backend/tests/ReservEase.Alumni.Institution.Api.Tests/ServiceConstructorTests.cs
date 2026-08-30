@@ -60,7 +60,7 @@ public class ServiceConstructorTests
         var _____ = new ForumService(forumCategoryRepo.Object, forumThreadRepo.Object, new NullLogger<ForumService>());
         var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<JobService>());
         var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, currentTenant.Object, new NullLogger<MemberManagementService>());
-        var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, new NullLogger<MentorshipService>());
+        var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, notificationActor.Object, currentTenant.Object, new NullLogger<MentorshipService>());
         var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, currentTenant.Object, new NullLogger<NewsService>());
         var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, new NullLogger<ReportService>());
         var ___________ = new ResourceService(resourceRepo.Object, storageService.Object, currentTenant.Object, new NullLogger<ResourceService>());

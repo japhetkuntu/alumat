@@ -98,7 +98,7 @@ public class SpotlightService(
             if (requiredCampaigns.Any())
             {
                 var requiredIds = requiredCampaigns.Select(c => c.Id).ToHashSet();
-                var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Confirmed");
+                var confirmed = await contributionRepo.GetAllAsync(c => c.MemberId == member.Id && c.Status == "Successful");
                 var paidCount = confirmed.Count(c => requiredIds.Contains(c.CampaignId));
                 duesRequirementMet = paidCount >= requiredIds.Count;
             }

@@ -6,14 +6,25 @@ import { Card } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { getAuditLog } from "@/lib/platform-api";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AuditLogPage() {
+  const { isSuperAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const { data } = useQuery({
     queryKey: ["audit-log", { page: 1, pageSize: 100, search }],
     queryFn: () => getAuditLog({ page: 1, pageSize: 100, search: search || undefined }),
   });
   const entries = data?.results ?? [];
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-8 lg:p-12">
+        <h1 className="text-2xl font-bold">Unauthorized</h1>
+        <p className="text-muted-foreground mt-2">Only SuperAdmin users can access the audit log.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-7 max-w-[1500px]">

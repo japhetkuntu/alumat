@@ -164,7 +164,7 @@ export default function StoreProductDetailPage() {
                             disabled={!isAvailable}
                             onClick={() => setSelectedOptions((prev) => ({ ...prev, [optionType]: value }))}
                             className={cn(
-                              "h-9 min-w-[2.5rem] px-3 border text-[13px] font-medium transition-colors",
+                              "h-10 min-w-[3rem] px-4 border text-[13px] font-medium transition-colors",
                               isSelected
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-border bg-background text-foreground hover:bg-muted",
@@ -198,14 +198,14 @@ export default function StoreProductDetailPage() {
             {inCart ? (
               <div className="flex items-center gap-2">
                 <button
-                  className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted"
+                  className="w-10 h-10 rounded-md border border-border flex items-center justify-center hover:bg-muted"
                   onClick={() => updateQuantity(product.id, selectedVariant?.id, -1)}
                 >
                   <Minus size={14} />
                 </button>
                 <span className="w-8 text-center text-[15px] font-semibold">{inCart.quantity}</span>
                 <button
-                  className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted"
+                  className="w-10 h-10 rounded-md border border-border flex items-center justify-center hover:bg-muted"
                   onClick={() => updateQuantity(product.id, selectedVariant?.id, 1)}
                 >
                   <Plus size={14} />

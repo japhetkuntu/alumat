@@ -184,7 +184,7 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     public async Task<IActionResult> InviteInstitutionStaff(string id, [FromBody] InviteInstitutionStaffRequest request)
     {
         var acct = User.GetAccount();
-        var result = await institutionService.InviteInstitutionStaffAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        var result = await institutionService.InviteInstitutionStaffAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim(), acct.Role);
         return result.ToActionResult();
     }
 
@@ -201,6 +201,7 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     }
 
     /// <summary>How money moved for this institution — gross collected, the platform's cut, and what settled to them.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing,Support")]
     [HttpGet("{id}/revenue")]
     [SwaggerOperation(Summary = "Get institution revenue")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionRevenueResponse>))]
@@ -211,12 +212,24 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     }
 
     /// <summary>Every payment this institution has collected — Contributions and Store orders, every status — for support staff to troubleshoot a member's payment issue.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing,Support")]
     [HttpGet("{id}/payments")]
     [SwaggerOperation(Summary = "Get institution payments (all sources, all statuses)")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<PlatformPaymentDto>>))]
     public async Task<IActionResult> GetPayments(string id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null, [FromQuery] string? source = null)
     {
         var result = await institutionService.GetPaymentsAsync(id, page, pageSize, status, source);
+        return result.ToActionResult();
+    }
+
+    /// <summary>Full detail for one payment (Contribution or StoreOrder) — fee breakdown, gateway channel/response, and line items where applicable — for support staff troubleshooting.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing,Support")]
+    [HttpGet("{institutionId}/payments/{paymentId}")]
+    [SwaggerOperation(Summary = "Get a single payment's full detail")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PaymentDetailDto>))]
+    public async Task<IActionResult> GetPaymentDetail(string institutionId, string paymentId, [FromQuery] string? source = null)
+    {
+        var result = await institutionService.GetPaymentDetailAsync(institutionId, paymentId, source);
         return result.ToActionResult();
     }
 

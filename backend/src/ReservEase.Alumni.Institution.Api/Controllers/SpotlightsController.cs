@@ -10,7 +10,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Filters;
 
 namespace ReservEase.Alumni.Institution.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Spotlights)]
 public class SpotlightsController(IInstitutionSpotlightService spotlightService) : DefaultController
 {

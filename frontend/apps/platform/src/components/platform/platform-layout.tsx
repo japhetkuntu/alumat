@@ -35,7 +35,12 @@ const navItems = [
 
 export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
+
+  const visibleNavItems = navItems.filter((item) => {
+    if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground w-[248px] select-none">
@@ -54,7 +59,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 custom-scrollbar">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link

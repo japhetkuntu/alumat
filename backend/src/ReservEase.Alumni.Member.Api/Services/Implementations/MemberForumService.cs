@@ -1,5 +1,6 @@
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
@@ -7,6 +8,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -16,6 +18,8 @@ public class MemberForumService(
     IAlumniPgRepository<ForumPost> postRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Community> communityRepo,
+    INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<MemberForumService> logger) : IMemberForumService
 {
     /// <summary>True if this member is an approved member or leader of the given community.</summary>
@@ -255,6 +259,14 @@ public class MemberForumService(
 
             thread.ReplyCount += 1;
             await threadRepo.UpdateAsync(thread);
+
+            // Notify the thread's original author only (not every prior
+            // participant) — skip when they're replying to their own thread.
+            if (thread.AuthorId != member.Id)
+            {
+                notificationActor.Tell(new DispatchForumReplyCommand(
+                    currentTenant.InstitutionId!, thread.AuthorId, $"{member.FirstName} {member.LastName}", thread.Title, thread.Id));
+            }
 
             logger.LogInformation("Reply {PostId} added to thread {ThreadId} by member {MemberId}", post.Id, request.ThreadId, member.Id);
             return post.ToDto().ToCreatedApiResponse("Reply posted");

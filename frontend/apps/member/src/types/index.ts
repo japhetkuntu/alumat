@@ -204,7 +204,7 @@ export type CampaignFilter = BaseFilter & {
 
 // ─── Contribution ─────────────────────────────────────────────────────────────
 
-export type ContributionStatus = "Pending" | "Confirmed" | "Rejected";
+export type ContributionStatus = "Pending" | "Successful" | "Rejected";
 export type ContributionMethod = "Manual" | "Paystack" | "MobileMoney" | "BankTransfer";
 
 // User-facing label for a payment method — keeps processor names like
@@ -616,7 +616,7 @@ export interface StoreOrder {
   orderNumber: string;
   items: StoreOrderItem[];
   totalAmount: number;
-  status: "Pending" | "Confirmed" | "Failed";
+  status: "Pending" | "Successful" | "Failed";
   transactionRef?: string;
   confirmedAt?: string;
   createdAt: string;

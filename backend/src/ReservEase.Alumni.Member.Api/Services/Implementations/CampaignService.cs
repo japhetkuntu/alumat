@@ -175,7 +175,7 @@ public class CampaignService(
         try
         {
             var contributions = await contributionRepo.GetAllAsync(
-                c => c.CampaignId == campaignId && c.Status == "Confirmed" && c.ShowOnWallOfSupport);
+                c => c.CampaignId == campaignId && c.Status == "Successful" && c.ShowOnWallOfSupport);
             var entries = contributions
                 .Where(c => c.Member is not null)
                 .OrderByDescending(c => c.ConfirmedAt ?? c.CreatedAt)

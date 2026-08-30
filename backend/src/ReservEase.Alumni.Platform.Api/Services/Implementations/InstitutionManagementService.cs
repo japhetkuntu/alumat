@@ -5,6 +5,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Actors;
+using ReservEase.Alumni.Platform.Api.Extensions;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -16,6 +17,7 @@ using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Institution
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
 using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
+using PaymentTransactionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.PaymentTransaction;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -83,7 +85,7 @@ public class InstitutionManagementService(
             // (which is always 0 for online payments now — nothing is deducted
             // from the institution).
             var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-                .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
+                .Where(c => c.InstitutionId == i.Id && c.Status == "Successful")
                 .SumAsync(c => c.PlatformRevenueAmount);
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
@@ -356,7 +358,7 @@ public class InstitutionManagementService(
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionRevenueResponse>("Institution not found");
 
         var confirmed = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.InstitutionId == id && c.Status == "Confirmed")
+            .Where(c => c.InstitutionId == id && c.Status == "Successful")
             .ToListAsync();
 
         var gross = confirmed.Sum(c => c.Amount);
@@ -390,7 +392,7 @@ public class InstitutionManagementService(
                 c.Id, "Contribution", c.InstitutionId,
                 c.Member is null ? null : $"{c.Member.FirstName} {c.Member.LastName}", c.Member?.Email,
                 c.Campaign?.Title ?? "Contribution", c.Amount, c.Status, c.PaymentMethod, c.TransactionRef,
-                c.CreatedAt, c.ConfirmedAt)));
+                c.CreatedAt, c.ConfirmedAt, c.PlatformFeeAmount, c.GatewayFeeAmount)));
         }
 
         if (string.IsNullOrEmpty(source) || source == "StoreOrder")
@@ -403,7 +405,7 @@ public class InstitutionManagementService(
                 o.Member is null ? null : $"{o.Member.FirstName} {o.Member.LastName}", o.Member?.Email,
                 o.Items.Count == 1 ? o.Items[0].ProductName : $"{o.Items.Count} items",
                 o.TotalAmount, o.Status, o.PaymentMethod, o.TransactionRef,
-                o.CreatedAt, o.ConfirmedAt)));
+                o.CreatedAt, o.ConfirmedAt, o.PlatformFeeAmount, o.GatewayFeeAmount)));
         }
 
         if (!string.IsNullOrEmpty(status))
@@ -426,6 +428,71 @@ public class InstitutionManagementService(
             Results = pageItems,
         };
         return result.ToOkApiResponse();
+    }
+
+    /// <summary>
+    /// Full detail for a single payment — tries Contribution first, then StoreOrder,
+    /// since the id alone doesn't say which source it came from (an optional `source`
+    /// hint short-circuits the lookup when the caller already knows, e.g. from the
+    /// payments list's Source field). For a Contribution, the linked PaymentTransaction
+    /// (joined by TransactionRef == Reference, the same string match ContributionService
+    /// uses to correlate the two) supplies Channel/GatewayResponse.
+    /// </summary>
+    public async Task<IApiResponse<PaymentDetailDto>> GetPaymentDetailAsync(string institutionId, string paymentId, string? source)
+    {
+        if (string.IsNullOrEmpty(source) || source == "Contribution")
+        {
+            var contribution = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Id == paymentId && c.InstitutionId == institutionId);
+            if (contribution is not null)
+            {
+                PaymentTransactionEntity? transaction = null;
+                if (!string.IsNullOrEmpty(contribution.TransactionRef))
+                {
+                    transaction = await db.Set<PaymentTransactionEntity>().IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(t => t.Reference == contribution.TransactionRef);
+                }
+
+                return new PaymentDetailDto(
+                    contribution.Id, "Contribution", contribution.InstitutionId,
+                    contribution.Member is null ? null : $"{contribution.Member.FirstName} {contribution.Member.LastName}",
+                    contribution.Member?.Email, contribution.Member?.MemberNumber,
+                    contribution.Campaign?.Title, null,
+                    contribution.Amount, contribution.PlatformFeeAmount, contribution.GatewayFeeAmount,
+                    transaction?.TransactionChargeAmount ?? 0m, contribution.GrossChargeAmount,
+                    contribution.Status, contribution.CreatedAt, contribution.ConfirmedAt,
+                    contribution.PaymentMethod, transaction?.Channel, transaction?.GatewayResponse, contribution.TransactionRef)
+                    .ToOkApiResponse();
+            }
+
+            if (source == "Contribution")
+                return ApiResponseExtensions.ToNotFoundApiResponse<PaymentDetailDto>("Payment not found");
+        }
+
+        if (string.IsNullOrEmpty(source) || source == "StoreOrder")
+        {
+            var order = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(o => o.Id == paymentId && o.InstitutionId == institutionId);
+            if (order is not null)
+            {
+                var items = order.Items
+                    .Select(i => new PaymentDetailItemDto(i.ProductName, i.VariantOptions, i.Quantity, i.UnitPrice))
+                    .ToList();
+
+                return new PaymentDetailDto(
+                    order.Id, "StoreOrder", order.InstitutionId,
+                    order.Member is null ? null : $"{order.Member.FirstName} {order.Member.LastName}",
+                    order.Member?.Email, order.Member?.MemberNumber,
+                    null, items,
+                    order.TotalAmount, order.PlatformFeeAmount, order.GatewayFeeAmount,
+                    order.TransactionChargeAmount, order.GrossChargeAmount,
+                    order.Status, order.CreatedAt, order.ConfirmedAt,
+                    order.PaymentMethod, order.Channel, order.GatewayResponse, order.TransactionRef)
+                    .ToOkApiResponse();
+            }
+        }
+
+        return ApiResponseExtensions.ToNotFoundApiResponse<PaymentDetailDto>("Payment not found");
     }
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName)
@@ -467,7 +534,7 @@ public class InstitutionManagementService(
         var newThisMonth = await db.Institutions.CountAsync(i => i.OnboardedAt >= monthStart);
 
         var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.Status == "Confirmed")
+            .Where(c => c.Status == "Successful")
             .SumAsync(c => c.PlatformRevenueAmount);
 
         var growthCounts = new List<int>();
@@ -497,9 +564,31 @@ public class InstitutionManagementService(
             .ToOkApiResponse();
     }
 
+    /// <summary>
+    /// The three institution-staff roles a platform staffer can grant here.
+    /// Institution.Api's StaffRoles class isn't reachable from this project
+    /// (Platform.Api and Institution.Api are sibling projects, not layered),
+    /// so this list is intentionally duplicated locally rather than pulling
+    /// in a cross-project reference for three string literals.
+    /// </summary>
+    private static bool IsValidInstitutionRole(string? role) => role is "SuperAdmin" or "Admin" or "ScopedAdmin";
+
     public async Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(
-        string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName)
+        string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName, string callerPlatformRole)
     {
+        if (!IsValidInstitutionRole(request.Role))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffDto>(
+                "Invalid role. Must be one of: SuperAdmin, Admin, ScopedAdmin.");
+
+        // Institution-level SuperAdmin is the top tier of that institution's
+        // own privilege hierarchy — only a platform SuperAdmin (not Support,
+        // which is also authorized to hit this endpoint) may grant it, so a
+        // lower-tier platform staffer can't mint themselves/an ally a
+        // maximally-privileged institution account.
+        if (request.Role == "SuperAdmin" && callerPlatformRole != PlatformStaffRoles.SuperAdmin)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffDto>(
+                "Only a platform SuperAdmin can grant institution SuperAdmin access.");
+
         var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == institutionId);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Institution not found");
@@ -586,7 +675,7 @@ public class InstitutionManagementService(
     {
         var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
         var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.InstitutionId == i.Id && c.Status == "Confirmed")
+            .Where(c => c.InstitutionId == i.Id && c.Status == "Successful")
             .SumAsync(c => c.PlatformRevenueAmount);
         return new InstitutionDetailResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain,

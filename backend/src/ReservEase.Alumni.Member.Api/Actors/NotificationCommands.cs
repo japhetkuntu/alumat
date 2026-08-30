@@ -42,3 +42,24 @@ public sealed record DispatchContributionConfirmedCommand(
     decimal Amount,
     string CampaignTitle,
     string ContributionId) : NotificationCommand(InstitutionId);
+
+public sealed record DispatchMentorshipRequestReceivedCommand(
+    string InstitutionId,
+    string MentorMemberId,
+    string MenteeName,
+    string Area,
+    string RequestId) : NotificationCommand(InstitutionId);
+
+public sealed record DispatchMentorshipRequestDecisionCommand(
+    string InstitutionId,
+    string MenteeId,
+    bool Accepted,
+    string Area,
+    string RequestId) : NotificationCommand(InstitutionId);
+
+public sealed record DispatchForumReplyCommand(
+    string InstitutionId,
+    string ThreadAuthorId,
+    string ReplierName,
+    string ThreadTitle,
+    string ThreadId) : NotificationCommand(InstitutionId);

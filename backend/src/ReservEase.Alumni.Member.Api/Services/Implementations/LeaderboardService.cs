@@ -35,7 +35,7 @@ public class LeaderboardService(
 
             // Get confirmed membership contributions grouped by member's year group
             var membershipPaid = membershipCampaignIds.Count > 0
-                ? await contributionRepo.GetQueryable(c => c.Status == "Confirmed" && membershipCampaignIds.Contains(c.CampaignId))
+                ? await contributionRepo.GetQueryable(c => c.Status == "Successful" && membershipCampaignIds.Contains(c.CampaignId))
                     .Join(memberRepo.GetQueryable(), c => c.MemberId, m => m.Id, (c, m) => m.GraduationYear)
                     .GroupBy(y => y)
                     .Select(g => new { YearGroup = g.Key, Count = g.Count() })
@@ -43,7 +43,7 @@ public class LeaderboardService(
                 : [];
 
             // Get total confirmed contributions grouped by member year group
-            var totalContributed = await contributionRepo.GetQueryable(c => c.Status == "Confirmed")
+            var totalContributed = await contributionRepo.GetQueryable(c => c.Status == "Successful")
                 .Join(memberRepo.GetQueryable(), c => c.MemberId, m => m.Id, (c, m) => new { m.GraduationYear, c.Amount })
                 .GroupBy(x => x.GraduationYear)
                 .Select(g => new { YearGroup = g.Key, Total = g.Sum(x => x.Amount) })

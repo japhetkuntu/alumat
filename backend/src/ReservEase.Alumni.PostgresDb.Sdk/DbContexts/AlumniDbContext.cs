@@ -57,6 +57,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<ClassNote> ClassNotes => Set<ClassNote>();
     public DbSet<ClassNoteLike> ClassNoteLikes => Set<ClassNoteLike>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<AdminNotificationPreference> AdminNotificationPreferences => Set<AdminNotificationPreference>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
@@ -326,6 +327,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
 
         // NotificationPreference
         modelBuilder.Entity<NotificationPreference>().HasIndex(np => np.MemberId).IsUnique();
+
+        // AdminNotificationPreference
+        modelBuilder.Entity<AdminNotificationPreference>().HasIndex(np => np.StaffId).IsUnique();
 
         // Notification
         modelBuilder.Entity<Notification>().HasIndex(n => n.RecipientId);

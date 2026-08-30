@@ -56,7 +56,7 @@ public class BadgeService(
             // First Contribution
             if (!existingBadges.Contains("FirstContribution"))
             {
-                var hasContribution = await contributionRepo.GetOneAsync(c => c.MemberId == memberId && c.Status == "Confirmed");
+                var hasContribution = await contributionRepo.GetOneAsync(c => c.MemberId == memberId && c.Status == "Successful");
                 if (hasContribution is not null)
                     newBadges.Add(CreateBadge(memberId, snapshot, "FirstContribution", "Made your first contribution"));
             }
@@ -92,7 +92,7 @@ public class BadgeService(
                 .ToListAsync();
 
             var paidMembershipYears = await contributionRepo
-                .GetQueryable(c => c.MemberId == memberId && c.Status == "Confirmed" && membershipCampaignIds.Select(mc => mc.Id).Contains(c.CampaignId))
+                .GetQueryable(c => c.MemberId == memberId && c.Status == "Successful" && membershipCampaignIds.Select(mc => mc.Id).Contains(c.CampaignId))
                 .Select(c => c.CampaignId)
                 .ToListAsync();
 

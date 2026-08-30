@@ -463,6 +463,17 @@ public class NotificationPreferenceDto
     public bool WhatsAppAlerts { get; set; }
 }
 
+// ── Admin Notification Preferences ──────────────────────────────────────────
+
+public class AdminNotificationPreferenceDto
+{
+    public string Id { get; set; } = string.Empty;
+    public bool PaymentReceivedAlerts { get; set; }
+    public bool NewMemberRegistrationAlerts { get; set; }
+    public bool PendingApprovalAlerts { get; set; }
+    public bool SystemAlerts { get; set; }
+}
+
 // ── In-App Notification ─────────────────────────────────────────────────────
 
 public class NotificationDto

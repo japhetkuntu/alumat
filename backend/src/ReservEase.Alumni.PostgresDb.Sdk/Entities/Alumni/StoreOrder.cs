@@ -54,7 +54,7 @@ public class StoreOrder : BaseEntity, ITenantScoped
     /// <summary>Sum of each item's UnitPrice * Quantity — what the institution nets in full, same as Contribution.Amount.</summary>
     public decimal TotalAmount { get; set; }
 
-    public string Status { get; set; } = "Pending"; // Pending, Confirmed, Failed
+    public string Status { get; set; } = "Pending"; // Pending, Successful, Failed
     public string PaymentMethod { get; set; } = "Paystack";
     public string? TransactionRef { get; set; }
 
@@ -69,6 +69,13 @@ public class StoreOrder : BaseEntity, ITenantScoped
 
     public DateTime? ConfirmedAt { get; set; }
     public string? FailureMessage { get; set; }
+
+    /// <summary>Paystack authorization channel (e.g. "card", "mobile_money"), parsed from the webhook payload when available. Mirrors PaymentTransaction.Channel.</summary>
+    public string? Channel { get; set; }
+    /// <summary>Paystack's own human-readable result message for this transaction. Mirrors PaymentTransaction.GatewayResponse.</summary>
+    public string? GatewayResponse { get; set; }
+    /// <summary>Raw payload as received from Paystack, for debugging/inspection — only populated when confirmed via webhook, not via the polling fallback. Mirrors PaymentTransaction.CallbackPayload.</summary>
+    public string? CallbackPayload { get; set; }
 
     /// <summary>Null until an admin sets it — stays fully optional, institutions that don't track delivery just never touch these fields.</summary>
     public string? DeliveryStatus { get; set; }

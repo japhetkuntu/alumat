@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ShoppingBag, ShoppingCart, Plus, Minus, X, Package } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Plus, Minus, X, Package, Receipt } from "lucide-react";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
@@ -23,6 +23,13 @@ function variantLabel(options?: Record<string, string>) {
 
 export default function StorePage() {
   const [showCart, setShowCart] = useState(false);
+  const cartPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showCart) {
+      cartPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showCart]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["store-products"],
@@ -60,14 +67,22 @@ export default function StorePage() {
           title="Alumni store"
           description="Buy branded merchandise and support the association. Delivery details are shown per item."
         />
-        <Button variant="outline" className="gap-2 shrink-0" onClick={() => setShowCart((v) => !v)}>
-          <ShoppingCart size={16} />
-          Cart{cartCount > 0 ? ` (${cartCount})` : ""}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/store/orders">
+            <Button variant="outline" className="gap-2">
+              <Receipt size={16} />
+              Order history
+            </Button>
+          </Link>
+          <Button variant="outline" className="gap-2" onClick={() => setShowCart((v) => !v)}>
+            <ShoppingCart size={16} />
+            Cart{cartCount > 0 ? ` (${cartCount})` : ""}
+          </Button>
+        </div>
       </div>
 
       {showCart && (
-        <Card className="border-primary/30">
+        <Card className="border-primary/30" ref={cartPanelRef}>
           <CardContent className="p-4 space-y-3">
             {cart.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
@@ -108,21 +123,21 @@ export default function StorePage() {
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-muted" onClick={() => updateQuantity(l.productId, l.variantId, -1)}>
+                        <button className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted" onClick={() => updateQuantity(l.productId, l.variantId, -1)}>
                           <Minus size={12} />
                         </button>
                         <span className="w-6 text-center text-[13px] font-semibold">{l.quantity}</span>
-                        <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-muted" onClick={() => updateQuantity(l.productId, l.variantId, 1)}>
+                        <button className="w-9 h-9 rounded-md border border-border flex items-center justify-center hover:bg-muted" onClick={() => updateQuantity(l.productId, l.variantId, 1)}>
                           <Plus size={12} />
                         </button>
-                        <button className="w-7 h-7 rounded-md flex items-center justify-center text-destructive hover:bg-destructive/10 ml-1" onClick={() => removeFromCart(l.productId, l.variantId)}>
+                        <button className="w-9 h-9 rounded-md flex items-center justify-center text-destructive hover:bg-destructive/10 ml-1" onClick={() => removeFromCart(l.productId, l.variantId)}>
                           <X size={13} />
                         </button>
                       </div>
                     </div>
                   );
                 })}
-                <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div className="flex items-center justify-between pt-3 border-t border-border flex-wrap gap-2">
                   <span className="text-[14px] font-bold">Total: {formatCurrency(cartTotal)}</span>
                   <Button
                     className="font-semibold gap-2"
@@ -140,13 +155,13 @@ export default function StorePage() {
       )}
 
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
         <EmptyState icon={<ShoppingBag size={40} />} title="No products yet" description="Check back soon — the alumni store is empty for now." />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((p) => {
             const hasVariants = p.variantOptionTypes.length > 0;
             const linesForProduct = cart.filter((l) => l.productId === p.id);

@@ -72,7 +72,7 @@ export default function MembershipCertificatePage() {
   const paidMemberships: PaidMembership[] = useMemo(() => {
     if (!campaignsData?.results || !contributionsData?.results) return [];
     const membershipCampaigns = campaignsData.results.filter(c => c.isMembershipCampaign);
-    const confirmedContribs   = contributionsData.results.filter(c => c.status === "Confirmed");
+    const confirmedContribs   = contributionsData.results.filter(c => c.status === "Successful");
     return membershipCampaigns
       .map(campaign => {
         const contribution = confirmedContribs.find(c => c.campaignId === campaign.id);

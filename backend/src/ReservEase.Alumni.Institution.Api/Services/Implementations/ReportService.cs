@@ -62,7 +62,7 @@ public class ReportService(
                 .Select(g => new
                 {
                     Count = g.Count(),
-                    Collected = g.Where(c => c.Status == "Confirmed").Sum(c => c.Amount)
+                    Collected = g.Where(c => c.Status == "Successful").Sum(c => c.Amount)
                 })
                 .FirstOrDefaultAsync();
 

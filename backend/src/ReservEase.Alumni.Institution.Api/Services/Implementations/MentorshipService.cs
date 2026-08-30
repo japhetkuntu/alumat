@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -7,12 +8,15 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class MentorshipService(
     IAlumniPgRepository<MentorProfile> profileRepo,
     IAlumniPgRepository<MentorshipRequest> requestRepo,
+    INotificationActor notificationActor,
+    ICurrentTenantService currentTenant,
     ILogger<MentorshipService> logger) : IMentorshipService
 {
     public async Task<IApiResponse<PgPagedResult<MentorProfileDto>>> GetMentorProfilesAsync(MentorProfileFilter filter, AuthData admin)
@@ -80,6 +84,8 @@ public class MentorshipService(
             profile.UpdatedBy = admin.Id;
             await profileRepo.UpdateAsync(profile);
 
+            notificationActor.Tell(new DispatchMentorProfileDecisionCommand(currentTenant.InstitutionId!, profile.MemberId, true, profile.Id));
+
             logger.LogInformation("Mentor profile {ProfileId} approved by admin {AdminId}", profileId, admin.Id);
             return new object().ToOkApiResponse("Mentor approved");
         }
@@ -114,6 +120,8 @@ public class MentorshipService(
             profile.UpdatedAt = DateTime.UtcNow;
             profile.UpdatedBy = admin.Id;
             await profileRepo.UpdateAsync(profile);
+
+            notificationActor.Tell(new DispatchMentorProfileDecisionCommand(currentTenant.InstitutionId!, profile.MemberId, false, profile.Id));
 
             logger.LogInformation("Mentor profile {ProfileId} rejected by admin {AdminId}", profileId, admin.Id);
             return new object().ToOkApiResponse("Mentor rejected");

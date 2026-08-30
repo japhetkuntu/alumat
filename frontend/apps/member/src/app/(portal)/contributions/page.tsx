@@ -36,7 +36,7 @@ import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
-  Confirmed: "success",
+  Successful: "success",
   Pending:   "warning",
   Rejected:  "destructive",
 };
@@ -468,7 +468,7 @@ export default function MemberContributionsPage() {
   const contributions = contribData?.results ?? [];
   const totalPages    = contribData?.totalPages ?? 1;
   const totalPaid     = allContributions
-    .filter((c) => c.status === "Confirmed")
+    .filter((c) => c.status === "Successful")
     .reduce((sum, c) => sum + c.amount, 0);
 
   const payMut = useMutation({
@@ -543,7 +543,7 @@ export default function MemberContributionsPage() {
                 .filter((co) => co.campaignId === c.id && co.status !== "Rejected")
                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
               const membershipPaid = !!c.isMembershipCampaign && !!myPayment &&
-                (myPayment.status === "Confirmed" || myPayment.status === "Pending");
+                (myPayment.status === "Successful" || myPayment.status === "Pending");
 
               return (
                 <CampaignCard

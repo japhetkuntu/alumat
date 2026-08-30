@@ -52,7 +52,7 @@ public class ContributionMemberForumServiceTests
         var contributions = new List<Contribution>
         {
             new Contribution { Id = "c1", CreatedBy = "admin1", CampaignId = "camp1", MemberId = "m1", Status = "Pending", TransactionRef = "t1" },
-            new Contribution { Id = "c2", CreatedBy = "admin2", CampaignId = "camp1", MemberId = "m2", Status = "Confirmed", TransactionRef = "t2" }
+            new Contribution { Id = "c2", CreatedBy = "admin2", CampaignId = "camp1", MemberId = "m2", Status = "Successful", TransactionRef = "t2" }
         };
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
@@ -129,7 +129,7 @@ public class ContributionMemberForumServiceTests
         Assert.Equal("GREENFIELD/CS/2025/9999", result.Data?.MemberId);
         Assert.Equal("Non Platform User", result.Data?.MemberName);
         Assert.Equal("nonplatform@example.com", result.Data?.MemberEmail);
-        Assert.Equal("Confirmed", result.Data?.Status);
+        Assert.Equal("Successful", result.Data?.Status);
         Assert.Equal("tx123", result.Data?.TransactionRef);
         Assert.Equal("Offline donation", result.Data?.Notes);
         Assert.Equal(500m, campaign.CollectedAmount);
@@ -186,7 +186,7 @@ public class ContributionMemberForumServiceTests
         Assert.Equal("m123", result.Data?.MemberId);
         Assert.Equal("Applied Member", result.Data?.MemberName);
         Assert.Equal("member@platform.com", result.Data?.MemberEmail);
-        Assert.Equal("Confirmed", result.Data?.Status);
+        Assert.Equal("Successful", result.Data?.Status);
         Assert.Equal("tx456", result.Data?.TransactionRef);
         Assert.Equal("Platform member donation", result.Data?.Notes);
         Assert.Equal(250m, campaign.CollectedAmount);
@@ -308,7 +308,7 @@ public class ContributionMemberForumServiceTests
         var mockProfileRepo = new Mock<IAlumniPgRepository<MentorProfile>>();
         var mockRequestRepo = new Mock<IAlumniPgRepository<MentorshipRequest>>();
 
-        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, new NullLogger<MentorshipService>());
+        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var profilesResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, admin);
@@ -381,7 +381,7 @@ public class ContributionMemberForumServiceTests
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1")).ReturnsAsync(mentorProfiles[0]);
         mockProfileRepo.Setup(r => r.UpdateAsync(It.IsAny<MentorProfile>())).ReturnsAsync(1);
 
-        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, new NullLogger<MentorshipService>());
+        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
         var superAdmin = new AuthData { Id = "super1", Role = "SuperAdmin" };
 
         var profileResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, superAdmin);
@@ -424,7 +424,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.UpdateAsync(It.IsAny<MentorProfile>()))
             .ReturnsAsync(1);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("New Area", "New bio", 5), member);
@@ -448,7 +448,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>() ))
             .ReturnsAsync(existingProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("Any", null, 3), member);
@@ -473,7 +473,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>() ))
             .ReturnsAsync(existingProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("Any", null, 3), member);
@@ -496,7 +496,7 @@ public class ContributionMemberForumServiceTests
         var mockProfileRepo = new Mock<IAlumniPgRepository<MentorProfile>>();
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1")).ReturnsAsync(mentorProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RequestMentorshipAsync(new RequestMentorshipRequest("p1", "Data Science", "Please mentor me"), member);
@@ -769,7 +769,7 @@ public class ContributionMemberForumServiceTests
         var logger = new NullLogger<MemberContributionService>();
 
         mockCampaignRepo.Setup(r => r.GetByIdAsync("membership-campaign")).ReturnsAsync(new Campaign { Id = "membership-campaign", Title = "Membership", AmountPerMember = 100, IsMembershipCampaign = true, AllowManualPayments = true });
-        mockContributionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new Contribution { Id = "c1", MemberId = "m1", CampaignId = "membership-campaign", Status = "Confirmed" });
+        mockContributionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new Contribution { Id = "c1", MemberId = "m1", CampaignId = "membership-campaign", Status = "Successful" });
 
         var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, CreateInMemoryDbContext(), mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<INotificationActor>(), config.Object, logger);
 
@@ -844,7 +844,7 @@ public class ContributionMemberForumServiceTests
 
         mockMemberRepo.Setup(r => r.GetByIdAsync("m1")).ReturnsAsync(new ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member { Id = "m1" });
         mockCampaignRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Campaign, bool>>>())).ReturnsAsync(new List<Campaign> { campaign });
-        mockContributionRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new List<Contribution> { new Contribution { Id = "pay1", MemberId = "m1", CampaignId = "c1", Status = "Confirmed" } });
+        mockContributionRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new List<Contribution> { new Contribution { Id = "pay1", MemberId = "m1", CampaignId = "c1", Status = "Successful" } });
 
         var service = new MemberContributionService(
             mockContributionRepo.Object,
@@ -891,7 +891,7 @@ public class ContributionMemberForumServiceTests
 
         mockMemberRepo.Setup(r => r.GetByIdAsync("m1")).ReturnsAsync(new ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member { Id = "m1" });
         mockCampaignRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Campaign, bool>>>())).ReturnsAsync(new List<Campaign> { currentCampaign });
-        mockContributionRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new List<Contribution> { new Contribution { Id = "pay-future", MemberId = "m1", CampaignId = "c-future", Status = "Confirmed" } });
+        mockContributionRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new List<Contribution> { new Contribution { Id = "pay-future", MemberId = "m1", CampaignId = "c-future", Status = "Successful" } });
 
         var service = new MemberContributionService(
             mockContributionRepo.Object,

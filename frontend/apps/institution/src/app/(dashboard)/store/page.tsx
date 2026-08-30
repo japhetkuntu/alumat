@@ -33,7 +33,7 @@ const statusVariant: Record<string, "success" | "secondary" | "warning"> = {
 };
 
 const orderStatusVariant: Record<string, "success" | "secondary" | "warning" | "destructive"> = {
-  Confirmed: "success",
+  Successful: "success",
   Pending: "warning",
   Failed: "destructive",
 };
@@ -581,7 +581,7 @@ export default function AdminStorePage() {
               {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : orders.length === 0 ? (
-            <EmptyState icon={<ShoppingBag size={40} />} title="No paid orders yet" description="Confirmed, fully-paid orders will show up here once members start buying." />
+            <EmptyState icon={<ShoppingBag size={40} />} title="No paid orders yet" description="Successful, fully-paid orders will show up here once members start buying." />
           ) : (
             <div className="space-y-3">
               {orders.map((o) => (

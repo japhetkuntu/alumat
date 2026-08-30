@@ -1,4 +1,5 @@
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Platform.Api.Extensions;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
@@ -34,6 +35,10 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
 
     public async Task<IApiResponse<PlatformStaffResponse>> CreateAsync(CreatePlatformStaffRequest request, string createdBy, string actorName)
     {
+        if (!PlatformStaffRoles.IsValid(request.Role))
+            return ApiResponseExtensions.ToBadRequestApiResponse<PlatformStaffResponse>(
+                $"Invalid role. Must be one of: {string.Join(", ", PlatformStaffRoles.All)}.");
+
         var email = request.Email.Trim().ToLowerInvariant();
         if (await staffRepo.GetOneAsync(s => s.Email == email) is not null)
             return ApiResponseExtensions.ToConflictApiResponse<PlatformStaffResponse>("A staff account with that email already exists");
@@ -60,6 +65,10 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
         var staff = await staffRepo.GetByIdAsync(id);
         if (staff is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<PlatformStaffResponse>("Staff account not found");
+
+        if (!PlatformStaffRoles.IsValid(request.Role))
+            return ApiResponseExtensions.ToBadRequestApiResponse<PlatformStaffResponse>(
+                $"Invalid role. Must be one of: {string.Join(", ", PlatformStaffRoles.All)}.");
 
         staff.Name = request.Name;
         staff.Role = request.Role;

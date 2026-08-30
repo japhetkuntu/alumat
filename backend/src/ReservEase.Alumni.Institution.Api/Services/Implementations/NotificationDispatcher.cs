@@ -14,6 +14,7 @@ public class NotificationDispatcher(
     IAlumniPgRepository<Notification> notifRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<NotificationPreference> prefRepo,
+    IAlumniPgRepository<AdminNotificationPreference> adminPrefRepo,
     IAlumniPgRepository<StaffEntity> adminRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     ICurrentTenantService currentTenant,
@@ -244,7 +245,11 @@ public class NotificationDispatcher(
     {
         try
         {
-            var admins = (await adminRepo.GetAllAsync(a => !a.IsDisabled)).ToList();
+            // Treat absent preference rows as defaults (all alerts = true).
+            // Only exclude admins who have explicitly opted out.
+            var optedOut = await adminPrefRepo.GetAllAsync(p => !p.PaymentReceivedAlerts);
+            var optedOutIds = optedOut.Select(p => p.StaffId).ToHashSet();
+            var admins = (await adminRepo.GetAllAsync(a => !a.IsDisabled && !optedOutIds.Contains(a.Id))).ToList();
             var body = $"{memberName} ({memberEmail}) submitted a payment of GHS {amount:N2} for the campaign \"{campaignTitle}\". Please review and confirm.";
             var portalUrl = await GetAdminPortalUrlAsync();
 
@@ -336,6 +341,60 @@ public class NotificationDispatcher(
         catch (Exception e)
         {
             logger.LogError(e, "Failed to dispatch ContributionRejected for contribution {ContributionId}", contributionId);
+        }
+    }
+
+    public async Task DispatchMentorProfileDecisionAsync(string memberId, bool approved, string profileId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                RecipientId = memberId,
+                RecipientType = "Member",
+                Title = approved ? "Mentor Application Approved" : "Mentor Application Not Approved",
+                Body = approved
+                    ? "Congratulations — your mentor application has been approved. You can now receive mentorship requests."
+                    : "Your mentor application was not approved this time.",
+                Type = "MentorProfileDecision",
+                RelatedEntityId = profileId,
+                RelatedEntityType = "MentorProfile",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/mentorship",
+                CreatedBy = "system",
+            };
+            await notifRepo.AddAsync(notification);
+
+            logger.LogInformation("Dispatched MentorProfileDecision ({Approved}) to member {MemberId}", approved, memberId);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to dispatch MentorProfileDecision for mentor profile {ProfileId}", profileId);
+        }
+    }
+
+    public async Task DispatchStoreDeliveryStatusUpdatedAsync(string memberId, string orderId, string orderNumber, string newStatus)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                RecipientId = memberId,
+                RecipientType = "Member",
+                Title = "Order Delivery Update",
+                Body = $"Your order #{orderNumber} is now \"{newStatus}\".",
+                Type = "StoreDeliveryStatusUpdated",
+                RelatedEntityId = orderId,
+                RelatedEntityType = "StoreOrder",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/store/orders",
+                CreatedBy = "system",
+            };
+            await notifRepo.AddAsync(notification);
+
+            logger.LogInformation("Dispatched StoreDeliveryStatusUpdated ({Status}) to member {MemberId} for order {OrderId}", newStatus, memberId, orderId);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to dispatch StoreDeliveryStatusUpdated for order {OrderId}", orderId);
         }
     }
 

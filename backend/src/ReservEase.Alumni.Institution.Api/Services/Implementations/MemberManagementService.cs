@@ -327,7 +327,7 @@ public class MemberManagementService(
                                 },
                                 Amount = campaign.AmountPerMember,
                                 PaymentMethod = "Pre-portal",
-                                Status = "Confirmed",
+                                Status = "Successful",
                                 ConfirmedAt = DateTime.UtcNow,
                                 ConfirmedBy = admin.Id,
                                 Notes = "Imported — paid before portal launch",
@@ -384,7 +384,7 @@ public class MemberManagementService(
 
                 // Check if already paid
                 var existingContribution = await contributionRepo.GetOneAsync(c =>
-                    c.CampaignId == campaign.Id && c.MemberId == memberId && c.Status == "Confirmed");
+                    c.CampaignId == campaign.Id && c.MemberId == memberId && c.Status == "Successful");
                 if (existingContribution is not null) continue;
 
                 var contribution = new Contribution
@@ -401,7 +401,7 @@ public class MemberManagementService(
                     },
                     Amount = campaign.AmountPerMember,
                     PaymentMethod = "Admin-activated",
-                    Status = "Confirmed",
+                    Status = "Successful",
                     ConfirmedAt = DateTime.UtcNow,
                     ConfirmedBy = admin.Id,
                     Notes = "Membership activated by admin (pre-portal payment)",
@@ -423,7 +423,7 @@ public class MemberManagementService(
             foreach (var campaign in requiredCampaigns)
             {
                 var paid = await contributionRepo.GetOneAsync(c =>
-                    c.CampaignId == campaign.Id && c.MemberId == memberId && c.Status == "Confirmed");
+                    c.CampaignId == campaign.Id && c.MemberId == memberId && c.Status == "Successful");
                 if (paid is null) { allPaid = false; break; }
             }
 

@@ -449,7 +449,7 @@ public class CampaignService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<PaystackDisbursementSummaryDto>("Campaign not found");
             }
 
-            var paystackContributions = await contributionRepo.GetAllAsync(c => c.CampaignId == campaignId && c.PaymentMethod == "Paystack" && c.Status == "Confirmed");
+            var paystackContributions = await contributionRepo.GetAllAsync(c => c.CampaignId == campaignId && c.PaymentMethod == "Paystack" && c.Status == "Successful");
 
             var totalPaidToPaystack = paystackContributions.Sum(c => c.Amount);
             var totalDisbursed = campaign.IsPaystackDisbursed ? totalPaidToPaystack : 0m;
@@ -732,7 +732,7 @@ public class ContributionService(
                 PaymentMethod = request.PaymentMethod,
                 TransactionRef = request.TransactionRef,
                 Notes = request.Notes,
-                Status = request.Confirmed ? "Confirmed" : "Pending",
+                Status = request.Confirmed ? "Successful" : "Pending",
                 ConfirmedAt = request.Confirmed ? (request.PaidAt ?? DateTime.UtcNow) : null,
                 ConfirmedBy = request.Confirmed ? admin.Id : null,
                 CreatedBy = admin.Id,
@@ -773,10 +773,10 @@ public class ContributionService(
             if (!isSuper && contribution.CreatedBy != admin.Id)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Contribution not found");
 
-            if (contribution.Status == "Confirmed")
+            if (contribution.Status == "Successful")
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Already confirmed");
 
-            contribution.Status = "Confirmed";
+            contribution.Status = "Successful";
             contribution.ConfirmedAt = DateTime.UtcNow;
             contribution.ConfirmedBy = admin.Id;
             contribution.UpdatedAt = DateTime.UtcNow;

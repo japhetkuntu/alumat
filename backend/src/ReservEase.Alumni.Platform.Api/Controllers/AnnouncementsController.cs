@@ -21,6 +21,7 @@ public class AnnouncementsController(IAnnouncementService announcementService) :
         return result.ToActionResult();
     }
 
+    [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPost]
     [SwaggerOperation(Summary = "Send an announcement to institution admins")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<AnnouncementResponse>))]

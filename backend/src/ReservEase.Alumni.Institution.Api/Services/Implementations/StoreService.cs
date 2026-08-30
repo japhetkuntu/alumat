@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -19,6 +20,7 @@ public class StoreService(
     IAlumniPgRepository<StoreProductVariant> variantRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IStorageService storageService,
+    INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
     ILogger<StoreService> logger) : IStoreService
 {
@@ -255,7 +257,7 @@ public class StoreService(
             // get shipped before payment actually clears).
             var result = await orderRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                o => o.Status == "Confirmed"
+                o => o.Status == "Successful"
                   && (string.IsNullOrEmpty(filter.DeliveryStatus) || o.DeliveryStatus == filter.DeliveryStatus));
 
             var dtoResult = new PgPagedResult<StoreOrderDto>
@@ -323,6 +325,13 @@ public class StoreService(
             order.UpdatedAt = DateTime.UtcNow;
             order.UpdatedBy = admin.Id;
             await orderRepo.UpdateAsync(order);
+
+            if (!string.IsNullOrEmpty(newStatus))
+            {
+                notificationActor.Tell(new DispatchStoreDeliveryStatusUpdatedCommand(
+                    currentTenant.InstitutionId!, order.MemberId, order.Id, order.OrderNumber, newStatus));
+            }
+
             logger.LogInformation("Store order {OrderId} delivery status set to {DeliveryStatus} by admin {AdminId}", orderId, newStatus, admin.Id);
             return order.ToDto().ToOkApiResponse("Delivery status updated");
         }

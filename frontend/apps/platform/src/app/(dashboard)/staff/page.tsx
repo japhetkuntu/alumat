@@ -14,8 +14,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { FormError } from "@alumni/ui";
 import { createPlatformStaff, getPlatformStaff, updatePlatformStaff, type PlatformStaffItem } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PlatformStaffPage() {
+  const { isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["platform-staff"],
@@ -63,6 +65,15 @@ export default function PlatformStaffPage() {
 
   const activeCount = staff.filter((s) => !s.isDisabled).length;
   const disabledCount = staff.filter((s) => s.isDisabled).length;
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-8 lg:p-12">
+        <h1 className="text-2xl font-bold">Unauthorized</h1>
+        <p className="text-muted-foreground mt-2">Only SuperAdmin users can access platform staff management.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-7 max-w-[1500px]">

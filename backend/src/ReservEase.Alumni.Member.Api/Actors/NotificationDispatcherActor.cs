@@ -75,6 +75,51 @@ public class NotificationDispatcherActor : ReceiveActor
             }
         });
 
+        ReceiveAsync<DispatchMentorshipRequestReceivedCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>().SetInstitutionId(cmd.InstitutionId);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchMentorshipRequestReceivedAsync(cmd.MentorMemberId, cmd.MenteeName, cmd.Area, cmd.RequestId);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching MentorshipRequestReceived for request {0}", cmd.RequestId);
+            }
+        });
+
+        ReceiveAsync<DispatchMentorshipRequestDecisionCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>().SetInstitutionId(cmd.InstitutionId);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchMentorshipRequestDecisionAsync(cmd.MenteeId, cmd.Accepted, cmd.Area, cmd.RequestId);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching MentorshipRequestDecision for request {0}", cmd.RequestId);
+            }
+        });
+
+        ReceiveAsync<DispatchForumReplyCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>().SetInstitutionId(cmd.InstitutionId);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchForumReplyAsync(cmd.ThreadAuthorId, cmd.ReplierName, cmd.ThreadTitle, cmd.ThreadId);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching ForumReply for thread {0}", cmd.ThreadId);
+            }
+        });
+
         ReceiveAsync<SendEmailCommand>(async cmd =>
         {
             try

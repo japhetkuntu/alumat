@@ -22,7 +22,7 @@ import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import type { ContributionStatus } from "@/types";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
-  Confirmed: "success",
+  Successful: "success",
   Pending: "warning",
   Rejected: "destructive",
 };
@@ -233,7 +233,7 @@ export default function AdminContributionsPage() {
           <FormSelect value={statusFilter || "__all__"} onValueChange={(v) => { setStatusFilter(v === "__all__" ? "" : v); setPage(1); }} placeholder="All statuses" options={[
             { value: "__all__", label: "All statuses" },
             { value: "Pending", label: "Pending" },
-            { value: "Confirmed", label: "Confirmed" },
+            { value: "Successful", label: "Successful" },
             { value: "Rejected", label: "Rejected" },
           ]} />
         </CardContent>

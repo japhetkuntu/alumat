@@ -50,6 +50,19 @@ public sealed record DispatchContributionRejectedCommand(
     string? Reason,
     string ContributionId) : NotificationCommand(InstitutionId);
 
+public sealed record DispatchMentorProfileDecisionCommand(
+    string InstitutionId,
+    string MemberId,
+    bool Approved,
+    string ProfileId) : NotificationCommand(InstitutionId);
+
+public sealed record DispatchStoreDeliveryStatusUpdatedCommand(
+    string InstitutionId,
+    string MemberId,
+    string OrderId,
+    string OrderNumber,
+    string NewStatus) : NotificationCommand(InstitutionId);
+
 public sealed record SendBroadcastCommand(
     string InstitutionId,
     List<BroadcastRecipient> Recipients,

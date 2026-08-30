@@ -8,7 +8,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 
 namespace ReservEase.Alumni.Platform.Api.Controllers;
 
-[Authorize]
+[Authorize(Roles = "SuperAdmin,Support")]
 [Route("api/v{version:apiVersion}/support-cases")]
 public class SupportController(ISupportCaseService supportService) : DefaultController
 {

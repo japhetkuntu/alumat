@@ -31,6 +31,7 @@ import {
   Globe,
   CalendarDays,
   ShoppingBag,
+  Receipt,
 } from "lucide-react";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -49,6 +50,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     items: [
       { href: "/contributions", label: "Give", icon: CreditCard },
       { href: "/store", label: "Store", icon: ShoppingBag },
+      { href: "/store/orders", label: "My Orders", icon: Receipt },
     ],
   },
   {

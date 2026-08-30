@@ -502,7 +502,7 @@ export default function MemberDashboardPage() {
   const currentYear = new Date().getFullYear();
   const activeCampaigns = (campaigns.data?.results ?? []).filter((c) => c.status === "Active");
   const contributionsList = contributions.data?.results ?? [];
-  const confirmedContributions = contributionsList.filter((c) => c.status === "Confirmed");
+  const confirmedContributions = contributionsList.filter((c) => c.status === "Successful");
   const paidMembershipCampaignIds = new Set(confirmedContributions.map((c) => c.campaignId));
 
   const unpaidCurrentMembershipCampaigns = unpaidMembershipCampaignsQuery.data ?? [];
@@ -881,7 +881,7 @@ export default function MemberDashboardPage() {
                     {formatCurrency(c.amount)}
                   </p>
                   <Badge
-                    variant={c.status === "Confirmed" ? "success" : c.status === "Pending" ? "warning" : "destructive"}
+                    variant={c.status === "Successful" ? "success" : c.status === "Pending" ? "warning" : "destructive"}
                     className="text-[10px] font-bold uppercase tracking-wide mt-0.5"
                   >
                     {c.status}

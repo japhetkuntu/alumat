@@ -13,7 +13,7 @@ import {
 import { getInstitutions, getAllPayments } from "@/lib/platform-api";
 
 const STATUS_COLORS: Record<string, string> = {
-  Confirmed: "var(--success, #16a34a)",
+  Successful: "var(--success, #16a34a)",
   Pending: "var(--warning, #d97706)",
   Failed: "var(--destructive, #dc2626)",
   Rejected: "var(--destructive, #dc2626)",
@@ -36,14 +36,14 @@ export default function BillingPage() {
   const trialCount = institutions.filter((i) => i.status === "Trial").length;
   const totalRevenue = institutions.reduce((s, i) => s + i.revenue, 0);
 
-  // Last 6 months, Confirmed payments only, split by source.
+  // Last 6 months, Successful payments only, split by source.
   const now = new Date();
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const trendMonths = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0 };
   });
-  payments.filter((p) => p.status === "Confirmed").forEach((p) => {
+  payments.filter((p) => p.status === "Successful").forEach((p) => {
     const d = new Date(p.confirmedAt ?? p.createdAt);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     const slot = trendMonths.find((m) => m.key === key);
@@ -73,7 +73,7 @@ export default function BillingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 mb-5 items-start">
         <Card>
           <div className="px-5 py-4 border-b border-border">
-            <p className="text-[14px] font-semibold">Confirmed revenue trend</p>
+            <p className="text-[14px] font-semibold">Successful revenue trend</p>
             <p className="text-[12px] text-muted-foreground mt-0.5">Last 6 months, by source — every institution combined.</p>
           </div>
           <CardContent className="p-5">
@@ -94,7 +94,7 @@ export default function BillingPage() {
                 {!hasTrendData && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <p className="text-[13px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md">
-                      No confirmed payments recorded yet this period
+                      No successful payments recorded yet this period
                     </p>
                   </div>
                 )}

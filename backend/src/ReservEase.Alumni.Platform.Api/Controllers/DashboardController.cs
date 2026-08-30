@@ -23,6 +23,7 @@ public class DashboardController(IInstitutionManagementService institutionServic
     }
 
     /// <summary>Every payment across every institution — Contributions and Store orders, every status — for platform-wide analytics and troubleshooting.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing,Support")]
     [HttpGet("payments")]
     [SwaggerOperation(Summary = "Get all payments across every institution")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<PlatformPaymentDto>>))]

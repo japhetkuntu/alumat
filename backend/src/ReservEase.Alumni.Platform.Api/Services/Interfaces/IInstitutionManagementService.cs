@@ -18,10 +18,11 @@ public interface IInstitutionManagementService
     Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionRevenueResponse>> GetRevenueAsync(string id);
     Task<IApiResponse<PgPagedResult<PlatformPaymentDto>>> GetPaymentsAsync(string? id, int page, int pageSize, string? status, string? source);
+    Task<IApiResponse<PaymentDetailDto>> GetPaymentDetailAsync(string institutionId, string paymentId, string? source);
     Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug);
     BaseDomainsResponse GetBaseDomains();
     Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync();
     Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId);
-    Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName);
+    Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName, string callerPlatformRole);
     Task<IApiResponse<InstitutionStaffDto>> SetInstitutionStaffDisabledAsync(string institutionId, string staffId, bool isDisabled, string updatedBy, string actorName);
 }

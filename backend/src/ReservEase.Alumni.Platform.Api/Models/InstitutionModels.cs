@@ -168,7 +168,27 @@ public record PlatformPaymentDto(
     string InstitutionId,
     string? PayerName, string? PayerEmail, string Description,
     decimal Amount, string Status, string PaymentMethod, string? TransactionRef,
-    DateTime CreatedAt, DateTime? ConfirmedAt);
+    DateTime CreatedAt, DateTime? ConfirmedAt,
+    decimal PlatformFeeAmount, decimal GatewayFeeAmount);
+
+/// <summary>One line item within a StoreOrder-sourced payment's detail view.</summary>
+public record PaymentDetailItemDto(
+    string ProductName, Dictionary<string, string>? VariantOptions, int Quantity, decimal UnitPrice);
+
+/// <summary>
+/// Full detail for one payment (Contribution or StoreOrder), including its Zero-Deduction
+/// fee breakdown and — when available — the Paystack gateway channel/response captured at
+/// confirmation time. Never exposes the raw CallbackPayload JSON blob directly.
+/// </summary>
+public record PaymentDetailDto(
+    string Id, string Source, // "Contribution" | "StoreOrder"
+    string InstitutionId,
+    string? PayerName, string? PayerEmail, string? MemberNumber,
+    string? CampaignTitle, List<PaymentDetailItemDto>? Items,
+    decimal Amount, decimal PlatformFeeAmount, decimal GatewayFeeAmount,
+    decimal TransactionChargeAmount, decimal GrossChargeAmount,
+    string Status, DateTime CreatedAt, DateTime? ConfirmedAt,
+    string PaymentMethod, string? Channel, string? GatewayResponse, string? TransactionRef);
 
 public record FeatureCatalogItem(string Key, string Label, string Description);
 

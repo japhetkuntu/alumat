@@ -122,6 +122,36 @@ public class NotificationDispatcherActor : ReceiveActor
             }
         });
 
+        ReceiveAsync<DispatchMentorProfileDecisionCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>().SetInstitutionId(cmd.InstitutionId);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchMentorProfileDecisionAsync(cmd.MemberId, cmd.Approved, cmd.ProfileId);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching MentorProfileDecision for profile {0}", cmd.ProfileId);
+            }
+        });
+
+        ReceiveAsync<DispatchStoreDeliveryStatusUpdatedCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>().SetInstitutionId(cmd.InstitutionId);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchStoreDeliveryStatusUpdatedAsync(cmd.MemberId, cmd.OrderId, cmd.OrderNumber, cmd.NewStatus);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching StoreDeliveryStatusUpdated for order {0}", cmd.OrderId);
+            }
+        });
+
         ReceiveAsync<SendBroadcastCommand>(async cmd =>
         {
             try

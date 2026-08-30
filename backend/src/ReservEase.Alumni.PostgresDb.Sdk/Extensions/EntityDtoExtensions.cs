@@ -391,6 +391,15 @@ public static class EntityDtoExtensions
         WhatsAppAlerts = np.WhatsAppAlerts,
     };
 
+    public static AdminNotificationPreferenceDto ToDto(this AdminNotificationPreference np) => new()
+    {
+        Id = np.Id,
+        PaymentReceivedAlerts = np.PaymentReceivedAlerts,
+        NewMemberRegistrationAlerts = np.NewMemberRegistrationAlerts,
+        PendingApprovalAlerts = np.PendingApprovalAlerts,
+        SystemAlerts = np.SystemAlerts,
+    };
+
     public static NotificationDto ToDto(this Notification n) => new()
     {
         Id = n.Id,

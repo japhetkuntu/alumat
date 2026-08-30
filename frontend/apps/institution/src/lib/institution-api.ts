@@ -991,6 +991,35 @@ export async function updateStoreSettings(body: { defaultDeliveryInfo?: string; 
   return res.data.data!;
 }
 
+// ─── Notification Preferences ──────────────────────────────────────────────
+
+export interface AdminNotificationPreferences {
+  id: string;
+  paymentReceivedAlerts: boolean;
+  newMemberRegistrationAlerts: boolean;
+  pendingApprovalAlerts: boolean;
+  systemAlerts: boolean;
+}
+
+export async function getAdminNotificationPreferences() {
+  // No explicit [Route] override on NotificationPreferencesController, so the
+  // [controller] token resolves to the class name as-is (lowercased) — no
+  // hyphen — matching the identical convention already used by Member.Api's
+  // own notification-preferences endpoint (/notificationpreferences).
+  const res = await institutionClient.get<ApiResponse<AdminNotificationPreferences>>("/notificationpreferences");
+  return res.data.data!;
+}
+
+export async function updateAdminNotificationPreferences(body: {
+  paymentReceivedAlerts: boolean;
+  newMemberRegistrationAlerts: boolean;
+  pendingApprovalAlerts: boolean;
+  systemAlerts: boolean;
+}) {
+  const res = await institutionClient.put<ApiResponse<AdminNotificationPreferences>>("/notificationpreferences", body);
+  return res.data.data!;
+}
+
 // ─── File Uploads ─────────────────────────────────────────────────────────────
 
 export async function uploadImage(file: File) {

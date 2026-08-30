@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -266,7 +267,7 @@ public class StoreOrderService(
     {
         try
         {
-            await ProcessReferenceAsync(reference);
+            await ProcessReferenceAsync(reference, rawBody);
             return ApiResponseExtensions.ToOkApiResponse<object>("Callback processed");
         }
         catch (Exception e)
@@ -276,7 +277,7 @@ public class StoreOrderService(
         }
     }
 
-    private async Task ProcessReferenceAsync(string reference)
+    private async Task ProcessReferenceAsync(string reference, string? rawBody = null)
     {
         var order = await db.Set<StoreOrder>().IgnoreQueryFilters().FirstOrDefaultAsync(o => o.TransactionRef == reference);
         if (order is null)
@@ -285,8 +286,15 @@ public class StoreOrderService(
             return;
         }
 
-        if (order.Status == "Confirmed")
+        if (!string.IsNullOrEmpty(rawBody))
+            order.CallbackPayload = rawBody;
+
+        if (order.Status == "Successful")
+        {
+            if (!string.IsNullOrEmpty(rawBody))
+                await db.SaveChangesAsync();
             return; // Already processed — webhook + poll fallback can both fire.
+        }
 
         var verifyResponse = await paystackService.VerifyPaymentAsync(reference);
         if (!verifyResponse.Status)
@@ -303,9 +311,24 @@ public class StoreOrderService(
         if (verifyResponse.Data?.Fees.HasValue == true)
             order.GatewayFeeAmount = verifyResponse.Data!.Fees!.Value / 100m;
 
+        order.GatewayResponse = verifyResponse.Data?.GatewayResponse;
+
+        if (!string.IsNullOrEmpty(rawBody))
+        {
+            try
+            {
+                var payload = JObject.Parse(rawBody);
+                order.Channel ??= payload.SelectToken("data.authorization.channel")?.ToString();
+            }
+            catch
+            {
+                // best effort; ignore if parsing fails
+            }
+        }
+
         if (paystackStatus == "success")
         {
-            order.Status = "Confirmed";
+            order.Status = "Successful";
             order.ConfirmedAt = DateTime.UtcNow;
 
             // Best-effort inventory decrement — clamped at zero rather than
@@ -380,7 +403,7 @@ public class StoreOrderService(
                 Amount = order.TotalAmount,
                 Message = order.Status switch
                 {
-                    "Confirmed" => "Payment confirmed",
+                    "Successful" => "Payment confirmed",
                     "Pending" => "Payment has been initiated but not yet completed.",
                     _ => order.FailureMessage ?? "Payment failed",
                 },

@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage financial contributions to campaigns.
 /// </summary>
-[Authorize]
+[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
 // No controller-level [RequireFeature] here — Contributions (online) and
 // ManualPayments (offline) are independently toggle-able, so each action is
 // gated individually below rather than sharing one class-level key.
@@ -39,6 +39,7 @@ public class ContributionsController(IContributionService contributionService) :
     /// Record a manual (offline) contribution.
     /// </summary>
     [HttpPost("manual")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [RequireFeature(InstitutionFeatures.ManualPayments)]
     [SwaggerOperation(Summary = "Record manual contribution")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<ContributionDto>))]
@@ -53,6 +54,7 @@ public class ContributionsController(IContributionService contributionService) :
     /// Confirm a pending contribution.
     /// </summary>
     [HttpPut("{contributionId}/confirm")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [RequireFeature(InstitutionFeatures.Contributions)]
     [SwaggerOperation(Summary = "Confirm contribution")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
@@ -68,6 +70,7 @@ public class ContributionsController(IContributionService contributionService) :
     /// Reject a contribution with an optional reason.
     /// </summary>
     [HttpPut("{contributionId}/reject")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [RequireFeature(InstitutionFeatures.Contributions)]
     [SwaggerOperation(Summary = "Reject contribution")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]

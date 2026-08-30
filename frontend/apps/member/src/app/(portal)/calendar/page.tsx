@@ -26,7 +26,7 @@ function useCalendarItems() {
   const items = useMemo<CalendarItem[]>(() => {
     const rsvpEventIds = new Set((rsvpsQ.data ?? []).map((r) => r.eventId));
     const paidCampaignIds = new Set(
-      (contributionsQ.data?.results ?? []).filter((c) => c.status === "Confirmed").map((c) => c.campaignId)
+      (contributionsQ.data?.results ?? []).filter((c) => c.status === "Successful").map((c) => c.campaignId)
     );
 
     const events: CalendarItem[] = (eventsQ.data?.results ?? [])

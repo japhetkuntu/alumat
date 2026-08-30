@@ -244,7 +244,7 @@ export interface ReportSummary {
 
 // ─── Contribution ─────────────────────────────────────────────────────────────
 
-export type ContributionStatus = "Pending" | "Confirmed" | "Rejected";
+export type ContributionStatus = "Pending" | "Successful" | "Rejected";
 export type ContributionMethod = "Manual" | "Paystack" | "MobileMoney" | "BankTransfer";
 
 export interface Contribution {
@@ -429,6 +429,10 @@ export interface MentorProfile {
   currentMenteeCount: number;
   status: MentorProfileStatus;
   createdAt: string;
+  /** Only present when explicitly requested (e.g. viewing full profile detail). */
+  contactLinkedInUrl?: string;
+  contactWhatsAppNumber?: string;
+  contactPhoneNumber?: string;
 }
 
 export type MentorshipStatus = "Pending" | "Accepted" | "Rejected" | "Completed";
@@ -444,6 +448,10 @@ export interface MentorshipRequest {
   message?: string;
   status: MentorshipStatus;
   createdAt: string;
+  /** Only present once this request is Accepted — the matched mentor's contact info. */
+  contactLinkedInUrl?: string;
+  contactWhatsAppNumber?: string;
+  contactPhoneNumber?: string;
 }
 
 // ─── Resource ─────────────────────────────────────────────────────────────────
@@ -572,7 +580,7 @@ export interface StoreOrder {
   memberEmail?: string;
   items: StoreOrderItem[];
   totalAmount: number;
-  status: "Pending" | "Confirmed" | "Failed";
+  status: "Pending" | "Successful" | "Failed";
   transactionRef?: string;
   confirmedAt?: string;
   createdAt: string;

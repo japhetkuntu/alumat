@@ -233,7 +233,7 @@ export async function getInstitutionRevenue(id: string) {
   return res.data.data!;
 }
 
-/** One payment, normalized across both payment sources — every status, not just Confirmed, so support staff can see the full picture. */
+/** One payment, normalized across both payment sources — every status, not just Successful, so support staff can see the full picture. */
 export interface PlatformPayment {
   id: string;
   source: "Contribution" | "StoreOrder";
@@ -247,11 +247,52 @@ export interface PlatformPayment {
   transactionRef?: string | null;
   createdAt: string;
   confirmedAt?: string | null;
+  platformFeeAmount: number;
+  gatewayFeeAmount: number;
 }
 
 export async function getInstitutionPayments(id: string, page = 1, pageSize = 20, status?: string, source?: string) {
   const res = await platformClient.get<ApiResponse<PagedResult<PlatformPayment>>>(`/institutions/${id}/payments`, {
     params: { page, pageSize, status: status || undefined, source: source || undefined },
+  });
+  return res.data.data!;
+}
+
+/** One line item within a StoreOrder-sourced payment's detail view. */
+export interface PaymentDetailItem {
+  productName: string;
+  variantOptions?: Record<string, string> | null;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** Full detail for one payment (Contribution or StoreOrder) — fee breakdown, gateway channel/response, and line items where applicable. */
+export interface PaymentDetail {
+  id: string;
+  source: "Contribution" | "StoreOrder";
+  institutionId: string;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  memberNumber?: string | null;
+  campaignTitle?: string | null;
+  items?: PaymentDetailItem[] | null;
+  amount: number;
+  platformFeeAmount: number;
+  gatewayFeeAmount: number;
+  transactionChargeAmount: number;
+  grossChargeAmount: number;
+  status: string;
+  createdAt: string;
+  confirmedAt?: string | null;
+  paymentMethod: string;
+  channel?: string | null;
+  gatewayResponse?: string | null;
+  transactionRef?: string | null;
+}
+
+export async function getPaymentDetail(institutionId: string, paymentId: string, source?: string) {
+  const res = await platformClient.get<ApiResponse<PaymentDetail>>(`/institutions/${institutionId}/payments/${paymentId}`, {
+    params: { source: source || undefined },
   });
   return res.data.data!;
 }

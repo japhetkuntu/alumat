@@ -132,6 +132,7 @@ public class CampaignsController(ICampaignService campaignService) : DefaultCont
     }
 
     [HttpPut("{campaignId}/paystack-disburse")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [SwaggerOperation(Summary = "Mark campaign paystack contributions as disbursed")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> MarkCampaignPaystackDisbursed(string campaignId)
