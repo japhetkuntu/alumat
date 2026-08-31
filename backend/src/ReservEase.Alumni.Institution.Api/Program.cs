@@ -59,6 +59,7 @@ builder.Services.AddScoped<IInstitutionAuthService, InstitutionAuthService>();
 builder.Services.AddScoped<IMemberManagementService, MemberManagementService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<IContributionService, ContributionService>();
+builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IUploadService, UploadService>();

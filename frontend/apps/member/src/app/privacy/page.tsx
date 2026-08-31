@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             community memberships;</li>
           <li>Payment records — the amount, date, fundraiser or membership dues item, and status of a contribution or payment.
             We do not receive or store your card number, CVV, or mobile money PIN; those go directly to
-            Paystack, our payment processor;</li>
+            our payment processor;</li>
           <li>Notification preferences — whether you&apos;ve opted in to SMS alerts, and the number they&apos;re sent
             to;</li>
           <li>Technical data — IP address, browser/device type, and basic usage logs, collected automatically for
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
         <p>We share personal data only where it is needed to run the Platform, and always under a contract that
           requires the recipient to protect it:</p>
         <ul className="list-disc pl-5 space-y-1.5">
-          <li><strong style={{ color: "var(--foreground)" }}>Paystack</strong> — processes online payments; they
+          <li><strong style={{ color: "var(--foreground)" }}>Our payment processor</strong> — processes online payments; they
             receive what is needed to complete a transaction (amount, email, payment method details you enter
             directly with them);</li>
           <li><strong style={{ color: "var(--foreground)" }}>Arkesel</strong> — delivers SMS notifications when

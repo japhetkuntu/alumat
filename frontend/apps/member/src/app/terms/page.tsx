@@ -28,7 +28,7 @@ export default function TermsPage() {
           what the Institution turns on, a portal may include: a searchable alumni directory, an opt-in world
           map showing where alumni are based, class notes and forum discussions, events with RSVP, a job board,
           mentorship matching, news and announcements, membership renewal, and fundraisers or membership dues
-          collected online (through our payment partner, Paystack) or recorded manually by staff.
+          collected online (through our payment processor) or recorded manually by staff.
         </p>
         <p>
           Institutions control which of these features are switched on for their own portal, and are responsible
@@ -85,9 +85,9 @@ export default function TermsPage() {
 
       <Section heading="6. Payments">
         <p>
-          Online payments (membership dues, fundraiser contributions) are processed by Paystack, a licensed
+          Online payments (membership dues, fundraiser contributions) are processed by a licensed
           payment service provider. We do not receive or store your full card or mobile money PIN details —
-          Paystack handles that directly. A processing fee, disclosed at checkout, may apply on top of the
+          our payment processor handles that directly. A processing fee, disclosed at checkout, may apply on top of the
           amount you choose to pay. Amounts already paid are generally non-refundable except where required by
           law or at an Institution&apos;s discretion; refund requests should go to the Institution that ran the
           fundraiser or dues cycle, since they hold the funds and the record of what was collected.

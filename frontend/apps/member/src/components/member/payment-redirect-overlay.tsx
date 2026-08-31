@@ -58,7 +58,7 @@ export function PaymentRedirectOverlay({
         )}
 
         <p className="text-[12.5px] mt-4" style={{ color: "var(--muted-foreground)" }}>
-          Please don&apos;t close this tab — you&apos;ll land on Paystack&apos;s secure checkout in a moment.
+          Please don&apos;t close this tab — you&apos;ll land on a secure checkout page in a moment.
         </p>
 
         <div
@@ -67,7 +67,7 @@ export function PaymentRedirectOverlay({
         >
           <ShieldCheck size={13} style={{ color: "var(--muted-foreground)" }} />
           <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>
-            Secured by Paystack
+            Secured checkout
           </span>
         </div>
       </div>

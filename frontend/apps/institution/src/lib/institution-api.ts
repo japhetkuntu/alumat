@@ -1315,3 +1315,22 @@ export async function createSupportTicket(body: { subject: string; severity?: st
   const res = await institutionClient.post<ApiResponse<SupportTicket>>("/support-tickets", body);
   return res.data.data!;
 }
+
+/** One settlement window's figure — an estimate from confirmed transactions, not a Paystack-confirmed settlement. */
+export interface PayoutWindow {
+  date: string;
+  amount: number;
+  transactionCount: number;
+}
+
+export interface PayoutForecast {
+  payoutsConfigured: boolean;
+  lastPayout: PayoutWindow;
+  nextPayout: PayoutWindow;
+}
+
+/** SuperAdmin-only — what Paystack should have already settled this working day, and what's accumulating toward the next one. */
+export async function getPayoutForecast(): Promise<PayoutForecast> {
+  const res = await institutionClient.get<ApiResponse<PayoutForecast>>("/payouts/forecast");
+  return res.data.data!;
+}

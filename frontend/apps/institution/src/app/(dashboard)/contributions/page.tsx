@@ -110,7 +110,7 @@ export default function AdminContributionsPage() {
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Contributions</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">A complete ledger for fundraiser and membership dues payments.</p>
-          <p className="text-muted-foreground text-[12px] mt-1">Online payments are processed via Paystack — your institution receives the full amount members pay.</p>
+          <p className="text-muted-foreground text-[12px] mt-1">Online payments are processed securely — your institution receives the full amount members pay.</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           {manualPaymentsEnabled && (

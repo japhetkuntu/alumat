@@ -1,19 +1,19 @@
 "use client";
 
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
-import { StatCard, StatCardSkeleton } from "@alumni/ui";
-import { Users, TrendingUp, Wallet, CalendarDays } from "lucide-react";
+import { StatCard, StatCardSkeleton, IconTile } from "@alumni/ui";
+import { Users, TrendingUp, Wallet, CalendarDays, Landmark, Clock3 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders } from "@/lib/institution-api";
+import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getPayoutForecast } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -22,6 +22,64 @@ const STATUS_COLORS: Record<string, string> = {
   Failed: "var(--destructive, #dc2626)",
   Rejected: "var(--destructive, #dc2626)",
 };
+
+// Paystack settles our subaccount split straight to the institution's own
+// bank account at the start of every working day — SuperAdmins are the ones
+// who reconcile that account, so this is the one dashboard panel scoped to
+// them alone, not every Admin.
+function PayoutPanel() {
+  const { data, isLoading } = useQuery({ queryKey: ["payout-forecast"], queryFn: getPayoutForecast, staleTime: 5 * 60 * 1000 });
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
+        {Array.from({ length: 2 }).map((_, i) => <div key={i} className="card p-[18px] h-[118px] skeleton" />)}
+      </div>
+    );
+  }
+  if (!data) return null;
+
+  if (!data.payoutsConfigured) {
+    return (
+      <div className="card p-[18px] mt-3.5 flex items-center gap-3">
+        <IconTile icon={Landmark} tone="muted" size="sm" />
+        <p className="text-[13px] text-muted-foreground">
+          Settlement banking isn&apos;t set up yet — ask the platform team to add your payout details to start seeing expected payouts here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
+      <div className="card p-[18px]">
+        <div className="flex items-center gap-2.5 mb-3">
+          <IconTile icon={Landmark} tone="primary" size="sm" />
+          <p className="text-[13px] font-semibold">Last payout</p>
+        </div>
+        <p className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em" }}>
+          {formatCurrency(data.lastPayout.amount)}
+        </p>
+        <p className="text-[12px] text-muted-foreground mt-1.5">
+          Settled {formatDate(data.lastPayout.date)} &middot; should already be in your account &middot; {data.lastPayout.transactionCount} transaction{data.lastPayout.transactionCount === 1 ? "" : "s"}
+        </p>
+      </div>
+      <div className="card p-[18px]" style={{ borderColor: "var(--border-emphasis)" }}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <IconTile icon={Clock3} tone="accent" size="sm" />
+          <p className="text-[13px] font-semibold">Next payout</p>
+        </div>
+        <p className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em" }}>
+          {formatCurrency(data.nextPayout.amount)}
+        </p>
+        <p className="text-[12px] text-muted-foreground mt-1.5">
+          Expected {formatDate(data.nextPayout.date)} morning &middot; still accumulating &middot; {data.nextPayout.transactionCount} transaction{data.nextPayout.transactionCount === 1 ? "" : "s"}
+        </p>
+      </div>
+      <p className="sm:col-span-2 text-[11px] text-muted-foreground -mt-2">Estimated from your confirmed transactions — not a bank-confirmed figure.</p>
+    </div>
+  );
+}
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -170,6 +228,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {user?.role === "SuperAdmin" && <PayoutPanel />}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
         <section className="card p-[18px]">

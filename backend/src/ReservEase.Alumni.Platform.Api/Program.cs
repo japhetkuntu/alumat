@@ -54,6 +54,7 @@ builder.Services.AddActorSystem();
 // Application services
 builder.Services.AddScoped<IPlatformAuthService, PlatformAuthService>();
 builder.Services.AddScoped<IInstitutionManagementService, InstitutionManagementService>();
+builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IPlatformStaffService, PlatformStaffService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ISupportCaseService, SupportCaseService>();

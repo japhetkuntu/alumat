@@ -1,16 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@alumni/ui";
+import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
-import { formatCurrency } from "@alumni/ui";
+import { formatCurrency, formatDate } from "@alumni/ui";
+import { Landmark, Clock3 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { getInstitutions, getAllPayments } from "@/lib/platform-api";
+import { getInstitutions, getAllPayments, getPayoutForecast } from "@/lib/platform-api";
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -31,6 +32,12 @@ export default function BillingPage() {
     queryFn: () => getAllPayments(1, 1000),
   });
   const payments = paymentsData?.results ?? [];
+
+  const { data: payoutForecast, isLoading: payoutsLoading } = useQuery({
+    queryKey: ["platform-payout-forecast"],
+    queryFn: getPayoutForecast,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const activeInstitutions = institutions.filter((i) => i.status === "Active");
   const trialCount = institutions.filter((i) => i.status === "Trial").length;
@@ -68,6 +75,64 @@ export default function BillingPage() {
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Active institutions</p><p className="text-[24px] font-bold mt-1">{activeInstitutions.length}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Trial institutions</p><p className="text-[24px] font-bold mt-1">{trialCount}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrency(totalRevenue, "GHS")}</p></CardContent></Card>
+      </div>
+
+      {/* Estimated from confirmed transactions, same formula/windows every
+          institution's own SuperAdmins see on their side — never a Paystack-
+          confirmed settlement figure, see the note below the table. */}
+      <div className="mb-5">
+        <p className="text-[14px] font-semibold mb-3">Expected payouts</p>
+        {payoutsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            {Array.from({ length: 2 }).map((_, i) => <div key={i} className="card p-5 h-[128px] skeleton" />)}
+          </div>
+        ) : payoutForecast ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <StatCard
+                icon={Landmark}
+                variant="hero"
+                label="Last payout, all institutions"
+                value={formatCurrency(payoutForecast.totals.lastPayout.amount, "GHS")}
+                sub={`Settled ${formatDate(payoutForecast.totals.lastPayout.date)} · ${payoutForecast.totals.lastPayout.transactionCount} transactions`}
+              />
+              <StatCard
+                icon={Clock3}
+                variant="hero"
+                tone="accent"
+                label="Next payout, all institutions"
+                value={formatCurrency(payoutForecast.totals.nextPayout.amount, "GHS")}
+                sub={`Expected ${formatDate(payoutForecast.totals.nextPayout.date)} morning · still accumulating`}
+              />
+            </div>
+            <Card>
+              <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Per institution</p></div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Institution</TableHead>
+                    <TableHead>Last payout</TableHead>
+                    <TableHead>Next payout</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payoutForecast.institutions.length === 0 && <TableEmpty title="No institutions yet" colSpan={3} />}
+                  {payoutForecast.institutions.map((f) => (
+                    <TableRow key={f.institutionId}>
+                      <TableCell className="font-semibold">
+                        {f.institutionName}
+                        {!f.payoutsConfigured && <Badge variant="warning" className="ml-2">Not set up</Badge>}
+                      </TableCell>
+                      <TableCell className="tabular-nums">{formatCurrency(f.lastPayout.amount, "GHS")}</TableCell>
+                      <TableCell className="tabular-nums">{formatCurrency(f.nextPayout.amount, "GHS")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+            <p className="text-[11px] text-muted-foreground mt-2">Estimated from confirmed transactions — not a figure confirmed by Paystack. Matches exactly what each institution's own SuperAdmins see on their dashboard.</p>
+          </>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 mb-5 items-start">

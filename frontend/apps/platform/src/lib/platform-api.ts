@@ -233,6 +233,32 @@ export async function getInstitutionRevenue(id: string) {
   return res.data.data!;
 }
 
+/** One settlement window's figure — an estimate from confirmed transactions, not a Paystack-confirmed settlement. Same shape and formula institutions see on their own side. */
+export interface PayoutWindow {
+  date: string;
+  amount: number;
+  transactionCount: number;
+}
+
+export interface InstitutionPayoutForecast {
+  institutionId: string;
+  institutionName: string;
+  payoutsConfigured: boolean;
+  lastPayout: PayoutWindow;
+  nextPayout: PayoutWindow;
+}
+
+export interface PlatformPayoutForecast {
+  totals: { lastPayout: PayoutWindow; nextPayout: PayoutWindow };
+  institutions: InstitutionPayoutForecast[];
+}
+
+/** SuperAdmin/Billing only — estimated last and next Paystack settlement, totaled and broken out per institution. */
+export async function getPayoutForecast(): Promise<PlatformPayoutForecast> {
+  const res = await platformClient.get<ApiResponse<PlatformPayoutForecast>>("/payouts/forecast");
+  return res.data.data!;
+}
+
 /** One payment, normalized across both payment sources — every status, not just Successful, so support staff can see the full picture. */
 export interface PlatformPayment {
   id: string;

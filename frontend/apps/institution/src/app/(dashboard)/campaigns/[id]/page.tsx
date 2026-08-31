@@ -175,7 +175,7 @@ export default function CampaignDetailPage() {
 
           <div className="mt-1 rounded-[6px] border border-border p-4">
             <h3 className="text-[13.5px] font-semibold">Online payment overview</h3>
-            <p className="text-xs text-muted-foreground mt-1">Online payments are processed via Paystack — your institution receives the full amount members pay.</p>
+            <p className="text-xs text-muted-foreground mt-1">Online payments are processed securely — your institution receives the full amount members pay.</p>
             {loadingPaystackSummary ? (
               <p className="text-sm text-muted-foreground mt-2">Loading payment summary…</p>
             ) : paystackSummary ? (
