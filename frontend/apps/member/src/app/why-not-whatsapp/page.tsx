@@ -157,13 +157,21 @@ export default function WhyNotWhatsAppPage() {
       {/* ── Comparison table ── */}
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
-          <div className="mb-10 max-w-[56ch] mx-auto text-center">
+          <div className="mb-6 max-w-[56ch] mx-auto text-center">
             <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", margin: "0 auto" }}>
               WhatsApp group vs. AlumUnion.
             </h2>
           </div>
 
-          <div className="card overflow-x-auto">
+          <p className="sm:hidden flex items-center justify-center gap-1.5 mb-4 text-[12px] font-medium" style={{ color: "var(--muted-foreground)" }}>
+            Swipe to see the full comparison <ArrowRight size={12} />
+          </p>
+
+          {/* .card sets overflow:hidden for its rounded corners/shadow, which clips
+              horizontal scroll if applied to the same element — so the scrollable
+              region is a separate inner wrapper, not the card itself. */}
+          <div className="card">
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[640px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
@@ -192,6 +200,7 @@ export default function WhyNotWhatsAppPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </Section>
@@ -210,7 +219,7 @@ export default function WhyNotWhatsAppPage() {
                 real platform can help push back against — a chat group alone won&apos;t.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <StatCard end={7.8} decimals={1} suffix="%" desc="Average alumni giving participation in 2023 — down from 8.5% in 2016, and ~20% in the 1980s." />
               <StatCard end={75} decimals={0} suffix="%" desc="Of alumni say they'd engage more if access to their association were mobile-friendly." />
             </div>
