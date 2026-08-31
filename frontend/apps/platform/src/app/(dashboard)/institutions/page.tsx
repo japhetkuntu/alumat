@@ -157,8 +157,8 @@ export default function InstitutionsPage() {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{inst.memberCount.toLocaleString()}</TableCell>
-                <TableCell>{formatCurrency(inst.revenue, "GHS")}</TableCell>
+                <TableCell className="tabular-nums">{inst.memberCount.toLocaleString()}</TableCell>
+                <TableCell className="tabular-nums font-medium">{formatCurrency(inst.revenue, "GHS")}</TableCell>
                 <TableCell>
                   <Badge variant={(statusBadge[inst.status] ?? statusBadge.Trial).variant}>
                     {(statusBadge[inst.status] ?? statusBadge.Trial).label}

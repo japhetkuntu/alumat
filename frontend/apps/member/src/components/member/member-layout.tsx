@@ -292,11 +292,22 @@ function MobileBottomNav() {
   );
 }
 
+const flatNavItems = navGroups.flatMap((g) => g.items);
+
+function useCurrentPageTitle() {
+  const pathname = usePathname();
+  return useMemo(() => {
+    const match = flatNavItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
+    return match?.label ?? "Home";
+  }, [pathname]);
+}
+
 export function MemberLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isLoading, isMember } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const pageTitle = useCurrentPageTitle();
   const { data: navTheme } = useNavTheme();
   const brandName = navTheme?.displayName || "Alumni Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
@@ -332,9 +343,10 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         
         {/* Desktop header */}
         <div
-          className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40"
+          className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40"
           style={GPU_LAYER_STYLE}
         >
+          <p className="font-[family-name:var(--font-display)] text-[14.5px] font-semibold tracking-tight truncate">{pageTitle}</p>
           <NotificationPanel />
         </div>
 

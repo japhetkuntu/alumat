@@ -102,7 +102,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const { data: theme } = useQuery({
     queryKey: ["institution-nav-theme"],
     queryFn: async () => {
-      const res = await institutionClient.get<{ data: { disabledFeatures: string[]; portalName?: string; portalTitle?: string } }>("/public/institution/theme");
+      const res = await institutionClient.get<{ data: { disabledFeatures: string[]; portalName?: string; portalTitle?: string; logoUrl?: string | null; iconUrl?: string | null } }>("/public/institution/theme");
       return res.data.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -110,6 +110,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   });
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
   const portalBrandName = theme?.portalTitle || theme?.portalName || "Institution Portal";
+  const brandMark = theme?.iconUrl || theme?.logoUrl;
 
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
@@ -142,9 +143,13 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       <div className="px-4 pt-5 pb-4 border-b border-sidebar-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-white text-[14px] font-bold shrink-0">
-              U
-            </div>
+            {brandMark ? (
+              <img src={brandMark} alt={portalBrandName} className="w-8 h-8 rounded-md object-cover shrink-0 border border-white/10 shadow-sm" />
+            ) : (
+              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-white text-[14px] font-bold shrink-0">
+                {portalBrandName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="overflow-hidden">
               <p className="font-bold text-[15px] tracking-tight truncate text-white leading-tight">{portalBrandName}</p>
             </div>
@@ -164,30 +169,33 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 custom-scrollbar">
+      <nav className="flex-1 overflow-y-auto px-3 py-3 custom-scrollbar">
         {navItems.map((item, i) => {
           if (item.isHeader) {
             return (
-              <p key={i} className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.12em] mt-5 mb-1 first:mt-0">
-                {item.label}
-              </p>
+              <div key={i} className="flex items-center gap-2 px-3 pt-6 pb-1.5 first:pt-1">
+                <span className="h-px w-2.5 bg-white/15 shrink-0" />
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.14em]">{item.label}</p>
+              </div>
             );
           }
 
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isHome = item.href === "/dashboard";
           return (
             <Link
               key={item.href}
               href={item.href!}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 group relative",
+                "flex items-center gap-2.5 px-3 rounded-md transition-all duration-150 ease-[cubic-bezier(0.2,0,0,1)] group relative mb-0.5",
+                isHome ? "py-2.5 mb-2 text-[13.5px] font-semibold" : "py-2 text-[13px] font-medium",
                 active
-                  ? "bg-sidebar-primary text-white font-semibold"
-                  : "text-sidebar-foreground hover:bg-white/5 hover:text-white"
+                  ? "bg-sidebar-primary text-white"
+                  : "text-sidebar-foreground hover:bg-white/5 hover:text-white active:scale-[0.99]"
               )}
             >
-              {item.icon && <item.icon size={16} className="shrink-0" />}
+              {item.icon && <item.icon size={isHome ? 17 : 16} className="shrink-0" strokeWidth={active || isHome ? 2.25 : 2} />}
               {item.label}
             </Link>
           );
@@ -209,11 +217,20 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
+function useCurrentPageTitle() {
+  const pathname = usePathname();
+  return useMemo(() => {
+    const match = baseNavItems.find((item) => !item.isHeader && item.href && (pathname === item.href || pathname.startsWith(item.href + "/")));
+    return match?.label ?? "Dashboard";
+  }, [pathname]);
+}
+
 export function InstitutionLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isLoading, isAdmin, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const pageTitle = useCurrentPageTitle();
 
   useEffect(() => {
     if (!isLoading && !isAdmin && pathname !== "/login") {
@@ -242,8 +259,9 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 flex flex-col min-w-0 bg-background relative">
         {/* Desktop header — matches the Platform Portal's translucent topbar */}
-        <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-          <div className="flex items-center gap-4">
+        <div className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
+          <p className="text-[14px] font-semibold text-foreground tracking-tight truncate">{pageTitle}</p>
+          <div className="flex items-center gap-4 shrink-0">
             <NotificationPanel />
             <span className="text-[13px] font-semibold">
               {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "Admin"}</span>
@@ -268,7 +286,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg hover:bg-muted -ml-1" onClick={() => setMobileOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </Button>
-            <span className="font-bold text-[15px] tracking-tight">Institution Portal</span>
+            <span className="font-bold text-[15px] tracking-tight truncate">{pageTitle}</span>
           </div>
           <div className="flex items-center gap-2">
             <NotificationPanel />

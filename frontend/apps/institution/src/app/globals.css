@@ -41,7 +41,9 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-border-subtle: var(--border-subtle);
   --color-border: var(--border);
+  --color-border-emphasis: var(--border-emphasis);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -442,9 +444,13 @@ svg {
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  /* ── Border & Input ── */
-  --border: #cbd5e1;
-  --input: #cbd5e1;
+  /* ── Border & Input — alpha-over-foreground, not a flat hex, so opacity
+     can step (subtle/standard/emphasis) without picking new colors and the
+     line always reads correctly against the surface under it ── */
+  --border-subtle: rgba(28, 32, 36, 0.07);
+  --border: rgba(28, 32, 36, 0.12);
+  --border-emphasis: rgba(28, 32, 36, 0.22);
+  --input: rgba(28, 32, 36, 0.18);
   --ring: rgba(37, 99, 235, 0.4);
 
   /* ── Status palette */
@@ -506,7 +512,9 @@ svg {
   --destructive: #f87171;
   --destructive-foreground: #ffffff;
 
+  --border-subtle: rgba(59, 130, 246, 0.10);
   --border: rgba(59, 130, 246, 0.18);
+  --border-emphasis: rgba(59, 130, 246, 0.32);
   --input: #122a1f;
   --ring: rgba(59, 130, 246, 0.5);
 

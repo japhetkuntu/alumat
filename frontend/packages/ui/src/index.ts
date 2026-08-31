@@ -15,6 +15,7 @@ export * from "./components/dialog";
 export * from "./components/dropdown-menu";
 export * from "./components/empty-state";
 export * from "./components/form-error";
+export * from "./components/icon-tile";
 export * from "./components/image-upload";
 export * from "./components/input";
 export * from "./components/label";

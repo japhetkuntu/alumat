@@ -69,13 +69,13 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           checked ? "bg-primary" : "bg-muted"
         )}
       >
         <span
           className={cn(
-            "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300",
+            "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)]",
             checked ? "translate-x-5" : "translate-x-0"
           )}
         />
@@ -633,13 +633,15 @@ export default function BrandingSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 h-fit">
+          {/* Account-ending action — the one card here that shouldn't blend in
+              with routine preference cards, so it gets its own tint. */}
+          <Card className="h-fit" style={{ borderColor: "color-mix(in oklch, var(--destructive) 30%, transparent)", background: "color-mix(in oklch, var(--destructive) 4%, var(--card))" }}>
             <CardContent className="p-5 flex items-center justify-between gap-4">
               <div>
                 <p className="text-[14px] font-semibold">Log out</p>
                 <p className="text-[12.5px] text-muted-foreground mt-0.5">Sign out of your staff account on this device.</p>
               </div>
-              <Button variant="outline" size="sm" className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
+              <Button variant="outline" size="sm" className="shrink-0 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive active:scale-[0.97]" onClick={logout}>
                 Log out
               </Button>
             </CardContent>

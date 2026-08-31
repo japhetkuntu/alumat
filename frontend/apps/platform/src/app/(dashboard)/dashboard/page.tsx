@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@alumni/ui";
+import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
+import { Wallet, Building2, Users, Sparkles } from "lucide-react";
 import { getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 
 export default function PlatformDashboardPage() {
@@ -34,39 +35,37 @@ export default function PlatformDashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-[12px] text-muted-foreground">Total Institutions</p>
-            <p className="text-[26px] font-bold mt-1">{summary?.totalInstitutions ?? "—"}</p>
-            <p className="text-[12px] text-muted-foreground mt-1">
-              {summary?.activeCount ?? 0} active &middot; {summary?.trialCount ?? 0} trial
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-[12px] text-muted-foreground">Total Members</p>
-            <p className="text-[26px] font-bold mt-1">{(summary?.totalMembers ?? 0).toLocaleString()}</p>
-            <p className="text-[12px] text-emerald-700 mt-1">Across every institution</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-[12px] text-muted-foreground">Platform Revenue</p>
-            <p className="text-[26px] font-bold mt-1">{formatCurrency(summary?.revenue ?? 0, "GHS")}</p>
-            <p className="text-[12px] text-muted-foreground mt-1">
-              Platform fee collected across all institutions
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-[12px] text-muted-foreground">New Institutions</p>
-            <p className="text-[26px] font-bold mt-1">{summary?.newInstitutionsThisMonth ?? "—"}</p>
-            <p className="text-[12px] text-muted-foreground mt-1">This month</p>
-          </CardContent>
-        </Card>
+      {/* Revenue leads — the one figure platform staff check first when
+          scanning fleet health, everything else demoted to a supporting row. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-4 mb-5 items-stretch">
+        <StatCard
+          icon={Wallet}
+          variant="hero"
+          label="Platform revenue"
+          value={formatCurrency(summary?.revenue ?? 0, "GHS")}
+          sub="Platform fee collected across all institutions"
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            icon={Building2}
+            label="Total institutions"
+            value={summary?.totalInstitutions ?? "—"}
+            sub={`${summary?.activeCount ?? 0} active · ${summary?.trialCount ?? 0} trial`}
+          />
+          <StatCard
+            icon={Users}
+            label="Total members"
+            value={(summary?.totalMembers ?? 0).toLocaleString()}
+            sub={<span style={{ color: "var(--success)" }}>Across every institution</span>}
+          />
+          <StatCard
+            icon={Sparkles}
+            tone="accent"
+            label="New institutions"
+            value={summary?.newInstitutionsThisMonth ?? "—"}
+            sub="This month"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
@@ -99,7 +98,7 @@ export default function PlatformDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card style={{ borderColor: attentionList.length > 0 ? "var(--border-emphasis)" : undefined }}>
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <p className="text-[14px] font-semibold">Needs attention</p>
             <Link href="/institutions" className="text-[12px] font-semibold text-primary hover:underline">View all</Link>

@@ -15,7 +15,7 @@ import {
   X,
   Inbox,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@alumni/ui";
@@ -58,22 +58,24 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 custom-scrollbar">
+      <nav className="flex-1 overflow-y-auto px-3 py-3 custom-scrollbar">
         {visibleNavItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isHome = item.href === "/dashboard";
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200",
+                "flex items-center gap-2.5 px-3 rounded-md transition-all duration-150 ease-[cubic-bezier(0.2,0,0,1)] mb-0.5",
+                isHome ? "py-2.5 mb-2 text-[13.5px] font-semibold" : "py-2 text-[13px] font-medium",
                 active
-                  ? "bg-sidebar-primary text-white font-semibold"
-                  : "text-sidebar-foreground hover:bg-white/5 hover:text-white"
+                  ? "bg-sidebar-primary text-white"
+                  : "text-sidebar-foreground hover:bg-white/5 hover:text-white active:scale-[0.99]"
               )}
             >
-              <item.icon size={16} className="shrink-0" />
+              <item.icon size={isHome ? 17 : 16} className="shrink-0" strokeWidth={active || isHome ? 2.25 : 2} />
               {item.label}
             </Link>
           );
@@ -95,11 +97,20 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
+function useCurrentPageTitle() {
+  const pathname = usePathname();
+  return useMemo(() => {
+    const match = navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
+    return match?.label ?? "Dashboard";
+  }, [pathname]);
+}
+
 export function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isLoading, isPlatformStaff, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const pageTitle = useCurrentPageTitle();
 
   useEffect(() => {
     if (!isLoading && !isPlatformStaff && pathname !== "/login") {
@@ -125,8 +136,9 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 bg-background relative">
-        <div className="hidden lg:flex items-center justify-end px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
-          <div className="flex items-center gap-4">
+        <div className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
+          <p className="text-[14px] font-semibold text-foreground tracking-tight truncate">{pageTitle}</p>
+          <div className="flex items-center gap-4 shrink-0">
             <NotificationPanel />
             <span className="text-[13px] font-semibold">
               {user?.name ?? "Platform staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
@@ -139,7 +151,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </Button>
-            <span className="font-bold text-[15px] tracking-tight">Platform Portal</span>
+            <span className="font-bold text-[15px] tracking-tight truncate">{pageTitle}</span>
           </div>
           <NotificationPanel />
         </div>

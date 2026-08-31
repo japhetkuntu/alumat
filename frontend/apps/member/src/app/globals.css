@@ -43,7 +43,9 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-border-subtle: var(--border-subtle);
   --color-border: var(--border);
+  --color-border-emphasis: var(--border-emphasis);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -503,8 +505,11 @@ svg {
   --destructive: #b94a48;
   --destructive-foreground: #ffffff;
 
-  /* ── Border & Input ── */
+  /* ── Border & Input — alpha-over-foreground steps from subtle to emphasis
+     so importance can be expressed without switching depth strategy ── */
+  --border-subtle: rgba(30, 41, 59, 0.07);
   --border: rgba(30, 41, 59, 0.12);
+  --border-emphasis: rgba(30, 41, 59, 0.22);
   --input: rgba(30, 41, 59, 0.18);
   --ring: rgba(37, 99, 235, 0.4);
 
@@ -575,7 +580,9 @@ svg {
   --destructive-foreground: oklch(0.99 0 0);
 
   /* ── Border & Input ── */
+  --border-subtle: oklch(0.26 0.010 70);
   --border: oklch(0.30 0.010 70);
+  --border-emphasis: oklch(0.38 0.012 70);
   --input: oklch(0.28 0.010 70);
   --ring: rgba(59, 130, 246, 0.5);
 

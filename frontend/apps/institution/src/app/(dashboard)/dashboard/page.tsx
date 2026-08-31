@@ -117,48 +117,57 @@ export default function AdminDashboardPage() {
       )}
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-start">
-          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
+          <StatCardSkeleton variant="hero" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-start">
-          <StatCard
-            icon={Users}
-            tone="primary"
-            label="Total members"
-            value={totalMembers.toLocaleString()}
-            sub={
-              <span style={{ color: "var(--success)" }}>
-                +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
-                <Link href="/members" className="underline">{pendingApprovals} pending</Link>
-              </span>
-            }
-          />
-          <StatCard
-            icon={TrendingUp}
-            tone="accent"
-            label="Active fundraisers & dues"
-            value={activeCampaigns.length}
-            sub={
-              <span style={{ color: approachingDeadline > 0 ? "var(--warning)" : undefined }}>
-                {approachingDeadline} approaching deadline
-              </span>
-            }
-          />
+        // Money leads — one dominant "total collected" figure (the number an
+        // institution admin cares about most, day to day) with the other three
+        // metrics demoted to a supporting row, instead of four equal boxes.
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
           <StatCard
             icon={Wallet}
             tone="primary"
+            variant="hero"
             label="Total collected"
             value={formatCurrency(totalAmountCollected)}
             sub={<span style={{ color: "var(--success)" }}>{totalContributions} contributions</span>}
           />
-          <StatCard
-            icon={CalendarDays}
-            tone="accent"
-            label="Upcoming events"
-            value={upcomingEvents}
-            sub={`+ ${openJobs} open job postings`}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <StatCard
+              icon={Users}
+              tone="primary"
+              label="Total members"
+              value={totalMembers.toLocaleString()}
+              sub={
+                <span style={{ color: "var(--success)" }}>
+                  +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
+                  <Link href="/members" className="underline">{pendingApprovals} pending</Link>
+                </span>
+              }
+            />
+            <StatCard
+              icon={TrendingUp}
+              tone="accent"
+              label="Active fundraisers & dues"
+              value={activeCampaigns.length}
+              sub={
+                <span style={{ color: approachingDeadline > 0 ? "var(--warning)" : undefined }}>
+                  {approachingDeadline} approaching deadline
+                </span>
+              }
+            />
+            <StatCard
+              icon={CalendarDays}
+              tone="accent"
+              label="Upcoming events"
+              value={upcomingEvents}
+              sub={`+ ${openJobs} open job postings`}
+            />
+          </div>
         </div>
       )}
 
@@ -217,7 +226,8 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3.5 mt-3.5">
-        <section className="card p-[18px]">
+        {/* Emphasis border — this card asks for action, the chart cards above only inform */}
+        <section className="card p-[18px]" style={{ borderColor: pendingApprovals > 0 ? "var(--border-emphasis)" : undefined }}>
           <h2 className="text-[15px] font-semibold m-0 mb-3.5 flex items-center justify-between">
             Pending approvals
             <Link href="/members" className="text-[12px] font-normal text-muted-foreground hover:text-primary">View queue &rarr;</Link>
