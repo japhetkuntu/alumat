@@ -8,11 +8,12 @@ import {
   Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell,
   Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
   Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
+  Wallet, CalendarCheck, CheckCircle2, PartyPopper,
 } from "lucide-react";
-import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
+import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
 import { publicPlatformClient } from "@/lib/api-client";
 import { handleApiError } from "@/lib/api-client";
-import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic } from "./_marketing/primitives";
+import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -287,6 +288,7 @@ export default function PlatformMarketingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const scrolled = useScrolled(24);
   const heroCta = useMagnetic(0.25);
+  const heroPanelTilt = useTilt<HTMLDivElement>(2.5);
   const [heroSpotlightVars, setHeroSpotlightVars] = useState<React.CSSProperties>({ background: "var(--background)", "--hx": "50%", "--hy": "0%" } as React.CSSProperties);
 
   useEffect(() => {
@@ -413,6 +415,81 @@ export default function PlatformMarketingPage() {
                 <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>{item.text}</p>
               </div>
             ))}
+          </div>
+
+          {/* Hero visual — an illustrative preview of the portal's own
+              dashboard (real component language: IconTile, stat tiles, flat
+              corners) rather than a generic stock screenshot. Gives the hero
+              a focal anchor instead of floating text in empty space. */}
+          <div className="relative mt-16 sm:mt-20 max-w-[880px] mx-auto" style={{ perspective: "1400px" }}>
+            <div className="absolute -inset-x-6 -inset-y-10 pointer-events-none" aria-hidden="true"
+              style={{ background: "radial-gradient(60% 65% at 50% 35%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 72%)", filter: "blur(6px)" }} />
+
+            <div
+              ref={heroPanelTilt.ref}
+              onMouseMove={heroPanelTilt.onMouseMove}
+              onMouseLeave={heroPanelTilt.onMouseLeave}
+              style={{ ...heroPanelTilt.style, borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 40px 90px -35px rgba(15,23,42,0.28), 0 1px 0 rgba(255,255,255,0.4) inset" }}
+              className="relative text-left border"
+            >
+              <div className="flex items-center gap-2 px-4 h-10 border-b" style={{ borderColor: "var(--border)" }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: "var(--destructive)", opacity: 0.4 }} />
+                <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand-accent, var(--primary))", opacity: 0.4 }} />
+                <span className="w-2 h-2 rounded-full" style={{ background: "var(--primary)", opacity: 0.4 }} />
+                <span className="ml-2.5 text-[11.5px] font-mono" style={{ color: "var(--muted-foreground)" }}>yourschool.alumunion.com</span>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-3 sm:mb-3.5">
+                  {[
+                    { icon: Wallet, label: "Total collected", value: "GH₵42,300" },
+                    { icon: Users, label: "Members", value: "1,204" },
+                    { icon: CalendarCheck, label: "Events", value: "6" },
+                    { icon: Briefcase, label: "Jobs posted", value: "18" },
+                  ].map((s) => (
+                    <div key={s.label} className="border p-2.5 sm:p-3.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+                      <IconTile icon={s.icon} size="sm" tone="primary" />
+                      <p className="font-[family-name:var(--font-display)] font-bold tabular-nums mt-2 text-[17px] sm:text-[19px]" style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}>{s.value}</p>
+                      <p className="text-[10.5px] sm:text-[11px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid sm:grid-cols-[1.3fr_1fr] gap-2.5 sm:gap-3">
+                  <div className="border p-3.5 sm:p-4" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+                    <p className="text-[11px] font-semibold mb-3" style={{ color: "var(--muted-foreground)" }}>Contributions, last 6 months</p>
+                    <div className="flex items-end gap-2 sm:gap-2.5" style={{ height: 64 }}>
+                      {[38, 55, 46, 72, 60, 90].map((h, i) => (
+                        <div key={i} className="flex-1" style={{ height: `${h}%`, background: i === 5 ? "var(--primary)" : "color-mix(in oklch, var(--primary) 28%, transparent)" }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border p-3.5 sm:p-4 space-y-2.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+                    <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>Recent activity</p>
+                    {[
+                      { icon: CheckCircle2, text: "New member approved" },
+                      { icon: Wallet, text: "Dues payment received" },
+                      { icon: PartyPopper, text: "Reunion RSVP’d" },
+                    ].map((a) => (
+                      <div key={a.text} className="flex items-center gap-2">
+                        <a.icon size={13} style={{ color: "var(--primary)" }} className="shrink-0" />
+                        <p className="text-[11.5px] truncate" style={{ color: "var(--foreground)" }}>{a.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating badge — overlaps the panel corner for depth */}
+            <div className="hidden sm:flex absolute -right-5 -bottom-6 items-center gap-2.5 border px-3.5 py-3 z-10"
+              style={{ borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 18px 40px -18px rgba(15,23,42,0.3)" }}>
+              <IconTile icon={CheckCircle2} size="sm" tone="primary" filled />
+              <div>
+                <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--foreground)" }}>Member approved</p>
+                <p className="text-[10.5px]" style={{ color: "var(--muted-foreground)" }}>Just now</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
