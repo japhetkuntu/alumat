@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft, ArrowRight, UserX, SearchX, ShieldAlert,
-  MessageCircleOff, PhoneOff, Check, X as XIcon, ExternalLink,
+  MessageCircleOff, PhoneOff, Check, X as XIcon, ExternalLink, MoveHorizontal,
 } from "lucide-react";
 import { Button, cn } from "@alumni/ui";
-import { Section, ScrollProgressBar, useScrolled, useTilt, useCountUp } from "../_marketing/primitives";
+import { Section, ScrollProgressBar, useScrolled, useTilt, useCountUp, CustomCursor, CustomCursorStyles } from "../_marketing/primitives";
 import { MarketingFooter } from "../_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -98,10 +99,101 @@ function LimitCard({ item, index }: { item: typeof LIMITS[number]; index: number
   );
 }
 
+const COMPARE_ROWS: { whatsapp: string; alumunion: string }[] = [
+  { whatsapp: "Caps at 1,024 members", alumunion: "No cap — built for the whole alumni base" },
+  { whatsapp: "Scroll and guess who's who", alumunion: "Searchable directory by name, year, location" },
+  { whatsapp: "Tied to one admin's personal phone", alumunion: "Role-based accounts the association owns" },
+  { whatsapp: "Manual, screenshot-and-trust dues", alumunion: "Secure online payments, automatic records" },
+  { whatsapp: "No RSVP tracking, no analytics", alumunion: "Real RSVPs and engagement reports" },
+];
+
+/** Drag (or touch-drag) the handle to reveal how much of the picture WhatsApp
+ * is actually missing. Purely a "feel it, don't just read it" companion to
+ * the fully sourced comparison table further down — every line here is a
+ * shorter restatement of a claim that table (and its sources) backs. */
+function DragCompare() {
+  const [pct, setPct] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const setFromClientX = (clientX: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const p = ((clientX - rect.left) / rect.width) * 100;
+    setPct(Math.min(96, Math.max(4, p)));
+  };
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragging.current) return;
+      const x = "touches" in e ? e.touches[0]?.clientX : e.clientX;
+      if (typeof x === "number") setFromClientX(x);
+    };
+    const onUp = () => { dragging.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchend", onUp);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative select-none border overflow-hidden touch-none"
+      style={{ borderColor: "var(--border)", height: 360 }}
+      onMouseDown={(e) => { dragging.current = true; setFromClientX(e.clientX); }}
+      onTouchStart={(e) => { dragging.current = true; setFromClientX(e.touches[0].clientX); }}
+    >
+      {/* Base layer — WhatsApp, dulled */}
+      <div className="absolute inset-0 p-6 sm:p-10 flex flex-col justify-center" style={{ background: "#eef0ec" }}>
+        <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: "#6b7280" }}>WhatsApp group</p>
+        <ul className="space-y-3.5">
+          {COMPARE_ROWS.map((r) => (
+            <li key={r.whatsapp} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14.5px]" style={{ color: "#4b5563" }}>
+              <XIcon size={15} className="shrink-0 mt-0.5" style={{ color: "#b91c1c" }} />
+              {r.whatsapp}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Reveal layer — AlumUnion, clipped to the handle position */}
+      <div className="absolute inset-0 p-6 sm:p-10 flex flex-col justify-center" style={{ background: "var(--background)", clipPath: `inset(0 ${100 - pct}% 0 0)` }}>
+        <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: "var(--primary)" }}>AlumUnion</p>
+        <ul className="space-y-3.5">
+          {COMPARE_ROWS.map((r) => (
+            <li key={r.alumunion} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14.5px] font-medium" style={{ color: "var(--foreground)" }}>
+              <Check size={15} className="shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
+              {r.alumunion}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Handle */}
+      <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pct}%`, width: 2, background: "var(--primary)", transform: "translateX(-1px)" }}>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ background: "var(--primary)", boxShadow: "0 6px 18px rgba(0,0,0,0.28)" }}>
+          <MoveHorizontal size={17} color="white" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WhyNotWhatsAppPage() {
   const scrolled = useScrolled(24);
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+    <div className="min-h-screen overflow-x-hidden au-cursor-zone" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+      <CustomCursorStyles />
+      <CustomCursor />
       <ScrollProgressBar />
 
       {/* ── Header — shrinks slightly once the page has scrolled, matching the homepage ── */}
@@ -130,10 +222,17 @@ export default function WhyNotWhatsAppPage() {
             style={{ fontSize: "clamp(2.2rem,4.6vw,3.5rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)", margin: "0 auto 1.5rem" }}>
             WhatsApp wasn&apos;t built to run your alumni community.
           </h1>
-          <p className="max-w-[54ch]" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto" }}>
+          <p className="max-w-[54ch] mb-10" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
             It&apos;s free, familiar, and everyone already has it — that&apos;s exactly why so many institutions start there.
             But a chat app is not a community platform. Here&apos;s the honest, sourced case for why it shows.
           </p>
+
+          <div className="max-w-[720px] mx-auto text-left">
+            <p className="text-center text-[12px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--muted-foreground)" }}>
+              Drag to see the difference
+            </p>
+            <DragCompare />
+          </div>
         </div>
       </div>
 

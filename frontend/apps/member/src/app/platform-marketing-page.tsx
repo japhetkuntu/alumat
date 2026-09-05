@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
-import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt } from "./_marketing/primitives";
+import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, useScrollActiveStep, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -288,6 +288,7 @@ export default function PlatformMarketingPage() {
   const scrolled = useScrolled(24);
   const heroCta = useMagnetic(0.25);
   const heroPanelTilt = useTilt<HTMLDivElement>(2.5);
+  const stepScroll = useScrollActiveStep(HOW_IT_WORKS.length);
   const [heroSpotlightVars, setHeroSpotlightVars] = useState<React.CSSProperties>({ background: "var(--background)", "--hx": "50%", "--hy": "0%" } as React.CSSProperties);
 
   useEffect(() => {
@@ -305,7 +306,9 @@ export default function PlatformMarketingPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+    <div className="min-h-screen overflow-x-hidden au-cursor-zone" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+      <CustomCursorStyles />
+      <CustomCursor />
       <ScrollProgressBar />
 
       {/* ════════════════════════════════════════════════════════════════
@@ -562,9 +565,47 @@ export default function PlatformMarketingPage() {
               From a form to a live portal, in a few simple steps.
             </h2>
           </div>
-          <div className="max-w-6xl mx-auto grid gap-10 sm:gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x" style={{ borderColor: "var(--border)" }}>
+          {/* Scroll-linked stepper on large screens — a sticky rail tracks
+              which step is centered in view (see useScrollActiveStep) and
+              fills a progress line toward it, instead of every card just
+              fading in independently. Collapses to the plain 4-up grid
+              below lg, where there's no room for a sticky rail anyway. */}
+          <div className="hidden lg:grid max-w-4xl mx-auto grid-cols-[200px_1fr] gap-16">
+            <div className="sticky top-28 self-start">
+              <div className="relative pl-5">
+                <div className="absolute left-0 top-1 bottom-1 w-px" style={{ background: "var(--border)" }} />
+                <div className="absolute left-0 top-1 w-px transition-[height] duration-500 ease-out"
+                  style={{ background: "var(--primary)", height: `${((stepScroll.active + 1) / HOW_IT_WORKS.length) * 100}%` }} />
+                {HOW_IT_WORKS.map((step, i) => (
+                  <div key={step.n} className="relative pb-10 last:pb-0">
+                    <div className="absolute -left-[3.5px] top-1 w-[8px] h-[8px] rounded-full transition-colors duration-300"
+                      style={{ background: i <= stepScroll.active ? "var(--primary)" : "var(--border)" }} />
+                    <p className="text-[10px] font-bold tracking-wide mb-1 transition-colors duration-300"
+                      style={{ color: i === stepScroll.active ? "var(--primary)" : "var(--muted-foreground)", opacity: i === stepScroll.active ? 1 : 0.55 }}>
+                      STEP {step.n}
+                    </p>
+                    <p className="text-[13.5px] font-semibold leading-snug transition-all duration-300"
+                      style={{ color: i === stepScroll.active ? "var(--foreground)" : "var(--muted-foreground)", opacity: i === stepScroll.active ? 1 : 0.55 }}>
+                      {step.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-24">
+              {HOW_IT_WORKS.map((step, i) => (
+                <div key={step.n} ref={stepScroll.setRef(i)}>
+                  <HowItWorksStep step={step} delay="0ms" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Plain 4-up grid below lg — no sticky rail, no scroll tracking */}
+          <div className="grid gap-10 sm:gap-8 sm:grid-cols-2 lg:hidden" style={{ borderColor: "var(--border)" }}>
             {HOW_IT_WORKS.map((step, i) => (
-              <div key={step.n} className={i > 0 ? "lg:pl-8" : undefined}>
+              <div key={step.n}>
                 <HowItWorksStep step={step} delay={`${i * 100}ms`} />
               </div>
             ))}
