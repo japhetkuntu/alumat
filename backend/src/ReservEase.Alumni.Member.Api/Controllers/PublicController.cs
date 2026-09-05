@@ -6,16 +6,19 @@ using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Member.Api.Controllers;
 
 /// <summary>
 /// Unauthenticated endpoints safe to call before login — used by the
-/// Member Portal frontend to theme itself for the resolved tenant.
+/// Member Portal frontend to theme itself for the resolved tenant, and by
+/// the public marketing site (also served from this app — see
+/// platform-marketing-page.tsx) for the institution-onboarding form.
 /// </summary>
 [AllowAnonymous]
 [EnableRateLimiting(RateLimitingExtensions.PublicReadPolicy)]
-public class PublicController : DefaultController
+public class PublicController(IAlumniPgRepository<OnboardingLead> onboardingLeadRepo) : DefaultController
 {
     /// <summary>
     /// Branding for the institution resolved from the request's Host header
@@ -51,5 +54,32 @@ public class PublicController : DefaultController
             institution.HeroHeadline);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
+    }
+
+    /// <summary>
+    /// A prospective institution's request to be onboarded, from the public
+    /// marketing site. Spam-worthy like login, so this overrides the class's
+    /// read-only rate limit with the stricter auth policy.
+    /// </summary>
+    [HttpPost("onboarding-leads")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Submit a request to onboard a new institution")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<OnboardingLeadResponse>))]
+    public async Task<IActionResult> CreateOnboardingLead([FromBody] CreateOnboardingLeadRequest request)
+    {
+        var lead = new OnboardingLead
+        {
+            InstitutionName = request.InstitutionName,
+            ContactName = request.ContactName,
+            ContactEmail = request.ContactEmail,
+            ContactPhone = request.ContactPhone,
+            Country = request.Country,
+            EstimatedMemberCount = request.EstimatedMemberCount,
+            Message = request.Message,
+        };
+        await onboardingLeadRepo.AddAsync(lead);
+
+        var response = new OnboardingLeadResponse(lead.Id, lead.InstitutionName, lead.ContactEmail, lead.Status);
+        return Created(string.Empty, new ApiResponse<OnboardingLeadResponse> { Message = "Created", Code = 201, Data = response });
     }
 }

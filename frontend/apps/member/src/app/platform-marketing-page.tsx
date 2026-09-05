@@ -11,8 +11,7 @@ import {
   Wallet, CalendarCheck, CheckCircle2, PartyPopper,
 } from "lucide-react";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
-import { publicPlatformClient } from "@/lib/api-client";
-import { handleApiError } from "@/lib/api-client";
+import { memberClient, handleApiError } from "@/lib/api-client";
 import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 
@@ -191,7 +190,7 @@ function OnboardingForm() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await publicPlatformClient.post("/public/onboarding-leads", {
+      await memberClient.post("/public/onboarding-leads", {
         institutionName: form.institutionName.trim(),
         contactName: form.contactName.trim(),
         contactEmail: form.contactEmail.trim(),
