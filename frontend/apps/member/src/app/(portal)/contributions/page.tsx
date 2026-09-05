@@ -88,7 +88,7 @@ function PaymentStatusModal({
     try {
       const res = await getPaystackPaymentStatus(reference);
       const n = res.status?.toLowerCase() ?? "unknown";
-      if (n === "confirmed" || n === "success") {
+      if (n === "confirmed" || n === "success" || n === "successful") {
         setStatus("success"); setMessage(res.message ?? "Payment confirmed."); onConfirmed(); return;
       }
       if (n === "pending" || n === "unknown") {

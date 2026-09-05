@@ -44,7 +44,7 @@ export default function PaystackCallbackPage() {
       const response = await getPaystackPaymentStatus(reference);
       const normalized = response.status?.toLowerCase() ?? "unknown";
 
-      if (normalized === "confirmed" || normalized === "success") {
+      if (normalized === "confirmed" || normalized === "success" || normalized === "successful") {
         setStatus("success");
         setMessage(response.message ?? "Your payment was successful and your contribution has been recorded.");
         return;
