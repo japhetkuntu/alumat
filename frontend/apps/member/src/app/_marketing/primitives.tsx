@@ -156,3 +156,109 @@ export function useMagnetic(strength = 0.3) {
   };
   return { ref, style, onMouseMove, onMouseLeave };
 }
+
+/** Tracks which of `count` registered elements is closest to viewport-center
+ * while the user scrolls — powers a scroll-linked stepper (a progress rail
+ * that fills and highlights the step currently in view), rather than every
+ * step just fading in independently. Attach `setRef(i)` to each step's root
+ * element. */
+export function useScrollActiveStep(count: number) {
+  const els = useRef<(HTMLElement | null)[]>([]);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const mid = window.innerHeight * 0.45;
+      let closest = 0;
+      let closestDist = Infinity;
+      els.current.forEach((el, i) => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const dist = Math.abs(rect.top + rect.height / 2 - mid);
+        if (dist < closestDist) { closestDist = dist; closest = i; }
+      });
+      setActive(closest);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [count]);
+
+  const setRef = (i: number) => (el: HTMLElement | null) => { els.current[i] = el; };
+  return { active, setRef };
+}
+
+/** A dot-and-lagging-ring custom cursor — the single highest-leverage "this
+ * feels alive" signal a marketing page can add. The ring eases toward the
+ * pointer every frame (not 1:1), and grows/fills over anything interactive
+ * (a, button, or an element opting in with data-cursor-hover). Desktop only
+ * — skipped entirely on touch/coarse pointers, where there's no cursor to
+ * replace. Pair with the `.au-cursor-zone` class + CustomCursorStyles below
+ * on the page's root element to actually hide the native cursor. */
+export function CustomCursor() {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const target = useRef({ x: -100, y: -100 });
+  const ring = useRef({ x: -100, y: -100 });
+  const [ready, setReady] = useState(false);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    setReady(true);
+
+    const onMove = (e: MouseEvent) => {
+      target.current = { x: e.clientX, y: e.clientY };
+      if (dotRef.current) dotRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+      const el = e.target as HTMLElement;
+      setHovering(!!el.closest?.("a, button, [data-cursor-hover]"));
+    };
+    let raf = 0;
+    const tick = () => {
+      ring.current.x += (target.current.x - ring.current.x) * 0.18;
+      ring.current.y += (target.current.y - ring.current.y) * 0.18;
+      if (ringRef.current) ringRef.current.style.transform = `translate3d(${ring.current.x}px, ${ring.current.y}px, 0)`;
+      raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener("mousemove", onMove);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <>
+      <div ref={dotRef} className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none z-[300]"
+        style={{ background: "var(--primary)", marginLeft: -3, marginTop: -3, transform: "translate3d(-100px,-100px,0)" }} />
+      <div ref={ringRef} className="fixed top-0 left-0 rounded-full pointer-events-none z-[300] transition-[width,height,margin,border-color] duration-200 ease-out"
+        style={{
+          border: `1px solid ${hovering ? "var(--primary)" : "color-mix(in oklch, var(--primary) 45%, transparent)"}`,
+          background: hovering ? "color-mix(in oklch, var(--primary) 8%, transparent)" : "transparent",
+          width: hovering ? 44 : 26, height: hovering ? 44 : 26,
+          marginLeft: hovering ? -22 : -13, marginTop: hovering ? -22 : -13,
+          transform: "translate3d(-100px,-100px,0)",
+        }} />
+    </>
+  );
+}
+
+/** Hides the native cursor site-wide, only where CustomCursor is also
+ * mounted and only on fine-pointer devices — touch/coarse pointers never
+ * match this query, so nothing breaks on mobile. */
+export function CustomCursorStyles() {
+  return (
+    <style jsx global>{`
+      @media (hover: hover) and (pointer: fine) {
+        .au-cursor-zone, .au-cursor-zone * { cursor: none !important; }
+      }
+    `}</style>
+  );
+}
