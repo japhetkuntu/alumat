@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, XCircle, Download, ShieldBan, ShieldCheck, MailCheck, MailX, Eye, Upload, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Download, ShieldBan, ShieldCheck, MailCheck, MailX, Eye, Upload, Loader2 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";

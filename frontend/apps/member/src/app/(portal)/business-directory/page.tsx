@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Building2, MapPin, Search, Store, Settings2 } from "lucide-react";
+import { Building2, MapPin, Search, Store, Settings2 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

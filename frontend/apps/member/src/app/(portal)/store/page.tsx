@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ShoppingBag, ShoppingCart, Plus, Minus, X, Package, Receipt } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Plus, Minus, X, Package, Receipt } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";

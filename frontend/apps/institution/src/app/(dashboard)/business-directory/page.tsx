@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Store, Trash2, Pencil, CheckCircle, XCircle, Ban, ShieldCheck, Loader2,
   Phone, Mail, Globe, Link2, MapPin, AlertCircle,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

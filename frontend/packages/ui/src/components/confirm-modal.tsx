@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "./dialog";
 import { Button } from "./button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "./icons";
 
 interface ConfirmModalProps {
   open: boolean;

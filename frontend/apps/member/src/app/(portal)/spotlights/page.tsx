@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Star, GraduationCap, Plus, Loader2, ChevronDown,
   Send, X, CheckCircle2, Clock,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
@@ -106,7 +106,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
 
         {/* Title */}
         {!featured && (
-          <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
+          <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--accent)" }}>
             Spotlight
           </p>
         )}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Linkedin, X, Building2, MapPin, User } from "lucide-react";
+import { Search, Linkedin, X, Building2, MapPin, User } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";

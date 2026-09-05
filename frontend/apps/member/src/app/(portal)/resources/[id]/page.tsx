@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Link2, Download, ExternalLink, Copy, Bookmark, BookmarkCheck, ChevronRight } from "lucide-react";
+import { ArrowLeft, FileText, Link2, Download, ExternalLink, Copy, Bookmark, BookmarkCheck, ChevronRight } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

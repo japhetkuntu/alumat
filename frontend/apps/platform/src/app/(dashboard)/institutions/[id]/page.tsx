@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Copy, ExternalLink, X } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, X } from "@alumni/ui";
 import { notFound, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

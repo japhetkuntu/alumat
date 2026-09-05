@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Users, Lock, Plus, MessageSquare, Clock, Crown, Check, X, UserMinus,
   Calendar, MapPin, FileText, ExternalLink, HandCoins, ArrowRight, Bell,
-} from "lucide-react";
+} from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
 import { Badge } from "@alumni/ui";

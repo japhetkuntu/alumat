@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Images, Trash2, Loader2 } from "lucide-react";
+import { Plus, Images, Trash2, Loader2 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";

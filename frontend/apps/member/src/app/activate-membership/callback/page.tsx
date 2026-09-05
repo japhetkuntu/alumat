@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, XCircle, Loader2, RefreshCcw, ShieldCheck, ArrowRight } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, RefreshCcw, ShieldCheck, ArrowRight } from "@alumni/ui";
 import Link from "next/link";
 
 import { Button } from "@alumni/ui";

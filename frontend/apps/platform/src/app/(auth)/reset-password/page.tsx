@@ -7,7 +7,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "@alumni/ui";
 
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";

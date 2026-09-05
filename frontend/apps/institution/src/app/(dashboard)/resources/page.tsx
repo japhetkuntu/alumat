@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Download, Link2, FileText, Pencil, Eye } from "lucide-react";
+import { Plus, Download, Link2, FileText, Pencil, Eye } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

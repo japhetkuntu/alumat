@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle } from "./icons";
 import { cn } from "../lib/utils";
 
 /** Persistent inline error for a form/dialog — shows until the user retries, unlike a toast which auto-dismisses. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Search } from "./icons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Input } from "./input";
 import { cn } from "../lib/utils";

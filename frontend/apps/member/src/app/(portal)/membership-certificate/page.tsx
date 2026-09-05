@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useMemo, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Download, Award, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, Award, CheckCircle2 } from "@alumni/ui";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
@@ -392,7 +392,7 @@ export default function MembershipCertificatePage() {
           style={{ borderColor: "var(--border)", background: "var(--background)" }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <Award size={15} style={{ color: "var(--primary)" }} />
+            <Award size={15} style={{ color: "var(--accent)" }} />
             <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
               Payment details
             </p>

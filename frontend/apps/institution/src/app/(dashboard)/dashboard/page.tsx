@@ -7,7 +7,7 @@ import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton, IconTile } from "@alumni/ui";
-import { Users, TrendingUp, Wallet, CalendarDays, Landmark, Clock3 } from "lucide-react";
+import { Users, TrendingUp, Wallet, CalendarDays, Landmark, Clock3 } from "@alumni/ui";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,

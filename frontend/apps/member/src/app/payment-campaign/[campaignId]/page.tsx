@@ -14,7 +14,7 @@ import {
   Copy, Check, Share2, MessageCircle, Twitter, Facebook, Send, Linkedin, Mail, MessageSquare,
   Users, Target, Calendar, ChevronDown, ChevronUp,
   Loader2, Lock, ArrowRight, ExternalLink,
-} from "lucide-react";
+} from "@alumni/ui";
 import { getCampaignById, initiatePaystackPayment, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";

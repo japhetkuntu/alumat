@@ -27,7 +27,7 @@ import {
   ShoppingBag,
   Images,
   Store,
-} from "lucide-react";
+} from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
@@ -191,7 +191,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
                 "flex items-center gap-2.5 px-3 rounded-md transition-all duration-150 ease-[cubic-bezier(0.2,0,0,1)] group relative mb-0.5",
                 isHome ? "py-2.5 mb-2 text-[13.5px] font-semibold" : "py-2 text-[13px] font-medium",
                 active
-                  ? "bg-sidebar-primary text-white"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-white/5 hover:text-white active:scale-[0.99]"
               )}
             >

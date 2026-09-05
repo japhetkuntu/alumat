@@ -6,7 +6,7 @@ import { Label } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "@alumni/ui";
 import { getBanks, resolveAccount } from "@/lib/platform-api";
 
 export interface SettlementAccountValue {

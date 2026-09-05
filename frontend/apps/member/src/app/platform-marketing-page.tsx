@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   Menu, X, ArrowRight, ChevronRight, ChevronDown,
   Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell,
   Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
   Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
   Wallet, CalendarCheck, CheckCircle2, PartyPopper,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
 import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, useScrollActiveStep, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";

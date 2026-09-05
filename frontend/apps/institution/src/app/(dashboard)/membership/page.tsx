@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Calendar, CreditCard, ChevronRight, Pencil } from "lucide-react";
+import { Plus, Calendar, CreditCard, ChevronRight, Pencil } from "@alumni/ui";
 import Link from "next/link";
 import { toast } from "sonner";
 import { getCampaigns, createCampaign, getMembers } from "@/lib/institution-api";

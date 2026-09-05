@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight, LifeBuoy,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {

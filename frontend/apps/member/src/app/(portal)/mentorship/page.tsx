@@ -6,7 +6,7 @@ import {
   UserCheck, Plus, CheckCircle, XCircle, Clock,
   Inbox, Users, ChevronDown, Linkedin, MessageCircle, Phone,
   Sparkles, GraduationCap, HeartHandshake,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

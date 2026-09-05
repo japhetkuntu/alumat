@@ -8,7 +8,7 @@ import {
   CreditCard, Loader2, ArrowLeft, Calendar, Target,
   Users, CheckCircle2, Award, Copy, Check,
   Share2, ExternalLink, AlertCircle, Megaphone, HeartHandshake,
-} from "lucide-react";
+} from "@alumni/ui";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
@@ -278,7 +278,7 @@ export default function CampaignDetailPage() {
                 className="font-[family-name:var(--font-display)] mb-4 pb-3 border-b flex items-center gap-2"
                 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--foreground)", borderColor: "var(--border)" }}
               >
-                <HeartHandshake size={17} style={{ color: "var(--primary)" }} /> Wall of support
+                <HeartHandshake size={17} style={{ color: "var(--accent)" }} /> Wall of support
               </h2>
               <div className="flex flex-wrap gap-3">
                 {wallOfSupport.map((entry, i) => (

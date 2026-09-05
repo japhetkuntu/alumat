@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   ArrowLeft, ArrowRight, UserX, SearchX, ShieldAlert,
   MessageCircleOff, PhoneOff, Check, X as XIcon, ExternalLink, MoveHorizontal,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button, cn } from "@alumni/ui";
 import { Section, ScrollProgressBar, useScrolled, useTilt, useCountUp, CustomCursor, CustomCursorStyles } from "../_marketing/primitives";
 import { MarketingFooter } from "../_marketing/footer";

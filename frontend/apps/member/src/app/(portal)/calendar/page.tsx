@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { format, isBefore, isToday, startOfDay } from "date-fns";
-import { CalendarDays, PartyPopper, CreditCard, CheckCircle2, Clock, MapPin, X } from "lucide-react";
+import { CalendarDays, PartyPopper, CreditCard, CheckCircle2, Clock, MapPin, X } from "@alumni/ui";
 import { PageHeader, Card, CardContent } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";

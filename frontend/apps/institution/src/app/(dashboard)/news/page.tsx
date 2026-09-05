@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pin, Pencil, Archive, Eye } from "lucide-react";
+import { Plus, Pin, Pencil, Archive, Eye } from "@alumni/ui";
 import Link from "next/link";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";

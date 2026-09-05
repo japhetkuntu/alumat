@@ -6,7 +6,7 @@ import {
   Briefcase, MapPin, Clock, ExternalLink, ArrowLeft,
   Building2, Calendar, Globe, Eye, XCircle, Pencil,
   CheckCircle2, AlertCircle, ChevronRight,
-} from "lucide-react";
+} from "@alumni/ui";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";

@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   Briefcase, MapPin, Clock, ExternalLink,
   ArrowLeft, Globe, Building2, Calendar,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";

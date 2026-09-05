@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Pin, Lock } from "lucide-react";
+import { MessageSquare, Pin, Lock } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

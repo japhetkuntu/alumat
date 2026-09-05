@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, XCircle, X, Expand, Pencil, ChevronRight, Trash2, Megaphone } from "lucide-react";
+import { ArrowLeft, XCircle, X, Expand, Pencil, ChevronRight, Trash2, Megaphone } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";

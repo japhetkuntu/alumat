@@ -6,7 +6,7 @@ import {
   CreditCard, Calendar, TrendingUp, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
   Briefcase, Star, UsersRound,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

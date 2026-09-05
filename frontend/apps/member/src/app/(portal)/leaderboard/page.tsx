@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Medal, TrendingUp, Users, CreditCard, Calendar } from "lucide-react";
+import { Trophy, Medal, TrendingUp, Users, CreditCard, Calendar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { getLeaderboard } from "@/lib/member-api";

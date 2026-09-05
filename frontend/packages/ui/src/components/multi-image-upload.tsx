@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useMemo, useState, useEffect, useCallback } from "react";
-import { X, Plus, ImageIcon } from "lucide-react";
+import { X, Plus, ImageIcon } from "./icons";
 import { cn } from "../lib/utils";
 
 interface MultiImageUploadProps {

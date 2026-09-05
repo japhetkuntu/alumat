@@ -6,7 +6,7 @@ import { Badge } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { Landmark, Clock3 } from "lucide-react";
+import { Landmark, Clock3 } from "@alumni/ui";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
@@ -98,7 +98,6 @@ export default function BillingPage() {
               />
               <StatCard
                 icon={Clock3}
-                variant="hero"
                 tone="accent"
                 label="Next payout, all institutions"
                 value={formatCurrency(payoutForecast.totals.nextPayout.amount, "GHS")}

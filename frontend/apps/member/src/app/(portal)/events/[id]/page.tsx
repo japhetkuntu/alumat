@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   Calendar, MapPin, Users, Ticket, ArrowLeft,
   Loader2, CheckCircle2, Navigation,
-} from "lucide-react";
+} from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

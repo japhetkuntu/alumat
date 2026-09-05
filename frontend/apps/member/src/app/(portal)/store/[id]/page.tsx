@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ShoppingCart, Package, Truck, Plus, Minus } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Package, Truck, Plus, Minus } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 
 const PLATFORM_LINKS = [

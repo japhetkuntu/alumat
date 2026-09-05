@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "../lib/utils";
-import { Play } from "lucide-react";
+import { Play } from "./icons";
 
 function extractVideoId(url: string): string | null {
   const patterns = [

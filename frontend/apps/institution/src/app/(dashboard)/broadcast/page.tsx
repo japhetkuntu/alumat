@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, Send, MessageSquare, Bell } from "lucide-react";
+import { Loader2, Send, MessageSquare, Bell } from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

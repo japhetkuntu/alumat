@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Download, Link2, FileText, FolderOpen, ExternalLink, ArrowRight, X } from "lucide-react";
+import { Download, Link2, FileText, FolderOpen, ExternalLink, ArrowRight, X } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

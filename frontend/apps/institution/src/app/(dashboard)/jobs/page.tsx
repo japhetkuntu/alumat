@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Briefcase, MapPin, Clock, ExternalLink, Pencil, Archive } from "lucide-react";
+import { Plus, Briefcase, MapPin, Clock, ExternalLink, Pencil, Archive } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";

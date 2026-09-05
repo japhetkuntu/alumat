@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Users, Clock, Crown } from "lucide-react";
+import { Users, Clock, Crown } from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
 import { Badge } from "@alumni/ui";

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Images, ImageOff } from "lucide-react";
+import { Images, ImageOff } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2, Copy,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
