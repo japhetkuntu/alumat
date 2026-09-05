@@ -38,7 +38,7 @@ export default function StoreCallbackPage() {
       const response = await getStoreOrderStatus(reference);
       const normalized = response.status?.toLowerCase() ?? "unknown";
 
-      if (normalized === "confirmed" || normalized === "success") {
+      if (normalized === "confirmed" || normalized === "success" || normalized === "successful") {
         setStatus("success");
         setMessage(response.message ?? "Your payment was successful and your order has been recorded.");
         return;
