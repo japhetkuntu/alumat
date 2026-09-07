@@ -9,6 +9,7 @@ export * from "./components/badge";
 export * from "./components/brand-preview";
 export * from "./components/button";
 export * from "./components/card";
+export * from "./components/charts";
 export * from "./components/checkbox";
 export * from "./components/confirm-modal";
 export * from "./components/dialog";

@@ -1,20 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Lora } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shared/providers";
 import { getInstitutionTheme, themeStyleVars } from "@/lib/theme";
 
-const inter = Inter({
+// IBM Plex Sans is the platform's single, permanent typeface — every portal,
+// every tenant. Assigned to both --font-sans and (via globals.css's @theme
+// block) --font-display, so the existing font-[family-name:var(--font-display)]
+// call sites across the app keep working unchanged, just rendering in a
+// heavier weight of this same family instead of a separate serif.
+const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const lora = Lora({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -64,7 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${lora.variable}`}
+      className={ibmPlexSans.variable}
       style={themeStyleVars(theme)}
     >
       <body className="min-h-screen bg-background font-sans antialiased">

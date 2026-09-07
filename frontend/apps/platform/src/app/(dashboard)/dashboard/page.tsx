@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { TrendChart } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 
@@ -21,6 +22,11 @@ export default function PlatformDashboardPage() {
 
   const attentionList = institutions.filter((i) => i.status === "Suspended");
   const recentSignups = [...institutions].sort((a, b) => +new Date(b.onboardedAt) - +new Date(a.onboardedAt)).slice(0, 3);
+
+  const growthData = (summary?.growthMonthLabels ?? []).map((month, i) => ({
+    month,
+    institutions: summary?.growthLast6Months[i] ?? 0,
+  }));
 
   return (
     <div className="p-7 max-w-[1500px]">
@@ -70,26 +76,16 @@ export default function PlatformDashboardPage() {
             <span className="text-[12px] text-muted-foreground">Last 6 months</span>
           </div>
           <CardContent className="p-5">
-            {summary && summary.growthLast6Months.length > 0 && (
-              <>
-                <div className="flex items-end gap-4 h-[160px] border-b border-border px-2">
-                  {summary.growthLast6Months.map((v, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
-                      <span className="text-[11px] text-muted-foreground">{v}</span>
-                      <div
-                        className="w-full rounded-t-[4px] bg-primary/70"
-                        style={{ height: `${(v / Math.max(...summary.growthLast6Months, 1)) * 100}%` }}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex justify-around mt-2">
-                  {summary.growthMonthLabels.map((m, i) => (
-                    <span key={`${m}-${i}`} className="text-[11px] text-muted-foreground">{m}</span>
-                  ))}
-                </div>
-              </>
-            )}
+            <TrendChart
+              data={growthData}
+              xKey="month"
+              series={[{ key: "institutions", label: "Institutions", color: "var(--brand-primary-500, var(--primary))" }]}
+              variant="area"
+              height={200}
+              loading={!summary}
+              emptyMessage="No institutions onboarded yet"
+              valueFormatter={(v) => v.toLocaleString()}
+            />
           </CardContent>
         </Card>
 

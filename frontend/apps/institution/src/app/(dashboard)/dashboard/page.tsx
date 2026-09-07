@@ -7,10 +7,7 @@ import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton } from "@alumni/ui";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from "recharts";
+import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getPayoutForecast } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
@@ -133,8 +130,6 @@ export default function AdminDashboardPage() {
     const slot = trendMonths.find((m) => m.key === key);
     if (slot) slot.Store += o.totalAmount;
   });
-  const hasTrendData = trendMonths.some((m) => m.Contributions > 0 || m.Store > 0);
-
   const statusCounts = [
     ...allContributions.map((c) => c.status),
     ...allStoreOrders.map((o) => o.status),
@@ -142,7 +137,12 @@ export default function AdminDashboardPage() {
     acc[status] = (acc[status] ?? 0) + 1;
     return acc;
   }, {});
-  const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({ status, count }));
+  const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({
+    label: status,
+    value: count,
+    color: STATUS_COLORS[status] ?? "var(--muted-foreground)",
+  }));
+  const totalPayments = statusPieData.reduce((sum, d) => sum + d.value, 0);
 
   const firstName = user?.name?.trim()?.split(" ")[0] || "";
   const greeting = firstName ? `Good morning, ${firstName}` : "Welcome back";
@@ -230,52 +230,33 @@ export default function AdminDashboardPage() {
           <h2 className="text-[15px] font-semibold m-0 mb-3.5">
             Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, Contributions + Store</span>
           </h2>
-          {isLoading ? (
-            <Skeleton className="h-[150px]" />
-          ) : (
-            <div className="relative">
-              <ResponsiveContainer width="100%" height={150}>
-                <BarChart data={trendMonths} barSize={22}>
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <YAxis hide />
-                  <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Contributions" stackId="a" fill="var(--primary)" />
-                  <Bar dataKey="Store" stackId="a" fill="var(--brand-accent, #d97706)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              {!hasTrendData && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <p className="text-[13px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md">
-                    No payments recorded yet this period
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          <TrendChart
+            data={trendMonths}
+            xKey="month"
+            series={[
+              { key: "Contributions", label: "Contributions", color: "var(--brand-primary-500, var(--primary))" },
+              { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
+            ]}
+            variant="area"
+            stacked
+            height={150}
+            loading={isLoading}
+            emptyMessage="No payments recorded yet this period"
+            valueFormatter={(v) => formatCurrency(v)}
+          />
         </section>
 
         <section className="card p-[18px]">
           <h2 className="text-[15px] font-semibold m-0 mb-3.5">Payment status mix</h2>
-          {isLoading ? (
-            <Skeleton className="h-[150px]" />
-          ) : statusPieData.length === 0 ? (
-            <div className="h-[150px] flex items-center justify-center">
-              <p className="text-[13px] text-muted-foreground">No payments yet</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={150}>
-              <PieChart>
-                <Pie data={statusPieData} dataKey="count" nameKey="status" innerRadius={35} outerRadius={60} paddingAngle={2}>
-                  {statusPieData.map((entry) => (
-                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "var(--muted-foreground)"} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
+          <DonutChart
+            data={statusPieData}
+            centerValue={totalPayments || undefined}
+            centerLabel="payments"
+            height={150}
+            loading={isLoading}
+            emptyMessage="No payments yet"
+            valueFormatter={(v) => v.toLocaleString()}
+          />
         </section>
       </div>
 

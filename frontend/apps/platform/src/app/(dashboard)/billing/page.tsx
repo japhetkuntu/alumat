@@ -7,12 +7,9 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
+import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { Landmark, Clock3 } from "@alumni/ui";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from "recharts";
 import {
   getInstitutions, getAllPayments, getPayoutForecast,
   getPendingBatchPayouts, approveBatchPayout, rejectBatchPayout,
@@ -83,13 +80,16 @@ export default function BillingPage() {
     if (p.source === "Contribution") slot.Contributions += p.amount;
     else slot.Store += p.amount;
   });
-  const hasTrendData = trendMonths.some((m) => m.Contributions > 0 || m.Store > 0);
-
   const statusCounts = payments.reduce<Record<string, number>>((acc, p) => {
     acc[p.status] = (acc[p.status] ?? 0) + 1;
     return acc;
   }, {});
-  const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({ status, count }));
+  const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({
+    label: status,
+    value: count,
+    color: STATUS_COLORS[status] ?? "var(--muted-foreground)",
+  }));
+  const totalPayments = statusPieData.reduce((sum, d) => sum + d.value, 0);
 
   return (
     <div className="p-7 max-w-[1500px]">
@@ -210,29 +210,20 @@ export default function BillingPage() {
             <p className="text-[12px] text-muted-foreground mt-0.5">Last 6 months, by source — every institution combined.</p>
           </div>
           <CardContent className="p-5">
-            {paymentsLoading ? (
-              <Skeleton className="h-[220px]" />
-            ) : (
-              <div className="relative">
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={trendMonths} barSize={22}>
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                    <YAxis hide />
-                    <Tooltip formatter={(v) => formatCurrency(Number(v), "GHS")} contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Contributions" stackId="a" fill="var(--primary)" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Store" stackId="a" fill="var(--brand-accent, #d97706)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-                {!hasTrendData && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-[13px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-md">
-                      No successful payments recorded yet this period
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            <TrendChart
+              data={trendMonths}
+              xKey="month"
+              series={[
+                { key: "Contributions", label: "Contributions", color: "var(--brand-primary-500, var(--primary))" },
+                { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
+              ]}
+              variant="area"
+              stacked
+              height={220}
+              loading={paymentsLoading}
+              emptyMessage="No successful payments recorded yet this period"
+              valueFormatter={(v) => formatCurrency(v, "GHS")}
+            />
           </CardContent>
         </Card>
 
@@ -242,25 +233,15 @@ export default function BillingPage() {
             <p className="text-[12px] text-muted-foreground mt-0.5">Every payment, every institution.</p>
           </div>
           <CardContent className="p-5">
-            {paymentsLoading ? (
-              <Skeleton className="h-[220px]" />
-            ) : statusPieData.length === 0 ? (
-              <div className="h-[220px] flex items-center justify-center">
-                <p className="text-[13px] text-muted-foreground">No payments yet</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={statusPieData} dataKey="count" nameKey="status" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                    {statusPieData.map((entry) => (
-                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "var(--muted-foreground)"} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: "6px", border: "1px solid var(--border)", fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            <DonutChart
+              data={statusPieData}
+              centerValue={totalPayments || undefined}
+              centerLabel="payments"
+              height={220}
+              loading={paymentsLoading}
+              emptyMessage="No payments yet"
+              valueFormatter={(v) => v.toLocaleString()}
+            />
           </CardContent>
         </Card>
       </div>
