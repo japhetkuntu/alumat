@@ -12,8 +12,14 @@ import {
 } from "@alumni/ui";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
-import { Section, scrollToSection, useFadeUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, useScrollActiveStep, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
+import { Section, scrollToSection, useFadeUp, useCountUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, useScrollActiveStep, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
+import {
+  JobsIllustration, MentorshipIllustration, ScatteredChatIllustration,
+  DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
+  AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration,
+  FormIllustration, LaunchIllustration, JoinIllustration, ControlIllustration,
+} from "./_marketing/illustrations";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DATA
@@ -24,24 +30,24 @@ const NAV_LINKS = [
   { label: "FAQ",          href: "#faq"          },
 ];
 
-const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean }[] = [
-  { icon: Briefcase,   label: "Careers",       title: "A jobs board just for your alumni",  desc: "Alumni employers post roles straight to your community, before they hit public boards.", big: true },
-  { icon: Users,       label: "Directory",     title: "Every member, one searchable list", desc: "Name, join year, location — members find each other in seconds." },
-  { icon: CreditCard,  label: "Fundraising",   title: "Collect dues & fund projects",        desc: "Online payments for development projects, year-group dues, and welfare support." },
-  { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",           desc: "Speech days, AGMs, reunions, chapter meetups — all in one shared calendar." },
-  { icon: Heart,       label: "Mentorship",    title: "Built-in mentor matching",             desc: "Alumni who've walked the path connect with those just starting out.", big: true },
-  { icon: ShoppingBag, label: "Store",         title: "Sell branded merchandise",             desc: "An online store for association gear, with online payment and order tracking." },
-  { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever." },
-  { icon: Trophy,      label: "Spotlight",     title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page." },
-  { icon: Building2,   label: "Businesses",    title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other." },
-  { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events — members choose exactly what reaches them." },
+const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
+  { icon: Briefcase,   label: "Careers",       title: "A jobs board just for your alumni",  desc: "Alumni employers post roles straight to your community, before they hit public boards.", big: true, illustration: JobsIllustration },
+  { icon: Users,       label: "Directory",     title: "Every member, one searchable list", desc: "Name, join year, location — members find each other in seconds.", illustration: DirectoryIllustration },
+  { icon: CreditCard,  label: "Fundraising",   title: "Collect dues & fund projects",        desc: "Online payments for development projects, year-group dues, and welfare support.", illustration: FundraisingIllustration },
+  { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",           desc: "Speech days, AGMs, reunions, chapter meetups — all in one shared calendar.", illustration: EventsIllustration },
+  { icon: Heart,       label: "Mentorship",    title: "Built-in mentor matching",             desc: "Alumni who've walked the path connect with those just starting out.", big: true, illustration: MentorshipIllustration },
+  { icon: ShoppingBag, label: "Store",         title: "Sell branded merchandise",             desc: "An online store for association gear, with online payment and order tracking.", illustration: StoreIllustration },
+  { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever.", illustration: AlbumsIllustration },
+  { icon: Trophy,      label: "Spotlight",     title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page.", illustration: SpotlightIllustration },
+  { icon: Building2,   label: "Businesses",    title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
+  { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events — members choose exactly what reaches them.", illustration: NotificationsIllustration },
 ];
 
-const HOW_IT_WORKS = [
-  { n: "01", icon: SlidersHorizontal, title: "Tell us about your institution", desc: "One short form — your institution's name and who we should talk to. Takes under two minutes." },
-  { n: "02", icon: Rocket,            title: "We set your portal up",          desc: "Our team configures your branding, your subdomain, and your first admin account." },
-  { n: "03", icon: Users,             title: "Your alumni join, free",         desc: "Share the link. Every member creates an account and steps into their new home." },
-  { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules — approve members, manage content, run the show." },
+const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
+  { n: "01", icon: SlidersHorizontal, title: "Tell us about your institution", desc: "One short form — your institution's name and who we should talk to. Takes under two minutes.", illustration: FormIllustration },
+  { n: "02", icon: Rocket,            title: "We set your portal up",          desc: "Our team configures your branding, your subdomain, and your first admin account.", illustration: LaunchIllustration },
+  { n: "03", icon: Users,             title: "Your alumni join, free",         desc: "Share the link. Every member creates an account and steps into their new home.", illustration: JoinIllustration },
+  { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules — approve members, manage content, run the show.", illustration: ControlIllustration },
 ];
 
 const FAQS = [
@@ -59,10 +65,27 @@ const WHATSAPP_PROBLEMS = [
   { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, no engagement analytics — even in WhatsApp Communities." },
 ];
 
+/** A hero stat tile whose number counts up from 0 the moment it scrolls into
+ *  view — the kind of small "this page is alive" touch that separates a
+ *  static screenshot-of-a-dashboard from something that feels like a real
+ *  product demo. `format` renders the eased-in value (comma grouping,
+ *  currency prefix, etc.) each frame of the count. */
+function HeroStat({ icon, end, format, label }: { icon: LucideIcon; end: number; format: (n: number) => string; label: string }) {
+  const { ref, value } = useCountUp(end, 0, 1400);
+  return (
+    <div ref={ref} className="border rounded-xl p-2.5 sm:p-3.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+      <IconTile icon={icon} size="sm" tone="primary" />
+      <p className="font-[family-name:var(--font-display)] font-bold tabular-nums mt-2 text-[17px] sm:text-[19px]" style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}>
+        {format(value)}
+      </p>
+      <p className="text-[10.5px] sm:text-[11px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{label}</p>
+    </div>
+  );
+}
+
 function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEATURES[number]; delay: string; tone?: "primary" | "accent" }) {
   const { ref, visible } = useFadeUp();
-  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--brand-primary-100, var(--color-background-info)))" : "var(--brand-primary-100, var(--color-background-info))";
-  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--brand-primary-300, var(--color-border-info)))" : "var(--brand-primary-300, var(--color-border-info))";
+  const tilt = useTilt<HTMLDivElement>(2.5);
   const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
@@ -71,12 +94,20 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
         feature.big && "sm:col-span-2",
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
       )}>
-      <div className={cn("card__content", feature.big && "sm:flex sm:items-center sm:gap-6")}>
-        <div className={cn("w-10 h-10 rounded-[10px] flex items-center justify-center transition-all duration-300 ease-out shrink-0 group-hover:-rotate-6 group-hover:scale-110",
-          feature.big ? "sm:w-14 sm:h-14 mb-4 sm:mb-0" : "mb-4")}
-          style={{ background: iconBg, border: `1px solid ${iconBorder}` }}>
-          <feature.icon size={feature.big ? 20 : 17} className={feature.big ? "sm:size-6" : ""} style={{ color: iconColor }} />
-        </div>
+      {/* Tilt lives on this inner wrapper, not the outer card — the outer
+          div's own transform already carries the scroll-reveal translate-y,
+          and inline style always wins over a Tailwind class for the same
+          property, so combining both on one element would let tilt silently
+          erase the reveal animation's transform. */}
+      <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style}
+        className={cn("card__content", feature.big && "sm:flex sm:items-center sm:gap-6")}>
+        <feature.illustration
+          tone={tone}
+          className={cn(
+            "transition-transform duration-500 group-hover:scale-105 mb-4",
+            feature.big ? "w-24 h-24 sm:w-32 sm:h-32 sm:mb-0" : "w-20 h-20"
+          )}
+        />
         <div>
           <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: iconColor }}>{feature.label}</p>
           <h3 className={cn("font-semibold leading-snug mb-2 group-hover:text-primary transition-colors duration-200", feature.big ? "text-[17px]" : "text-[14px]")} style={{ color: "var(--foreground)" }}>
@@ -109,21 +140,25 @@ function WhatsAppProblemCard({ item, index, delay }: { item: typeof WHATSAPP_PRO
   );
 }
 
-function HowItWorksStep({ step, delay }: { step: typeof HOW_IT_WORKS[number]; delay: string }) {
+function HowItWorksStep({ step, delay, tone = "primary" }: { step: typeof HOW_IT_WORKS[number]; delay: string; tone?: "primary" | "accent" }) {
   const { ref, visible } = useFadeUp();
+  const c = tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)";
   return (
     <div ref={ref}
-      className={cn("relative transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
+      className={cn("relative flex items-center gap-6 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
       style={{ transitionDelay: delay }}>
-      <p className="font-[family-name:var(--font-display)] leading-none select-none mb-3"
-        style={{ fontSize: "3.75rem", fontWeight: 700, color: "var(--primary)", opacity: 0.14 }} aria-hidden="true">
-        {step.n}
-      </p>
-      <div className="flex items-center gap-2 mb-2 -mt-9">
-        <step.icon size={15} style={{ color: "var(--primary)" }} />
-        <h3 className="text-[16px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+      <step.illustration tone={tone} className="w-20 h-20 sm:w-24 sm:h-24 shrink-0" />
+      <div className="min-w-0">
+        <p className="font-[family-name:var(--font-display)] leading-none select-none mb-1.5"
+          style={{ fontSize: "1.75rem", fontWeight: 700, color: c, opacity: 0.35 }} aria-hidden="true">
+          {step.n}
+        </p>
+        <div className="flex items-center gap-2 mb-2">
+          <step.icon size={15} style={{ color: c }} />
+          <h3 className="text-[16px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+        </div>
+        <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
       </div>
-      <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
     </div>
   );
 }
@@ -287,6 +322,7 @@ export default function PlatformMarketingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const scrolled = useScrolled(24);
   const heroCta = useMagnetic(0.25);
+  const freeCta = useMagnetic(0.25);
   const heroPanelTilt = useTilt<HTMLDivElement>(2.5);
   const stepScroll = useScrollActiveStep(HOW_IT_WORKS.length);
   const [heroSpotlightVars, setHeroSpotlightVars] = useState<React.CSSProperties>({ background: "var(--background)", "--hx": "50%", "--hy": "0%" } as React.CSSProperties);
@@ -326,10 +362,10 @@ export default function PlatformMarketingPage() {
             <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>AlumUnion</p>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
+          <nav className="hidden md:flex items-center gap-0.5 p-1 rounded-full" style={{ background: "var(--secondary)" }} aria-label="Primary">
             {NAV_LINKS.map((link) => (
               <button key={link.label} onClick={() => scrollToSection(link.href)}
-                className="rounded-lg px-4 py-2 text-[13.5px] font-medium transition-colors hover:bg-secondary"
+                className="rounded-full px-4 py-1.5 text-[13.5px] font-medium transition-colors hover:bg-background"
                 style={{ color: "var(--muted-foreground)" }}>
                 {link.label}
               </button>
@@ -337,7 +373,7 @@ export default function PlatformMarketingPage() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Button size="sm" className="text-[13px] font-semibold gap-1.5" onClick={() => scrollToSection("#onboard")}>
+            <Button size="sm" className="text-[13px] font-semibold gap-1.5 rounded-full px-5" onClick={() => scrollToSection("#onboard")}>
               Get onboarded — free <ArrowRight size={12} />
             </Button>
           </div>
@@ -378,6 +414,13 @@ export default function PlatformMarketingPage() {
         {/* Cursor-tracked glow — a quiet, premium touch behind the headline rather than a decorative badge */}
         <div className="absolute inset-0 pointer-events-none transition-opacity duration-500"
           style={{ background: "radial-gradient(500px circle at var(--hx) var(--hy), color-mix(in oklch, var(--primary) 7%, transparent), transparent 70%)" }} />
+        {/* Concentric rings behind the headline — a quiet focal cue, echoing radar/signal without a literal icon */}
+        <div className="absolute left-1/2 top-12 pointer-events-none hidden sm:block" aria-hidden="true">
+          {[220, 340, 460].map((size) => (
+            <div key={size} className="absolute rounded-full"
+              style={{ width: size, height: size, left: 0, top: 0, transform: `translate(-50%, -50%)`, border: "1px solid color-mix(in oklch, var(--primary) 10%, transparent)" }} />
+          ))}
+        </div>
 
         <div className="section__inner--wide relative pt-16 pb-20 text-center">
 
@@ -395,15 +438,17 @@ export default function PlatformMarketingPage() {
             One home for your alumni — jobs, fundraising, mentorship, and events, all in one place.{" "}
             Built for schools, universities, and any community that wants to stay connected.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
-            <Button ref={heroCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="h-12 px-8 text-[15px] font-semibold gap-2"
-              style={heroCta.style} onMouseMove={heroCta.onMouseMove} onMouseLeave={heroCta.onMouseLeave}
+          <div className="flex flex-col items-center gap-4 mb-14">
+            <Button ref={heroCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="px-9 text-[15.5px] font-semibold gap-2 rounded-full shadow-sm"
+              style={{ ...heroCta.style, height: 52 }} onMouseMove={heroCta.onMouseMove} onMouseLeave={heroCta.onMouseLeave}
               onClick={() => scrollToSection("#onboard")}>
               Get your institution onboarded <ArrowRight size={15} />
             </Button>
-            <Button size="lg" variant="outline" className="h-12 px-8 text-[15px] font-medium" onClick={() => scrollToSection("#how-it-works")}>
+            <button onClick={() => scrollToSection("#how-it-works")}
+              className="text-[13.5px] font-semibold underline decoration-transparent hover:decoration-current underline-offset-4 transition-all"
+              style={{ color: "var(--muted-foreground)" }}>
               See how it works
-            </Button>
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
@@ -423,73 +468,98 @@ export default function PlatformMarketingPage() {
               dashboard (real component language: IconTile, stat tiles, flat
               corners) rather than a generic stock screenshot. Gives the hero
               a focal anchor instead of floating text in empty space. */}
-          <div className="relative mt-16 sm:mt-20 max-w-[880px] mx-auto" style={{ perspective: "1400px" }}>
-            <div className="absolute -inset-x-6 -inset-y-10 pointer-events-none" aria-hidden="true"
-              style={{ background: "radial-gradient(60% 65% at 50% 35%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 72%)", filter: "blur(6px)" }} />
+          <div className="relative mt-16 sm:mt-20 max-w-[880px] mx-auto" style={{ perspective: "1800px" }}>
+            <div className="absolute -inset-x-10 -inset-y-14 pointer-events-none" aria-hidden="true"
+              style={{ background: "radial-gradient(60% 65% at 50% 40%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 72%)", filter: "blur(10px)" }} />
 
-            <div
-              ref={heroPanelTilt.ref}
-              onMouseMove={heroPanelTilt.onMouseMove}
-              onMouseLeave={heroPanelTilt.onMouseLeave}
-              style={{ ...heroPanelTilt.style, borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 40px 90px -35px rgba(15,23,42,0.28), 0 1px 0 rgba(255,255,255,0.4) inset" }}
-              className="relative text-left border"
-            >
-              <div className="flex items-center gap-2 px-4 h-10 border-b" style={{ borderColor: "var(--border)" }}>
-                <span className="w-2 h-2 rounded-full" style={{ background: "var(--destructive)", opacity: 0.4 }} />
-                <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand-accent, var(--primary))", opacity: 0.4 }} />
-                <span className="w-2 h-2 rounded-full" style={{ background: "var(--primary)", opacity: 0.4 }} />
-                <span className="ml-2.5 text-[11.5px] font-mono" style={{ color: "var(--muted-foreground)" }}>yourschool.alumunion.com</span>
+            {/* Floating category chips — orbit the hero visual with their own
+                gentle, staggered bob so the whole hero doesn't sit still,
+                each a quiet nod to one thing the portal actually does. */}
+            {[
+              { icon: Briefcase, tone: "primary" as const, className: "left-0 top-6 sm:-left-6", delay: "0s" },
+              { icon: Heart,     tone: "accent" as const,  className: "right-2 top-24 sm:-right-8 sm:top-28", delay: "1.1s" },
+              { icon: Globe,     tone: "primary" as const, className: "left-10 -bottom-6 sm:left-14", delay: "0.6s" },
+            ].map(({ icon: Icon, tone, className, delay }, i) => (
+              <div key={i} className={cn("hidden sm:block absolute z-10", className)}
+                style={{ animation: "au-float 4.5s ease-in-out infinite", animationDelay: delay }} aria-hidden="true">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center border"
+                  style={{
+                    background: "var(--card)", borderColor: "var(--border)",
+                    boxShadow: "0 14px 30px -14px rgba(15,23,42,0.28)",
+                  }}>
+                  <Icon size={17} style={{ color: tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)" }} />
+                </div>
               </div>
+            ))}
+            <style jsx>{`
+              @keyframes au-float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+              }
+            `}</style>
 
-              <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-3 sm:mb-3.5">
-                  {[
-                    { icon: Wallet, label: "Total collected", value: "GH₵42,300" },
-                    { icon: Users, label: "Members", value: "1,204" },
-                    { icon: CalendarCheck, label: "Events", value: "6" },
-                    { icon: Briefcase, label: "Jobs posted", value: "18" },
-                  ].map((s) => (
-                    <div key={s.label} className="border p-2.5 sm:p-3.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-                      <IconTile icon={s.icon} size="sm" tone="primary" />
-                      <p className="font-[family-name:var(--font-display)] font-bold tabular-nums mt-2 text-[17px] sm:text-[19px]" style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}>{s.value}</p>
-                      <p className="text-[10.5px] sm:text-[11px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
-                    </div>
-                  ))}
+            {/* Resting perspective — a fixed base tilt so the panel reads as a
+                floating card seen at an angle even before any mouse
+                interaction; heroPanelTilt's own transform layers on top of
+                this for the interactive nudge, composing naturally since
+                nested CSS transforms combine. */}
+            <div style={{ transform: "perspective(1800px) rotateX(6deg) rotateY(-8deg)", transformStyle: "preserve-3d" }}>
+              <div
+                ref={heroPanelTilt.ref}
+                onMouseMove={heroPanelTilt.onMouseMove}
+                onMouseLeave={heroPanelTilt.onMouseLeave}
+                style={{ ...heroPanelTilt.style, borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 60px 100px -40px rgba(15,23,42,0.35), 0 1px 0 rgba(255,255,255,0.4) inset" }}
+                className="relative text-left border rounded-3xl overflow-hidden"
+              >
+                <div className="flex items-center gap-2 px-4 h-10 border-b" style={{ borderColor: "var(--border)" }}>
+                  <span className="w-2 h-2 rounded-full" style={{ background: "var(--destructive)", opacity: 0.4 }} />
+                  <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand-accent, var(--primary))", opacity: 0.4 }} />
+                  <span className="w-2 h-2 rounded-full" style={{ background: "var(--primary)", opacity: 0.4 }} />
+                  <span className="ml-2.5 text-[11.5px] font-mono" style={{ color: "var(--muted-foreground)" }}>yourschool.alumunion.com</span>
                 </div>
 
-                <div className="grid sm:grid-cols-[1.3fr_1fr] gap-2.5 sm:gap-3">
-                  <div className="border p-3.5 sm:p-4" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-                    <p className="text-[11px] font-semibold mb-3" style={{ color: "var(--muted-foreground)" }}>Contributions, last 6 months</p>
-                    <div className="flex items-end gap-2 sm:gap-2.5" style={{ height: 64 }}>
-                      {[38, 55, 46, 72, 60, 90].map((h, i) => (
-                        <div key={i} className="flex-1" style={{ height: `${h}%`, background: i === 5 ? "var(--primary)" : "color-mix(in oklch, var(--primary) 28%, transparent)" }} />
+                <div className="p-4 sm:p-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-3 sm:mb-3.5">
+                    <HeroStat icon={Wallet} end={42300} label="Total collected" format={(n) => `GH₵${Math.round(n).toLocaleString()}`} />
+                    <HeroStat icon={Users} end={1204} label="Members" format={(n) => Math.round(n).toLocaleString()} />
+                    <HeroStat icon={CalendarCheck} end={6} label="Events" format={(n) => String(Math.round(n))} />
+                    <HeroStat icon={Briefcase} end={18} label="Jobs posted" format={(n) => String(Math.round(n))} />
+                  </div>
+
+                  <div className="grid sm:grid-cols-[1.3fr_1fr] gap-2.5 sm:gap-3">
+                    <div className="border rounded-xl p-3.5 sm:p-4" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+                      <p className="text-[11px] font-semibold mb-3" style={{ color: "var(--muted-foreground)" }}>Contributions, last 6 months</p>
+                      <div className="flex items-end gap-2 sm:gap-2.5" style={{ height: 64 }}>
+                        {[38, 55, 46, 72, 60, 90].map((h, i) => (
+                          <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%`, background: i === 5 ? "var(--primary)" : "color-mix(in oklch, var(--primary) 28%, transparent)" }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="border rounded-xl p-3.5 sm:p-4 space-y-2.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+                      <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>Recent activity</p>
+                      {[
+                        { icon: CheckCircle2, text: "New member approved" },
+                        { icon: Wallet, text: "Dues payment received" },
+                        { icon: PartyPopper, text: "Reunion RSVP’d" },
+                      ].map((a) => (
+                        <div key={a.text} className="flex items-center gap-2">
+                          <a.icon size={13} style={{ color: "var(--primary)" }} className="shrink-0" />
+                          <p className="text-[11.5px] truncate" style={{ color: "var(--foreground)" }}>{a.text}</p>
+                        </div>
                       ))}
                     </div>
                   </div>
-                  <div className="border p-3.5 sm:p-4 space-y-2.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-                    <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>Recent activity</p>
-                    {[
-                      { icon: CheckCircle2, text: "New member approved" },
-                      { icon: Wallet, text: "Dues payment received" },
-                      { icon: PartyPopper, text: "Reunion RSVP’d" },
-                    ].map((a) => (
-                      <div key={a.text} className="flex items-center gap-2">
-                        <a.icon size={13} style={{ color: "var(--primary)" }} className="shrink-0" />
-                        <p className="text-[11.5px] truncate" style={{ color: "var(--foreground)" }}>{a.text}</p>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Floating badge — overlaps the panel corner for depth */}
-            <div className="hidden sm:flex absolute -right-5 -bottom-6 items-center gap-2.5 border px-3.5 py-3 z-10"
-              style={{ borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 18px 40px -18px rgba(15,23,42,0.3)" }}>
-              <IconTile icon={CheckCircle2} size="sm" tone="primary" filled />
-              <div>
-                <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--foreground)" }}>Member approved</p>
-                <p className="text-[10.5px]" style={{ color: "var(--muted-foreground)" }}>Just now</p>
+              {/* Floating badge — overlaps the panel corner for depth */}
+              <div className="hidden sm:flex absolute -right-5 -bottom-6 items-center gap-2.5 border rounded-2xl px-3.5 py-3 z-10"
+                style={{ borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 18px 40px -18px rgba(15,23,42,0.3)", transform: "translateZ(40px)" }}>
+                <IconTile icon={CheckCircle2} size="sm" tone="primary" filled />
+                <div>
+                  <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--foreground)" }}>Member approved</p>
+                  <p className="text-[10.5px]" style={{ color: "var(--muted-foreground)" }}>Just now</p>
+                </div>
               </div>
             </div>
           </div>
@@ -531,14 +601,17 @@ export default function PlatformMarketingPage() {
       ════════════════════════════════════════════════════════════════ */}
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
-          <div className="mb-12 max-w-[60ch]">
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              You&apos;re already running this over WhatsApp. It shows.
-            </h2>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              It&apos;s free and everyone already has it — but a chat app was never built to run a community. Here&apos;s
-              what that actually costs you.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-8 mb-12">
+            <div className="max-w-[60ch]">
+              <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
+                You&apos;re already running this over WhatsApp. It shows.
+              </h2>
+              <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+                It&apos;s free and everyone already has it — but a chat app was never built to run a community. Here&apos;s
+                what that actually costs you.
+              </p>
+            </div>
+            <ScatteredChatIllustration className="w-32 h-32 sm:w-40 sm:h-40 shrink-0 mx-auto sm:mx-0" />
           </div>
           <div className="grid gap-10 sm:gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x mb-10" style={{ borderColor: "var(--border)" }}>
             {WHATSAPP_PROBLEMS.map((item, i) => (
@@ -593,10 +666,10 @@ export default function PlatformMarketingPage() {
               </div>
             </div>
 
-            <div className="space-y-24">
+            <div className="space-y-16">
               {HOW_IT_WORKS.map((step, i) => (
                 <div key={step.n} ref={stepScroll.setRef(i)}>
-                  <HowItWorksStep step={step} delay="0ms" />
+                  <HowItWorksStep step={step} delay="0ms" tone={i % 2 === 0 ? "primary" : "accent"} />
                 </div>
               ))}
             </div>
@@ -606,7 +679,7 @@ export default function PlatformMarketingPage() {
           <div className="grid gap-10 sm:gap-8 sm:grid-cols-2 lg:hidden" style={{ borderColor: "var(--border)" }}>
             {HOW_IT_WORKS.map((step, i) => (
               <div key={step.n}>
-                <HowItWorksStep step={step} delay={`${i * 100}ms`} />
+                <HowItWorksStep step={step} delay={`${i * 100}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
               </div>
             ))}
           </div>
@@ -634,8 +707,10 @@ export default function PlatformMarketingPage() {
               No setup fee, no monthly bill, no per-member charge. Your alumni get a modern portal, and your institution
               never sees an invoice for it.
             </p>
-            <Button size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2"
-              style={{ background: "white", color: "var(--primary)" }} onClick={() => scrollToSection("#onboard")}>
+            <Button ref={freeCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2 rounded-full"
+              style={{ ...freeCta.style, background: "white", color: "var(--primary)" }}
+              onMouseMove={freeCta.onMouseMove} onMouseLeave={freeCta.onMouseLeave}
+              onClick={() => scrollToSection("#onboard")}>
               Get your institution onboarded <ChevronRight size={16} />
             </Button>
           </div>

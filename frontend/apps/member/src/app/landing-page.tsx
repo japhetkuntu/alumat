@@ -14,6 +14,11 @@ import {
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { publicMemberClient } from "@/lib/api-client";
+import {
+  JobsIllustration, MentorshipIllustration, DirectoryIllustration, FundraisingIllustration,
+  EventsIllustration, StoreIllustration, AlbumsIllustration, SpotlightIllustration,
+  BusinessIllustration, NotificationsIllustration,
+} from "./_marketing/illustrations";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DYNAMIC CONTENT — Stories and the news banner are editable by both the
@@ -135,17 +140,17 @@ const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
 ];
 
-const FEATURES = [
-  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true, featureKey: "Jobs" },
-  { icon: Users,        label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora.", featureKey: "Directory" },
-  { icon: CreditCard,   label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support.", featureKey: "Contributions" },
-  { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events" },
-  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship" },
-  { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association — pay online, pick up or receive your order.", featureKey: "Store" },
-  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between — added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums" },
-  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights" },
-  { icon: Building2,    label: "Businesses",    title: "Support alumni-owned business", desc: "Browse businesses run by fellow graduates, or list your own and get discovered by the network.", featureKey: "BusinessDirectory" },
-  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you.", featureKey: undefined },
+const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; featureKey: string | undefined; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
+  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
+  { icon: Users,        label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora.", featureKey: "Directory", illustration: DirectoryIllustration },
+  { icon: CreditCard,   label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support.", featureKey: "Contributions", illustration: FundraisingIllustration },
+  { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events", illustration: EventsIllustration },
+  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration },
+  { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association — pay online, pick up or receive your order.", featureKey: "Store", illustration: StoreIllustration },
+  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between — added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
+  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights", illustration: SpotlightIllustration },
+  { icon: Building2,    label: "Businesses",    title: "Support alumni-owned business", desc: "Browse businesses run by fellow graduates, or list your own and get discovered by the network.", featureKey: "BusinessDirectory", illustration: BusinessIllustration },
+  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you.", featureKey: undefined, illustration: NotificationsIllustration },
 ];
 
 const STATS = [
@@ -275,9 +280,7 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
   const big = "big" in feature && feature.big;
   // Alternates primary/accent across the grid — the same flat, solid-fill
   // pattern as the dashboard stat cards, so a real secondary color shows up
-  // as a genuinely distinct icon tone, never blended into a background.
-  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--brand-primary-100, var(--color-background-info)))" : "var(--brand-primary-100, var(--color-background-info))";
-  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--brand-primary-300, var(--color-border-info)))" : "var(--brand-primary-300, var(--color-border-info))";
+  // as a genuinely distinct tone, never blended into a background.
   const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
@@ -287,11 +290,10 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
       )}>
       <div className={cn("card__content", big && "sm:flex sm:items-center sm:gap-6")}>
-        <div className={cn("w-10 h-10 rounded-[10px] flex items-center justify-center transition-colors duration-200 shrink-0",
-          big ? "sm:w-14 sm:h-14 mb-4 sm:mb-0" : "mb-4")}
-          style={{ background: iconBg, border: `1px solid ${iconBorder}` }}>
-          <feature.icon size={big ? 20 : 17} className={big ? "sm:size-6" : ""} style={{ color: iconColor }} />
-        </div>
+        <feature.illustration
+          tone={tone}
+          className={cn("transition-transform duration-500 group-hover:scale-105 mb-4", big ? "w-24 h-24 sm:w-32 sm:h-32 sm:mb-0" : "w-20 h-20")}
+        />
         <div>
           <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: iconColor }}>
             {feature.label}
