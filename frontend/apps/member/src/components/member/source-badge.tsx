@@ -1,4 +1,4 @@
-import { Building2, UsersRound } from "lucide-react";
+import { Building2, UsersRound } from "@alumni/ui";
 
 /** Deterministic hue from a string so each community reads as a consistent color across the app, without needing a color field on the Community entity. */
 function hueFor(seed: string): number {

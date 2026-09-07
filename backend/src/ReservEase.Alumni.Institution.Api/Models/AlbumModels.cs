@@ -6,6 +6,9 @@ public class CreateAlbumRequest
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    /// <summary>Ignored for a ScopedAdmin — their own scope is applied automatically (see ResolveYearGroupsForCreation/ResolveCommunityForCreation).</summary>
+    public string? CommunityId { get; set; }
+    public List<int>? YearGroups { get; set; }
 }
 
 public class UpdateAlbumRequest
@@ -14,6 +17,9 @@ public class UpdateAlbumRequest
     public string? Description { get; set; }
     /// <summary>When provided, must match one of the album's existing AlbumPhoto URLs — validated server-side.</summary>
     public string? CoverImageUrl { get; set; }
+    /// <summary>Ignored for a ScopedAdmin — their own scope is applied automatically.</summary>
+    public string? CommunityId { get; set; }
+    public List<int>? YearGroups { get; set; }
 }
 
 public class AddAlbumPhotosRequest

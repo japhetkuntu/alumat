@@ -19,14 +19,20 @@ public class AlbumService(
     ICurrentTenantService currentTenant,
     ILogger<AlbumService> logger) : IAlbumService
 {
-    public async Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter)
+    public async Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter, AuthData admin)
     {
         try
         {
-            logger.LogInformation("GetAlbums request — filter: {Filter}", filter.Serialize());
+            logger.LogInformation("GetAlbums request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
             var result = await albumRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                a => string.IsNullOrEmpty(filter.Search) || a.Title.Contains(filter.Search));
+                a => (string.IsNullOrEmpty(filter.Search) || a.Title.Contains(filter.Search))
+                  && (isSuper
+                      || (a.YearGroups != null && a.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                      || (a.CommunityId != null && communityIds.Contains(a.CommunityId))));
 
             var dtoResult = new PgPagedResult<PhotoAlbumDto>
             {
@@ -48,12 +54,15 @@ public class AlbumService(
         }
     }
 
-    public async Task<IApiResponse<PhotoAlbumDto>> GetAlbumByIdAsync(string albumId)
+    public async Task<IApiResponse<PhotoAlbumDto>> GetAlbumByIdAsync(string albumId, AuthData admin)
     {
         try
         {
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<PhotoAlbumDto>("Album not found");
+
+            if (!admin.CanViewScopedItem(album.YearGroups, album.CommunityId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<PhotoAlbumDto>("Album not found");
 
             return album.ToDto().ToOkApiResponse();
@@ -65,12 +74,15 @@ public class AlbumService(
         }
     }
 
-    public async Task<IApiResponse<PgPagedResult<AlbumPhotoDto>>> GetAlbumPhotosAsync(string albumId, AlbumPhotoFilter filter)
+    public async Task<IApiResponse<PgPagedResult<AlbumPhotoDto>>> GetAlbumPhotosAsync(string albumId, AlbumPhotoFilter filter, AuthData admin)
     {
         try
         {
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<PgPagedResult<AlbumPhotoDto>>("Album not found");
+
+            if (!admin.CanViewScopedItem(album.YearGroups, album.CommunityId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<PgPagedResult<AlbumPhotoDto>>("Album not found");
 
             var result = await photoRepo.GetPagedAsync(
@@ -106,11 +118,17 @@ public class AlbumService(
             if (string.IsNullOrWhiteSpace(request.Title))
                 return ApiResponseExtensions.ToBadRequestApiResponse<PhotoAlbumDto>("Title is required.");
 
+            var yearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            var communityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref yearGroups, ref communityId);
+
             var album = new PhotoAlbum
             {
                 Title = request.Title,
                 Description = request.Description,
                 PhotoCount = 0,
+                CommunityId = communityId,
+                YearGroups = yearGroups,
                 CreatedBy = admin.Id,
             };
 
@@ -135,6 +153,9 @@ public class AlbumService(
             if (album is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<PhotoAlbumDto>("Album not found");
 
+            if (!admin.CanModifyScopedItem(album.YearGroups, album.CreatedBy, album.CommunityId))
+                return ApiResponseExtensions.ToNotFoundApiResponse<PhotoAlbumDto>("Album not found");
+
             if (string.IsNullOrWhiteSpace(request.Title))
                 return ApiResponseExtensions.ToBadRequestApiResponse<PhotoAlbumDto>("Title is required.");
 
@@ -145,9 +166,15 @@ public class AlbumService(
                     return ApiResponseExtensions.ToBadRequestApiResponse<PhotoAlbumDto>("CoverImageUrl must match one of this album's existing photos.");
             }
 
+            var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
+            var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
+            ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
+
             album.Title = request.Title;
             album.Description = request.Description;
             album.CoverImageUrl = request.CoverImageUrl;
+            album.CommunityId = updatedCommunityId;
+            album.YearGroups = updatedYearGroups;
             album.UpdatedAt = DateTime.UtcNow;
             album.UpdatedBy = admin.Id;
             await albumRepo.UpdateAsync(album);
@@ -162,12 +189,15 @@ public class AlbumService(
         }
     }
 
-    public async Task<IApiResponse<object>> DeleteAlbumAsync(string albumId)
+    public async Task<IApiResponse<object>> DeleteAlbumAsync(string albumId, AuthData admin)
     {
         try
         {
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Album not found");
+
+            if (!admin.CanModifyScopedItem(album.YearGroups, album.CreatedBy, album.CommunityId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Album not found");
 
             var photos = (await photoRepo.GetAllAsync(p => p.AlbumId == albumId)).ToList();
@@ -192,6 +222,9 @@ public class AlbumService(
             logger.LogInformation("AddPhotos request for albumId: {AlbumId} by admin {AdminId}", albumId, admin.Id);
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<AddAlbumPhotosResponse>("Album not found");
+
+            if (!admin.CanModifyScopedItem(album.YearGroups, album.CreatedBy, album.CommunityId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<AddAlbumPhotosResponse>("Album not found");
 
             if (request.Photos is not { Count: > 0 })
@@ -229,12 +262,15 @@ public class AlbumService(
         }
     }
 
-    public async Task<IApiResponse<object>> DeletePhotoAsync(string albumId, string photoId)
+    public async Task<IApiResponse<object>> DeletePhotoAsync(string albumId, string photoId, AuthData admin)
     {
         try
         {
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Album not found");
+
+            if (!admin.CanModifyScopedItem(album.YearGroups, album.CreatedBy, album.CommunityId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Album not found");
 
             var photo = await photoRepo.GetByIdAsync(photoId);

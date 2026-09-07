@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { MapPin, Clock, Briefcase, ArrowRight, X, Search } from "lucide-react";
+import { MapPin, Clock, Briefcase, ArrowRight, X, Search } from "@alumni/ui";
 import Link from "next/link";
 import { Pagination } from "@alumni/ui";
 import { Input } from "@alumni/ui";

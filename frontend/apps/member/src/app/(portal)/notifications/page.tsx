@@ -5,7 +5,7 @@ import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tansta
 import {
   Bell, CheckCheck, Loader2, Briefcase, Megaphone, Calendar,
   Star, CreditCard, MessageSquare, Check,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {

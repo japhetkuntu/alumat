@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ConfirmModal } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
-import { Inbox } from "lucide-react";
+import { Inbox } from "@alumni/ui";
 import { addOnboardingLeadNote, getOnboardingLeads, updateOnboardingLeadStatus } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 

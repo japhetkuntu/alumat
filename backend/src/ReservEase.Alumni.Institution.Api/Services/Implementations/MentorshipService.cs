@@ -23,10 +23,9 @@ public class MentorshipService(
     {
         try
         {
-            if (admin.Role == StaffRoles.ScopedAdmin)
-                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<MentorProfileDto>>("Scoped admins cannot manage mentorship");
-
             logger.LogInformation("GetMentorProfiles request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var yearGroups = admin.YearGroups ?? new List<int>();
             var search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim();
             var result = await profileRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
@@ -37,7 +36,8 @@ public class MentorshipService(
                       || (p.Member != null && (
                             p.Member.FirstName.ToLower().Contains(search.ToLower())
                             || p.Member.LastName.ToLower().Contains(search.ToLower())
-                        ))));
+                        )))
+                  && (isSuper || (p.YearGroups != null && p.YearGroups.Any(__y => yearGroups.Contains(__y)))));
 
             var dtoResult = new PgPagedResult<MentorProfileDto>
             {
@@ -137,13 +137,24 @@ public class MentorshipService(
     {
         try
         {
-            if (admin.Role == StaffRoles.ScopedAdmin)
-                return ApiResponseExtensions.ToForbiddenApiResponse<PgPagedResult<MentorshipRequestDto>>("Scoped admins cannot manage mentorship");
-
             logger.LogInformation("GetMentorshipRequests request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
+
+            // Requests carry no scope of their own — they inherit their mentor
+            // profile's YearGroups, so a scoped admin's view is narrowed to
+            // requests aimed at a mentor in their own batch.
+            List<string>? scopedProfileIds = null;
+            if (admin.Role == StaffRoles.ScopedAdmin)
+            {
+                var yearGroups = admin.YearGroups ?? new List<int>();
+                scopedProfileIds = (await profileRepo.GetAllAsync(p => p.YearGroups != null && p.YearGroups.Any(y => yearGroups.Contains(y))))
+                    .Select(p => p.Id)
+                    .ToList();
+            }
+
             var result = await requestRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                r => string.IsNullOrEmpty(filter.Status) || r.Status == filter.Status);
+                r => (string.IsNullOrEmpty(filter.Status) || r.Status == filter.Status)
+                  && (scopedProfileIds == null || scopedProfileIds.Contains(r.MentorProfileId)));
 
             var dtoResult = new PgPagedResult<MentorshipRequestDto>
             {

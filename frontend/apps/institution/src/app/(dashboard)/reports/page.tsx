@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Users, TrendingUp, Calendar, Briefcase, Activity, Layers, DollarSign, Loader2 } from "lucide-react";
+import { Download, Users, TrendingUp, Calendar, Briefcase, Activity, Layers, DollarSign, Loader2 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Progress } from "@alumni/ui";

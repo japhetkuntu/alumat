@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, CheckCircle, XCircle, Plus, Search, Loader2 } from "lucide-react";import { Pagination } from "@alumni/ui";
+import { Star, CheckCircle, XCircle, Plus, Search, Loader2 } from "@alumni/ui";import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

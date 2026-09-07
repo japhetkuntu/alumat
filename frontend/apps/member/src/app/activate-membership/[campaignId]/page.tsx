@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Calendar,
   Users,
-} from "lucide-react";
+} from "@alumni/ui";
 import Link from "next/link";
 
 import { Button } from "@alumni/ui";

@@ -38,7 +38,7 @@ public class InstitutionAuthServiceTests
             Id = "test",
             Email = "disabled@test.com",
             Password = BCrypt.Net.BCrypt.HashPassword("password"),
-            Role = "Admin",
+            Role = "SuperAdmin",
             IsDisabled = true,
         };
 

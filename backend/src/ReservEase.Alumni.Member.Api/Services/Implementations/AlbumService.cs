@@ -14,16 +14,45 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class AlbumService(
     IAlumniPgRepository<PhotoAlbum> albumRepo,
     IAlumniPgRepository<AlbumPhoto> photoRepo,
+    IAlumniPgRepository<CommunityMembership> membershipRepo,
     ILogger<AlbumService> logger) : IAlbumService
 {
-    public async Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter)
+    /// <summary>Institution-wide albums (no scope set) are visible to everyone;
+    /// a scoped album is visible only to an approved member of its community
+    /// or a member whose graduation year is in its batch.</summary>
+    private async Task<bool> IsInScopeAsync(PhotoAlbum album, AuthData member)
+    {
+        if (album.CommunityId is null && album.YearGroups is null)
+            return true;
+
+        if (album.YearGroups != null && member.GraduationYear.HasValue && album.YearGroups.Contains(member.GraduationYear.Value))
+            return true;
+
+        if (album.CommunityId != null)
+        {
+            var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == album.CommunityId && m.MemberId == member.Id);
+            if (membership is not null && membership.Status == "Approved")
+                return true;
+        }
+
+        return false;
+    }
+
+    public async Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter, AuthData member)
     {
         try
         {
-            logger.LogInformation("GetAlbums request — filter: {Filter}", filter.Serialize());
+            logger.LogInformation("GetAlbums request — filter: {Filter} (member: {MemberId})", filter.Serialize(), member.Id);
+            var approvedCommunityIds = (await membershipRepo.GetAllAsync(m => m.MemberId == member.Id && m.Status == "Approved"))
+                .Select(m => m.CommunityId).ToList();
+            var graduationYear = member.GraduationYear;
+
             var result = await albumRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                a => string.IsNullOrEmpty(filter.Search) || a.Title.Contains(filter.Search));
+                a => (string.IsNullOrEmpty(filter.Search) || a.Title.Contains(filter.Search))
+                  && ((a.CommunityId == null && a.YearGroups == null)
+                      || (a.CommunityId != null && approvedCommunityIds.Contains(a.CommunityId))
+                      || (a.YearGroups != null && graduationYear.HasValue && a.YearGroups.Contains(graduationYear.Value))));
 
             var dtoResult = new PgPagedResult<PhotoAlbumDto>
             {
@@ -45,12 +74,15 @@ public class AlbumService(
         }
     }
 
-    public async Task<IApiResponse<PhotoAlbumDto>> GetAlbumByIdAsync(string albumId)
+    public async Task<IApiResponse<PhotoAlbumDto>> GetAlbumByIdAsync(string albumId, AuthData member)
     {
         try
         {
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<PhotoAlbumDto>("Album not found");
+
+            if (!await IsInScopeAsync(album, member))
                 return ApiResponseExtensions.ToNotFoundApiResponse<PhotoAlbumDto>("Album not found");
 
             return album.ToDto().ToOkApiResponse();
@@ -62,12 +94,15 @@ public class AlbumService(
         }
     }
 
-    public async Task<IApiResponse<PgPagedResult<AlbumPhotoDto>>> GetAlbumPhotosAsync(string albumId, AlbumPhotoFilter filter)
+    public async Task<IApiResponse<PgPagedResult<AlbumPhotoDto>>> GetAlbumPhotosAsync(string albumId, AlbumPhotoFilter filter, AuthData member)
     {
         try
         {
             var album = await albumRepo.GetByIdAsync(albumId);
             if (album is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<PgPagedResult<AlbumPhotoDto>>("Album not found");
+
+            if (!await IsInScopeAsync(album, member))
                 return ApiResponseExtensions.ToNotFoundApiResponse<PgPagedResult<AlbumPhotoDto>>("Album not found");
 
             var result = await photoRepo.GetPagedAsync(

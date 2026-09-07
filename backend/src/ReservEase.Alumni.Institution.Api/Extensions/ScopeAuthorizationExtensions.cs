@@ -3,11 +3,11 @@ using ReservEase.Alumni.Common.Sdk.Models;
 namespace ReservEase.Alumni.Institution.Api.Extensions;
 
 /// <summary>
-/// Three-tier institution-staff authorization: SuperAdmin and Admin are never
-/// restricted (Admin's only limitation — being unable to manage other admins —
-/// is enforced separately via [Authorize(Roles=...)] on InstitutionStaffController,
-/// not here). Only ScopedAdmin is actually scoped, by year-group and/or community,
-/// keyed off whichever dimension(s) the specific content type supports.
+/// Two-tier institution-staff authorization: SuperAdmin is never restricted.
+/// Only ScopedAdmin is actually scoped, by year-group ("batch" — capped to at
+/// most one entry, enforced at the API boundary in InstitutionStaffService,
+/// not here) and/or community, keyed off whichever dimension(s) the specific
+/// content type supports.
 /// </summary>
 public static class ScopeAuthorizationExtensions
 {

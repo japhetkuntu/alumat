@@ -25,7 +25,7 @@ import {
   Heading3,
   Minus,
   Code,
-} from "lucide-react";
+} from "./icons";
 import { Button } from "./button";
 import { cn } from "../lib/utils";
 import { useCallback, useEffect } from "react";

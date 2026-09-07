@@ -14,7 +14,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage alumni events.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Events)]
 public class EventsController(IEventService eventService) : DefaultController
 {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle2, XCircle, Loader2, RefreshCcw } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, RefreshCcw } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Badge } from "@alumni/ui";

@@ -42,7 +42,7 @@ public class InstitutionController(
     }
 
     /// <summary>Update this institution's Member Portal landing page Stories and news banner — the one piece of content institution admins may edit themselves.</summary>
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("me/landing-content")]
     [SwaggerOperation(Summary = "Update landing page stories and news banner")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
@@ -63,7 +63,7 @@ public class InstitutionController(
     }
 
     /// <summary>How "active member" status is determined — this institution's own operational choice.</summary>
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("me/member-policy")]
     [SwaggerOperation(Summary = "Update the active-member policy")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]

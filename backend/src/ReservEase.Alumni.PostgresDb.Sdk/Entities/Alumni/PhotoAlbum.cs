@@ -12,6 +12,12 @@ public class PhotoAlbum : BaseEntity, ITenantScoped
 {
     public string InstitutionId { get; set; } = string.Empty;
 
+    /// <summary>Null = institution-wide album, visible to everyone (SuperAdmin-created). Set = belongs to one Community; only its approved members/leaders can see it.</summary>
+    public string? CommunityId { get; set; }
+
+    /// <summary>Set when a ScopedAdmin creates the album, scoping it to their one assigned batch. Null = visible to everyone.</summary>
+    public List<int>? YearGroups { get; set; }
+
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
 

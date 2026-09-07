@@ -3,7 +3,7 @@
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Images, Pencil, Trash2, Star, Plus, Loader2, ImageOff } from "lucide-react";
+import { ArrowLeft, Images, Pencil, Trash2, Star, Plus, Loader2, ImageOff } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";

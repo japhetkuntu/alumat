@@ -10,7 +10,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Institution.Api.Controllers;
 
-[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 public class ReportsController(
     IReportService reportService,
     IAlumniPgRepository<Campaign> campaignRepo,

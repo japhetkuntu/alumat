@@ -66,7 +66,10 @@ public class InstitutionStaffService(
             if (existing is not null)
                 return ApiResponseExtensions.ToConflictApiResponse<InstitutionStaffListItem>("An admin with that email already exists");
 
-            var role = StaffRoles.IsValid(request.Role) ? request.Role : StaffRoles.Admin;
+            var role = StaffRoles.IsValid(request.Role) ? request.Role! : StaffRoles.ScopedAdmin;
+
+            if (role == StaffRoles.ScopedAdmin && request.YearGroups is { Count: > 1 })
+                return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffListItem>("A scoped admin can be assigned to only one batch.");
 
             var admin = new StaffEntity
             {
@@ -103,9 +106,14 @@ public class InstitutionStaffService(
             if (admin is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffListItem>("Admin not found");
 
+            var role = StaffRoles.IsValid(request.Role) ? request.Role! : StaffRoles.ScopedAdmin;
+
+            if (role == StaffRoles.ScopedAdmin && request.YearGroups is { Count: > 1 })
+                return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffListItem>("A scoped admin can be assigned to only one batch.");
+
             admin.FirstName = request.FirstName.Trim();
             admin.LastName = request.LastName.Trim();
-            admin.Role = StaffRoles.IsValid(request.Role) ? request.Role : StaffRoles.Admin;
+            admin.Role = role;
             admin.YearGroups = admin.Role == StaffRoles.ScopedAdmin ? request.YearGroups : null;
             admin.CommunityIds = admin.Role == StaffRoles.ScopedAdmin ? request.CommunityIds : null;
             admin.IsDisabled = request.IsDisabled;

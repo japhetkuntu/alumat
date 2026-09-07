@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, Images, ImageOff } from "lucide-react";
+import { ArrowLeft, ChevronRight, Images, ImageOff } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";

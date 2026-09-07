@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingBag, CheckCircle2, Circle } from "lucide-react";
+import { ShoppingBag, CheckCircle2, Circle } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";

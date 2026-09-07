@@ -259,6 +259,33 @@ export async function getPayoutForecast(): Promise<PlatformPayoutForecast> {
   return res.data.data!;
 }
 
+/** A batch whose payout setup (see Institution.Api's BatchesController.SubmitPayoutSetup) is awaiting review. */
+export interface PendingBatchPayout {
+  batchId: string;
+  batchName: string;
+  year: number;
+  institutionId: string;
+  institutionName: string;
+  useInstitutionAccount: boolean;
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
+  submittedAt: string;
+}
+
+export async function getPendingBatchPayouts(): Promise<PendingBatchPayout[]> {
+  const res = await platformClient.get<ApiResponse<PendingBatchPayout[]>>("/batch-payouts/pending");
+  return res.data.data ?? [];
+}
+
+export async function approveBatchPayout(batchId: string): Promise<void> {
+  await platformClient.put(`/batch-payouts/${batchId}/approve`);
+}
+
+export async function rejectBatchPayout(batchId: string, notes?: string): Promise<void> {
+  await platformClient.put(`/batch-payouts/${batchId}/reject`, { notes });
+}
+
 /** One payment, normalized across both payment sources — every status, not just Successful, so support staff can see the full picture. */
 export interface PlatformPayment {
   id: string;

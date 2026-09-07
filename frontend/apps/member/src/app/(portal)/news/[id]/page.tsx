@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Pin } from "lucide-react";
+import { ArrowLeft, Calendar, Pin } from "@alumni/ui";
 
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -11,7 +11,7 @@ import { MediaGallery } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { getNewsPost } from "@/lib/member-api";
-import { Newspaper } from "lucide-react";
+import { Newspaper } from "@alumni/ui";
 
 export default function NewsDetailPage() {
   const { id }   = useParams<{ id: string }>();

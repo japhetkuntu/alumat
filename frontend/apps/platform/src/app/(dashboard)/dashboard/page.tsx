@@ -6,7 +6,7 @@ import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
-import { Wallet, Building2, Users, Sparkles } from "lucide-react";
+import { Wallet, Building2, Users, Sparkles } from "@alumni/ui";
 import { getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 
 export default function PlatformDashboardPage() {

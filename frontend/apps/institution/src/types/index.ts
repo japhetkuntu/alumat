@@ -35,7 +35,7 @@ export interface BaseFilter {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-export type UserRole = "SuperAdmin" | "Admin" | "ScopedAdmin" | "Member";
+export type UserRole = "SuperAdmin" | "ScopedAdmin" | "Member";
 export type MemberStatus = "Pending" | "Active" | "Suspended" | "Banned" | "Blocked";
 
 export interface AuthData {

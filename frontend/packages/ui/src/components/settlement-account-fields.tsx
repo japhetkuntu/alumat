@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Label } from "@alumni/ui";
-import { Input } from "@alumni/ui";
-import { FormSelect } from "@alumni/ui";
-import { Button } from "@alumni/ui";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { getBanks, resolveAccount } from "@/lib/platform-api";
+import { Label } from "./label";
+import { Input } from "./input";
+import { FormSelect } from "./select";
+import { Button } from "./button";
+import { Loader2, CheckCircle2, AlertCircle } from "./icons";
 
 export interface SettlementAccountValue {
   settlementBankCode: string;
@@ -16,19 +15,34 @@ export interface SettlementAccountValue {
   settlementAccountName: string;
 }
 
+export interface SettlementBankOption {
+  name: string;
+  code: string;
+}
+
 /**
  * Bank/mobile-money picker + account-number resolver, backed by Paystack's
  * own List Banks and Resolve Account Number endpoints — the bank name and
  * account holder name are both looked up from Paystack directly (read-only),
  * never typed by hand, since CreateSubaccountAsync needs the real bank code
  * and a wrong hand-typed one would silently misroute settlement money.
+ *
+ * `getBanks`/`resolveAccount` are injected rather than imported directly so
+ * this can live in the shared UI package — each app calls its own backend
+ * (never another app's API, per this codebase's same-origin-only rule), so
+ * platform passes its own Platform.Api client and institution its own
+ * Institution.Api client.
  */
 export function SettlementAccountFields({
   value,
   onChange,
+  getBanks,
+  resolveAccount,
 }: {
   value: SettlementAccountValue;
   onChange: (next: SettlementAccountValue) => void;
+  getBanks: (channel: "ghipss" | "mobile_money") => Promise<SettlementBankOption[]>;
+  resolveAccount: (accountNumber: string, bankCode: string) => Promise<{ accountName: string }>;
 }) {
   const [channel, setChannel] = useState<"ghipss" | "mobile_money">("ghipss");
   const [resolveState, setResolveState] = useState<"idle" | "loading" | "resolved" | "error">(
@@ -37,7 +51,7 @@ export function SettlementAccountFields({
   const [resolveError, setResolveError] = useState("");
 
   const { data: banks = [], isLoading: banksLoading } = useQuery({
-    queryKey: ["banks", channel],
+    queryKey: ["settlement-banks", channel],
     queryFn: () => getBanks(channel),
   });
 

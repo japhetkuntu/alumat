@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
-import { Globe, Users, MapPin, Search } from "lucide-react";
+import { Globe, Users, MapPin, Search } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";

@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage alumni resources (files, links).
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Resources)]
 public class ResourcesController(IResourceService resourceService) : DefaultController
 {

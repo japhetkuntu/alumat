@@ -7,13 +7,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2, CreditCard, Loader2, RefreshCcw,
   XCircle, Award, TrendingUp, AlertCircle,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
+import { TableSkeleton, Skeleton } from "@alumni/ui";
 import {
   Dialog, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
@@ -623,11 +624,7 @@ export default function MemberContributionsPage() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-5 py-16 text-center">
-                      <Loader2 size={24} className="animate-spin mx-auto" style={{ color: "var(--primary)" }} />
-                    </td>
-                  </tr>
+                  <TableSkeleton rows={5} cols={5} />
                 ) : contributions.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-16 text-center">
@@ -696,9 +693,22 @@ export default function MemberContributionsPage() {
         {/* Mobile list — stacked cards instead of table */}
         <div className="sm:hidden space-y-2">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 size={24} className="animate-spin" style={{ color: "var(--primary)" }} />
-            </div>
+            Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border p-4 flex items-start gap-4"
+                style={{ borderColor: "var(--border)", background: "var(--background)" }}
+              >
+                <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <Skeleton className="h-4 w-32" variant="text" />
+                    <Skeleton className="h-4 w-16" variant="text" />
+                  </div>
+                  <Skeleton className="h-3 w-24" variant="text" />
+                </div>
+              </div>
+            ))
           ) : contributions.length === 0 ? (
             <div className="py-12 text-center space-y-2">
               <div

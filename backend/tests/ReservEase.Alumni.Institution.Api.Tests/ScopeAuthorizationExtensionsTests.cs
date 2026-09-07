@@ -21,7 +21,7 @@ public class ScopeAuthorizationExtensionsTests
     {
         // Regular Admin has no YearGroups/CommunityIds configured at all — should
         // still have full access, unlike a ScopedAdmin in the same situation.
-        var admin = new AuthData { Role = "Admin", Id = "a" };
+        var admin = new AuthData { Role = "SuperAdmin", Id = "a" };
         Assert.True(admin.CanViewScopedItem(new List<int> { 2026 }));
         Assert.True(admin.CanViewScopedItem(null, "community-1"));
         Assert.True(admin.CanModifyScopedItem(new List<int> { 2026 }, "someone-else"));
@@ -71,7 +71,7 @@ public class ScopeAuthorizationExtensionsTests
     [Fact]
     public void ResolveYearGroupsForCreation_AdminAndSuperAdminPassRequestThrough()
     {
-        var admin = new AuthData { Role = "Admin" };
+        var admin = new AuthData { Role = "SuperAdmin" };
         var superAdmin = new AuthData { Role = "SuperAdmin" };
         var requested = new List<int> { 1999 };
         Assert.Equal(requested, admin.ResolveYearGroupsForCreation(requested));

@@ -25,9 +25,10 @@ public class ReportServiceTests
         var campaignRepo = new Mock<IAlumniPgRepository<Campaign>>();
         var eventRepo = new Mock<IAlumniPgRepository<AlumniEvent>>();
         var jobRepo = new Mock<IAlumniPgRepository<Job>>();
-        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, new NullLogger<ReportService>());
+        var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
+        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, new NullLogger<ReportService>());
 
-        var result = await service.ExportEntityCsvAsync("unknown", new AuthData { Role = "Admin" });
+        var result = await service.ExportEntityCsvAsync("unknown", new AuthData { Role = "SuperAdmin" });
 
         Assert.Equal(400, result.Code);
         Assert.Null(result.Data);
@@ -41,6 +42,7 @@ public class ReportServiceTests
         var campaignRepo = new Mock<IAlumniPgRepository<Campaign>>();
         var eventRepo = new Mock<IAlumniPgRepository<AlumniEvent>>();
         var jobRepo = new Mock<IAlumniPgRepository<Job>>();
+        var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
 
         var campaigns = new List<Campaign>
         {
@@ -53,7 +55,7 @@ public class ReportServiceTests
                     ? campaigns.AsQueryable()
                     : campaigns.AsQueryable().Where(predicate.Compile()).AsQueryable());
 
-        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, new NullLogger<ReportService>());
+        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, new NullLogger<ReportService>());
 
         var result = await service.ExportEntityCsvAsync("campaigns", new AuthData { Role = "SuperAdmin" });
 

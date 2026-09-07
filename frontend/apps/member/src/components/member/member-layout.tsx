@@ -34,7 +34,7 @@ import {
   Receipt,
   Images,
   Building2,
-} from "lucide-react";
+} from "@alumni/ui";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
 // sidebar scannable and gives "Home" a clear job (the daily-return feed)
@@ -200,7 +200,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                     className={cn(
                       "flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 group relative",
                       active
-                        ? "bg-primary/10 text-primary font-semibold"
+                        ? "bg-accent/10 text-accent font-semibold"
                         : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                     )}
                     style={{
@@ -209,7 +209,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                   >
                     <item.icon size={16} className={cn(
                       "shrink-0 transition-colors duration-200",
-                      active ? "text-primary" : "group-hover:text-primary"
+                      active ? "text-accent" : "group-hover:text-accent"
                     )} />
                     {item.label}
                   </Link>
@@ -275,14 +275,14 @@ function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
-              style={{ color: active ? "var(--primary)" : "var(--muted-foreground)" }}
+              style={{ color: active ? "var(--accent)" : "var(--muted-foreground)" }}
             >
               <item.icon size={22} strokeWidth={active ? 2.4 : 1.9} />
               <span className={cn("text-[10.5px] leading-none", active ? "font-bold" : "font-medium")}>
                 {item.label}
               </span>
               {active && (
-                <div className="absolute top-0 w-8 h-[2.5px] rounded-full" style={{ background: "var(--primary)" }} />
+                <div className="absolute top-0 w-8 h-[2.5px] rounded-full" style={{ background: "var(--accent)" }} />
               )}
             </Link>
           );

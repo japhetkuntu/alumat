@@ -14,7 +14,7 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 
 export type CalendarItem = {

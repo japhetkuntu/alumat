@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard, ChevronRight, Check, Share2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard, ChevronRight, Check, Share2 } from "@alumni/ui";
 import { useState } from "react";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

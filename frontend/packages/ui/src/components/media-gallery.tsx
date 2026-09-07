@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight, ZoomIn, ImageOff } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ZoomIn, ImageOff } from "./icons";
 import { cn } from "../lib/utils";
 import { YouTubeGrid } from "./youtube-embed";
 

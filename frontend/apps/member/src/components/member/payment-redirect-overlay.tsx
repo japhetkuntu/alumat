@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, ShieldCheck } from "lucide-react";
+import { CreditCard, ShieldCheck } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 

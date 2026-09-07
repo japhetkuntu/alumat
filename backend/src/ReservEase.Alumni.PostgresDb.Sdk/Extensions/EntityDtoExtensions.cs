@@ -123,6 +123,8 @@ public static class EntityDtoExtensions
         Description = a.Description,
         CoverImageUrl = a.CoverImageUrl,
         PhotoCount = a.PhotoCount,
+        CommunityId = a.CommunityId,
+        YearGroups = a.YearGroups,
         CreatedAt = a.CreatedAt,
     };
 

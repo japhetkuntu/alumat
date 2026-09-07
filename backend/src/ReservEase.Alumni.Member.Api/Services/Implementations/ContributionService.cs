@@ -64,6 +64,31 @@ public class ContributionService : IContributionService
         return $"{slug}-{graduationYear}-";
     }
 
+    /// <summary>
+    /// A campaign targeting exactly one batch (YearGroups with a single
+    /// entry) settles into that batch's own Paystack subaccount instead of
+    /// the institution's, once the batch's payout setup has been approved —
+    /// see BatchesController.SubmitPayoutSetup / Platform.Api's
+    /// BatchPayoutsController. A campaign with no year groups, more than one,
+    /// or a community-only audience always falls back to the institution's
+    /// account (unambiguous only for a single-batch audience). The platform
+    /// fee percentage is always the institution's — batches never have their
+    /// own.
+    /// </summary>
+    private async Task<string?> ResolveSubaccountAsync(Campaign? campaign, Institution? institution)
+    {
+        if (campaign?.YearGroups is { Count: 1 } && !string.IsNullOrEmpty(currentTenant.InstitutionId))
+        {
+            var year = campaign.YearGroups[0];
+            var batch = await db.Set<PostgresDb.Sdk.Entities.Alumni.Batch>()
+                .FirstOrDefaultAsync(b => b.InstitutionId == currentTenant.InstitutionId && b.Year == year);
+            if (batch is { PayoutStatus: "Approved", UseInstitutionAccount: false } && !string.IsNullOrEmpty(batch.PaystackSubaccountCode))
+                return batch.PaystackSubaccountCode;
+        }
+
+        return institution?.PaystackSubaccountCode;
+    }
+
     private async Task<Institution?> GetCurrentInstitutionAsync() =>
         string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
 
@@ -277,6 +302,7 @@ public class ContributionService : IContributionService
 
             var currentInstitution = await GetCurrentInstitutionAsync();
             var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution);
+            var subaccount = await ResolveSubaccountAsync(campaign, currentInstitution);
 
             // The subaccount's own dashboard config always shows a static
             // 0%-platform/100%-institution split (deliberate — see
@@ -286,7 +312,7 @@ public class ContributionService : IContributionService
             // verifiable from our own logs, not just trusted from code.
             logger.LogInformation(
                 "Zero-Deduction charge for campaign {CampaignId}, institution {InstitutionId}: schoolAmount={SchoolAmount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}, subaccount={Subaccount}, bearer={Bearer}",
-                request.CampaignId, currentInstitution?.Id, request.Amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, currentInstitution?.PaystackSubaccountCode, charge.bearer);
+                request.CampaignId, currentInstitution?.Id, request.Amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, subaccount, charge.bearer);
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
@@ -298,7 +324,7 @@ public class ContributionService : IContributionService
                     { "memberId", memberId },
                     { "campaignId", request.CampaignId },
                 },
-                Subaccount = currentInstitution?.PaystackSubaccountCode,
+                Subaccount = subaccount,
                 TransactionCharge = charge.transactionCharge,
                 Bearer = charge.bearer,
             });
@@ -427,6 +453,7 @@ public class ContributionService : IContributionService
             var amount = amountPerYear * request.Years;
             var currentInstitution = await GetCurrentInstitutionAsync();
             var charge = BuildZeroDeductionCharge(amount, currentInstitution);
+            var subaccount = await ResolveSubaccountAsync(campaign, currentInstitution);
 
             // See the matching log in InitiatePaystackPaymentAsync — the
             // subaccount's dashboard config always shows a static
@@ -434,7 +461,7 @@ public class ContributionService : IContributionService
             // actual per-payment split, independently verifiable here.
             logger.LogInformation(
                 "Zero-Deduction charge for membership renewal, campaign {CampaignId}, institution {InstitutionId}: schoolAmount={SchoolAmount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}, subaccount={Subaccount}, bearer={Bearer}",
-                campaign.Id, currentInstitution?.Id, amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, currentInstitution?.PaystackSubaccountCode, charge.bearer);
+                campaign.Id, currentInstitution?.Id, amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, subaccount, charge.bearer);
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
@@ -447,7 +474,7 @@ public class ContributionService : IContributionService
                     { "campaignId", campaign.Id },
                     { "membershipYears", request.Years.ToString() }
                 },
-                Subaccount = currentInstitution?.PaystackSubaccountCode,
+                Subaccount = subaccount,
                 TransactionCharge = charge.transactionCharge,
                 Bearer = charge.bearer,
             });

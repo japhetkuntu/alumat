@@ -114,6 +114,8 @@ public class PhotoAlbumDto
     public string? Description { get; set; }
     public string? CoverImageUrl { get; set; }
     public int PhotoCount { get; set; }
+    public string? CommunityId { get; set; }
+    public List<int>? YearGroups { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

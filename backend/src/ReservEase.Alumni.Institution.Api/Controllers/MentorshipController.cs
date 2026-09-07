@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage mentorship profiles and requests.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Mentorship)]
 public class MentorshipController(IMentorshipService mentorshipService) : DefaultController
 {
@@ -36,6 +36,7 @@ public class MentorshipController(IMentorshipService mentorshipService) : Defaul
     /// Approve a mentor profile.
     /// </summary>
     [HttpPut("profiles/{profileId}/approve")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Approve mentor")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -50,6 +51,7 @@ public class MentorshipController(IMentorshipService mentorshipService) : Defaul
     /// Reject a mentor profile.
     /// </summary>
     [HttpPut("profiles/{profileId}/reject")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Reject mentor")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

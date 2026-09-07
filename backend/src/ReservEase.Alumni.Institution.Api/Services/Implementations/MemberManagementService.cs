@@ -15,10 +15,35 @@ public class MemberManagementService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
+    IAlumniPgRepository<CommunityMembership> membershipRepo,
     ICurrentTenantService currentTenant,
     ILogger<MemberManagementService> logger) : IMemberManagementService
 {
     private const int MaxRejections = 3;
+
+    /// <summary>
+    /// A scoped admin can see/act on a member who's in their batch (graduation
+    /// year) OR an approved member of one of their assigned communities —
+    /// Member carries no CommunityId of its own, so the community check needs
+    /// a CommunityMembership lookup rather than the sync CanViewScopedItem/
+    /// CanModifyScopedItem helpers used elsewhere.
+    /// </summary>
+    private async Task<bool> IsMemberInScopeAsync(AuthData admin, Member member)
+    {
+        if (admin.Role != StaffRoles.ScopedAdmin)
+            return true;
+
+        if (admin.YearGroups?.Contains(member.GraduationYear) == true)
+            return true;
+
+        var communityIds = admin.CommunityIds ?? new List<string>();
+        if (communityIds.Count == 0)
+            return false;
+
+        var membership = await membershipRepo.GetOneAsync(cm =>
+            cm.MemberId == member.Id && communityIds.Contains(cm.CommunityId) && cm.Status == "Approved");
+        return membership is not null;
+    }
 
     /// <summary>
     /// Member numbers are prefixed by the current institution's own slug
@@ -46,11 +71,20 @@ public class MemberManagementService(
 
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
+            List<string>? communityMemberIds = null;
+            if (!isSuper)
+            {
+                var communityIds = admin.CommunityIds ?? new List<string>();
+                communityMemberIds = communityIds.Count == 0
+                    ? new List<string>()
+                    : (await membershipRepo.GetAllAsync(m => communityIds.Contains(m.CommunityId) && m.Status == "Approved"))
+                        .Select(m => m.MemberId).Distinct().ToList();
+            }
 
             var result = await memberRepo.GetPagedAsync(
                 filter.Page, filter.PageSize,
                 sortColumn: filter.SortColumn ?? "CreatedAt", sortDir: filter.SortDir ?? "desc",
-                f => (isSuper || yearGroups.Contains(f.GraduationYear))
+                f => (isSuper || yearGroups.Contains(f.GraduationYear) || communityMemberIds!.Contains(f.Id))
                   && (string.IsNullOrEmpty(filter.Status) || f.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.DepartmentId) || f.DepartmentId == filter.DepartmentId)
                   && (!filter.GraduationYearFrom.HasValue || f.GraduationYear >= filter.GraduationYearFrom.Value)
@@ -96,7 +130,7 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MemberDetailItem>("Member not found");
 
-            if (!admin.CanViewScopedItem(new List<int> { member.GraduationYear }))
+            if (!(await IsMemberInScopeAsync(admin, member)))
                 return ApiResponseExtensions.ToNotFoundApiResponse<MemberDetailItem>("Member not found");
 
             var detail = new MemberDetailItem(
@@ -126,7 +160,7 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
-            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+            if (!(await IsMemberInScopeAsync(admin, member)))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             // Generate unique readable member number: SLUG-YEAR-NNNN
@@ -167,7 +201,7 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
-            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+            if (!(await IsMemberInScopeAsync(admin, member)))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             member.RejectionCount += 1;
@@ -199,7 +233,7 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
-            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+            if (!(await IsMemberInScopeAsync(admin, member)))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             member.Status = "Banned";
@@ -228,7 +262,7 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
-            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+            if (!(await IsMemberInScopeAsync(admin, member)))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             member.Status = "Active";
@@ -261,6 +295,9 @@ public class MemberManagementService(
             {
                 try
                 {
+                    // Not-yet-created — no Id to check community membership against, so this
+                    // is a batch/year-group check only (a ScopedAdmin scoped purely by
+                    // community, with no batch, can't bulk-import new members at all).
                     if (!admin.CanModifyScopedItem(new List<int> { item.GraduationYear }, createdBy: null))
                     {
                         skipped++;
@@ -372,7 +409,7 @@ public class MemberManagementService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
-            if (!admin.CanModifyScopedItem(new List<int> { member.GraduationYear }, createdBy: null))
+            if (!(await IsMemberInScopeAsync(admin, member)))
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
 
             var activatedCount = 0;

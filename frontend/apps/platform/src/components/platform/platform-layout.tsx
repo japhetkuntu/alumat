@@ -14,7 +14,7 @@ import {
   Menu,
   X,
   Inbox,
-} from "lucide-react";
+} from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";

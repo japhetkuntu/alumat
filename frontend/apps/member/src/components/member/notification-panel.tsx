@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, Loader2, X } from "lucide-react";
+import { Bell, Check, CheckCheck, Loader2, X } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";

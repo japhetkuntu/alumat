@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Newspaper, Calendar, Pin } from "lucide-react";
+import { Newspaper, Calendar, Pin } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";

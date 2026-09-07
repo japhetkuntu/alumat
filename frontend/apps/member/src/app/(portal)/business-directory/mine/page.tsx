@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Building2, CheckCircle2, Clock, XCircle, Ban, Eye, EyeOff,
   Trash2, Info, MapPin, Phone, Mail, Globe, ExternalLink,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

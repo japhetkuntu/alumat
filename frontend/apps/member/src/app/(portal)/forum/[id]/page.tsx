@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, Pin, Lock, MessageSquare, Clock } from "lucide-react";
+import { ArrowLeft, Send, Pin, Lock, MessageSquare, Clock } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
 

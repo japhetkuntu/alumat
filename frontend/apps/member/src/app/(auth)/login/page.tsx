@@ -7,7 +7,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "@alumni/ui";
 import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
 
 import { Button } from "@alumni/ui";

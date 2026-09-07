@@ -221,11 +221,36 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PayoutStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaystackSubaccountCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PendingPayoutChanges")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("SettlementAccountName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementAccountNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementBankCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementBankName")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
+
+                    b.Property<bool>("UseInstitutionAccount")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Year")
                         .HasColumnType("integer");
@@ -233,6 +258,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InstitutionId");
+
+                    b.HasIndex("PayoutStatus");
 
                     b.ToTable("Batches", "alumni");
                 });
@@ -1787,6 +1814,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<string>("CommunityId")
+                        .HasColumnType("text");
+
                     b.Property<string>("CoverImageUrl")
                         .HasColumnType("text");
 
@@ -1816,6 +1846,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
+
+                    b.Property<List<int>>("YearGroups")
+                        .HasColumnType("integer[]");
 
                     b.HasKey("Id");
 

@@ -7,7 +7,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { EyeOff } from "lucide-react";
+import { EyeOff } from "@alumni/ui";
 
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";

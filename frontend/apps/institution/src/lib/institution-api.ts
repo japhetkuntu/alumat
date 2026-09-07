@@ -184,6 +184,11 @@ export interface Batch {
   name: string;
   year: number;
   isActive: boolean;
+  payoutStatus: "None" | "Pending" | "Approved" | "Rejected";
+  useInstitutionAccount: boolean;
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
 }
 
 export async function getBatches(): Promise<Batch[]> {
@@ -203,6 +208,29 @@ export async function updateBatch(id: string, body: { name: string; year: number
 
 export async function deleteBatch(id: string): Promise<void> {
   await institutionClient.delete(`/batches/${id}`);
+}
+
+export async function submitBatchPayoutSetup(id: string, body: {
+  useInstitutionAccount: boolean;
+  settlementBankCode?: string;
+  settlementBankName?: string;
+  settlementAccountNumber?: string;
+  settlementAccountName?: string;
+}): Promise<Batch> {
+  const res = await institutionClient.post<ApiResponse<Batch>>(`/batches/${id}/payout-setup`, body);
+  return res.data.data!;
+}
+
+export async function getBatchPayoutBanks(type: "ghipss" | "mobile_money"): Promise<{ name: string; code: string }[]> {
+  const res = await institutionClient.get<ApiResponse<{ name: string; code: string }[]>>("/batches/payout-setup/banks", { params: { type } });
+  return res.data.data ?? [];
+}
+
+export async function resolveBatchPayoutAccount(accountNumber: string, bankCode: string): Promise<{ accountNumber: string; accountName: string }> {
+  const res = await institutionClient.get<ApiResponse<{ accountNumber: string; accountName: string }>>("/batches/payout-setup/resolve-account", {
+    params: { accountNumber, bankCode },
+  });
+  return res.data.data!;
 }
 
 // ─── Communities ─────────────────────────────────────────────────────────────
@@ -1123,6 +1151,8 @@ export interface PhotoAlbum {
   description?: string | null;
   coverImageUrl?: string | null;
   photoCount: number;
+  communityId?: string | null;
+  yearGroups?: number[] | null;
   createdAt: string;
 }
 
@@ -1150,12 +1180,12 @@ export async function getAlbum(id: string): Promise<PhotoAlbum> {
   return res.data.data!;
 }
 
-export async function createAlbum(body: { title: string; description?: string }): Promise<PhotoAlbum> {
+export async function createAlbum(body: { title: string; description?: string; communityId?: string; yearGroups?: number[] }): Promise<PhotoAlbum> {
   const res = await institutionClient.post<ApiResponse<PhotoAlbum>>("/albums", body);
   return res.data.data!;
 }
 
-export async function updateAlbum(id: string, body: { title: string; description?: string; coverImageUrl?: string }): Promise<PhotoAlbum> {
+export async function updateAlbum(id: string, body: { title: string; description?: string; coverImageUrl?: string; communityId?: string; yearGroups?: number[] }): Promise<PhotoAlbum> {
   const res = await institutionClient.put<ApiResponse<PhotoAlbum>>(`/albums/${id}`, body);
   return res.data.data!;
 }

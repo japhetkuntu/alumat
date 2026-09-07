@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, UsersRound } from "lucide-react";
+import { ChevronDown, UsersRound } from "@alumni/ui";
 import { getMyCommunities } from "@/lib/member-api";
 import { cn } from "@alumni/ui";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@alumni/ui";

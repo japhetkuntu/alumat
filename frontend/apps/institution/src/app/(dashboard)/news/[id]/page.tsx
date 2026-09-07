@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pin, Pencil, Send, Images, Youtube, Archive, ChevronRight } from "lucide-react";
+import { ArrowLeft, Pin, Pencil, Send, Images, Youtube, Archive, ChevronRight } from "@alumni/ui";
 import { useState } from "react";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";

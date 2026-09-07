@@ -1,17 +1,23 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { Landmark, Clock3 } from "lucide-react";
+import { Landmark, Clock3 } from "@alumni/ui";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { getInstitutions, getAllPayments, getPayoutForecast } from "@/lib/platform-api";
+import {
+  getInstitutions, getAllPayments, getPayoutForecast,
+  getPendingBatchPayouts, approveBatchPayout, rejectBatchPayout,
+} from "@/lib/platform-api";
+import { handleApiError } from "@/lib/api-client";
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -37,6 +43,25 @@ export default function BillingPage() {
     queryKey: ["platform-payout-forecast"],
     queryFn: getPayoutForecast,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const qc = useQueryClient();
+  const { data: pendingBatchPayouts = [], isLoading: pendingBatchPayoutsLoading } = useQuery({
+    queryKey: ["platform-pending-batch-payouts"],
+    queryFn: getPendingBatchPayouts,
+    staleTime: 60 * 1000,
+  });
+
+  const approveMut = useMutation({
+    mutationFn: (batchId: string) => approveBatchPayout(batchId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-batch-payouts"] }); toast.success("Batch payout approved"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const rejectMut = useMutation({
+    mutationFn: (batchId: string) => rejectBatchPayout(batchId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-batch-payouts"] }); toast.success("Batch payout rejected"); },
+    onError: (e) => toast.error(handleApiError(e)),
   });
 
   const activeInstitutions = institutions.filter((i) => i.status === "Active");
@@ -98,7 +123,6 @@ export default function BillingPage() {
               />
               <StatCard
                 icon={Clock3}
-                variant="hero"
                 tone="accent"
                 label="Next payout, all institutions"
                 value={formatCurrency(payoutForecast.totals.nextPayout.amount, "GHS")}
@@ -133,6 +157,50 @@ export default function BillingPage() {
             <p className="text-[11px] text-muted-foreground mt-2">Estimated from confirmed transactions — not a figure confirmed by Paystack. Matches exactly what each institution's own SuperAdmins see on their dashboard.</p>
           </>
         ) : null}
+      </div>
+
+      <div className="mb-5">
+        <p className="text-[14px] font-semibold mb-3">Batch payout approvals</p>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Institution</TableHead>
+                <TableHead>Batch</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingBatchPayoutsLoading ? (
+                <TableRow><TableCell colSpan={5}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+              ) : pendingBatchPayouts.length === 0 ? (
+                <TableEmpty title="No pending batch payout setups" colSpan={5} />
+              ) : pendingBatchPayouts.map((p) => (
+                <TableRow key={p.batchId}>
+                  <TableCell className="font-semibold">{p.institutionName}</TableCell>
+                  <TableCell>{p.batchName} ({p.year})</TableCell>
+                  <TableCell>
+                    {p.useInstitutionAccount ? (
+                      <Badge variant="secondary">Institution's own account</Badge>
+                    ) : (
+                      <span className="text-[13px]">{p.settlementBankName} · {p.settlementAccountNumber} · {p.settlementAccountName}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-[13px] text-muted-foreground">{formatDate(p.submittedAt)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button size="sm" variant="outline" isLoading={rejectMut.isPending} onClick={() => rejectMut.mutate(p.batchId)}>Reject</Button>
+                      <Button size="sm" isLoading={approveMut.isPending} onClick={() => approveMut.mutate(p.batchId)}>Approve</Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+        <p className="text-[11px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the batch over immediately — same platform fee percentage as its institution.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 mb-5 items-start">

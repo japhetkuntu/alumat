@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { LucideIcon } from "lucide-react";
+import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   GraduationCap, Users, Briefcase, Heart, Globe,
   Menu, X, ArrowRight, ChevronRight,
   BookOpen, Trophy, CreditCard, Bell,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
   Images, Building2,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { publicMemberClient } from "@/lib/api-client";

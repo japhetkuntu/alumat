@@ -122,7 +122,7 @@ public class ContributionMemberForumServiceTests
             "Offline donation",
             DateTime.UtcNow,
             true),
-            new AuthData { Id = "admin1", Role = "Admin" });
+            new AuthData { Id = "admin1", Role = "SuperAdmin" });
 
         Assert.Equal(201, result.Code);
         Assert.NotNull(result.Data);
@@ -179,7 +179,7 @@ public class ContributionMemberForumServiceTests
             "Platform member donation",
             DateTime.UtcNow,
             true),
-            new AuthData { Id = "admin1", Role = "Admin" });
+            new AuthData { Id = "admin1", Role = "SuperAdmin" });
 
         Assert.Equal(201, result.Code);
         Assert.NotNull(result.Data);
@@ -225,7 +225,7 @@ public class ContributionMemberForumServiceTests
             "anonymous fallback",
             DateTime.UtcNow,
             true),
-            new AuthData { Id = "admin1", Role = "Admin" });
+            new AuthData { Id = "admin1", Role = "SuperAdmin" });
 
         Assert.Equal(400, result.Code);
         Assert.Equal("MemberNumber is required for manual contributions.", result.Message);
@@ -263,8 +263,9 @@ public class ContributionMemberForumServiceTests
         var mockCampaignRepo = new Mock<IAlumniPgRepository<Campaign>>();
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockInstitutionRepoForMembers = new Mock<IAlumniPgRepository<InstitutionEntity>>();
+        var mockMembershipRepoForMembers = new Mock<IAlumniPgRepository<CommunityMembership>>();
         var mockCurrentTenantForMembers = new Mock<ICurrentTenantService>();
-        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockCurrentTenantForMembers.Object, new NullLogger<MemberManagementService>());
+        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, mockCurrentTenantForMembers.Object, new NullLogger<MemberManagementService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var listResponse = await service.GetMembersAsync(new MemberListFilter { Page = 1, PageSize = 10 }, admin);
@@ -303,19 +304,27 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
-    public async Task MentorshipService_Actions_ReturnForbidden_ForScopedAdmin()
+    public async Task MentorshipService_ScopedAdmin_CanListScopedProfilesAndRequests_ButCannotApproveOrReject()
     {
         var mockProfileRepo = new Mock<IAlumniPgRepository<MentorProfile>>();
         var mockRequestRepo = new Mock<IAlumniPgRepository<MentorshipRequest>>();
 
+        mockProfileRepo
+            .Setup(r => r.GetPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Expression<Func<MentorProfile, bool>>>()))
+            .ReturnsAsync(new PgPagedResult<MentorProfile> { PageIndex = 1, PageSize = 10, Count = 0, TotalCount = 0, TotalPages = 1, LowerBoundSize = 0, UpperBoundSize = 0, Results = new List<MentorProfile>() });
+        mockProfileRepo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>())).ReturnsAsync(new List<MentorProfile>());
+        mockRequestRepo
+            .Setup(r => r.GetPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Expression<Func<MentorshipRequest, bool>>>()))
+            .ReturnsAsync(new PgPagedResult<MentorshipRequest> { PageIndex = 1, PageSize = 10, Count = 0, TotalCount = 0, TotalPages = 1, LowerBoundSize = 0, UpperBoundSize = 0, Results = new List<MentorshipRequest>() });
+
         var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
-        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
+        var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var profilesResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, admin);
-        Assert.Equal(403, profilesResponse.Code);
+        Assert.Equal(200, profilesResponse.Code);
 
         var requestsResponse = await service.GetRequestsAsync(new MentorshipRequestFilter { Page = 1, PageSize = 10 }, admin);
-        Assert.Equal(403, requestsResponse.Code);
+        Assert.Equal(200, requestsResponse.Code);
 
         var stubProfile = new MentorProfile { Id = "p1", Status = "Pending" };
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1")).ReturnsAsync(stubProfile);
@@ -559,7 +568,7 @@ public class ContributionMemberForumServiceTests
         var mockStorage = new Mock<IStorageService>();
 
         var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<EventService>());
-        var admin = new AuthData { Id = "admin1", Role = "Admin", GraduationYear = 2026 };
+        var admin = new AuthData { Id = "admin1", Role = "SuperAdmin", GraduationYear = 2026 };
 
         var request = new CreateEventRequest
         {

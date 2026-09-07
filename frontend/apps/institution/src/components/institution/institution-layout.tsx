@@ -27,7 +27,7 @@ import {
   ShoppingBag,
   Images,
   Store,
-} from "lucide-react";
+} from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
@@ -114,8 +114,14 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
 
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
-      if (item.href === "/forum" || item.href === "/mentorship" || item.href === "/albums" || item.href === "/business-directory") {
-        if (user?.role !== "SuperAdmin" && user?.role !== "Admin") return false;
+      // Forum and Business Directory stay SuperAdmin-only. Mentorship and
+      // Albums are now partially available to a ScopedAdmin too (scoped to
+      // their own batch/community) — see MentorshipController/AlbumsController.
+      if (item.href === "/forum" || item.href === "/business-directory") {
+        if (user?.role !== "SuperAdmin") return false;
+      }
+      if (item.href === "/mentorship" || item.href === "/albums") {
+        if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
       if (item.href === "/store" && user?.role !== "SuperAdmin") return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
@@ -165,7 +171,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             <span className="font-mono text-blue-300/90 truncate" title={tenantHost}>{tenantHost}</span>
           )}
           <span className="text-slate-500">&middot;</span>
-          <span className="text-slate-400 shrink-0">{user?.role ?? "Admin"}</span>
+          <span className="text-slate-400 shrink-0">{user?.role ?? "SuperAdmin"}</span>
         </div>
       </div>
 
@@ -191,7 +197,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
                 "flex items-center gap-2.5 px-3 rounded-md transition-all duration-150 ease-[cubic-bezier(0.2,0,0,1)] group relative mb-0.5",
                 isHome ? "py-2.5 mb-2 text-[13.5px] font-semibold" : "py-2 text-[13px] font-medium",
                 active
-                  ? "bg-sidebar-primary text-white"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-white/5 hover:text-white active:scale-[0.99]"
               )}
             >
@@ -264,7 +270,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4 shrink-0">
             <NotificationPanel />
             <span className="text-[13px] font-semibold">
-              {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "Admin"}</span>
+              {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
             </span>
           </div>
         </div>

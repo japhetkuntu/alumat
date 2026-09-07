@@ -11,7 +11,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Compose and send bulk SMS / in-app broadcasts to filtered groups of members.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+[Authorize(Roles = "SuperAdmin")]
 public class BroadcastController(IBroadcastService broadcastService) : DefaultController
 {
     /// <summary>

@@ -151,6 +151,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<BusinessListing>().HasIndex(b => b.MemberId);
         modelBuilder.Entity<BusinessListing>().HasIndex(b => b.Status);
 
+        // Batch: payout-setup proposal awaiting platform approval, same jsonb pending-changes pattern as BusinessListing.
+        modelBuilder.Entity<Batch>().Property(b => b.PendingPayoutChanges).HasColumnType("jsonb").HasConversion(new JsonbConverter<BatchPayoutPendingChanges>(jsonOpts));
+        modelBuilder.Entity<Batch>().HasIndex(b => b.PayoutStatus);
+
         // ── JSONB array columns ──────────────────────────────────────────────
         // YearGroups stored as integer array to allow efficient filtering by member graduation year.
         modelBuilder.Entity<Campaign>().Property(c => c.YearGroups).HasColumnType("integer[]");

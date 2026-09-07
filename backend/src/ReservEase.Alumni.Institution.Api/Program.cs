@@ -123,7 +123,11 @@ app.MapHealthChecks("/health");
 app.UseActorSystem();
 
 await PostgresExtensionService.ApplyMigrationsAsync(app.Services);
-await DataSeeder.SeedAsync(app.Services);
+if (!app.Environment.IsDevelopment())
+{
+    await DataSeeder.SeedAsync(app.Services);
+}
+
 
 await app.RunAsync();
 

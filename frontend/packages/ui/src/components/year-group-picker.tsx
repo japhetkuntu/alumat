@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Badge } from "./badge";
 import { Input } from "./input";
-import { X } from "lucide-react";
+import { X } from "./icons";
 import { cn } from "../lib/utils";
 
 interface YearGroupPickerProps {

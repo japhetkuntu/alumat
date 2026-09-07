@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, GraduationCap, List, X } from "lucide-react";
+import { ArrowLeft, GraduationCap, List, X } from "@alumni/ui";
 
 function slugify(heading: string): string {
   return heading

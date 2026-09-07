@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Eye, EyeOff, ArrowLeft, CheckCircle2, Clock,
   CreditCard, Loader2, ChevronRight,
-} from "lucide-react";
+} from "@alumni/ui";
 
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";

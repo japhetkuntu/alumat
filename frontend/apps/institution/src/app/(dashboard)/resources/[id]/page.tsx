@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Link2, Download, ExternalLink, Pencil, ChevronRight } from "lucide-react";
+import { ArrowLeft, FileText, Link2, Download, ExternalLink, Pencil, ChevronRight } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";

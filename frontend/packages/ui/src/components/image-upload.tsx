@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useMemo, useState, useEffect, useCallback } from "react";
-import { Upload, X, FileIcon, ImageIcon } from "lucide-react";
+import { Upload, X, FileIcon, ImageIcon } from "./icons";
 import { Button } from "./button";
 import { cn } from "../lib/utils";
 

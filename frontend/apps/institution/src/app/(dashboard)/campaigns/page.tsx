@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Eye, Pencil, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Eye, Pencil, Archive, ArchiveRestore } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import Link from "next/link";
 import { toast } from "sonner";

@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage fundraising campaigns.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Contributions)]
 public class CampaignsController(ICampaignService campaignService) : DefaultController
 {
@@ -132,7 +132,7 @@ public class CampaignsController(ICampaignService campaignService) : DefaultCont
     }
 
     [HttpPut("{campaignId}/paystack-disburse")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Mark campaign paystack contributions as disbursed")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> MarkCampaignPaystackDisbursed(string campaignId)

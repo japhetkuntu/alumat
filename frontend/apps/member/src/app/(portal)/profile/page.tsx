@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award } from "lucide-react";
+import { Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -299,7 +299,7 @@ export default function MemberProfilePage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-[14px] flex items-center gap-2">
-              <Award size={15} style={{ color: "var(--primary)" }} /> Badges
+              <Award size={15} style={{ color: "var(--accent)" }} /> Badges
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">

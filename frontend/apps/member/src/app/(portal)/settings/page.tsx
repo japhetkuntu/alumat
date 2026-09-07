@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   User, Lock, Bell, Link as LinkIcon,
-} from "lucide-react";
+} from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
