@@ -117,7 +117,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
       {/* Lightbox */}
       {lightboxIndex !== null && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={closeLightbox}
           role="dialog"
           aria-modal="true"
@@ -325,7 +325,7 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
       {/* Lightbox */}
       {current && lightboxIndex !== null && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={closeLightbox}
           role="dialog"
           aria-modal="true"
