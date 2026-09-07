@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  CreditCard, Calendar, TrendingUp, ChevronRight, Award,
+  CreditCard, Calendar, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
   Briefcase, Star, UsersRound,
 } from "@alumni/ui";
@@ -267,17 +267,15 @@ function DashStat({
   label,
   value,
   sub,
-  icon,
   tone,
 }: {
   label: string;
   value: string | number;
   sub: string;
-  icon: React.ElementType;
   tone?: "primary" | "accent";
 }) {
   return (
-    <StatCard icon={icon} label={label} value={value} sub={sub} tone={tone} />
+    <StatCard label={label} value={value} sub={sub} tone={tone} />
   );
 }
 
@@ -570,28 +568,24 @@ export default function MemberDashboardPage() {
                 label="Active fundraisers &amp; dues"
                 value={activeCampaigns.length}
                 sub="Open for contributions"
-                icon={TrendingUp}
                 tone="primary"
               />
               <DashStat
                 label="Total contributed"
                 value={formatCurrency(totalPaid)}
                 sub="All-time confirmed"
-                icon={CreditCard}
                 tone="accent"
               />
               <DashStat
                 label="This year"
                 value={formatCurrency(totalPaidThisYear)}
                 sub={`Contributed in ${currentYear}`}
-                icon={TrendingUp}
                 tone="primary"
               />
               <DashStat
                 label="Upcoming events"
                 value={upcomingEventsCount}
                 sub="Events you can join"
-                icon={Calendar}
                 tone="accent"
               />
             </>

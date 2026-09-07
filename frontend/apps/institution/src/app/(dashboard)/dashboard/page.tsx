@@ -6,8 +6,7 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
-import { StatCard, StatCardSkeleton, IconTile } from "@alumni/ui";
-import { Users, TrendingUp, Wallet, CalendarDays, Landmark, Clock3 } from "@alumni/ui";
+import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
@@ -41,8 +40,7 @@ function PayoutPanel() {
 
   if (!data.payoutsConfigured) {
     return (
-      <div className="card p-[18px] mt-3.5 flex items-center gap-3">
-        <IconTile icon={Landmark} tone="muted" size="sm" />
+      <div className="card p-[18px] mt-3.5">
         <p className="text-[13px] text-muted-foreground">
           Settlement banking isn&apos;t set up yet — ask the platform team to add your payout details to start seeing expected payouts here.
         </p>
@@ -52,24 +50,24 @@ function PayoutPanel() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
-      <div className="card p-[18px]">
-        <div className="flex items-center gap-2.5 mb-3">
-          <IconTile icon={Landmark} tone="primary" size="sm" />
-          <p className="text-[13px] font-semibold">Last payout</p>
-        </div>
-        <p className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em" }}>
+      <div className="card p-[18px] min-w-0">
+        <p className="text-[13px] font-semibold mb-3">Last payout</p>
+        <p
+          className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground"
+          style={{ fontSize: "clamp(1.1rem, 3vw, 1.6rem)", letterSpacing: "-0.02em", wordBreak: "break-word", overflowWrap: "anywhere" }}
+        >
           {formatCurrency(data.lastPayout.amount)}
         </p>
         <p className="text-[12px] text-muted-foreground mt-1.5">
           Settled {formatDate(data.lastPayout.date)} &middot; should already be in your account &middot; {data.lastPayout.transactionCount} transaction{data.lastPayout.transactionCount === 1 ? "" : "s"}
         </p>
       </div>
-      <div className="card p-[18px]" style={{ borderColor: "var(--border-emphasis)" }}>
-        <div className="flex items-center gap-2.5 mb-3">
-          <IconTile icon={Clock3} tone="accent" size="sm" />
-          <p className="text-[13px] font-semibold">Next payout</p>
-        </div>
-        <p className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em" }}>
+      <div className="card p-[18px] min-w-0" style={{ borderColor: "var(--border-emphasis)" }}>
+        <p className="text-[13px] font-semibold mb-3">Next payout</p>
+        <p
+          className="font-[family-name:var(--font-display)] font-bold tabular-nums text-foreground"
+          style={{ fontSize: "clamp(1.1rem, 3vw, 1.6rem)", letterSpacing: "-0.02em", wordBreak: "break-word", overflowWrap: "anywhere" }}
+        >
           {formatCurrency(data.nextPayout.amount)}
         </p>
         <p className="text-[12px] text-muted-foreground mt-1.5">
@@ -187,7 +185,6 @@ export default function AdminDashboardPage() {
         // metrics demoted to a supporting row, instead of four equal boxes.
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
           <StatCard
-            icon={Wallet}
             tone="primary"
             variant="hero"
             label="Total collected"
@@ -196,7 +193,6 @@ export default function AdminDashboardPage() {
           />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard
-              icon={Users}
               tone="primary"
               label="Total members"
               value={totalMembers.toLocaleString()}
@@ -208,7 +204,6 @@ export default function AdminDashboardPage() {
               }
             />
             <StatCard
-              icon={TrendingUp}
               tone="accent"
               label="Active fundraisers & dues"
               value={activeCampaigns.length}
@@ -219,7 +214,6 @@ export default function AdminDashboardPage() {
               }
             />
             <StatCard
-              icon={CalendarDays}
               tone="accent"
               label="Upcoming events"
               value={upcomingEvents}
