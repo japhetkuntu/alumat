@@ -9,7 +9,7 @@ const badgeVariants = cva(
       variant: {
         default: "border-primary/40 text-primary hover:bg-primary/5",
         /** The tenant's secondary/supporting brand color — featured content, highlighted tags, selected states. Not "secondary" (that name is taken by the neutral surface variant below, for historical/shadcn-convention reasons). */
-        accent: "border-accent-300 bg-accent-50 text-accent-800",
+        accent: "border-accent/40 bg-accent-50 text-accent-800",
         secondary: "border-border text-secondary-foreground hover:bg-secondary/40",
         destructive: "border-destructive/40 text-destructive hover:bg-destructive/10",
         outline: "text-foreground border-border/60 hover:bg-accent hover:text-accent-foreground",
