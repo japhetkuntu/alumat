@@ -6,7 +6,6 @@ import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
-import { Wallet, Building2, Users, Sparkles } from "@alumni/ui";
 import { getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 
 export default function PlatformDashboardPage() {
@@ -39,7 +38,6 @@ export default function PlatformDashboardPage() {
           scanning fleet health, everything else demoted to a supporting row. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-4 mb-5 items-stretch">
         <StatCard
-          icon={Wallet}
           variant="hero"
           label="Platform revenue"
           value={formatCurrency(summary?.revenue ?? 0, "GHS")}
@@ -47,19 +45,16 @@ export default function PlatformDashboardPage() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
-            icon={Building2}
             label="Total institutions"
             value={summary?.totalInstitutions ?? "—"}
             sub={`${summary?.activeCount ?? 0} active · ${summary?.trialCount ?? 0} trial`}
           />
           <StatCard
-            icon={Users}
             label="Total members"
             value={(summary?.totalMembers ?? 0).toLocaleString()}
             sub={<span style={{ color: "var(--success)" }}>Across every institution</span>}
           />
           <StatCard
-            icon={Sparkles}
             tone="accent"
             label="New institutions"
             value={summary?.newInstitutionsThisMonth ?? "—"}
