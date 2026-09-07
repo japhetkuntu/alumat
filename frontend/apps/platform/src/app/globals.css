@@ -441,12 +441,12 @@ svg {
   --input: rgba(15, 23, 42, 0.16);
   --ring: rgba(37, 99, 235, 0.4);
 
-  /* ── Status palette */
+  /* ── Status palette — fixed hues, independent of the brand tokens above. ── */
   --success: #047857;
   --success-foreground: #ffffff;
-  --warning: var(--brand-accent);
-  --warning-foreground: #0F172A;
-  --info: var(--brand-primary);
+  --warning: #F59E0B;
+  --warning-foreground: #422006;
+  --info: #2563EB;
   --info-foreground: #ffffff;
 
   /* ── Platform Portal raw tokens (use in components directly) ── */
@@ -504,12 +504,12 @@ svg {
   --input: #122a1f;
   --ring: rgba(59, 130, 246, 0.5);
 
-  --success: #3B82F6;
-  --success-foreground: #0b2014;
+  --success: #22c55e;
+  --success-foreground: #052e13;
   --warning: #F59E0B;
   --warning-foreground: #3a2a01;
-  --info: #3B82F6;
-  --info-foreground: #0b2014;
+  --info: #60a5fa;
+  --info-foreground: #0b1a33;
 
   --accent-emerald: #3B82F6;
   --accent-sky: #7c96f7;

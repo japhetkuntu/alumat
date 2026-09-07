@@ -55,7 +55,7 @@ const TYPE_META: Record<string, {
   ContributionRejected:  { icon: CreditCard,    bg: "rgba(239,68,68,0.12)",   color: "#dc2626", label: "Rejected"     },
   ClassNoteAlert:        { icon: MessageSquare, bg: "rgba(20,184,166,0.12)",  color: "#0d9488", label: "Class note"   },
 };
-const DEFAULT_META = { icon: Bell, bg: "var(--color-background-info)", color: "var(--primary)", label: "Notification" };
+const DEFAULT_META = { icon: Bell, bg: "var(--brand-primary-100, var(--color-background-info))", color: "var(--primary)", label: "Notification" };
 
 function TypeIcon({ type }: { type: string }) {
   const m = TYPE_META[type] ?? DEFAULT_META;
@@ -103,7 +103,7 @@ function NotifRow({
       className={cn("flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b transition-colors", !path && "cursor-pointer")}
       style={{
         borderColor: "var(--border)",
-        background: notif.isRead ? "var(--background)" : "var(--color-background-info)",
+        background: notif.isRead ? "var(--background)" : "var(--brand-primary-100, var(--color-background-info))",
       }}
     >
       <TypeIcon type={notif.type} />
@@ -271,7 +271,7 @@ export default function NotificationsPage() {
               <span
                 className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold"
                 style={{
-                  background: tab === "Unread" ? "rgba(255,255,255,0.2)" : "var(--color-background-info)",
+                  background: tab === "Unread" ? "rgba(255,255,255,0.2)" : "var(--brand-primary-100, var(--color-background-info))",
                   color:      tab === "Unread" ? "white" : "var(--primary)",
                 }}
               >

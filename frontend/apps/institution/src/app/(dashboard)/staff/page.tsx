@@ -268,7 +268,7 @@ export default function AdminsPage() {
         </Button>
       </header>
 
-      <div className="p-3 rounded-[6px] text-[13px]" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
+      <div className="p-3 rounded-[6px] text-[13px]" style={{ background: "var(--brand-primary-light)", color: "var(--brand-primary-700, var(--color-text-info))" }}>
         <b>SuperAdmin-only area.</b> Administrators can view staff access but cannot create, edit, or disable accounts.
       </div>
 

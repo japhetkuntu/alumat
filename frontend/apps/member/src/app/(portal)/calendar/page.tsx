@@ -141,7 +141,7 @@ export default function CalendarPage() {
         <Link
           href="/contributions"
           className="flex items-center gap-3 p-4 rounded-xl border"
-          style={{ background: "var(--color-background-info)", borderColor: "var(--color-border-info)" }}
+          style={{ background: "var(--brand-primary-100, var(--color-background-info))", borderColor: "var(--brand-primary-300, var(--color-border-info))" }}
         >
           <Clock size={16} className="shrink-0" style={{ color: "var(--primary)" }} />
           <p className="text-[13px]" style={{ color: "var(--foreground)" }}>

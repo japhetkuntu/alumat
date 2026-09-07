@@ -294,12 +294,12 @@ export default function CampaignDetailPage() {
           {/* Share link */}
           <div
             className="rounded-2xl border p-4 sm:p-5"
-            style={{ borderColor: "var(--color-border-info)", background: "var(--color-background-info)" }}
+            style={{ borderColor: "var(--brand-primary-300, var(--color-border-info))", background: "var(--brand-primary-100, var(--color-background-info))" }}
           >
             <div className="flex items-center gap-2.5 mb-3">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: "var(--background)", border: "1px solid var(--color-border-info)" }}
+                style={{ background: "var(--background)", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
               >
                 <Share2 size={14} style={{ color: "var(--primary)" }} />
               </div>
@@ -417,10 +417,10 @@ export default function CampaignDetailPage() {
               {hasPaid && !isMembership && (
                 <div
                   className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
-                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                  style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
                 >
                   <CheckCircle2 size={14} style={{ color: "var(--primary)" }} className="shrink-0" />
-                  <p className="text-[13px] font-semibold" style={{ color: "var(--color-text-info)" }}>
+                  <p className="text-[13px] font-semibold" style={{ color: "var(--brand-primary-700, var(--color-text-info))" }}>
                     You&apos;ve contributed to this fundraiser before.
                   </p>
                 </div>

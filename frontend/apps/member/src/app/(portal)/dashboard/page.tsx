@@ -331,15 +331,19 @@ function CampaignRow({
    since the last visit, so there's a reason to open this beyond dues season.
    ───────────────────────────────────────────────────────────────────────── */
 function PulseCard({
-  icon: Icon, title, href, seeAllLabel = "See all", children,
+  icon: Icon, title, href, seeAllLabel = "See all", tone = "neutral", children,
 }: {
-  icon: React.ElementType; title: string; href: string; seeAllLabel?: string; children: React.ReactNode;
+  icon: React.ElementType; title: string; href: string; seeAllLabel?: string;
+  /** "neutral" (default) for a plain listing; "accent" for recognition/celebration content (e.g. Spotlight) — not every pulse card needs to be primary-branded. */
+  tone?: "neutral" | "accent";
+  children: React.ReactNode;
 }) {
+  const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--muted-foreground)";
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2">
-          <Icon size={15} style={{ color: "var(--primary)" }} />
+          <Icon size={15} style={{ color: iconColor }} />
           <CardTitle className="text-[14.5px] font-bold">{title}</CardTitle>
         </div>
         <Link href={href}>
@@ -380,8 +384,8 @@ function JobsPulse() {
       ) : (
         jobs.map((j) => (
           <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-secondary group">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
-              <Briefcase size={14} style={{ color: "var(--primary)" }} />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+              <Briefcase size={14} style={{ color: "var(--muted-foreground)" }} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold leading-snug truncate group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
@@ -406,7 +410,7 @@ function SpotlightPulse() {
   const spotlight = data?.results?.[0];
 
   return (
-    <PulseCard icon={Star} title="Spotlight" href="/spotlights">
+    <PulseCard icon={Star} title="Spotlight" href="/spotlights" tone="accent">
       {isLoading ? (
         <div className="h-24 rounded-lg animate-pulse bg-secondary" />
       ) : !spotlight ? (
@@ -808,9 +812,9 @@ export default function MemberDashboardPage() {
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                  style={{ background: "var(--muted)", border: "1px solid var(--border)" }}
                 >
-                  <Calendar size={17} style={{ color: "var(--primary)" }} />
+                  <Calendar size={17} style={{ color: "var(--muted-foreground)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-semibold leading-snug truncate" style={{ color: "var(--foreground)" }}>
@@ -864,7 +868,7 @@ export default function MemberDashboardPage() {
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                  style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
                 >
                   <CreditCard size={17} style={{ color: "var(--primary)" }} />
                 </div>

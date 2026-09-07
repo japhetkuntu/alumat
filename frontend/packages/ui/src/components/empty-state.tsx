@@ -14,10 +14,10 @@ export function EmptyState({ icon, title, description, action, className }: Empt
     <div className={cn("flex flex-col items-center justify-center py-16 px-6 text-center", className)}>
       {icon && (
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 [&>svg]:text-primary"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 [&>svg]:text-muted-foreground"
           style={{
-            background: "var(--color-background-info)",
-            border: "1px solid var(--color-border-info)",
+            background: "var(--muted)",
+            border: "1px solid var(--border)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
           }}
         >

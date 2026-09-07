@@ -353,7 +353,7 @@ function RsvpBlock({
         <div className="flex items-center gap-3 px-4 py-3.5">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+            style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
           >
             <MapPin size={14} style={{ color: "var(--primary)" }} />
           </div>
@@ -379,7 +379,7 @@ function RsvpBlock({
         <div className="flex items-center gap-3 px-4 py-3.5">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+            style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
           >
             <Calendar size={14} style={{ color: "var(--primary)" }} />
           </div>
@@ -395,7 +395,7 @@ function RsvpBlock({
         <div className="flex items-center gap-3 px-4 py-3.5">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+            style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
           >
             <Users size={14} style={{ color: "var(--primary)" }} />
           </div>

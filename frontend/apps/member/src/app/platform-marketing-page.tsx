@@ -61,8 +61,8 @@ const WHATSAPP_PROBLEMS = [
 
 function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEATURES[number]; delay: string; tone?: "primary" | "accent" }) {
   const { ref, visible } = useFadeUp();
-  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--color-background-info))" : "var(--color-background-info)";
-  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--color-border-info))" : "var(--color-border-info)";
+  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--brand-primary-100, var(--color-background-info)))" : "var(--brand-primary-100, var(--color-background-info))";
+  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--brand-primary-300, var(--color-border-info)))" : "var(--brand-primary-300, var(--color-border-info))";
   const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
   return (
     <div ref={ref} style={{ transitionDelay: delay }}
@@ -210,7 +210,7 @@ function OnboardingForm() {
   if (submitted) {
     return (
       <div className="card p-8 sm:p-12 text-center flex flex-col items-center">
-        <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
+        <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
             <path d="M6 13.5L11 18.5L20 8" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
               pathLength={1} style={{ strokeDasharray: 1, strokeDashoffset: 1, animation: "draw-check 500ms 150ms ease-out forwards" }} />
@@ -663,7 +663,7 @@ export default function PlatformMarketingPage() {
                   { icon: MapPin,   text: "Built for any alumni community, anywhere" },
                 ].map((item) => (
                   <div key={item.text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
                       <item.icon size={14} style={{ color: "var(--primary)" }} />
                     </div>
                     <p className="text-[13.5px] font-medium" style={{ color: "var(--foreground)" }}>{item.text}</p>

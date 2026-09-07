@@ -276,8 +276,8 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
   // Alternates primary/accent across the grid — the same flat, solid-fill
   // pattern as the dashboard stat cards, so a real secondary color shows up
   // as a genuinely distinct icon tone, never blended into a background.
-  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--color-background-info))" : "var(--color-background-info)";
-  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--color-border-info))" : "var(--color-border-info)";
+  const iconBg = tone === "accent" ? "var(--brand-accent-light, var(--brand-primary-100, var(--color-background-info)))" : "var(--brand-primary-100, var(--color-background-info))";
+  const iconBorder = tone === "accent" ? "var(--brand-accent, var(--brand-primary-300, var(--color-border-info)))" : "var(--brand-primary-300, var(--color-border-info))";
   const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
   return (
     <div ref={ref} style={{ transitionDelay: delay }}

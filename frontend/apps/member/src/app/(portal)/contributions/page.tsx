@@ -730,7 +730,7 @@ export default function MemberContributionsPage() {
             >
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
               >
                 <CreditCard size={16} style={{ color: "var(--primary)" }} />
               </div>
