@@ -6,7 +6,6 @@ import { useState, useEffect, useMemo, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@alumni/ui";
-import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { memberClient } from "@/lib/api-client";
@@ -22,7 +21,6 @@ import {
   GraduationCap,
   FolderOpen,
   UserCircle,
-  Settings,
   Menu,
   X,
   Trophy,
@@ -140,7 +138,6 @@ function useDisabledFeatures(): Set<string> {
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
-  const { user } = useAuth();
   const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
   const brandName = navTheme?.displayName || "Alumni Portal";
@@ -219,24 +216,6 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           </div>
         ))}
       </nav>
-
-      <div className="p-4 mt-auto border-t border-sidebar-border bg-black/2 dark:bg-white/2">
-        <div className="flex items-center gap-3 mb-4 px-2">
-          <Avatar className="h-8 w-8 ring-2 ring-background shadow-md">
-            <AvatarFallback name={user?.name} className="text-[10px]">{getInitials(user?.name ?? "M")}</AvatarFallback>
-          </Avatar>
-          <div className="overflow-hidden flex-1">
-            <p className="text-[12px] font-bold truncate leading-tight">{user?.name}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{user?.email}</p>
-          </div>
-        </div>
-        <Link href="/settings" className="w-full block px-1" onClick={onClose}>
-          <Button size="sm" variant="outline" className="h-8 w-full text-[11px] font-semibold border-border/50 hover:bg-background gap-1.5">
-            <Settings size={12} />
-            Settings
-          </Button>
-        </Link>
-      </div>
     </div>
   );
 }

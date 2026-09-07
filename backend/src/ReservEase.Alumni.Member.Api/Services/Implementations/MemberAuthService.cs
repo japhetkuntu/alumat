@@ -16,6 +16,7 @@ using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Common.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Referral = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Referral;
@@ -34,6 +35,7 @@ public class MemberAuthService(
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     INotificationActor notificationActor,
     IStorageService storageService,
+    IGoogleTokenVerifier googleTokenVerifier,
     ILogger<MemberAuthService> logger) : IMemberAuthService
 {
     private const string PictureClaimType = "picture";
@@ -385,6 +387,57 @@ public class MemberAuthService(
         catch (Exception e)
         {
             logger.LogError(e, "Error during login for email: {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<MemberTokenResponse>("Login failed");
+        }
+    }
+
+    public async Task<IApiResponse<MemberTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request)
+    {
+        try
+        {
+            var identity = await googleTokenVerifier.VerifyAsync(request.IdToken);
+            if (identity is null)
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Google sign-in failed. Please try again.");
+
+            logger.LogInformation("Google login attempt for email: {Email}", identity.Email);
+
+            // Auto-link: an existing password account with this email signs straight in via
+            // Google too — no separate "link your account" step. Google sign-in never creates
+            // a new member on its own; membership still starts with the normal register/OTP/
+            // admin-approval flow, so an unmatched email here means "not registered yet," not
+            // an error worth hiding behind a vague message.
+            var member = await memberRepo.GetOneAsync(m => m.Email == identity.Email);
+            if (member is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>(
+                    "No account found for this Google email. Please register first.");
+
+            if (member.Status is "Pending")
+                return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>("Your account is pending admin approval.");
+            if (member.Status is "Banned")
+                return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>("Your account has been banned. Please contact support.");
+            if (member.Status is "Blocked")
+                return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>("Your account has been permanently blocked.");
+            if (member.Status is "Suspended")
+                return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>("Your registration was rejected. You may submit a new registration request.");
+
+            member.LastLoginAt = DateTime.UtcNow;
+            await memberRepo.UpdateAsync(member);
+
+            var claimData = BuildClaimData(member);
+            var accessToken = GenerateJwtToken(claimData);
+            var refreshToken = GenerateRefreshToken();
+            await redis.SetAsync($"member:refresh:{member.Id}", refreshToken,
+                TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+
+            var userResp = new AuthUserResponse(member.Id, member.Email, member.FirstName, member.LastName, "Member", member.GraduationYear, member.ProfilePictureUrl);
+            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+
+            logger.LogInformation("Member {MemberId} logged in via Google", member.Id);
+            return new MemberTokenResponse(userResp, tokensResp).ToOkApiResponse("Login successful");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error during Google login");
             return ApiResponseExtensions.ToServerErrorApiResponse<MemberTokenResponse>("Login failed");
         }
     }

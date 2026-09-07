@@ -32,6 +32,21 @@ public class AuthController(IInstitutionAuthService authService) : DefaultContro
     }
 
     /// <summary>
+    /// Authenticate an existing institution staff member via a verified Google ID token.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("google")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Institution staff Google login", Description = "Authenticate an existing staff account via a verified Google ID token.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionTokenResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        var result = await authService.GoogleLoginAsync(request);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Refresh an expired access token using a valid refresh token.
     /// </summary>
     [AllowAnonymous]

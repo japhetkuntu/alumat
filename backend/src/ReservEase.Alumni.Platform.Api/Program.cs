@@ -46,6 +46,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 builder.Services.AddAlumniRateLimiting();
 builder.Services.AddPlatformBearerAuth(tokenConfig);
+builder.Services.AddGoogleAuth(builder.Configuration);
 builder.Services.AddApiVersioning(1);
 builder.Services.AddSwagger("Platform API");
 builder.Services.AddPlatformControllers();

@@ -15,6 +15,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Common.Sdk.Services;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -25,6 +26,7 @@ public class PlatformAuthService(
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     INotificationActor notificationActor,
     IHttpContextAccessor httpContextAccessor,
+    IGoogleTokenVerifier googleTokenVerifier,
     ILogger<PlatformAuthService> logger) : IPlatformAuthService
 {
     private readonly BearerTokenConfig tokenConfig = tokenConfigOptions.Value;
@@ -138,6 +140,47 @@ public class PlatformAuthService(
         catch (Exception e)
         {
             logger.LogError(e, "Error during platform login for email: {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformTokenResponse>("Login failed");
+        }
+    }
+
+    public async Task<IApiResponse<PlatformTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request)
+    {
+        try
+        {
+            var identity = await googleTokenVerifier.VerifyAsync(request.IdToken);
+            if (identity is null)
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<PlatformTokenResponse>("Google sign-in failed. Please try again.");
+
+            // Platform staff accounts only ever come from another platform staff creating
+            // them — Google sign-in auto-links to that existing record by email, never
+            // creates a new one.
+            var staff = await staffRepo.GetOneAsync(s => s.Email == identity.Email);
+            if (staff is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<PlatformTokenResponse>("No platform staff account found for this Google email.");
+
+            if (staff.IsDisabled)
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<PlatformTokenResponse>("Account disabled");
+
+            staff.LastActiveAt = DateTime.UtcNow;
+            await staffRepo.UpdateAsync(staff);
+
+            var claimData = BuildClaimData(staff);
+            var accessToken = GenerateJwtToken(claimData);
+            var refreshToken = GenerateRefreshToken();
+
+            await redis.SetAsync($"platform:refresh:{staff.Id}", refreshToken,
+                TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+
+            logger.LogInformation("Platform staff {StaffId} logged in via Google", staff.Id);
+
+            var user = new AuthUserResponse(staff.Id, staff.Email, staff.Name, staff.Role);
+            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            return new PlatformTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error during platform Google login");
             return ApiResponseExtensions.ToServerErrorApiResponse<PlatformTokenResponse>("Login failed");
         }
     }

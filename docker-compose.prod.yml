@@ -132,6 +132,7 @@ services:
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
       BearerTokenConfig__AccessTokenLifetime: ${JWT_ACCESS_TOKEN_LIFETIME_HOURS:-8}
       BearerTokenConfig__RefreshTokenLifetime: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-30}
+      GoogleAuthConfig__ClientId: ${GOOGLE_CLIENT_ID:-}
       MailtrapConfig__ApiKey: ${MAILTRAP_API_KEY}
       MailtrapConfig__DefaultMessageSource__Name: ${MAIL_SENDER_NAME}
       MailtrapConfig__DefaultMessageSource__Email: ${MAIL_SENDER_EMAIL}
@@ -183,6 +184,7 @@ services:
       BearerTokenConfig__MemberSigningKey: ${MEMBER_SIGNING_KEY}
       BearerTokenConfig__AccessTokenLifetime: ${JWT_ACCESS_TOKEN_LIFETIME_HOURS:-8}
       BearerTokenConfig__RefreshTokenLifetime: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-30}
+      GoogleAuthConfig__ClientId: ${GOOGLE_CLIENT_ID:-}
       PaystackConfig__SecretKey: ${PAYSTACK_SECRET_KEY}
       PaystackConfig__PublicKey: ${PAYSTACK_PUBLIC_KEY}
       PaystackConfig__CallbackUrl: ${PAYSTACK_CALLBACK_URL}
@@ -245,6 +247,7 @@ services:
       BearerTokenConfig__PlatformSigningKey: ${PLATFORM_SIGNING_KEY}
       BearerTokenConfig__AccessTokenLifetime: ${JWT_ACCESS_TOKEN_LIFETIME_HOURS:-8}
       BearerTokenConfig__RefreshTokenLifetime: ${JWT_REFRESH_TOKEN_LIFETIME_DAYS:-30}
+      GoogleAuthConfig__ClientId: ${GOOGLE_CLIENT_ID:-}
       StorageConfig__AccessKey: ${STORAGE_ACCESS_KEY}
       StorageConfig__SecretKey: ${STORAGE_SECRET_KEY}
       StorageConfig__BucketName: ${STORAGE_BUCKET}
@@ -279,6 +282,12 @@ services:
     build:
       context: ./frontend
       dockerfile: apps/institution/Dockerfile
+      args:
+        # The Google sign-in bridge always lives on the member app's fixed
+        # domain (see apps/member/src/app/google-auth) — this just points
+        # institution staff login at it, unlike NEXT_PUBLIC_*_API_URL above
+        # this doesn't vary per subdomain, so a build arg is correct here.
+        NEXT_PUBLIC_GOOGLE_AUTH_URL: ${NEXT_PUBLIC_GOOGLE_AUTH_URL:-}
     image: alumni/frontend-institution:prod
     container_name: alumni-frontend-institution
     restart: unless-stopped
@@ -294,6 +303,13 @@ services:
     build:
       context: ./frontend
       dockerfile: apps/member/Dockerfile
+      args:
+        # The member app hosts the shared Google sign-in bridge itself
+        # (apps/member/src/app/google-auth) — it needs the real OAuth client
+        # ID to run the sign-in flow, and its own bridge URL to link to from
+        # its own login page (normally just the relative "/google-auth").
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_GOOGLE_AUTH_URL: ${NEXT_PUBLIC_GOOGLE_AUTH_URL:-/google-auth}
     image: alumni/frontend-member:prod
     container_name: alumni-frontend-member
     restart: unless-stopped
@@ -314,6 +330,9 @@ services:
       # pass their NEXT_PUBLIC_*_API_URL build arg either.
       args:
         NEXT_PUBLIC_PLATFORM_API_URL: ""
+        # Points platform staff login at the member app's shared Google
+        # sign-in bridge (apps/member/src/app/google-auth).
+        NEXT_PUBLIC_GOOGLE_AUTH_URL: ${NEXT_PUBLIC_GOOGLE_AUTH_URL:-}
     image: alumni/frontend-platform:prod
     container_name: alumni-frontend-platform
     restart: unless-stopped

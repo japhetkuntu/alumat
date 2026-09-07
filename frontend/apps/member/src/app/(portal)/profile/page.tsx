@@ -2,17 +2,24 @@
 
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award } from "@alumni/ui";
+import {
+  Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award,
+  User, Lock, Bell, Link as LinkIcon,
+} from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { PhoneInput } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
+import { Separator } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
-import { getMyProfile, updateMyProfile, changePassword, getMyBadges, getCurrentMembershipCampaign } from "@/lib/member-api";
+import {
+  getMyProfile, updateMyProfile, changePassword, getMyBadges, getCurrentMembershipCampaign,
+  getNotificationPreferences, updateNotificationPreferences,
+} from "@/lib/member-api";
 import { getRoundedLocation } from "@/lib/geolocation";
 import { formatCurrency } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
@@ -20,24 +27,18 @@ import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { useAuth } from "@/hooks/use-auth";
+import { useNavTheme } from "@/components/member/member-layout";
+import type { NotificationPreference } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   EMPLOYMENT OPTION BUTTON
+   SHARED BITS
    ───────────────────────────────────────────────────────────────────────── */
 function EmploymentOption({
-  icon: Icon,
-  label,
-  description,
-  active,
-  disabled,
-  onClick,
+  icon: Icon, label, description, active, disabled, onClick,
 }: {
-  icon: React.ElementType;
-  label: string;
-  description: string;
-  active: boolean;
-  disabled: boolean;
-  onClick: () => void;
+  icon: React.ElementType; label: string; description: string;
+  active: boolean; disabled: boolean; onClick: () => void;
 }) {
   return (
     <button
@@ -52,40 +53,53 @@ function EmploymentOption({
       )}
     >
       <Icon size={22} style={{ color: active ? "var(--accent)" : "var(--muted-foreground)" }} />
-      <span
-        className="text-[13.5px] font-semibold"
-        style={{ color: active ? "var(--primary)" : "var(--foreground)" }}
-      >
+      <span className="text-[13.5px] font-semibold" style={{ color: active ? "var(--primary)" : "var(--foreground)" }}>
         {label}
       </span>
       <span className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
         {description}
       </span>
-      {active && (
-        <div
-          className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full"
-          style={{ background: "var(--primary)" }}
-        />
-      )}
+      {active && <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full" style={{ background: "var(--primary)" }} />}
     </button>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SECTION HEADING — consistent with other pages
-   ───────────────────────────────────────────────────────────────────────── */
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }) {
   return (
-    <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
-      {children}
-    </p>
+    <div className="flex items-start justify-between gap-4 py-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        {description && <p className="text-[12px] text-muted-foreground mt-0.5">{description}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          checked ? "bg-primary" : "bg-muted"
+        )}
+      >
+        <span
+          className={cn(
+            "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300",
+            checked ? "translate-x-5" : "translate-x-0"
+          )}
+        />
+      </button>
+    </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   PAGE
+   PAGE — profile (editable identity, professional info, employment, badges)
+   first, then account settings (notifications, security, about) — one
+   unified page instead of two separate destinations for what's really a
+   single "manage my account" task.
    ───────────────────────────────────────────────────────────────────────── */
 export default function MemberProfilePage() {
+  const { logout } = useAuth();
   const [profileForm, setProfileForm] = useState({
     company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "",
   });
@@ -112,6 +126,14 @@ export default function MemberProfilePage() {
     queryKey: ["m-current-membership-campaign"],
     queryFn:  getCurrentMembershipCampaign,
   });
+
+  const { data: notifPrefs } = useQuery({
+    queryKey: ["m-notif-prefs"],
+    queryFn:  getNotificationPreferences,
+  });
+
+  const { data: navTheme } = useNavTheme();
+  const institutionName = navTheme?.displayName || "Alumni Member Portal";
 
   // Adjust local form state when the fetched profile changes — done during
   // render (React's documented alternative to an effect for this case)
@@ -210,9 +232,34 @@ export default function MemberProfilePage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const notifMut = useMutation({
+    mutationFn: updateNotificationPreferences,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-notif-prefs"] });
+      toast.success("Notification preferences saved");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  function toggleNotif(key: keyof Omit<NotificationPreference, "id">, value: boolean) {
+    if (!notifPrefs) return;
+    notifMut.mutate({
+      membershipReminders: notifPrefs.membershipReminders,
+      campaignAlerts: notifPrefs.campaignAlerts,
+      eventReminders: notifPrefs.eventReminders,
+      jobAlerts: notifPrefs.jobAlerts,
+      classNoteAlerts: notifPrefs.classNoteAlerts,
+      spotlightAlerts: notifPrefs.spotlightAlerts,
+      smsAlerts: notifPrefs.smsAlerts,
+      whatsAppAlerts: notifPrefs.whatsAppAlerts,
+      [key]: value,
+    });
+  }
+
   if (isLoading || !profile) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px] mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto space-y-5">
+        <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
       </div>
@@ -220,354 +267,424 @@ export default function MemberProfilePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto">
+      <PageHeader eyebrow="Account" title="Profile" description="Your profile, visible to fellow alumni, and how the portal works for you." />
 
-      <PageHeader eyebrow="Account" title="My profile" description="Update your information visible to fellow alumni." />
+      <div className="grid grid-cols-1 gap-5 mt-6">
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-5 items-start mt-6">
-      <div className="space-y-5">
+        {/* ═══════════════════ PROFILE ═══════════════════ */}
 
-      {/* ── Identity card ── */}
-      <Card>
-        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* Avatar with upload */}
-          <div className="relative shrink-0">
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async e => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setAvatarUploading(true);
-                try {
-                  await updateMyProfile({ profilePicture: file });
-                  qc.invalidateQueries({ queryKey: ["m-profile"] });
-                  toast.success("Profile picture updated.");
-                } catch (err) {
-                  toast.error(handleApiError(err));
-                } finally {
-                  setAvatarUploading(false);
-                  if (avatarInputRef.current) avatarInputRef.current.value = "";
-                }
-              }}
-            />
-            <UserAvatar
-              src={profile.profilePictureUrl}
-              name={`${profile.firstName} ${profile.lastName}`}
-              size="xl"
-            />
-            <Button
-              size="icon"
-              variant="secondary"
-              className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full"
-              disabled={avatarUploading}
-              onClick={() => avatarInputRef.current?.click()}
-            >
-              {avatarUploading
-                ? <Loader2 size={12} className="animate-spin" />
-                : <Camera size={12} />}
-            </Button>
-          </div>
-
-          {/* Name + meta */}
-          <div>
-            <p className="text-[17px] font-semibold" style={{ color: "var(--foreground)" }}>
-              {profile.firstName} {profile.lastName}
-            </p>
-            <p className="text-[13.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-              {profile.email}
-            </p>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge variant="outline" className="text-[11px] font-semibold">
-                Class of {profile.graduationYear}
-              </Badge>
-              <Badge
-                variant={profile.status === "Active" ? "success" : "warning"}
-                className="text-[11px] font-semibold"
-              >
-                {profile.status}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Badges ── */}
-      {badges && badges.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[14px] flex items-center gap-2">
-              <Award size={15} style={{ color: "var(--accent)" }} /> Badges
+        {/* ── Identity ── */}
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <User size={18} className="text-primary" />
+              Identity
             </CardTitle>
+            <CardDescription>How you appear to fellow alumni</CardDescription>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex flex-wrap gap-2">
-              {badges.map(b => (
-                <Badge key={b.id} variant="secondary" className="gap-1.5 py-1.5 px-3 text-[12px] font-semibold">
-                  🏅 {b.badgeType.replace(/([A-Z])/g, " $1").trim()}
-                </Badge>
-              ))}
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="relative shrink-0">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setAvatarUploading(true);
+                    try {
+                      await updateMyProfile({ profilePicture: file });
+                      qc.invalidateQueries({ queryKey: ["m-profile"] });
+                      toast.success("Profile picture updated.");
+                    } catch (err) {
+                      toast.error(handleApiError(err));
+                    } finally {
+                      setAvatarUploading(false);
+                      if (avatarInputRef.current) avatarInputRef.current.value = "";
+                    }
+                  }}
+                />
+                <UserAvatar
+                  src={profile.profilePictureUrl}
+                  name={`${profile.firstName} ${profile.lastName}`}
+                  size="xl"
+                />
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full"
+                  disabled={avatarUploading}
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {avatarUploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                </Button>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[17px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+                  {profile.firstName} {profile.lastName}
+                </p>
+                <p className="text-[13.5px] mt-0.5 break-all" style={{ color: "var(--muted-foreground)" }}>
+                  {profile.email}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <Badge variant="outline" className="text-[11px] font-semibold">
+                    Class of {profile.graduationYear}
+                  </Badge>
+                  <Badge variant={profile.status === "Active" ? "success" : "warning"} className="text-[11px] font-semibold">
+                    {profile.status}
+                  </Badge>
+                  {badges?.map(b => (
+                    <Badge key={b.id} variant="secondary" className="gap-1 text-[11px] font-semibold">
+                      🏅 {b.badgeType.replace(/([A-Z])/g, " $1").trim()}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* ── Employment status ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <SectionTitle>Employment status</SectionTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
-            Your status determines your membership renewal amount.
-          </p>
+        {/* ── Professional info ── */}
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Professional info</CardTitle>
+            <CardDescription>Shown on your profile and the alumni directory</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateMut.mutate(); }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { id: "company",  label: "Company",  placeholder: "Where you work",    type: "text"  },
+                  { id: "jobTitle", label: "Job title", placeholder: "Your current role", type: "text"  },
+                  { id: "location", label: "Location",  placeholder: "City, Country",     type: "text"  },
+                ].map(({ id, label, placeholder, type }) => (
+                  <div key={id} className="space-y-1.5">
+                    <Label htmlFor={id} className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      {label}
+                    </Label>
+                    <Input
+                      id={id}
+                      type={type}
+                      autoComplete={id === "company" ? "organization" : undefined}
+                      placeholder={placeholder}
+                      value={profileForm[id as keyof typeof profileForm]}
+                      onChange={e => setProfileForm(f => ({ ...f, [id]: e.target.value }))}
+                      className="h-11 text-[14px]"
+                    />
+                  </div>
+                ))}
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Phone
+                  </Label>
+                  <PhoneInput
+                    id="phone"
+                    value={profileForm.phone}
+                    onChange={val => setProfileForm(f => ({ ...f, phone: val }))}
+                  />
+                </div>
+              </div>
 
-          {employmentStatus === "Pensioner" && (
-            <div className="rounded-xl p-3.5 text-[13px] font-medium bg-warning/10 border border-warning/25 text-warning">
-              Your status is set to <strong>Pensioner</strong>. This cannot be changed back.
-            </div>
-          )}
+              <div className="rounded-xl p-3.5 space-y-2.5" style={{ background: "var(--muted)" }}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">
+                      Uses your device&apos;s real location — rounded to roughly your city/region, never your exact address — to plot a pin, visible to fellow members. Off by default — your location stays private, and nothing is stored unless you turn this on.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showOnAlumniMap}
+                    disabled={mapToggleMut.isPending}
+                    onClick={() => mapToggleMut.mutate(!showOnAlumniMap)}
+                    className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{ background: showOnAlumniMap ? "var(--primary)" : "var(--border)" }}
+                  >
+                    <span
+                      className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300"
+                      style={{ transform: showOnAlumniMap ? "translateX(20px)" : "translateX(0)" }}
+                    />
+                  </button>
+                </div>
+                {showOnAlumniMap && (
+                  <button
+                    type="button"
+                    disabled={updateLocationMut.isPending}
+                    onClick={() => updateLocationMut.mutate()}
+                    className="text-[12px] font-semibold text-primary hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {updateLocationMut.isPending ? "Updating location…" : "Update my location"}
+                  </button>
+                )}
+              </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <EmploymentOption
-              icon={Briefcase}
-              label="Employed"
-              description={
-                membershipCampaign?.amountPerMember != null
-                  ? `Currently working or self-employed — ${formatCurrency(membershipCampaign.amountPerMember)}/year`
-                  : "Currently working or self-employed"
-              }
-              active={employmentStatus === "Employed"}
-              disabled={employmentMut.isPending || employmentStatus === "Pensioner" || employmentStatus === "Employed"}
-              onClick={() => {
-                if (employmentStatus !== "Pensioner" && employmentStatus !== "Employed") {
-                  employmentMut.mutate("Employed");
+              <div className="space-y-1.5">
+                <Label htmlFor="linkedInUrl" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  LinkedIn URL
+                </Label>
+                <Input
+                  id="linkedInUrl"
+                  type="url"
+                  placeholder="https://linkedin.com/in/…"
+                  value={profileForm.linkedInUrl}
+                  onChange={e => setProfileForm(f => ({ ...f, linkedInUrl: e.target.value }))}
+                  className="h-11 text-[14px]"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bio" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Bio
+                </Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Tell your fellow alumni about yourself…"
+                  rows={3}
+                  value={profileForm.bio}
+                  onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value }))}
+                  className="text-[14px] resize-none"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="font-semibold text-[13.5px] gap-2"
+                style={{ height: 42 }}
+                isLoading={updateMut.isPending}
+                loadingText="Saving…"
+              >
+                Save changes
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* ── Employment status ── */}
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Employment status</CardTitle>
+            <CardDescription>Determines your membership renewal amount</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            {employmentStatus === "Pensioner" && (
+              <div className="rounded-xl p-3.5 text-[13px] font-medium bg-warning/10 border border-warning/25 text-warning">
+                Your status is set to <strong>Pensioner</strong>. This cannot be changed back.
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <EmploymentOption
+                icon={Briefcase}
+                label="Employed"
+                description={
+                  membershipCampaign?.amountPerMember != null
+                    ? `Currently working or self-employed — ${formatCurrency(membershipCampaign.amountPerMember)}/year`
+                    : "Currently working or self-employed"
                 }
-              }}
+                active={employmentStatus === "Employed"}
+                disabled={employmentMut.isPending || employmentStatus === "Pensioner" || employmentStatus === "Employed"}
+                onClick={() => {
+                  if (employmentStatus !== "Pensioner" && employmentStatus !== "Employed") {
+                    employmentMut.mutate("Employed");
+                  }
+                }}
+              />
+              <EmploymentOption
+                icon={Armchair}
+                label="Pensioner"
+                description={
+                  membershipCampaign?.pensionerAmountPerMember != null
+                    ? `Retired and receiving pension — ${formatCurrency(membershipCampaign.pensionerAmountPerMember)}/year`
+                    : "Retired and receiving pension"
+                }
+                active={employmentStatus === "Pensioner"}
+                disabled={employmentMut.isPending || employmentStatus === "Pensioner"}
+                onClick={() => {
+                  if (employmentStatus !== "Pensioner") setConfirmPensioner(true);
+                }}
+              />
+            </div>
+
+            {employmentMut.isPending && (
+              <p className="text-[12.5px] animate-pulse" style={{ color: "var(--muted-foreground)" }}>
+                Updating…
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ═══════════════════ SETTINGS ═══════════════════ */}
+
+        {/* ── Notifications ── */}
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bell size={18} className="text-primary" />
+              Notifications
+            </CardTitle>
+            <CardDescription>Choose what updates you want to receive</CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y divide-border/40">
+            <Toggle
+              checked={notifPrefs?.membershipReminders ?? true}
+              onChange={(v) => toggleNotif("membershipReminders", v)}
+              label="Membership Reminders"
+              description="Reminders about upcoming membership renewals"
             />
-            <EmploymentOption
-              icon={Armchair}
-              label="Pensioner"
-              description={
-                membershipCampaign?.pensionerAmountPerMember != null
-                  ? `Retired and receiving pension — ${formatCurrency(membershipCampaign.pensionerAmountPerMember)}/year`
-                  : "Retired and receiving pension"
-              }
-              active={employmentStatus === "Pensioner"}
-              disabled={employmentMut.isPending || employmentStatus === "Pensioner"}
-              onClick={() => {
-                if (employmentStatus !== "Pensioner") setConfirmPensioner(true);
-              }}
+            <Toggle
+              checked={notifPrefs?.campaignAlerts ?? true}
+              onChange={(v) => toggleNotif("campaignAlerts", v)}
+              label="Fundraiser Alerts"
+              description="Notifications when new fundraisers are launched"
             />
-          </div>
+            <Toggle
+              checked={notifPrefs?.eventReminders ?? true}
+              onChange={(v) => toggleNotif("eventReminders", v)}
+              label="Event Reminders"
+              description="Get notified about upcoming alumni events"
+            />
+            <Toggle
+              checked={notifPrefs?.jobAlerts ?? true}
+              onChange={(v) => toggleNotif("jobAlerts", v)}
+              label="Job Alerts"
+              description="Notifications for new job postings"
+            />
+            <Toggle
+              checked={notifPrefs?.spotlightAlerts ?? true}
+              onChange={(v) => toggleNotif("spotlightAlerts", v)}
+              label="Spotlight Updates"
+              description="Get notified about new alumni spotlights"
+            />
+            <Toggle
+              checked={notifPrefs?.smsAlerts ?? false}
+              onChange={(v) => toggleNotif("smsAlerts", v)}
+              label="SMS Notifications"
+              description={profileForm.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number above to enable SMS alerts"}
+            />
+            {/* WhatsApp notifications are wired up but hidden from the UI for
+                the pilot — email and SMS only for now. The underlying
+                whatsAppAlerts preference is left untouched, not forced off. */}
+          </CardContent>
+        </Card>
 
-          {employmentMut.isPending && (
-            <p className="text-[12.5px] animate-pulse" style={{ color: "var(--muted-foreground)" }}>
-              Updating…
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      </div>
-      <div className="space-y-5">
-
-      {/* ── Professional info ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <SectionTitle>Professional info</SectionTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateMut.mutate(); }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { id: "company",  label: "Company",  placeholder: "Where you work",    type: "text"  },
-                { id: "jobTitle", label: "Job title", placeholder: "Your current role", type: "text"  },
-                { id: "location", label: "Location",  placeholder: "City, Country",     type: "text"  },
-              ].map(({ id, label, placeholder, type }) => (
-                <div key={id} className="space-y-1.5">
-                  <Label htmlFor={id} className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    {label}
+        {/* ── Security + About ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+          <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Lock size={18} className="text-primary" />
+                Security
+              </CardTitle>
+              <CardDescription>Change your password to keep your account secure</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" onSubmit={e => { e.preventDefault(); pwMut.mutate(); }}>
+                <div className="space-y-1.5">
+                  <Label htmlFor="currentPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Current password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      type={pwVisible ? "text" : "password"}
+                      placeholder="Current password"
+                      value={pwForm.currentPassword}
+                      onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+                      className="h-11 text-[14px] pr-11"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-0 top-0 h-full w-11 flex items-center justify-center transition-colors"
+                      style={{ color: "var(--muted-foreground)" }}
+                      onClick={() => setPwVisible(v => !v)}
+                      aria-label={pwVisible ? "Hide password" : "Show password"}
+                    >
+                      {pwVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="newPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    New password
                   </Label>
                   <Input
-                    id={id}
-                    type={type}
-                    autoComplete={id === "company" ? "organization" : undefined}
-                    placeholder={placeholder}
-                    value={profileForm[id as keyof typeof profileForm]}
-                    onChange={e => setProfileForm(f => ({ ...f, [id]: e.target.value }))}
+                    id="newPassword"
+                    type="password"
+                    placeholder="New password"
+                    value={pwForm.newPassword}
+                    onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
                     className="h-11 text-[14px]"
+                    required
                   />
                 </div>
-              ))}
-              <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  Phone
-                </Label>
-                <PhoneInput
-                  id="phone"
-                  value={profileForm.phone}
-                  onChange={val => setProfileForm(f => ({ ...f, phone: val }))}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-xl p-3.5 space-y-2.5" style={{ background: "var(--muted)" }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
-                  <p className="text-[12px] text-muted-foreground mt-0.5">
-                    Uses your device's real location — rounded to roughly your city/region, never your exact address — to plot a pin, visible to fellow members. Off by default — your location stays private, and nothing is stored unless you turn this on.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={showOnAlumniMap}
-                  disabled={mapToggleMut.isPending}
-                  onClick={() => mapToggleMut.mutate(!showOnAlumniMap)}
-                  className="relative inline-flex h-6 w-11 shrink-0 mt-0.5 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ background: showOnAlumniMap ? "var(--primary)" : "var(--border)" }}
-                >
-                  <span
-                    className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-300"
-                    style={{ transform: showOnAlumniMap ? "translateX(20px)" : "translateX(0)" }}
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Confirm new password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Repeat your new password"
+                    value={pwForm.confirm}
+                    onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                    className="h-11 text-[14px]"
+                    required
                   />
-                </button>
-              </div>
-              {showOnAlumniMap && (
-                <button
-                  type="button"
-                  disabled={updateLocationMut.isPending}
-                  onClick={() => updateLocationMut.mutate()}
-                  className="text-[12px] font-semibold text-primary hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                  {pwForm.confirm && pwForm.newPassword !== pwForm.confirm && (
+                    <p className="text-[12px] font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                      Passwords do not match
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="font-semibold text-[13.5px]"
+                  style={{ height: 42 }}
+                  isLoading={pwMut.isPending}
+                  loadingText="Changing…"
+                  disabled={!pwForm.currentPassword || !pwForm.newPassword || pwForm.newPassword !== pwForm.confirm}
                 >
-                  {updateLocationMut.isPending ? "Updating location…" : "Update my location"}
-                </button>
-              )}
-            </div>
+                  Change password
+                </Button>
+              </form>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="linkedInUrl" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                LinkedIn URL
-              </Label>
-              <Input
-                id="linkedInUrl"
-                type="url"
-                placeholder="https://linkedin.com/in/…"
-                value={profileForm.linkedInUrl}
-                onChange={e => setProfileForm(f => ({ ...f, linkedInUrl: e.target.value }))}
-                className="h-11 text-[14px]"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="bio" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                Bio
-              </Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell your fellow alumni about yourself…"
-                rows={3}
-                value={profileForm.bio}
-                onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value }))}
-                className="text-[14px] resize-none"
-              />
-            </div>
-            <Button
-              type="submit"
-              className="font-semibold text-[13.5px] gap-2"
-              style={{ height: 42 }}
-              isLoading={updateMut.isPending}
-              loadingText="Saving…"
-            >
-              Save changes
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Separator className="my-5" />
 
-      {/* ── Change password ── */}
-      <Card>
-        <CardHeader className="pb-3">
-          <SectionTitle>Change password</SectionTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <form className="space-y-4" onSubmit={e => { e.preventDefault(); pwMut.mutate(); }}>
-            <div className="space-y-1.5">
-              <Label htmlFor="currentPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                Current password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={pwVisible ? "text" : "password"}
-                  placeholder="Current password"
-                  value={pwForm.currentPassword}
-                  onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
-                  className="h-11 text-[14px] pr-11"
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-0 top-0 h-full w-11 flex items-center justify-center transition-colors"
-                  style={{ color: "var(--muted-foreground)" }}
-                  onClick={() => setPwVisible(v => !v)}
-                  aria-label={pwVisible ? "Hide password" : "Show password"}
-                >
-                  {pwVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="newPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                New password
-              </Label>
-              <Input
-                id="newPassword"
-                type="password"
-                placeholder="New password"
-                value={pwForm.newPassword}
-                onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
-                className="h-11 text-[14px]"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                Confirm new password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Repeat your new password"
-                value={pwForm.confirm}
-                onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
-                className="h-11 text-[14px]"
-                required
-              />
-              {pwForm.confirm && pwForm.newPassword !== pwForm.confirm && (
-                <p className="text-[12px] font-medium text-destructive animate-in fade-in slide-in-from-top-1">
-                  Passwords do not match
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Sign out of your account on this device.
                 </p>
-              )}
-            </div>
-            <Button
-              type="submit"
-              className="font-semibold text-[13.5px]"
-              style={{ height: 42 }}
-              isLoading={pwMut.isPending}
-              loadingText="Changing…"
-              disabled={!pwForm.currentPassword || !pwForm.newPassword || pwForm.newPassword !== pwForm.confirm}
-            >
-              Change password
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={logout}
+                >
+                  Log out
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-      </div>
+          {/* About */}
+          <Card className="border-border/40 bg-muted/20 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-350">
+            <CardContent className="p-6 flex items-center justify-between h-full">
+              <div>
+                <p className="text-sm font-bold">{institutionName}</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Alumni Member Portal</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <LinkIcon size={13} className="text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
 
       {/* ── Confirm pensioner modal ── */}

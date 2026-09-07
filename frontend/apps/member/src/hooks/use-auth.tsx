@@ -9,6 +9,10 @@ interface AuthContextValue {
   tokens: AuthTokens | null;
   isLoading: boolean;
   login: (req: LoginRequest) => Promise<void>;
+  /** Persists a session obtained outside the normal password login call —
+   *  currently just the Google sign-in bridge, which already has the
+   *  user/tokens payload from its own API call and only needs it stored. */
+  setSession: (user: AuthData, tokens: AuthTokens) => void;
   logout: () => void;
   isMember: boolean;
 }
@@ -93,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokens,
         isLoading,
         login,
+        setSession: persist,
         logout,
         isMember: user?.role === "Member",
       }}

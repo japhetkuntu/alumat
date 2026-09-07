@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useSyncExternalStore } from "react";
-import { AuthData, LoginRequest } from "@/types";
+import { AuthData, AuthTokens, LoginRequest } from "@/types";
 import { loginPlatformStaff } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 
@@ -9,6 +9,10 @@ interface AuthContextValue {
   user: AuthData | null;
   isLoading: boolean;
   login: (req: LoginRequest) => Promise<void>;
+  /** Persists a session obtained outside the normal password login call —
+   *  currently just the Google sign-in bridge, which already has the
+   *  user/tokens payload from its own API call and only needs it stored. */
+  setSession: (user: AuthData, tokens: AuthTokens) => void;
   logout: () => void;
   isPlatformStaff: boolean;
   role: AuthData["role"] | undefined;
@@ -74,6 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function setSession(user: AuthData, tokens: AuthTokens) {
+    localStorage.setItem("platform_user", JSON.stringify(user));
+    localStorage.setItem("platform_tokens", JSON.stringify(tokens));
+    localStorage.setItem("access_token", tokens.accessToken);
+    localStorage.setItem("refresh_token", tokens.refreshToken);
+    notifyAuth();
+  }
+
   function logout() {
     localStorage.removeItem("platform_user");
     localStorage.removeItem("platform_tokens");
@@ -89,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading: !hasMounted,
         login,
+        setSession,
         logout,
         isPlatformStaff: !!user,
         role: user?.role,

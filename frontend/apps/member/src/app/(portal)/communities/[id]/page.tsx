@@ -37,14 +37,42 @@ function safeDate(value: string | null | undefined): string {
   return formatDate(value);
 }
 
-/** A summary section's header — a title and a "see everything" link out to the relevant global feed, pre-filtered to this community. */
-function SectionHeader({ title, seeAllHref }: { title: string; seeAllHref: string }) {
+/** A summary section's header — an icon, a title, an optional extra action
+ *  (e.g. "New thread"), and a "see everything" link out to the relevant
+ *  global feed, pre-filtered to this community. All in one row so a section
+ *  with an extra action doesn't need its own separate flex wrapper — nesting
+ *  that around this used to collapse the title+link pair to their own
+ *  shrink-to-fit width instead of spanning the section. */
+function SectionHeader({
+  icon: Icon, title, seeAllHref, action,
+}: { icon: React.ElementType; title: string; seeAllHref: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>{title}</h2>
-      <Link href={seeAllHref} className="flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline">
-        See all <ArrowRight size={12} />
-      </Link>
+    <div className="flex items-center justify-between gap-3 mb-3.5">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-accent-100">
+          <Icon size={15} style={{ color: "var(--accent)" }} />
+        </div>
+        <h2 className="text-[15.5px] font-bold truncate" style={{ color: "var(--foreground)" }}>{title}</h2>
+      </div>
+      <div className="flex items-center gap-2.5 shrink-0">
+        {action}
+        <Link href={seeAllHref} className="flex items-center gap-1 text-[12.5px] font-semibold text-primary hover:underline">
+          See all <ArrowRight size={12} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/** A section's empty state — a small dashed box instead of a bare sentence, so an empty section still reads as "designed" rather than unfinished. */
+function SectionEmpty({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-2xl border border-dashed flex items-center gap-3 px-4 py-5"
+      style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+    >
+      <Icon size={16} className="shrink-0 opacity-60" />
+      <p className="text-[13px]">{children}</p>
     </div>
   );
 }
@@ -194,31 +222,25 @@ export default function CommunityDetailPage() {
       {/* ── Hero ── */}
       <div
         className="relative overflow-hidden rounded-3xl p-6 sm:p-10"
-        style={{
-          background: "linear-gradient(135deg, var(--primary) 0%, color-mix(in oklch, var(--primary) 70%, black) 100%)",
-          color: "white",
-        }}
+        style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
       >
-        <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full border border-white/10" />
-        <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full border border-white/10" />
-
         <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5 mb-3">
               {isLeader && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-bold bg-white/15">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15 backdrop-blur-sm">
                   <Crown size={12} /> You lead this community
                 </span>
               )}
               {community.myStatus === "Pending" && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-bold bg-white/15">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15 backdrop-blur-sm">
                   <Clock size={12} /> Request pending
                 </span>
               )}
               {isLeader && joinRequests.length > 0 && (
                 <button
                   onClick={() => setRequestsOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-bold bg-white/15 hover:bg-white/25 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15 backdrop-blur-sm hover:bg-white/25 transition-colors"
                 >
                   <Bell size={12} /> {joinRequests.length} join {joinRequests.length === 1 ? "request" : "requests"}
                 </button>
@@ -292,11 +314,11 @@ export default function CommunityDetailPage() {
         <div className="space-y-8">
           {/* ── Fundraisers ── */}
           <section>
-            <SectionHeader title="Fundraisers" seeAllHref={`/contributions?communityId=${id}`} />
+            <SectionHeader icon={HandCoins} title="Fundraisers" seeAllHref={`/contributions?communityId=${id}`} />
             {campaignsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>
             ) : campaigns.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>No fundraisers here right now.</p>
+              <SectionEmpty icon={HandCoins}>No fundraisers here right now.</SectionEmpty>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {campaigns.map((c) => {
@@ -324,11 +346,11 @@ export default function CommunityDetailPage() {
 
           {/* ── Events ── */}
           <section>
-            <SectionHeader title="Upcoming events" seeAllHref={`/events?communityId=${id}`} />
+            <SectionHeader icon={Calendar} title="Upcoming events" seeAllHref={`/events?communityId=${id}`} />
             {eventsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>
             ) : events.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>No events scheduled here right now.</p>
+              <SectionEmpty icon={Calendar}>No events scheduled here right now.</SectionEmpty>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {events.map((e) => {
@@ -360,12 +382,16 @@ export default function CommunityDetailPage() {
 
           {/* ── Discussion ── */}
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <SectionHeader title="Discussion" seeAllHref={`/forum?communityId=${id}`} />
-              <Button size="sm" variant="outline" onClick={() => setShowNewThread((v) => !v)} className="gap-1.5 -mt-3">
-                <Plus size={13} /> New thread
-              </Button>
-            </div>
+            <SectionHeader
+              icon={MessageSquare}
+              title="Discussion"
+              seeAllHref={`/forum?communityId=${id}`}
+              action={
+                <Button size="sm" variant="outline" onClick={() => setShowNewThread((v) => !v)} className="gap-1.5">
+                  <Plus size={13} /> New thread
+                </Button>
+              }
+            />
 
             {showNewThread && (
               <div className="card p-4 space-y-3 mb-3">
@@ -387,7 +413,7 @@ export default function CommunityDetailPage() {
             {threadsLoading ? (
               <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>
             ) : threads.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>No discussion yet — be the first to post.</p>
+              <SectionEmpty icon={MessageSquare}>No discussion yet — be the first to post.</SectionEmpty>
             ) : (
               <div className="space-y-2">
                 {threads.map((t) => (
@@ -407,11 +433,11 @@ export default function CommunityDetailPage() {
 
           {/* ── Resources ── */}
           <section>
-            <SectionHeader title="Resources" seeAllHref={`/resources?communityId=${id}`} />
+            <SectionHeader icon={FileText} title="Resources" seeAllHref={`/resources?communityId=${id}`} />
             {resourcesLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>
             ) : resources.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>No resources shared here yet.</p>
+              <SectionEmpty icon={FileText}>No resources shared here yet.</SectionEmpty>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {resources.map((r) => (

@@ -28,6 +28,17 @@ public class AuthController(IPlatformAuthService authService) : DefaultControlle
     }
 
     [AllowAnonymous]
+    [HttpPost("google")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Platform staff Google login", Description = "Authenticate an existing platform staff account via a verified Google ID token.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformTokenResponse>))]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        var result = await authService.GoogleLoginAsync(request);
+        return result.ToActionResult();
+    }
+
+    [AllowAnonymous]
     [HttpPost("refreshtoken")]
     [SwaggerOperation(Summary = "Refresh token")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformTokenResponse>))]

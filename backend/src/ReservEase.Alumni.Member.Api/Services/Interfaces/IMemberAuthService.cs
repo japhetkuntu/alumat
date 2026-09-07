@@ -13,6 +13,7 @@ public interface IMemberAuthService
     Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
     Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
     Task<IApiResponse<MemberTokenResponse>> LoginAsync(LoginRequest request);
+    Task<IApiResponse<MemberTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
     Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
     Task<IApiResponse<MemberProfileResponse>> GetProfileAsync(AuthData auth);
     Task<IApiResponse<MemberProfileResponse>> UpdateProfileAsync(UpdateProfileRequest request, AuthData auth);

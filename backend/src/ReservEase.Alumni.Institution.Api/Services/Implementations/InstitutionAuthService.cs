@@ -16,6 +16,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Common.Sdk.Services;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
@@ -30,6 +31,7 @@ public class InstitutionAuthService(
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     INotificationActor notificationActor,
+    IGoogleTokenVerifier googleTokenVerifier,
     ILogger<InstitutionAuthService> logger) : IInstitutionAuthService
 {
     private const string PictureClaimType = "picture";
@@ -159,6 +161,53 @@ public class InstitutionAuthService(
         catch (Exception e)
         {
             logger.LogError(e, "Error during login for email: {Email}", request.Email);
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionTokenResponse>("Login failed");
+        }
+    }
+
+    public async Task<IApiResponse<InstitutionTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request)
+    {
+        try
+        {
+            var identity = await googleTokenVerifier.VerifyAsync(request.IdToken);
+            if (identity is null)
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<InstitutionTokenResponse>("Google sign-in failed. Please try again.");
+
+            logger.LogInformation("Google login attempt for email: {Email}", identity.Email);
+
+            // Staff accounts only ever come from the backoffice/an institution admin creating
+            // them — Google sign-in auto-links to that existing record by email, it never
+            // creates a new staff account on its own.
+            var admin = await adminRepo.GetOneAsync(a => a.Email == identity.Email);
+            if (admin is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionTokenResponse>(
+                    "No staff account found for this Google email at this institution.");
+
+            if (admin.IsDisabled)
+            {
+                logger.LogWarning("Google login attempt for disabled admin {AdminId} (email: {Email})", admin.Id, identity.Email);
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<InstitutionTokenResponse>("Account disabled");
+            }
+
+            admin.LastLoginAt = DateTime.UtcNow;
+            await adminRepo.UpdateAsync(admin);
+
+            var claimData = BuildClaimData(admin);
+            var accessToken = GenerateJwtToken(claimData);
+            var refreshToken = GenerateRefreshToken();
+
+            await redis.SetAsync($"admin:refresh:{admin.Id}", refreshToken,
+                TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+
+            logger.LogInformation("Admin {AdminId} logged in via Google", admin.Id);
+
+            var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
+            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error during Google login");
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionTokenResponse>("Login failed");
         }
     }

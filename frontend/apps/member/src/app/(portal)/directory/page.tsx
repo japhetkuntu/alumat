@@ -15,6 +15,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import type { Member } from "@/types";
+import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
 
 const currentYear    = new Date().getFullYear();
 const GRAD_YEAR_START = 1952;
@@ -29,6 +30,7 @@ export default function MemberDirectoryPage() {
   const [page,       setPage]       = useState(1);
   const [selected,   setSelected]   = useState<Member | null>(null);
   const pageSize = 24;
+  const vvHeight = useVisualViewportHeight();
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey:        ["member-directory", search, yearFilter, page],
@@ -187,6 +189,7 @@ export default function MemberDirectoryPage() {
       {selected && (
         <div
           className="fixed mobile-sheet-overlay z-[60] flex items-end sm:items-center justify-center sm:justify-end"
+          style={vvHeight ? { height: vvHeight } : undefined}
           onClick={() => setSelected(null)}
         >
           {/* Backdrop */}
@@ -198,7 +201,10 @@ export default function MemberDirectoryPage() {
           {/* Panel */}
           <div
             className="relative z-[61] w-full sm:w-[360px] sm:m-4 bottom-sheet-scroll rounded-t-2xl sm:rounded-2xl border animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 duration-300"
-            style={{ background: "var(--background)", borderColor: "var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.15)" }}
+            style={{
+              background: "var(--background)", borderColor: "var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
+              ...(vvHeight ? { maxHeight: vvHeight * 0.85 } : {}),
+            }}
             onClick={e => e.stopPropagation()}
           >
             {/* Handle bar — mobile */}

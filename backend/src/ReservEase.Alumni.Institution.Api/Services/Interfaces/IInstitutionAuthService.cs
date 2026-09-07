@@ -6,6 +6,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Interfaces;
 public interface IInstitutionAuthService
 {
     Task<IApiResponse<InstitutionTokenResponse>> LoginAsync(LoginRequest request);
+    Task<IApiResponse<InstitutionTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
     Task<IApiResponse<InstitutionTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
     Task<IApiResponse<InstitutionStaffProfileResponse>> GetProfileAsync(AuthData auth);
     Task<IApiResponse<InstitutionTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);

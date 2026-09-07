@@ -92,6 +92,17 @@ public class MembersController(IMemberAuthService authService) : DefaultControll
         return result.ToActionResult();
     }
 
+    [HttpPost("google")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Google login", Description = "Authenticate a member via a verified Google ID token and return tokens.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MemberTokenResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        var result = await authService.GoogleLoginAsync(request);
+        return result.ToActionResult();
+    }
+
     [HttpPost("refreshtoken")]
     [SwaggerOperation(Summary = "Refresh token", Description = "Exchange a refresh token for new access/refresh tokens")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MemberTokenResponse>))]

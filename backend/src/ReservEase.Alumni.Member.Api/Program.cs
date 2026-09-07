@@ -51,6 +51,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 builder.Services.AddAlumniRateLimiting();
 builder.Services.AddBearerAuth(tokenConfig);
+builder.Services.AddGoogleAuth(builder.Configuration);
 builder.Services.AddApiVersioning(1);
 builder.Services.AddSwagger("Member API");
 builder.Services.AddMemberControllers();

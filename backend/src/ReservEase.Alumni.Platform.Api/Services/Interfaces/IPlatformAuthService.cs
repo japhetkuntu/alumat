@@ -6,6 +6,7 @@ namespace ReservEase.Alumni.Platform.Api.Services.Interfaces;
 public interface IPlatformAuthService
 {
     Task<IApiResponse<PlatformTokenResponse>> LoginAsync(LoginRequest request);
+    Task<IApiResponse<PlatformTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
     Task<IApiResponse<PlatformTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
     Task<IApiResponse<PlatformTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);
     Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);

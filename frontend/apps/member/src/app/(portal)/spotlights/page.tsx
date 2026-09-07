@@ -20,6 +20,7 @@ import { Textarea } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import type { Spotlight } from "@/types";
 import { PageHeader } from "@alumni/ui";
+import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
 
 /* Deterministic avatar background color from name */
 const AVATAR_COLORS = [
@@ -156,15 +157,19 @@ function SubmitDrawer({
 }) {
   const [title, setTitle] = useState("");
   const [story, setStory] = useState("");
+  const vvHeight = useVisualViewportHeight();
   if (!open) return null;
 
   return (
-    <div className="fixed mobile-sheet-overlay z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed mobile-sheet-overlay z-50 flex items-end sm:items-center justify-center" style={vvHeight ? { height: vvHeight } : undefined}>
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
         onClick={onClose} />
       <div
         className="relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 space-y-5 animate-in slide-in-from-bottom-4 duration-300 bottom-sheet-scroll-90"
-        style={{ background: "var(--background)", border: "1px solid var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.2)" }}
+        style={{
+          background: "var(--background)", border: "1px solid var(--border)", boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
+          ...(vvHeight ? { maxHeight: vvHeight * 0.9 } : {}),
+        }}
       >
         {/* Handle */}
         <div className="flex justify-center sm:hidden mb-1">

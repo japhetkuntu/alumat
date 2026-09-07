@@ -44,6 +44,19 @@ export function TrendChart<T extends Record<string, unknown>>({
 
   const Chart = variant === "area" ? AreaChart : LineChart;
 
+  // A fixed axis width clips longer labels (e.g. a full currency string like
+  // "GH₵100,000.00") — measured from the actual longest formatted tick
+  // instead, so a plain "1,234" stays compact and a currency axis still
+  // gets the room it needs.
+  const yAxisWidth = React.useMemo(() => {
+    const values = data.flatMap((d) => series.map((s) => Number(d[s.key]) || 0));
+    const longest = values.reduce((max, v) => {
+      const label = valueFormatter ? valueFormatter(v) : String(v);
+      return Math.max(max, label.length);
+    }, 0);
+    return Math.max(40, longest * 6.5 + 12);
+  }, [data, series, valueFormatter]);
+
   return (
     <div className={className}>
       <ChartContainer height={height} loading={loading} isEmpty={isEmpty} emptyMessage={emptyMessage}>
@@ -70,7 +83,7 @@ export function TrendChart<T extends Record<string, unknown>>({
           axisLine={false}
           tickLine={false}
           tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-          width={40}
+          width={yAxisWidth}
           tickFormatter={valueFormatter ? (v) => valueFormatter(Number(v)) : undefined}
         />
         <Tooltip
