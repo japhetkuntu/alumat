@@ -11,10 +11,14 @@ const buttonVariants = cva(
         default: "border-primary bg-primary text-primary-foreground hover:brightness-110",
         destructive:
           "border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/15 hover:border-destructive/70",
-        outline: "border-primary bg-background text-primary hover:bg-primary/5",
+        // Outline/link are supporting actions (paired with a primary CTA, or
+        // a lower-emphasis affordance on their own) — they carry the
+        // tenant's secondary/accent color, reserving primary for the one
+        // dominant action on a screen.
+        outline: "border-accent bg-background text-accent hover:bg-accent/5",
         secondary: "border-border bg-muted/45 text-foreground hover:bg-muted",
         ghost: "border-transparent bg-transparent text-foreground hover:bg-muted",
-        link: "h-auto border-transparent bg-transparent p-0 text-sm font-semibold text-primary underline-offset-4 hover:underline",
+        link: "h-auto border-transparent bg-transparent p-0 text-sm font-semibold text-accent underline-offset-4 hover:underline",
       },
       size: {
         default: "h-11 px-5",

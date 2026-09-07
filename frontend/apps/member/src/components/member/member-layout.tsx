@@ -321,7 +321,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   if (isLoading || !isMember) return null;
 
   return (
-    <div className="flex h-dvh bg-background overflow-hidden overscroll-none selection:bg-primary/10">
+    <div className="flex h-dvh bg-background overflow-hidden overscroll-none selection:bg-accent/10">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex shrink-0">
         <Sidebar />
@@ -339,7 +339,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
 
       <div className="flex-1 flex flex-col min-w-0 bg-background relative">
         {/* Subtle top glow */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
         
         {/* Desktop header */}
         <div
@@ -392,7 +392,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-primary/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
+        <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
               {children}

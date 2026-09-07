@@ -238,7 +238,7 @@ export function RichTextEditor({
       Underline,
       Link.configure({
         openOnClick: false,
-        HTMLAttributes: { class: "text-primary underline cursor-pointer" },
+        HTMLAttributes: { class: "text-accent underline cursor-pointer" },
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
@@ -280,7 +280,7 @@ export function RichTextViewer({ content, className }: { content: string; classN
   return (
     <div
       className={cn(
-        "prose prose-sm max-w-none text-foreground [&_a]:text-primary [&_a]:underline [&_p]:my-1.5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/20 [&_blockquote]:pl-4 [&_blockquote]:italic [&_hr]:my-4 [&_img]:max-w-full",
+        "prose prose-sm max-w-none text-foreground [&_a]:text-accent [&_a]:underline [&_p]:my-1.5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/20 [&_blockquote]:pl-4 [&_blockquote]:italic [&_hr]:my-4 [&_img]:max-w-full",
         className
       )}
       dangerouslySetInnerHTML={{ __html: content }}

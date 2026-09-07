@@ -144,8 +144,8 @@ export function ActivityCalendarGrid({
                   dayIsToday && "font-bold"
                 )}
                 style={{
-                  background: dayIsToday ? "var(--primary)" : "transparent",
-                  color: dayIsToday ? "var(--primary-foreground)" : "var(--foreground)",
+                  background: dayIsToday ? "var(--accent)" : "transparent",
+                  color: dayIsToday ? "var(--accent-foreground)" : "var(--foreground)",
                 }}
               >
                 {format(day, "d")}

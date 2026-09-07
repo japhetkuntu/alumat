@@ -73,14 +73,14 @@ function NotificationRow({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       className={cn(
         "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
-        !notif.isRead && "bg-primary/5"
+        !notif.isRead && "bg-accent/5"
       )}
     >
       <div className="mt-1 shrink-0">
         <div
           className={cn(
             "w-2 h-2 rounded-full mt-1",
-            notif.isRead ? "bg-transparent" : "bg-primary"
+            notif.isRead ? "bg-transparent" : "bg-accent"
           )}
         />
       </div>
@@ -98,7 +98,7 @@ function NotificationRow({
       {!notif.isRead && (
         <button
           onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
-          className="shrink-0 mt-0.5 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary/10 text-primary transition-all sm:opacity-0 sm:group-hover:opacity-100"
+          className="shrink-0 mt-0.5 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-accent/10 text-accent transition-all sm:opacity-0 sm:group-hover:opacity-100"
           aria-label="Mark as read"
         >
           <Check size={13} />
@@ -139,7 +139,7 @@ export function NotificationPanel() {
       >
         <Bell size={20} className="text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+          <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-accent text-accent-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -163,7 +163,7 @@ export function NotificationPanel() {
               <Bell size={14} className="text-muted-foreground" />
               <span className="font-semibold text-[13px]">Notifications</span>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 leading-none">
+                <span className="text-[10px] font-bold bg-accent text-accent-foreground px-1.5 py-0.5 leading-none">
                   {unreadCount}
                 </span>
               )}
@@ -173,7 +173,7 @@ export function NotificationPanel() {
                 <button
                   onClick={() => markAll.mutate()}
                   disabled={markAll.isPending}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-lg hover:bg-primary/10 disabled:opacity-50"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-accent hover:text-accent/80 transition-colors px-2 py-1 rounded-lg hover:bg-accent/10 disabled:opacity-50"
                 >
                   {markAll.isPending ? (
                     <Loader2 size={11} className="animate-spin" />
@@ -233,7 +233,7 @@ export function NotificationPanel() {
           <Link
             href="/notifications"
             onClick={() => setOpen(false)}
-            className="block text-center py-2.5 text-[12px] font-semibold text-primary hover:bg-primary/5 transition-colors border-t border-border/40"
+            className="block text-center py-2.5 text-[12px] font-semibold text-accent hover:bg-accent/5 transition-colors border-t border-border/40"
           >
             View all notifications
           </Link>

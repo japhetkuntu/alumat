@@ -247,7 +247,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
   if (isLoading || !isAdmin) return null;
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden selection:bg-primary/10">
+    <div className="flex h-screen bg-background overflow-hidden selection:bg-accent/10">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex shrink-0">
         <AdminSidebar />
@@ -296,13 +296,13 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <NotificationPanel />
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-              <span className="text-[10px] font-bold text-primary">AD</span>
+            <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
+              <span className="text-[10px] font-bold text-accent">AD</span>
             </div>
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-background selection:bg-primary/20 relative pt-14 lg:pt-0">
+        <main className="flex-1 overflow-y-auto bg-background selection:bg-accent/20 relative pt-14 lg:pt-0">
           <div className="max-w-[1800px] mx-auto min-h-full">
             {children}
           </div>

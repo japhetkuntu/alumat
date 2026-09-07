@@ -7,8 +7,9 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-primary/40 text-primary hover:bg-primary/5",
-        /** The tenant's secondary/supporting brand color — featured content, highlighted tags, selected states. Not "secondary" (that name is taken by the neutral surface variant below, for historical/shadcn-convention reasons). */
+        /** Plain tag/label badges use the tenant's secondary/supporting brand color, not primary — primary is reserved for core-identity and primary-action contexts. */
+        default: "border-accent/40 text-accent hover:bg-accent/5",
+        /** Same secondary brand color, filled — for featured content, highlighted tags, selected states. Not "secondary" (that name is taken by the neutral surface variant below, for historical/shadcn-convention reasons). */
         accent: "border-accent/40 bg-accent-50 text-accent-800",
         secondary: "border-border text-secondary-foreground hover:bg-secondary/40",
         destructive: "border-destructive/40 text-destructive hover:bg-destructive/10",

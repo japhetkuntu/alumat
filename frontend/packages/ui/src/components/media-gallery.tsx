@@ -308,7 +308,7 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
             type="button"
             onClick={() => onLoadMore?.()}
             disabled={isLoadingMore}
-            className="px-5 py-2.5 text-[12.5px] font-semibold border border-border hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-5 py-2.5 text-[12.5px] font-semibold border border-border hover:border-accent/40 hover:bg-muted/40 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isLoadingMore ? (
               <>

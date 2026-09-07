@@ -122,8 +122,8 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
           className={cn(
             "relative border-2 border-dashed transition-all duration-150 cursor-pointer",
             dragOver
-              ? "border-primary bg-primary/5 scale-[1.01]"
-              : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+              ? "border-accent bg-accent/5 scale-[1.01]"
+              : "border-muted-foreground/25 hover:border-accent/50 hover:bg-muted/40"
           )}
           onClick={() => inputRef.current?.click()}
           onDrop={handleDrop}
@@ -133,7 +133,7 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
           <div className="flex flex-col items-center justify-center py-8 gap-2 pointer-events-none">
             <div className={cn(
               "h-10 w-10 flex items-center justify-center transition-colors duration-150",
-              dragOver ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+              dragOver ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
             )}>
               {isImage ? <ImageIcon size={18} /> : <Upload size={18} />}
             </div>

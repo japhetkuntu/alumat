@@ -34,8 +34,8 @@ export function SourceFilterChips({ value, onChange, divider = true }: {
   const chipClass = (active: boolean) => cn(
     "px-3.5 py-1.5 text-[12.5px] font-semibold transition-all duration-200 border",
     active
-      ? "bg-primary text-primary-foreground border-transparent"
-      : "bg-background text-muted-foreground border-border hover:border-primary/40",
+      ? "bg-accent text-accent-foreground border-transparent"
+      : "bg-background text-muted-foreground border-border hover:border-accent/40",
   );
 
   const selectedLabel = value === null ? "All sources" : communities.find((c) => c.id === value)?.name ?? "All sources";
@@ -60,7 +60,7 @@ export function SourceFilterChips({ value, onChange, divider = true }: {
             className={cn(
               "sm:hidden inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-semibold border transition-colors",
               value !== null
-                ? "bg-primary text-primary-foreground border-transparent"
+                ? "bg-accent text-accent-foreground border-transparent"
                 : "bg-background text-muted-foreground border-border",
             )}
           >

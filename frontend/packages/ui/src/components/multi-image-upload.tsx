@@ -86,7 +86,7 @@ export function MultiImageUpload({
               </div>
             ))}
             {files.map((f, i) => (
-              <div key={`new-${i}`} className="relative group aspect-square overflow-hidden ring-2 ring-primary/40 bg-primary/5">
+              <div key={`new-${i}`} className="relative group aspect-square overflow-hidden ring-2 ring-accent/40 bg-accent/5">
                 {filePreviews[i] ? (
                   <img src={filePreviews[i]!} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -102,7 +102,7 @@ export function MultiImageUpload({
                 >
                   <X size={12} />
                 </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-white text-[10px] px-1.5 py-0.5 truncate font-medium">
+                <div className="absolute bottom-0 left-0 right-0 bg-accent/80 text-white text-[10px] px-1.5 py-0.5 truncate font-medium">
                   New
                 </div>
               </div>
@@ -112,8 +112,8 @@ export function MultiImageUpload({
               className={cn(
                 "aspect-square border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all duration-150 cursor-pointer",
                 dragOver
-                  ? "border-primary bg-primary/5 scale-[1.02]"
-                  : "border-muted-foreground/25 text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5"
+                  ? "border-accent bg-accent/5 scale-[1.02]"
+                  : "border-muted-foreground/25 text-muted-foreground hover:border-accent hover:text-accent hover:bg-accent/5"
               )}
               onClick={() => inputRef.current?.click()}
               onDrop={handleDrop}
@@ -132,8 +132,8 @@ export function MultiImageUpload({
           className={cn(
             "border-2 border-dashed transition-all duration-150 cursor-pointer",
             dragOver
-              ? "border-primary bg-primary/5 scale-[1.01]"
-              : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+              ? "border-accent bg-accent/5 scale-[1.01]"
+              : "border-muted-foreground/25 hover:border-accent/50 hover:bg-muted/40"
           )}
           onClick={() => inputRef.current?.click()}
           onDrop={handleDrop}
@@ -143,7 +143,7 @@ export function MultiImageUpload({
           <div className="flex flex-col items-center justify-center py-6 gap-2 pointer-events-none">
             <div className={cn(
               "h-9 w-9 flex items-center justify-center transition-colors duration-150",
-              dragOver ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+              dragOver ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground"
             )}>
               <ImageIcon size={16} />
             </div>

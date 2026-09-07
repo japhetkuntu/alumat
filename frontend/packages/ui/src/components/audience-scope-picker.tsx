@@ -74,9 +74,9 @@ export function AudienceScopePicker({
               "px-3 py-1.5 text-[11px] font-bold uppercase tracking-[.05em] border transition-colors",
               mode === opt.value
                 ? "text-white border-transparent"
-                : "border-border text-muted-foreground hover:border-primary/40"
+                : "border-border text-muted-foreground hover:border-accent/40"
             )}
-            style={mode === opt.value ? { background: "var(--primary)" } : undefined}
+            style={mode === opt.value ? { background: "var(--accent)", color: "var(--accent-foreground)" } : undefined}
           >
             {opt.label}
           </button>
