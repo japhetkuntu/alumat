@@ -112,7 +112,7 @@ export default function MemberJobDetailPage() {
               >
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                  style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
                 >
                   <Briefcase size={28} style={{ color: "var(--primary)" }} />
                 </div>
@@ -206,7 +206,7 @@ export default function MemberJobDetailPage() {
                     style={{ background: "var(--background)" }}>
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                      style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
                     >
                       <Icon size={14} style={{ color: "var(--primary)" }} />
                     </div>

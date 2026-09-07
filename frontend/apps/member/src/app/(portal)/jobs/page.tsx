@@ -133,7 +133,7 @@ export default function MemberJobsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                      style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
                     >
                       <Briefcase size={17} style={{ color: "var(--primary)" }} />
                     </div>

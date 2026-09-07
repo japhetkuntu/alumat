@@ -185,6 +185,10 @@ export interface BrandPalette {
   textOnPrimary: string;
   /** rgba(...) string at the given alpha — for ring/border tokens that use a translucent brand tint. */
   ring: (alpha: number) => string;
+  /** Full 50–900 tonal scale, 500 === primary. Lighter steps (50–300) are for
+   *  subtle backgrounds/badges/highlights; 600–900 are for text/interactive
+   *  states where contrast against a light background must hold up. */
+  scale: TonalScale;
   /**
    * Present only when a secondary hex was supplied AND it's far enough in
    * hue from primary to read as a real second color (see
@@ -203,7 +207,44 @@ export interface BrandPalette {
     light: string;
     soft: string;
     textOnAccent: string;
+    /** Full 50–900 tonal scale for the secondary/accent color, same shape as the primary scale. */
+    scale: TonalScale;
   };
+}
+
+export interface TonalScale {
+  50: string; 100: string; 200: string; 300: string; 400: string;
+  500: string; 600: string; 700: string; 800: string; 900: string;
+}
+
+// Target lightness per step (500 is the clamped seed's own lightness — see
+// clampSeed — everything else is relative to it, not absolute, so a naturally
+// darker or lighter brand seed still produces a sensibly-ordered scale
+// instead of clipping at the ends). Chroma tapers down at both extremes:
+// full saturation at 500 reads as neon once it's also near-white or
+// near-black, which is exactly the "washed pastel" / "muddy near-black"
+// failure mode clampSeed already exists to avoid at the seed itself.
+const SCALE_STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
+const LIGHTNESS_OFFSET: Record<(typeof SCALE_STEPS)[number], number> = {
+  50: 0.50, 100: 0.42, 200: 0.32, 300: 0.20, 400: 0.09,
+  500: 0, 600: -0.07, 700: -0.14, 800: -0.20, 900: -0.25,
+};
+const CHROMA_SCALE: Record<(typeof SCALE_STEPS)[number], number> = {
+  50: 0.20, 100: 0.32, 200: 0.5, 300: 0.68, 400: 0.85,
+  500: 1, 600: 0.96, 700: 0.9, 800: 0.8, 900: 0.68,
+};
+const MIN_L = 0.06;
+const MAX_L = 0.98;
+
+/** Derives the full 50–900 tonal scale from an already-clamped seed color (500). */
+function generateTonalScale(seed: string): TonalScale {
+  const { l, c, h } = toOklch(seed);
+  const scale = {} as TonalScale;
+  for (const step of SCALE_STEPS) {
+    const targetL = Math.min(MAX_L, Math.max(MIN_L, l + LIGHTNESS_OFFSET[step]));
+    scale[step] = step === 500 ? seed : fromOklch(targetL, c * CHROMA_SCALE[step], h);
+  }
+  return scale;
 }
 
 /** Generates the full derived palette for a seed color, ready to plug into CSS custom properties. Pass a secondaryHex to also derive an accent family from it. */
@@ -217,6 +258,7 @@ export function generateBrandPalette(seedHex: string, secondaryHex?: string): Br
     primarySoft: softShade(primary),
     textOnPrimary: textOn(primary),
     ring: (alpha: number) => `rgba(${r}, ${g}, ${b}, ${alpha})`,
+    scale: generateTonalScale(primary),
   };
 
   if (secondaryHex) {
@@ -229,6 +271,7 @@ export function generateBrandPalette(seedHex: string, secondaryHex?: string): Br
         light: lightShade(accent),
         soft: softShade(accent),
         textOnAccent: textOn(accent),
+        scale: generateTonalScale(accent),
       };
     }
   }

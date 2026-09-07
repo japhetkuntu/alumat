@@ -83,7 +83,7 @@ function RequestForm({
   return (
     <div
       className="rounded-2xl border p-5 space-y-4"
-      style={{ borderColor: "var(--color-border-info)", background: "var(--color-background-info)" }}
+      style={{ borderColor: "var(--brand-primary-300, var(--color-border-info))", background: "var(--brand-primary-100, var(--color-background-info))" }}
     >
       <div className="flex items-center gap-2 mb-1">
         <ChevronDown size={15} style={{ color: "var(--primary)" }} />
@@ -442,7 +442,7 @@ export default function MemberMentorshipPage() {
                   {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactWhatsAppNumber || r.contactPhoneNumber) && (
                     <div
                       className="p-3 rounded-xl space-y-2"
-                      style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)" }}
+                      style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
                     >
                       <p className="text-[12px] font-semibold" style={{ color: "var(--foreground)" }}>
                         Contact your mentor
@@ -708,7 +708,7 @@ export default function MemberMentorshipPage() {
               <div>
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center mb-3"
-                  style={{ background: "var(--color-background-info)" }}
+                  style={{ background: "var(--brand-primary-100, var(--color-background-info))" }}
                 >
                   <HeartHandshake size={20} style={{ color: "var(--primary)" }} />
                 </div>

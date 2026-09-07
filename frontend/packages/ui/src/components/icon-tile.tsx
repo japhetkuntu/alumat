@@ -27,8 +27,13 @@ const SIZES = {
 } as const;
 
 const TONES: Record<NonNullable<IconTileProps["tone"]>, { bg: string; border: string; fg: string; fill: string }> = {
-  primary: { bg: "var(--color-background-info)", border: "var(--color-border-info)", fg: "var(--primary)", fill: "var(--primary)" },
-  accent: { bg: "var(--brand-accent-light, var(--color-background-info))", border: "var(--brand-accent, var(--color-border-info))", fg: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))", fill: "var(--brand-accent, var(--primary))" },
+  // Note: intentionally the *brand* primary/accent tonal scale here, not
+  // --color-background-info/--color-border-info — those are the fixed,
+  // brand-independent "informational" semantic tokens (see theme.ts), never
+  // tenant-colored, so using them for a "primary" icon tile would render a
+  // fixed blue for every institution regardless of its actual brand color.
+  primary: { bg: "var(--brand-primary-100, var(--color-background-info))", border: "var(--brand-primary-300, var(--color-border-info))", fg: "var(--primary)", fill: "var(--primary)" },
+  accent: { bg: "var(--brand-accent-100, var(--brand-accent-light, var(--color-background-info)))", border: "var(--brand-accent-300, var(--brand-accent, var(--color-border-info)))", fg: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))", fill: "var(--brand-accent, var(--primary))" },
   muted: { bg: "var(--muted)", border: "var(--border)", fg: "var(--muted-foreground)", fill: "var(--muted-foreground)" },
   destructive: { bg: "color-mix(in oklch, var(--destructive) 10%, var(--card))", border: "color-mix(in oklch, var(--destructive) 28%, transparent)", fg: "var(--destructive)", fill: "var(--destructive)" },
   success: { bg: "color-mix(in oklch, var(--success) 12%, var(--card))", border: "color-mix(in oklch, var(--success) 28%, transparent)", fg: "var(--success)", fill: "var(--success)" },

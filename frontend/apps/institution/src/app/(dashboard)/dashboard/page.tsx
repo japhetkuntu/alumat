@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">{greeting}</h1>
           <p className="mt-1.5 text-muted-foreground text-[13px]">{todayLabel} &middot; Institution operations overview</p>
         </div>
-        <span className="shrink-0 whitespace-nowrap px-2.5 py-2 rounded-[6px] text-[12px] font-bold" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
+        <span className="shrink-0 whitespace-nowrap px-2.5 py-2 rounded-[6px] text-[12px] font-bold" style={{ background: "var(--brand-primary-light)", color: "var(--brand-primary-700, var(--color-text-info))" }}>
           All institution records
         </span>
       </div>

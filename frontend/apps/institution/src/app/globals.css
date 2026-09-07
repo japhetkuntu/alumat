@@ -64,6 +64,30 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
+  /* Tonal scales — bg-primary-100, text-accent-700, etc. "accent" here is
+     the tenant's SECOND brand color (supporting/emphasis), not to be
+     confused with the neutral --secondary surface token above. */
+  --color-primary-50: var(--brand-primary-50);
+  --color-primary-100: var(--brand-primary-100);
+  --color-primary-200: var(--brand-primary-200);
+  --color-primary-300: var(--brand-primary-300);
+  --color-primary-400: var(--brand-primary-400);
+  --color-primary-500: var(--brand-primary-500);
+  --color-primary-600: var(--brand-primary-600);
+  --color-primary-700: var(--brand-primary-700);
+  --color-primary-800: var(--brand-primary-800);
+  --color-primary-900: var(--brand-primary-900);
+  --color-accent-50: var(--brand-accent-50);
+  --color-accent-100: var(--brand-accent-100);
+  --color-accent-200: var(--brand-accent-200);
+  --color-accent-300: var(--brand-accent-300);
+  --color-accent-400: var(--brand-accent-400);
+  --color-accent-500: var(--brand-accent-500);
+  --color-accent-600: var(--brand-accent-600);
+  --color-accent-700: var(--brand-accent-700);
+  --color-accent-800: var(--brand-accent-800);
+  --color-accent-900: var(--brand-accent-900);
+
   /* Accent Utility Colors */
   --color-accent-emerald: var(--accent-emerald);
   --color-accent-sky: var(--accent-sky);
@@ -421,6 +445,31 @@ svg {
   --brand-accent-mid: #F59E0B;
   --brand-accent-dark: #0F172A;
 
+  /* ── Tonal scales — 50 (lightest) through 900 (darkest); 500 === the
+     brand color itself. themeStyleVars() overrides every step per
+     institution; these are only pre-hydration/no-institution defaults. ── */
+  --brand-primary-50: #e9f9ff;
+  --brand-primary-100: #dcf5ff;
+  --brand-primary-200: #aed3ff;
+  --brand-primary-300: #7babff;
+  --brand-primary-400: #4d84f8;
+  --brand-primary-500: #2563EB;
+  --brand-primary-600: #144ece;
+  --brand-primary-700: #0439af;
+  --brand-primary-800: #002b91;
+  --brand-primary-900: #002174;
+
+  --brand-accent-50: #fff5e1;
+  --brand-accent-100: #fff3d3;
+  --brand-accent-200: #fff0bc;
+  --brand-accent-300: #ffe8a0;
+  --brand-accent-400: #ffbf61;
+  --brand-accent-500: #F59E0B;
+  --brand-accent-600: #db8900;
+  --brand-accent-700: #c07500;
+  --brand-accent-800: #a76600;
+  --brand-accent-900: #915b01;
+
   --color-background-primary: #ffffff;
   --color-background-info: #E6F4FE;
   --color-text-info: #0F172A;
@@ -453,12 +502,14 @@ svg {
   --input: rgba(28, 32, 36, 0.18);
   --ring: rgba(37, 99, 235, 0.4);
 
-  /* ── Status palette */
+  /* ── Status palette — always these fixed hues, in every institution,
+     regardless of brand color. Tenant branding must never be able to shift
+     what "success"/"warning"/"info" mean. ── */
   --success: #047857;
   --success-foreground: #ffffff;
-  --warning: var(--brand-accent);
-  --warning-foreground: #0F172A;
-  --info: var(--brand-primary);
+  --warning: #F59E0B;
+  --warning-foreground: #422006;
+  --info: #2563EB;
   --info-foreground: #ffffff;
 
   /* ── Institution Portal raw tokens (use in components directly) ── */
@@ -500,6 +551,28 @@ svg {
   --primary: #3B82F6;
   --primary-foreground: #ffffff;
 
+  --brand-primary-50: #eafaff;
+  --brand-primary-100: #e1faff;
+  --brand-primary-200: #c7eeff;
+  --brand-primary-300: #94c6ff;
+  --brand-primary-400: #64a1ff;
+  --brand-primary-500: #3B82F6;
+  --brand-primary-600: #296dda;
+  --brand-primary-700: #1958bc;
+  --brand-primary-800: #12489e;
+  --brand-primary-900: #103c83;
+
+  --brand-accent-50: #fff5e1;
+  --brand-accent-100: #fff3d3;
+  --brand-accent-200: #fff0bc;
+  --brand-accent-300: #ffe8a0;
+  --brand-accent-400: #ffbf61;
+  --brand-accent-500: #F59E0B;
+  --brand-accent-600: #db8900;
+  --brand-accent-700: #c07500;
+  --brand-accent-800: #a76600;
+  --brand-accent-900: #915b01;
+
   --secondary: #122a1c;
   --secondary-foreground: #dcead9;
 
@@ -518,12 +591,12 @@ svg {
   --input: #122a1f;
   --ring: rgba(59, 130, 246, 0.5);
 
-  --success: #3B82F6;
-  --success-foreground: #0b2014;
+  --success: #22c55e;
+  --success-foreground: #052e13;
   --warning: #F59E0B;
   --warning-foreground: #3a2a01;
-  --info: #3B82F6;
-  --info-foreground: #0b2014;
+  --info: #60a5fa;
+  --info-foreground: #0b1a33;
 
   --accent-emerald: #3B82F6;
   --accent-sky: #7c96f7;

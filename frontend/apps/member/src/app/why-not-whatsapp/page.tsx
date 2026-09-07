@@ -53,7 +53,7 @@ function SourceCard({ s, index }: { s: typeof SOURCES[number]; index: number }) 
       style={tilt.style}
       className="card group flex items-start gap-4 p-5 transition-shadow duration-300 hover:shadow-sm hover:border-primary/40">
       <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
-        style={{ background: "var(--color-background-info)", border: "1px solid var(--color-border-info)", color: "var(--primary)" }}>
+        style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))", color: "var(--primary)" }}>
         {String(index + 1).padStart(2, "0")}
       </div>
       <div className="min-w-0">

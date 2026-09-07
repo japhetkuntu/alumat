@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-import { generateBrandPalette } from "@alumni/ui";
+import { generateBrandPalette, type TonalScale } from "@alumni/ui";
 
 export interface InstitutionTheme {
   slug: string;
@@ -97,6 +97,15 @@ export async function getInstitutionThemeStatus() {
 // .dark breaks the var() chain for — as an inline style keeps the whole UI
 // internally consistent in both light and dark mode, since an inline style
 // always wins over any class selector's declaration for the same property.
+/** Flattens a TonalScale into `${prefix}-50` .. `${prefix}-900` CSS var entries. */
+function scaleVars(prefix: string, scale: TonalScale): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const) {
+    out[`${prefix}-${step}`] = scale[step];
+  }
+  return out;
+}
+
 export function themeStyleVars(theme: InstitutionTheme | null): Record<string, string> {
   if (!theme?.primaryColorHex) return {};
   const palette = generateBrandPalette(theme.primaryColorHex, theme.secondaryColorHex ?? undefined);
@@ -105,23 +114,25 @@ export function themeStyleVars(theme: InstitutionTheme | null): Record<string, s
     "--brand-primary-mid": palette.primary,
     "--brand-primary-light": palette.primaryLight,
     "--brand-primary-dark": palette.primaryDark,
-    "--color-background-info": palette.primaryLight,
-    "--color-text-info": palette.primaryDark,
-    "--color-border-info": palette.primary,
+    ...scaleVars("--brand-primary", palette.scale),
     "--border": palette.ring(0.15),
     "--ring": palette.ring(0.4),
     "--sidebar-ring": palette.ring(0.25),
     // Overrides what .dark otherwise hardcodes to a fixed green, independent
     // of --brand-primary (--accent/--accent-foreground/--sidebar-accent* are
-    // the separate gold accent system — overridden below only when the
+    // the separate accent-color system — overridden below only when the
     // institution has a real secondary color; otherwise left at their
-    // existing generic-gold default, unchanged from before).
+    // existing generic-amber default, unchanged from before).
+    //
+    // Deliberately NOT overridden here: --success/--warning/--info and
+    // --color-background-info/--color-text-info/--color-border-info. Those
+    // are semantic meanings, not brand identity — every institution must
+    // show the same success-green/warning-amber/info-blue regardless of its
+    // primary/secondary color, so they stay whatever globals.css's fixed
+    // :root/.dark values already say. Tenant branding must never be able to
+    // shift what "success" or "warning" looks like.
     "--primary": palette.primary,
     "--primary-foreground": palette.textOnPrimary,
-    "--success": palette.primary,
-    "--success-foreground": palette.textOnPrimary,
-    "--info": palette.primary,
-    "--info-foreground": palette.textOnPrimary,
     "--accent-emerald": palette.primary,
     "--chart-1": palette.primary,
     "--sidebar-primary": palette.primary,
@@ -133,11 +144,10 @@ export function themeStyleVars(theme: InstitutionTheme | null): Record<string, s
     vars["--brand-accent-mid"] = palette.accent.color;
     vars["--brand-accent-light"] = palette.accent.light;
     vars["--brand-accent-dark"] = palette.accent.dark;
+    Object.assign(vars, scaleVars("--brand-accent", palette.accent.scale));
     vars["--accent"] = palette.accent.color;
     vars["--accent-foreground"] = palette.accent.textOnAccent;
     vars["--accent-gold"] = palette.accent.color;
-    vars["--warning"] = palette.accent.color;
-    vars["--warning-foreground"] = palette.accent.textOnAccent;
     vars["--chart-2"] = palette.accent.color;
     vars["--sidebar-accent"] = palette.accent.light;
     vars["--sidebar-accent-foreground"] = palette.accent.dark;
