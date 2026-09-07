@@ -23,7 +23,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 public class CommunitiesController(ICommunityService communityService) : DefaultController
 {
     [HttpGet]
-    [Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+    [Authorize(Roles = "SuperAdmin,ScopedAdmin")]
     [SwaggerOperation(Summary = "List communities")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CommunityListItem>>))]
     public async Task<IActionResult> GetCommunities()
@@ -33,7 +33,7 @@ public class CommunitiesController(ICommunityService communityService) : Default
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Create a community")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<CommunityListItem>))]
     public async Task<IActionResult> CreateCommunity([FromBody] CreateCommunityRequest request)
@@ -44,7 +44,7 @@ public class CommunitiesController(ICommunityService communityService) : Default
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Update a community")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<CommunityListItem>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
@@ -56,7 +56,7 @@ public class CommunitiesController(ICommunityService communityService) : Default
     }
 
     [HttpGet("{id}/members")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "List a community's members and pending requests")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CommunityMemberItem>>))]
     public async Task<IActionResult> GetCommunityMembers(string id)
@@ -66,7 +66,7 @@ public class CommunitiesController(ICommunityService communityService) : Default
     }
 
     [HttpPut("{id}/members/{memberId}/role")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Promote or demote a community member")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]

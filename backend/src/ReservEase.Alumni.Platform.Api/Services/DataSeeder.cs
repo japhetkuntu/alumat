@@ -15,8 +15,8 @@ public static class DataSeeder
         {
             var staff = new PlatformStaff
             {
-                Name = "Platform Admin",
-                Email = "admin@yourplatform.example",
+                Name = "Japhet Kuntu Blankson",
+                Email = "japhetkuntublankson1@gmail.com",
                 Password = BCrypt.Net.BCrypt.HashPassword("platform@2026"),
                 Role = "SuperAdmin",
                 CreatedBy = "seeder",

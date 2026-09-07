@@ -12,7 +12,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage alumni members — list, approve, reject.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin,ScopedAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 public class MembersController(IMemberManagementService memberService) : DefaultController
 {
     /// <summary>

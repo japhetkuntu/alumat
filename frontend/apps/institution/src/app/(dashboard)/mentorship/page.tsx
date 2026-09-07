@@ -37,7 +37,7 @@ const requestStatusVariant: Record<MentorshipStatus, "success" | "warning" | "de
 export default function AdminMentorshipPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
-  const isAdmin = user?.role === "Admin";
+  const isScopedAdmin = user?.role === "ScopedAdmin";
   const [view, setView] = useState<"mentors" | "requests">("mentors");
   const [approveTarget, setApproveTarget] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
@@ -55,14 +55,14 @@ export default function AdminMentorshipPage() {
     queryKey: ["admin-mentor-profiles", mentorPage, mentorStatusFilter, mentorSearch],
     queryFn: () => getMentorProfiles(mentorPage, mentorPageSize, mentorStatusFilter || undefined, mentorSearch || undefined),
     placeholderData: (prev) => prev,
-    enabled: isSuperAdmin || isAdmin,
+    enabled: isSuperAdmin || isScopedAdmin,
   });
 
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
     queryKey: ["admin-mentorship-requests", requestPage],
     queryFn: () => getMentorshipRequests(requestPage, requestPageSize),
     placeholderData: (prev) => prev,
-    enabled: isSuperAdmin || isAdmin,
+    enabled: isSuperAdmin || isScopedAdmin,
   });
 
   const approveMut = useMutation({
@@ -82,13 +82,13 @@ export default function AdminMentorshipPage() {
   const requests = requestsData?.results ?? [];
   const requestTotalPages = requestsData?.totalPages ?? 1;
 
-  if (!isSuperAdmin && !isAdmin) {
+  if (!isSuperAdmin && !isScopedAdmin) {
     return (
       <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
         <EmptyState
           icon={<Lock size={40} />}
           title="Access denied"
-          description="Only Admins and Super Admins can access mentorship management."
+          description="Only Super Admins and Scoped Admins can access mentorship management."
         />
       </div>
     );
@@ -100,8 +100,8 @@ export default function AdminMentorshipPage() {
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Mentorship</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Review mentor capacity and help pairing requests move forward.</p>
-          {isAdmin && !isSuperAdmin && (
-            <p className="text-xs text-muted-foreground mt-1">You are scoped to your graduation year group; Super Admins can manage all year groups.</p>
+          {isScopedAdmin && (
+            <p className="text-xs text-muted-foreground mt-1">You're scoped to your assigned batch and communities, and can't approve or decline mentors — a Super Admin handles that.</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -212,7 +212,7 @@ export default function AdminMentorshipPage() {
                         </div>
                       )}
 
-                      {m.status === "Pending" && (
+                      {m.status === "Pending" && isSuperAdmin && (
                         <div className="flex gap-2 pt-2 border-t border-border/40">
                           <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0" title="View details" onClick={() => setViewMentor(m)}>
                             <Eye size={13} />
@@ -222,6 +222,14 @@ export default function AdminMentorshipPage() {
                           </Button>
                           <Button size="sm" variant="outline" className="flex-1 h-8 text-[12px] font-bold text-destructive border-destructive hover:bg-destructive/10" disabled={rejectMut.isPending} onClick={() => setRejectTarget(m.id)}>
                             <XCircle size={13} />Decline
+                          </Button>
+                        </div>
+                      )}
+
+                      {m.status === "Pending" && !isSuperAdmin && (
+                        <div className="pt-2 border-t border-border/40">
+                          <Button size="sm" variant="outline" className="h-8 text-[12px] font-bold" onClick={() => setViewMentor(m)}>
+                            <Eye size={13} />View details
                           </Button>
                         </div>
                       )}
@@ -374,7 +382,7 @@ export default function AdminMentorshipPage() {
                 <p className="text-[11px] text-muted-foreground">Applied {formatDate(viewMentor.createdAt)}</p>
               </div>
 
-              {viewMentor.status === "Pending" && (
+              {viewMentor.status === "Pending" && isSuperAdmin && (
                 <DialogFooter>
                   <Button
                     variant="outline"

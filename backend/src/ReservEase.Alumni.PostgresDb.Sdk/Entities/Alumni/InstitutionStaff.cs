@@ -10,7 +10,7 @@ public class InstitutionStaff : BaseEntity, ITenantScoped
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string Role { get; set; } = "Admin";
+    public string Role { get; set; } = "SuperAdmin";
 
     // Only meaningful when Role == "ScopedAdmin" — Admin and SuperAdmin are
     // never restricted by these, regardless of whether they're populated.

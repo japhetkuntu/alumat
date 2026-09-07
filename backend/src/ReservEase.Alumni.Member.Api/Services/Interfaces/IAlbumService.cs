@@ -6,7 +6,7 @@ namespace ReservEase.Alumni.Member.Api.Services.Interfaces;
 
 public interface IAlbumService
 {
-    Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter);
-    Task<IApiResponse<PhotoAlbumDto>> GetAlbumByIdAsync(string albumId);
-    Task<IApiResponse<PgPagedResult<AlbumPhotoDto>>> GetAlbumPhotosAsync(string albumId, AlbumPhotoFilter filter);
+    Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter, AuthData member);
+    Task<IApiResponse<PhotoAlbumDto>> GetAlbumByIdAsync(string albumId, AuthData member);
+    Task<IApiResponse<PgPagedResult<AlbumPhotoDto>>> GetAlbumPhotosAsync(string albumId, AlbumPhotoFilter filter, AuthData member);
 }

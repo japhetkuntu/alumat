@@ -14,7 +14,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// <summary>
 /// Manage forum categories and threads.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "SuperAdmin")]
 [RequireFeature(InstitutionFeatures.Forum)]
 public class ForumController(IForumService forumService) : DefaultController
 {

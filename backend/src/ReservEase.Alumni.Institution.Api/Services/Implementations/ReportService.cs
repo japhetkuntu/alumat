@@ -15,8 +15,30 @@ public class ReportService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<Job> jobRepo,
+    IAlumniPgRepository<CommunityMembership> membershipRepo,
     ILogger<ReportService> logger) : IReportService
 {
+    /// <summary>
+    /// Member IDs belonging to one of a scoped admin's assigned communities
+    /// (approved memberships only) — the join Members/Contributions need
+    /// since neither carries a CommunityId of its own. Null for a SuperAdmin
+    /// (unrestricted) or a ScopedAdmin with no communities assigned.
+    /// </summary>
+    private async Task<List<string>?> GetScopedCommunityMemberIdsAsync(AuthData admin)
+    {
+        if (admin.Role != StaffRoles.ScopedAdmin)
+            return null;
+
+        var communityIds = admin.CommunityIds ?? new List<string>();
+        if (communityIds.Count == 0)
+            return new List<string>();
+
+        return (await membershipRepo.GetAllAsync(m => communityIds.Contains(m.CommunityId) && m.Status == "Approved"))
+            .Select(m => m.MemberId)
+            .Distinct()
+            .ToList();
+    }
+
     public async Task<IApiResponse<ReportSummaryDto>> GetReportSummaryAsync(AuthData admin)
     {
         try
@@ -25,9 +47,13 @@ public class ReportService(
 
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
+            var communityMemberIds = await GetScopedCommunityMemberIdsAsync(admin);
 
-            // Campaigns / year-scoped and global
-            var campaignQuery = campaignRepo.GetQueryable(isSuper ? null : c => c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)));
+            // Campaigns — year-scoped or community-scoped
+            var campaignQuery = campaignRepo.GetQueryable(isSuper ? null : c =>
+                (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                || (c.CommunityId != null && communityIds.Contains(c.CommunityId)));
             var campaignStats = await campaignQuery
                 .GroupBy(c => 1)
                 .Select(g => new
@@ -42,16 +68,18 @@ public class ReportService(
             var activeCampaigns = campaignStats?.Active ?? 0;
             var closedCampaigns = campaignStats?.Closed ?? 0;
 
-            // Members
+            // Members — batch (graduation year) or community membership
             var membersQuery = isSuper
                 ? memberRepo.GetQueryable(null)
-                : memberRepo.GetQueryable(m => yearGroups.Contains(m.GraduationYear));
+                : memberRepo.GetQueryable(m => yearGroups.Contains(m.GraduationYear) || communityMemberIds!.Contains(m.Id));
             var totalMembers = await membersQuery.CountAsync();
 
-            // Contributions
+            // Contributions — via their Campaign's scope
             var campaignIdQuery = isSuper
                 ? null
-                : campaignRepo.GetQueryable(c => c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y))).Select(c => c.Id);
+                : campaignRepo.GetQueryable(c =>
+                    (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (c.CommunityId != null && communityIds.Contains(c.CommunityId))).Select(c => c.Id);
 
             var contributionQuery = isSuper
                 ? contributionRepo.GetQueryable(null)
@@ -69,16 +97,20 @@ public class ReportService(
             var totalContributions = contributionsStats?.Count ?? 0;
             var totalCollected = contributionsStats?.Collected ?? 0;
 
-            // Events
+            // Events — year-scoped or community-scoped
             var eventsQueryFiltered = isSuper
                 ? eventRepo.GetQueryable(null)
-                : eventRepo.GetQueryable(e => e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)));
+                : eventRepo.GetQueryable(e =>
+                    (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (e.CommunityId != null && communityIds.Contains(e.CommunityId)));
             var totalEvents = await eventsQueryFiltered.CountAsync();
 
-            // Jobs
+            // Jobs — year-scoped or community-scoped
             var jobsQueryFiltered = isSuper
                 ? jobRepo.GetQueryable(null)
-                : jobRepo.GetQueryable(j => j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)));
+                : jobRepo.GetQueryable(j =>
+                    (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (j.CommunityId != null && communityIds.Contains(j.CommunityId)));
             var totalJobs = await jobsQueryFiltered.CountAsync();
 
             var summary = new ReportSummaryDto
@@ -108,14 +140,24 @@ public class ReportService(
         {
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
+            var communityMemberIds = await GetScopedCommunityMemberIdsAsync(admin);
 
             IQueryable<object>? source = entity.ToLower() switch
             {
-                "campaigns" => campaignRepo.GetQueryable(isSuper ? null : c => c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y))),
-                "members" => memberRepo.GetQueryable(isSuper ? null : m => yearGroups.Contains(m.GraduationYear)),
-                "contributions" => contributionRepo.GetQueryable(isSuper ? null : c => campaignRepo.GetQueryable(isSuper ? null : cc => cc.YearGroups != null && cc.YearGroups.Any(__y => yearGroups.Contains(__y))).Select(cc => cc.Id).Contains(c.CampaignId)),
-                "events" => eventRepo.GetQueryable(isSuper ? null : e => e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y))),
-                "jobs" => jobRepo.GetQueryable(isSuper ? null : j => j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y))),
+                "campaigns" => campaignRepo.GetQueryable(isSuper ? null : c =>
+                    (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (c.CommunityId != null && communityIds.Contains(c.CommunityId))),
+                "members" => memberRepo.GetQueryable(isSuper ? null : m => yearGroups.Contains(m.GraduationYear) || communityMemberIds!.Contains(m.Id)),
+                "contributions" => contributionRepo.GetQueryable(isSuper ? null : c => campaignRepo.GetQueryable(isSuper ? null : cc =>
+                    (cc.YearGroups != null && cc.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (cc.CommunityId != null && communityIds.Contains(cc.CommunityId))).Select(cc => cc.Id).Contains(c.CampaignId)),
+                "events" => eventRepo.GetQueryable(isSuper ? null : e =>
+                    (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (e.CommunityId != null && communityIds.Contains(e.CommunityId))),
+                "jobs" => jobRepo.GetQueryable(isSuper ? null : j =>
+                    (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (j.CommunityId != null && communityIds.Contains(j.CommunityId))),
                 _ => null,
             };
 

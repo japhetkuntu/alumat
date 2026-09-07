@@ -105,7 +105,7 @@ public class JobServiceTests
         mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
 
         var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
-        var admin = new AuthData { Id = "admin-1", Role = "Admin" };
+        var admin = new AuthData { Id = "admin-1", Role = "SuperAdmin" };
 
         var response = await service.UpdateJobAsync(new UpdateJobRequest
         {

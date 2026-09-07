@@ -114,8 +114,14 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
 
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
-      if (item.href === "/forum" || item.href === "/mentorship" || item.href === "/albums" || item.href === "/business-directory") {
-        if (user?.role !== "SuperAdmin" && user?.role !== "Admin") return false;
+      // Forum and Business Directory stay SuperAdmin-only. Mentorship and
+      // Albums are now partially available to a ScopedAdmin too (scoped to
+      // their own batch/community) — see MentorshipController/AlbumsController.
+      if (item.href === "/forum" || item.href === "/business-directory") {
+        if (user?.role !== "SuperAdmin") return false;
+      }
+      if (item.href === "/mentorship" || item.href === "/albums") {
+        if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
       if (item.href === "/store" && user?.role !== "SuperAdmin") return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
@@ -165,7 +171,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             <span className="font-mono text-blue-300/90 truncate" title={tenantHost}>{tenantHost}</span>
           )}
           <span className="text-slate-500">&middot;</span>
-          <span className="text-slate-400 shrink-0">{user?.role ?? "Admin"}</span>
+          <span className="text-slate-400 shrink-0">{user?.role ?? "SuperAdmin"}</span>
         </div>
       </div>
 
@@ -264,7 +270,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4 shrink-0">
             <NotificationPanel />
             <span className="text-[13px] font-semibold">
-              {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "Admin"}</span>
+              {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
             </span>
           </div>
         </div>

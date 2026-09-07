@@ -22,7 +22,14 @@ import { formatDate } from "@alumni/ui";
 import type { InstitutionStaffUser, CreateInstitutionStaffRequest, UpdateInstitutionStaffRequest } from "@/types";
 import { TableSkeleton } from "@alumni/ui";
 
-const roles = ["SuperAdmin", "Admin", "ScopedAdmin"] as const;
+const roles = ["SuperAdmin", "ScopedAdmin"] as const;
+
+/** A scoped admin can be assigned at most one batch — cap the shared
+ *  multi-select YearGroupPicker to its most recent selection rather than
+ *  forking a single-select variant just for this form. */
+function toSingleYear(years: number[]): number[] {
+  return years.length > 0 ? [years[years.length - 1]] : [];
+}
 
 function CommunityCheckboxList({ communities, selected, onChange }: { communities: CommunityListItem[]; selected: string[]; onChange: (ids: string[]) => void }) {
   if (communities.length === 0) {
@@ -49,7 +56,7 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<typeof roles[number]>("Admin");
+  const [role, setRole] = useState<typeof roles[number]>("SuperAdmin");
   const [yearGroups, setYearGroups] = useState<number[]>([]);
   const [communityIds, setCommunityIds] = useState<string[]>([]);
 
@@ -86,16 +93,15 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
             <Label>Role</Label>
             <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
             <p className="text-xs text-muted-foreground">
-              {role === "SuperAdmin" && "Full access, including managing other admins."}
-              {role === "Admin" && "Full access to institution data, except managing other admins."}
-              {role === "ScopedAdmin" && "Restricted to the year-groups/batches and communities selected below."}
+              {role === "SuperAdmin" && "Full access to everything, including managing other admins."}
+              {role === "ScopedAdmin" && "Restricted to the one batch and the communities selected below."}
             </p>
           </div>
           {role === "ScopedAdmin" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Year groups</Label>
-                <YearGroupPicker value={yearGroups} onChange={setYearGroups} />
+                <Label>Batch (one year group)</Label>
+                <YearGroupPicker value={yearGroups} onChange={(years) => setYearGroups(toSingleYear(years))} />
               </div>
               <div className="space-y-2">
                 <Label>Communities</Label>
@@ -165,8 +171,8 @@ function EditAdminForm({
           {role === "ScopedAdmin" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Year groups</Label>
-                <YearGroupPicker value={yearGroups} onChange={setYearGroups} />
+                <Label>Batch (one year group)</Label>
+                <YearGroupPicker value={yearGroups} onChange={(years) => setYearGroups(toSingleYear(years))} />
               </div>
               <div className="space-y-2">
                 <Label>Communities</Label>
@@ -348,7 +354,7 @@ export default function AdminsPage() {
                       "All institution records"
                     ) : (a.yearGroups?.length || a.communityIds?.length) ? (
                       [
-                        a.yearGroups?.length ? `Years: ${a.yearGroups.join(", ")}` : null,
+                        a.yearGroups?.length ? `Batch: ${a.yearGroups[0]}` : null,
                         a.communityIds?.length ? `${a.communityIds.length} ${a.communityIds.length === 1 ? "community" : "communities"}` : null,
                       ].filter(Boolean).join(" · ")
                     ) : (

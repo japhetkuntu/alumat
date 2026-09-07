@@ -190,7 +190,7 @@ export default function BrandingSettingsPage() {
     ? `${profile.firstName} ${profile.lastName}`
     : (user?.name ?? "Administrator");
 
-  const roleLabel = profile?.role ?? user?.role ?? "Admin";
+  const roleLabel = profile?.role ?? user?.role ?? "SuperAdmin";
   const tenantHost = useHostname();
 
   return (

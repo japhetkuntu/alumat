@@ -21,7 +21,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<PhotoAlbumDto>>))]
     public async Task<IActionResult> GetAlbums([FromQuery] PhotoAlbumFilter filter)
     {
-        var result = await albumService.GetAlbumsAsync(filter);
+        var member = User.GetAccount();
+        var result = await albumService.GetAlbumsAsync(filter, member);
         return result.ToActionResult();
     }
 
@@ -31,7 +32,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetAlbum(string id)
     {
-        var result = await albumService.GetAlbumByIdAsync(id);
+        var member = User.GetAccount();
+        var result = await albumService.GetAlbumByIdAsync(id, member);
         return result.ToActionResult();
     }
 
@@ -41,7 +43,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetAlbumPhotos(string id, [FromQuery] AlbumPhotoFilter filter)
     {
-        var result = await albumService.GetAlbumPhotosAsync(id, filter);
+        var member = User.GetAccount();
+        var result = await albumService.GetAlbumPhotosAsync(id, filter, member);
         return result.ToActionResult();
     }
 }

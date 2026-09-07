@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907083229_CollapseAdminRoleAndAlbumScoping")]
+    partial class CollapseAdminRoleAndAlbumScoping
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,36 +224,11 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("PayoutStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PaystackSubaccountCode")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PendingPayoutChanges")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("SettlementAccountName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SettlementAccountNumber")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SettlementBankCode")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SettlementBankName")
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
-
-                    b.Property<bool>("UseInstitutionAccount")
-                        .HasColumnType("boolean");
 
                     b.Property<int>("Year")
                         .HasColumnType("integer");
@@ -258,8 +236,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InstitutionId");
-
-                    b.HasIndex("PayoutStatus");
 
                     b.ToTable("Batches", "alumni");
                 });

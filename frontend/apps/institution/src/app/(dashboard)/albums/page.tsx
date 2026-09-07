@@ -13,15 +13,19 @@ import { Card, CardContent } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getAlbums, createAlbum, deleteAlbum, type PhotoAlbum } from "@/lib/institution-api";
+import { getAlbums, createAlbum, deleteAlbum, getCommunities, type PhotoAlbum } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
+import { FormSelect } from "@alumni/ui";
+import { useAuth } from "@/hooks/use-auth";
 
-const emptyForm = { title: "", description: "" };
+const emptyForm = { title: "", description: "", communityId: "" };
 
 export default function AdminAlbumsPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SuperAdmin";
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -35,8 +39,10 @@ export default function AdminAlbumsPage() {
     placeholderData: (prev) => prev,
   });
 
+  const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
+
   const createMut = useMutation({
-    mutationFn: () => createAlbum({ title: form.title, description: form.description || undefined }),
+    mutationFn: () => createAlbum({ title: form.title, description: form.description || undefined, communityId: form.communityId || undefined }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-albums"] });
       setShowCreate(false);
@@ -145,6 +151,21 @@ export default function AdminAlbumsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
+            {communities.length > 0 && (
+              <div className="space-y-2">
+                <Label>Community (optional)</Label>
+                <FormSelect
+                  value={form.communityId}
+                  onValueChange={(v) => setForm((f) => ({ ...f, communityId: v }))}
+                  options={[{ value: "", label: "Institution-wide (all members)" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
+                />
+                {isSuperAdmin ? (
+                  <p className="text-xs text-muted-foreground">Restricts this album to one community's approved members instead of the whole institution.</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Leave as institution-wide to scope this album to your own batch instead, or pick one of your assigned communities.</p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); setForm(emptyForm); }}>Cancel</Button>

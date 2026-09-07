@@ -15,7 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// Manage this institution's photo albums — admins create an album once and
 /// add photos to it incrementally over many separate sessions afterward.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.PhotoAlbums)]
 public class AlbumsController(IAlbumService albumService) : DefaultController
 {
@@ -24,7 +24,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<PhotoAlbumDto>>))]
     public async Task<IActionResult> GetAlbums([FromQuery] PhotoAlbumFilter filter)
     {
-        var result = await albumService.GetAlbumsAsync(filter);
+        var admin = User.GetAccount();
+        var result = await albumService.GetAlbumsAsync(filter, admin);
         return result.ToActionResult();
     }
 
@@ -34,7 +35,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetAlbum(string id)
     {
-        var result = await albumService.GetAlbumByIdAsync(id);
+        var admin = User.GetAccount();
+        var result = await albumService.GetAlbumByIdAsync(id, admin);
         return result.ToActionResult();
     }
 
@@ -44,7 +46,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetAlbumPhotos(string id, [FromQuery] AlbumPhotoFilter filter)
     {
-        var result = await albumService.GetAlbumPhotosAsync(id, filter);
+        var admin = User.GetAccount();
+        var result = await albumService.GetAlbumPhotosAsync(id, filter, admin);
         return result.ToActionResult();
     }
 
@@ -76,7 +79,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> DeleteAlbum(string id)
     {
-        var result = await albumService.DeleteAlbumAsync(id);
+        var admin = User.GetAccount();
+        var result = await albumService.DeleteAlbumAsync(id, admin);
         return result.ToActionResult();
     }
 
@@ -97,7 +101,8 @@ public class AlbumsController(IAlbumService albumService) : DefaultController
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> DeletePhoto(string id, string photoId)
     {
-        var result = await albumService.DeletePhotoAsync(id, photoId);
+        var admin = User.GetAccount();
+        var result = await albumService.DeletePhotoAsync(id, photoId, admin);
         return result.ToActionResult();
     }
 }

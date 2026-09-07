@@ -31,7 +31,8 @@ import {
   getInstitutionStaff, inviteInstitutionStaff, setInstitutionStaffDisabled,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
-import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
+import { SettlementAccountFields } from "@alumni/ui";
+import { getBanks, resolveAccount } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 
 const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments"] as const;
@@ -925,7 +926,7 @@ export default function InstitutionDetailPage() {
                     <span className="text-[13px] text-muted-foreground">% of each successful payment</span>
                   </div>
                 </div>
-                <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} />
+                <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} getBanks={getBanks} resolveAccount={resolveAccount} />
                 {inst.paystackSubaccountCode && (
                   <p className="text-[12px] text-muted-foreground">Payment subaccount ID: <span className="font-mono">{inst.paystackSubaccountCode}</span></p>
                 )}

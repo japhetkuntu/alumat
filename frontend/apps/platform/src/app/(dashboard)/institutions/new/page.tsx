@@ -11,7 +11,8 @@ import { Label } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
 import { createInstitution, getBaseDomains, getOnboardingLead, updateOnboardingLeadStatus } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
-import { SettlementAccountFields } from "@/components/platform/settlement-account-fields";
+import { SettlementAccountFields } from "@alumni/ui";
+import { getBanks, resolveAccount } from "@/lib/platform-api";
 
 const STEPS = ["Institution details", "Branding", "Payments & payouts", "First admin", "Review"] as const;
 
@@ -276,6 +277,8 @@ function NewInstitutionPageContent() {
                   <SettlementAccountFields
                     value={form}
                     onChange={(next) => setForm((f) => ({ ...f, ...next }))}
+                    getBanks={getBanks}
+                    resolveAccount={resolveAccount}
                   />
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
                     Optional — leave blank and configure later from the institution&apos;s Payments tab. Providing settlement details here sets up their payout account automatically.

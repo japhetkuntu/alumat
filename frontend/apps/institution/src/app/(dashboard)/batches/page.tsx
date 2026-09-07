@@ -12,8 +12,89 @@ import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { TableSkeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { getBatches, createBatch, updateBatch, deleteBatch, type Batch } from "@/lib/institution-api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
+import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
+import {
+  getBatches, createBatch, updateBatch, deleteBatch, submitBatchPayoutSetup,
+  getBatchPayoutBanks, resolveBatchPayoutAccount, type Batch,
+} from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
+
+const payoutStatusVariant: Record<Batch["payoutStatus"], "neutral" | "warning" | "success" | "destructive"> = {
+  None: "neutral",
+  Pending: "warning",
+  Approved: "success",
+  Rejected: "destructive",
+};
+
+function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => void }) {
+  const [useOwn, setUseOwn] = useState(!batch.useInstitutionAccount);
+  const [value, setValue] = useState<SettlementAccountValue>({
+    settlementBankCode: "",
+    settlementBankName: batch.settlementBankName ?? "",
+    settlementAccountNumber: batch.settlementAccountNumber ?? "",
+    settlementAccountName: batch.settlementAccountName ?? "",
+  });
+  const qc = useQueryClient();
+
+  const submitMut = useMutation({
+    mutationFn: () => submitBatchPayoutSetup(batch.id, {
+      useInstitutionAccount: !useOwn,
+      settlementBankCode: useOwn ? value.settlementBankCode : undefined,
+      settlementBankName: useOwn ? value.settlementBankName : undefined,
+      settlementAccountNumber: useOwn ? value.settlementAccountNumber : undefined,
+      settlementAccountName: useOwn ? value.settlementAccountName : undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["batches"] });
+      toast.success("Submitted for platform review");
+      onClose();
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Payout setup — {batch.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted-foreground">
+            Choose whether this batch's contributions settle into the institution's own account, or its own dedicated one. Either way, this needs platform approval before it takes effect — until then, this batch keeps using the institution's account.
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant={!useOwn ? "default" : "outline"} onClick={() => setUseOwn(false)}>
+              Use institution's account
+            </Button>
+            <Button type="button" size="sm" variant={useOwn ? "default" : "outline"} onClick={() => setUseOwn(true)}>
+              This batch's own account
+            </Button>
+          </div>
+          {useOwn && (
+            <SettlementAccountFields
+              value={value}
+              onChange={setValue}
+              getBanks={getBatchPayoutBanks}
+              resolveAccount={resolveBatchPayoutAccount}
+            />
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={useOwn && (!value.settlementBankCode || !value.settlementAccountNumber || !value.settlementAccountName)}
+            isLoading={submitMut.isPending}
+            onClick={() => submitMut.mutate()}
+          >
+            Submit for review
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function BatchForm({
   initial, onSave, onCancel, saving,
@@ -60,10 +141,15 @@ function BatchForm({
 }
 
 export default function BatchesPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SuperAdmin";
   const [showCreate, setShowCreate] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Batch | null>(null);
+  const [payoutTarget, setPayoutTarget] = useState<Batch | null>(null);
   const qc = useQueryClient();
+
+  const canSetUpPayout = (b: Batch) => isSuperAdmin || (user?.role === "ScopedAdmin" && user.yearGroups?.includes(b.year));
 
   const { data: batches = [], isLoading } = useQuery({
     queryKey: ["batches"],
@@ -99,9 +185,11 @@ export default function BatchesPage() {
             The graduating-class year groups your members register into — set your own list instead of a generic year range.
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus size={16} />Add batch
-        </Button>
+        {isSuperAdmin && (
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus size={16} />Add batch
+          </Button>
+        )}
       </header>
 
       {showCreate && (
@@ -133,14 +221,15 @@ export default function BatchesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Year</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payout</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton rows={5} cols={4} />
+                <TableSkeleton rows={5} cols={5} />
               ) : batches.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No batches yet — members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No batches yet — members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
               ) : batches.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.name}</TableCell>
@@ -149,20 +238,34 @@ export default function BatchesPage() {
                     <Badge variant={b.isActive ? "success" : "neutral"}>{b.isActive ? "Active" : "Inactive"}</Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="outline" onClick={() => setEditingBatch(b)}>Edit</Button>
-                      <Button size="sm" variant="secondary" onClick={() => toggleActive(b)} isLoading={updateMut.isPending}>
-                        {b.isActive ? "Deactivate" : "Activate"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setDeleteTarget(b)}
-                        isLoading={deleteMut.isPending}
-                      >
-                        Delete
-                      </Button>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={payoutStatusVariant[b.payoutStatus]}>
+                        {b.payoutStatus === "None" ? "Institution account" : b.payoutStatus}
+                      </Badge>
+                      {canSetUpPayout(b) && (
+                        <Button size="sm" variant="outline" onClick={() => setPayoutTarget(b)}>
+                          {b.payoutStatus === "None" ? "Set up" : "Edit"}
+                        </Button>
+                      )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {isSuperAdmin && (
+                      <div className="flex items-center gap-2 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => setEditingBatch(b)}>Edit</Button>
+                        <Button size="sm" variant="secondary" onClick={() => toggleActive(b)} isLoading={updateMut.isPending}>
+                          {b.isActive ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(b)}
+                          isLoading={deleteMut.isPending}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -181,6 +284,8 @@ export default function BatchesPage() {
         onConfirm={() => { if (deleteTarget) deleteMut.mutate(deleteTarget.id); }}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {payoutTarget && <PayoutSetupModal batch={payoutTarget} onClose={() => setPayoutTarget(null)} />}
     </div>
   );
 }

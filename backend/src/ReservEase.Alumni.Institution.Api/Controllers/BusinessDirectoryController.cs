@@ -17,7 +17,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// blacklist/unblacklist listings, add listings directly (auto-approved), and
 /// directly edit any listing.
 /// </summary>
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "SuperAdmin")]
 [RequireFeature(InstitutionFeatures.BusinessDirectory)]
 [Route("api/v{version:apiVersion}/business-directory")]
 public class BusinessDirectoryController(IBusinessDirectoryService businessDirectoryService) : DefaultController
