@@ -23,6 +23,7 @@ import {
   initiatePaystackPayment, renewMembership, getMyContributions,
   getCampaignUpdates, getWallOfSupport,
 } from "@/lib/member-api";
+import { SourceBadge } from "@/components/member/source-badge";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
 import type { Campaign } from "@/types";
@@ -178,6 +179,7 @@ export default function CampaignDetailPage() {
             >
               {campaign.title}
             </h1>
+            <SourceBadge communityId={campaign.communityId} communityName={campaign.communityName} yearGroups={campaign.yearGroups} className="mb-3" />
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
                 { icon: Calendar, text: `Closes ${formatDate(campaign.deadline)}` },

@@ -350,7 +350,6 @@ function NewInstitutionPageContent() {
             <div className="space-y-2.5 text-[13px]">
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Member portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.memberBaseDomain}` : ""}</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Institution portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.adminBaseDomain}` : ""}</span></div>
-              <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Initial status</span><span className="font-semibold">Trial &middot; 14 days</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
               <div className="flex justify-between border-t border-border pt-2.5"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminEmail || form.contactEmail || "Not added"}</span></div>
             </div>

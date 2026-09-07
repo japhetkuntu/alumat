@@ -209,7 +209,7 @@ export default function BrandingSettingsPage() {
             onClick={() => setTab(t)}
             className={cn(
               "pb-3 text-[13.5px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
-              tab === t ? "text-primary border-primary font-semibold" : "text-muted-foreground border-transparent hover:text-foreground"
+              tab === t ? "text-accent border-accent font-semibold" : "text-muted-foreground border-transparent hover:text-foreground"
             )}
           >
             {t}

@@ -189,7 +189,7 @@ export default function MemberEventsPage() {
 
                 {/* Body */}
                 <div className="flex flex-col flex-1 p-4 gap-3">
-                  <SourceBadge communityId={e.communityId} communityName={e.communityName} className="self-start" />
+                  <SourceBadge communityId={e.communityId} communityName={e.communityName} yearGroups={e.yearGroups} className="self-start" />
                   <Link href={`/events/${e.id}`}>
                     <h3
                       className="text-[15px] font-semibold leading-snug line-clamp-2 transition-colors duration-200 hover:text-primary"

@@ -192,10 +192,10 @@ export default function MemberForumPage() {
               onClick={() => { setThreadFilter(f.value); setThreadPage(1); }}
               className={cn(
                 "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-                threadFilter === f.value ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                threadFilter === f.value ? "text-white border-transparent" : "border-border hover:border-accent/40",
               )}
               style={threadFilter === f.value
-                ? { background: "var(--primary)", color: "white" }
+                ? { background: "var(--accent)", color: "var(--accent-foreground)" }
                 : { background: "var(--background)", color: "var(--muted-foreground)" }}
             >
               {f.label}
@@ -211,10 +211,10 @@ export default function MemberForumPage() {
                 onClick={() => { setSelectedCategory(""); setThreadPage(1); }}
                 className={cn(
                   "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-                  selectedCategory === "" ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                  selectedCategory === "" ? "text-white border-transparent" : "border-border hover:border-accent/40",
                 )}
                 style={selectedCategory === ""
-                  ? { background: "var(--primary)", color: "white" }
+                  ? { background: "var(--accent)", color: "var(--accent-foreground)" }
                   : { background: "var(--background)", color: "var(--muted-foreground)" }}
               >
                 All categories
@@ -225,10 +225,10 @@ export default function MemberForumPage() {
                   onClick={() => { setSelectedCategory(c.id); setThreadPage(1); }}
                   className={cn(
                     "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-                    selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                    selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-accent/40",
                   )}
                   style={selectedCategory === c.id
-                    ? { background: "var(--primary)", color: "white" }
+                    ? { background: "var(--accent)", color: "var(--accent-foreground)" }
                     : { background: "var(--background)", color: "var(--muted-foreground)" }}
                 >
                   {c.name}

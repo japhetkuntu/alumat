@@ -92,7 +92,7 @@ export default function PlatformDashboardPage() {
         <Card style={{ borderColor: attentionList.length > 0 ? "var(--border-emphasis)" : undefined }}>
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <p className="text-[14px] font-semibold">Needs attention</p>
-            <Link href="/institutions" className="text-[12px] font-semibold text-primary hover:underline">View all</Link>
+            <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all</Link>
           </div>
           <CardContent className="p-0">
             {attentionList.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">Nothing needs attention right now.</p>}
@@ -112,7 +112,7 @@ export default function PlatformDashboardPage() {
       <Card className="mt-4">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <p className="text-[14px] font-semibold">Recent signups</p>
-          <Link href="/institutions" className="text-[12px] font-semibold text-primary hover:underline">View all institutions</Link>
+          <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all institutions</Link>
         </div>
         <CardContent className="p-0">
           {recentSignups.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">No institutions yet.</p>}

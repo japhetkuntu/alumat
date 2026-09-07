@@ -384,7 +384,7 @@ export default function InstitutionDetailPage() {
       <Card className="mb-5">
         <CardContent className="p-5 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
-            <UserAvatar name={inst.name} size="lg" />
+            <UserAvatar src={inst.logoUrl} name={inst.name} size="lg" />
             <div>
               <h1 className="text-[20px] font-bold flex items-center gap-2">
                 {inst.name}
@@ -430,7 +430,7 @@ export default function InstitutionDetailPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`pb-3 text-[13.5px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
-              tab === t ? "text-primary border-primary font-semibold" : "text-muted-foreground border-transparent hover:text-foreground"
+              tab === t ? "text-accent border-accent font-semibold" : "text-muted-foreground border-transparent hover:text-foreground"
             }`}
           >
             {t}

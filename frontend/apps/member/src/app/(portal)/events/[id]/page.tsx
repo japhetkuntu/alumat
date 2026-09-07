@@ -14,6 +14,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { MediaGallery } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-api";
+import { SourceBadge } from "@/components/member/source-badge";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
 import type { AlumniEvent } from "@/types";
@@ -134,6 +135,7 @@ export default function EventDetailPage() {
             >
               {event.title}
             </h1>
+            <SourceBadge communityId={event.communityId} communityName={event.communityName} yearGroups={event.yearGroups} className="mb-3" />
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
                 { icon: Calendar, text: formatDate(event.startDate)             },

@@ -135,7 +135,7 @@ export default function MemberNewsPage() {
 
               {/* Body */}
               <div className="flex flex-col flex-1 p-4 gap-3">
-                <SourceBadge communityId={p.communityId} communityName={p.communityName} className="self-start" />
+                <SourceBadge communityId={p.communityId} communityName={p.communityName} yearGroups={p.yearGroups} className="self-start" />
                 <h3
                   className="text-[14.5px] font-semibold leading-snug line-clamp-3 transition-colors duration-200 group-hover:text-primary"
                   style={{ color: "var(--foreground)" }}

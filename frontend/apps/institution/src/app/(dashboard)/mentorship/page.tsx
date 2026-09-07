@@ -184,7 +184,7 @@ export default function AdminMentorshipPage() {
                       <div className="flex items-start gap-4 mb-4">
                         <Avatar className="h-14 w-14 ring-2 ring-border/40 group-hover:ring-primary/30 transition-all">
                           <AvatarImage src={m.memberProfilePictureUrl ?? undefined} alt={name} />
-                          <AvatarFallback className="text-base font-bold bg-primary/10 text-primary">
+                          <AvatarFallback className="text-base font-bold bg-accent/10 text-accent">
                             {getInitials(name)}
                           </AvatarFallback>
                         </Avatar>

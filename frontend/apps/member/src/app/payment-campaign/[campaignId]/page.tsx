@@ -239,7 +239,7 @@ export default function PublicCampaignContributionPage() {
                   {campaign.status}
                 </Badge>
                 {campaign.isMembershipCampaign && (
-                  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest">Membership</Badge>
+                  <Badge variant="accent" className="text-[10px] font-black uppercase tracking-widest">Membership</Badge>
                 )}
               </div>
               <h1 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{campaign.title}</h1>

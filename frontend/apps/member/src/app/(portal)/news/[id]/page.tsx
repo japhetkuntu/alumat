@@ -11,6 +11,7 @@ import { MediaGallery } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { getNewsPost } from "@/lib/member-api";
+import { SourceBadge } from "@/components/member/source-badge";
 import { Newspaper } from "@alumni/ui";
 
 export default function NewsDetailPage() {
@@ -89,6 +90,8 @@ export default function NewsDetailPage() {
         >
           {post.title}
         </h1>
+
+        <SourceBadge communityId={post.communityId} communityName={post.communityName} yearGroups={post.yearGroups} />
 
         {/* Date + author */}
         <div className="flex flex-wrap items-center gap-4">

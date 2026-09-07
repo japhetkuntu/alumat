@@ -295,7 +295,7 @@ export default function AdminReportsPage() {
         <CardHeader><CardTitle className="text-base">Fundraiser &amp; Dues Status Breakdown</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           <p className="text-sm">Active: <strong>{activeCampaigns}</strong> · Closed: <strong>{closedCampaigns}</strong> · Total: <strong>{totalCampaigns}</strong></p>
-          <Progress value={totalCampaigns > 0 ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0} />
+          <Progress value={totalCampaigns > 0 ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0} tone="accent" />
           <p className="text-xs text-muted-foreground">Active share: {totalCampaigns ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0}%</p>
         </CardContent>
       </Card>

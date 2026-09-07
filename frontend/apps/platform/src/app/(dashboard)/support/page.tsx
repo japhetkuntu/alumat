@@ -84,7 +84,7 @@ export default function SupportPage() {
                 key={c.id}
                 onClick={() => setActiveId(c.id)}
                 className={`w-full text-left px-5 py-3.5 border-b border-border last:border-0 transition-colors ${
-                  c.id === (activeId ?? supportCases[0]?.id) ? "bg-primary/5 border-l-4 border-l-primary" : "hover:bg-muted/40"
+                  c.id === (activeId ?? supportCases[0]?.id) ? "bg-accent/5 border-l-4 border-l-accent" : "hover:bg-muted/40"
                 }`}
               >
                 <div className="flex justify-between items-start gap-2">

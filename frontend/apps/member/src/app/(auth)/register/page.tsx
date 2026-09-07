@@ -89,7 +89,7 @@ function StepIndicator({ step }: { step: Step }) {
                 className={cn(
                   "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-all duration-300",
                   done   && "bg-primary border-primary text-white",
-                  active && "border-primary bg-primary/10 text-primary",
+                  active && "border-accent bg-accent/10 text-accent",
                   !done && !active && "border-border bg-background text-muted-foreground",
                 )}
               >
@@ -160,7 +160,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 space-y-1">
-            <Badge variant="default">Membership {campaign.membershipYear}</Badge>
+            <Badge variant="accent">Membership {campaign.membershipYear}</Badge>
             <h3 className="text-[14px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>
               {campaign.title}
             </h3>

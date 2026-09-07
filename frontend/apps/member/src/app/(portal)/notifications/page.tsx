@@ -260,10 +260,10 @@ export default function NotificationsPage() {
             onClick={() => setTab(t)}
             className={cn(
               "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-              tab === t ? "text-white border-transparent" : "border-border hover:border-primary/40",
+              tab === t ? "text-white border-transparent" : "border-border hover:border-accent/40",
             )}
             style={tab === t
-              ? { background: "var(--primary)", color: "white" }
+              ? { background: "var(--accent)", color: "var(--accent-foreground)" }
               : { background: "var(--background)", color: "var(--muted-foreground)" }}
           >
             {t}

@@ -12,6 +12,7 @@ import { Button } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { getJobById } from "@/lib/member-api";
+import { SourceBadge } from "@/components/member/source-badge";
 import type { Job } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -131,6 +132,7 @@ export default function MemberJobDetailPage() {
             >
               {job.title}
             </h1>
+            <SourceBadge communityId={job.communityId} communityName={job.communityName} yearGroups={job.yearGroups} className="mb-3" />
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {[
                 { icon: Building2, text: job.company },

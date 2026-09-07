@@ -180,6 +180,25 @@ export default function CalendarPage() {
           title="No activity yet"
           description="New events, fundraisers, and dues will appear here as they're published."
         />
+      ) : tab === "all" ? (
+        // "All activities" is a flat chronological list, not the calendar
+        // grid — the grid is for browsing by date, this tab is for
+        // scanning everything at once.
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            {visible.length === 0 ? (
+              <p className="text-[13px] py-10 text-center rounded-xl" style={{ color: "var(--muted-foreground)", background: "var(--muted)" }}>
+                Nothing to show.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {visible.map((item) => (
+                  <ItemRow key={`${item.type}-${item.id}`} item={item} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardContent className="p-4 sm:p-6">

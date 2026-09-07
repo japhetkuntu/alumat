@@ -131,7 +131,7 @@ export default function OnboardingLeadsPage() {
                   key={l.id}
                   onClick={() => setActiveId(l.id)}
                   className={`w-full text-left px-5 py-3.5 border-b border-border last:border-0 transition-colors ${
-                    l.id === (activeId ?? leads[0]?.id) ? "bg-primary/5 border-l-4 border-l-primary" : "hover:bg-muted/40"
+                    l.id === (activeId ?? leads[0]?.id) ? "bg-accent/5 border-l-4 border-l-accent" : "hover:bg-muted/40"
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">

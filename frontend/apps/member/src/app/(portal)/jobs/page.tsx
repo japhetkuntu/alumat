@@ -142,7 +142,7 @@ export default function MemberJobsPage() {
 
                   {/* Title + company */}
                   <div className="flex-1 min-w-0">
-                    <SourceBadge communityId={j.communityId} communityName={j.communityName} className="mb-2" />
+                    <SourceBadge communityId={j.communityId} communityName={j.communityName} yearGroups={j.yearGroups} className="mb-2" />
                     <h3
                       className="text-[15px] font-semibold leading-snug line-clamp-2 mb-1 transition-colors duration-200 group-hover:text-primary"
                       style={{ color: "var(--foreground)" }}

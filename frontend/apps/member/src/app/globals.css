@@ -939,6 +939,12 @@ html {
   max-height: 85vh;
   max-height: 85dvh;
   overflow-y: auto;
+  /* iOS Safari: an overflow:auto box nested inside a fixed-position ancestor
+     doesn't reliably pick up touch-scroll gestures without this — without
+     it, content past the fold is technically present but the user has no
+     way to reach it by scrolling, which reads as "hidden". */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 @media (min-width: 640px) {
   .bottom-sheet-scroll {
@@ -951,6 +957,8 @@ html {
   max-height: 90vh;
   max-height: 90dvh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* A `fixed` overlay anchored with `inset-0` (top/right/bottom/left all 0) is

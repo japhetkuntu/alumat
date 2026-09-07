@@ -259,7 +259,7 @@ function CampaignCard({
         {/* Title + status badge */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <SourceBadge communityId={c.communityId} communityName={c.communityName} className="mb-1.5" />
+            <SourceBadge communityId={c.communityId} communityName={c.communityName} yearGroups={c.yearGroups} className="mb-1.5" />
             {!c.bannerImageUrl && isMembership && (
               <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
                 Membership dues

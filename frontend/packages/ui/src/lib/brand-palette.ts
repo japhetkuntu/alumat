@@ -101,9 +101,6 @@ function fromOklch(l: number, c: number, h: number): string {
   return toHex(linearToSrgb(r) * 255, linearToSrgb(g) * 255, linearToSrgb(b) * 255);
 }
 
-/** Hue (radians) of the platform's own default green (#0e7143) — used when a seed has no real hue to preserve. */
-const DEFAULT_HUE = toOklch("#0e7143").h;
-
 // Below this hue separation, primary and secondary render close enough to
 // the same color that a "duotone" surface built from both would just look
 // like primary rendered twice — not wrong, just pointless. Institutions
@@ -121,20 +118,39 @@ function hueDistanceDeg(h1: number, h2: number): number {
   return diff > 180 ? 360 - diff : diff;
 }
 
-/** Softly clamps a seed color into a workable saturation/lightness band before any derivation happens. */
-export function clampSeed(hex: string): string {
+/**
+ * Softly clamps a seed color into a workable saturation/lightness band
+ * before any derivation happens.
+ *
+ * `fallbackHueHex` (typically the institution's own secondary color) is
+ * used only when the seed itself is achromatic (white/black/gray — hue is
+ * meaningless there, and numerically noisy — atan2 near the origin). This
+ * used to fall back to the platform's own default green hue, which meant
+ * an institution whose primary happened to be white/gray rendered a
+ * platform-green UI instead of anything derived from their own brand —
+ * exactly the "hardcoded color leaking through" bug this now avoids: an
+ * achromatic seed borrows hue from the institution's OTHER real color when
+ * one is available, and otherwise stays genuinely neutral (nearly zero
+ * chroma) rather than inventing a hue that isn't theirs.
+ */
+export function clampSeed(hex: string, fallbackHueHex?: string): string {
   const { l, c, h } = toOklch(hex);
-
-  // Hue is meaningless (and numerically noisy — atan2 near the origin) once
-  // chroma is this low: white, black, and every shade of gray all have "no
-  // real color", so deriving one from floating-point noise produces an
-  // arbitrary muddy tint instead of admitting there's no brand hue to work
-  // with. Fall back to the platform's own hue.
-  const hue = c < 0.02 ? DEFAULT_HUE : h;
-
   const clampedL = Math.min(MAX_LIGHTNESS, Math.max(MIN_LIGHTNESS, l));
-  const clampedC = Math.max(c, MIN_CHROMA);
-  return fromOklch(clampedL, clampedC, hue);
+
+  if (c >= 0.02) {
+    return fromOklch(clampedL, Math.max(c, MIN_CHROMA), h);
+  }
+
+  const fallback = fallbackHueHex ? toOklch(fallbackHueHex) : null;
+  if (fallback && fallback.c >= 0.02) {
+    // Borrow the institution's other real color's hue, at a muted chroma —
+    // ties the achromatic seed to their own identity instead of a fixed one.
+    return fromOklch(clampedL, MIN_CHROMA, fallback.h);
+  }
+
+  // No real hue anywhere in this institution's palette — stay genuinely
+  // neutral (near-zero chroma) instead of forcing an arbitrary tint.
+  return fromOklch(clampedL, 0, h);
 }
 
 function withLightness(hex: string, adjust: (l: number) => number, chromaScale = 1): string {
@@ -249,7 +265,7 @@ function generateTonalScale(seed: string): TonalScale {
 
 /** Generates the full derived palette for a seed color, ready to plug into CSS custom properties. Pass a secondaryHex to also derive an accent family from it. */
 export function generateBrandPalette(seedHex: string, secondaryHex?: string): BrandPalette {
-  const primary = clampSeed(seedHex);
+  const primary = clampSeed(seedHex, secondaryHex);
   const [r, g, b] = parseHex(primary);
   const palette: BrandPalette = {
     primary,

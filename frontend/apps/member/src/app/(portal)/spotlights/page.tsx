@@ -48,7 +48,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
     <div
       className={cn(
         "card overflow-hidden transition-all duration-150",
-        featured && "ring-2 ring-primary/20 border-primary/40",
+        featured && "ring-2 ring-accent/20 border-accent/40",
       )}
     >
       {/* Banner image — only if provided */}
@@ -305,10 +305,10 @@ export default function SpotlightsPage() {
             onClick={() => setTab(t)}
             className={cn(
               "px-4 py-2 text-[13px] font-semibold border transition-colors",
-              tab === t ? "text-white border-transparent" : "border-border hover:border-primary/40",
+              tab === t ? "text-white border-transparent" : "border-border hover:border-accent/40",
             )}
             style={tab === t
-              ? { background: "var(--primary)", color: "white" }
+              ? { background: "var(--accent)", color: "var(--accent-foreground)" }
               : { background: "var(--background)", color: "var(--muted-foreground)" }}
           >
             {t === "featured" ? "Featured stories" : "My submissions"}
@@ -379,7 +379,7 @@ export default function SpotlightsPage() {
                       className="h-1 w-full"
                       style={{
                         background:
-                          s.status === "Approved" ? "#059669" :
+                          s.status === "Approved" ? "var(--success)" :
                           s.status === "Rejected" ? "var(--destructive)" :
                           "var(--primary)",
                       }}

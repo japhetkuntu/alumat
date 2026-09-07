@@ -214,10 +214,10 @@ export default function MembershipCertificatePage() {
               onClick={() => setSelectedYear(p.campaign.membershipYear ?? null)}
               className={cn(
                 "px-4 py-2 text-[13px] font-semibold border transition-colors",
-                p.campaign.membershipYear === activeYear ? "text-white border-transparent" : "border-border hover:border-primary/40",
+                p.campaign.membershipYear === activeYear ? "text-white border-transparent" : "border-border hover:border-accent/40",
               )}
               style={p.campaign.membershipYear === activeYear
-                ? { background: "var(--primary)", color: "white" }
+                ? { background: "var(--accent)", color: "var(--accent-foreground)" }
                 : { background: "var(--background)", color: "var(--muted-foreground)" }}
             >
               {p.campaign.membershipYear}
@@ -233,11 +233,22 @@ export default function MembershipCertificatePage() {
           className="relative bg-white rounded-2xl overflow-hidden shadow-2xl"
           style={{ aspectRatio: "297/210", containerType: "inline-size" }}
         >
-          {/* Decorative double border */}
+          {/* Institution-colored wash — a faint corner-to-corner gradient in
+              the tenant's own primary/accent, instead of a fixed neutral
+              white, so the certificate reads as this institution's document
+              at a glance rather than a generic template. */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(135deg, var(--brand-primary-50, #fafafa) 0%, #ffffff 45%, var(--brand-accent-50, #ffffff) 100%)",
+            }}
+          />
+
+          {/* Decorative double border — tenant accent color */}
           <div className="absolute inset-0" style={{ padding: "clamp(4px, 2.1cqw, 20px)" }}>
-            <div className="absolute border sm:border-2 border-amber-600/30 rounded-lg sm:rounded-xl"
+            <div className="absolute border sm:border-2 border-accent/35 rounded-lg sm:rounded-xl"
               style={{ inset: "clamp(4px, 2.1cqw, 20px)" }} />
-            <div className="absolute border border-amber-600/15 rounded sm:rounded-lg"
+            <div className="absolute border border-accent/15 rounded sm:rounded-lg"
               style={{ inset: "clamp(8px, 2.5cqw, 24px)" }} />
           </div>
 
@@ -247,7 +258,7 @@ export default function MembershipCertificatePage() {
               <div
                 key={`${v}-${h}`}
                 className={cn(
-                  "absolute border-amber-600/40",
+                  "absolute border-accent/50",
                   v === "top" ? "border-t-2 rounded-tl" : "border-b-2 rounded-bl",
                   h === "left" ? "border-l-2" : "border-r-2",
                 )}
@@ -260,6 +271,21 @@ export default function MembershipCertificatePage() {
               />
             ))
           )}
+
+          {/* Watermark — the institution's own initial, huge and faint,
+              behind the copy; reinforces whose certificate this is without
+              competing with the readable content in front of it. */}
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none font-bold"
+            style={{
+              fontSize: "clamp(60px, 34cqw, 320px)",
+              color: "var(--brand-primary-100, #f5f5f5)",
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              lineHeight: 1,
+            }}
+          >
+            {(theme?.displayName ?? "A").charAt(0).toUpperCase()}
+          </div>
 
           {/* Dot pattern */}
           <div className="absolute inset-0 opacity-[0.025]"
@@ -294,15 +320,15 @@ export default function MembershipCertificatePage() {
                 </div>
               )}
               <h2
-                className="font-bold text-amber-800 tracking-wider"
-                style={{ fontSize: "clamp(7px, 2.1cqw, 20px)" }}
+                className="font-bold tracking-wider"
+                style={{ fontSize: "clamp(7px, 2.1cqw, 20px)", color: "var(--brand-primary-800, var(--primary))" }}
               >
                 {(theme?.displayName ?? "ALUMNI").toUpperCase()} ALUMNI ASSOCIATION
               </h2>
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-gradient-to-r from-transparent via-amber-600/40 to-transparent"
+            <div className="h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent"
               style={{ width: "clamp(24px, 10cqw, 96px)", marginBottom: "clamp(4px, 2.1cqw, 20px)" }} />
 
             {/* Title */}
@@ -345,7 +371,7 @@ export default function MembershipCertificatePage() {
               ].map((item, i, arr) => (
                 <Fragment key={item.label}>
                   <div className="text-center" style={{ padding: "0 clamp(2px, 1.3cqw, 12px)" }}>
-                    <p className="font-bold uppercase text-amber-600/60"
+                    <p className="font-bold uppercase text-accent/70"
                       style={{ fontSize: "clamp(4px, 1cqw, 9px)", letterSpacing: "0.15em" }}>
                       {item.label}
                     </p>
@@ -354,7 +380,7 @@ export default function MembershipCertificatePage() {
                     </p>
                   </div>
                   {i < arr.length - 1 && (
-                    <span className="text-amber-300 select-none"
+                    <span className="text-accent/40 select-none"
                       style={{ fontSize: "clamp(4px, 1.3cqw, 12px)" }}>•</span>
                   )}
                 </Fragment>
@@ -381,6 +407,30 @@ export default function MembershipCertificatePage() {
                 Ref: {selected.contribution.transactionRef ?? selected.contribution.id.slice(0, 12).toUpperCase()}
               </p>
             </div>
+          </div>
+
+          {/* Seal — a classic embossed-medallion touch in the institution's
+              accent color, anchored to a corner so it reads as an official
+              mark rather than another line of body copy. */}
+          <div
+            className="absolute flex items-center justify-center rounded-full"
+            style={{
+              bottom: "clamp(10px, 4.2cqw, 40px)",
+              right: "clamp(10px, 4.2cqw, 40px)",
+              width: "clamp(24px, 9cqw, 84px)",
+              height: "clamp(24px, 9cqw, 84px)",
+              background: "var(--accent)",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.18)",
+              border: "clamp(1px, 0.4cqw, 3px) solid rgba(255,255,255,0.7)",
+            }}
+          >
+            <Award
+              style={{
+                width: "clamp(12px, 4.4cqw, 40px)",
+                height: "clamp(12px, 4.4cqw, 40px)",
+                color: "var(--accent-foreground)",
+              }}
+            />
           </div>
         </div>
       )}

@@ -49,10 +49,10 @@ function TabBtn({
       onClick={onClick}
       className={cn(
         "px-4 py-2 text-[13px] font-semibold flex items-center gap-1.5 transition-colors border",
-        active ? "text-white border-transparent" : "border-border hover:border-primary/40",
+        active ? "text-white border-transparent" : "border-border hover:border-accent/40",
       )}
       style={active
-        ? { background: "var(--primary)", color: "white" }
+        ? { background: "var(--accent)", color: "var(--accent-foreground)" }
         : { background: "var(--background)", color: "var(--muted-foreground)" }}
     >
       {children}

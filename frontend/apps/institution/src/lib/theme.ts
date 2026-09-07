@@ -98,6 +98,7 @@ export function themeStyleVars(theme: InstitutionTheme | null): Record<string, s
     "--primary": palette.primary,
     "--primary-foreground": palette.textOnPrimary,
     "--accent-sky": palette.primary,
+    "--accent-emerald": palette.primary,
     "--chart-1": palette.primary,
     // Deliberately NOT overridden: --success/--warning/--info and
     // --color-background-info/--color-text-info/--color-border-info — those

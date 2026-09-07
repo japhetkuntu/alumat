@@ -46,12 +46,12 @@ function EmploymentOption({
       onClick={onClick}
       className={cn(
         "relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 text-center transition-colors",
-        active   ? "border-primary bg-primary/10"      : "border-border bg-background",
-        !disabled && !active && "hover:border-primary/40",
+        active   ? "border-accent bg-accent/10"      : "border-border bg-background",
+        !disabled && !active && "hover:border-accent/40",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >
-      <Icon size={22} style={{ color: active ? "var(--primary)" : "var(--muted-foreground)" }} />
+      <Icon size={22} style={{ color: active ? "var(--accent)" : "var(--muted-foreground)" }} />
       <span
         className="text-[13.5px] font-semibold"
         style={{ color: active ? "var(--primary)" : "var(--foreground)" }}

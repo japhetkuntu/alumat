@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
         <section className="card p-[18px]" style={{ borderColor: pendingApprovals > 0 ? "var(--border-emphasis)" : undefined }}>
           <h2 className="text-[15px] font-semibold m-0 mb-3.5 flex items-center justify-between">
             Pending approvals
-            <Link href="/members" className="text-[12px] font-normal text-muted-foreground hover:text-primary">View queue &rarr;</Link>
+            <Link href="/members" className="text-[12px] font-normal text-muted-foreground hover:text-accent">View queue &rarr;</Link>
           </h2>
           {isLoading ? (
             <div className="space-y-3 py-1">

@@ -232,7 +232,7 @@ export default function AdminForumPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {t.categoryName && (
-                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider">
+                            <span className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] font-black uppercase tracking-wider">
                               {t.categoryName}
                             </span>
                           )}

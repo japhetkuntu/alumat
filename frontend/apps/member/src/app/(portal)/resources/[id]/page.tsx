@@ -11,6 +11,7 @@ import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { getResource, getResources, trackResourceDownload } from "@/lib/member-api";
+import { SourceBadge } from "@/components/member/source-badge";
 import { EmptyState } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
 import { toast } from "sonner";
@@ -165,6 +166,7 @@ export default function MemberResourceDetailPage() {
         >
           {resource.title}
         </h1>
+        <SourceBadge communityId={resource.communityId} communityName={resource.communityName} yearGroups={resource.yearGroups} />
         <p className="text-muted-foreground text-sm font-medium">
           Added {formatDate(resource.createdAt)}
           {resource.downloadCount ? ` · ${resource.downloadCount} downloads` : ""}
