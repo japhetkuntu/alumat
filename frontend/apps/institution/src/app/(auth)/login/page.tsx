@@ -15,6 +15,7 @@ import { Label } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
 import { AuthMobileBrand } from "@/components/institution/auth-brand-mark";
+import { buildGoogleBridgeUrl, useGoogleBridgeTheme } from "@/lib/google-bridge-theme";
 
 const schema = z.object({
   email:    z.string().email("Enter a valid email"),
@@ -69,8 +70,9 @@ function GoogleSignInButton() {
   const bridgeUrl = baseDomain ? `https://${baseDomain}/google-auth` : undefined;
   const [origin, setOrigin] = useState("");
   useEffect(() => { setOrigin(window.location.origin); }, []);
+  const { data: theme } = useGoogleBridgeTheme();
   if (!bridgeUrl || !origin) return null;
-  const href = `${bridgeUrl}?portal=institution&return=${encodeURIComponent(origin)}`;
+  const href = buildGoogleBridgeUrl(bridgeUrl, { portal: "institution", return: origin, theme });
   return (
     <a
       href={href}

@@ -24,6 +24,7 @@ import { getDepartments, getBatches, getCurrentMembershipCampaign, type Departme
 import type { Campaign } from "@/types";
 import { cn } from "@alumni/ui";
 import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
+import { buildGoogleBridgeUrl, useGoogleBridgeTheme } from "@/lib/google-bridge-theme";
 
 // Always the fixed base domain, never this institution's own subdomain —
 // that's the one origin actually registered with Google.
@@ -309,6 +310,7 @@ function PasswordInput({
    ───────────────────────────────────────────────────────────────────────── */
 function RegisterForm() {
   const router = useRouter();
+  const { data: googleBridgeTheme } = useGoogleBridgeTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState<Step>("form");
@@ -610,7 +612,7 @@ function RegisterForm() {
                 ) : GOOGLE_AUTH_URL ? (
                   <>
                     <a
-                      href={`${GOOGLE_AUTH_URL}?portal=member&mode=register&return=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+                      href={buildGoogleBridgeUrl(GOOGLE_AUTH_URL, { portal: "member", mode: "register", return: typeof window !== "undefined" ? window.location.origin : "", theme: googleBridgeTheme })}
                       className="flex items-center justify-center gap-2.5 w-full h-11 border text-[13.5px] font-semibold transition-colors hover:bg-muted/50"
                       style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
                     >
