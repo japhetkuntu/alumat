@@ -93,6 +93,7 @@ public class MailtrapEmailService(
             "contribution-confirmed" => $"Contribution Confirmed — {brand}",
             "event-rsvp-confirmed" => $"RSVP Confirmed — {brand}",
             "referral-invitation" => $"You've Been Invited to {brand}",
+            "digest" => $"What's new at {brand}",
             "notification" => $"New Notification — {brand}",
             _ => $"{brand} — {FormatTemplateId(templateId)}",
         };
@@ -213,7 +214,11 @@ public class MailtrapEmailService(
     // see BuildBrandMarkHtml) and must be substituted raw, not re-escaped
     // like ordinary text variables (otherwise the tags render as literal
     // text in the email instead of an actual image/mark).
-    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html" };
+    // "digest_sections_html" is built by DigestService from trusted DB fields,
+    // HTML-encoding each dynamic value itself before assembling the markup —
+    // it needs the same raw treatment since it's a multi-item list block this
+    // template engine's flat {{key}} substitution can't loop over on its own.
+    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html", "digest_sections_html" };
 
     private static string ReplaceTemplateVariables(string templateText, Dictionary<string, string> variables)
     {

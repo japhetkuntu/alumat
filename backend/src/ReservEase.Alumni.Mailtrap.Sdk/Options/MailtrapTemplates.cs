@@ -10,4 +10,5 @@ public class MailtrapTemplates
     public string EmailVerification { get; set; } = string.Empty;
     public string EmailVerificationLink { get; set; } = string.Empty;
     public string ReferralInvitation { get; set; } = string.Empty;
+    public string Digest { get; set; } = string.Empty;
 }

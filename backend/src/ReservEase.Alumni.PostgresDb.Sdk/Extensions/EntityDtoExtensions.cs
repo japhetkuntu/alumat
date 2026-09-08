@@ -257,6 +257,22 @@ public static class EntityDtoExtensions
         ShowOnWallOfSupport = c.ShowOnWallOfSupport,
     };
 
+    public static RecurringContributionDto ToDto(this RecurringContribution r) => new()
+    {
+        Id = r.Id,
+        CampaignId = r.CampaignId,
+        CampaignTitle = r.Campaign?.Title,
+        Amount = r.Amount,
+        Status = r.Status,
+        CardLast4 = r.CardLast4,
+        CardType = r.CardType,
+        CardBank = r.CardBank,
+        NextChargeDate = r.NextChargeDate,
+        LastChargeAt = r.LastChargeAt,
+        LastChargeStatus = r.LastChargeStatus,
+        CreatedAt = r.CreatedAt,
+    };
+
     public static CampaignUpdateDto ToDto(this CampaignUpdate u) => new()
     {
         Id = u.Id,
@@ -443,6 +459,7 @@ public static class EntityDtoExtensions
         SpotlightAlerts = np.SpotlightAlerts,
         SmsAlerts = np.SmsAlerts,
         WhatsAppAlerts = np.WhatsAppAlerts,
+        DigestFrequency = np.DigestFrequency,
     };
 
     public static AdminNotificationPreferenceDto ToDto(this AdminNotificationPreference np) => new()

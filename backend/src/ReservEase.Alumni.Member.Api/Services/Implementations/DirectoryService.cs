@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -62,12 +63,23 @@ public class DirectoryService(
         }
     }
 
+    // A pin-per-member map stops being usable (or even renderable without
+    // clustering) well before this many points, and an unbounded query here
+    // was one of very few endpoints in the codebase with no cap at all — at
+    // 100k members with map opt-in this could serialize tens of thousands of
+    // rows in a single response. Capping is the right fix, not classic
+    // page/pageSize — nobody "pages" through a map.
+    private const int MaxMapMembers = 5000;
+
     public async Task<IApiResponse<List<AlumniMapMemberDto>>> GetMapMembersAsync()
     {
         try
         {
-            var members = await memberRepo.GetAllAsync(m =>
-                m.Status == "Active" && m.ShowOnAlumniMap && m.MapLatitude != null && m.MapLongitude != null);
+            var members = await memberRepo.GetQueryable(m =>
+                    m.Status == "Active" && m.ShowOnAlumniMap && m.MapLatitude != null && m.MapLongitude != null)
+                .OrderByDescending(m => m.CreatedAt)
+                .Take(MaxMapMembers)
+                .ToListAsync();
 
             var dtos = members.Select(m => new AlumniMapMemberDto
             {

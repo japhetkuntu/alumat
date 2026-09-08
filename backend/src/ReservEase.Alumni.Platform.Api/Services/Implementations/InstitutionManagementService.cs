@@ -84,10 +84,16 @@ public class InstitutionManagementService(
             // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
             // (collected from the payer's grossed-up charge), not PlatformFeeAmount
             // (which is always 0 for online payments now — nothing is deducted
-            // from the institution).
-            var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+            // from the institution). Store orders earn the same way, through the
+            // identical charge-building logic in StoreOrderService — counted here
+            // too, not just contributions.
+            var contributionRevenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
                 .Where(c => c.InstitutionId == i.Id && c.Status == "Successful")
                 .SumAsync(c => c.PlatformRevenueAmount);
+            var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+                .Where(o => o.InstitutionId == i.Id && o.Status == "Successful")
+                .SumAsync(o => o.PlatformFeeAmount);
+            var revenue = contributionRevenue + storeRevenue;
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
                 i.LogoUrl, i.Status, memberCount, i.OnboardedAt,
@@ -138,6 +144,9 @@ public class InstitutionManagementService(
         if (request.BatchStartYear.HasValue && request.BatchEndYear!.Value - request.BatchStartYear!.Value > 200)
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Batch year range is too wide");
 
+        if (request.PlatformFeeFlatThreshold.HasValue != request.PlatformFeeFlatAmount.HasValue)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Provide both a flat-fee threshold and amount, or neither");
+
         await using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
@@ -156,6 +165,8 @@ public class InstitutionManagementService(
                 TrialEndsAt = DateTime.UtcNow.AddDays(14),
                 OnboardedAt = DateTime.UtcNow,
                 PlatformFeePercentage = request.PlatformFeePercentage,
+                PlatformFeeFlatThreshold = request.PlatformFeeFlatThreshold,
+                PlatformFeeFlatAmount = request.PlatformFeeFlatAmount,
                 SettlementBankCode = request.SettlementBankCode,
                 SettlementBankName = request.SettlementBankName,
                 SettlementAccountNumber = request.SettlementAccountNumber,
@@ -322,6 +333,9 @@ public class InstitutionManagementService(
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
+        if (request.PlatformFeeFlatThreshold.HasValue != request.PlatformFeeFlatAmount.HasValue)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Provide both a flat-fee threshold and amount, or neither");
+
         var subaccountRequest = new SubaccountRequest
         {
             BusinessName = institution.Name,
@@ -358,6 +372,8 @@ public class InstitutionManagementService(
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>($"Paystack subaccount sync failed: {subaccount.Message}");
 
         institution.PlatformFeePercentage = request.PlatformFeePercentage;
+        institution.PlatformFeeFlatThreshold = request.PlatformFeeFlatThreshold;
+        institution.PlatformFeeFlatAmount = request.PlatformFeeFlatAmount;
         institution.SettlementBankCode = request.SettlementBankCode;
         institution.SettlementBankName = request.SettlementBankName;
         institution.SettlementAccountNumber = request.SettlementAccountNumber;
@@ -382,14 +398,21 @@ public class InstitutionManagementService(
         var confirmed = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.InstitutionId == id && c.Status == "Successful")
             .ToListAsync();
+        var confirmedOrders = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+            .Where(o => o.InstitutionId == id && o.Status == "Successful")
+            .ToListAsync();
 
-        var gross = confirmed.Sum(c => c.Amount);
-        // Zero-Deduction model: our actual revenue is PlatformRevenueAmount; net
-        // to the institution is always equal to gross now (nothing deducted).
-        var fee = confirmed.Sum(c => c.PlatformRevenueAmount);
-        var net = confirmed.Sum(c => c.NetAmountToInstitution);
+        // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
+        // (Contribution) / PlatformFeeAmount (StoreOrder — same charge-building
+        // logic, just not carrying Contribution's legacy pre-Zero-Deduction
+        // field name); net to each is always equal to gross now (nothing
+        // deducted). Store orders included alongside contributions — they earn
+        // the platform fee identically, through the same Zero-Deduction charge.
+        var gross = confirmed.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount);
+        var fee = confirmed.Sum(c => c.PlatformRevenueAmount) + confirmedOrders.Sum(o => o.PlatformFeeAmount);
+        var net = confirmed.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount);
 
-        return new InstitutionRevenueResponse(id, gross, fee, net, confirmed.Count).ToOkApiResponse();
+        return new InstitutionRevenueResponse(id, gross, fee, net, confirmed.Count + confirmedOrders.Count).ToOkApiResponse();
     }
 
     /// <summary>
@@ -555,9 +578,13 @@ public class InstitutionManagementService(
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var newThisMonth = await db.Institutions.CountAsync(i => i.OnboardedAt >= monthStart);
 
-        var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+        var contributionRevenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.Status == "Successful")
             .SumAsync(c => c.PlatformRevenueAmount);
+        var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+            .Where(o => o.Status == "Successful")
+            .SumAsync(o => o.PlatformFeeAmount);
+        var revenue = contributionRevenue + storeRevenue;
 
         var growthCounts = new List<int>();
         var growthLabels = new List<string>();
@@ -696,9 +723,13 @@ public class InstitutionManagementService(
     private async Task<InstitutionDetailResponse> ToDetailDtoAsync(Institution i)
     {
         var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
-        var revenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+        var contributionRevenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
             .Where(c => c.InstitutionId == i.Id && c.Status == "Successful")
             .SumAsync(c => c.PlatformRevenueAmount);
+        var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+            .Where(o => o.InstitutionId == i.Id && o.Status == "Successful")
+            .SumAsync(o => o.PlatformFeeAmount);
+        var revenue = contributionRevenue + storeRevenue;
         return new InstitutionDetailResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain,
             i.PortalName, i.Tagline, i.ContactName, i.ContactEmail, i.SupportEmail,
@@ -709,7 +740,7 @@ public class InstitutionManagementService(
             i.HeroImageUrls, i.HeroHeadline,
             i.Status, memberCount,
             i.OnboardedAt, i.TrialEndsAt,
-            i.PlatformFeePercentage, i.PaystackSubaccountCode,
+            i.PlatformFeePercentage, i.PlatformFeeFlatThreshold, i.PlatformFeeFlatAmount, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
             MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug));

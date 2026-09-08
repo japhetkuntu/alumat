@@ -252,7 +252,23 @@ export default function MemberProfilePage() {
       spotlightAlerts: notifPrefs.spotlightAlerts,
       smsAlerts: notifPrefs.smsAlerts,
       whatsAppAlerts: notifPrefs.whatsAppAlerts,
+      digestFrequency: notifPrefs.digestFrequency,
       [key]: value,
+    });
+  }
+
+  function setDigestFrequency(frequency: NotificationPreference["digestFrequency"]) {
+    if (!notifPrefs) return;
+    notifMut.mutate({
+      membershipReminders: notifPrefs.membershipReminders,
+      campaignAlerts: notifPrefs.campaignAlerts,
+      eventReminders: notifPrefs.eventReminders,
+      jobAlerts: notifPrefs.jobAlerts,
+      classNoteAlerts: notifPrefs.classNoteAlerts,
+      spotlightAlerts: notifPrefs.spotlightAlerts,
+      smsAlerts: notifPrefs.smsAlerts,
+      whatsAppAlerts: notifPrefs.whatsAppAlerts,
+      digestFrequency: frequency,
     });
   }
 
@@ -529,6 +545,34 @@ export default function MemberProfilePage() {
             <CardDescription>Choose what updates you want to receive</CardDescription>
           </CardHeader>
           <CardContent className="divide-y divide-border/40">
+            <div className="flex items-start justify-between gap-4 py-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Digest Email</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  A roundup of new jobs, upcoming events, and what you&apos;ve missed
+                </p>
+              </div>
+              <div className="flex shrink-0 rounded-lg border border-border p-0.5" role="radiogroup" aria-label="Digest email frequency">
+                {(["Weekly", "Monthly", "None"] as const).map((freq) => {
+                  const active = (notifPrefs?.digestFrequency ?? "Weekly") === freq;
+                  return (
+                    <button
+                      key={freq}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setDigestFrequency(freq)}
+                      className={cn(
+                        "px-3 py-1.5 text-[12.5px] font-semibold rounded-md transition-colors",
+                        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {freq === "None" ? "Off" : freq}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <Toggle
               checked={notifPrefs?.membershipReminders ?? true}
               onChange={(v) => toggleNotif("membershipReminders", v)}

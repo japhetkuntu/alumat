@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <title>{{brand_name}} digest</title>
+  <!--[if !mso]><!-->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!--<![endif]-->
+  <style>
+    body { margin: 0; padding: 0; background: #f5f3ee; color: #14181f; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+    table { border-collapse: collapse; }
+    a { color: inherit; }
+    .page { width: 100%; padding: 40px 20px 48px; }
+    .email { width: 100%; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid {{brand_color_light}}; border-radius: 20px; overflow: hidden; box-shadow: 0 14px 38px rgba(20,24,31,0.08); }
+    .bar { height: 6px; background: linear-gradient(90deg, {{brand_color}}, {{brand_color_dark}}); }
+    .email-header { padding: 26px 40px 4px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-name { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: #14181f; }
+    .eyebrow-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{brand_accent_dark}}; }
+    .content { padding: 30px 40px 8px; }
+    .eyebrow { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {{brand_color}}; }
+    h1 { margin: 0 0 10px; font-size: 26px; line-height: 1.25; letter-spacing: -0.01em; color: #14181f; font-weight: 800; }
+    p { margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #4b5566; }
+    p strong { color: #14181f; }
+    .section { margin: 0 0 26px; }
+    .section-title { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{brand_accent_dark}}; }
+    .item { padding: 16px 18px; background: {{brand_accent_light}}; border: 1px solid {{brand_accent_soft}}; border-radius: 12px; margin: 0 0 10px; }
+    .item:last-child { margin-bottom: 0; }
+    .item-title { font-size: 15px; font-weight: 700; color: #14181f; margin: 0 0 4px; }
+    .item-meta { font-size: 13px; color: #6b7385; margin: 0; }
+    .button { display: inline-block; padding: 15px 28px; background: {{brand_color}}; color: {{brand_text_on_color}} !important; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 6px 0 22px; box-shadow: 0 8px 20px {{brand_color_soft}}; }
+    .footer { padding: 24px 40px 30px; background: #f5f3ee; border-top: 1px solid {{brand_color_light}}; text-align: center; }
+    .footer p { margin: 0 0 8px; color: #8a93a3; font-size: 12px; line-height: 1.6; }
+    .footer a { color: {{brand_color_dark}}; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="email">
+      <div class="bar"></div>
+      <div class="email-header">
+        <div class="brand">{{brand_mark_html}}<span class="brand-name">{{brand_name}}</span></div>
+        <span class="eyebrow-tag">{{digest_period_label}}</span>
+      </div>
+      <div class="content">
+        <p class="eyebrow">Since you've been away</p>
+        <h1>Here's what happened, {{member_first_name}}</h1>
+        <p>A quick roundup from {{brand_name}} — new postings, an upcoming date, and a few faces you might know.</p>
+        {{digest_sections_html}}
+        <a class="button" href="{{portal_url}}">Open {{brand_name}}</a>
+      </div>
+      <div class="footer">
+        <p>You're getting this because your digest preference is set to {{digest_frequency_label}}.</p>
+        <p><a href="{{preferences_url}}">Change how often you hear from us</a></p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

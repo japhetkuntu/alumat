@@ -199,7 +199,7 @@ export async function getMyContributions(params?: { page?: number; pageSize?: nu
   return res.data.data!;
 }
 
-export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; showOnWallOfSupport?: boolean; }
+export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; showOnWallOfSupport?: boolean; setupRecurringGiving?: boolean; }
 export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; sharedByMemberId?: string; showOnWallOfSupport?: boolean; }
 
 export async function initiatePaystackPayment(body: InitiatePaystackBody) {
@@ -209,6 +209,31 @@ export async function initiatePaystackPayment(body: InitiatePaystackBody) {
 
 export async function initiatePaystackPaymentGuest(body: InitiatePaystackGuestBody) {
   const res = await memberClient.post("/contributions/paystack/initiate/guest", body);
+  return res.data.data!;
+}
+
+export interface RecurringContribution {
+  id: string;
+  campaignId: string;
+  campaignTitle?: string;
+  amount: number;
+  status: "Active" | "Paused" | "Cancelled" | "Failed";
+  cardLast4?: string;
+  cardType?: string;
+  cardBank?: string;
+  nextChargeDate: string;
+  lastChargeAt?: string;
+  lastChargeStatus?: string;
+  createdAt: string;
+}
+
+export async function getMyRecurringGiving(): Promise<RecurringContribution[]> {
+  const res = await memberClient.get("/contributions/recurring");
+  return res.data.data!;
+}
+
+export async function cancelRecurringGiving(id: string) {
+  const res = await memberClient.post(`/contributions/recurring/${id}/cancel`);
   return res.data.data!;
 }
 

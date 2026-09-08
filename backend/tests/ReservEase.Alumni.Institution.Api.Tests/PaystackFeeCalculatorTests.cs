@@ -125,4 +125,66 @@ public class PaystackFeeCalculatorTests
         Assert.True(actualPlatformNet >= result.PlatformFeeSubunit,
             $"Platform net {actualPlatformNet} fell below its target fee {result.PlatformFeeSubunit}");
     }
+
+    // ── Tiered pricing: percentage below the threshold, flat fee above it ──
+
+    [Fact]
+    public void CalculateZeroDeductionCharge_TieredPricing_UsesPercentage_AtOrBelowThreshold()
+    {
+        // GHS 150 school amount, threshold GHS 200 / flat fee GHS 15 — should still use 5%.
+        var result = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            15000, 5m, 1.95m,
+            flatFeeThresholdSubunit: 20000, flatFeeAmountSubunit: 1500);
+
+        Assert.Equal(750, result.PlatformFeeSubunit); // 5% of 15000
+    }
+
+    [Fact]
+    public void CalculateZeroDeductionCharge_TieredPricing_UsesPercentage_ExactlyAtThreshold()
+    {
+        // Threshold is "above", not "at or above" — a payment exactly at the
+        // threshold still pays the percentage, not the flat fee.
+        var result = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            20000, 5m, 1.95m,
+            flatFeeThresholdSubunit: 20000, flatFeeAmountSubunit: 1500);
+
+        Assert.Equal(1000, result.PlatformFeeSubunit); // 5% of 20000, not the 1500 flat fee
+    }
+
+    [Fact]
+    public void CalculateZeroDeductionCharge_TieredPricing_UsesFlatFee_AboveThreshold()
+    {
+        // GHS 1,000 school amount — well above the GHS 200 threshold — pays
+        // the flat GHS 15 fee instead of 5% (which would have been GHS 50).
+        var result = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            100000, 5m, 1.95m,
+            flatFeeThresholdSubunit: 20000, flatFeeAmountSubunit: 1500);
+
+        Assert.Equal(1500, result.PlatformFeeSubunit);
+        Assert.Equal(result.ChargeAmountSubunit, result.SchoolAmountSubunit + result.PlatformFeeSubunit + result.GatewayFeeSubunit);
+    }
+
+    [Fact]
+    public void CalculateZeroDeductionCharge_TieredPricing_IgnoredWhenOnlyOneSideSet()
+    {
+        // Threshold without a flat amount (or vice versa) must fall back to
+        // pure percentage pricing, never throw or silently apply a fee of 0.
+        var thresholdOnly = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            100000, 5m, 1.95m, flatFeeThresholdSubunit: 20000);
+        var amountOnly = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            100000, 5m, 1.95m, flatFeeAmountSubunit: 1500);
+
+        Assert.Equal(5000, thresholdOnly.PlatformFeeSubunit); // 5% of 100000
+        Assert.Equal(5000, amountOnly.PlatformFeeSubunit);
+    }
+
+    [Fact]
+    public void CalculateZeroDeductionCharge_TieredPricing_ReconcilesExactly()
+    {
+        var result = PaystackFeeCalculator.CalculateZeroDeductionCharge(
+            250000, 5m, 1.95m,
+            flatFeeThresholdSubunit: 20000, flatFeeAmountSubunit: 1500);
+
+        Assert.Equal(result.ChargeAmountSubunit, result.SchoolAmountSubunit + result.PlatformFeeSubunit + result.GatewayFeeSubunit);
+    }
 }

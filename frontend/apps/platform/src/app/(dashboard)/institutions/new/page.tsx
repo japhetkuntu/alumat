@@ -56,6 +56,8 @@ function NewInstitutionPageContent() {
     primaryColor: "#2563eb",
     secondaryColor: "",
     platformFeePercentage: "5",
+    platformFeeFlatThreshold: "",
+    platformFeeFlatAmount: "",
     settlementBankName: "",
     settlementBankCode: "",
     settlementAccountNumber: "",
@@ -97,6 +99,10 @@ function NewInstitutionPageContent() {
         toast.error("Batch start year must be on or before the end year");
         return;
       }
+      if (!!form.platformFeeFlatThreshold !== !!form.platformFeeFlatAmount) {
+        toast.error("Enter both a flat-fee threshold and amount, or leave both blank");
+        return;
+      }
       setSubmitting(true);
       try {
         const created = await createInstitution({
@@ -109,6 +115,8 @@ function NewInstitutionPageContent() {
           primaryColorHex: form.primaryColor,
           secondaryColorHex: form.secondaryColor || undefined,
           platformFeePercentage: form.platformFeePercentage ? Number(form.platformFeePercentage) : undefined,
+          platformFeeFlatThreshold: form.platformFeeFlatThreshold ? Number(form.platformFeeFlatThreshold) : undefined,
+          platformFeeFlatAmount: form.platformFeeFlatAmount ? Number(form.platformFeeFlatAmount) : undefined,
           settlementBankCode: form.settlementBankCode || undefined,
           settlementBankName: form.settlementBankName || undefined,
           settlementAccountNumber: form.settlementAccountNumber || undefined,
@@ -295,6 +303,34 @@ function NewInstitutionPageContent() {
                         className="w-[120px]"
                       />
                       <span className="text-[13px] text-muted-foreground">% of each confirmed payment</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Flat fee above a threshold (optional)</Label>
+                    <p className="text-[12px] text-muted-foreground">
+                      Above the threshold, this flat fee replaces the percentage entirely — set both, or leave both blank for pure percentage pricing.
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[13px] text-muted-foreground">Above GH₵</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="1"
+                        placeholder="200"
+                        value={form.platformFeeFlatThreshold}
+                        onChange={(e) => update("platformFeeFlatThreshold", e.target.value)}
+                        className="w-[100px]"
+                      />
+                      <span className="text-[13px] text-muted-foreground">charge a flat GH₵</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="1"
+                        placeholder="15"
+                        value={form.platformFeeFlatAmount}
+                        onChange={(e) => update("platformFeeFlatAmount", e.target.value)}
+                        className="w-[100px]"
+                      />
                     </div>
                   </div>
                   <SettlementAccountFields

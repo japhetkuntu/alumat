@@ -116,7 +116,9 @@ public class ContributionService : IContributionService
             paystackConfig.GatewayFeePercentage,
             paystackConfig.GatewayFixedFeeSubunit,
             paystackConfig.GatewayFeeCapSubunit,
-            paystackConfig.GatewayFeeSafetyBufferSubunit);
+            paystackConfig.GatewayFeeSafetyBufferSubunit,
+            institution.PlatformFeeFlatThreshold.HasValue ? (long)Math.Round(institution.PlatformFeeFlatThreshold.Value * 100m, MidpointRounding.AwayFromZero) : null,
+            institution.PlatformFeeFlatAmount.HasValue ? (long)Math.Round(institution.PlatformFeeFlatAmount.Value * 100m, MidpointRounding.AwayFromZero) : null);
 
         return (
             charge.ChargeAmountSubunit,
@@ -300,6 +302,9 @@ public class ContributionService : IContributionService
             if (request.Amount <= 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Amount must be greater than zero.");
 
+            if (request.SetupRecurringGiving && member is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("You must be logged in to set up a monthly gift.");
+
             var currentInstitution = await GetCurrentInstitutionAsync();
             var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution);
             var subaccount = await ResolveSubaccountAsync(campaign, currentInstitution);
@@ -360,6 +365,7 @@ public class ContributionService : IContributionService
                 IsGuestPayment = isGuestPayment,
                 SharedByMemberId = sharedByMemberId,
                 ShowOnWallOfSupport = request.ShowOnWallOfSupport,
+                SetupRecurringGiving = request.SetupRecurringGiving,
                 PlatformFeeAmount = charge.platformFee,
                 GatewayFeeAmount = charge.gatewayFee,
                 TransactionChargeAmount = charge.transactionChargeAmount,
@@ -367,7 +373,7 @@ public class ContributionService : IContributionService
             };
 
             await paymentTransactionRepo.AddAsync(transaction);
-            await redis.SetAsync($"paystack:ref:{reference}", new PaystackReferenceInfo { MemberId = memberId, CampaignId = request.CampaignId, IsGuestPayment = isGuestPayment, SharedByMemberId = sharedByMemberId }, TimeSpan.FromHours(24));
+            await redis.SetAsync($"paystack:ref:{reference}", new PaystackReferenceInfo { MemberId = memberId, CampaignId = request.CampaignId, IsGuestPayment = isGuestPayment, SharedByMemberId = sharedByMemberId, SetupRecurringGiving = request.SetupRecurringGiving }, TimeSpan.FromHours(24));
 
             logger.LogInformation("Paystack payment initiated for member {MemberId}, campaign {CampaignId}", string.IsNullOrEmpty(memberId) ? "anonymous" : memberId, request.CampaignId);
             return ((object)new { authorizationUrl = response.Data?.AuthorizationUrl, reference })
@@ -528,6 +534,7 @@ public class ContributionService : IContributionService
         public string CampaignId { get; set; } = string.Empty;
         public bool IsGuestPayment { get; set; }
         public string? SharedByMemberId { get; set; }
+        public bool SetupRecurringGiving { get; set; }
     }
 
     private async Task<PaystackReferenceInfo?> GetReferenceInfoAsync(string reference)
@@ -540,6 +547,58 @@ public class ContributionService : IContributionService
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Turns this just-confirmed, member-present charge into a standing
+    /// monthly gift — only possible when Paystack reports the authorization
+    /// as reusable (true for most cards, false for most mobile money and
+    /// bank-transfer channels, which can't be re-charged without the
+    /// customer present). Silently does nothing otherwise: the one-off
+    /// contribution the member actually paid for already succeeded either
+    /// way, so a channel that can't support recurring is not an error.
+    /// </summary>
+    private async Task TrySetUpRecurringGivingAsync(PaymentTransaction transaction, Contribution contribution, PaystackAuthorization? authorization)
+    {
+        if (authorization is null || !authorization.Reusable || string.IsNullOrWhiteSpace(authorization.AuthorizationCode))
+        {
+            logger.LogInformation(
+                "Recurring giving requested for contribution {ContributionId} but the charge channel isn't reusable — skipping recurring setup.",
+                contribution.Id);
+            return;
+        }
+
+        var existing = await db.Set<RecurringContribution>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(r => r.MemberId == transaction.MemberId && r.CampaignId == transaction.CampaignId && r.Status == "Active");
+        if (existing is not null)
+        {
+            logger.LogInformation("Member {MemberId} already has an active recurring gift to campaign {CampaignId} — not creating a duplicate.", transaction.MemberId, transaction.CampaignId);
+            return;
+        }
+
+        var recurring = new RecurringContribution
+        {
+            InstitutionId = contribution.InstitutionId,
+            MemberId = transaction.MemberId,
+            Member = contribution.Member,
+            CampaignId = transaction.CampaignId,
+            Campaign = contribution.Campaign,
+            Amount = contribution.Amount,
+            Status = "Active",
+            AuthorizationCode = authorization.AuthorizationCode,
+            CardLast4 = authorization.Last4,
+            CardType = authorization.CardType,
+            CardBank = authorization.Bank,
+            NextChargeDate = DateTime.UtcNow.AddMonths(1),
+            LastChargeAt = DateTime.UtcNow,
+            LastChargeStatus = "Successful",
+            CreatedBy = transaction.MemberId,
+        };
+
+        await db.Set<RecurringContribution>().AddAsync(recurring);
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("Set up recurring monthly gift {RecurringId} for member {MemberId} to campaign {CampaignId}, amount {Amount}", recurring.Id, transaction.MemberId, transaction.CampaignId, contribution.Amount);
     }
 
     /// <summary>
@@ -595,6 +654,7 @@ public class ContributionService : IContributionService
                 CallbackPayload = rawBody,
                 IsGuestPayment = referenceInfo.IsGuestPayment,
                 SharedByMemberId = referenceInfo.SharedByMemberId,
+                SetupRecurringGiving = referenceInfo.SetupRecurringGiving,
             };
 
             await paymentTransactionRepo.AddAsync(transaction);
@@ -780,6 +840,9 @@ public class ContributionService : IContributionService
                     contribution.Amount,
                     contribution.Campaign?.Title ?? "your contribution",
                     contribution.Id));
+
+                if (transaction.SetupRecurringGiving && !string.IsNullOrEmpty(transaction.MemberId))
+                    await TrySetUpRecurringGivingAsync(transaction, contribution, verifyResponse.Data?.Authorization);
 
                 if (campaign is not null)
                 {
@@ -1234,6 +1297,49 @@ public class ContributionService : IContributionService
         {
             logger.LogError(e, "Error uploading proof for member {MemberId}", member.Id);
             return ApiResponseExtensions.ToServerErrorApiResponse<ContributionDto>("Failed to upload proof");
+        }
+    }
+
+    public async Task<IApiResponse<List<RecurringContributionDto>>> GetMyRecurringGivingAsync(string memberId)
+    {
+        try
+        {
+            var recurring = await db.Set<RecurringContribution>()
+                .Where(r => r.MemberId == memberId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+            return recurring.Select(r => r.ToDto()).ToList().ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving recurring gifts for member {MemberId}", memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<RecurringContributionDto>>("Failed to retrieve recurring gifts");
+        }
+    }
+
+    public async Task<IApiResponse<object>> CancelRecurringGivingAsync(string recurringContributionId, string memberId)
+    {
+        try
+        {
+            var recurring = await db.Set<RecurringContribution>()
+                .FirstOrDefaultAsync(r => r.Id == recurringContributionId);
+            if (recurring is null || recurring.MemberId != memberId)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Recurring gift not found");
+
+            if (recurring.Status is "Cancelled" or "Failed")
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This recurring gift is already stopped");
+
+            recurring.Status = "Cancelled";
+            recurring.UpdatedBy = memberId;
+            await db.SaveChangesAsync();
+
+            logger.LogInformation("Member {MemberId} cancelled recurring gift {RecurringId}", memberId, recurring.Id);
+            return new object().ToOkApiResponse("Recurring gift cancelled");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error cancelling recurring gift {RecurringId} for member {MemberId}", recurringContributionId, memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to cancel recurring gift");
         }
     }
 }

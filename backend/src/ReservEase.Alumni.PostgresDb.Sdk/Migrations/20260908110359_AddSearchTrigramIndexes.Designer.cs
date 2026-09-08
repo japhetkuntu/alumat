@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260908110359_AddSearchTrigramIndexes")]
+    partial class AddSearchTrigramIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -762,9 +765,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("ProofUrl")
                         .HasColumnType("text");
 
-                    b.Property<string>("RecurringContributionId")
-                        .HasColumnType("text");
-
                     b.Property<string>("SharedByMemberId")
                         .HasColumnType("text");
 
@@ -1315,8 +1315,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("InstitutionId");
 
-                    b.HasIndex("MemberNumber");
-
                     b.HasIndex("Status");
 
                     b.HasIndex("DepartmentId", "GraduationYear");
@@ -1670,10 +1668,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DigestFrequency")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<bool>("EventReminders")
                         .HasColumnType("boolean");
 
@@ -1683,9 +1677,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<bool>("JobAlerts")
                         .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastDigestSentAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MemberId")
                         .IsRequired()
@@ -1792,9 +1783,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("SetupRecurringGiving")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("SharedByMemberId")
                         .HasColumnType("text");
 
@@ -1870,85 +1858,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("InstitutionId");
 
                     b.ToTable("PhotoAlbums", "alumni");
-                });
-
-            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.RecurringContribution", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("AuthorizationCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Campaign")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("CampaignId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CardBank")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CardLast4")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CardType")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("FailedAttemptCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("InstitutionId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("LastChargeAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastChargeStatus")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Member")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("MemberId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("NextChargeDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstitutionId");
-
-                    b.HasIndex("MemberId");
-
-                    b.HasIndex("Status", "NextChargeDate");
-
-                    b.ToTable("RecurringContributions", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Referral", b =>
@@ -2502,12 +2411,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("PaystackSubaccountCode")
                         .HasColumnType("text");
-
-                    b.Property<decimal?>("PlatformFeeFlatAmount")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("PlatformFeeFlatThreshold")
-                        .HasColumnType("numeric");
 
                     b.Property<decimal>("PlatformFeePercentage")
                         .HasColumnType("numeric");

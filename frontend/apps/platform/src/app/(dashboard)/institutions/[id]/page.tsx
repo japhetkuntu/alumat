@@ -276,7 +276,8 @@ export default function InstitutionDetailPage() {
   });
 
   const [payments, setPayments] = useState<{
-    platformFeePercentage: string; settlementBankCode: string; settlementBankName: string;
+    platformFeePercentage: string; platformFeeFlatThreshold: string; platformFeeFlatAmount: string;
+    settlementBankCode: string; settlementBankName: string;
     settlementAccountNumber: string; settlementAccountName: string;
   } | null>(null);
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
@@ -284,6 +285,8 @@ export default function InstitutionDetailPage() {
     mutationFn: () =>
       updateInstitutionPayments(id, {
         platformFeePercentage: Number(payments!.platformFeePercentage) || 0,
+        platformFeeFlatThreshold: payments!.platformFeeFlatThreshold ? Number(payments!.platformFeeFlatThreshold) : undefined,
+        platformFeeFlatAmount: payments!.platformFeeFlatAmount ? Number(payments!.platformFeeFlatAmount) : undefined,
         settlementBankCode: payments!.settlementBankCode,
         settlementBankName: payments!.settlementBankName,
         settlementAccountNumber: payments!.settlementAccountNumber,
@@ -353,6 +356,8 @@ export default function InstitutionDetailPage() {
   if (payments === null) {
     setPayments({
       platformFeePercentage: String(inst.platformFeePercentage ?? 0),
+      platformFeeFlatThreshold: inst.platformFeeFlatThreshold != null ? String(inst.platformFeeFlatThreshold) : "",
+      platformFeeFlatAmount: inst.platformFeeFlatAmount != null ? String(inst.platformFeeFlatAmount) : "",
       settlementBankCode: inst.settlementBankCode ?? "",
       settlementBankName: inst.settlementBankName ?? "",
       settlementAccountNumber: inst.settlementAccountNumber ?? "",
@@ -926,6 +931,36 @@ export default function InstitutionDetailPage() {
                     <span className="text-[13px] text-muted-foreground">% of each successful payment</span>
                   </div>
                 </div>
+                <div className="space-y-1.5 pt-1 border-t border-border/60">
+                  <Label>Flat fee above a threshold (optional)</Label>
+                  <p className="text-[12px] text-muted-foreground">
+                    Above the threshold, this flat fee replaces the percentage entirely — set both, or leave both blank for pure percentage pricing.
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[13px] text-muted-foreground">Above</span>
+                    <span className="text-[13px] text-muted-foreground">GH₵</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="1"
+                      placeholder="200"
+                      value={payments.platformFeeFlatThreshold}
+                      onChange={(e) => setPayments((p) => ({ ...p!, platformFeeFlatThreshold: e.target.value }))}
+                      className="w-[100px]"
+                    />
+                    <span className="text-[13px] text-muted-foreground">charge a flat</span>
+                    <span className="text-[13px] text-muted-foreground">GH₵</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="1"
+                      placeholder="15"
+                      value={payments.platformFeeFlatAmount}
+                      onChange={(e) => setPayments((p) => ({ ...p!, platformFeeFlatAmount: e.target.value }))}
+                      className="w-[100px]"
+                    />
+                  </div>
+                </div>
                 <SettlementAccountFields value={payments} onChange={(next) => setPayments((p) => ({ ...p!, ...next }))} getBanks={getBanks} resolveAccount={resolveAccount} />
                 {inst.paystackSubaccountCode && (
                   <p className="text-[12px] text-muted-foreground">Payment subaccount ID: <span className="font-mono">{inst.paystackSubaccountCode}</span></p>
@@ -935,7 +970,16 @@ export default function InstitutionDetailPage() {
           </div>
 
           <FormError message={paymentsError} />
-          <Button onClick={() => paymentsMutation.mutate()} disabled={paymentsMutation.isPending}>
+          <Button
+            onClick={() => {
+              if (!!payments?.platformFeeFlatThreshold !== !!payments?.platformFeeFlatAmount) {
+                toast.error("Enter both a flat-fee threshold and amount, or leave both blank");
+                return;
+              }
+              paymentsMutation.mutate();
+            }}
+            disabled={paymentsMutation.isPending}
+          >
             {paymentsMutation.isPending ? "Saving…" : "Save payments"}
           </Button>
 

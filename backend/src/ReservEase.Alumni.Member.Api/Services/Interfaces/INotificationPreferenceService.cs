@@ -16,4 +16,5 @@ public record UpdateNotificationPreferenceRequest(
     bool ClassNoteAlerts,
     bool SpotlightAlerts,
     bool SmsAlerts,
-    bool WhatsAppAlerts);
+    bool WhatsAppAlerts,
+    string DigestFrequency = "Weekly");

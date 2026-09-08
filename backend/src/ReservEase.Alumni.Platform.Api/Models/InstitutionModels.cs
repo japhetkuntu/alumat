@@ -31,6 +31,11 @@ public class CreateInstitutionRequest
     // Revenue & payment split (from the onboarding wizard's Payments & payouts step)
     [Range(0, 100)]
     public decimal PlatformFeePercentage { get; set; }
+    /// <summary>Optional tiered pricing — above this amount, a flat fee (below) replaces the percentage. Set both or neither.</summary>
+    [Range(0, double.MaxValue)]
+    public decimal? PlatformFeeFlatThreshold { get; set; }
+    [Range(0, double.MaxValue)]
+    public decimal? PlatformFeeFlatAmount { get; set; }
     public string? SettlementBankCode { get; set; }
     public string? SettlementBankName { get; set; }
     public string? SettlementAccountNumber { get; set; }
@@ -71,7 +76,7 @@ public record InstitutionDetailResponse(
     List<string> HeroImageUrls, string? HeroHeadline,
     string Status, int MemberCount,
     DateTime OnboardedAt, DateTime? TrialEndsAt,
-    decimal PlatformFeePercentage, string? PaystackSubaccountCode,
+    decimal PlatformFeePercentage, decimal? PlatformFeeFlatThreshold, decimal? PlatformFeeFlatAmount, string? PaystackSubaccountCode,
     string? SettlementBankCode, string? SettlementBankName,
     string? SettlementAccountNumber, string? SettlementAccountName, decimal Revenue,
     string MemberPortalUrl, string InstitutionPortalUrl);
@@ -148,6 +153,11 @@ public class UpdateInstitutionPaymentsRequest
 {
     [Required, Range(0, 100)]
     public decimal PlatformFeePercentage { get; set; }
+    /// <summary>Optional tiered pricing — above this amount, a flat fee (below) replaces the percentage. Set both or neither; leaving both null keeps pure percentage pricing.</summary>
+    [Range(0, double.MaxValue)]
+    public decimal? PlatformFeeFlatThreshold { get; set; }
+    [Range(0, double.MaxValue)]
+    public decimal? PlatformFeeFlatAmount { get; set; }
     [Required]
     public string SettlementBankCode { get; set; } = string.Empty;
     [Required]

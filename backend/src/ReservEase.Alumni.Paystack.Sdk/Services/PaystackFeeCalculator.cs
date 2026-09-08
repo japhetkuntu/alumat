@@ -31,7 +31,9 @@ public static class PaystackFeeCalculator
         decimal gatewayFeePercentage,
         long gatewayFixedFeeSubunit = 0,
         long? gatewayFeeCapSubunit = null,
-        long gatewayFeeSafetyBufferSubunit = 0)
+        long gatewayFeeSafetyBufferSubunit = 0,
+        long? flatFeeThresholdSubunit = null,
+        long? flatFeeAmountSubunit = null)
     {
         if (schoolAmountSubunit <= 0)
             throw new ArgumentOutOfRangeException(nameof(schoolAmountSubunit), "Amount must be greater than zero.");
@@ -42,8 +44,20 @@ public static class PaystackFeeCalculator
         var gatewayRate = gatewayFeePercentage / 100m;
         if (gatewayRate < 0 || gatewayRate >= 1m)
             throw new ArgumentOutOfRangeException(nameof(gatewayFeePercentage), "Gateway fee percentage must be between 0 and 100 (exclusive).");
+        if (flatFeeAmountSubunit is < 0)
+            throw new ArgumentOutOfRangeException(nameof(flatFeeAmountSubunit), "Flat fee cannot be negative.");
 
-        var platformFee = (long)Math.Round(schoolAmountSubunit * platformFeePercentage / 100m, MidpointRounding.AwayFromZero);
+        // Tiered pricing: above the configured threshold, a flat fee replaces
+        // the percentage cut entirely rather than topping it up — a large
+        // payment shouldn't pay a percentage fee that dwarfs a modest flat
+        // rate. Both threshold and amount must be set together; either alone
+        // is ignored and pure percentage pricing applies, unchanged.
+        var useFlatFee = flatFeeThresholdSubunit.HasValue && flatFeeAmountSubunit.HasValue
+            && schoolAmountSubunit > flatFeeThresholdSubunit.Value;
+
+        var platformFee = useFlatFee
+            ? flatFeeAmountSubunit!.Value
+            : (long)Math.Round(schoolAmountSubunit * platformFeePercentage / 100m, MidpointRounding.AwayFromZero);
         var subtotal = schoolAmountSubunit + platformFee;
 
         // Gross-up so that chargeAmount - (chargeAmount * rate + fixed) == subtotal.

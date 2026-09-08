@@ -17,4 +17,10 @@ public interface IContributionService
     Task<IApiResponse<MembershipStatusResponse>> GetMembershipStatusAsync(AuthData member);
     Task<IApiResponse<List<CampaignDto>>> GetCurrentYearUnpaidMembershipCampaignsAsync(AuthData member);
     Task<IApiResponse<ContributionDto>> UploadProofAsync(UploadContributionProofRequest request, AuthData member);
+
+    /// <summary>The current member's standing monthly gifts, active and past.</summary>
+    Task<IApiResponse<List<RecurringContributionDto>>> GetMyRecurringGivingAsync(string memberId);
+
+    /// <summary>Cancels a standing monthly gift — terminal, the member must set up a new one (via a fresh InitiatePaystackPaymentAsync with SetupRecurringGiving) to resume.</summary>
+    Task<IApiResponse<object>> CancelRecurringGivingAsync(string recurringContributionId, string memberId);
 }

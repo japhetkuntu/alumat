@@ -52,6 +52,32 @@ public class PaystackService(PaystackConfig config, IHttpClientFactory httpClien
         })!;
     }
 
+    public async Task<ChargeAuthorizationResponse> ChargeAuthorizationAsync(ChargeAuthorizationRequest request)
+    {
+        var client = CreateClient();
+        var body = new StringContent(JsonConvert.SerializeObject(new
+        {
+            authorization_code = request.AuthorizationCode,
+            email = request.Email,
+            amount = request.Amount,
+            reference = request.Reference,
+            metadata = request.Metadata,
+            subaccount = request.Subaccount,
+            transaction_charge = request.TransactionCharge,
+            bearer = request.Bearer,
+        }), Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("/transaction/charge_authorization", body);
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<ChargeAuthorizationResponse>(content, new JsonSerializerSettings
+        {
+            ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+            {
+                NamingStrategy = new Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy()
+            }
+        })!;
+    }
+
     public async Task<SubaccountResponse> CreateSubaccountAsync(SubaccountRequest request)
     {
         var client = CreateClient();

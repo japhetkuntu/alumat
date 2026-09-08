@@ -86,6 +86,9 @@ export interface InstitutionDetail {
   onboardedAt: string;
   trialEndsAt?: string | null;
   platformFeePercentage: number;
+  /** Optional tiered pricing — above this amount, platformFeeFlatAmount replaces the percentage. Set together or not at all. */
+  platformFeeFlatThreshold?: number | null;
+  platformFeeFlatAmount?: number | null;
   paystackSubaccountCode?: string | null;
   settlementBankCode?: string | null;
   settlementBankName?: string | null;
@@ -107,6 +110,8 @@ export interface CreateInstitutionRequest {
   primaryColorHex?: string;
   secondaryColorHex?: string;
   platformFeePercentage?: number;
+  platformFeeFlatThreshold?: number;
+  platformFeeFlatAmount?: number;
   settlementBankCode?: string;
   settlementBankName?: string;
   settlementAccountNumber?: string;
@@ -212,6 +217,9 @@ export async function updateInstitutionBranding(id: string, req: UpdateInstituti
 
 export interface UpdateInstitutionPaymentsRequest {
   platformFeePercentage: number;
+  /** Optional tiered pricing — above this amount, platformFeeFlatAmount replaces the percentage. Set together or not at all. */
+  platformFeeFlatThreshold?: number | null;
+  platformFeeFlatAmount?: number | null;
   settlementBankCode: string;
   settlementBankName: string;
   settlementAccountNumber: string;

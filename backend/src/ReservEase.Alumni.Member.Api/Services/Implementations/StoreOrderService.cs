@@ -69,7 +69,9 @@ public class StoreOrderService(
             paystackConfig.GatewayFeePercentage,
             paystackConfig.GatewayFixedFeeSubunit,
             paystackConfig.GatewayFeeCapSubunit,
-            paystackConfig.GatewayFeeSafetyBufferSubunit);
+            paystackConfig.GatewayFeeSafetyBufferSubunit,
+            institution.PlatformFeeFlatThreshold.HasValue ? (long)Math.Round(institution.PlatformFeeFlatThreshold.Value * 100m, MidpointRounding.AwayFromZero) : null,
+            institution.PlatformFeeFlatAmount.HasValue ? (long)Math.Round(institution.PlatformFeeFlatAmount.Value * 100m, MidpointRounding.AwayFromZero) : null);
 
         return (
             charge.ChargeAmountSubunit,

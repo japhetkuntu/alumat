@@ -60,4 +60,7 @@ public class Contribution : BaseEntity, ITenantScoped
     /// anyone but the giver and institution staff, regardless of this flag.
     /// </summary>
     public bool ShowOnWallOfSupport { get; set; }
+
+    /// <summary>Set when this charge was collected automatically by a recurring gift, not a one-off payment — see RecurringContribution.</summary>
+    public string? RecurringContributionId { get; set; }
 }

@@ -40,6 +40,9 @@ public class NotificationPreferenceService(
     {
         try
         {
+            if (request.DigestFrequency is not ("None" or "Weekly" or "Monthly"))
+                return ApiResponseExtensions.ToBadRequestApiResponse<NotificationPreferenceDto>("Digest frequency must be None, Weekly, or Monthly");
+
             var pref = await prefRepo.GetOneAsync(p => p.MemberId == memberId);
             if (pref is null)
             {
@@ -59,6 +62,7 @@ public class NotificationPreferenceService(
             pref.SpotlightAlerts = request.SpotlightAlerts;
             pref.SmsAlerts = request.SmsAlerts;
             pref.WhatsAppAlerts = request.WhatsAppAlerts;
+            pref.DigestFrequency = request.DigestFrequency;
             pref.UpdatedBy = memberId;
 
             await prefRepo.UpdateAsync(pref);

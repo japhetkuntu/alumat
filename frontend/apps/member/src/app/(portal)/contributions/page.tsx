@@ -28,6 +28,8 @@ import {
   initiatePaystackPayment,
   renewMembership,
   getMyProfile,
+  getMyRecurringGiving,
+  cancelRecurringGiving,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import type { Campaign, Contribution, ContributionStatus } from "@/types";
@@ -449,6 +451,20 @@ export default function MemberContributionsPage() {
     queryFn:  getMyProfile,
   });
 
+  const { data: recurringGifts } = useQuery({
+    queryKey: ["m-recurring-giving"],
+    queryFn:  getMyRecurringGiving,
+  });
+
+  const cancelRecurringMut = useMutation({
+    mutationFn: cancelRecurringGiving,
+    onSuccess: () => {
+      toast.success("Recurring gift cancelled");
+      qc.invalidateQueries({ queryKey: ["m-recurring-giving"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   const isPensioner = profile?.employmentStatus === "Pensioner";
   const getMemberAmount = useCallback((c: Campaign) =>
     isPensioner && c.pensionerAmountPerMember != null ? c.pensionerAmountPerMember : c.amountPerMember,
@@ -575,6 +591,54 @@ export default function MemberContributionsPage() {
           </p>
         )}
       </section>
+
+      {/* ── Recurring gifts — only shown once at least one exists; the toggle to
+           create one lives on each campaign's own contribute page. ── */}
+      {recurringGifts && recurringGifts.filter((r) => r.status === "Active" || r.status === "Paused").length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-[15px] font-bold flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+              <RefreshCcw size={15} className="text-primary" />
+              Recurring gifts
+            </h2>
+            <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+              Standing monthly gifts, charged automatically
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {recurringGifts.filter((r) => r.status === "Active" || r.status === "Paused").map((r) => (
+              <div
+                key={r.id}
+                className="rounded-2xl border p-4 flex items-start justify-between gap-3"
+                style={{ borderColor: "var(--border)", background: "var(--card)" }}
+              >
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-bold truncate" style={{ color: "var(--foreground)" }}>
+                    {r.campaignTitle ?? "Fundraiser"}
+                  </p>
+                  <p className="text-[12px] mt-0.5 tabular-nums" style={{ color: "var(--muted-foreground)" }}>
+                    {formatCurrency(r.amount)}/month
+                    {r.cardLast4 && ` · ${r.cardType ?? "card"} •••• ${r.cardLast4}`}
+                  </p>
+                  <p className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
+                    {r.status === "Paused" ? "Paused — fundraiser is no longer active" : `Next charge ${formatDate(r.nextChargeDate)}`}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  disabled={cancelRecurringMut.isPending}
+                  onClick={() => cancelRecurringMut.mutate(r.id)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Payment history ── */}
       <section className="space-y-4">

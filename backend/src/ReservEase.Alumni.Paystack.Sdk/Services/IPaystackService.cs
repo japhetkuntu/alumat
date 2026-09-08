@@ -7,6 +7,9 @@ public interface IPaystackService
     Task<InitializePaymentResponse> InitializePaymentAsync(InitializePaymentRequest request);
     Task<VerifyPaymentResponse> VerifyPaymentAsync(string reference);
 
+    /// <summary>Re-charges a saved, reusable authorization off-session — used by recurring giving's scheduled charge cycle.</summary>
+    Task<ChargeAuthorizationResponse> ChargeAuthorizationAsync(ChargeAuthorizationRequest request);
+
     /// <summary>Create a Paystack subaccount for an institution's settlement banking details.</summary>
     Task<SubaccountResponse> CreateSubaccountAsync(SubaccountRequest request);
 

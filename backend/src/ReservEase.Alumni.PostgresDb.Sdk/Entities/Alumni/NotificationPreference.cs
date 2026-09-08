@@ -19,4 +19,10 @@ public class NotificationPreference : BaseEntity, ITenantScoped
     // to explicitly turn these on rather than explicitly turn them off.
     public bool SmsAlerts { get; set; } = false;
     public bool WhatsAppAlerts { get; set; } = false;
+
+    /// <summary>"None", "Weekly", or "Monthly" — how often the re-engagement digest email goes out. Defaults to Weekly so new members are opted in.</summary>
+    public string DigestFrequency { get; set; } = "Weekly";
+
+    /// <summary>Last time the digest scheduler actually sent this member a digest — drives the "is one due yet" check, not just an audit timestamp.</summary>
+    public DateTime? LastDigestSentAt { get; set; }
 }

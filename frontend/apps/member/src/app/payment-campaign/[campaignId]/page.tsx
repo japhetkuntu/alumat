@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import {
   Copy, Check, Share2, MessageCircle, Twitter, Facebook, Send, Linkedin, Mail, MessageSquare,
   Users, Target, Calendar, ChevronDown, ChevronUp,
-  Loader2, Lock, ArrowRight, ExternalLink,
+  Loader2, Lock, ArrowRight, ExternalLink, RefreshCcw,
 } from "@alumni/ui";
 import { getCampaignById, initiatePaystackPayment, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,6 +40,7 @@ export default function PublicCampaignContributionPage() {
   const [email, setEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [showEmail, setShowEmail] = useState(false);
+  const [makeMonthly, setMakeMonthly] = useState(false);
   const rawShareUrl = useShareUrl();
   // Carries the current viewer's own member id as `?ref=` on shared links, so
   // a guest who pays through a shared link can be attributed back to whoever
@@ -91,7 +92,7 @@ export default function PublicCampaignContributionPage() {
       // only a logged-out payer goes through the guest flow, which attributes
       // the payment to whoever shared the link (via ?ref=) when present.
       if (isMember) {
-        return initiatePaystackPayment({ campaignId, amount: amountToPay, callbackUrl });
+        return initiatePaystackPayment({ campaignId, amount: amountToPay, callbackUrl, setupRecurringGiving: makeMonthly });
       }
       return initiatePaystackPaymentGuest({ campaignId, amount: amountToPay, email, callbackUrl, sharedByMemberId });
     },
@@ -359,6 +360,35 @@ export default function PublicCampaignContributionPage() {
                       )}
                     </div>
 
+                    {/* Make it monthly — logged-in members only; recurring needs an
+                        identity to re-charge later, guests have none. */}
+                    {isMember && !isMembershipFixed && (
+                      <button
+                        type="button"
+                        onClick={() => setMakeMonthly((v) => !v)}
+                        className={cn(
+                          "w-full flex items-start gap-3 rounded-xl border-2 p-3.5 text-left transition-colors",
+                          makeMonthly ? "border-accent bg-accent/10" : "border-border/60 hover:border-accent/40"
+                        )}
+                      >
+                        <div className={cn(
+                          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
+                          makeMonthly ? "border-accent bg-accent" : "border-border"
+                        )}>
+                          {makeMonthly && <Check size={13} className="text-white" strokeWidth={3} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="flex items-center gap-1.5 text-[13px] font-bold text-foreground">
+                            <RefreshCcw size={13} className="text-accent" />
+                            Make this monthly
+                          </p>
+                          <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                            Automatically give {isValidAmount ? formatCurrency(numericAmount) : "this amount"} every month. Cancel anytime from your contributions.
+                          </p>
+                        </div>
+                      </button>
+                    )}
+
                     {/* Email — collapsible */}
                     <div className="space-y-2">
                       <button
@@ -398,7 +428,10 @@ export default function PublicCampaignContributionPage() {
                       {payMutation.isPending ? (
                         <><Loader2 size={18} className="animate-spin" /> Processing…</>
                       ) : (
-                        <>Pay {isValidAmount ? formatCurrency(numericAmount) : ""} online <ArrowRight size={18} /></>
+                        <>
+                          {makeMonthly && !isMembershipFixed ? "Set up" : "Pay"} {isValidAmount ? formatCurrency(numericAmount) : ""}
+                          {makeMonthly && !isMembershipFixed ? "/month" : " online"} <ArrowRight size={18} />
+                        </>
                       )}
                     </Button>
 

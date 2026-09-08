@@ -549,6 +549,7 @@ export interface NotificationPreference {
   spotlightAlerts: boolean;
   smsAlerts: boolean;
   whatsAppAlerts: boolean;
+  digestFrequency: "None" | "Weekly" | "Monthly";
 }
 
 export interface NotificationItem {

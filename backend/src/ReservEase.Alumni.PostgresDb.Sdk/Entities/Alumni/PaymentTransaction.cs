@@ -23,6 +23,14 @@ public class PaymentTransaction : BaseEntity, ITenantScoped
     /// <summary>Opt-in, set by the giver at initiation — carried onto the Contribution once confirmed. Never implies the amount is shown.</summary>
     public bool ShowOnWallOfSupport { get; set; }
 
+    /// <summary>
+    /// True when this charge was made to set up a standing monthly gift, not
+    /// just a one-off contribution. On successful verification, if Paystack's
+    /// authorization for this charge turned out reusable, a RecurringContribution
+    /// row is created from it. False (the default) for every ordinary payment.
+    /// </summary>
+    public bool SetupRecurringGiving { get; set; }
+
     public string CampaignId { get; set; } = string.Empty;
     public CampaignSnapshot? Campaign { get; set; }
 

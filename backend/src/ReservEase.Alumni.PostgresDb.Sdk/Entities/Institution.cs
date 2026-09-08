@@ -107,6 +107,18 @@ public class Institution : BaseEntity
     /// </summary>
     public decimal PlatformFeePercentage { get; set; }
 
+    /// <summary>
+    /// Above this payment amount, the flat fee below replaces the percentage
+    /// cut entirely — not a top-up. E.g. threshold 200, flat fee 15: a ₵150
+    /// payment pays 5% (₵7.50), a ₵1,000 payment pays a flat ₵15, not
+    /// ₵50. Null (with <see cref="PlatformFeeFlatAmount"/>) means pure
+    /// percentage pricing, unchanged from before this existed.
+    /// </summary>
+    public decimal? PlatformFeeFlatThreshold { get; set; }
+
+    /// <summary>The flat fee charged once <see cref="PlatformFeeFlatThreshold"/> is exceeded. Both must be set together for tiered pricing to apply.</summary>
+    public decimal? PlatformFeeFlatAmount { get; set; }
+
     /// <summary>Paystack subaccount code once created — null until settlement banking details are set.</summary>
     public string? PaystackSubaccountCode { get; set; }
     public string? SettlementBankCode { get; set; }

@@ -127,4 +127,25 @@ public class ContributionsController(IContributionService contributionService) :
         var result = await contributionService.UploadProofAsync(request, member);
         return result.ToActionResult();
     }
+
+    [HttpGet("recurring")]
+    [SwaggerOperation(Summary = "My recurring gifts", Description = "Get the current member's standing monthly gifts, active and past")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<RecurringContributionDto>>))]
+    public async Task<IActionResult> GetMyRecurringGiving()
+    {
+        var member = User.GetAccount();
+        var result = await contributionService.GetMyRecurringGivingAsync(member.Id);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("recurring/{id}/cancel")]
+    [SwaggerOperation(Summary = "Cancel recurring gift", Description = "Stops a standing monthly gift — terminal, a new one must be set up to resume")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> CancelRecurringGiving(string id)
+    {
+        var member = User.GetAccount();
+        var result = await contributionService.CancelRecurringGivingAsync(id, member.Id);
+        return result.ToActionResult();
+    }
 }

@@ -271,6 +271,22 @@ public class ContributionDto
     public bool ShowOnWallOfSupport { get; set; }
 }
 
+public class RecurringContributionDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string CampaignId { get; set; } = string.Empty;
+    public string? CampaignTitle { get; set; }
+    public decimal Amount { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? CardLast4 { get; set; }
+    public string? CardType { get; set; }
+    public string? CardBank { get; set; }
+    public DateTime NextChargeDate { get; set; }
+    public DateTime? LastChargeAt { get; set; }
+    public string? LastChargeStatus { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 /// <summary>An institution-staff-posted progress update on a campaign.</summary>
 public class CampaignUpdateDto
 {
@@ -520,6 +536,7 @@ public class NotificationPreferenceDto
     public bool SpotlightAlerts { get; set; }
     public bool SmsAlerts { get; set; }
     public bool WhatsAppAlerts { get; set; }
+    public string DigestFrequency { get; set; } = "Weekly";
 }
 
 // ── Admin Notification Preferences ──────────────────────────────────────────

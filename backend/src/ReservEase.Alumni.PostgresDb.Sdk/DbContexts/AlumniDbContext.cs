@@ -41,6 +41,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignUpdate> CampaignUpdates => Set<CampaignUpdate>();
     public DbSet<Contribution> Contributions => Set<Contribution>();
+    public DbSet<RecurringContribution> RecurringContributions => Set<RecurringContribution>();
     public DbSet<AlumniEvent> Events => Set<AlumniEvent>();
     public DbSet<EventRsvp> EventRsvps => Set<EventRsvp>();
     public DbSet<Job> Jobs => Set<Job>();
@@ -96,6 +97,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // Contributions: persist member/campaign snapshots as jsonb for display.
         modelBuilder.Entity<Contribution>().Property(c => c.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
         modelBuilder.Entity<Contribution>().Property(c => c.Campaign).HasColumnType("jsonb").HasConversion(new JsonbConverter<CampaignSnapshot>(jsonOpts));
+        modelBuilder.Entity<RecurringContribution>().Property(r => r.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
+        modelBuilder.Entity<RecurringContribution>().Property(r => r.Campaign).HasColumnType("jsonb").HasConversion(new JsonbConverter<CampaignSnapshot>(jsonOpts));
 
         // PaymentTransactions: persist member/campaign snapshots as jsonb.
         modelBuilder.Entity<PaymentTransaction>().Property(p => p.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
@@ -212,6 +215,12 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(m => m.Status);
         modelBuilder.Entity<Member>()
             .HasIndex(m => new { m.DepartmentId, m.GraduationYear });
+        // Member number generation (see MemberManagementService.ApproveMemberAsync)
+        // does a StartsWith("PREFIX-YEAR-") scan every time a member is
+        // approved — StartsWith is a right-anchored LIKE 'prefix%', which (unlike
+        // a leading-wildcard Contains) a plain btree index serves directly.
+        modelBuilder.Entity<Member>()
+            .HasIndex(m => m.MemberNumber);
 
         // Campaign: list by status + sort by deadline
         modelBuilder.Entity<Campaign>().Property(c => c.YearGroups).HasColumnType("integer[]");
@@ -240,6 +249,12 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(c => c.Status);
         modelBuilder.Entity<Contribution>()
             .HasIndex(c => c.TransactionRef);
+
+        // RecurringContribution: scheduler scans by Status+NextChargeDate; member's own list by MemberId
+        modelBuilder.Entity<RecurringContribution>()
+            .HasIndex(r => r.MemberId);
+        modelBuilder.Entity<RecurringContribution>()
+            .HasIndex(r => new { r.Status, r.NextChargeDate });
 
         // PaymentTransaction: lookup by Paystack reference
         modelBuilder.Entity<PaymentTransaction>()
