@@ -190,6 +190,7 @@ export default function AdminCampaignsPage() {
     queryFn: () => getCampaigns(page, pageSize, statusFilter || undefined),
     placeholderData: (prev) => prev,
   });
+  const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
 
   const createMut = useMutation({
     mutationFn: (f: FormState) => createCampaign({
@@ -356,7 +357,9 @@ export default function AdminCampaignsPage() {
                     <p className="text-[12.5px] text-muted-foreground mt-1">
                       {c.yearGroups && c.yearGroups.length > 0
                         ? (c.yearGroups.length === 1 ? `Class of ${c.yearGroups[0]}` : `Classes ${c.yearGroups.slice(0, 2).join(", ")}${c.yearGroups.length > 2 ? "…" : ""}`)
-                        : "All members"}
+                        : c.communityId
+                          ? (communities.find((cm) => cm.id === c.communityId)?.name ?? "Community")
+                          : "All members"}
                       {" · "}
                       {c.allowManualPayments ? "Online + manual payments" : "Online payments"}
                     </p>
