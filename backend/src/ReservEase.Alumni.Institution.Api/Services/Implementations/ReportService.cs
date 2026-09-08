@@ -52,7 +52,8 @@ public class ReportService(
 
             // Campaigns — year-scoped or community-scoped
             var campaignQuery = campaignRepo.GetQueryable(isSuper ? null : c =>
-                (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                c.CreatedBy == admin.Id
+                || (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
                 || (c.CommunityId != null && communityIds.Contains(c.CommunityId)));
             var campaignStats = await campaignQuery
                 .GroupBy(c => 1)
@@ -78,7 +79,8 @@ public class ReportService(
             var campaignIdQuery = isSuper
                 ? null
                 : campaignRepo.GetQueryable(c =>
-                    (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    c.CreatedBy == admin.Id
+                    || (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (c.CommunityId != null && communityIds.Contains(c.CommunityId))).Select(c => c.Id);
 
             var contributionQuery = isSuper
@@ -101,7 +103,8 @@ public class ReportService(
             var eventsQueryFiltered = isSuper
                 ? eventRepo.GetQueryable(null)
                 : eventRepo.GetQueryable(e =>
-                    (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    e.CreatedBy == admin.Id
+                    || (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (e.CommunityId != null && communityIds.Contains(e.CommunityId)));
             var totalEvents = await eventsQueryFiltered.CountAsync();
 
@@ -109,7 +112,8 @@ public class ReportService(
             var jobsQueryFiltered = isSuper
                 ? jobRepo.GetQueryable(null)
                 : jobRepo.GetQueryable(j =>
-                    (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    j.CreatedBy == admin.Id
+                    || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (j.CommunityId != null && communityIds.Contains(j.CommunityId)));
             var totalJobs = await jobsQueryFiltered.CountAsync();
 
@@ -134,7 +138,7 @@ public class ReportService(
         }
     }
 
-    public async Task<IApiResponse<ReportExportResult>> ExportEntityCsvAsync(string entity, AuthData admin)
+    public async Task<IApiResponse<ReportExportResult>> ExportEntityCsvAsync(string entity, AuthData admin, MemberExportFilters? memberFilters = null)
     {
         try
         {
@@ -142,21 +146,32 @@ public class ReportService(
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
             var communityMemberIds = await GetScopedCommunityMemberIdsAsync(admin);
+            memberFilters ??= new MemberExportFilters(null, null, null, null, null);
 
             IQueryable<object>? source = entity.ToLower() switch
             {
                 "campaigns" => campaignRepo.GetQueryable(isSuper ? null : c =>
-                    (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    c.CreatedBy == admin.Id
+                    || (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (c.CommunityId != null && communityIds.Contains(c.CommunityId))),
-                "members" => memberRepo.GetQueryable(isSuper ? null : m => yearGroups.Contains(m.GraduationYear) || communityMemberIds!.Contains(m.Id)),
+                "members" => memberRepo.GetQueryable(m =>
+                    (isSuper || yearGroups.Contains(m.GraduationYear) || communityMemberIds!.Contains(m.Id))
+                    && (string.IsNullOrEmpty(memberFilters.Status) || m.Status == memberFilters.Status)
+                    && (!memberFilters.GraduationYearFrom.HasValue || m.GraduationYear >= memberFilters.GraduationYearFrom.Value)
+                    && (!memberFilters.GraduationYearTo.HasValue || m.GraduationYear <= memberFilters.GraduationYearTo.Value)
+                    && (string.IsNullOrEmpty(memberFilters.JobTitleContains) || (m.JobTitle != null && m.JobTitle.ToLower().Contains(memberFilters.JobTitleContains.ToLower())))
+                    && (string.IsNullOrEmpty(memberFilters.LocationContains) || (m.Location != null && m.Location.ToLower().Contains(memberFilters.LocationContains.ToLower())))),
                 "contributions" => contributionRepo.GetQueryable(isSuper ? null : c => campaignRepo.GetQueryable(isSuper ? null : cc =>
-                    (cc.YearGroups != null && cc.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    cc.CreatedBy == admin.Id
+                    || (cc.YearGroups != null && cc.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (cc.CommunityId != null && communityIds.Contains(cc.CommunityId))).Select(cc => cc.Id).Contains(c.CampaignId)),
                 "events" => eventRepo.GetQueryable(isSuper ? null : e =>
-                    (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    e.CreatedBy == admin.Id
+                    || (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (e.CommunityId != null && communityIds.Contains(e.CommunityId))),
                 "jobs" => jobRepo.GetQueryable(isSuper ? null : j =>
-                    (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    j.CreatedBy == admin.Id
+                    || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
                     || (j.CommunityId != null && communityIds.Contains(j.CommunityId))),
                 _ => null,
             };
@@ -187,10 +202,10 @@ public class ReportService(
             }
             else if (entity.ToLower() == "members")
             {
-                sb.AppendLine("Id,FirstName,LastName,Email,GraduationYear,DepartmentId,Status");
+                sb.AppendLine("Id,FirstName,LastName,Email,GraduationYear,DepartmentId,Status,JobTitle,Location");
                 foreach (var row in ((IQueryable<Member>)source).AsEnumerable())
                 {
-                    sb.AppendLine($"{row.Id},{EscapeCsv(row.FirstName)},{EscapeCsv(row.LastName)},{row.Email},{row.GraduationYear},{EscapeCsv(row.DepartmentId)},{row.Status}");
+                    sb.AppendLine($"{row.Id},{EscapeCsv(row.FirstName)},{EscapeCsv(row.LastName)},{row.Email},{row.GraduationYear},{EscapeCsv(row.DepartmentId)},{row.Status},{EscapeCsv(row.JobTitle ?? string.Empty)},{EscapeCsv(row.Location ?? string.Empty)}");
                 }
             }
             else if (entity.ToLower() == "contributions")

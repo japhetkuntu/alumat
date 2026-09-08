@@ -47,9 +47,10 @@ public class AlbumService(
                 .Select(m => m.CommunityId).ToList();
             var graduationYear = member.GraduationYear;
 
+            var search = filter.Search?.ToLower();
             var result = await albumRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                a => (string.IsNullOrEmpty(filter.Search) || a.Title.Contains(filter.Search))
+                a => (string.IsNullOrEmpty(search) || a.Title.ToLower().Contains(search))
                   && ((a.CommunityId == null && a.YearGroups == null)
                       || (a.CommunityId != null && approvedCommunityIds.Contains(a.CommunityId))
                       || (a.YearGroups != null && graduationYear.HasValue && a.YearGroups.Contains(graduationYear.Value))));

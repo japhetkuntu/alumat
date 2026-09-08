@@ -4,11 +4,13 @@ using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 
@@ -19,8 +21,13 @@ public class NewsService(
     IAlumniPgRepository<StaffEntity> adminRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
+    IRedisService<PublicContentCacheConfig> publicCache,
     ILogger<NewsService> logger) : INewsService
 {
+    /// <summary>A post's audience (community/year-group) can only ever narrow it away from the public, institution-wide landing page — so any create/update/publish/delete is invalidated unconditionally rather than trying to first work out whether this particular post was ever public. Cheap, and never wrong.</summary>
+    private Task InvalidatePublicNewsCacheAsync()
+        => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.News(id)) : Task.CompletedTask;
+
     public async Task<IApiResponse<PgPagedResult<NewsPostDto>>> GetPostsAsync(NewsFilter filter, AuthData admin)
     {
         try
@@ -30,12 +37,13 @@ public class NewsService(
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
 
+            var search = filter.Search?.ToLower();
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 p => (string.IsNullOrEmpty(filter.Status) || p.Status == filter.Status)
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || p.Title.Contains(filter.Search)
-                      || p.Content.Contains(filter.Search))
+                  && (string.IsNullOrEmpty(search)
+                      || p.Title.ToLower().Contains(search)
+                      || p.Content.ToLower().Contains(search))
                   && (isSuper || p.CreatedBy == admin.Id
                       || (p.YearGroups != null && p.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (p.CommunityId != null && communityIds.Contains(p.CommunityId))));
@@ -127,6 +135,7 @@ public class NewsService(
                 post.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
             await newsRepo.AddAsync(post);
+            await InvalidatePublicNewsCacheAsync();
             logger.LogInformation("Post {PostId} created by admin {AdminId}", post.Id, admin.Id);
             return post.ToDto().ToCreatedApiResponse("Post created");
         }
@@ -178,6 +187,7 @@ public class NewsService(
             post.UpdatedAt = DateTime.UtcNow;
             post.UpdatedBy = admin.Id;
             await newsRepo.UpdateAsync(post);
+            await InvalidatePublicNewsCacheAsync();
             logger.LogInformation("Post {PostId} updated by admin {AdminId}", post.Id, admin.Id);
             return post.ToDto().ToOkApiResponse();
         }
@@ -210,6 +220,7 @@ public class NewsService(
             post.UpdatedAt = DateTime.UtcNow;
             post.UpdatedBy = admin.Id;
             await newsRepo.UpdateAsync(post);
+            await InvalidatePublicNewsCacheAsync();
 
             logger.LogInformation("Post {PostId} published by admin {AdminId}", postId, admin.Id);
             return post.ToDto().ToOkApiResponse();
@@ -239,6 +250,7 @@ public class NewsService(
             }
 
             await newsRepo.RemoveAsync(post);
+            await InvalidatePublicNewsCacheAsync();
             logger.LogInformation("Post {PostId} deleted", postId);
             return new object().ToOkApiResponse("Post deleted");
         }

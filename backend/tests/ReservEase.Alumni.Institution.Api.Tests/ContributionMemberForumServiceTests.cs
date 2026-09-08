@@ -11,6 +11,7 @@ using ReservEase.Alumni.Institution.Api.Services.Implementations;
 using AdminContributionService = ReservEase.Alumni.Institution.Api.Services.Implementations.ContributionService;
 using AdminCampaignService = ReservEase.Alumni.Institution.Api.Services.Implementations.CampaignService;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -539,7 +540,7 @@ public class ContributionMemberForumServiceTests
             .ReturnsAsync(1)
             .Callback<AlumniEvent>(e => createdEvent = e);
 
-        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<EventService>());
+        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), Mock.Of<IRedisService<PublicContentCacheConfig>>(), new NullLogger<EventService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateEventRequest
@@ -567,7 +568,7 @@ public class ContributionMemberForumServiceTests
         var mockMemberRepo = new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>>();
         var mockStorage = new Mock<IStorageService>();
 
-        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<EventService>());
+        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), Mock.Of<IRedisService<PublicContentCacheConfig>>(), new NullLogger<EventService>());
         var admin = new AuthData { Id = "admin1", Role = "SuperAdmin", GraduationYear = 2026 };
 
         var request = new CreateEventRequest

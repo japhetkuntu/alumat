@@ -2,11 +2,13 @@ using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -16,8 +18,12 @@ public class InstitutionSpotlightService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
+    IRedisService<PublicContentCacheConfig> publicCache,
     ILogger<InstitutionSpotlightService> logger) : IInstitutionSpotlightService
 {
+    private Task InvalidatePublicSpotlightsCacheAsync()
+        => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.Spotlights(id)) : Task.CompletedTask;
+
     public async Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetSpotlightsAsync(int page, int pageSize, string? status)
     {
         try
@@ -85,6 +91,7 @@ public class InstitutionSpotlightService(
             };
 
             await spotlightRepo.AddAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
 
             notificationActor.Tell(new DispatchSpotlightAlertCommand(currentTenant.InstitutionId!, spotlight));
 
@@ -96,6 +103,30 @@ public class InstitutionSpotlightService(
         {
             logger.LogError(e, "Error creating spotlight for member {MemberId}", request.MemberId);
             return ApiResponseExtensions.ToServerErrorApiResponse<SpotlightDto>("Failed to create spotlight");
+        }
+    }
+
+    public async Task<IApiResponse<SpotlightDto>> UpdateSpotlightAsync(string spotlightId, UpdateSpotlightRequest request, AuthData admin)
+    {
+        try
+        {
+            var spotlight = await spotlightRepo.GetByIdAsync(spotlightId);
+            if (spotlight is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<SpotlightDto>("Spotlight not found");
+
+            spotlight.Title = request.Title;
+            spotlight.Story = request.Story;
+            spotlight.ImageUrl = request.ImageUrl;
+            spotlight.UpdatedBy = admin.Id;
+            await spotlightRepo.UpdateAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
+
+            return spotlight.ToDto().ToOkApiResponse("Spotlight updated.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating spotlight {SpotlightId}", spotlightId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<SpotlightDto>("Failed to update spotlight");
         }
     }
 
@@ -111,6 +142,7 @@ public class InstitutionSpotlightService(
             spotlight.FeaturedMonth = DateTime.UtcNow;
             spotlight.UpdatedBy = admin.Id;
             await spotlightRepo.UpdateAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
 
             return spotlight.ToDto().ToOkApiResponse("Spotlight approved.");
         }
@@ -133,6 +165,7 @@ public class InstitutionSpotlightService(
             spotlight.AdminNotes = reason;
             spotlight.UpdatedBy = admin.Id;
             await spotlightRepo.UpdateAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
 
             return spotlight.ToDto().ToOkApiResponse("Spotlight rejected.");
         }

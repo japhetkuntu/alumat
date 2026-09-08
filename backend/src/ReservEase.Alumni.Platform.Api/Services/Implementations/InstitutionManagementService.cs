@@ -10,6 +10,7 @@ using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using Microsoft.Extensions.Options;
@@ -130,6 +131,13 @@ public class InstitutionManagementService(
             && request.MemberActivePolicy != MembershipActivityCalculator.DuesRequiredPolicy)
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("MemberActivePolicy must be either \"ApprovedOnly\" or \"DuesRequired\"");
 
+        if (request.BatchStartYear.HasValue != request.BatchEndYear.HasValue)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Provide both a batch start year and end year, or neither");
+        if (request.BatchStartYear.HasValue && request.BatchEndYear!.Value < request.BatchStartYear!.Value)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Batch start year must be on or before the end year");
+        if (request.BatchStartYear.HasValue && request.BatchEndYear!.Value - request.BatchStartYear!.Value > 200)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Batch year range is too wide");
+
         await using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
@@ -191,6 +199,20 @@ public class InstitutionManagementService(
             };
             db.Set<StaffEntity>().Add(admin);
             await db.SaveChangesAsync();
+
+            if (request.BatchStartYear.HasValue && request.BatchEndYear.HasValue)
+            {
+                var batches = Enumerable.Range(request.BatchStartYear.Value, request.BatchEndYear.Value - request.BatchStartYear.Value + 1)
+                    .Select(year => new Batch
+                    {
+                        InstitutionId = institution.Id,
+                        Name = year.ToString(),
+                        Year = year,
+                        CreatedBy = createdBy,
+                    });
+                db.Batches.AddRange(batches);
+                await db.SaveChangesAsync();
+            }
 
             await transaction.CommitAsync();
 

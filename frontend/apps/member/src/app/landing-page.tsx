@@ -9,8 +9,9 @@ import {
   Menu, X, ArrowRight, ChevronRight,
   BookOpen, Trophy, CreditCard, Bell,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
-  Images, Building2,
+  Images, Building2, Newspaper, Clock,
 } from "@alumni/ui";
+import { Skeleton } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { publicMemberClient } from "@/lib/api-client";
@@ -52,8 +53,8 @@ interface DynamicNewsBanner {
 }
 
 interface LandingContent {
-  landingPageStories: DynamicLandingStory[];
-  newsBanner: DynamicNewsBanner | null;
+  landingPageStories?: DynamicLandingStory[] | null;
+  newsBanner?: DynamicNewsBanner | null;
   displayName?: string | null;
   logoUrl?: string | null;
   /** Overrides the hero photo(s), shown as a carousel when there's more than one — falls back to IMG.heroPanel (generic stock photo) when empty. */
@@ -63,17 +64,68 @@ interface LandingContent {
   disabledFeatures?: string[] | null;
 }
 
-function useLandingContent() {
+function useLandingContent(initialContent?: LandingContent | null) {
   const { data } = useQuery({
     queryKey: ["member-landing-content"],
     queryFn: async () => {
       const res = await publicMemberClient.get<{ data: LandingContent }>("/public/institution/theme");
       return res.data.data;
     },
+    // Server-rendered by the root page (see RootPage in page.tsx) — the very
+    // first paint already has the real institution's branding baked in, so
+    // there's nothing to flash generic placeholder content while this
+    // client-side fetch (which still runs, to pick up any edit made after
+    // that server render) is in flight.
+    initialData: initialContent ?? undefined,
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
   return data;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   REAL INSTITUTION CONTENT — news, events, and a spotlight, all pulled from
+   this tenant's own actual data (institution-wide items only — nothing
+   community/year-restricted, since an anonymous visitor has no membership
+   context). This is what makes the homepage read as this institution's own
+   site rather than a generic product marketing page.
+   ───────────────────────────────────────────────────────────────────────── */
+interface PublicNewsItem { id: string; title: string; excerpt: string; imageUrl?: string | null; publishedAt?: string | null; category: string; }
+interface PublicEventItem { id: string; title: string; startDate: string; venue: string; bannerImageUrl?: string | null; }
+interface PublicSpotlightItem { id: string; title: string; story: string; imageUrl?: string | null; memberName: string; featuredMonth?: string | null; }
+
+function usePublicNews() {
+  const { data, isPending } = useQuery({
+    queryKey: ["public-news"],
+    queryFn: async () => (await publicMemberClient.get<{ data: PublicNewsItem[] }>("/public/news", { params: { take: 3 } })).data.data,
+    staleTime: 5 * 60 * 1000, retry: false,
+  });
+  return { items: data ?? [], isPending };
+}
+function usePublicEvents() {
+  const { data, isPending } = useQuery({
+    queryKey: ["public-events"],
+    queryFn: async () => (await publicMemberClient.get<{ data: PublicEventItem[] }>("/public/events", { params: { take: 3 } })).data.data,
+    staleTime: 5 * 60 * 1000, retry: false,
+  });
+  return { items: data ?? [], isPending };
+}
+function usePublicSpotlight() {
+  const { data, isPending } = useQuery({
+    queryKey: ["public-spotlight"],
+    queryFn: async () => (await publicMemberClient.get<{ data: PublicSpotlightItem[] }>("/public/spotlights", { params: { take: 1 } })).data.data,
+    staleTime: 5 * 60 * 1000, retry: false,
+  });
+  return { item: data?.[0], isPending };
+}
+
+function formatNewsDate(iso?: string | null) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+}
+function formatEventDate(iso: string) {
+  const d = new Date(iso);
+  return { day: d.getDate(), month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(), time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) };
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -135,6 +187,7 @@ function HeroCarousel({ images }: { images: string[] }) {
    DATA
    ───────────────────────────────────────────────────────────────────────── */
 const NAV_LINKS = [
+  { label: "News",         href: "#news"         },
   { label: "Features",     href: "#features"     },
   { label: "Stories",      href: "#stories"      },
   { label: "How it works", href: "#how-it-works" },
@@ -410,13 +463,225 @@ function AnnouncementBanner({ banner }: { banner: DynamicNewsBanner }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   NEWS · EVENTS · SPOTLIGHT
+   Editorial feed (news + upcoming events) with a spotlight sidebar card —
+   the section that makes this read as the institution's own site instead
+   of a generic product page. Each piece is independently optional: a brand
+   new tenant with nothing published yet simply doesn't render this section.
+   ───────────────────────────────────────────────────────────────────────── */
+function NewsCard({ item, big }: { item: PublicNewsItem; big?: boolean }) {
+  return (
+    <Link href={`/news/${item.id}`} className="group block">
+      <article>
+        <div className="relative overflow-hidden rounded-lg mb-3.5" style={{ aspectRatio: big ? "16/9" : "4/3" }}>
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
+              <Newspaper size={big ? 30 : 20} style={{ color: "var(--primary)", opacity: 0.4 }} />
+            </div>
+          )}
+        </div>
+        <p className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
+        <h3 className={cn("font-semibold leading-snug mb-2 transition-colors group-hover:text-primary", big ? "text-[19px]" : "text-[14.5px]")}
+          style={{ color: "var(--foreground)" }}>
+          {item.title}
+        </h3>
+        {big && (
+          <p className="text-[13.5px] leading-relaxed mb-2.5 max-w-[58ch]" style={{ color: "var(--muted-foreground)" }}>{item.excerpt}</p>
+        )}
+        <div className="flex items-center gap-3">
+          <p className="text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>{formatNewsDate(item.publishedAt)}</p>
+          <span className="flex items-center gap-1 text-[11.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+            Sign in to read <ArrowRight size={10} />
+          </span>
+        </div>
+      </article>
+    </Link>
+  );
+}
+
+function EventRow({ item }: { item: PublicEventItem }) {
+  const d = formatEventDate(item.startDate);
+  return (
+    <Link href={`/events/${item.id}`} className="group flex items-start gap-3.5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="shrink-0 w-12 rounded-lg overflow-hidden text-center" style={{ border: "1px solid var(--border)" }}>
+        <div className="text-[9.5px] font-bold uppercase py-0.5" style={{ background: "var(--primary)", color: "white" }}>{d.month}</div>
+        <div className="text-[16px] font-bold py-1 font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)" }}>{d.day}</div>
+      </div>
+      {item.bannerImageUrl && (
+        <img src={item.bannerImageUrl} alt="" className="shrink-0 w-12 h-12 rounded-lg object-cover" style={{ border: "1px solid var(--border)" }} />
+      )}
+      <div className="min-w-0 pt-0.5">
+        <h4 className="text-[13.5px] font-semibold leading-snug mb-1 truncate transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h4>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="flex items-center gap-1 text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+            <Clock size={11} /> {d.time}
+          </span>
+          <span className="flex items-center gap-1 text-[11.5px] truncate" style={{ color: "var(--muted-foreground)" }}>
+            <MapPin size={11} /> {item.venue}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/** Fills the same visual slot the real thing would occupy — so a brand-new institution with nothing published yet still reads as a finished, intentional page instead of a gap where content should be. */
+function EmptyPanel({ icon: Icon, title, desc, big }: { icon: LucideIcon; title: string; desc: string; big?: boolean }) {
+  return (
+    <div className={cn("rounded-xl flex flex-col items-center justify-center text-center gap-2.5 px-6", big ? "py-16" : "py-10")}
+      style={{ background: "var(--muted)", border: "1px dashed var(--border)" }}>
+      <Icon size={big ? 26 : 20} style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
+      <p className={cn("font-semibold", big ? "text-[14px]" : "text-[12.5px]")} style={{ color: "var(--foreground)" }}>{title}</p>
+      <p className={cn("leading-relaxed max-w-[32ch]", big ? "text-[12.5px]" : "text-[11.5px]")} style={{ color: "var(--muted-foreground)" }}>{desc}</p>
+    </div>
+  );
+}
+
+/** Shimmer stand-in for a NewsCard, same proportions so nothing shifts when the real card swaps in. */
+function NewsCardSkeleton({ big }: { big?: boolean }) {
+  return (
+    <div>
+      <Skeleton className="w-full rounded-lg mb-3.5" style={{ aspectRatio: big ? "16/9" : "4/3" }} />
+      <Skeleton className="h-2.5 w-16 mb-2" variant="text" />
+      <Skeleton className={cn("mb-2", big ? "h-5 w-4/5" : "h-4 w-full")} variant="text" />
+      {big && <Skeleton className="h-3 w-3/4 mb-2.5" variant="text" />}
+      <Skeleton className="h-2.5 w-20" variant="text" />
+    </div>
+  );
+}
+
+function EventRowSkeleton() {
+  return (
+    <div className="flex items-start gap-3.5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
+      <Skeleton className="shrink-0 w-12 h-12 rounded-lg" />
+      <div className="min-w-0 pt-0.5 flex-1 space-y-2">
+        <Skeleton className="h-3.5 w-3/4" variant="text" />
+        <Skeleton className="h-2.5 w-1/2" variant="text" />
+      </div>
+    </div>
+  );
+}
+
+function SpotlightCardSkeleton() {
+  return (
+    <div className="card overflow-hidden">
+      <Skeleton className="w-full" style={{ aspectRatio: "16/10" }} />
+      <div className="card__content space-y-2">
+        <Skeleton className="h-3.5 w-2/3" variant="text" />
+        <Skeleton className="h-3 w-1/3" variant="text" />
+        <Skeleton className="h-2.5 w-full" variant="text" />
+        <Skeleton className="h-2.5 w-4/5" variant="text" />
+      </div>
+    </div>
+  );
+}
+
+function NewsEventsSpotlight() {
+  const { items: news, isPending: newsPending } = usePublicNews();
+  const { items: events, isPending: eventsPending } = usePublicEvents();
+  const { item: spotlight, isPending: spotlightPending } = usePublicSpotlight();
+
+  return (
+    <Section id="news" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+      <div className="section__inner--wide section">
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--primary)" }}>
+          From the community
+        </p>
+        <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr]">
+
+          {/* News feed */}
+          <div>
+            <div className="flex items-end justify-between mb-8">
+              <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Latest news</h2>
+              {news.length > 0 && (
+                <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: "var(--primary)" }}>
+                  See all <ArrowRight size={12} />
+                </Link>
+              )}
+            </div>
+            {newsPending ? (
+              <div className="grid gap-x-8 gap-y-9 sm:grid-cols-2">
+                <div className="sm:col-span-2"><NewsCardSkeleton big /></div>
+                <NewsCardSkeleton />
+                <NewsCardSkeleton />
+              </div>
+            ) : news.length > 0 ? (
+              <div className="grid gap-x-8 gap-y-9 sm:grid-cols-2">
+                <div className="sm:col-span-2"><NewsCard item={news[0]} big /></div>
+                {news.slice(1).map((n) => <NewsCard key={n.id} item={n} />)}
+              </div>
+            ) : (
+              <EmptyPanel icon={Newspaper} big title="News is on its way" desc="Updates from the association will be featured here as soon as they're posted." />
+            )}
+          </div>
+
+          {/* Sidebar — upcoming events + spotlight */}
+          <div className="flex flex-col gap-10">
+            <div>
+              <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)", fontSize: "1.15rem" }}>Upcoming events</h2>
+              {eventsPending ? (
+                <div>{[0, 1, 2].map((i) => <EventRowSkeleton key={i} />)}</div>
+              ) : events.length > 0 ? (
+                <>
+                  <div>{events.map((e) => <EventRow key={e.id} item={e} />)}</div>
+                  <Link href="/login" className="mt-4 flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: "var(--primary)" }}>
+                    See full calendar <ArrowRight size={12} />
+                  </Link>
+                </>
+              ) : (
+                <EmptyPanel icon={Clock} title="No events scheduled yet" desc="Reunions, chapter meetups, and Speech Day will show up here." />
+              )}
+            </div>
+
+            {spotlightPending ? (
+              <SpotlightCardSkeleton />
+            ) : spotlight ? (
+              <Link href="/spotlights" className="card overflow-hidden group block">
+                <div className="relative w-full" style={{ aspectRatio: "16/10", background: "var(--muted)" }}>
+                  {spotlight.imageUrl ? (
+                    <img src={spotlight.imageUrl} alt={spotlight.memberName} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"
+                      style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
+                      <Trophy size={28} style={{ color: "var(--primary)", opacity: 0.4 }} />
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
+                    style={{ background: "var(--primary)", color: "white" }}>
+                    <Trophy size={10} /> Spotlight
+                  </div>
+                </div>
+                <div className="card__content">
+                  <h3 className="text-[14px] font-semibold leading-snug mb-1 transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{spotlight.memberName}</h3>
+                  <p className="text-[12.5px] font-medium mb-2" style={{ color: "var(--primary)" }}>{spotlight.title}</p>
+                  <p className="text-[12.5px] leading-relaxed line-clamp-3 mb-2.5" style={{ color: "var(--muted-foreground)" }}>{spotlight.story}</p>
+                  <span className="flex items-center gap-1 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>
+                    Sign in to read the full story <ArrowRight size={10} />
+                  </span>
+                </div>
+              </Link>
+            ) : (
+              <EmptyPanel icon={Trophy} title="No spotlight yet" desc="A featured alumni story will appear here once one's approved." />
+            )}
+          </div>
+
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
-export default function LandingPage() {
+export default function LandingPage({ initialContent }: { initialContent?: LandingContent | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsActive, setStatsActive] = useState(false);
-  const content = useLandingContent();
+  const content = useLandingContent(initialContent);
 
   const stories = useMemo(() => {
     if (!content?.landingPageStories?.length) return USE_CASES;
@@ -508,94 +773,47 @@ export default function LandingPage() {
       </header>
 
       {/* ════════════════════════════════════════════════════════════════
-          HERO
+          HERO — a single full-bleed banner photo with a masthead-style
+          overlay, the way an institution's own website leads with a campus
+          photo rather than a product screenshot.
       ════════════════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden" style={{ background: "var(--background)" }}>
-        <div className="absolute inset-0 bg-subtle-pattern opacity-[0.45] pointer-events-none" />
-        <div className="absolute -top-40 -right-40 w-[640px] h-[640px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--primary) 6%, transparent) 0%, transparent 65%)" }} />
+      <div className="relative w-full overflow-hidden h-[62vh] min-h-[420px] max-h-[640px]">
+        <HeroCarousel images={content?.heroImageUrls?.length ? content.heroImageUrls : [IMG.heroPanel]} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 46%, rgba(0,0,0,0.15) 100%)" }} />
 
-        <div className="section__inner--wide relative pt-6 pb-20">
-          <div className="grid gap-x-10 gap-y-14 lg:grid-cols-[1.35fr_1fr] items-end">
-
-            {/* Left col */}
-            <div className="lg:pr-6">
-              <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[19ch]"
-                style={{ fontSize: "clamp(2.4rem,4.6vw,3.75rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
-                The alumni portal{" "}
-                <span className="relative whitespace-nowrap" style={{ color: "var(--primary)" }}>
-                  built
-                  <span className="absolute left-0 right-0 -bottom-1 h-[3px] rounded-full" style={{ background: "var(--brand-primary-light)" }} />
-                </span>{" "}
-                to connect, support, and grow together.
-              </h1>
-              <p className="mb-10 max-w-[46ch]"
-                style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-                One place for jobs, fundraisers, mentorship, events, and verified connections —
-                built to feel modern, reliable, and easy for graduates at every stage of their career.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 mb-12">
-                <Link href="/register">
-                  <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-[15px] font-semibold gap-2">
-                    Join the network <ArrowRight size={15} />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-[15px] font-medium">
-                    Already a member
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Trust strip — inline, not a grid of boxes */}
-              <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
-                {[
-                  { icon: GraduationCap, text: "Verified access"    },
-                  { icon: Briefcase,     text: "Jobs from grads"    },
-                  { icon: Heart,         text: "Mentor matching"    },
-                  { icon: Globe,         text: "Events & fundraisers" },
-                ].map((item, i) => (
-                  <div key={item.text} className="flex items-center gap-2 cursor-default">
-                    <item.icon size={15} style={{ color: i % 2 === 0 ? "var(--primary)" : "var(--brand-accent, var(--primary))" }} />
-                    <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>{item.text}</p>
-                  </div>
-                ))}
-              </div>
+        <div className="absolute inset-x-0 bottom-0">
+          <div className="section__inner--wide pb-10 sm:pb-14 pt-10">
+            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>
+              {content?.displayName || "Alumni Association"}
+            </p>
+            <h1 className="font-[family-name:var(--font-display)] mb-5 max-w-[24ch]"
+              style={{ fontSize: "clamp(2rem,4.4vw,3.4rem)", fontWeight: 700, lineHeight: 1.14, letterSpacing: "-0.02em", color: "white" }}>
+              {content?.heroHeadline || "Every graduate, one network — wherever they are."}
+            </h1>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/register">
+                <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-[15px] font-semibold gap-2">
+                  Join the network <ArrowRight size={15} />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-[15px] font-medium"
+                  style={{ borderColor: "rgba(255,255,255,0.5)", color: "white", background: "rgba(255,255,255,0.08)" }}>
+                  Already a member
+                </Button>
+              </Link>
             </div>
-
-            {/* Right — single photo, overlaid stat badge, no nested card list */}
-            <div className="relative">
-              <div className="relative w-full overflow-hidden rounded-2xl h-[300px] sm:h-[400px] lg:h-[min(72vh,560px)]" style={{ boxShadow: "0 8px 40px color-mix(in oklch, var(--primary) 12%, transparent)" }}>
-                <HeroCarousel images={content?.heroImageUrls?.length ? content.heroImageUrls : [IMG.heroPanel]} />
-                <div className="absolute inset-0"
-                  style={{ background: "linear-gradient(200deg, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.72) 100%)" }} />
-
-                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-                  <p className="text-white font-[family-name:var(--font-display)] leading-snug mb-2.5 sm:mb-3 text-[1.05rem] sm:text-[1.35rem]">
-                    {content?.heroHeadline || "One network. Every graduate, wherever they are."}
-                  </p>
-                  <Link href="/register">
-                    <Button size="sm" className="gap-2 font-semibold sm:hidden">
-                      Create free account <ArrowRight size={13} />
-                    </Button>
-                    <Button className="gap-2 font-semibold hidden sm:inline-flex">
-                      Create your free account <ArrowRight size={14} />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Floating stat card — inset on the photo at mobile widths, floating clear of it from sm+ */}
-              <div className="absolute left-3 top-3 sm:-right-6 sm:-top-6 sm:left-auto rounded-xl px-3 py-2 sm:px-5 sm:py-4"
-                style={{ background: "var(--background)", border: "1px solid var(--card-border)", boxShadow: "0 10px 30px rgba(0,0,0,0.12)" }}>
-                <p className="font-[family-name:var(--font-display)] leading-none mb-0.5 sm:mb-1 text-[1.05rem] sm:text-[1.6rem]" style={{ fontWeight: 700, color: "var(--primary)" }}>5,000+</p>
-                <p className="text-[9.5px] sm:text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)" }}>Verified graduates</p>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
+
+      {/* ════════════════════════════════════════════════════════════════
+          NEWS · EVENTS · SPOTLIGHT — this institution's own real content,
+          in an editorial layout (masthead feed + sidebar), the way an
+          actual association website leads rather than a product pitch.
+          Hidden per-section when the institution has nothing published yet.
+      ════════════════════════════════════════════════════════════════ */}
+      <NewsEventsSpotlight />
 
       {/* ════════════════════════════════════════════════════════════════
           STATS — full-bleed banded row, not a card grid
@@ -626,6 +844,9 @@ export default function LandingPage() {
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[56ch]">
+            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
+              What&apos;s inside
+            </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               One portal for every alumni need.
             </h2>
@@ -658,6 +879,9 @@ export default function LandingPage() {
       <Section id="stories" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-12 max-w-[50ch]">
+            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
+              Why they join
+            </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               The three reasons most alumni join.
             </h2>
@@ -688,6 +912,9 @@ export default function LandingPage() {
       <Section id="how-it-works" style={{ background: "var(--secondary)" }}>
         <div className="section__inner section">
           <div className="text-center mb-12">
+            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
+              Getting started
+            </p>
             <h2 className="font-[family-name:var(--font-display)] max-w-[28ch] mx-auto" style={{ color: "var(--foreground)" }}>
               Three steps. That&apos;s all it takes.
             </h2>

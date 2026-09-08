@@ -24,10 +24,11 @@ public class BusinessDirectoryService(
         try
         {
             logger.LogInformation("GetListings request — filter: {Filter}", filter.Serialize());
+            var search = filter.Search?.ToLower();
             var result = await listingRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 l => l.Status == "Approved" && !l.IsHiddenByMember
-                     && (string.IsNullOrEmpty(filter.Search) || l.BusinessName.Contains(filter.Search)));
+                     && (string.IsNullOrEmpty(search) || l.BusinessName.ToLower().Contains(search)));
 
             var dtoResult = new PgPagedResult<BusinessListingDto>
             {

@@ -115,6 +115,9 @@ export interface CreateInstitutionRequest {
   adminLastName: string;
   adminEmail: string;
   adminPassword: string;
+  /** Optional — when both are set, one Batch per year in this range is auto-created (name defaults to the year; the institution can rename any of them later). */
+  batchStartYear?: number;
+  batchEndYear?: number;
 }
 
 export async function getInstitutions(params: { page?: number; pageSize?: number; search?: string; status?: string }) {

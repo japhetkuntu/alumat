@@ -85,10 +85,11 @@ public class StoreOrderService(
     {
         try
         {
+            var search = filter.Search?.ToLower();
             var result = await productRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 p => p.Status == "Active"
-                  && (string.IsNullOrEmpty(filter.Search) || p.Name.Contains(filter.Search)));
+                  && (string.IsNullOrEmpty(search) || p.Name.ToLower().Contains(search)));
 
             var productIds = result.Results.Select(p => p.Id).ToList();
             var variantsByProduct = (await variantRepo.GetAllAsync(v => productIds.Contains(v.ProductId)))

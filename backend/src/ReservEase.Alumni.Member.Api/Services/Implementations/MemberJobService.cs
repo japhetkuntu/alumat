@@ -59,6 +59,8 @@ public class MemberJobService(
             // plus every community I'm an approved member of — not institution-wide alone.
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
 
+            var search = filter.Search?.ToLower();
+            var location = filter.Location?.ToLower();
             var result = await jobRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 j => j.Status == "Active"
@@ -67,13 +69,13 @@ public class MemberJobService(
                       : j.CommunityId == filter.CommunityId)
                   && (j.YearGroups == null || j.YearGroups.Count == 0 || (memberYear.HasValue && j.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Type) || j.Type == filter.Type)
-                  && (string.IsNullOrEmpty(filter.Location) || j.Location.Contains(filter.Location))
+                  && (string.IsNullOrEmpty(location) || j.Location.ToLower().Contains(location))
                   && (!filter.PostedAfter.HasValue || j.CreatedAt >= filter.PostedAfter.Value)
                   && (!filter.PostedBefore.HasValue || j.CreatedAt <= filter.PostedBefore.Value)
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || j.Title.Contains(filter.Search)
-                      || j.Company.Contains(filter.Search)
-                      || j.Location.Contains(filter.Search)));
+                  && (string.IsNullOrEmpty(search)
+                      || j.Title.ToLower().Contains(search)
+                      || j.Company.ToLower().Contains(search)
+                      || j.Location.ToLower().Contains(search)));
             var dtoResult = new PgPagedResult<JobDto>
             {
                 PageIndex = result.PageIndex,

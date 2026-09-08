@@ -17,6 +17,7 @@ import {
 } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
+import { PortalShellSkeleton } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -118,7 +119,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isPlatformStaff, pathname, router]);
 
-  if (isLoading || !isPlatformStaff) return null;
+  if (isLoading || !isPlatformStaff) return <PortalShellSkeleton sidebarWidth={248} />;
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">

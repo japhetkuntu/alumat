@@ -31,11 +31,10 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
+import { PortalShellSkeleton } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
-import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { getInitials } from "@alumni/ui";
 import { NotificationPanel } from "@/components/institution/notification-panel";
 import { institutionClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -207,18 +206,6 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
           );
         })}
       </nav>
-
-      <div className="p-4 mt-auto border-t border-sidebar-border">
-        <div className="flex items-center gap-3 mb-4 px-1">
-          <Avatar className="h-8 w-8 ring-2 ring-sidebar shadow-md">
-            <AvatarFallback name={user?.name} className="text-[10px]">{getInitials(user?.name ?? "A")}</AvatarFallback>
-          </Avatar>
-          <div className="overflow-hidden flex-1">
-            <p className="text-[12px] font-bold truncate leading-tight text-white">{user?.name ?? "Administrator"}</p>
-            <p className="text-[10px] text-blue-300 font-bold uppercase tracking-wider">{user?.role ?? "Super Admin"}</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -244,7 +231,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAdmin, pathname, router]);
 
-  if (isLoading || !isAdmin) return null;
+  if (isLoading || !isAdmin) return <PortalShellSkeleton sidebarWidth={248} />;
 
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-accent/10">

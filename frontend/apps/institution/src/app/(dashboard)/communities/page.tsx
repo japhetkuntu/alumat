@@ -16,9 +16,10 @@ import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import {
   getCommunities, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole,
-  type CommunityListItem, type CommunityMemberItem,
+  uploadImage, type CommunityListItem, type CommunityMemberItem,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
+import { LinkOrUpload } from "@alumni/ui";
 
 function CommunityForm({
   initial, onSave, onCancel, saving,
@@ -31,6 +32,8 @@ function CommunityForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? "");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   return (
     <Card>
@@ -38,9 +41,22 @@ function CommunityForm({
       <CardContent>
         <form
           className="space-y-4"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            onSave({ name: name.trim(), description: description.trim() || undefined, coverImageUrl: coverImageUrl.trim() || undefined });
+            let resolvedCoverUrl = coverImageUrl.trim();
+            if (coverImageFile) {
+              setUploading(true);
+              try {
+                const { url } = await uploadImage(coverImageFile);
+                resolvedCoverUrl = url;
+              } catch (err) {
+                toast.error(handleApiError(err));
+                setUploading(false);
+                return;
+              }
+              setUploading(false);
+            }
+            onSave({ name: name.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined });
           }}
         >
           <div className="space-y-2">
@@ -51,12 +67,15 @@ function CommunityForm({
             <Label>Description</Label>
             <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this community is for" />
           </div>
-          <div className="space-y-2">
-            <Label>Cover image URL (optional)</Label>
-            <Input value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)} placeholder="https://…" />
-          </div>
+          <LinkOrUpload
+            label="Cover image (optional)"
+            url={coverImageUrl}
+            onUrlChange={setCoverImageUrl}
+            file={coverImageFile}
+            onFileChange={setCoverImageFile}
+          />
           <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">{initial ? "Save changes" : "Create community"}</Button>
+            <Button type="submit" size="sm" isLoading={saving || uploading} loadingText={uploading ? "Uploading" : "Saving"}>{initial ? "Save changes" : "Create community"}</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>

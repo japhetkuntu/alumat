@@ -32,10 +32,17 @@ public class ReportsController(
 
     [HttpGet("export/{entity}")]
     [SwaggerOperation(Summary = "Export entity data to CSV")]
-    public async Task<IActionResult> ExportEntityCsv(string entity)
+    public async Task<IActionResult> ExportEntityCsv(
+        string entity,
+        [FromQuery] string? status = null,
+        [FromQuery] int? graduationYearFrom = null,
+        [FromQuery] int? graduationYearTo = null,
+        [FromQuery] string? jobTitleContains = null,
+        [FromQuery] string? locationContains = null)
     {
         var admin = User.GetAccount();
-        var result = await reportService.ExportEntityCsvAsync(entity, admin);
+        var memberFilters = new MemberExportFilters(status, graduationYearFrom, graduationYearTo, jobTitleContains, locationContains);
+        var result = await reportService.ExportEntityCsvAsync(entity, admin, memberFilters);
         if (result.Code != 200 || result.Data is null)
             return result.ToActionResult();
 

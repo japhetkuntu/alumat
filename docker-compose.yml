@@ -121,6 +121,8 @@ services:
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__InstitutionRedisConfig__ConnectionString: redis:6379
       Redis__InstitutionRedisConfig__DbNumber: 0
+      Redis__PublicContentCacheConfig__ConnectionString: redis:6379
+      Redis__PublicContentCacheConfig__DbNumber: 3
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}
@@ -167,6 +169,8 @@ services:
       DefaultInstitutionSlug: ${DEFAULT_INSTITUTION_SLUG:-demo}
       Redis__MemberRedisConfig__ConnectionString: redis:6379
       Redis__MemberRedisConfig__DbNumber: 1
+      Redis__PublicContentCacheConfig__ConnectionString: redis:6379
+      Redis__PublicContentCacheConfig__DbNumber: 3
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}

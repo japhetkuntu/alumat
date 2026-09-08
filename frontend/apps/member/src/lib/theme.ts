@@ -14,6 +14,17 @@ export interface InstitutionTheme {
   authHeadline: string | null;
   authSubtext: string | null;
   requireStudentId: boolean;
+  // Landing-page-only fields — present in the same API response, just unused
+  // by the <html>/metadata plumbing this type otherwise serves. Kept here
+  // (rather than a second fetch) so the root page can pass this single
+  // server-side result straight into LandingPage as SSR-resolved initial
+  // data, instead of it re-fetching client-side and flashing generic
+  // placeholder branding first.
+  disabledFeatures?: string[] | null;
+  landingPageStories?: { icon: string; eyebrow: string; scenario: string; description: string; imageUrl?: string | null }[] | null;
+  newsBanner?: { enabled: boolean; text: string; linkText?: string | null; linkUrl?: string | null } | null;
+  heroImageUrls?: string[] | null;
+  heroHeadline?: string | null;
 }
 
 // Server-side only (never sent to the browser, unlike api-client.ts's

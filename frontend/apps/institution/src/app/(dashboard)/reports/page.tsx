@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Users, TrendingUp, Calendar, Briefcase, Activity, Layers, DollarSign, Loader2 } from "@alumni/ui";
+import { Download, Users, Calendar, Activity, Layers, DollarSign, Loader2 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
@@ -11,7 +11,8 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
-import { getCampaigns, getMembers, getEvents, getJobs, getContributions, getReportSummary } from "@/lib/institution-api";
+import { getCampaigns, getReportSummary, exportReportCsv, type MemberReportExportFilters } from "@/lib/institution-api";
+import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 
 const MEMBER_STATUS_OPTIONS = [
@@ -22,13 +23,21 @@ const MEMBER_STATUS_OPTIONS = [
   { value: "Banned", label: "Banned" },
 ];
 
+type ExportEntity = "campaigns" | "members" | "contributions" | "events" | "jobs";
+
 export default function AdminReportsPage() {
   const [memberStatusFilter, setMemberStatusFilter] = useState("");
   const [memberYearFrom, setMemberYearFrom] = useState("");
   const [memberYearTo, setMemberYearTo] = useState("");
   const [memberProfession, setMemberProfession] = useState("");
   const [memberLocation, setMemberLocation] = useState("");
+  const [exporting, setExporting] = useState<ExportEntity | null>(null);
 
+  // Only these two feed anything on this page — a prior version also fetched
+  // members/contributions/events/jobs (each just for a `pageSize: 1` count)
+  // and gated the whole page's loading state on all six requests together,
+  // so the stat cards stayed skeletons until the slowest of six calls
+  // resolved instead of the two that actually matter.
   const summaryQuery = useQuery({
     queryKey: ["report-summary"],
     queryFn: () => getReportSummary(),
@@ -39,66 +48,11 @@ export default function AdminReportsPage() {
     queryFn: () => getCampaigns(1, 100),
   });
 
-  const contributionsQuery = useQuery({
-    queryKey: ["report-contributions"],
-    queryFn: () => getContributions({ pageSize: 1 }),
-  });
-
-  const eventsQuery = useQuery({
-    queryKey: ["report-events"],
-    queryFn: () => getEvents(1, 1),
-  });
-
-  const jobsQuery = useQuery({
-    queryKey: ["report-jobs"],
-    queryFn: () => getJobs(1, 1),
-  });
-
-  const membersQuery = useQuery({
-    queryKey: ["report-members"],
-    queryFn: () => getMembers({ pageSize: 1 }),
-  });
-
-  const membersExportQuery = useQuery({
-    queryKey: ["report-members-export", memberStatusFilter, memberYearFrom, memberYearTo, memberProfession, memberLocation],
-    queryFn: () => getMembers({
-      page: 1,
-      pageSize: 2000,
-      status: memberStatusFilter || undefined,
-      graduationYearFrom: memberYearFrom ? Number(memberYearFrom) : undefined,
-      graduationYearTo: memberYearTo ? Number(memberYearTo) : undefined,
-      jobTitleContains: memberProfession || undefined,
-      locationContains: memberLocation || undefined,
-    }),
-    enabled: false,
-  });
-
-  const contributionsExportQuery = useQuery({
-    queryKey: ["report-contributions-export"],
-    queryFn: () => getContributions({ page: 1, pageSize: 2000 }),
-    enabled: false,
-  });
-
-  const eventsExportQuery = useQuery({
-    queryKey: ["report-events-export"],
-    queryFn: () => getEvents(1, 2000),
-    enabled: false,
-  });
-
-  const jobsExportQuery = useQuery({
-    queryKey: ["report-jobs-export"],
-    queryFn: () => getJobs(1, 2000),
-    enabled: false,
-  });
-
   useEffect(() => {
     if (summaryQuery.isError) toast.error("Unable to load report summary metrics");
     if (campaignsQuery.isError) toast.error("Unable to load fundraiser details");
-    if (membersQuery.isError) toast.error("Unable to load member metrics");
-    if (contributionsQuery.isError) toast.error("Unable to load contribution metrics");
-    if (eventsQuery.isError) toast.error("Unable to load event metrics");
-    if (jobsQuery.isError) toast.error("Unable to load job metrics");
-  }, [summaryQuery.isError, campaignsQuery.isError, membersQuery.isError, contributionsQuery.isError, eventsQuery.isError, jobsQuery.isError]);
+  }, [summaryQuery.isError, campaignsQuery.isError]);
+
   const campaigns = campaignsQuery.data?.results ?? [];
   const totalCampaigns = summaryQuery.data?.totalCampaigns ?? 0;
   const activeCampaigns = summaryQuery.data?.activeCampaigns ?? 0;
@@ -107,127 +61,31 @@ export default function AdminReportsPage() {
   const totalContributions = summaryQuery.data?.totalContributions ?? 0;
   const totalCollected = summaryQuery.data?.totalCollected ?? 0;
   const totalEvents = summaryQuery.data?.totalEvents ?? 0;
-  const totalJobs = summaryQuery.data?.totalJobs ?? 0;
-  const isLoading = summaryQuery.isLoading || campaignsQuery.isLoading || membersQuery.isLoading || contributionsQuery.isLoading || eventsQuery.isLoading || jobsQuery.isLoading;
+  const isLoading = summaryQuery.isLoading || campaignsQuery.isLoading;
 
-  const makeCsv = (rows: Record<string, unknown>[]) => {
-    if (rows.length === 0) return "";
-    const keys = Object.keys(rows[0]);
-    const csv = [
-      keys.join(","),
-      ...rows.map((row) => keys.map((key) => JSON.stringify(String(row[key] ?? ""))).join(",")),
-    ].join("\n");
-    return csv;
-  };
-
-  const downloadCsv = (filename: string, rows: Record<string, unknown>[]) => {
-    const body = makeCsv(rows);
-    if (!body) {
-      toast.error("No data available for export");
-      return;
+  // Downloads straight from the backend's own scoped CSV builder (see
+  // ReportService.ExportEntityCsvAsync) — server-side, not capped at any
+  // client page size, and consistently scoped with everything else a
+  // ScopedAdmin can see elsewhere in the portal.
+  async function handleExport(entity: ExportEntity, filters?: MemberReportExportFilters) {
+    setExporting(entity);
+    try {
+      await exportReportCsv(entity, filters);
+      toast.success(`${entity[0].toUpperCase()}${entity.slice(1)} report downloaded`);
+    } catch (e) {
+      toast.error(handleApiError(e));
+    } finally {
+      setExporting(null);
     }
+  }
 
-    const blob = new Blob([body], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast.success(`${filename} downloaded`);
-  };
-
-  const exportCampaigns = () => {
-    downloadCsv(
-      "campaigns-report.csv",
-      campaigns.map((c) => ({
-        id: c.id,
-        title: c.title,
-        status: c.status,
-        targetAmount: c.targetAmount,
-        collectedAmount: c.collectedAmount,
-        paidCount: c.paidCount,
-        yearGroups: c.yearGroups?.join("|") ?? "",
-      })),
-    );
-  };
-
-  const exportMembers = async () => {
-    const result = await membersExportQuery.refetch();
-    const members = result.data?.results ?? [];
-    if (!members.length) { toast.error("No member data to export"); return; }
-    downloadCsv(
-      "members-report.csv",
-      members.map((m) => ({
-        id: m.id,
-        firstName: m.firstName,
-        lastName: m.lastName,
-        email: m.email,
-        graduationYear: m.graduationYear,
-        department: m.departmentName,
-        status: m.status,
-        jobTitle: m.jobTitle ?? "",
-        location: m.location ?? "",
-      })),
-    );
-  };
-
-  const exportContributions = async () => {
-    const result = await contributionsExportQuery.refetch();
-    const contributions = result.data?.results ?? [];
-    if (!contributions.length) { toast.error("No contribution data to export"); return; }
-    downloadCsv(
-      "contributions-report.csv",
-      contributions.map((c) => ({
-        id: c.id,
-        campaignId: c.campaignId,
-        campaignTitle: c.campaignTitle,
-        memberId: c.memberId,
-        memberName: c.memberName,
-        memberEmail: c.memberEmail,
-        amount: c.amount,
-        paymentMethod: c.paymentMethod,
-        status: c.status,
-        confirmedAt: c.confirmedAt,
-        createdAt: c.createdAt,
-      })),
-    );
-  };
-
-  const exportEvents = async () => {
-    const result = await eventsExportQuery.refetch();
-    const events = result.data?.results ?? [];
-    if (!events.length) { toast.error("No event data to export"); return; }
-    downloadCsv(
-      "events-report.csv",
-      events.map((e) => ({
-        id: e.id,
-        title: e.title,
-        startDate: e.startDate,
-        endDate: e.endDate,
-        venue: e.venue,
-        status: e.status,
-        capacity: e.capacity,
-      })),
-    );
-  };
-
-  const exportJobs = async () => {
-    const result = await jobsExportQuery.refetch();
-    const jobs = result.data?.results ?? [];
-    if (!jobs.length) { toast.error("No job data to export"); return; }
-    downloadCsv(
-      "jobs-report.csv",
-      jobs.map((j) => ({
-        id: j.id,
-        title: j.title,
-        company: j.company,
-        location: j.location,
-        type: j.type,
-        status: j.status,
-        deadline: j.deadline,
-      })),
-    );
-  };
+  const exportMembers = () => handleExport("members", {
+    status: memberStatusFilter || undefined,
+    graduationYearFrom: memberYearFrom ? Number(memberYearFrom) : undefined,
+    graduationYearTo: memberYearTo ? Number(memberYearTo) : undefined,
+    jobTitleContains: memberProfession || undefined,
+    locationContains: memberLocation || undefined,
+  });
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
@@ -261,8 +119,8 @@ export default function AdminReportsPage() {
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">Fundraiser &amp; Dues Performance</CardTitle>
-          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5 w-full sm:w-auto" onClick={exportCampaigns}>
-            <Download size={13} />Export Fundraisers CSV
+          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5 w-full sm:w-auto" onClick={() => handleExport("campaigns")} disabled={exporting === "campaigns"}>
+            {exporting === "campaigns" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Export Fundraisers CSV</>}
           </Button>
         </CardHeader>
         <CardContent className="space-y-3.5">
@@ -301,11 +159,18 @@ export default function AdminReportsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Member Roster Filters</CardTitle></CardHeader>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="text-base">Member Roster Export</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Narrow the roster below, then export — e.g. all alumni working in Healthcare, or all alumni based in Kumasi.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5 w-full sm:w-auto shrink-0" onClick={exportMembers} disabled={exporting === "members"}>
+            {exporting === "members" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Export Members CSV</>}
+          </Button>
+        </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground -mt-1">
-            Narrow the member roster before exporting — e.g. all alumni working in Healthcare, or all alumni based in Kumasi.
-          </p>
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             <div className="space-y-1.5">
               <Label className="text-[11px] text-muted-foreground font-normal">Status</Label>
@@ -332,50 +197,19 @@ export default function AdminReportsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Data Exports</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">More Exports</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap gap-2.5">
-          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={exportCampaigns}>
-            <Download size={13} />Fundraisers CSV
+          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("contributions")} disabled={exporting === "contributions"}>
+            {exporting === "contributions" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Contributions CSV</>}
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1 h-9 px-3.5"
-            onClick={exportMembers}
-            disabled={membersExportQuery.isFetching}
-          >
-            {membersExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Members CSV</>}
+          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("events")} disabled={exporting === "events"}>
+            {exporting === "events" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Events CSV</>}
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1 h-9 px-3.5"
-            onClick={exportContributions}
-            disabled={contributionsExportQuery.isFetching}
-          >
-            {contributionsExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Contributions CSV</>}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1 h-9 px-3.5"
-            onClick={exportEvents}
-            disabled={eventsExportQuery.isFetching}
-          >
-            {eventsExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Events CSV</>}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1 h-9 px-3.5"
-            onClick={exportJobs}
-            disabled={jobsExportQuery.isFetching}
-          >
-            {jobsExportQuery.isFetching ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Jobs CSV</>}
+          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("jobs")} disabled={exporting === "jobs"}>
+            {exporting === "jobs" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Jobs CSV</>}
           </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
-

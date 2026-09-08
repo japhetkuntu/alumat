@@ -7,8 +7,10 @@ public interface IInstitutionSpotlightService
 {
     Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetSpotlightsAsync(int page, int pageSize, string? status);
     Task<IApiResponse<SpotlightDto>> CreateSpotlightAsync(AdminCreateSpotlightRequest request, AuthData admin);
+    Task<IApiResponse<SpotlightDto>> UpdateSpotlightAsync(string spotlightId, UpdateSpotlightRequest request, AuthData admin);
     Task<IApiResponse<SpotlightDto>> ApproveSpotlightAsync(string spotlightId, AuthData admin);
     Task<IApiResponse<SpotlightDto>> RejectSpotlightAsync(string spotlightId, string? reason, AuthData admin);
 }
 
 public record AdminCreateSpotlightRequest(string MemberId, string Title, string Story, string? ImageUrl);
+public record UpdateSpotlightRequest(string Title, string Story, string? ImageUrl);

@@ -50,6 +50,7 @@ public class MemberResourceService(
 
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
 
+            var search = filter.Search?.ToLower();
             var result = await resourceRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 r => (string.IsNullOrEmpty(filter.CommunityId)
@@ -59,9 +60,9 @@ public class MemberResourceService(
                   && (string.IsNullOrEmpty(filter.Type) || r.Type == filter.Type)
                   && (!filter.AddedAfter.HasValue || r.CreatedAt >= filter.AddedAfter.Value)
                   && (!filter.AddedBefore.HasValue || r.CreatedAt <= filter.AddedBefore.Value)
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || r.Title.Contains(filter.Search)
-                      || (r.Description != null && r.Description.Contains(filter.Search))));
+                  && (string.IsNullOrEmpty(search)
+                      || r.Title.ToLower().Contains(search)
+                      || (r.Description != null && r.Description.ToLower().Contains(search))));
             var dtoResult = new PgPagedResult<ResourceDto>
             {
                 PageIndex = result.PageIndex,

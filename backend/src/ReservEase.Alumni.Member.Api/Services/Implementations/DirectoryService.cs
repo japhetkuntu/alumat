@@ -21,12 +21,13 @@ public class DirectoryService(
         try
         {
             logger.LogInformation("SearchMembers request — filter: {Filter}", filter.Serialize());
+            var search = filter.Search?.ToLower();
             var result = await memberRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "FirstName", filter.SortDir ?? "asc",
                 m => m.Status == "Active"
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || m.FirstName.Contains(filter.Search) || m.LastName.Contains(filter.Search)
-                      || (m.Company != null && m.Company.Contains(filter.Search)))
+                  && (string.IsNullOrEmpty(search)
+                      || m.FirstName.ToLower().Contains(search) || m.LastName.ToLower().Contains(search)
+                      || (m.Company != null && m.Company.ToLower().Contains(search)))
                   && (string.IsNullOrEmpty(filter.DepartmentId) || m.DepartmentId == filter.DepartmentId)
                   && (!filter.GraduationYear.HasValue || m.GraduationYear == filter.GraduationYear.Value));
 

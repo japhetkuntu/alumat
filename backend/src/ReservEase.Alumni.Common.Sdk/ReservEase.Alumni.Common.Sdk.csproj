@@ -16,4 +16,8 @@
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ReservEase.Alumni.Redis.Sdk\ReservEase.Alumni.Redis.Sdk.csproj" />
+  </ItemGroup>
+
 </Project>

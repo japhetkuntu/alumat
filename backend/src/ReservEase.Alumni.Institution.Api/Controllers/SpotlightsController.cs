@@ -35,6 +35,17 @@ public class SpotlightsController(IInstitutionSpotlightService spotlightService)
         return result.ToActionResult();
     }
 
+    [HttpPut("{spotlightId}")]
+    [SwaggerOperation(Summary = "Update spotlight", Description = "Update an already-added spotlight's title, story, or image")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<SpotlightDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Update(string spotlightId, [FromBody] UpdateSpotlightRequest body)
+    {
+        var admin = User.GetAccount();
+        var result = await spotlightService.UpdateSpotlightAsync(spotlightId, body, admin);
+        return result.ToActionResult();
+    }
+
     [HttpPost("{spotlightId}/approve")]
     [SwaggerOperation(Summary = "Approve spotlight", Description = "Approve a spotlight submission to be featured")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<SpotlightDto>))]

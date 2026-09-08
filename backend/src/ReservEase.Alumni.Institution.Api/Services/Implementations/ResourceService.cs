@@ -27,15 +27,16 @@ public class ResourceService(
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
+            var search = filter.Search?.ToLower();
             var result = await resourceRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 r => (string.IsNullOrEmpty(filter.Category) || r.Category == filter.Category)
                   && (string.IsNullOrEmpty(filter.Type) || r.Type == filter.Type)
                   && (!filter.AddedAfter.HasValue || r.CreatedAt >= filter.AddedAfter.Value)
                   && (!filter.AddedBefore.HasValue || r.CreatedAt <= filter.AddedBefore.Value)
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || r.Title.Contains(filter.Search)
-                      || (r.Description != null && r.Description.Contains(filter.Search)))
+                  && (string.IsNullOrEmpty(search)
+                      || r.Title.ToLower().Contains(search)
+                      || (r.Description != null && r.Description.ToLower().Contains(search)))
                   && (isSuper
                       || (r.YearGroups != null && r.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (r.CommunityId != null && communityIds.Contains(r.CommunityId))));

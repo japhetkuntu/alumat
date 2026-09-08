@@ -588,7 +588,7 @@ public class ContributionService(
         try
         {
             logger.LogInformation("GetContributions request — filter: {Filter} (admin: {AdminId})", filter.Serialize(), admin.Id);
-            var search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim();
+            var search = string.IsNullOrWhiteSpace(filter.Search) ? null : filter.Search.Trim().ToLower();
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
@@ -606,9 +606,9 @@ public class ContributionService(
                   && (string.IsNullOrEmpty(filter.CampaignId) || c.CampaignId == filter.CampaignId)
                   && (string.IsNullOrEmpty(filter.Status) || c.Status == filter.Status)
                   && (search == null
-                      || (c.TransactionRef != null && c.TransactionRef.Contains(search))
-                      || (c.MemberId != null && c.MemberId.Contains(search))
-                      || (c.Notes != null && c.Notes.Contains(search))));
+                      || (c.TransactionRef != null && c.TransactionRef.ToLower().Contains(search))
+                      || (c.MemberId != null && c.MemberId.ToLower().Contains(search))
+                      || (c.Notes != null && c.Notes.ToLower().Contains(search))));
 
             // Backfill missing snapshots for contributions stored before jsonb columns were added.
             var needsBackfill = result.Results.Where(c => c.Member is null || c.Campaign is null).ToList();

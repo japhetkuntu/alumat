@@ -13,10 +13,11 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
     public async Task<IApiResponse<ReservEase.Alumni.PostgresDb.Sdk.Models.PgPagedResult<PlatformStaffResponse>>> GetStaffAsync(
         int page, int pageSize, string? search)
     {
+        var loweredSearch = search?.ToLower();
         var paged = await staffRepo.GetPagedAsync(page, pageSize, sortColumn: "Name", sortDir: "asc",
-            filter: string.IsNullOrWhiteSpace(search)
+            filter: string.IsNullOrWhiteSpace(loweredSearch)
                 ? null
-                : s => s.Name.Contains(search) || s.Email.Contains(search));
+                : s => s.Name.ToLower().Contains(loweredSearch) || s.Email.ToLower().Contains(loweredSearch));
 
         var result = new ReservEase.Alumni.PostgresDb.Sdk.Models.PgPagedResult<PlatformStaffResponse>
         {

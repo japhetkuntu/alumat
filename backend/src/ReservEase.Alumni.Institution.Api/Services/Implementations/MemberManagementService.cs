@@ -81,6 +81,9 @@ public class MemberManagementService(
                         .Select(m => m.MemberId).Distinct().ToList();
             }
 
+            var search = filter.Search?.ToLower();
+            var jobTitleContains = filter.JobTitleContains?.ToLower();
+            var locationContains = filter.LocationContains?.ToLower();
             var result = await memberRepo.GetPagedAsync(
                 filter.Page, filter.PageSize,
                 sortColumn: filter.SortColumn ?? "CreatedAt", sortDir: filter.SortDir ?? "desc",
@@ -89,12 +92,12 @@ public class MemberManagementService(
                   && (string.IsNullOrEmpty(filter.DepartmentId) || f.DepartmentId == filter.DepartmentId)
                   && (!filter.GraduationYearFrom.HasValue || f.GraduationYear >= filter.GraduationYearFrom.Value)
                   && (!filter.GraduationYearTo.HasValue || f.GraduationYear <= filter.GraduationYearTo.Value)
-                  && (string.IsNullOrEmpty(filter.JobTitleContains) || (f.JobTitle != null && f.JobTitle.Contains(filter.JobTitleContains)))
-                  && (string.IsNullOrEmpty(filter.LocationContains) || (f.Location != null && f.Location.Contains(filter.LocationContains)))
-                  && (string.IsNullOrEmpty(filter.Search) ||
-                      f.FirstName.Contains(filter.Search) ||
-                      f.LastName.Contains(filter.Search) ||
-                      f.Email.Contains(filter.Search)));
+                  && (string.IsNullOrEmpty(jobTitleContains) || (f.JobTitle != null && f.JobTitle.ToLower().Contains(jobTitleContains)))
+                  && (string.IsNullOrEmpty(locationContains) || (f.Location != null && f.Location.ToLower().Contains(locationContains)))
+                  && (string.IsNullOrEmpty(search) ||
+                      f.FirstName.ToLower().Contains(search) ||
+                      f.LastName.ToLower().Contains(search) ||
+                      f.Email.ToLower().Contains(search)));
 
             var items = result.Results.Select(m => new MemberListItem(
                 m.Id, m.FirstName, m.LastName, m.Email, m.Phone,

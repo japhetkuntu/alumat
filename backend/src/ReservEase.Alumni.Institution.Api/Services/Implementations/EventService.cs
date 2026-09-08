@@ -5,11 +5,13 @@ using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -21,8 +23,12 @@ public class EventService(
     IStorageService storageService,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
+    IRedisService<PublicContentCacheConfig> publicCache,
     ILogger<EventService> logger) : IEventService
 {
+    private Task InvalidatePublicEventsCacheAsync()
+        => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.Events(id)) : Task.CompletedTask;
+
     public async Task<IApiResponse<PgPagedResult<AlumniEventDto>>> GetEventsAsync(EventFilter filter, AuthData admin)
     {
         try
@@ -140,6 +146,7 @@ public class EventService(
                 ev.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
             await eventRepo.AddAsync(ev);
+            await InvalidatePublicEventsCacheAsync();
             logger.LogInformation("Event {EventId} created by admin {AdminId}", ev.Id, admin.Id);
             notificationActor.Tell(new DispatchEventReminderCommand(currentTenant.InstitutionId!, ev));
             return ev.ToDto().ToCreatedApiResponse("Event created");
@@ -205,6 +212,7 @@ public class EventService(
             ev.UpdatedAt = DateTime.UtcNow;
             ev.UpdatedBy = admin.Id;
             await eventRepo.UpdateAsync(ev);
+            await InvalidatePublicEventsCacheAsync();
             logger.LogInformation("Event {EventId} updated by admin {AdminId}", ev.Id, admin.Id);
             return ev.ToDto().ToOkApiResponse();
         }
@@ -235,6 +243,7 @@ public class EventService(
             ev.UpdatedAt = DateTime.UtcNow;
             ev.UpdatedBy = admin.Id;
             await eventRepo.UpdateAsync(ev);
+            await InvalidatePublicEventsCacheAsync();
             logger.LogInformation("Event {EventId} cancelled", eventId);
             return new object().ToOkApiResponse("Event cancelled");
         }
@@ -262,6 +271,7 @@ public class EventService(
             }
 
             await eventRepo.RemoveAsync(ev);
+            await InvalidatePublicEventsCacheAsync();
             logger.LogInformation("Event {EventId} deleted", eventId);
             return new object().ToOkApiResponse("Event deleted");
         }

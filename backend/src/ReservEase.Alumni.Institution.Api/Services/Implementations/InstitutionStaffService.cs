@@ -17,14 +17,15 @@ public class InstitutionStaffService(
         try
         {
             logger.LogInformation("GetAdmins request — filter: {Filter}", filter.Serialize());
+            var search = filter.Search?.ToLower();
             var result = await adminRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 a => (string.IsNullOrEmpty(filter.Role) || a.Role == filter.Role)
                   && (!filter.GraduationYear.HasValue || (a.YearGroups != null && a.YearGroups.Contains(filter.GraduationYear.Value)))
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || a.FirstName.Contains(filter.Search)
-                      || a.LastName.Contains(filter.Search)
-                      || a.Email.Contains(filter.Search)));
+                  && (string.IsNullOrEmpty(search)
+                      || a.FirstName.ToLower().Contains(search)
+                      || a.LastName.ToLower().Contains(search)
+                      || a.Email.ToLower().Contains(search)));
 
             var items = result.Results.Select(a => new InstitutionStaffListItem(
                 a.Id,

@@ -38,6 +38,7 @@ builder.Services.Configure<BearerTokenConfig>(
 // Data + cache + external services
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<InstitutionRedisConfig>(builder.Configuration);
+builder.Services.AddRedisDatabase<PublicContentCacheConfig>(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
@@ -46,7 +47,12 @@ builder.Services.AddArkeselSmsService(builder.Configuration);
 
 // Auth + API
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+    // WithExposedHeaders: without it, browsers hide Content-Disposition from
+    // JS on a cross-origin response (frontend/backend are different origins
+    // in every real deployment) — the Reports page's CSV export reads it to
+    // name the downloaded file, and would otherwise silently fall back to a
+    // generic filename.
+    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Content-Disposition")));
 builder.Services.AddAlumniRateLimiting();
 builder.Services.AddBearerAuth(tokenConfig);
 builder.Services.AddGoogleAuth(builder.Configuration);

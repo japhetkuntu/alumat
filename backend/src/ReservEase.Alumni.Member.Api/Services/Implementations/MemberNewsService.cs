@@ -57,6 +57,7 @@ public class MemberNewsService(
 
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
 
+            var search = filter.Search?.ToLower();
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "PublishedAt", filter.SortDir ?? "desc",
                 p => p.Status == "Published"
@@ -65,9 +66,9 @@ public class MemberNewsService(
                       : p.CommunityId == filter.CommunityId)
                   && (p.YearGroups == null || p.YearGroups.Count == 0 || (memberYear.HasValue && p.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Category) || p.Category == filter.Category)
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || p.Title.Contains(filter.Search)
-                      || p.Content.Contains(filter.Search)));
+                  && (string.IsNullOrEmpty(search)
+                      || p.Title.ToLower().Contains(search)
+                      || p.Content.ToLower().Contains(search)));
 
                         await PopulateMissingAuthorsAsync(result.Results);
 

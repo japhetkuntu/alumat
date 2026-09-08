@@ -30,17 +30,19 @@ public class JobService(
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
 
+            var search = filter.Search?.ToLower();
+            var location = filter.Location?.ToLower();
             var result = await jobRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 j => (string.IsNullOrEmpty(filter.Status) || j.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.Type) || j.Type == filter.Type)
-                  && (string.IsNullOrEmpty(filter.Location) || j.Location.Contains(filter.Location))
+                  && (string.IsNullOrEmpty(location) || j.Location.ToLower().Contains(location))
                   && (!filter.PostedAfter.HasValue || j.CreatedAt >= filter.PostedAfter.Value)
                   && (!filter.PostedBefore.HasValue || j.CreatedAt <= filter.PostedBefore.Value)
-                  && (string.IsNullOrEmpty(filter.Search)
-                      || j.Title.Contains(filter.Search)
-                      || j.Company.Contains(filter.Search)
-                      || j.Location.Contains(filter.Search))
+                  && (string.IsNullOrEmpty(search)
+                      || j.Title.ToLower().Contains(search)
+                      || j.Company.ToLower().Contains(search)
+                      || j.Location.ToLower().Contains(search))
                   && (isSuper || j.CreatedBy == admin.Id
                       || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (j.CommunityId != null && communityIds.Contains(j.CommunityId))));

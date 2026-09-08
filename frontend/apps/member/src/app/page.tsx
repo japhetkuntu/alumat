@@ -11,9 +11,13 @@ import PlatformMarketingPage from "./platform-marketing-page";
 // fetch — an outage must never misclassify a real institution visitor as a
 // marketing-site visitor.
 export default async function RootPage() {
-  const { status } = await getInstitutionThemeStatus();
+  const { status, theme } = await getInstitutionThemeStatus();
   if (status === "not-found") {
     return <PlatformMarketingPage />;
   }
-  return <LandingPage />;
+  // Passed through as SSR-resolved initial data (see useLandingContent in
+  // landing-page.tsx) so the first paint already has the real institution's
+  // branding — no flash of generic placeholder content while a client-side
+  // fetch is in flight.
+  return <LandingPage initialContent={theme} />;
 }

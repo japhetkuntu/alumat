@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, CheckCircle, XCircle, Plus, Search, Loader2 } from "@alumni/ui";import { Pagination } from "@alumni/ui";
+import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil } from "@alumni/ui";import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
@@ -13,11 +13,12 @@ import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { Avatar, AvatarImage, AvatarFallback } from "@alumni/ui";
 import { formatDate, getInitials } from "@alumni/ui";
-import { getSpotlights, approveSpotlight, rejectSpotlight, createSpotlight, getMembers } from "@/lib/institution-api";
+import { getSpotlights, approveSpotlight, rejectSpotlight, createSpotlight, updateSpotlight, getMembers, uploadImage } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
+import { LinkOrUpload } from "@alumni/ui";
 import type { Spotlight, Member } from "@/types";
 
 export default function AdminSpotlightsPage() {
@@ -30,6 +31,12 @@ export default function AdminSpotlightsPage() {
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [createForm, setCreateForm] = useState({ title: "", story: "", imageUrl: "" });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [editTarget, setEditTarget] = useState<Spotlight | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", story: "", imageUrl: "" });
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editUploading, setEditUploading] = useState(false);
   const pageSize = 10;
   const qc = useQueryClient();
 
@@ -60,6 +67,16 @@ export default function AdminSpotlightsPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { title: string; story: string; imageUrl?: string } }) => updateSpotlight(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-spotlights"] });
+      setEditTarget(null);
+      toast.success("Spotlight updated");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   const memberSearchQuery = useQuery({
     queryKey: ["admin-member-search", memberSearch],
     queryFn: () => getMembers({ search: memberSearch, pageSize: 8, status: "Active" }),
@@ -73,6 +90,7 @@ export default function AdminSpotlightsPage() {
       setShowCreate(false);
       setSelectedMember(null);
       setCreateForm({ title: "", story: "", imageUrl: "" });
+      setImageFile(null);
       setMemberSearch("");
       toast.success("Spotlight created and featured");
     },
@@ -176,16 +194,24 @@ export default function AdminSpotlightsPage() {
                       <img src={s.imageUrl} alt={s.title} className="w-full rounded-xl max-h-48 object-cover mb-3 border border-border/30" />
                     )}
 
-                    {isPending && (
-                      <div className="flex gap-2 mt-1">
-                        <Button size="sm" className="h-8 text-xs font-bold" onClick={() => setApproveTarget(s)}>
-                          <CheckCircle size={13} className="mr-1" />Approve
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-destructive hover:text-destructive" onClick={() => setRejectTarget(s)}>
-                          <XCircle size={13} className="mr-1" />Reject
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex gap-2 mt-1">
+                      {isPending && (
+                        <>
+                          <Button size="sm" className="h-8 text-xs font-bold" onClick={() => setApproveTarget(s)}>
+                            <CheckCircle size={13} className="mr-1" />Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-8 text-xs font-bold text-destructive hover:text-destructive" onClick={() => setRejectTarget(s)}>
+                            <XCircle size={13} className="mr-1" />Reject
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        size="sm" variant="outline" className="h-8 text-xs font-bold"
+                        onClick={() => { setEditTarget(s); setEditForm({ title: s.title, story: s.story, imageUrl: s.imageUrl ?? "" }); setEditImageFile(null); }}
+                      >
+                        <Pencil size={13} className="mr-1" />Edit
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -232,8 +258,71 @@ export default function AdminSpotlightsPage() {
         </div>
       </ConfirmModal>
 
+      {/* Edit spotlight dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(v) => { if (!v) { setEditTarget(null); setEditImageFile(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Spotlight</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input
+                placeholder="e.g. Outstanding Community Leader"
+                value={editForm.title}
+                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Story</Label>
+              <Textarea
+                placeholder="Write about this member's achievements, contributions, or story..."
+                value={editForm.story}
+                onChange={(e) => setEditForm((f) => ({ ...f, story: e.target.value }))}
+                rows={4}
+                required
+              />
+            </div>
+            <LinkOrUpload
+              label="Image (optional)"
+              url={editForm.imageUrl}
+              onUrlChange={(v) => setEditForm((f) => ({ ...f, imageUrl: v }))}
+              file={editImageFile}
+              onFileChange={setEditImageFile}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setEditTarget(null); setEditImageFile(null); }}>Cancel</Button>
+              <Button
+                disabled={!editForm.title.trim() || !editForm.story.trim() || updateMut.isPending || editUploading}
+                onClick={async () => {
+                  if (!editTarget) return;
+                  let resolvedImageUrl = editForm.imageUrl;
+                  if (editImageFile) {
+                    setEditUploading(true);
+                    try {
+                      const { url } = await uploadImage(editImageFile);
+                      resolvedImageUrl = url;
+                    } catch (err) {
+                      toast.error(handleApiError(err));
+                      setEditUploading(false);
+                      return;
+                    }
+                    setEditUploading(false);
+                  }
+                  updateMut.mutate({ id: editTarget.id, data: { title: editForm.title, story: editForm.story, imageUrl: resolvedImageUrl || undefined } });
+                }}
+              >
+                {(updateMut.isPending || editUploading) ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+                Save changes
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Create spotlight dialog */}
-      <Dialog open={showCreate} onOpenChange={(v) => { if (!v) { setShowCreate(false); setSelectedMember(null); setCreateForm({ title: "", story: "", imageUrl: "" }); setMemberSearch(""); } }}>
+      <Dialog open={showCreate} onOpenChange={(v) => { if (!v) { setShowCreate(false); setSelectedMember(null); setCreateForm({ title: "", story: "", imageUrl: "" }); setImageFile(null); setMemberSearch(""); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Feature a Member</DialogTitle>
@@ -316,22 +405,36 @@ export default function AdminSpotlightsPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Image URL (optional)</Label>
-                <Input
-                  placeholder="https://..."
-                  value={createForm.imageUrl}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, imageUrl: e.target.value }))}
-                />
-              </div>
+              <LinkOrUpload
+                label="Image (optional)"
+                url={createForm.imageUrl}
+                onUrlChange={(v) => setCreateForm((f) => ({ ...f, imageUrl: v }))}
+                file={imageFile}
+                onFileChange={setImageFile}
+              />
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => { setShowCreate(false); setSelectedMember(null); setCreateForm({ title: "", story: "", imageUrl: "" }); setMemberSearch(""); }}>Cancel</Button>
+                <Button variant="outline" onClick={() => { setShowCreate(false); setSelectedMember(null); setCreateForm({ title: "", story: "", imageUrl: "" }); setImageFile(null); setMemberSearch(""); }}>Cancel</Button>
                 <Button
-                  disabled={!createForm.title.trim() || !createForm.story.trim() || createMut.isPending}
-                  onClick={() => createMut.mutate({ memberId: selectedMember.id, title: createForm.title, story: createForm.story, imageUrl: createForm.imageUrl || undefined })}
+                  disabled={!createForm.title.trim() || !createForm.story.trim() || createMut.isPending || uploading}
+                  onClick={async () => {
+                    let resolvedImageUrl = createForm.imageUrl;
+                    if (imageFile) {
+                      setUploading(true);
+                      try {
+                        const { url } = await uploadImage(imageFile);
+                        resolvedImageUrl = url;
+                      } catch (err) {
+                        toast.error(handleApiError(err));
+                        setUploading(false);
+                        return;
+                      }
+                      setUploading(false);
+                    }
+                    createMut.mutate({ memberId: selectedMember.id, title: createForm.title, story: createForm.story, imageUrl: resolvedImageUrl || undefined });
+                  }}
                 >
-                  {createMut.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+                  {(createMut.isPending || uploading) ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
                   Feature Member
                 </Button>
               </DialogFooter>

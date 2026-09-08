@@ -27,9 +27,10 @@ public class AlbumService(
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
+            var search = filter.Search?.ToLower();
             var result = await albumRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                a => (string.IsNullOrEmpty(filter.Search) || a.Title.Contains(filter.Search))
+                a => (string.IsNullOrEmpty(search) || a.Title.ToLower().Contains(search))
                   && (isSuper
                       || (a.YearGroups != null && a.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (a.CommunityId != null && communityIds.Contains(a.CommunityId))));

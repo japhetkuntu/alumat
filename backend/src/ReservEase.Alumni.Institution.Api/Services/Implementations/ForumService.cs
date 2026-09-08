@@ -71,10 +71,11 @@ public class ForumService(
         try
         {
             logger.LogInformation("GetThreads request — filter: {Filter}", filter.Serialize());
+            var search = filter.Search?.ToLower();
             var result = await threadRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 t => (string.IsNullOrEmpty(filter.CategoryId) || t.CategoryId == filter.CategoryId)
-                  && (string.IsNullOrEmpty(filter.Search) || t.Title.Contains(filter.Search))
+                  && (string.IsNullOrEmpty(search) || t.Title.ToLower().Contains(search))
                   && (string.IsNullOrEmpty(filter.Filter)
                       || (filter.Filter == "pinned" && t.IsPinned)
                       || (filter.Filter == "closed" && t.IsClosed)

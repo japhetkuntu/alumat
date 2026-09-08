@@ -74,10 +74,11 @@ public class StoreService(
         try
         {
             logger.LogInformation("GetProducts request — filter: {Filter}", filter.Serialize());
+            var search = filter.Search?.ToLower();
             var result = await productRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 p => (string.IsNullOrEmpty(filter.Status) || p.Status == filter.Status)
-                  && (string.IsNullOrEmpty(filter.Search) || p.Name.Contains(filter.Search)));
+                  && (string.IsNullOrEmpty(search) || p.Name.ToLower().Contains(search)));
 
             var productIds = result.Results.Select(p => p.Id).ToList();
             var variantsByProduct = (await variantRepo.GetAllAsync(v => productIds.Contains(v.ProductId)))

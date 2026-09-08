@@ -16,6 +16,8 @@ import { FormError } from "@alumni/ui";
 import { getInitials, cn } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
+import { LinkOrUpload } from "@alumni/ui";
+import { CardSkeleton } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -100,12 +102,13 @@ export default function BrandingSettingsPage() {
     queryFn: getStaffProfile,
   });
 
-  const { data: institution } = useQuery({
+  const { data: institution, isLoading: institutionLoading } = useQuery({
     queryKey: ["institution-profile"],
     queryFn: getInstitutionProfile,
   });
 
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
+  const [storyFiles, setStoryFiles] = useState<(File | null)[]>([]);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
   const [heroHeadline, setHeroHeadline] = useState<string | null>(null);
   const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
@@ -115,13 +118,20 @@ export default function BrandingSettingsPage() {
     mutationFn: async () => {
       const uploaded = await Promise.all(heroImageFiles.map((f) => uploadImage(f)));
       const heroImageUrls = [...(heroExistingImageUrls ?? []), ...uploaded.map((u) => u.url)];
-      return updateLandingContent(stories ?? [], banner?.enabled ? banner : null, heroImageUrls, heroHeadline || undefined);
+      const resolvedStories = await Promise.all((stories ?? []).map(async (s, i) => {
+        const pending = storyFiles[i];
+        if (!pending) return s;
+        const { url } = await uploadImage(pending);
+        return { ...s, imageUrl: url };
+      }));
+      return updateLandingContent(resolvedStories, banner?.enabled ? banner : null, heroImageUrls, heroHeadline || undefined);
     },
     onSuccess: () => {
       toast.success("Landing content updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
       setContentError(null);
       setHeroImageFiles([]);
+      setStoryFiles([]);
     },
     onError: (e) => {
       const msg = handleApiError(e);
@@ -165,7 +175,7 @@ export default function BrandingSettingsPage() {
     pwMut.mutate();
   }
 
-  const { data: notifPrefsDto } = useQuery({
+  const { data: notifPrefsDto, isLoading: notifPrefsLoading } = useQuery({
     queryKey: ["admin-notification-preferences"],
     queryFn: getAdminNotificationPreferences,
   });
@@ -217,7 +227,12 @@ export default function BrandingSettingsPage() {
         ))}
       </div>
 
-      {tab === "Institution profile" && (
+      {tab === "Institution profile" && institutionLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
+          <Card className="border-border/40"><CardContent className="p-6"><CardSkeleton /></CardContent></Card>
+          <Card className="border-border/40 h-fit"><CardContent className="p-5"><CardSkeleton /></CardContent></Card>
+        </div>
+      ) : tab === "Institution profile" && (
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
           <Card className="border-border/40">
             <CardContent className="p-6 space-y-4">
@@ -251,11 +266,20 @@ export default function BrandingSettingsPage() {
                   <Input value={institution?.tagline ?? ""} disabled />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-semibold">Primary color</Label>
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-md border border-border" style={{ backgroundColor: institution?.primaryColorHex ?? "#2563eb" }} />
-                  <Input value={institution?.primaryColorHex ?? ""} disabled className="w-[140px]" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold">Primary color</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-md border border-border shrink-0" style={{ backgroundColor: institution?.primaryColorHex ?? "#2563eb" }} />
+                    <Input value={institution?.primaryColorHex ?? ""} disabled className="w-[140px]" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold">Secondary color</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-md border border-border shrink-0" style={{ backgroundColor: institution?.secondaryColorHex || "#e2e8f0" }} />
+                    <Input value={institution?.secondaryColorHex || "Not set"} disabled className="w-[140px]" />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -264,8 +288,8 @@ export default function BrandingSettingsPage() {
           <Card className="border-border/40 h-fit">
             <CardContent className="p-5">
               <p className="font-semibold text-[14px] mb-1">Brand preview</p>
-              <p className="text-[12px] text-muted-foreground mb-3">How your primary color reads across the portal.</p>
-              <BrandPreview color={institution?.primaryColorHex ?? "#2563eb"} name={institution?.portalName || institution?.name || "Institution"} />
+              <p className="text-[12px] text-muted-foreground mb-3">How your primary and secondary colors read across the portal.</p>
+              <BrandPreview color={institution?.primaryColorHex ?? "#2563eb"} secondaryColor={institution?.secondaryColorHex ?? undefined} name={institution?.portalName || institution?.name || "Institution"} />
             </CardContent>
           </Card>
 
@@ -309,6 +333,13 @@ export default function BrandingSettingsPage() {
             <p className="text-muted-foreground mt-2">Only Admin and SuperAdmin users can manage landing page content.</p>
           </CardContent>
         </Card>
+      )}
+
+      {tab === "Landing content" && !isScopedAdmin && (!stories || !banner) && (
+        <div className="space-y-4">
+          <Card className="border-border/40"><CardContent className="p-6"><CardSkeleton /></CardContent></Card>
+          <Card className="border-border/40"><CardContent className="p-6"><CardSkeleton /></CardContent></Card>
+        </div>
       )}
 
       {tab === "Landing content" && !isScopedAdmin && stories && banner && (
@@ -388,7 +419,7 @@ export default function BrandingSettingsPage() {
                   <p className="font-semibold text-[15px]">Stories</p>
                   <p className="text-[12.5px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on your landing page. Leave empty for generic default copy.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setStories((s) => [...(s ?? []), { ...EMPTY_STORY }])}>
+                <Button variant="outline" size="sm" onClick={() => { setStories((s) => [...(s ?? []), { ...EMPTY_STORY }]); setStoryFiles((f) => [...f, null]); }}>
                   <Plus size={14} className="mr-1.5" /> Add story
                 </Button>
               </div>
@@ -400,7 +431,7 @@ export default function BrandingSettingsPage() {
                   <div key={i} className="space-y-3 pb-5 border-b border-border/40 last:border-0 last:pb-0">
                     <div className="flex items-center justify-between">
                       <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wide">Story {i + 1}</p>
-                      <button type="button" onClick={() => setStories((s) => s!.filter((_, idx) => idx !== i))} className="text-destructive hover:opacity-70">
+                      <button type="button" onClick={() => { setStories((s) => s!.filter((_, idx) => idx !== i)); setStoryFiles((f) => f.filter((_, idx) => idx !== i)); }} className="text-destructive hover:opacity-70">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -428,10 +459,13 @@ export default function BrandingSettingsPage() {
                       <Label>Description</Label>
                       <Textarea rows={2} value={story.description} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, description: e.target.value } : it)))} />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Image URL</Label>
-                      <Input value={story.imageUrl ?? ""} onChange={(e) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: e.target.value } : it)))} placeholder="https://…" />
-                    </div>
+                    <LinkOrUpload
+                      label="Image"
+                      url={story.imageUrl ?? ""}
+                      onUrlChange={(v) => setStories((s) => s!.map((it, idx) => (idx === i ? { ...it, imageUrl: v } : it)))}
+                      file={storyFiles[i] ?? null}
+                      onFileChange={(f) => setStoryFiles((files) => { const next = [...files]; next[i] = f; return next; })}
+                    />
                   </div>
                 ))}
               </CardContent>
@@ -445,7 +479,9 @@ export default function BrandingSettingsPage() {
         </div>
       )}
 
-      {tab === "Domain" && (
+      {tab === "Domain" && institutionLoading ? (
+        <Card className="border-border/40 max-w-2xl"><CardContent className="p-6"><CardSkeleton /></CardContent></Card>
+      ) : tab === "Domain" && (
         <Card className="border-border/40 max-w-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-1">
@@ -493,7 +529,9 @@ export default function BrandingSettingsPage() {
         </Card>
       )}
 
-      {tab === "Notifications" && (
+      {tab === "Notifications" && notifPrefsLoading ? (
+        <Card className="border-border/40 max-w-2xl"><CardContent className="p-6"><CardSkeleton /></CardContent></Card>
+      ) : tab === "Notifications" && (
         <Card className="border-border/40 max-w-2xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-1">

@@ -124,6 +124,7 @@ export interface InstitutionProfileResponse {
   logoUrl?: string | null;
   iconUrl?: string | null;
   primaryColorHex: string;
+  secondaryColorHex?: string | null;
   institutionPortalTitle?: string | null;
   institutionAuthHeadline?: string | null;
   institutionAuthSubtext?: string | null;
@@ -551,6 +552,37 @@ export async function markCampaignPaystackDisbursed(campaignId: string) {
 export async function getReportSummary() {
   const res = await institutionClient.get<ApiResponse<ReportSummary>>('/reports/summary');
   return res.data.data!;
+}
+
+export interface MemberReportExportFilters {
+  status?: string;
+  graduationYearFrom?: number;
+  graduationYearTo?: number;
+  jobTitleContains?: string;
+  locationContains?: string;
+}
+
+/**
+ * Downloads a report export straight from the backend's already-scoped,
+ * DB-side CSV builder (see ReportService.ExportEntityCsvAsync) — the entire
+ * scoped dataset, not capped at a fixed page size like a client-rebuilt CSV
+ * from a paginated list endpoint would be.
+ */
+export async function exportReportCsv(entity: "campaigns" | "members" | "contributions" | "events" | "jobs", filters?: MemberReportExportFilters) {
+  const res = await institutionClient.get(`/reports/export/${entity}`, {
+    params: entity === "members" ? filters : undefined,
+    responseType: "blob",
+  });
+  const disposition = res.headers["content-disposition"] as string | undefined;
+  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] ?? `${entity}-export.csv`;
+
+  const blob = res.data as Blob;
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
@@ -1079,6 +1111,11 @@ export async function getSpotlights(page = 1, pageSize = 10, status?: string): P
 
 export async function createSpotlight(data: { memberId: string; title: string; story: string; imageUrl?: string }): Promise<Spotlight> {
   const res = await institutionClient.post<ApiResponse<Spotlight>>("/spotlights", data);
+  return res.data.data!;
+}
+
+export async function updateSpotlight(spotlightId: string, data: { title: string; story: string; imageUrl?: string }): Promise<Spotlight> {
+  const res = await institutionClient.put<ApiResponse<Spotlight>>(`/spotlights/${spotlightId}`, data);
   return res.data.data!;
 }
 

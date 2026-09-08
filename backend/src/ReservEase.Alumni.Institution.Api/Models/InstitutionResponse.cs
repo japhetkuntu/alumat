@@ -14,6 +14,7 @@ public record InstitutionResponse(
     string? LogoUrl,
     string? IconUrl,
     string PrimaryColorHex,
+    string? SecondaryColorHex,
     string? InstitutionPortalTitle,
     string? InstitutionAuthHeadline,
     string? InstitutionAuthSubtext,

@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { PortalShellSkeleton } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { memberClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -297,7 +298,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
     }
   }, [isLoading, isMember, pathname, router]);
 
-  if (isLoading || !isMember) return null;
+  if (isLoading || !isMember) return <PortalShellSkeleton sidebarWidth={240} />;
 
   return (
     <div className="flex h-dvh bg-background overflow-hidden overscroll-none selection:bg-accent/10">

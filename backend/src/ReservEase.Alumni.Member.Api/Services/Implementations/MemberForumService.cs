@@ -85,6 +85,7 @@ public class MemberForumService(
             // plus every community I'm an approved member of — never someone else's community.
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(member.Id) : [];
 
+            var search = filter.Search?.ToLower();
             var result = await threadRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "IsPinned", filter.SortDir ?? "desc",
                 t => !t.IsClosed
@@ -92,7 +93,7 @@ public class MemberForumService(
                       ? (t.CommunityId == null || approvedCommunityIds.Contains(t.CommunityId))
                       : t.CommunityId == filter.CommunityId)
                   && (string.IsNullOrEmpty(filter.CategoryId) || t.CategoryId == filter.CategoryId)
-                  && (string.IsNullOrEmpty(filter.Search) || t.Title.Contains(filter.Search))
+                  && (string.IsNullOrEmpty(search) || t.Title.ToLower().Contains(search))
                   && (string.IsNullOrEmpty(filter.Filter)
                       || (filter.Filter == "pinned" && t.IsPinned)
                       || (filter.Filter == "recent")
