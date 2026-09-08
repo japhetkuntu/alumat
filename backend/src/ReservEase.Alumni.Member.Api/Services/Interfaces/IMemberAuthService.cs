@@ -6,6 +6,7 @@ namespace ReservEase.Alumni.Member.Api.Services.Interfaces;
 public interface IMemberAuthService
 {
     Task<IApiResponse<object>> RegisterAsync(RegisterRequest request);
+    Task<IApiResponse<object>> GoogleRegisterAsync(GoogleRegisterRequest request);
     Task<IApiResponse<object>> VerifyOtpAsync(VerifyOtpRequest request);
     Task<IApiResponse<object>> ResendOtpAsync(ResendOtpRequest request);
     Task<IApiResponse<object>> VerifyEmailAsync(string token, string email);

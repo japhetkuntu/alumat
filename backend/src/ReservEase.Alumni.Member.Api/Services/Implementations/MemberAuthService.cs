@@ -124,6 +124,82 @@ public class MemberAuthService(
         }
     }
 
+    public async Task<IApiResponse<object>> GoogleRegisterAsync(GoogleRegisterRequest request)
+    {
+        try
+        {
+            var identity = await googleTokenVerifier.VerifyAsync(request.IdToken);
+            if (identity is null)
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<object>("Google sign-in failed. Please try again.");
+
+            logger.LogInformation("Google registration attempt for email: {Email}", identity.Email);
+
+            // Same re-registration allowance as the password flow — a Suspended
+            // (rejected) member can try again; anything else with this email is
+            // a real conflict, so this never creates a second account for the
+            // same address regardless of which method it came in through.
+            var existing = await memberRepo.GetOneAsync(m => m.Email == identity.Email);
+            if (existing is not null && existing.Status != "Suspended")
+            {
+                return existing.Status == "Pending"
+                    ? ApiResponseExtensions.ToConflictApiResponse<object>("An account with this email is already pending approval.")
+                    : ApiResponseExtensions.ToConflictApiResponse<object>("An account with this email already exists. Please sign in instead.");
+            }
+            if (existing is not null && existing.Status == "Suspended")
+                await memberRepo.RemoveAsync(existing);
+
+            // No OTP staging in Redis — Google already proved this email is
+            // real and reachable, so the member row is created immediately
+            // instead of waiting on a code the member would type back in.
+            var member = new MemberEntity
+            {
+                FirstName = identity.FirstName,
+                LastName = identity.LastName,
+                Email = identity.Email,
+                // Random, never-typed hash — this account only ever signs in via Google.
+                Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
+                Phone = request.Phone,
+                StudentId = request.StudentId,
+                GraduationYear = request.GraduationYear,
+                DepartmentId = request.DepartmentId ?? string.Empty,
+                Status = "Pending",
+                IsEmailVerified = true,
+                CreatedBy = "google",
+            };
+
+            if (!string.IsNullOrWhiteSpace(request.ReferralCode))
+            {
+                var referrer = await memberRepo.GetOneAsync(m => m.ReferralCode == request.ReferralCode);
+                if (referrer is not null)
+                {
+                    member.ReferredById = referrer.Id;
+                }
+            }
+
+            await memberRepo.AddAsync(member);
+
+            if (!string.IsNullOrWhiteSpace(member.ReferredById))
+            {
+                var referral = await referralRepo.GetOneAsync(r =>
+                    r.ReferrerId == member.ReferredById && r.ReferredEmail == identity.Email);
+                if (referral is not null)
+                {
+                    referral.ReferredMemberId = member.Id;
+                    referral.Status = "Registered";
+                    await referralRepo.UpdateAsync(referral);
+                }
+            }
+
+            logger.LogInformation("Member {MemberId} registered via Google", member.Id);
+            return new object().ToCreatedApiResponse("Registration submitted. Your account is pending admin approval.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error during Google registration");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Registration failed");
+        }
+    }
+
     public async Task<IApiResponse<object>> VerifyOtpAsync(VerifyOtpRequest request)
     {
         try

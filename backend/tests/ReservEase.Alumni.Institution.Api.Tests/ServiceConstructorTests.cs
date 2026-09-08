@@ -13,6 +13,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Common.Sdk.Services;
 using Xunit;
 
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
@@ -51,10 +52,11 @@ public class ServiceConstructorTests
         var notificationActor = new Mock<INotificationActor>();
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
         var mailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
+        var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
 
         var _ = new InstitutionAuthService(
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
-            redisService.Object, tokenOptions, mailtrapOptions, notificationActor.Object, new NullLogger<InstitutionAuthService>());
+            redisService.Object, tokenOptions, mailtrapOptions, notificationActor.Object, googleTokenVerifier.Object, new NullLogger<InstitutionAuthService>());
         var __ = new InstitutionStaffService(adminRepo.Object, new NullLogger<InstitutionStaffService>());
         var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, campaignUpdateRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<CampaignService>());
         var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<EventService>());

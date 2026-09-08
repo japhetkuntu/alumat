@@ -103,6 +103,18 @@ public class MembersController(IMemberAuthService authService) : DefaultControll
         return result.ToActionResult();
     }
 
+    [HttpPost("google-register")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Register via Google", Description = "Register a new member from a verified Google ID token, skipping the email-OTP step. Still requires alumni-specific details the form collects (phone, student ID, graduation year, department).")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GoogleRegister([FromBody] GoogleRegisterRequest request)
+    {
+        var result = await authService.GoogleRegisterAsync(request);
+        return result.ToActionResult();
+    }
+
     [HttpPost("refreshtoken")]
     [SwaggerOperation(Summary = "Refresh token", Description = "Exchange a refresh token for new access/refresh tokens")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MemberTokenResponse>))]

@@ -25,6 +25,18 @@ const PORTAL_LABEL: Record<string, string> = {
   platform: "platform portal",
 };
 
+/** Decodes (never verifies — that only ever happens server-side) a Google ID
+ *  token's payload, purely so the register form can prefill name/email
+ *  before the token is actually submitted and checked. */
+function decodeJwtPayload(idToken: string): { email?: string; given_name?: string; family_name?: string } {
+  try {
+    const base64 = idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(escape(atob(base64))));
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Shared Google sign-in bridge for all three portals. Google's OAuth client
  * only allows a fixed, pre-registered set of origins — it can't authorize
@@ -41,6 +53,12 @@ function GoogleAuthBridgeContent() {
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("return");
   const portal = searchParams.get("portal") ?? "member";
+  // "register" never completes anything itself — the register page still
+  // needs alumni-specific fields (phone, student ID, graduation year) Google
+  // has no idea about, so this mode just hands the raw ID token back for the
+  // register page's own form submission to include. Real verification of
+  // that token only ever happens server-side, same as the login mode below.
+  const mode = searchParams.get("mode") === "register" ? "register" : "login";
   const buttonRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "signing-in" | "error">("loading");
   const [error, setError] = useState("");
@@ -51,6 +69,16 @@ function GoogleAuthBridgeContent() {
       setError("Missing return destination — please start sign-in from the portal again.");
       return;
     }
+
+    if (mode === "register") {
+      const claims = decodeJwtPayload(idToken);
+      const payload = encodeURIComponent(btoa(JSON.stringify({
+        idToken, email: claims.email ?? "", firstName: claims.given_name ?? "", lastName: claims.family_name ?? "",
+      })));
+      window.location.href = `${returnUrl}/register#googleReg=${payload}`;
+      return;
+    }
+
     setStatus("signing-in");
     try {
       const res = await fetch(`${returnUrl}/api/v1/auth/google`, {
@@ -70,7 +98,7 @@ function GoogleAuthBridgeContent() {
       setStatus("error");
       setError("Could not reach the server. Please try again.");
     }
-  }, [returnUrl]);
+  }, [returnUrl, mode]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
@@ -113,9 +141,11 @@ function GoogleAuthBridgeContent() {
           <ShieldCheck size={20} className="text-primary" />
         </div>
         <div>
-          <h1 className="text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>Sign in with Google</h1>
+          <h1 className="text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>
+            {mode === "register" ? "Sign up with Google" : "Sign in with Google"}
+          </h1>
           <p className="text-[13px] mt-1" style={{ color: "var(--muted-foreground)" }}>
-            Continuing to your {PORTAL_LABEL[portal] ?? "portal"}
+            {mode === "register" ? "Continuing your registration for " : "Continuing to your "}{PORTAL_LABEL[portal] ?? "portal"}
           </p>
         </div>
 

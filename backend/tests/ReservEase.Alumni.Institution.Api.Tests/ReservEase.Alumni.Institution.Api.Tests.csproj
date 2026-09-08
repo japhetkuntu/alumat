@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ReservEase.Alumni.Institution.Api/ReservEase.Alumni.Institution.Api.csproj" />
     <ProjectReference Include="..\..\src\ReservEase.Alumni.Member.Api\ReservEase.Alumni.Member.Api.csproj" />
+    <ProjectReference Include="..\..\src\ReservEase.Alumni.Platform.Api\ReservEase.Alumni.Platform.Api.csproj" />
   </ItemGroup>
 
 </Project>

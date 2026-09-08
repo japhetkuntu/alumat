@@ -25,6 +25,8 @@ import type { Campaign } from "@/types";
 import { cn } from "@alumni/ui";
 import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
 
+const GOOGLE_AUTH_URL = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
+
 // Dev-only: lets a local build reach a specific institution without real
 // wildcard-subdomain DNS (see TenantResolutionMiddleware / X-Institution-Slug).
 // Ignored by the backend outside Development, and hidden here in production
@@ -41,25 +43,28 @@ const gradYears = Array.from(
 // Whether Student ID is required varies per institution (platform-configured
 // via RequireStudentId — see the theme fetch below), so the schema is built
 // dynamically instead of being a fixed module-level constant.
-function buildSchema(requireStudentId: boolean) {
-  return z
-    .object({
-      firstName: z.string().min(2, "First name is required"),
-      lastName: z.string().min(2, "Last name is required"),
-      email: z.string().email("Enter a valid email"),
-      phone: z.string()
-        .min(9, "Enter a valid mobile number")
-        .regex(/^[+0-9\s-]+$/, "Enter a valid mobile number"),
-      studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
-      graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
-      departmentId: z.string().optional(),
-      password: z.string().min(8, "Password must be at least 8 characters"),
-      confirmPassword: z.string(),
-    })
-    .refine((d) => d.password === d.confirmPassword, {
-      message: "Passwords do not match",
-      path: ["confirmPassword"],
-    });
+// `googleMode` is true once sign-up came in via "Continue with Google" — no
+// password to collect (this account only ever signs in with Google), so the
+// password fields are dropped from validation entirely rather than just
+// hidden, which would otherwise still block submission.
+function buildSchema(requireStudentId: boolean, googleMode: boolean) {
+  const base = z.object({
+    firstName: z.string().min(2, "First name is required"),
+    lastName: z.string().min(2, "Last name is required"),
+    email: z.string().email("Enter a valid email"),
+    phone: z.string()
+      .min(9, "Enter a valid mobile number")
+      .regex(/^[+0-9\s-]+$/, "Enter a valid mobile number"),
+    studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
+    graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
+    departmentId: z.string().optional(),
+    password: googleMode ? z.string().optional() : z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().optional(),
+  });
+  return googleMode ? base : base.refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 }
 
 type FormData = z.infer<ReturnType<typeof buildSchema>>;
@@ -317,6 +322,13 @@ function RegisterForm() {
   const [workspaceSlug, setWorkspaceSlug] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Set once "Continue with Google" comes back from the bridge with a raw ID
+  // token (see /google-auth) — name/email are pre-filled and locked, the
+  // password sub-step is skipped entirely, and submission goes to
+  // /auth/google-register instead of /auth/register + OTP.
+  const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
+  const [submittingGoogle, setSubmittingGoogle] = useState(false);
+
   useEffect(() => {
     if (SHOW_WORKSPACE_FIELD) {
       setWorkspaceSlug(localStorage.getItem("institution_slug") ?? "");
@@ -368,7 +380,7 @@ function RegisterForm() {
     retry: false,
   });
   const requireStudentId = theme?.requireStudentId ?? true;
-  const schema = useMemo(() => buildSchema(requireStudentId), [requireStudentId]);
+  const schema = useMemo(() => buildSchema(requireStudentId, !!googleIdToken), [requireStudentId, googleIdToken]);
 
   const {
     register,
@@ -382,6 +394,28 @@ function RegisterForm() {
     resolver: zodResolver(schema),
   });
 
+  // Relay from the Google sign-in bridge (see /google-auth) — a raw,
+  // not-yet-verified ID token plus the name/email it claims, purely to
+  // prefill the form. The token itself is only ever checked server-side,
+  // when it's actually submitted below.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith("#googleReg=")) return;
+    try {
+      const { idToken, email: gEmail, firstName, lastName } =
+        JSON.parse(atob(decodeURIComponent(hash.slice("#googleReg=".length))));
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      setGoogleIdToken(idToken);
+      setValue("firstName", firstName || "");
+      setValue("lastName", lastName || "");
+      setValue("email", gEmail || "");
+    } catch {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    // Runs once on mount only — the fragment is consumed and stripped immediately.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function onSubmit(data: FormData) {
     try {
       await memberClient.post("/auth/register", data);
@@ -392,6 +426,28 @@ function RegisterForm() {
     } catch (err) {
       const appliedToField = applyServerFieldErrors<FormData>(err, setError);
       if (!appliedToField) toast.error(handleApiError(err));
+    }
+  }
+
+  async function onSubmitGoogle(data: FormData) {
+    if (!googleIdToken) return;
+    setSubmittingGoogle(true);
+    try {
+      await memberClient.post("/auth/google-register", {
+        idToken: googleIdToken,
+        phone: data.phone,
+        studentId: data.studentId,
+        graduationYear: data.graduationYear,
+        departmentId: data.departmentId,
+      });
+      setEmail(data.email);
+      setStep("pending");
+      toast.success("Registration submitted. Your account is pending admin approval.");
+    } catch (err) {
+      const appliedToField = applyServerFieldErrors<FormData>(err, setError);
+      if (!appliedToField) toast.error(handleApiError(err));
+    } finally {
+      setSubmittingGoogle(false);
     }
   }
 
@@ -456,7 +512,11 @@ function RegisterForm() {
   }
   async function nextFromStep2() {
     const ok = await trigger(["studentId", "graduationYear"]);
-    if (ok) setFormSubStep(3);
+    if (!ok) return;
+    // Google mode skips the password sub-step (and the OTP step after it)
+    // entirely — submit straight from here instead of advancing to step 3.
+    if (googleIdToken) { await handleSubmit(onSubmitGoogle)(); return; }
+    setFormSubStep(3);
   }
 
   return (
@@ -531,13 +591,48 @@ function RegisterForm() {
                     </p>
                   </div>
                 )}
+                {googleIdToken ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl border p-3 bg-accent/5" style={{ borderColor: "var(--border)" }}>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
+                        {watch("firstName")} {watch("lastName")}
+                      </p>
+                      <p className="text-[12px] truncate" style={{ color: "var(--muted-foreground)" }}>{watch("email")} · via Google</p>
+                    </div>
+                    <button type="button" onClick={() => setGoogleIdToken(null)}
+                      className="text-[12px] font-semibold shrink-0 hover:underline" style={{ color: "var(--primary)" }}>
+                      Use a different method
+                    </button>
+                  </div>
+                ) : GOOGLE_AUTH_URL ? (
+                  <>
+                    <a
+                      href={`${GOOGLE_AUTH_URL}?portal=member&mode=register&return=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+                      className="flex items-center justify-center gap-2.5 w-full h-11 border text-[13.5px] font-semibold transition-colors hover:bg-muted/50"
+                      style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+                        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+                        <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6c-2 1.5-4.6 2.5-7.7 2.5-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z" />
+                        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.4 36.1 44 30.5 44 24c0-1.3-.1-2.7-.4-3.5z" />
+                      </svg>
+                      Sign up with Google
+                    </a>
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+                      <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
+                      <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+                    </div>
+                  </>
+                ) : null}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="firstName" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                       First name
                     </Label>
-                    <Input id="firstName" placeholder="Kwame" autoFocus error={!!errors.firstName}
-                      className="h-11 text-[14px]" {...register("firstName")} />
+                    <Input id="firstName" placeholder="Kwame" autoFocus={!googleIdToken} error={!!errors.firstName}
+                      disabled={!!googleIdToken} className="h-11 text-[14px]" {...register("firstName")} />
                     <FieldError message={errors.firstName?.message} />
                   </div>
                   <div className="space-y-1.5">
@@ -545,7 +640,7 @@ function RegisterForm() {
                       Last name
                     </Label>
                     <Input id="lastName" placeholder="Mensah" error={!!errors.lastName}
-                      className="h-11 text-[14px]" {...register("lastName")} />
+                      disabled={!!googleIdToken} className="h-11 text-[14px]" {...register("lastName")} />
                     <FieldError message={errors.lastName?.message} />
                   </div>
                 </div>
@@ -554,7 +649,7 @@ function RegisterForm() {
                     Email address
                   </Label>
                   <Input id="email" type="email" placeholder="you@example.com" error={!!errors.email}
-                    className="h-11 text-[14px]" {...register("email")} />
+                    disabled={!!googleIdToken} className="h-11 text-[14px]" {...register("email")} />
                   <FieldError message={errors.email?.message} />
                 </div>
                 <div className="space-y-1.5">
@@ -621,8 +716,8 @@ function RegisterForm() {
                     <ArrowLeft size={14} className="mr-1.5" /> Back
                   </Button>
                   <Button type="button" className="flex-[2] text-[14px] font-semibold" style={{ height: 44 }}
-                    onClick={nextFromStep2}>
-                    Continue <ChevronRight size={15} className="ml-1" />
+                    onClick={nextFromStep2} isLoading={submittingGoogle} loadingText="Creating account…">
+                    {googleIdToken ? "Create account" : "Continue"} <ChevronRight size={15} className="ml-1" />
                   </Button>
                 </div>
               </div>
