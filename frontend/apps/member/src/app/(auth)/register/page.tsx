@@ -25,7 +25,10 @@ import type { Campaign } from "@/types";
 import { cn } from "@alumni/ui";
 import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
 
-const GOOGLE_AUTH_URL = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
+// Always the fixed base domain, never this institution's own subdomain —
+// that's the one origin actually registered with Google.
+const GOOGLE_BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+const GOOGLE_AUTH_URL = GOOGLE_BASE_DOMAIN ? `https://${GOOGLE_BASE_DOMAIN}/google-auth` : undefined;
 
 // Dev-only: lets a local build reach a specific institution without real
 // wildcard-subdomain DNS (see TenantResolutionMiddleware / X-Institution-Slug).

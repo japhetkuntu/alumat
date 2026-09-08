@@ -64,7 +64,13 @@ function useGoogleAuthRelay(onSession: (user: unknown, tokens: unknown) => void)
 }
 
 function GoogleSignInButton({ portal }: { portal: "member" | "institution" | "platform" }) {
-  const bridgeUrl = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
+  // Always the fixed base domain, never this institution's own subdomain —
+  // that's the one origin actually registered with Google. Matters here
+  // even though this bridge page lives in this very app: a member visiting
+  // via their institution's subdomain must still be sent to the base domain
+  // for the Google Identity Services SDK to accept the origin.
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+  const bridgeUrl = baseDomain ? `https://${baseDomain}/google-auth` : undefined;
   const [origin, setOrigin] = useState("");
   useEffect(() => { setOrigin(window.location.origin); }, []);
   if (!bridgeUrl || !origin) return null;

@@ -288,10 +288,12 @@ services:
       dockerfile: apps/institution/Dockerfile
       args:
         # The Google sign-in bridge always lives on the member app's fixed
-        # domain (see apps/member/src/app/google-auth) — this just points
-        # institution staff login at it, unlike NEXT_PUBLIC_*_API_URL above
-        # this doesn't vary per subdomain, so a build arg is correct here.
-        NEXT_PUBLIC_GOOGLE_AUTH_URL: ${NEXT_PUBLIC_GOOGLE_AUTH_URL:-}
+        # domain (see apps/member/src/app/google-auth) — this institution
+        # portal also has its own per-institution subdomain, so the button
+        # always links to https://<this>/google-auth rather than a relative
+        # path, unlike NEXT_PUBLIC_*_API_URL above this doesn't vary per
+        # subdomain, so a build arg is correct here.
+        NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-}
     image: alumni/frontend-institution:prod
     container_name: alumni-frontend-institution
     restart: unless-stopped
@@ -310,10 +312,12 @@ services:
       args:
         # The member app hosts the shared Google sign-in bridge itself
         # (apps/member/src/app/google-auth) — it needs the real OAuth client
-        # ID to run the sign-in flow, and its own bridge URL to link to from
-        # its own login page (normally just the relative "/google-auth").
+        # ID to run the sign-in flow. Its own login/register buttons link to
+        # https://<NEXT_PUBLIC_BASE_DOMAIN>/google-auth too, not a relative
+        # path — this app also serves per-institution subdomains, and only
+        # the fixed base domain is actually registered with Google.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-        NEXT_PUBLIC_GOOGLE_AUTH_URL: ${NEXT_PUBLIC_GOOGLE_AUTH_URL:-/google-auth}
+        NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-}
     image: alumni/frontend-member:prod
     container_name: alumni-frontend-member
     restart: unless-stopped
@@ -335,8 +339,9 @@ services:
       args:
         NEXT_PUBLIC_PLATFORM_API_URL: ""
         # Points platform staff login at the member app's shared Google
-        # sign-in bridge (apps/member/src/app/google-auth).
-        NEXT_PUBLIC_GOOGLE_AUTH_URL: ${NEXT_PUBLIC_GOOGLE_AUTH_URL:-}
+        # sign-in bridge (apps/member/src/app/google-auth) on the fixed base
+        # domain — this portal has its own subdomain too, so never relative.
+        NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-}
     image: alumni/frontend-platform:prod
     container_name: alumni-frontend-platform
     restart: unless-stopped
