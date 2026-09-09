@@ -5,6 +5,7 @@ using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
@@ -42,12 +43,15 @@ public class RecurringGivingProcessor(
         if (string.IsNullOrEmpty(currentTenant.InstitutionId))
             return 0;
 
+        var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.RecurringGiving))
+            return 0;
+
         var now = DateTime.UtcNow;
         var due = (await recurringRepo.GetAllAsync(r => r.Status == "Active" && r.NextChargeDate <= now)).ToList();
         if (due.Count == 0)
             return 0;
 
-        var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
         var chargedCount = 0;
 
         foreach (var recurring in due)

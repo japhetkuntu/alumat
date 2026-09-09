@@ -132,7 +132,7 @@ export function useNavTheme() {
   });
 }
 
-function useDisabledFeatures(): Set<string> {
+export function useDisabledFeatures(): Set<string> {
   const { data } = useNavTheme();
   return useMemo(() => new Set(data?.disabledFeatures ?? []), [data]);
 }

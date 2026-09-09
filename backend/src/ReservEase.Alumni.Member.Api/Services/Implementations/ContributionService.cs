@@ -11,6 +11,7 @@ using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
@@ -306,6 +307,10 @@ public class ContributionService : IContributionService
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("You must be logged in to set up a monthly gift.");
 
             var currentInstitution = await GetCurrentInstitutionAsync();
+
+            if (request.SetupRecurringGiving && currentInstitution is { } inst && inst.DisabledFeatures.Contains(InstitutionFeatures.RecurringGiving))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Recurring giving is not enabled for this institution.");
+
             var charge = BuildZeroDeductionCharge(request.Amount, currentInstitution);
             var subaccount = await ResolveSubaccountAsync(campaign, currentInstitution);
 

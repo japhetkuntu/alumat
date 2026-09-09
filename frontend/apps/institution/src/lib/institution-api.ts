@@ -134,6 +134,8 @@ export interface InstitutionProfileResponse {
   requireStudentId: boolean;
   /** "DuesRequired" (default) — active only once dues are paid. "ApprovedOnly" — any approved member is active regardless of dues. */
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
+  /** Platform-controlled feature gates, plus the two self-service ones below (see updateSelfServiceFeatures) — a key's presence here means that feature is OFF. */
+  disabledFeatures: string[];
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
   /** Overrides the Member Portal landing page's hero photo(s), shown as a carousel — falls back to generic stock art when empty. */
@@ -171,6 +173,16 @@ export async function updateLandingContent(
 /** How "active member" status is determined — this institution's own operational choice. */
 export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly"): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** The two self-service feature toggles institution admins can flip themselves — the re-engagement digest email and recurring (monthly) giving. Everything else in disabledFeatures is platform-staff-only. */
+export async function updateSelfServiceFeatures(digestEnabled: boolean, recurringGivingEnabled: boolean): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", { digestEnabled, recurringGivingEnabled });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");

@@ -28,7 +28,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavTheme } from "@/components/member/member-layout";
+import { useNavTheme, useDisabledFeatures } from "@/components/member/member-layout";
 import type { NotificationPreference } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -134,6 +134,8 @@ export default function MemberProfilePage() {
 
   const { data: navTheme } = useNavTheme();
   const institutionName = navTheme?.displayName || "Alumni Member Portal";
+  const disabledFeatures = useDisabledFeatures();
+  const digestEnabled = !disabledFeatures.has("Digest");
 
   // Adjust local form state when the fetched profile changes — done during
   // render (React's documented alternative to an effect for this case)
@@ -545,34 +547,36 @@ export default function MemberProfilePage() {
             <CardDescription>Choose what updates you want to receive</CardDescription>
           </CardHeader>
           <CardContent className="divide-y divide-border/40">
-            <div className="flex items-start justify-between gap-4 py-4">
-              <div>
-                <p className="text-sm font-semibold text-foreground">Digest Email</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">
-                  A roundup of new jobs, upcoming events, and what you&apos;ve missed
-                </p>
+            {digestEnabled && (
+              <div className="flex items-start justify-between gap-4 py-4">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Digest Email</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
+                    A roundup of new jobs, upcoming events, and what you&apos;ve missed
+                  </p>
+                </div>
+                <div className="flex shrink-0 rounded-lg border border-border p-0.5" role="radiogroup" aria-label="Digest email frequency">
+                  {(["Weekly", "Monthly", "None"] as const).map((freq) => {
+                    const active = (notifPrefs?.digestFrequency ?? "Weekly") === freq;
+                    return (
+                      <button
+                        key={freq}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setDigestFrequency(freq)}
+                        className={cn(
+                          "px-3 py-1.5 text-[12.5px] font-semibold rounded-md transition-colors",
+                          active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {freq === "None" ? "Off" : freq}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex shrink-0 rounded-lg border border-border p-0.5" role="radiogroup" aria-label="Digest email frequency">
-                {(["Weekly", "Monthly", "None"] as const).map((freq) => {
-                  const active = (notifPrefs?.digestFrequency ?? "Weekly") === freq;
-                  return (
-                    <button
-                      key={freq}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setDigestFrequency(freq)}
-                      className={cn(
-                        "px-3 py-1.5 text-[12.5px] font-semibold rounded-md transition-colors",
-                        active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {freq === "None" ? "Off" : freq}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            )}
             <Toggle
               checked={notifPrefs?.membershipReminders ?? true}
               onChange={(v) => toggleNotif("membershipReminders", v)}

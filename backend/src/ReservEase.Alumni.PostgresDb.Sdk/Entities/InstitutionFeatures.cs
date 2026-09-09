@@ -37,14 +37,28 @@ public static class InstitutionFeatures
     public const string PhotoAlbums = "PhotoAlbums";
     /// <summary>Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable in a public directory.</summary>
     public const string BusinessDirectory = "BusinessDirectory";
+    /// <summary>The scheduled "here's what happened" re-engagement email (new jobs, an upcoming event, a spotlight, a campaign deadline). Self-service — see SelfService below.</summary>
+    public const string Digest = "Digest";
+    /// <summary>Members setting up a standing "give ₵X every month" gift, charged automatically via a saved Paystack authorization. Self-service — see SelfService below.</summary>
+    public const string RecurringGiving = "RecurringGiving";
 
     public static readonly IReadOnlyList<string> All =
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
         Communities, ManualPayments, AlumniMap, Calendar, Store, PhotoAlbums,
-        BusinessDirectory,
+        BusinessDirectory, Digest, RecurringGiving,
     ];
+
+    /// <summary>
+    /// Feature keys an institution's own SuperAdmin may toggle themselves
+    /// (Institution.Api's InstitutionController.UpdateSelfServiceFeatures) —
+    /// every other key in <see cref="All"/> stays platform-staff-only
+    /// (Platform.Api's InstitutionsController). Keep this list deliberately
+    /// small: only features where a wrong self-service call can't strand the
+    /// institution's core data or billing, unlike e.g. Contributions or Store.
+    /// </summary>
+    public static readonly IReadOnlyList<string> SelfService = [Digest, RecurringGiving];
 
     /// <summary>
     /// Label + one-line description per key — the single source of truth the
@@ -73,5 +87,7 @@ public static class InstitutionFeatures
         (Store, "Store", "SuperAdmins list products with inventory; members buy them online, same platform-fee model as Contributions."),
         (PhotoAlbums, "Photo albums", "Institution admins create albums and add photos to them over time; members browse albums and view photos."),
         (BusinessDirectory, "Business directory", "Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable by other members."),
+        (Digest, "Re-engagement digest", "A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."),
+        (RecurringGiving, "Recurring giving", "Members can set up a standing monthly gift, charged automatically."),
     ];
 }

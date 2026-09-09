@@ -20,6 +20,7 @@ import { LinkOrUpload } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
+  updateSelfServiceFeatures,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
 } from "@/lib/institution-api";
@@ -148,6 +149,16 @@ export default function BrandingSettingsPage() {
     mutationFn: (policy: "DuesRequired" | "ApprovedOnly") => updateMemberActivePolicy(policy),
     onSuccess: () => {
       toast.success("Active-member policy updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const featuresMutation = useMutation({
+    mutationFn: (features: { digestEnabled: boolean; recurringGivingEnabled: boolean }) =>
+      updateSelfServiceFeatures(features.digestEnabled, features.recurringGivingEnabled),
+    onSuccess: () => {
+      toast.success("Features updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -315,6 +326,42 @@ export default function BrandingSettingsPage() {
                         ? "Off — any approved member is active regardless of dues paid."
                         : "On — a member is active only once current and past dues are paid."
                     }
+                  />
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 lg:col-span-2">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Megaphone size={16} className="text-primary" />
+                <p className="font-semibold text-[15px]">Re-engagement &amp; giving</p>
+              </div>
+              {isScopedAdmin ? (
+                <p className="text-muted-foreground mt-2">Only Admin and SuperAdmin users can manage these features.</p>
+              ) : (
+                <>
+                  <p className="text-[12.5px] text-muted-foreground -mt-1 mb-1">
+                    Turn these on or off for your members — no platform involvement needed.
+                  </p>
+                  <Toggle
+                    checked={!institution?.disabledFeatures?.includes("Digest")}
+                    onChange={(checked) => featuresMutation.mutate({
+                      digestEnabled: checked,
+                      recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
+                    })}
+                    label="Re-engagement digest"
+                    description="A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."
+                  />
+                  <Toggle
+                    checked={!institution?.disabledFeatures?.includes("RecurringGiving")}
+                    onChange={(checked) => featuresMutation.mutate({
+                      digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
+                      recurringGivingEnabled: checked,
+                    })}
+                    label="Recurring giving"
+                    description="Let members set up a standing monthly gift, charged automatically."
                   />
                 </>
               )}

@@ -52,3 +52,13 @@ public class UpdateLandingContentRequest
 /// platform staff's, so it's edited here rather than via Platform.Api.
 /// </summary>
 public record UpdateMemberActivePolicyRequest(string MemberActivePolicy);
+
+/// <summary>
+/// Another institution-editable-themselves carve-out, distinct from the
+/// platform-only bulk feature toggle (Platform.Api's InstitutionsController)
+/// — see InstitutionFeatures.SelfService for exactly which keys this is
+/// allowed to touch. Only Digest/RecurringGiving today; any other key is
+/// rejected rather than silently ignored, so a frontend bug can't quietly
+/// disable something this endpoint was never meant to control.
+/// </summary>
+public record UpdateSelfServiceFeaturesRequest(bool DigestEnabled, bool RecurringGivingEnabled);

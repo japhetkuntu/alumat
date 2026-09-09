@@ -17,6 +17,7 @@ import {
 } from "@alumni/ui";
 import { getCampaignById, initiatePaystackPayment, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { useAuth } from "@/hooks/use-auth";
+import { useDisabledFeatures } from "@/components/member/member-layout";
 import { handleApiError } from "@/lib/api-client";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
@@ -37,6 +38,8 @@ export default function PublicCampaignContributionPage() {
   const searchParams = useSearchParams();
   const sharedByMemberId = searchParams.get("ref") || undefined;
   const { user, isMember } = useAuth();
+  const disabledFeatures = useDisabledFeatures();
+  const recurringGivingEnabled = !disabledFeatures.has("RecurringGiving");
   const [email, setEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [showEmail, setShowEmail] = useState(false);
@@ -362,7 +365,7 @@ export default function PublicCampaignContributionPage() {
 
                     {/* Make it monthly — logged-in members only; recurring needs an
                         identity to re-charge later, guests have none. */}
-                    {isMember && !isMembershipFixed && (
+                    {isMember && !isMembershipFixed && recurringGivingEnabled && (
                       <button
                         type="button"
                         onClick={() => setMakeMonthly((v) => !v)}

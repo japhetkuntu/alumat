@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
@@ -85,6 +86,37 @@ public class InstitutionController(
         await institutionRepo.UpdateAsync(institution);
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Active-member policy updated", Code = 200, Data = ToDto(institution) });
+    }
+
+    /// <summary>
+    /// Toggles the two self-service features (see InstitutionFeatures.SelfService)
+    /// on or off for this institution — everything else in DisabledFeatures is
+    /// left untouched, since every other key stays platform-staff-only.
+    /// </summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/self-service-features")]
+    [SwaggerOperation(Summary = "Enable or disable the digest and recurring-giving features")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    public async Task<IActionResult> UpdateSelfServiceFeatures([FromBody] UpdateSelfServiceFeaturesRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        var disabled = new HashSet<string>(institution.DisabledFeatures);
+        void Set(string feature, bool enabled)
+        {
+            if (enabled) disabled.Remove(feature);
+            else disabled.Add(feature);
+        }
+        Set(InstitutionFeatures.Digest, request.DigestEnabled);
+        Set(InstitutionFeatures.RecurringGiving, request.RecurringGivingEnabled);
+
+        institution.DisabledFeatures = disabled.ToList();
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Features updated", Code = 200, Data = ToDto(institution) });
     }
 
     private async Task<InstitutionEntity?> GetResolvedInstitutionAsync() =>

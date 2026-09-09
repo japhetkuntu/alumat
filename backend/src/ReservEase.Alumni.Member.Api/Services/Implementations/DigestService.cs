@@ -4,6 +4,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
@@ -48,7 +49,7 @@ public class DigestService(
             return 0;
 
         var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-        if (institution is null)
+        if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Digest))
             return 0;
 
         var now = DateTime.UtcNow;
