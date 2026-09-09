@@ -213,7 +213,12 @@ const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; 
 const STATS = [
   { end: 5000, suffix: "+",    label: "Alumni registered",     desc: "Verified graduates"          },
   { end: 120,  suffix: "+",    label: "Countries represented", desc: "A truly global network"            },
-  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised for projects & welfare", desc: "Funding school development and member support" },
+  // The one stat that gets the secondary color — blended toward white so it
+  // stays legible on the dark, solid primary band regardless of how light
+  // or dark the institution's own accent happens to be, unlike raw accent
+  // text (which is only contrast-checked against a light/white background
+  // elsewhere, not this one's colored backdrop).
+  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised for projects & welfare", desc: "Funding school development and member support", highlight: true },
   { end: 300,  suffix: "+",    label: "Jobs posted",           desc: "Roles shared by alumni employers"  },
 ];
 
@@ -321,7 +326,10 @@ function StatRow({ stat, active, index }: { stat: typeof STATS[number]; active: 
         index === 0 && "sm:pl-0",
       )}>
       <p className="font-[family-name:var(--font-display)] leading-none tabular-nums break-words mb-2"
-        style={{ fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
+        style={{
+          fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, letterSpacing: "-0.02em",
+          color: stat.highlight ? "color-mix(in oklch, var(--brand-accent, white) 65%, white)" : "white",
+        }}>
         {stat.prefix}{count.toLocaleString()}{stat.suffix}
       </p>
       <p className="text-[12px] sm:text-[12.5px] font-medium leading-snug max-w-[16ch]" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
@@ -591,7 +599,7 @@ function NewsEventsSpotlight() {
   return (
     <Section id="news" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
       <div className="section__inner--wide section">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--primary)" }}>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
           From the community
         </p>
         <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr]">
@@ -787,6 +795,11 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
         <div className="absolute inset-x-0 bottom-0">
           <div className="section__inner--wide pb-10 sm:pb-14 pt-10">
+            <span className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[11px] font-bold"
+              style={{ background: "rgba(15,23,42,0.5)", color: "white", border: "1px solid rgba(255,255,255,0.18)" }}>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--brand-accent, var(--primary))" }} />
+              {STATS[0].end.toLocaleString()}{STATS[0].suffix} alumni already home
+            </span>
             <p className="text-[11px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>
               {content?.displayName || "Alumni Association"}
             </p>
