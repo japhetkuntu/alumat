@@ -507,14 +507,17 @@ export default function BrandingSettingsPage() {
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Display name</Label>
                   <Input value={brandingForm.portalName} onChange={(e) => setBrandingForm((f) => ({ ...f!, portalName: e.target.value }))} />
+                  <p className="text-[11.5px] text-muted-foreground">Shown in the navigation bar, browser tab, and outbound email of both the Institution Portal and Member Portal.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Tagline</Label>
                   <Input value={brandingForm.tagline} onChange={(e) => setBrandingForm((f) => ({ ...f!, tagline: e.target.value }))} placeholder="One network. Every graduate." />
+                  <p className="text-[11.5px] text-muted-foreground">Shown under your name on the Member Portal&apos;s landing and sign-in pages.</p>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-[13px] font-semibold">Support email</Label>
                   <Input type="email" value={brandingForm.supportEmail} onChange={(e) => setBrandingForm((f) => ({ ...f!, supportEmail: e.target.value }))} placeholder="support@yourinstitution.edu" />
+                  <p className="text-[11.5px] text-muted-foreground">Where members are told to reach you for help — shown on support/contact links in both portals.</p>
                 </div>
               </div>
 
@@ -523,12 +526,13 @@ export default function BrandingSettingsPage() {
                   label="Primary color"
                   value={brandingForm.primaryColorHex}
                   onChange={(hex) => setBrandingForm((f) => ({ ...f!, primaryColorHex: hex }))}
+                  helperText="Buttons, links, and highlights across both portals and outbound email — see the live preview to the right."
                 />
                 <ColorPicker
                   label="Secondary color"
                   value={brandingForm.secondaryColorHex || "#E2E8F0"}
                   onChange={(hex) => setBrandingForm((f) => ({ ...f!, secondaryColorHex: hex }))}
-                  helperText="Optional"
+                  helperText="Optional accent, used alongside the primary color where a second tone helps (badges, charts)."
                 />
               </div>
 
@@ -540,6 +544,7 @@ export default function BrandingSettingsPage() {
                   file={logoFile}
                   onFileChange={setLogoFile}
                   accept="image/*"
+                  helperText="Shown in both portals' navigation, sign-in screens, and outbound email header."
                 />
                 <LinkOrUpload
                   label="Icon"
@@ -548,42 +553,55 @@ export default function BrandingSettingsPage() {
                   file={iconFile}
                   onFileChange={setIconFile}
                   accept="image/*"
-                  helperText="A square mark used where a full logo won't fit."
+                  helperText="A square mark for tight spaces — browser tab icon and compact nav — where a full logo won't fit."
                 />
               </div>
 
               <div className="pt-2 border-t border-border/40">
-                <p className="text-[13px] font-semibold mb-3">Institution Portal content</p>
+                <p className="text-[13px] font-semibold">Institution Portal content</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5 mb-3">
+                  Seen only by your staff, at <span className="font-mono">{tenantHost ?? "your institution portal"}</span>.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Portal title</Label>
                     <Input value={brandingForm.institutionPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionPortalTitle: e.target.value }))} placeholder="Staff Portal" />
+                    <p className="text-[11.5px] text-muted-foreground">Browser tab title staff see across every page of the Institution Portal.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Sign-in headline</Label>
                     <Input value={brandingForm.institutionAuthHeadline} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthHeadline: e.target.value }))} placeholder="Welcome back" />
+                    <p className="text-[11.5px] text-muted-foreground">Large heading on the Institution Portal&apos;s sign-in page.</p>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
                     <Textarea rows={2} value={brandingForm.institutionAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthSubtext: e.target.value }))} placeholder="Sign in to manage your alumni community." />
+                    <p className="text-[11.5px] text-muted-foreground">The supporting line right under that headline, same sign-in page.</p>
                   </div>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-border/40">
-                <p className="text-[13px] font-semibold mb-3">Member Portal content</p>
+                <p className="text-[13px] font-semibold">Member Portal content</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5 mb-3">
+                  Seen only by your alumni, at{" "}
+                  <span className="font-mono">{institution?.memberPortalUrl?.replace(/^https?:\/\//, "") ?? "your member portal"}</span>.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Portal title</Label>
                     <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder="Alumni Portal" />
+                    <p className="text-[11.5px] text-muted-foreground">Browser tab title members see across every page of the Member Portal.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Sign-in headline</Label>
                     <Input value={brandingForm.memberAuthHeadline} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthHeadline: e.target.value }))} placeholder="Welcome home" />
+                    <p className="text-[11.5px] text-muted-foreground">Large heading on the Member Portal&apos;s sign-in and landing pages.</p>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
                     <Textarea rows={2} value={brandingForm.memberAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthSubtext: e.target.value }))} placeholder="Reconnect with classmates and give back." />
+                    <p className="text-[11.5px] text-muted-foreground">The supporting line right under that headline, same pages.</p>
                   </div>
                 </div>
               </div>
@@ -630,7 +648,7 @@ export default function BrandingSettingsPage() {
                   checked={!!institution?.requireStudentId}
                   onChange={(checked) => requireStudentIdMutation.mutate(checked)}
                   label="Require student ID at registration"
-                  description="On: new members must enter a student/alumni ID number to register. Off: the field is optional."
+                  description="On the Member Portal's registration form: on, the student/alumni ID field becomes required; off, it stays optional."
                 />
               </CardContent>
             </Card>
@@ -650,13 +668,13 @@ export default function BrandingSettingsPage() {
                   checked={!institution?.disabledFeatures?.includes("Digest")}
                   onChange={(checked) => patchFeatures({ digestEnabled: checked })}
                   label="Re-engagement digest"
-                  description="A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."
+                  description="A scheduled roundup — new jobs, an upcoming event, a spotlight, a campaign deadline — emailed straight to members' inboxes."
                 />
                 <Toggle
                   checked={!institution?.disabledFeatures?.includes("RecurringGiving")}
                   onChange={(checked) => patchFeatures({ recurringGivingEnabled: checked })}
                   label="Recurring giving"
-                  description="Let members set up a standing monthly gift, charged automatically."
+                  description="Adds a 'give monthly' option on the payment screen in the Member Portal, charged automatically each month."
                 />
                 <Toggle
                   checked={!!institution?.promptMembershipActivationAtSignup}
@@ -668,7 +686,7 @@ export default function BrandingSettingsPage() {
                   checked={!institution?.disabledFeatures?.includes("BirthdaySpotlight")}
                   onChange={(checked) => patchFeatures({ birthdaySpotlightEnabled: checked })}
                   label="Birthday spotlight"
-                  description="Members who add their date of birth get an automatic spotlight on their birthday, shown wherever spotlights appear. Several birthdays on the same day are combined into one."
+                  description="Members who add their date of birth get an automatic entry on the Member Portal's Spotlights page on their birthday. Several birthdays on the same day are combined into one entry."
                 />
               </CardContent>
             </Card>
