@@ -16,11 +16,11 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// (<see cref="ICurrentTenantService"/>) — staff can never target another
 /// institution's record; there is no institution id in the route.
 ///
-/// Institution staff can no longer edit branding themselves — that's now
-/// platform-staff-only (Platform.Api's InstitutionsController), so most of
-/// this stays display-only. The one deliberate carve-out is the Member
-/// Portal landing page's Stories and news banner (<see cref="UpdateLandingContent"/>),
-/// which institution admins are meant to keep current themselves.
+/// Institution SuperAdmins can edit their own branding (<see cref="UpdateBranding"/>)
+/// and the Member Portal landing page's Stories and news banner
+/// (<see cref="UpdateLandingContent"/>). Platform.Api's InstitutionsController
+/// can also edit branding — a platform-staff override for institutions that
+/// need help — but this is the institution's own self-service path.
 /// </summary>
 [Authorize]
 [Route("api/v{version:apiVersion}/institution")]
@@ -40,6 +40,42 @@ public class InstitutionController(
             return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Success", Code = 200, Data = ToDto(institution) });
+    }
+
+    /// <summary>Update this institution's own branding: display name, tagline, support email, colors, logos/icons, and both portals' auth copy.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/branding")]
+    [SwaggerOperation(Summary = "Update institution branding")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateBranding([FromBody] UpdateInstitutionBrandingRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.PortalName))
+            return BadRequest(new ApiResponse<object> { Message = "Display name is required", Code = 400 });
+        if (string.IsNullOrWhiteSpace(request.PrimaryColorHex))
+            return BadRequest(new ApiResponse<object> { Message = "Primary color is required", Code = 400 });
+
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        institution.PortalName = request.PortalName;
+        institution.Tagline = request.Tagline;
+        institution.SupportEmail = request.SupportEmail;
+        institution.LogoUrl = request.LogoUrl;
+        institution.IconUrl = request.IconUrl;
+        institution.PrimaryColorHex = request.PrimaryColorHex;
+        institution.SecondaryColorHex = request.SecondaryColorHex;
+        institution.InstitutionPortalTitle = request.InstitutionPortalTitle;
+        institution.InstitutionAuthHeadline = request.InstitutionAuthHeadline;
+        institution.InstitutionAuthSubtext = request.InstitutionAuthSubtext;
+        institution.MemberPortalTitle = request.MemberPortalTitle;
+        institution.MemberAuthHeadline = request.MemberAuthHeadline;
+        institution.MemberAuthSubtext = request.MemberAuthSubtext;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Branding updated", Code = 200, Data = ToDto(institution) });
     }
 
     /// <summary>Update this institution's Member Portal landing page Stories and news banner — the one piece of content institution admins may edit themselves.</summary>

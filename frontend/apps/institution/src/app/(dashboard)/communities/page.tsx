@@ -91,21 +91,37 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
     queryFn: () => getCommunityMembers(community.id),
   });
 
+  // What "Promote to leader" and "Demote to member" actually do is easy to
+  // misread as granting institution-admin access: it doesn't. It only
+  // flips a per-community flag that unlocks a couple of Member Portal
+  // actions (approving join requests, removing members) for that one
+  // community. Confirming with that spelled out is the fix for staff not
+  // being sure what the button does, rather than a silent one-click toggle.
+  const [promoteTarget, setPromoteTarget] = useState<CommunityMemberItem | null>(null);
+  const [demoteTarget, setDemoteTarget] = useState<CommunityMemberItem | null>(null);
+
   const roleMut = useMutation({
     mutationFn: ({ memberId, role }: { memberId: string; role: "Member" | "Leader" }) => setCommunityMemberRole(community.id, memberId, role),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["community-members", community.id] });
       qc.invalidateQueries({ queryKey: ["communities"] });
-      toast.success("Role updated");
+      toast.success(variables.role === "Leader" ? "Promoted to leader" : "Role updated");
+      setPromoteTarget(null);
+      setDemoteTarget(null);
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   return (
     <Card>
-      <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
-        <b className="text-[13.5px]">{community.name} members</b>
-        <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+      <div className="px-4 py-3.5 border-b border-border">
+        <div className="flex items-center justify-between">
+          <b className="text-[13.5px]">{community.name} members</b>
+          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+        </div>
+        <p className="text-[12px] text-muted-foreground mt-1">
+          A <b>Leader</b> is still an ordinary member (same login, same Member Portal): the role just unlocks approving join requests and removing members for this one community, from their own Member Portal. It doesn&apos;t create an admin account or grant any access here in the Institution Portal.
+        </p>
       </div>
       <CardContent className="p-0">
         <Table className="min-w-[600px]">
@@ -136,9 +152,9 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
                   {m.status === "Approved" && (
                     <div className="flex justify-end">
                       {m.role === "Leader" ? (
-                        <Button size="sm" variant="outline" onClick={() => roleMut.mutate({ memberId: m.memberId, role: "Member" })} isLoading={roleMut.isPending}>Demote to member</Button>
+                        <Button size="sm" variant="outline" onClick={() => setDemoteTarget(m)}>Demote to member</Button>
                       ) : (
-                        <Button size="sm" variant="secondary" onClick={() => roleMut.mutate({ memberId: m.memberId, role: "Leader" })} isLoading={roleMut.isPending}>Promote to leader</Button>
+                        <Button size="sm" variant="secondary" onClick={() => setPromoteTarget(m)}>Promote to leader</Button>
                       )}
                     </div>
                   )}
@@ -151,6 +167,27 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
           </TableBody>
         </Table>
       </CardContent>
+
+      <ConfirmModal
+        open={!!promoteTarget}
+        variant="default"
+        title="Promote to leader?"
+        message={`${promoteTarget?.memberName} will be able to approve or reject join requests and remove members in "${community.name}", from their own Member Portal login: no new account, no access to this Institution Portal. You can demote them back to a regular member at any time.`}
+        confirmLabel="Promote"
+        isLoading={roleMut.isPending}
+        onConfirm={() => promoteTarget && roleMut.mutate({ memberId: promoteTarget.memberId, role: "Leader" })}
+        onCancel={() => setPromoteTarget(null)}
+      />
+      <ConfirmModal
+        open={!!demoteTarget}
+        variant="default"
+        title="Demote to member?"
+        message={`${demoteTarget?.memberName} will lose the ability to approve join requests or remove members in "${community.name}". They stay a regular member of the community either way.`}
+        confirmLabel="Demote"
+        isLoading={roleMut.isPending}
+        onConfirm={() => demoteTarget && roleMut.mutate({ memberId: demoteTarget.memberId, role: "Member" })}
+        onCancel={() => setDemoteTarget(null)}
+      />
     </Card>
   );
 }

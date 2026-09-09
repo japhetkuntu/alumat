@@ -15,13 +15,14 @@ import { Avatar, AvatarFallback } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { getInitials, cn } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
+import { ColorPicker } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { LinkOrUpload } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
-  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
+  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy,
   updateSelfServiceFeatures, submitInstitutionPayoutSetup,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -209,6 +210,67 @@ export default function BrandingSettingsPage() {
     queryFn: getInstitutionProfile,
   });
 
+  const [brandingForm, setBrandingForm] = useState<null | {
+    portalName: string; tagline: string; supportEmail: string;
+    logoUrl: string; iconUrl: string; primaryColorHex: string; secondaryColorHex: string;
+    institutionPortalTitle: string; institutionAuthHeadline: string; institutionAuthSubtext: string;
+    memberPortalTitle: string; memberAuthHeadline: string; memberAuthSubtext: string;
+  }>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [brandingError, setBrandingError] = useState<string | null>(null);
+  if (institution && brandingForm === null) {
+    setBrandingForm({
+      portalName: institution.portalName ?? "",
+      tagline: institution.tagline ?? "",
+      supportEmail: institution.supportEmail ?? "",
+      logoUrl: institution.logoUrl ?? "",
+      iconUrl: institution.iconUrl ?? "",
+      primaryColorHex: institution.primaryColorHex || "#2563EB",
+      secondaryColorHex: institution.secondaryColorHex ?? "",
+      institutionPortalTitle: institution.institutionPortalTitle ?? "",
+      institutionAuthHeadline: institution.institutionAuthHeadline ?? "",
+      institutionAuthSubtext: institution.institutionAuthSubtext ?? "",
+      memberPortalTitle: institution.memberPortalTitle ?? "",
+      memberAuthHeadline: institution.memberAuthHeadline ?? "",
+      memberAuthSubtext: institution.memberAuthSubtext ?? "",
+    });
+  }
+
+  const brandingMutation = useMutation({
+    mutationFn: async () => {
+      const logoUrl = logoFile ? (await uploadImage(logoFile)).url : brandingForm!.logoUrl;
+      const iconUrl = iconFile ? (await uploadImage(iconFile)).url : brandingForm!.iconUrl;
+      return updateInstitutionBranding({
+        portalName: brandingForm!.portalName,
+        tagline: brandingForm!.tagline || null,
+        supportEmail: brandingForm!.supportEmail || null,
+        logoUrl: logoUrl || null,
+        iconUrl: iconUrl || null,
+        primaryColorHex: brandingForm!.primaryColorHex,
+        secondaryColorHex: brandingForm!.secondaryColorHex || null,
+        institutionPortalTitle: brandingForm!.institutionPortalTitle || null,
+        institutionAuthHeadline: brandingForm!.institutionAuthHeadline || null,
+        institutionAuthSubtext: brandingForm!.institutionAuthSubtext || null,
+        memberPortalTitle: brandingForm!.memberPortalTitle || null,
+        memberAuthHeadline: brandingForm!.memberAuthHeadline || null,
+        memberAuthSubtext: brandingForm!.memberAuthSubtext || null,
+      });
+    },
+    onSuccess: (updated) => {
+      toast.success("Branding updated");
+      queryClient.setQueryData(["institution-profile"], updated);
+      setBrandingError(null);
+      setLogoFile(null);
+      setIconFile(null);
+    },
+    onError: (e) => {
+      const msg = handleApiError(e);
+      setBrandingError(msg);
+      toast.error(msg);
+    },
+  });
+
   const [stories, setStories] = useState<LandingPageStory[] | null>(null);
   const [storyFiles, setStoryFiles] = useState<(File | null)[]>([]);
   const [banner, setBanner] = useState<NewsBanner | null>(null);
@@ -352,12 +414,12 @@ export default function BrandingSettingsPage() {
         ))}
       </div>
 
-      {tab === "Institution profile" && institutionLoading ? (
+      {tab === "Institution profile" && (institutionLoading || (!isScopedAdmin && !brandingForm)) ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
           <Card className="border-border/40"><CardContent className="p-6"><CardSkeleton /></CardContent></Card>
           <Card className="border-border/40 h-fit"><CardContent className="p-5"><CardSkeleton /></CardContent></Card>
         </div>
-      ) : tab === "Institution profile" && (
+      ) : tab === "Institution profile" && isScopedAdmin && (
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
           <Card className="border-border/40">
             <CardContent className="p-6 space-y-4">
@@ -370,7 +432,7 @@ export default function BrandingSettingsPage() {
               <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-2.5">
                 <Lock size={14} className="text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  These fields are locked. Branding, portal titles, and login page content are managed by the platform team; contact support to request a change.
+                  These fields are locked to your SuperAdmin. Only a SuperAdmin can edit branding, portal titles, and login page content here.
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -415,6 +477,118 @@ export default function BrandingSettingsPage() {
               <p className="font-semibold text-[14px] mb-1">Brand preview</p>
               <p className="text-[12px] text-muted-foreground mb-3">How your primary and secondary colors read across the portal.</p>
               <BrandPreview color={institution?.primaryColorHex ?? "#2563eb"} secondaryColor={institution?.secondaryColorHex ?? undefined} name={institution?.portalName || institution?.name || "Institution"} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {tab === "Institution profile" && !isScopedAdmin && brandingForm && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
+          <Card className="border-border/40">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Building2 size={16} className="text-primary" />
+                <p className="font-semibold text-[15px]">Institution profile</p>
+              </div>
+              <p className="text-[12.5px] text-muted-foreground -mt-2">These details appear across your Institution Portal, your Member Portal, and outbound email. Changes take effect immediately.</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold">Display name</Label>
+                  <Input value={brandingForm.portalName} onChange={(e) => setBrandingForm((f) => ({ ...f!, portalName: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold">Tagline</Label>
+                  <Input value={brandingForm.tagline} onChange={(e) => setBrandingForm((f) => ({ ...f!, tagline: e.target.value }))} placeholder="One network. Every graduate." />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-[13px] font-semibold">Support email</Label>
+                  <Input type="email" value={brandingForm.supportEmail} onChange={(e) => setBrandingForm((f) => ({ ...f!, supportEmail: e.target.value }))} placeholder="support@yourinstitution.edu" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ColorPicker
+                  label="Primary color"
+                  value={brandingForm.primaryColorHex}
+                  onChange={(hex) => setBrandingForm((f) => ({ ...f!, primaryColorHex: hex }))}
+                />
+                <ColorPicker
+                  label="Secondary color"
+                  value={brandingForm.secondaryColorHex || "#E2E8F0"}
+                  onChange={(hex) => setBrandingForm((f) => ({ ...f!, secondaryColorHex: hex }))}
+                  helperText="Optional"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <LinkOrUpload
+                  label="Logo"
+                  url={brandingForm.logoUrl}
+                  onUrlChange={(v) => setBrandingForm((f) => ({ ...f!, logoUrl: v }))}
+                  file={logoFile}
+                  onFileChange={setLogoFile}
+                  accept="image/*"
+                />
+                <LinkOrUpload
+                  label="Icon"
+                  url={brandingForm.iconUrl}
+                  onUrlChange={(v) => setBrandingForm((f) => ({ ...f!, iconUrl: v }))}
+                  file={iconFile}
+                  onFileChange={setIconFile}
+                  accept="image/*"
+                  helperText="A square mark used where a full logo won't fit."
+                />
+              </div>
+
+              <div className="pt-2 border-t border-border/40">
+                <p className="text-[13px] font-semibold mb-3">Institution Portal content</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-semibold">Portal title</Label>
+                    <Input value={brandingForm.institutionPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionPortalTitle: e.target.value }))} placeholder="Staff Portal" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-semibold">Sign-in headline</Label>
+                    <Input value={brandingForm.institutionAuthHeadline} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthHeadline: e.target.value }))} placeholder="Welcome back" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
+                    <Textarea rows={2} value={brandingForm.institutionAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthSubtext: e.target.value }))} placeholder="Sign in to manage your alumni community." />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/40">
+                <p className="text-[13px] font-semibold mb-3">Member Portal content</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-semibold">Portal title</Label>
+                    <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder="Alumni Portal" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-semibold">Sign-in headline</Label>
+                    <Input value={brandingForm.memberAuthHeadline} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthHeadline: e.target.value }))} placeholder="Welcome home" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
+                    <Textarea rows={2} value={brandingForm.memberAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthSubtext: e.target.value }))} placeholder="Reconnect with classmates and give back." />
+                  </div>
+                </div>
+              </div>
+
+              <FormError message={brandingError} />
+              <Button onClick={() => brandingMutation.mutate()} disabled={brandingMutation.isPending || !brandingForm.portalName || !brandingForm.primaryColorHex}>
+                {brandingMutation.isPending ? "Saving…" : "Save branding"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/40 h-fit sticky top-4">
+            <CardContent className="p-5">
+              <p className="font-semibold text-[14px] mb-1">Brand preview</p>
+              <p className="text-[12px] text-muted-foreground mb-3">How your colors read across the portal, live as you edit.</p>
+              <BrandPreview color={brandingForm.primaryColorHex} secondaryColor={brandingForm.secondaryColorHex || undefined} name={brandingForm.portalName || institution?.name || "Institution"} />
             </CardContent>
           </Card>
 

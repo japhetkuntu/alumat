@@ -212,13 +212,25 @@ function CampaignCard({
   membershipPaid: boolean;
   isPensioner: boolean;
   getMemberAmount: (c: Campaign) => number;
-  onPay: () => void;
+  onPay: (amount: number) => void;
   onCheckStatus: () => void;
   isPaying: boolean;
 }) {
   const c = campaign;
   const isMembership = !!c.isMembershipCampaign;
   const amount = getMemberAmount(c);
+
+  // Membership dues are a fixed price — nothing to adjust. A fundraiser's
+  // "per member" figure is only ever a suggestion (the detail/checkout page
+  // already accepts any amount); the card previously gave zero indication
+  // of that, so a tap on "Pay ₵X" always locked in the minimum. Quick chips
+  // right here mean upgrading the amount costs one extra tap, not a trip to
+  // another page — the one-tap "pay the suggested amount" path is unchanged.
+  const [adjusting, setAdjusting] = useState(false);
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const payAmount = !isMembership && customAmount && Number(customAmount) > 0 ? Number(customAmount) : amount;
+  const isBumped = !isMembership && payAmount > amount;
+  const quickMultiples = [1.5, 2, 3];
 
   const pct = isMembership && c.totalEligibleMembers
     ? Math.round((c.paidCount / c.totalEligibleMembers) * 100)
@@ -305,31 +317,83 @@ function CampaignCard({
         </div>
 
         {/* Amount + deadline row */}
-        <div
-          className="flex items-center justify-between py-3 px-4 rounded-xl"
-          style={{ background: "var(--secondary)" }}
-        >
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
-              {isMembership ? "Your amount" : "Per member"}
-            </p>
-            <p className="text-[17px] font-bold tabular-nums" style={{ color: "var(--foreground)" }}>
-              {formatCurrency(amount)}
-              {isPensioner && isMembership && (
-                <span className="text-[11px] font-normal ml-1.5" style={{ color: "var(--muted-foreground)" }}>
-                  pensioner rate
-                </span>
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--secondary)" }}>
+          <div className="flex items-center justify-between py-3 px-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+                {isMembership ? "Your amount" : "Suggested"}
+              </p>
+              <p className="text-[17px] font-bold tabular-nums" style={{ color: isBumped ? "var(--primary)" : "var(--foreground)" }}>
+                {formatCurrency(payAmount)}
+                {isPensioner && isMembership && (
+                  <span className="text-[11px] font-normal ml-1.5" style={{ color: "var(--muted-foreground)" }}>
+                    pensioner rate
+                  </span>
+                )}
+              </p>
+              {!isMembership && !membershipPaid && (
+                <button
+                  type="button"
+                  onClick={() => setAdjusting((v) => !v)}
+                  className="flex items-center gap-1 mt-1 text-[11.5px] font-semibold"
+                  style={{ color: "var(--primary)" }}
+                >
+                  <TrendingUp size={11} />
+                  {isBumped ? "Change amount" : "Give more than the suggested amount"}
+                </button>
               )}
-            </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+                Due
+              </p>
+              <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
+                {formatDate(c.deadline)}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
-              Due
-            </p>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
-              {formatDate(c.deadline)}
-            </p>
-          </div>
+
+          {/* Quick amount picker — one extra tap to give more, never in the way of the default one-tap pay flow below. */}
+          {adjusting && !isMembership && !membershipPaid && (
+            <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3 pt-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              {quickMultiples.map((mult) => {
+                const value = Math.round(amount * mult);
+                const active = Number(customAmount) === value;
+                return (
+                  <button
+                    key={mult}
+                    type="button"
+                    onClick={() => setCustomAmount(String(value))}
+                    className="px-2.5 py-1 text-[12px] font-bold rounded-lg border transition-colors tabular-nums"
+                    style={active
+                      ? { background: "var(--primary)", color: "var(--primary-foreground)", borderColor: "var(--primary)" }
+                      : { background: "var(--background)", color: "var(--foreground)", borderColor: "var(--border)" }}
+                  >
+                    {formatCurrency(value)}
+                  </button>
+                );
+              })}
+              <input
+                type="number"
+                min={1}
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                placeholder="Custom"
+                className="w-20 px-2 py-1 text-[12px] font-semibold rounded-lg border tabular-nums"
+                style={{ background: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+              />
+              {customAmount && (
+                <button
+                  type="button"
+                  onClick={() => { setCustomAmount(""); setAdjusting(false); }}
+                  className="text-[11.5px] font-semibold underline underline-offset-2"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Membership paid confirmation */}
@@ -390,12 +454,12 @@ function CampaignCard({
             <Button
               className="flex-1 min-w-[8rem] font-bold text-[13.5px] gap-2"
               style={{ height: 42 }}
-              onClick={onPay}
+              onClick={() => onPay(payAmount)}
               disabled={isPaying}
             >
               {isPaying
                 ? <><Loader2 size={14} className="animate-spin" /> Processing…</>
-                : <><CreditCard size={14} /> Pay {formatCurrency(amount)}</>}
+                : <><CreditCard size={14} /> Pay {formatCurrency(payAmount)}</>}
             </Button>
           )}
         </div>
@@ -571,8 +635,7 @@ export default function MemberContributionsPage() {
                   isPensioner={isPensioner}
                   getMemberAmount={getMemberAmount}
                   isPaying={payingCampaignId === c.id && payMut.isPending}
-                  onPay={() => {
-                    const amount = getMemberAmount(c);
+                  onPay={(amount) => {
                     if (amount > 0) {
                       setPaying(c.id);
                       setPayingContext({ title: c.title, amount });

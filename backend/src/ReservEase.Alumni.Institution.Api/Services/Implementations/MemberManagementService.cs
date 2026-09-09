@@ -1,7 +1,11 @@
+using Microsoft.Extensions.Options;
+using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Mailtrap.Sdk.Models;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -17,9 +21,56 @@ public class MemberManagementService(
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     ICurrentTenantService currentTenant,
+    IConfiguration config,
+    IOptions<MailtrapConfig> mailtrapConfigOptions,
+    INotificationActor notificationActor,
     ILogger<MemberManagementService> logger) : IMemberManagementService
 {
     private const int MaxRejections = 3;
+    private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
+
+    private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// A newly bulk-created member has no usable password yet — mirrors the
+    /// same secure reset-token pattern used for institution admins and staff
+    /// invites (InstitutionManagementService/InstitutionAuthService), reusing
+    /// Member's own EmailVerificationToken/EmailVerificationSentAt fields
+    /// exactly the way MemberAuthService.ForgotPasswordAsync already does, so
+    /// the existing Member.Api /reset-password flow validates it unchanged.
+    /// The link points at the Member Portal (this institution's own
+    /// subdomain), never at the Institution Portal host this request landed
+    /// on.
+    /// </summary>
+    private async Task SendMemberWelcomeEmailAsync(Member member, InstitutionEntity institution)
+    {
+        var memberBaseDomain = config["MemberPortalBaseDomain"];
+        if (string.IsNullOrWhiteSpace(memberBaseDomain)) return;
+
+        var memberPortalUrl = $"https://{institution.Slug}.{memberBaseDomain}";
+        var link = $"{memberPortalUrl}/reset-password?token={member.EmailVerificationToken}&email={Uri.EscapeDataString(member.Email)}";
+        var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
+            {
+                To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
+                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.MemberWelcome)
+                    ? "member-welcome"
+                    : mailtrapConfig.Templates.MemberWelcome,
+                TemplateVariables = new
+                {
+                    first_name = member.FirstName,
+                    set_password_url = link,
+                    member_portal_url = memberPortalUrl,
+                    brand_name = brandName,
+                    brand_color = institution.PrimaryColorHex,
+                    brand_secondary_color = institution.SecondaryColorHex,
+                    brand_logo = institution.LogoUrl,
+                },
+            },
+            $"member welcome email to {member.Email}"));
+    }
 
     /// <summary>
     /// A scoped admin can see/act on a member who's in their batch (graduation
@@ -293,6 +344,9 @@ public class MemberManagementService(
             var imported = 0;
             var skipped = 0;
             var errors = new List<string>();
+            var institution = string.IsNullOrEmpty(currentTenant.InstitutionId)
+                ? null
+                : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
 
             foreach (var item in request.Members)
             {
@@ -317,9 +371,6 @@ public class MemberManagementService(
                         continue;
                     }
 
-                    // Generate a temporary password (member must reset on first login)
-                    var tempPassword = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
-
                     // Generate member number
                     var prefix = await GetMemberNumberPrefixAsync(item.GraduationYear);
                     var existingMembers = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
@@ -333,17 +384,23 @@ public class MemberManagementService(
                         FirstName = item.FirstName.Trim(),
                         LastName = item.LastName.Trim(),
                         Email = email,
-                        Password = tempPassword,
+                        // No usable password yet — see SendMemberWelcomeEmailAsync for the reset-token pattern this pairs with.
+                        Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
                         Phone = item.Phone,
                         StudentId = item.StudentId,
                         GraduationYear = item.GraduationYear,
                         DepartmentId = item.DepartmentId ?? string.Empty,
                         Status = "Active",
                         IsEmailVerified = true,
+                        EmailVerificationToken = GenerateUrlToken("reset"),
+                        EmailVerificationSentAt = DateTime.UtcNow,
                         MemberNumber = $"{prefix}{(maxSeq + 1):D4}",
                         CreatedBy = admin.Id,
                     };
                     await memberRepo.AddAsync(member);
+
+                    if (institution is not null)
+                        await SendMemberWelcomeEmailAsync(member, institution);
 
                     // Record contributions for paid membership years
                     if (item.PaidMembershipYears is { Count: > 0 })

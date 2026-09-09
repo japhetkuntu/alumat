@@ -11,6 +11,7 @@ export * from "./components/button";
 export * from "./components/card";
 export * from "./components/charts";
 export * from "./components/checkbox";
+export * from "./components/color-picker";
 export * from "./components/confirm-modal";
 export * from "./components/dialog";
 export * from "./components/dropdown-menu";

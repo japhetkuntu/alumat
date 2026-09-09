@@ -55,6 +55,31 @@ public class UpdateLandingContentRequest
 }
 
 /// <summary>
+/// Institution SuperAdmins editing their own branding: display name,
+/// tagline, support email, colors, logos/icons, and both portals' auth
+/// copy. Mirrors Platform.Api's UpdateInstitutionBrandingRequest field for
+/// field, minus ContactEmail (the institution's own legal/contact address,
+/// not a branding choice) and RequireStudentId (a signup policy, not
+/// branding). Takes effect immediately, same as the other me/* endpoints.
+/// </summary>
+public class UpdateInstitutionBrandingRequest
+{
+    public string PortalName { get; set; } = string.Empty;
+    public string? Tagline { get; set; }
+    public string? SupportEmail { get; set; }
+    public string? LogoUrl { get; set; }
+    public string? IconUrl { get; set; }
+    public string PrimaryColorHex { get; set; } = string.Empty;
+    public string? SecondaryColorHex { get; set; }
+    public string? InstitutionPortalTitle { get; set; }
+    public string? InstitutionAuthHeadline { get; set; }
+    public string? InstitutionAuthSubtext { get; set; }
+    public string? MemberPortalTitle { get; set; }
+    public string? MemberAuthHeadline { get; set; }
+    public string? MemberAuthSubtext { get; set; }
+}
+
+/// <summary>
 /// Another institution-editable-themselves carve-out — how "active member"
 /// status is determined is this institution's own operational choice, not
 /// platform staff's, so it's edited here rather than via Platform.Api.

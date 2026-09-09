@@ -94,6 +94,8 @@ public class MailtrapEmailService(
             "event-rsvp-confirmed" => $"RSVP Confirmed — {brand}",
             "referral-invitation" => $"You've Been Invited to {brand}",
             "digest" => $"What's new at {brand}",
+            "institution-welcome" => $"Welcome to {brand}: set up your account",
+            "member-welcome" => $"Welcome to {brand}: set up your account",
             "notification" => $"New Notification — {brand}",
             _ => $"{brand} — {FormatTemplateId(templateId)}",
         };

@@ -24,6 +24,107 @@ import type { MemberStatus } from "@/types";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 
+const CSV_HEADERS = ["firstName", "lastName", "email", "phone", "studentId", "graduationYear"] as const;
+const CSV_TEMPLATE = [
+  CSV_HEADERS.join(","),
+  `Kwame,Mensah,kwame@example.com,+233241234567,ENG/20/0001,2020`,
+].join("\n");
+
+function downloadCsvTemplate() {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([CSV_TEMPLATE], { type: "text/csv" }));
+  a.download = "member-upload-template.csv";
+  a.click();
+}
+
+/** Minimal RFC4180 parser — handles quoted fields, embedded commas, and escaped quotes ("" inside a quoted field). */
+function parseCsvText(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      field = "";
+      if (row.some((f) => f.trim() !== "")) rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  if (field !== "" || row.length > 0) { row.push(field); if (row.some((f) => f.trim() !== "")) rows.push(row); }
+  return rows;
+}
+
+function normalizeHeader(h: string) {
+  return h.trim().toLowerCase().replace(/[\s_-]+/g, "");
+}
+
+const HEADER_ALIASES: Record<string, keyof ImportMemberItem> = {
+  firstname: "firstName",
+  lastname: "lastName",
+  email: "email",
+  emailaddress: "email",
+  phone: "phone",
+  phonenumber: "phone",
+  studentid: "studentId",
+  graduationyear: "graduationYear",
+  gradyear: "graduationYear",
+  year: "graduationYear",
+};
+
+interface CsvParseResult {
+  rows: ImportMemberItem[];
+  errors: string[];
+}
+
+function parseMembersCsv(text: string): CsvParseResult {
+  const table = parseCsvText(text);
+  if (table.length === 0) return { rows: [], errors: ["The file is empty."] };
+
+  const headerRow = table[0].map(normalizeHeader);
+  const columnFor: Partial<Record<keyof ImportMemberItem, number>> = {};
+  headerRow.forEach((h, i) => {
+    const field = HEADER_ALIASES[h];
+    if (field) columnFor[field] = i;
+  });
+
+  const missing = (["firstName", "lastName", "email", "graduationYear"] as const).filter((f) => columnFor[f] === undefined);
+  if (missing.length > 0) {
+    return { rows: [], errors: [`Missing required column(s): ${missing.join(", ")}. Download the template to see the expected format.`] };
+  }
+
+  const rows: ImportMemberItem[] = [];
+  const errors: string[] = [];
+  for (let r = 1; r < table.length; r++) {
+    const cells = table[r];
+    const get = (f: keyof ImportMemberItem) => (columnFor[f] !== undefined ? (cells[columnFor[f]!] ?? "").trim() : "");
+    const firstName = get("firstName");
+    const lastName = get("lastName");
+    const email = get("email");
+    const graduationYearRaw = get("graduationYear");
+    const graduationYear = Number(graduationYearRaw);
+
+    if (!firstName || !lastName || !email || !graduationYearRaw || !Number.isFinite(graduationYear)) {
+      errors.push(`Row ${r + 1}: missing or invalid required field(s)`);
+      continue;
+    }
+    rows.push({
+      firstName, lastName, email, graduationYear,
+      phone: get("phone") || undefined,
+      studentId: get("studentId") || undefined,
+    });
+  }
+  return { rows, errors };
+}
+
 const statusVariant: Record<MemberStatus, "success" | "warning" | "destructive" | "secondary"> = {
   Active: "success",
   Pending: "warning",
@@ -56,7 +157,8 @@ export default function AdminMembersPage() {
   const [modal, setModal] = useState<ModalState>(null);
   const [reasonText, setReasonText] = useState("");
   const [showImport, setShowImport] = useState(false);
-  const [importData, setImportData] = useState("");
+  const [csvFileName, setCsvFileName] = useState<string | null>(null);
+  const [csvParsed, setCsvParsed] = useState<CsvParseResult | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [addMemberForm, setAddMemberForm] = useState({
     firstName: "", lastName: "", email: "", phone: "", studentId: "", graduationYear: "",
@@ -107,14 +209,29 @@ export default function AdminMembersPage() {
     onSuccess: (result) => {
       invalidate();
       setShowImport(false);
-      setImportData("");
-      toast.success(`${result.imported} member(s) imported, ${result.skipped} skipped`);
+      setCsvFileName(null);
+      setCsvParsed(null);
+      toast.success(
+        result.imported > 0
+          ? `${result.imported} member(s) added — each was emailed a link to set their password.`
+          : "No new members were added."
+      );
+      if (result.skipped > 0) toast(`${result.skipped} row(s) skipped (already registered or out of scope).`);
       if (result.errors.length > 0) {
         toast.error(`Errors: ${result.errors.slice(0, 3).join("; ")}`);
       }
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
+
+  function handleCsvFile(file: File) {
+    setCsvFileName(file.name);
+    setCsvParsed(null);
+    const reader = new FileReader();
+    reader.onload = () => setCsvParsed(parseMembersCsv(String(reader.result ?? "")));
+    reader.onerror = () => setCsvParsed({ rows: [], errors: ["Could not read that file."] });
+    reader.readAsText(file);
+  }
 
   const addMemberMut = useMutation({
     mutationFn: (member: ImportMemberItem) => importMembers([member]),
@@ -123,7 +240,7 @@ export default function AdminMembersPage() {
         invalidate();
         setShowAddMember(false);
         setAddMemberForm({ firstName: "", lastName: "", email: "", phone: "", studentId: "", graduationYear: "" });
-        toast.success("Member added");
+        toast.success("Member added — they've been emailed a link to set their password.");
       } else {
         toast.error(result.errors[0] ?? "Could not add member");
       }
@@ -185,7 +302,7 @@ export default function AdminMembersPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowImport(true)}>
-            <Upload size={14} />Import members
+            <Upload size={14} />Bulk upload
           </Button>
           <Button variant="outline" disabled={exportLoading} onClick={handleExportCsv}>
             {exportLoading ? <><Loader2 size={14} className="animate-spin" />Exporting…</> : <><Download size={14} />Export roster</>}
@@ -432,50 +549,62 @@ export default function AdminMembersPage() {
       />
 
       {/* Import Members Dialog */}
-      <Dialog open={showImport} onOpenChange={setShowImport}>
+      <Dialog open={showImport} onOpenChange={(open) => { setShowImport(open); if (!open) { setCsvFileName(null); setCsvParsed(null); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Import Members</DialogTitle>
+            <DialogTitle>Bulk-upload members</DialogTitle>
             <DialogDescription>
-              Paste a JSON array of members to import. Each member needs: firstName, lastName, email, graduationYear. Optional: phone, studentId, departmentId, paidMembershipYears (array of years).
+              Upload a CSV of your roster. Anyone new gets an account created automatically and an email with a link to set their password and get into the member portal — no manual passwords to hand out.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>JSON data</Label>
-              <Textarea
-                rows={8}
-                placeholder={`[
-  {
-    "firstName": "Kwame",
-    "lastName": "Mensah",
-    "email": "kwame@example.com",
-    "graduationYear": 2020,
-    "studentId": "ENG/20/0001",
-    "paidMembershipYears": [2023, 2024]
-  }
-]`}
-                value={importData}
-                onChange={(e) => setImportData(e.target.value)}
-                className="font-mono text-xs"
+            <button type="button" onClick={downloadCsvTemplate} className="text-[12.5px] font-semibold text-accent hover:underline">
+              <Download size={12} className="inline mr-1 -mt-0.5" />
+              Download a CSV template
+            </button>
+
+            <label
+              className={cn(
+                "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors",
+                csvFileName ? "border-accent/50 bg-accent/5" : "border-border hover:border-accent/40 hover:bg-muted/40"
+              )}
+            >
+              <Upload size={20} className="text-muted-foreground" />
+              <p className="text-[13px] font-semibold">{csvFileName ?? "Click to choose a CSV file"}</p>
+              <p className="text-[11.5px] text-muted-foreground">Required columns: firstName, lastName, email, graduationYear. Optional: phone, studentId.</p>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCsvFile(f); e.target.value = ""; }}
               />
-            </div>
+            </label>
+
+            {csvParsed && (
+              <div className={cn("rounded-lg border px-3 py-2.5 text-[12.5px]", csvParsed.rows.length > 0 ? "border-success/40 bg-success/5" : "border-destructive/40 bg-destructive/5")}>
+                {csvParsed.rows.length > 0 ? (
+                  <p className="font-semibold text-success">{csvParsed.rows.length} member{csvParsed.rows.length === 1 ? "" : "s"} ready to upload</p>
+                ) : (
+                  <p className="font-semibold text-destructive">No valid rows found</p>
+                )}
+                {csvParsed.errors.length > 0 && (
+                  <ul className="mt-1.5 space-y-0.5 text-muted-foreground">
+                    {csvParsed.errors.slice(0, 5).map((e, i) => <li key={i}>&bull; {e}</li>)}
+                    {csvParsed.errors.length > 5 && <li>&bull; …and {csvParsed.errors.length - 5} more</li>}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowImport(false); setImportData(""); }}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setShowImport(false); setCsvFileName(null); setCsvParsed(null); }}>Cancel</Button>
             <Button
-              disabled={!importData.trim() || importMut.isPending}
-              onClick={() => {
-                try {
-                  const parsed = JSON.parse(importData);
-                  if (!Array.isArray(parsed)) { toast.error("Must be a JSON array"); return; }
-                  importMut.mutate(parsed);
-                } catch {
-                  toast.error("Invalid JSON format");
-                }
-              }}
+              disabled={!csvParsed || csvParsed.rows.length === 0 || importMut.isPending}
+              onClick={() => csvParsed && importMut.mutate(csvParsed.rows)}
             >
-              {importMut.isPending ? <><Loader2 size={14} className="animate-spin" />Importing...</> : `Import Members`}
+              {importMut.isPending
+                ? <><Loader2 size={14} className="animate-spin" />Uploading…</>
+                : csvParsed?.rows.length ? `Upload ${csvParsed.rows.length} member${csvParsed.rows.length === 1 ? "" : "s"}` : "Upload members"}
             </Button>
           </DialogFooter>
         </DialogContent>

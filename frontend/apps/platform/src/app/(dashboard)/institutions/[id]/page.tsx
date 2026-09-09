@@ -20,6 +20,7 @@ import { FormError } from "@alumni/ui";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
+import { ColorPicker } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionMemberPolicy,
@@ -552,20 +553,17 @@ export default function InstitutionDetailPage() {
                 <p className="text-[14px] font-mono">{inst.customDomain ?? "Not configured"}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Primary color</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-md border border-border" style={{ background: branding.primaryColorHex }} />
-                    <Input value={branding.primaryColorHex} onChange={(e) => setBranding((b) => ({ ...b!, primaryColorHex: e.target.value }))} className="w-[140px]" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Secondary color</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-md border border-border" style={{ background: branding.secondaryColorHex || "#e2e8f0" }} />
-                    <Input value={branding.secondaryColorHex} onChange={(e) => setBranding((b) => ({ ...b!, secondaryColorHex: e.target.value }))} className="w-[140px]" placeholder="Optional" />
-                  </div>
-                </div>
+                <ColorPicker
+                  label="Primary color"
+                  value={branding.primaryColorHex}
+                  onChange={(hex) => setBranding((b) => ({ ...b!, primaryColorHex: hex }))}
+                />
+                <ColorPicker
+                  label="Secondary color"
+                  value={branding.secondaryColorHex || "#E2E8F0"}
+                  onChange={(hex) => setBranding((b) => ({ ...b!, secondaryColorHex: hex }))}
+                  helperText="Optional"
+                />
               </div>
               <div className="space-y-1.5 pt-1">
                 <Label>Preview</Label>

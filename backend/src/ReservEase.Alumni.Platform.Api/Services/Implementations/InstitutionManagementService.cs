@@ -198,14 +198,21 @@ public class InstitutionManagementService(
             db.Institutions.Add(institution);
             await db.SaveChangesAsync();
 
+            // No password is ever generated or transmitted here — same
+            // reset-token mechanism as inviting a regular staff member (see
+            // InviteStaffAsync/SendStaffInviteEmailAsync below). The random
+            // hash is never usable to log in; it exists only because
+            // Password is a required, non-nullable column.
             var admin = new StaffEntity
             {
                 InstitutionId = institution.Id,
                 FirstName = request.AdminFirstName,
                 LastName = request.AdminLastName,
                 Email = email,
-                Password = BCrypt.Net.BCrypt.HashPassword(request.AdminPassword),
+                Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
                 Role = "SuperAdmin",
+                PasswordResetToken = $"reset_{Guid.NewGuid():N}",
+                PasswordResetSentAt = DateTime.UtcNow,
                 CreatedBy = createdBy,
             };
             db.Set<StaffEntity>().Add(admin);
@@ -226,6 +233,8 @@ public class InstitutionManagementService(
             }
 
             await transaction.CommitAsync();
+
+            SendInstitutionWelcomeEmailAsync(admin, institution);
 
             logger.LogInformation("Onboarded institution {Slug} ({InstitutionId}) with first admin {AdminEmail}", slug, institution.Id, email);
             await auditLog.LogAsync(createdBy, actorName, "onboarded institution", institution.Name);
@@ -696,6 +705,43 @@ public class InstitutionManagementService(
 
         return new InstitutionStaffDto(staff.Id, staff.FirstName, staff.LastName, staff.Email, staff.Role, staff.IsDisabled, staff.LastLoginAt, staff.CreatedAt)
             .ToOkApiResponse();
+    }
+
+    /// <summary>
+    /// Fired once, right after a brand-new institution and its first admin
+    /// are committed — the "here's everything you need" email that replaces
+    /// a platform staffer having to manually generate and hand off a
+    /// password. Richer than SendStaffInviteEmailAsync below (same
+    /// set-your-password link, plus both portal URLs spelled out) since this
+    /// is someone's very first touch with the platform, not a routine invite.
+    /// </summary>
+    private void SendInstitutionWelcomeEmailAsync(StaffEntity admin, Institution institution)
+    {
+        var portalUrl = InstitutionPortalUrl(institution.Slug);
+        var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
+        var link = $"{baseUrl}/reset-password?token={admin.PasswordResetToken}&email={Uri.EscapeDataString(admin.Email)}";
+        var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+
+        notificationActor.Tell(new SendEmailCommand(
+            new SendEmailRequest
+            {
+                To = [new EmailContact { Email = admin.Email, Name = admin.FirstName }],
+                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.InstitutionWelcome)
+                    ? "institution-welcome"
+                    : mailtrapConfig.Templates.InstitutionWelcome,
+                TemplateVariables = new
+                {
+                    first_name = admin.FirstName,
+                    set_password_url = link,
+                    institution_portal_url = portalUrl,
+                    member_portal_url = MemberPortalUrl(institution.Slug),
+                    brand_name = brandName,
+                    brand_color = institution.PrimaryColorHex,
+                    brand_secondary_color = institution.SecondaryColorHex,
+                    brand_logo = institution.LogoUrl,
+                },
+            },
+            $"institution welcome email to {admin.Email}"));
     }
 
     private void SendStaffInviteEmailAsync(

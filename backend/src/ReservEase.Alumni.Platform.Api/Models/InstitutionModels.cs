@@ -48,8 +48,6 @@ public class CreateInstitutionRequest
     public string AdminLastName { get; set; } = string.Empty;
     [Required, EmailAddress]
     public string AdminEmail { get; set; } = string.Empty;
-    [Required, MinLength(8)]
-    public string AdminPassword { get; set; } = string.Empty;
 
     /// <summary>Optional — when both are set, one Batch per year in [BatchStartYear, BatchEndYear] is auto-created for the new institution (name defaults to the year itself; the institution can rename any of them afterward). Omit either to skip batch generation entirely.</summary>
     [Range(1900, 2200)]

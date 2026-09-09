@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -15,6 +16,7 @@ using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using Microsoft.Extensions.Configuration;
@@ -266,7 +268,7 @@ public class ContributionMemberForumServiceTests
         var mockInstitutionRepoForMembers = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var mockMembershipRepoForMembers = new Mock<IAlumniPgRepository<CommunityMembership>>();
         var mockCurrentTenantForMembers = new Mock<ICurrentTenantService>();
-        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, mockCurrentTenantForMembers.Object, new NullLogger<MemberManagementService>());
+        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, mockCurrentTenantForMembers.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<IAdminNotificationActor>(), new NullLogger<MemberManagementService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var listResponse = await service.GetMembersAsync(new MemberListFilter { Page = 1, PageSize = 10 }, admin);

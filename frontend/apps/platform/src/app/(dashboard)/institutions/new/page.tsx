@@ -9,6 +9,7 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
+import { ColorPicker } from "@alumni/ui";
 import { createInstitution, getBaseDomains, getOnboardingLead, updateOnboardingLeadStatus } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@alumni/ui";
@@ -18,10 +19,6 @@ const STEPS = ["Institution details", "Branding", "Payments & payouts", "First a
 
 function slugify(v: string) {
   return v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
-function generatePassword() {
-  return Math.random().toString(36).slice(-6) + Math.random().toString(36).slice(-6).toUpperCase() + "!1";
 }
 
 export default function NewInstitutionPage() {
@@ -65,7 +62,6 @@ function NewInstitutionPageContent() {
     adminFirstName: "",
     adminLastName: "",
     adminEmail: "",
-    adminPassword: generatePassword(),
     requireDues: false,
     batchStartYear: "",
     batchEndYear: "",
@@ -124,13 +120,12 @@ function NewInstitutionPageContent() {
           adminFirstName: form.adminFirstName || form.contactName.split(" ")[0] || "Admin",
           adminLastName: form.adminLastName || form.contactName.split(" ").slice(1).join(" ") || "User",
           adminEmail: form.adminEmail || form.contactEmail,
-          adminPassword: form.adminPassword,
           memberActivePolicy: form.requireDues ? "DuesRequired" : "ApprovedOnly",
           batchStartYear: form.batchStartYear ? Number(form.batchStartYear) : undefined,
           batchEndYear: form.batchEndYear ? Number(form.batchEndYear) : undefined,
         });
         toast.success("Institution created", {
-          description: `${created.name} has been onboarded. First admin: ${form.adminEmail || form.contactEmail}.`,
+          description: `${created.name} has been onboarded. We've emailed ${form.adminEmail || form.contactEmail} a welcome message with their setup link.`,
         });
         if (fromLead) {
           // Fire-and-forget — linking the lead to the new institution is secondary
@@ -254,20 +249,13 @@ function NewInstitutionPageContent() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Primary color</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-md border border-border" style={{ background: form.primaryColor }} />
-                        <Input value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} className="w-[140px]" />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Secondary color</Label>
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-md border border-border" style={{ background: form.secondaryColor || "#e2e8f0" }} />
-                        <Input value={form.secondaryColor} onChange={(e) => update("secondaryColor", e.target.value)} className="w-[140px]" placeholder="Optional" />
-                      </div>
-                    </div>
+                    <ColorPicker label="Primary color" value={form.primaryColor} onChange={(hex) => update("primaryColor", hex)} />
+                    <ColorPicker
+                      label="Secondary color"
+                      value={form.secondaryColor || "#E2E8F0"}
+                      onChange={(hex) => update("secondaryColor", hex)}
+                      helperText="Optional"
+                    />
                   </div>
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
                     Optional for activation. Platform defaults apply if you continue without custom assets.
@@ -365,11 +353,9 @@ function NewInstitutionPageContent() {
                     <Label>Email</Label>
                     <Input value={form.adminEmail} onChange={(e) => update("adminEmail", e.target.value)} placeholder={form.contactEmail || "amelia.owusu@greenfield.edu.gh"} />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Temporary password</Label>
-                    <Input value={form.adminPassword} onChange={(e) => update("adminPassword", e.target.value)} />
-                    <p className="text-[12px] text-muted-foreground">Share this securely with the admin; they should change it after first login.</p>
-                  </div>
+                  <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
+                    No password to set here. As soon as this institution is created, we&apos;ll email this person a welcome message with a link to set their own password, plus the institution portal and member portal links.
+                  </p>
                 </div>
               </>
             )}

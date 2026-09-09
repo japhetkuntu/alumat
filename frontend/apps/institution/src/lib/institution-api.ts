@@ -181,6 +181,30 @@ export async function updateLandingContent(
   return profile;
 }
 
+/** This institution's own branding: display name, tagline, support email, colors, logo/icon, and both portals' auth copy. SuperAdmin only, takes effect immediately. */
+export async function updateInstitutionBranding(branding: {
+  portalName: string;
+  tagline?: string | null;
+  supportEmail?: string | null;
+  logoUrl?: string | null;
+  iconUrl?: string | null;
+  primaryColorHex: string;
+  secondaryColorHex?: string | null;
+  institutionPortalTitle?: string | null;
+  institutionAuthHeadline?: string | null;
+  institutionAuthSubtext?: string | null;
+  memberPortalTitle?: string | null;
+  memberAuthHeadline?: string | null;
+  memberAuthSubtext?: string | null;
+}): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/branding", branding);
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
 /** How "active member" status is determined — this institution's own operational choice. */
 export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly"): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy });

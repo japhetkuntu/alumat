@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -63,7 +64,7 @@ public class ServiceConstructorTests
         var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, publicCache.Object, new NullLogger<EventService>());
         var _____ = new ForumService(forumCategoryRepo.Object, forumThreadRepo.Object, new NullLogger<ForumService>());
         var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<JobService>());
-        var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, membershipRepo.Object, currentTenant.Object, new NullLogger<MemberManagementService>());
+        var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, membershipRepo.Object, currentTenant.Object, Mock.Of<IConfiguration>(), mailtrapOptions, notificationActor.Object, new NullLogger<MemberManagementService>());
         var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, notificationActor.Object, currentTenant.Object, new NullLogger<MentorshipService>());
         var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, currentTenant.Object, publicCache.Object, new NullLogger<NewsService>());
         var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, new NullLogger<ReportService>());
