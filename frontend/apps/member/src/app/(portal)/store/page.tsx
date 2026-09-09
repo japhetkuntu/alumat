@@ -159,7 +159,7 @@ export default function StorePage() {
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        <EmptyState icon={<ShoppingBag size={40} />} title="No products yet" description="Check back soon — the alumni store is empty for now." />
+        <EmptyState icon={<ShoppingBag size={40} />} title="No products yet" description="Check back soon. The alumni store is empty for now." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((p) => {
@@ -197,7 +197,7 @@ export default function StorePage() {
                     <Link href={`/store/${p.id}`} className="mt-auto">
                       <Button size="sm" className="w-full text-[12px] font-bold gap-1.5" disabled={soldOut}>
                         <ShoppingCart size={13} />
-                        {inCartCount > 0 ? `In cart (${inCartCount}) — choose options` : "Choose options"}
+                        {inCartCount > 0 ? `In cart (${inCartCount}), choose options` : "Choose options"}
                       </Button>
                     </Link>
                   ) : (

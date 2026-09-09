@@ -104,7 +104,7 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
   return (
     <Card>
       <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
-        <b className="text-[13.5px]">{community.name} — members</b>
+        <b className="text-[13.5px]">{community.name} members</b>
         <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
       </div>
       <CardContent className="p-0">

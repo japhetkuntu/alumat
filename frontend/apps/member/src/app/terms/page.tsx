@@ -23,7 +23,7 @@ export default function TermsPage() {
 
       <Section heading="2. What the Platform does">
         <p>
-          Each Institution gets its own portal — a member-facing site (for example, at a subdomain of
+          Each Institution gets its own portal: a member-facing site (for example, at a subdomain of
           alumunion.com or the Institution&apos;s own custom domain) and a staff-facing admin console. Depending on
           what the Institution turns on, a portal may include: a searchable alumni directory, an opt-in world
           map showing where alumni are based, class notes and forum discussions, events with RSVP, a job board,
@@ -40,7 +40,7 @@ export default function TermsPage() {
       <Section heading="3. Eligibility and accounts">
         <p>
           You must be at least 18 years old to create a Member account. Member registration is intended for
-          alumni, students, and staff of a participating Institution — an Institution may ask for a graduation
+          alumni, students, and staff of a participating Institution. An Institution may ask for a graduation
           year, student ID, or department to confirm you belong to their community, and may require a staff
           member to approve new registrations before an account becomes active.
         </p>
@@ -56,7 +56,7 @@ export default function TermsPage() {
         <p>
           Some fundraiser or membership dues links can be paid without creating an account (&quot;guest payment&quot;). If you pay as a
           guest through a link that was shared by a registered Member, the contribution may be recorded against
-          that Member&apos;s account for the Institution&apos;s records, but is clearly marked as paid by a guest — it is
+          that Member&apos;s account for the Institution&apos;s records, but is clearly marked as paid by a guest; it is
           never shown as if the sharer paid it themselves. If you are logged in when you pay, the payment is
           always recorded against your own account, even on a link someone else shared with you.
         </p>
@@ -86,7 +86,7 @@ export default function TermsPage() {
       <Section heading="6. Payments">
         <p>
           Online payments (membership dues, fundraiser contributions) are processed by a licensed
-          payment service provider. We do not receive or store your full card or mobile money PIN details —
+          payment service provider. We do not receive or store your full card or mobile money PIN details;
           our payment processor handles that directly. A processing fee, disclosed at checkout, may apply on top of the
           amount you choose to pay. Amounts already paid are generally non-refundable except where required by
           law or at an Institution&apos;s discretion; refund requests should go to the Institution that ran the
@@ -94,7 +94,7 @@ export default function TermsPage() {
         </p>
         <p>
           Institutions set their own fundraiser amounts, deadlines, and (for membership) yearly dues. We are not a
-          party to the underlying reason a payment is being collected — that relationship is between you and the
+          party to the underlying reason a payment is being collected; that relationship is between you and the
           Institution.
         </p>
       </Section>
@@ -106,14 +106,14 @@ export default function TermsPage() {
           your profile. You can turn SMS notifications off at any time from your notification settings; some
           account-critical emails (like password resets or payment receipts) cannot be turned off, since they
           exist to protect your account and give you a record of transactions. We may add further channels,
-          such as WhatsApp, in the future — this policy will be updated before that happens.
+          such as WhatsApp, in the future. This policy will be updated before that happens.
         </p>
       </Section>
 
       <Section heading="8. Alumni Map">
         <p>
           The Alumni Map plots Members by general location (city/country as you entered it) so fellow alumni can
-          see where the community is based. It is opt-in and off by default — your location is never shown on
+          see where the community is based. It is opt-in and off by default. Your location is never shown on
           the map unless you turn the setting on yourself in your profile, and you can turn it back off at any
           time, which removes you from the map immediately.
         </p>
@@ -166,8 +166,8 @@ export default function TermsPage() {
           Questions about these Terms can be sent to{" "}
           <a href="mailto:support@alumunion.com" className="font-semibold underline underline-offset-2" style={{ color: "var(--primary)" }}>
             support@alumunion.com
-          </a>. For anything specific to your own Institution&apos;s portal — like membership dues or event
-          details — the fastest route is usually your Institution&apos;s own alumni office, since they run that
+          </a>. For anything specific to your own Institution&apos;s portal (like membership dues or event
+          details), the fastest route is usually your Institution&apos;s own alumni office, since they run that
           side of things directly.
         </p>
       </Section>

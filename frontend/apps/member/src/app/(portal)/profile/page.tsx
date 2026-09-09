@@ -412,7 +412,7 @@ export default function MemberProfilePage() {
                   <div>
                     <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
                     <p className="text-[12px] text-muted-foreground mt-0.5">
-                      Uses your device&apos;s real location — rounded to roughly your city/region, never your exact address — to plot a pin, visible to fellow members. Off by default — your location stays private, and nothing is stored unless you turn this on.
+                      Uses your device&apos;s real location (rounded to roughly your city/region, never your exact address) to plot a pin, visible to fellow members. Off by default: your location stays private, and nothing is stored unless you turn this on.
                     </p>
                   </div>
                   <button
@@ -500,7 +500,7 @@ export default function MemberProfilePage() {
                 label="Employed"
                 description={
                   membershipCampaign?.amountPerMember != null
-                    ? `Currently working or self-employed — ${formatCurrency(membershipCampaign.amountPerMember)}/year`
+                    ? `Currently working or self-employed: ${formatCurrency(membershipCampaign.amountPerMember)}/year`
                     : "Currently working or self-employed"
                 }
                 active={employmentStatus === "Employed"}
@@ -516,7 +516,7 @@ export default function MemberProfilePage() {
                 label="Pensioner"
                 description={
                   membershipCampaign?.pensionerAmountPerMember != null
-                    ? `Retired and receiving pension — ${formatCurrency(membershipCampaign.pensionerAmountPerMember)}/year`
+                    ? `Retired and receiving pension: ${formatCurrency(membershipCampaign.pensionerAmountPerMember)}/year`
                     : "Retired and receiving pension"
                 }
                 active={employmentStatus === "Pensioner"}
@@ -739,7 +739,7 @@ export default function MemberProfilePage() {
       <ConfirmModal
         open={confirmPensioner}
         title="Switch to Pensioner?"
-        message="This is permanent — you will not be able to switch back to Employed. Only confirm if you are retired and receiving a pension."
+        message="This is permanent: you will not be able to switch back to Employed. Only confirm if you are retired and receiving a pension."
         confirmLabel="Yes, I am a pensioner"
         variant="destructive"
         isLoading={employmentMut.isPending}

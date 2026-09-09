@@ -92,7 +92,7 @@ export default function MemberEventsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      <PageHeader eyebrow="Connect in person" title="Events" description="Never miss a Speech Day or AGM — RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions." />
+      <PageHeader eyebrow="Connect in person" title="Events" description="Never miss a Speech Day or AGM. RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions." />
 
       {/* ── Filter pills ── */}
       <div className="flex flex-wrap items-center gap-2">

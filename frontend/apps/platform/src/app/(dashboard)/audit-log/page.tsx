@@ -29,7 +29,7 @@ export default function AuditLogPage() {
   return (
     <div className="p-7 max-w-[1500px]">
       <h1 className="text-[24px] font-bold">Audit Log</h1>
-      <p className="text-muted-foreground text-[13px] mt-1 mb-6">Platform-wide accountability trail — every sensitive action taken by platform staff.</p>
+      <p className="text-muted-foreground text-[13px] mt-1 mb-6">Platform-wide accountability trail: every sensitive action taken by platform staff.</p>
 
       <Card>
         <div className="px-5 py-4 border-b border-border">

@@ -23,6 +23,7 @@ public record InstitutionResponse(
     string? MemberAuthSubtext,
     bool RequireStudentId,
     string MemberActivePolicy,
+    bool PromptMembershipActivationAtSignup,
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
@@ -30,7 +31,12 @@ public record InstitutionResponse(
     string? HeroHeadline,
     string Status,
     // Shareable Member Portal URL for this institution — null if MemberPortalBaseDomain isn't configured.
-    string? MemberPortalUrl);
+    string? MemberPortalUrl,
+    // Live settlement details — null until PayoutStatus is Approved.
+    string PayoutStatus,
+    string? SettlementBankName,
+    string? SettlementAccountNumber,
+    string? SettlementAccountName);
 
 /// <summary>
 /// Deliberate carve-out from the "institution staff can't edit branding"
@@ -55,10 +61,27 @@ public record UpdateMemberActivePolicyRequest(string MemberActivePolicy);
 
 /// <summary>
 /// Another institution-editable-themselves carve-out, distinct from the
-/// platform-only bulk feature toggle (Platform.Api's InstitutionsController)
-/// — see InstitutionFeatures.SelfService for exactly which keys this is
-/// allowed to touch. Only Digest/RecurringGiving today; any other key is
-/// rejected rather than silently ignored, so a frontend bug can't quietly
-/// disable something this endpoint was never meant to control.
+/// platform-only bulk feature toggle (Platform.Api's InstitutionsController).
+/// DigestEnabled/RecurringGivingEnabled toggle the two DisabledFeatures keys
+/// in InstitutionFeatures.SelfService — everything else in that list stays
+/// platform-staff-only. PromptMembershipActivationAtSignup is a separate,
+/// opt-in-by-default-false field (not a DisabledFeatures key), since most
+/// institutions don't want a payment ask on the registration success screen
+/// before a member is even approved.
 /// </summary>
-public record UpdateSelfServiceFeaturesRequest(bool DigestEnabled, bool RecurringGivingEnabled);
+public record UpdateSelfServiceFeaturesRequest(bool DigestEnabled, bool RecurringGivingEnabled, bool PromptMembershipActivationAtSignup);
+
+/// <summary>
+/// Submitted by this institution's own SuperAdmin only (unlike a batch's
+/// payout setup, a ScopedAdmin may never touch the institution's own payment
+/// info). Never writes the live settlement fields directly — lands in
+/// Institution.PendingPayoutChanges until a platform staffer approves it
+/// (see Platform.Api's InstitutionPayoutsController).
+/// </summary>
+public class SubmitInstitutionPayoutSetupRequest
+{
+    public string SettlementBankCode { get; set; } = string.Empty;
+    public string SettlementBankName { get; set; } = string.Empty;
+    public string SettlementAccountNumber { get; set; } = string.Empty;
+    public string SettlementAccountName { get; set; } = string.Empty;
+}

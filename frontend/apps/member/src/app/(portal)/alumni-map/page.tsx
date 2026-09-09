@@ -71,7 +71,7 @@ export default function AlumniMapPage() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <PageHeader
           title="Alumni Map"
-          description="Where fellow graduates live around the world — shown only for alumni who chose to appear here."
+          description="Where fellow graduates live around the world, shown only for alumni who chose to appear here."
         />
         <div className="relative w-full sm:w-[280px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />

@@ -378,7 +378,7 @@ function JobsPulse() {
       {isLoading ? (
         <div className="space-y-3 py-1">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-10 rounded-lg animate-pulse bg-secondary" />)}</div>
       ) : jobs.length === 0 ? (
-        <PulseEmpty label="No open roles right now — check back soon." />
+        <PulseEmpty label="No open roles right now, check back soon." />
       ) : (
         jobs.map((j) => (
           <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-secondary group">
@@ -634,7 +634,7 @@ export default function MemberDashboardPage() {
               Early renewal
             </h2>
             <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-              Optional — pay ahead to secure upcoming membership years
+              Optional: pay ahead to secure upcoming membership years
             </p>
           </div>
           <div className="space-y-2">

@@ -163,7 +163,7 @@ export default function AdminReportsPage() {
           <div>
             <CardTitle className="text-base">Member Roster Export</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Narrow the roster below, then export — e.g. all alumni working in Healthcare, or all alumni based in Kumasi.
+              Narrow the roster below, then export: e.g. all alumni working in Healthcare, or all alumni based in Kumasi.
             </p>
           </div>
           <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5 w-full sm:w-auto shrink-0" onClick={exportMembers} disabled={exporting === "members"}>

@@ -71,6 +71,7 @@ public class PublicController(
             institution.MemberAuthHeadline,
             institution.MemberAuthSubtext,
             institution.RequireStudentId,
+            institution.PromptMembershipActivationAtSignup,
             institution.DisabledFeatures,
             institution.LandingPageStories,
             institution.NewsBanner,

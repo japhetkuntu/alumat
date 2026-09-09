@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil } from "@alumni/ui";import { Pagination } from "@alumni/ui";
+import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil, Lock } from "@alumni/ui";import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
@@ -15,6 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@alumni/ui";
 import { formatDate, getInitials } from "@alumni/ui";
 import { getSpotlights, approveSpotlight, rejectSpotlight, createSpotlight, updateSpotlight, getMembers, uploadImage } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -22,6 +23,9 @@ import { LinkOrUpload } from "@alumni/ui";
 import type { Spotlight, Member } from "@/types";
 
 export default function AdminSpotlightsPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SuperAdmin";
+
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [approveTarget, setApproveTarget] = useState<Spotlight | null>(null);
@@ -44,6 +48,7 @@ export default function AdminSpotlightsPage() {
     queryKey: ["admin-spotlights", statusFilter, page],
     queryFn: () => getSpotlights(page, pageSize, statusFilter || undefined),
     placeholderData: (prev) => prev,
+    enabled: isSuperAdmin,
   });
 
   const approveMut = useMutation({
@@ -99,6 +104,18 @@ export default function AdminSpotlightsPage() {
 
   const spotlights = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
+        <EmptyState
+          icon={<Lock size={40} />}
+          title="Access denied"
+          description="Only Super Admins can manage spotlights."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">

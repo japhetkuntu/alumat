@@ -83,7 +83,7 @@ export default function StoreProductDetailPage() {
         <Link href="/store" className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground">
           <ArrowLeft size={14} /> Back to store
         </Link>
-        <p className="text-[14px] text-muted-foreground">This product couldn&apos;t be found — it may have been removed.</p>
+        <p className="text-[14px] text-muted-foreground">This product couldn&apos;t be found. It may have been removed.</p>
       </div>
     );
   }

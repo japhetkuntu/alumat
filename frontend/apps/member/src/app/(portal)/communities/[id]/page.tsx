@@ -413,7 +413,7 @@ export default function CommunityDetailPage() {
             {threadsLoading ? (
               <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>
             ) : threads.length === 0 ? (
-              <SectionEmpty icon={MessageSquare}>No discussion yet — be the first to post.</SectionEmpty>
+              <SectionEmpty icon={MessageSquare}>No discussion yet, be the first to post.</SectionEmpty>
             ) : (
               <div className="space-y-2">
                 {threads.map((t) => (

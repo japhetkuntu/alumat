@@ -169,7 +169,7 @@ function LoginForm() {
                 className="h-12 text-[15px]"
               />
               <p className="text-[12px] text-muted-foreground">
-                Institution slug — stands in for real subdomain routing until wildcard DNS is set up.
+                Institution slug, stands in for real subdomain routing until wildcard DNS is set up.
               </p>
             </div>
           )}

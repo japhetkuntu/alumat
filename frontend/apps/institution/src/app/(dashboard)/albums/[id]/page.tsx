@@ -206,7 +206,7 @@ export default function AdminAlbumDetailPage() {
         <EmptyState
           icon={<ImageOff size={40} />}
           title="No photos added yet"
-          description="Add photos to this album — they'll appear here as soon as they upload."
+          description="Add photos to this album, they'll appear here as soon as they upload."
           action={<Button size="sm" onClick={() => fileInputRef.current?.click()}><Plus size={14} />Add photos</Button>}
         />
       ) : (
@@ -276,7 +276,7 @@ export default function AdminAlbumDetailPage() {
 
       {knownPhotos.length === 0 && !photos && album.photoCount > 0 && (
         <p className="text-[12px] text-muted-foreground -mt-3">
-          This album already has {album.photoCount} photo{album.photoCount === 1 ? "" : "s"} from a previous session — add a new photo above to bring the full gallery back into view here, or use the cover thumbnail shown in the header.
+          This album already has {album.photoCount} photo{album.photoCount === 1 ? "" : "s"} from a previous session. Add a new photo above to bring the full gallery back into view here, or use the cover thumbnail shown in the header.
         </p>
       )}
 

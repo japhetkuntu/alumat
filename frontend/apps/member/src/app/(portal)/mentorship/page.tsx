@@ -667,7 +667,7 @@ export default function MemberMentorshipPage() {
                     <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
                   </Label>
                   <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                    Shared only with a mentee once you accept their request — fill in whichever you&apos;re comfortable sharing.
+                    Shared only with a mentee once you accept their request. Fill in whichever you&apos;re comfortable sharing.
                   </p>
                   <Input
                     placeholder="LinkedIn profile URL"
@@ -729,7 +729,7 @@ export default function MemberMentorshipPage() {
                 <li className="flex items-start gap-2.5">
                   <Sparkles size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
                   <span className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                    Set your own capacity — you choose how many mentees to take on at once.
+                    Set your own capacity. You choose how many mentees to take on at once.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">

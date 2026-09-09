@@ -113,10 +113,15 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
 
   const navItems = useMemo(() => {
     const items = baseNavItems.filter((item) => {
-      // Forum and Business Directory stay SuperAdmin-only. Mentorship and
-      // Albums are now partially available to a ScopedAdmin too (scoped to
-      // their own batch/community) — see MentorshipController/AlbumsController.
-      if (item.href === "/forum" || item.href === "/business-directory") {
+      // Forum, Business Directory, Broadcast, and Spotlights stay
+      // SuperAdmin-only (matches ForumController/BusinessDirectoryController/
+      // BroadcastController/SpotlightsController's [Authorize(Roles = "SuperAdmin")]
+      // on the backend exactly — a ScopedAdmin gets a 403 from any of these
+      // today, so the nav item must never be shown to them in the first
+      // place). Mentorship and Albums are partially available to a
+      // ScopedAdmin too (scoped to their own batch/community) — see
+      // MentorshipController/AlbumsController.
+      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights") {
         if (user?.role !== "SuperAdmin") return false;
       }
       if (item.href === "/mentorship" || item.href === "/albums") {

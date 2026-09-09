@@ -145,8 +145,8 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
             <div className="space-y-2"><Label>Status</Label>
               <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
                 options={[
-                  { value: "Active", label: "Active — visible to members" },
-                  { value: "Draft", label: "Draft — hidden" },
+                  { value: "Active", label: "Active, visible to members" },
+                  { value: "Draft", label: "Draft, hidden" },
                   { value: "Archived", label: "Archived" },
                 ]} /></div>
             <div className="space-y-2"><Label>Price (GHS)</Label>
@@ -159,7 +159,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
           <div className="space-y-2">
             <Label>Delivery info</Label>
             <p className="text-[12px] text-muted-foreground -mt-0.5">
-              Shown to buyers — delivery itself is handled by your team outside the platform (e.g. pickup location/hours, shipping timeframe).
+              Shown to buyers. Delivery itself is handled by your team outside the platform (e.g. pickup location/hours, shipping timeframe).
               {defaultDeliveryInfo && " Leave blank to use your store's default delivery info (set below)."}
             </p>
             <Textarea
@@ -428,7 +428,7 @@ export default function AdminStorePage() {
                 {editingSettings ? (
                   <Textarea rows={2} value={defaultDeliveryDraft} onChange={(e) => setDefaultDeliveryDraft(e.target.value)} placeholder="Pickup at the alumni office, Mon–Fri 9am–5pm." />
                 ) : (
-                  <p className="text-[12.5px] text-foreground">{settings?.defaultDeliveryInfo || "Not set — new products need their own delivery info."}</p>
+                  <p className="text-[12.5px] text-foreground">{settings?.defaultDeliveryInfo || "Not set. New products need their own delivery info."}</p>
                 )}
               </div>
 
@@ -436,7 +436,7 @@ export default function AdminStorePage() {
                 <div>
                   <p className="text-[12.5px] font-medium">Delivery stages</p>
                   <p className="text-[11.5px] text-muted-foreground mt-0.5">
-                    Optional — define stages (e.g. Packed, Shipped, Delivered) to track each order&apos;s fulfillment progress. Leave empty to skip delivery tracking.
+                    Optional: define stages (e.g. Packed, Shipped, Delivered) to track each order&apos;s fulfillment progress. Leave empty to skip delivery tracking.
                   </p>
                 </div>
                 {editingSettings ? (
@@ -468,7 +468,7 @@ export default function AdminStorePage() {
                     {deliveryStages.map((s) => <Badge key={s} variant="neutral" size="sm">{s}</Badge>)}
                   </div>
                 ) : (
-                  <p className="text-[12.5px] text-muted-foreground">Not set — delivery status tracking is off.</p>
+                  <p className="text-[12.5px] text-muted-foreground">Not set. Delivery status tracking is off.</p>
                 )}
               </div>
 
@@ -488,7 +488,7 @@ export default function AdminStorePage() {
           )}
           {editProduct && (
             <ProductForm
-              title={`Edit — ${editProduct.name}`}
+              title={`Edit ${editProduct.name}`}
               init={{
                 name: editProduct.name, description: editProduct.description ?? "",
                 price: String(editProduct.price), quantityAvailable: String(editProduct.quantityAvailable),

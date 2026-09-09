@@ -252,7 +252,7 @@ export default function AdminEventsPage() {
       )}
 
       {editEvent && (
-        <EventForm title={`Edit — ${editEvent.title}`} init={toFormState(editEvent)} saving={updateMut.isPending} showStatus
+        <EventForm title={`Edit ${editEvent.title}`} init={toFormState(editEvent)} saving={updateMut.isPending} showStatus
           isSuperAdmin={isSuperAdmin}
           onSave={(f) => updateMut.mutate({ id: editEvent.id, f })} onCancel={() => setEditEvent(null)} />
       )}

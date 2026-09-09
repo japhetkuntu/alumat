@@ -101,7 +101,7 @@ export default function AdminMentorshipPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Mentorship</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Review mentor capacity and help pairing requests move forward.</p>
           {isScopedAdmin && (
-            <p className="text-xs text-muted-foreground mt-1">You're scoped to your assigned batch and communities, and can't approve or decline mentors — a Super Admin handles that.</p>
+            <p className="text-xs text-muted-foreground mt-1">You're scoped to your assigned batch and communities, and can't approve or decline mentors; a Super Admin handles that.</p>
           )}
         </div>
         <div className="flex gap-2">

@@ -39,7 +39,7 @@ function PayoutPanel() {
     return (
       <div className="card p-[18px] mt-3.5">
         <p className="text-[13px] text-muted-foreground">
-          Settlement banking isn&apos;t set up yet — ask the platform team to add your payout details to start seeing expected payouts here.
+          Settlement banking isn&apos;t set up yet. Ask the platform team to add your payout details to start seeing expected payouts here.
         </p>
       </div>
     );
@@ -71,7 +71,7 @@ function PayoutPanel() {
           Expected {formatDate(data.nextPayout.date)} morning &middot; still accumulating &middot; {data.nextPayout.transactionCount} transaction{data.nextPayout.transactionCount === 1 ? "" : "s"}
         </p>
       </div>
-      <p className="sm:col-span-2 text-[11px] text-muted-foreground -mt-2">Estimated from your confirmed transactions — not a bank-confirmed figure.</p>
+      <p className="sm:col-span-2 text-[11px] text-muted-foreground -mt-2">Estimated from your confirmed transactions, not a bank-confirmed figure.</p>
     </div>
   );
 }

@@ -297,6 +297,29 @@ export async function rejectBatchPayout(batchId: string, notes?: string): Promis
   await platformClient.put(`/batch-payouts/${batchId}/reject`, { notes });
 }
 
+/** An institution whose own payout setup (see Institution.Api's InstitutionController.SubmitPayoutSetup) is awaiting review. */
+export interface PendingInstitutionPayout {
+  institutionId: string;
+  institutionName: string;
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
+  submittedAt: string;
+}
+
+export async function getPendingInstitutionPayouts(): Promise<PendingInstitutionPayout[]> {
+  const res = await platformClient.get<ApiResponse<PendingInstitutionPayout[]>>("/institution-payouts/pending");
+  return res.data.data ?? [];
+}
+
+export async function approveInstitutionPayout(institutionId: string): Promise<void> {
+  await platformClient.put(`/institution-payouts/${institutionId}/approve`);
+}
+
+export async function rejectInstitutionPayout(institutionId: string, notes?: string): Promise<void> {
+  await platformClient.put(`/institution-payouts/${institutionId}/reject`, { notes });
+}
+
 /** One payment, normalized across both payment sources — every status, not just Successful, so support staff can see the full picture. */
 export interface PlatformPayment {
   id: string;

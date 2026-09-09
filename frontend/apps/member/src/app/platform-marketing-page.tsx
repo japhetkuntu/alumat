@@ -32,37 +32,37 @@ const NAV_LINKS = [
 
 const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
   { icon: Briefcase,   label: "Careers",       title: "A jobs board just for your alumni",  desc: "Alumni employers post roles straight to your community, before they hit public boards.", big: true, illustration: JobsIllustration },
-  { icon: Users,       label: "Directory",     title: "Every member, one searchable list", desc: "Name, join year, location — members find each other in seconds.", illustration: DirectoryIllustration },
+  { icon: Users,       label: "Directory",     title: "Every member, one searchable list", desc: "Name, join year, location: members find each other in seconds.", illustration: DirectoryIllustration },
   { icon: CreditCard,  label: "Fundraising",   title: "Collect dues & fund projects",        desc: "Online payments for development projects, year-group dues, and welfare support.", illustration: FundraisingIllustration },
-  { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",           desc: "Speech days, AGMs, reunions, chapter meetups — all in one shared calendar.", illustration: EventsIllustration },
+  { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",           desc: "Speech days, AGMs, reunions, chapter meetups, all in one shared calendar.", illustration: EventsIllustration },
   { icon: Heart,       label: "Mentorship",    title: "Built-in mentor matching",             desc: "Alumni who've walked the path connect with those just starting out.", big: true, illustration: MentorshipIllustration },
   { icon: ShoppingBag, label: "Store",         title: "Sell branded merchandise",             desc: "An online store for association gear, with online payment and order tracking.", illustration: StoreIllustration },
   { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever.", illustration: AlbumsIllustration },
   { icon: Trophy,      label: "Spotlight",     title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page.", illustration: SpotlightIllustration },
   { icon: Building2,   label: "Businesses",    title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
-  { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events — members choose exactly what reaches them.", illustration: NotificationsIllustration },
+  { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events: members choose exactly what reaches them.", illustration: NotificationsIllustration },
 ];
 
 const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
-  { n: "01", icon: SlidersHorizontal, title: "Tell us about your institution", desc: "One short form — your institution's name and who we should talk to. Takes under two minutes.", illustration: FormIllustration },
+  { n: "01", icon: SlidersHorizontal, title: "Tell us about your institution", desc: "One short form: your institution's name and who we should talk to. Takes under two minutes.", illustration: FormIllustration },
   { n: "02", icon: Rocket,            title: "We set your portal up",          desc: "Our team configures your branding, your subdomain, and your first admin account.", illustration: LaunchIllustration },
   { n: "03", icon: Users,             title: "Your alumni join, free",         desc: "Share the link. Every member creates an account and steps into their new home.", illustration: JoinIllustration },
-  { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules — approve members, manage content, run the show.", illustration: ControlIllustration },
+  { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules: approve members, manage content, run the show.", illustration: ControlIllustration },
 ];
 
 const FAQS = [
-  { q: "Is it really free?", a: "Yes. There's no setup fee, no monthly bill, and no cost to your institution to run your alumni portal. We handle the details on our side — you focus on your alumni community." },
+  { q: "Is it really free?", a: "Yes. There's no setup fee, no monthly bill, and no cost to your institution to run your alumni portal. We handle the details on our side, you focus on your alumni community." },
   { q: "How long does setup take?", a: "Submit the form below and our team will typically reach out within one business day to get your institution's portal configured and ready to launch." },
-  { q: "Can we use our own domain or subdomain?", a: "Yes — every institution gets a branded subdomain out of the box, and a custom domain can be configured for your institution as well." },
-  { q: "What if our alumni currently coordinate over WhatsApp or spreadsheets?", a: "That's exactly what this replaces. Import your existing contact list, invite your alumni, and everything — directory, events, dues, jobs — moves into one place built for it." },
+  { q: "Can we use our own domain or subdomain?", a: "Yes, every institution gets a branded subdomain out of the box, and a custom domain can be configured for your institution as well." },
+  { q: "What if our alumni currently coordinate over WhatsApp or spreadsheets?", a: "That's exactly what this replaces. Import your existing contact list, invite your alumni, and everything (directory, events, dues, jobs) moves into one place built for it." },
   { q: "Is our alumni data secure?", a: "Every institution's data is isolated from every other institution's on the platform, with role-based access control for your admin team." },
 ];
 
 const WHATSAPP_PROBLEMS = [
-  { icon: UserX,           title: "Caps at 1,024 members", desc: "WhatsApp groups max out at 1,024 people — a Community stretches to 5,000, but that's still a ceiling a growing alumni base will hit." },
+  { icon: UserX,           title: "Caps at 1,024 members", desc: "WhatsApp groups max out at 1,024 people. A Community stretches to 5,000, but that's still a ceiling a growing alumni base will hit." },
   { icon: SearchX,         title: "No real search",        desc: "Find last year's fundraiser announcement? Good luck scrolling. WhatsApp only searches text in one chat at a time." },
-  { icon: ShieldAlert,     title: "Real fraud risk",        desc: "UK Action Fraud logged 636 reports of WhatsApp group-chat scams in H1 2024 alone — often someone impersonating a member to solicit money." },
-  { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, no engagement analytics — even in WhatsApp Communities." },
+  { icon: ShieldAlert,     title: "Real fraud risk",        desc: "UK Action Fraud logged 636 reports of WhatsApp group-chat scams in H1 2024 alone, often someone impersonating a member to solicit money." },
+  { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, no engagement analytics, even in WhatsApp Communities." },
 ];
 
 /** A hero stat tile whose number counts up from 0 the moment it scrolls into
@@ -251,9 +251,9 @@ function OnboardingForm() {
               pathLength={1} style={{ strokeDasharray: 1, strokeDashoffset: 1, animation: "draw-check 500ms 150ms ease-out forwards" }} />
           </svg>
         </div>
-        <h3 className="font-[family-name:var(--font-display)] mb-2.5" style={{ fontSize: "1.35rem", color: "var(--foreground)" }}>Thanks — we&apos;ve got it.</h3>
+        <h3 className="font-[family-name:var(--font-display)] mb-2.5" style={{ fontSize: "1.35rem", color: "var(--foreground)" }}>Thanks, we&apos;ve got it.</h3>
         <p className="max-w-[42ch]" style={{ color: "var(--muted-foreground)", fontSize: "0.925rem", lineHeight: 1.7 }}>
-          Our team will reach out to <strong style={{ color: "var(--foreground)" }}>{form.contactEmail}</strong> within one business day to get {form.institutionName} set up — free, as always.
+          Our team will reach out to <strong style={{ color: "var(--foreground)" }}>{form.contactEmail}</strong> within one business day to get {form.institutionName} set up, free as always.
         </p>
         <style jsx>{`@keyframes draw-check { to { stroke-dashoffset: 0; } }`}</style>
       </div>
@@ -307,7 +307,7 @@ function OnboardingForm() {
       </div>
       <FormError message={error} />
       <Button type="submit" className="w-full h-12 text-[15px] font-semibold gap-2" isLoading={submitting} loadingText="Sending your request...">
-        Get onboarded — free <ArrowRight size={15} />
+        Get onboarded, free <ArrowRight size={15} />
       </Button>
       <p className="text-center text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>No cost, no obligation. We&apos;ll be in touch shortly.</p>
     </form>
@@ -374,7 +374,7 @@ export default function PlatformMarketingPage() {
 
           <div className="hidden md:flex items-center gap-2">
             <Button size="sm" className="text-[13px] font-semibold gap-1.5 rounded-full px-5" onClick={() => scrollToSection("#onboard")}>
-              Get onboarded — free <ArrowRight size={12} />
+              Get onboarded, free <ArrowRight size={12} />
             </Button>
           </div>
 
@@ -397,7 +397,7 @@ export default function PlatformMarketingPage() {
             ))}
             <div className="mt-4 pt-4 flex flex-col gap-2.5" style={{ borderTop: "1px solid var(--border)" }}>
               <Button className="w-full font-semibold gap-2" onClick={() => { scrollToSection("#onboard"); setMenuOpen(false); }}>
-                Get onboarded — free <ArrowRight size={14} />
+                Get onboarded, free <ArrowRight size={14} />
               </Button>
             </div>
           </div>
@@ -435,7 +435,7 @@ export default function PlatformMarketingPage() {
           </h1>
           <p className="mb-10 max-w-[52ch] mx-auto"
             style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-            One home for your alumni — jobs, fundraising, mentorship, and events, all in one place.{" "}
+            One home for your alumni: jobs, fundraising, mentorship, and events, all in one place.{" "}
             Built for schools, universities, and any community that wants to stay connected.
           </p>
           <div className="flex flex-col items-center gap-4 mb-14">
@@ -576,7 +576,7 @@ export default function PlatformMarketingPage() {
               One portal. Every alumni need.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Everything your alumni association needs to stay connected — none of it costs your institution anything.
+              Everything your alumni association needs to stay connected, none of it costs your institution anything.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
@@ -588,7 +588,7 @@ export default function PlatformMarketingPage() {
               style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
               <div>
                 <p className="text-[14px] font-semibold text-white mb-1">Ready to bring this to your alumni?</p>
-                <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution — it's free to get started.</p>
+                <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution, it's free to get started.</p>
               </div>
               <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
             </button>
@@ -607,7 +607,7 @@ export default function PlatformMarketingPage() {
                 You&apos;re already running this over WhatsApp. It shows.
               </h2>
               <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-                It&apos;s free and everyone already has it — but a chat app was never built to run a community. Here&apos;s
+                It&apos;s free and everyone already has it, but a chat app was never built to run a community. Here&apos;s
                 what that actually costs you.
               </p>
             </div>
@@ -729,7 +729,7 @@ export default function PlatformMarketingPage() {
               </h2>
               <p className="max-w-[46ch] mb-8" style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
                 Tell us a little about your institution and where to reach you. Our team will follow up to configure
-                your portal, your branding, and your first admin account — free, from day one.
+                your portal, your branding, and your first admin account, free from day one.
               </p>
               <div className="space-y-4">
                 {[

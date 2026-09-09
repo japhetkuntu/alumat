@@ -103,7 +103,7 @@ function PendingEditDiff({ listing }: { listing: BusinessListing }) {
   return (
     <div className="space-y-2 rounded-md border border-warning/30 bg-warning/5 p-3">
       <p className="text-[11.5px] font-bold text-warning uppercase tracking-wide flex items-center gap-1.5">
-        <AlertCircle size={12} />Pending edit — proposed changes
+        <AlertCircle size={12} />Pending edit: proposed changes
       </p>
       <div className="space-y-1.5">
         {changedKeys.map((k) => (
@@ -430,7 +430,7 @@ export default function AdminBusinessDirectoryPage() {
       <Dialog open={!!editTarget} onOpenChange={(v) => { if (!v) setEditTarget(null); }}>
         {editInit && (
           <ListingForm
-            title={`Edit — ${editTarget?.businessName}`}
+            title={`Edit ${editTarget?.businessName}`}
             init={editInit}
             saving={updateMut.isPending}
             onSave={(f) => editTarget && updateMut.mutate({ id: editTarget.id, f })}

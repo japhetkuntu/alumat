@@ -286,7 +286,7 @@ export default function AdminCampaignsPage() {
 
       {editCampaign && (
         <CampaignForm
-          title={`Edit — ${editCampaign.title}`}
+          title={`Edit ${editCampaign.title}`}
           init={{
             title: editCampaign.title,
             description: editCampaign.description ?? "",

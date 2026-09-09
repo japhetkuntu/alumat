@@ -14,8 +14,8 @@ export default function PrivacyPage() {
           (Act 843), and applies to every Institution portal hosted on the Platform.
         </p>
         <p>
-          In most cases, the Institution decides why and how Members&apos; data is collected — for example, which
-          fields are required at registration, or which fundraisers are run — which makes the Institution the
+          In most cases, the Institution decides why and how Members&apos; data is collected, for example, which
+          fields are required at registration, or which fundraisers are run, which makes the Institution the
           data controller for its own Members&apos; records. We act as the data processor that stores and runs
           that data on the Institution&apos;s behalf, and we are separately the controller for platform-level
           records like billing and security logs. If you are unsure which applies to a specific piece of data,
@@ -26,42 +26,42 @@ export default function PrivacyPage() {
       <Section heading="2. What we collect">
         <p><strong style={{ color: "var(--foreground)" }}>From Members, when you register or use a portal:</strong></p>
         <ul className="list-disc pl-5 space-y-1.5">
-          <li>Identity and contact details — full name, email address, mobile number, graduation year, student
+          <li>Identity and contact details: full name, email address, mobile number, graduation year, student
             ID, department;</li>
-          <li>Profile details you choose to add — company, job title, location, LinkedIn URL, bio, profile
+          <li>Profile details you choose to add: company, job title, location, LinkedIn URL, bio, profile
             photo;</li>
-          <li>Location, only if you turn on the Alumni Map — the city/country you entered, nothing more precise;</li>
-          <li>Activity data — event RSVPs, forum and class-note posts, job applications, mentorship requests,
+          <li>Location, only if you turn on the Alumni Map: the city/country you entered, nothing more precise;</li>
+          <li>Activity data: event RSVPs, forum and class-note posts, job applications, mentorship requests,
             community memberships;</li>
-          <li>Payment records — the amount, date, fundraiser or membership dues item, and status of a contribution or payment.
+          <li>Payment records: the amount, date, fundraiser or membership dues item, and status of a contribution or payment.
             We do not receive or store your card number, CVV, or mobile money PIN; those go directly to
             our payment processor;</li>
-          <li>Notification preferences — whether you&apos;ve opted in to SMS alerts, and the number they&apos;re sent
+          <li>Notification preferences: whether you&apos;ve opted in to SMS alerts, and the number they&apos;re sent
             to;</li>
-          <li>Technical data — IP address, browser/device type, and basic usage logs, collected automatically for
+          <li>Technical data: IP address, browser/device type, and basic usage logs, collected automatically for
             security and to keep the service running.</li>
         </ul>
         <p><strong style={{ color: "var(--foreground)" }}>From Institution staff:</strong> name, work email, and role,
           used to manage staff access to the admin console.</p>
         <p><strong style={{ color: "var(--foreground)" }}>From guest payers:</strong> if you pay a fundraiser or membership dues item without
-          an account, we collect the payment amount, reference, and — only if you choose to provide one — an
+          an account, we collect the payment amount, reference, and (only if you choose to provide one) an
           email address to receive a receipt.</p>
       </Section>
 
       <Section heading="3. Why we process it">
         <p>Under Act 843, we rely on the following legal bases:</p>
         <ul className="list-disc pl-5 space-y-1.5">
-          <li><strong style={{ color: "var(--foreground)" }}>Performance of a contract</strong> — creating and
+          <li><strong style={{ color: "var(--foreground)" }}>Performance of a contract</strong>: creating and
             running your account, showing your directory listing to fellow Members, processing a payment you
             initiate, sending you the account emails needed to operate the service (like password resets and
             payment receipts);</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Consent</strong> — showing your location on the
+          <li><strong style={{ color: "var(--foreground)" }}>Consent</strong>: showing your location on the
             Alumni Map, sending you SMS notifications, and any marketing communications. You can withdraw this
             consent at any time from your profile settings, and we stop that specific use going forward;</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Legitimate interest</strong> — keeping the Platform
+          <li><strong style={{ color: "var(--foreground)" }}>Legitimate interest</strong>: keeping the Platform
             secure (fraud prevention, abuse detection), improving reliability, and maintaining audit logs of
             staff actions on an Institution&apos;s portal;</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Legal obligation</strong> — retaining payment and
+          <li><strong style={{ color: "var(--foreground)" }}>Legal obligation</strong>: retaining payment and
             transaction records for the period required under Ghanaian financial and tax record-keeping rules.</li>
         </ul>
       </Section>
@@ -70,25 +70,25 @@ export default function PrivacyPage() {
         <p>We share personal data only where it is needed to run the Platform, and always under a contract that
           requires the recipient to protect it:</p>
         <ul className="list-disc pl-5 space-y-1.5">
-          <li><strong style={{ color: "var(--foreground)" }}>Our payment processor</strong> — processes online payments; they
+          <li><strong style={{ color: "var(--foreground)" }}>Our payment processor</strong>: processes online payments; they
             receive what is needed to complete a transaction (amount, email, payment method details you enter
             directly with them);</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Arkesel</strong> — delivers SMS notifications when
+          <li><strong style={{ color: "var(--foreground)" }}>Arkesel</strong>: delivers SMS notifications when
             you have opted in; they receive your phone number and the message content, nothing more. (We also
-            integrate with a WhatsApp provider for a future release — it is not active during the current
+            integrate with a WhatsApp provider for a future release; it is not active during the current
             pilot, and this policy will be updated before it is turned on.)</li>
           <li><strong style={{ color: "var(--foreground)" }}>Cloud hosting and storage providers</strong>{" "}
-            (including DigitalOcean) — store the Platform&apos;s database and uploaded files (like profile photos
+            (including DigitalOcean): store the Platform&apos;s database and uploaded files (like profile photos
             and fundraiser banners) securely;</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Your own Institution&apos;s staff</strong> — the staff
+          <li><strong style={{ color: "var(--foreground)" }}>Your own Institution&apos;s staff</strong>: the staff
             of the Institution whose portal you registered on can see the profile and activity data needed to
             run that portal (for example, to approve your membership or confirm a manual payment). Staff at one
             Institution cannot see another Institution&apos;s Members;</li>
-          <li><strong style={{ color: "var(--foreground)" }}>Other Members</strong> — your directory listing, and
+          <li><strong style={{ color: "var(--foreground)" }}>Other Members</strong>: your directory listing, and
             anything you post in forums, class notes, or communities, is visible to fellow Members of the same
             Institution, per the visibility settings that feature offers;</li>
           <li>
-            <strong style={{ color: "var(--foreground)" }}>Law enforcement or regulators</strong> — only where we
+            <strong style={{ color: "var(--foreground)" }}>Law enforcement or regulators</strong>: only where we
             are legally required to disclose it.
           </li>
         </ul>
@@ -118,7 +118,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-5 space-y-1.5">
           <li>Know what personal data we hold about you and how it is used;</li>
           <li>Access a copy of your personal data;</li>
-          <li>Correct inaccurate or incomplete data — most profile fields can be edited directly from your
+          <li>Correct inaccurate or incomplete data: most profile fields can be edited directly from your
             account;</li>
           <li>Object to, or ask us to stop, a specific processing activity (for example, withdrawing your Alumni
             Map or notification consent);</li>

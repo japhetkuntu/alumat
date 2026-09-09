@@ -194,16 +194,16 @@ const NAV_LINKS = [
 ];
 
 const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; featureKey: string | undefined; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
-  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards — first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
+  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards: first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
   { icon: Users,        label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora.", featureKey: "Directory", illustration: DirectoryIllustration },
   { icon: CreditCard,   label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support.", featureKey: "Contributions", illustration: FundraisingIllustration },
   { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events", illustration: EventsIllustration },
   { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration },
-  { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association — pay online, pick up or receive your order.", featureKey: "Store", illustration: StoreIllustration },
-  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between — added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
+  { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association, pay online, pick up or receive your order.", featureKey: "Store", illustration: StoreIllustration },
+  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between, added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
   { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights", illustration: SpotlightIllustration },
   { icon: Building2,    label: "Businesses",    title: "Support alumni-owned business", desc: "Browse businesses run by fellow graduates, or list your own and get discovered by the network.", featureKey: "BusinessDirectory", illustration: BusinessIllustration },
-  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites — you choose what reaches you.", featureKey: undefined, illustration: NotificationsIllustration },
+  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites: you choose what reaches you.", featureKey: undefined, illustration: NotificationsIllustration },
 ];
 
 const STATS = [
@@ -219,7 +219,7 @@ const USE_CASES = [
     eyebrow: "Career",
     image: IMG.storyJobs,
     scenario: "The job that never reached a public board",
-    desc: "Alumni employers post directly to the portal first — before LinkedIn, before agencies. Being in the network means seeing those roles first.",
+    desc: "Alumni employers post directly to the portal first, before LinkedIn, before agencies. Being in the network means seeing those roles first.",
   },
   {
     icon: CreditCard,
@@ -233,7 +233,7 @@ const USE_CASES = [
     eyebrow: "Mentorship",
     image: IMG.storyMentor,
     scenario: "The mentor who's already done it",
-    desc: "Every programme, every career path — there's a graduate ahead of you on that road. The mentorship feature is how you find them.",
+    desc: "Every programme, every career path: there's a graduate ahead of you on that road. The mentorship feature is how you find them.",
   },
 ];
 
@@ -788,7 +788,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
             </p>
             <h1 className="font-[family-name:var(--font-display)] mb-5 max-w-[24ch]"
               style={{ fontSize: "clamp(2rem,4.4vw,3.4rem)", fontWeight: 700, lineHeight: 1.14, letterSpacing: "-0.02em", color: "white" }}>
-              {content?.heroHeadline || "Every graduate, one network — wherever they are."}
+              {content?.heroHeadline || "Every graduate, one network, wherever they are."}
             </h1>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/register">
@@ -864,7 +864,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
             <Link href="/register" className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 transition-all duration-500 hover:-translate-y-1"
               style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
               <div>
-                <p className="text-[14px] font-semibold text-white mb-1">That&apos;s everything — see it live</p>
+                <p className="text-[14px] font-semibold text-white mb-1">That&apos;s everything, see it live</p>
                 <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Create a free account and explore the full portal.</p>
               </div>
               <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />

@@ -81,7 +81,7 @@ export default function MemberResourcesPage() {
       <PageHeader
         eyebrow="Library"
         title="Resources"
-        description="Guides, articles, and tools curated by the alumni team — fuel your career and professional growth."
+        description="Guides, articles, and tools curated by the alumni team, fuel your career and professional growth."
       />
 
       {/* Filter bar */}

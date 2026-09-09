@@ -13,6 +13,7 @@ import { Landmark, Clock3 } from "@alumni/ui";
 import {
   getInstitutions, getAllPayments, getPayoutForecast,
   getPendingBatchPayouts, approveBatchPayout, rejectBatchPayout,
+  getPendingInstitutionPayouts, approveInstitutionPayout, rejectInstitutionPayout,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 
@@ -58,6 +59,24 @@ export default function BillingPage() {
   const rejectMut = useMutation({
     mutationFn: (batchId: string) => rejectBatchPayout(batchId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-batch-payouts"] }); toast.success("Batch payout rejected"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const { data: pendingInstitutionPayouts = [], isLoading: pendingInstitutionPayoutsLoading } = useQuery({
+    queryKey: ["platform-pending-institution-payouts"],
+    queryFn: getPendingInstitutionPayouts,
+    staleTime: 60 * 1000,
+  });
+
+  const approveInstitutionMut = useMutation({
+    mutationFn: (institutionId: string) => approveInstitutionPayout(institutionId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-institution-payouts"] }); toast.success("Institution payout approved"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const rejectInstitutionMut = useMutation({
+    mutationFn: (institutionId: string) => rejectInstitutionPayout(institutionId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-institution-payouts"] }); toast.success("Institution payout rejected"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -154,7 +173,7 @@ export default function BillingPage() {
                 </TableBody>
               </Table>
             </Card>
-            <p className="text-[11px] text-muted-foreground mt-2">Estimated from confirmed transactions — not a figure confirmed by Paystack. Matches exactly what each institution's own SuperAdmins see on their dashboard.</p>
+            <p className="text-[11px] text-muted-foreground mt-2">Estimated from confirmed transactions, not a figure confirmed by Paystack. Matches exactly what each institution's own SuperAdmins see on their dashboard.</p>
           </>
         ) : null}
       </div>
@@ -200,14 +219,52 @@ export default function BillingPage() {
             </TableBody>
           </Table>
         </Card>
-        <p className="text-[11px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the batch over immediately — same platform fee percentage as its institution.</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the batch over immediately, same platform fee percentage as its institution.</p>
+      </div>
+
+      <div className="mb-5">
+        <p className="text-[14px] font-semibold mb-3">Institution payout approvals</p>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Institution</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingInstitutionPayoutsLoading ? (
+                <TableRow><TableCell colSpan={4}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+              ) : pendingInstitutionPayouts.length === 0 ? (
+                <TableEmpty title="No pending institution payout setups" colSpan={4} />
+              ) : pendingInstitutionPayouts.map((p) => (
+                <TableRow key={p.institutionId}>
+                  <TableCell className="font-semibold">{p.institutionName}</TableCell>
+                  <TableCell>
+                    <span className="text-[13px]">{p.settlementBankName} · {p.settlementAccountNumber} · {p.settlementAccountName}</span>
+                  </TableCell>
+                  <TableCell className="text-[13px] text-muted-foreground">{formatDate(p.submittedAt)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button size="sm" variant="outline" isLoading={rejectInstitutionMut.isPending} onClick={() => rejectInstitutionMut.mutate(p.institutionId)}>Reject</Button>
+                      <Button size="sm" isLoading={approveInstitutionMut.isPending} onClick={() => approveInstitutionMut.mutate(p.institutionId)}>Approve</Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+        <p className="text-[11px] text-muted-foreground mt-2">Approving creates (or links) the institution's own Paystack subaccount, same platform fee percentage already on file.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 mb-5 items-start">
         <Card>
           <div className="px-5 py-4 border-b border-border">
             <p className="text-[14px] font-semibold">Successful revenue trend</p>
-            <p className="text-[12px] text-muted-foreground mt-0.5">Last 6 months, by source — every institution combined.</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">Last 6 months, by source, every institution combined.</p>
           </div>
           <CardContent className="p-5">
             <TrendChart

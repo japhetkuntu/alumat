@@ -539,7 +539,7 @@ export default function MemberContributionsPage() {
         <PageHeader
           eyebrow="Financial overview"
           title="My Contributions"
-          description="Fund projects & welfare — easy payments for school development fundraisers, year-group dues, and member welfare support."
+          description="Fund projects & welfare: easy payments for school development fundraisers, year-group dues, and member welfare support."
         />
       </div>
 
@@ -622,7 +622,7 @@ export default function MemberContributionsPage() {
                     {r.cardLast4 && ` · ${r.cardType ?? "card"} •••• ${r.cardLast4}`}
                   </p>
                   <p className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
-                    {r.status === "Paused" ? "Paused — fundraiser is no longer active" : `Next charge ${formatDate(r.nextChargeDate)}`}
+                    {r.status === "Paused" ? "Paused: fundraiser is no longer active" : `Next charge ${formatDate(r.nextChargeDate)}`}
                   </p>
                 </div>
                 <Button

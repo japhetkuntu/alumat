@@ -136,6 +136,8 @@ export interface InstitutionProfileResponse {
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
   /** Platform-controlled feature gates, plus the two self-service ones below (see updateSelfServiceFeatures) — a key's presence here means that feature is OFF. */
   disabledFeatures: string[];
+  /** Whether a just-registered member sees an "Activate your membership" payment prompt on the registration success screen. Opt-in, defaults to false. */
+  promptMembershipActivationAtSignup: boolean;
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
   /** Overrides the Member Portal landing page's hero photo(s), shown as a carousel — falls back to generic stock art when empty. */
@@ -144,6 +146,11 @@ export interface InstitutionProfileResponse {
   heroHeadline?: string | null;
   /** Shareable Member Portal URL for this institution — null if the backend has no MemberPortalBaseDomain configured. */
   memberPortalUrl?: string | null;
+  /** None (never submitted) — Pending (awaiting platform review) — Approved (settlement fields below are live) — Rejected. */
+  payoutStatus: "None" | "Pending" | "Approved" | "Rejected";
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
 }
 
 export async function getInstitutionProfile(): Promise<InstitutionProfileResponse> {
@@ -181,8 +188,27 @@ export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired
 }
 
 /** The two self-service feature toggles institution admins can flip themselves — the re-engagement digest email and recurring (monthly) giving. Everything else in disabledFeatures is platform-staff-only. */
-export async function updateSelfServiceFeatures(digestEnabled: boolean, recurringGivingEnabled: boolean): Promise<InstitutionProfileResponse> {
-  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", { digestEnabled, recurringGivingEnabled });
+export async function updateSelfServiceFeatures(
+  digestEnabled: boolean,
+  recurringGivingEnabled: boolean,
+  promptMembershipActivationAtSignup: boolean,
+): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", { digestEnabled, recurringGivingEnabled, promptMembershipActivationAtSignup });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** Submit (or resubmit) this institution's own settlement details for platform review — SuperAdmin only, never takes effect immediately. Banks/account-resolve reuse the same Paystack proxy as batch payout setup (see getBatchPayoutBanks/resolveBatchPayoutAccount below). */
+export async function submitInstitutionPayoutSetup(body: {
+  settlementBankCode: string;
+  settlementBankName: string;
+  settlementAccountNumber: string;
+  settlementAccountName: string;
+}): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.post<ApiResponse<InstitutionProfileResponse>>("/institution/me/payout-setup", body);
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");

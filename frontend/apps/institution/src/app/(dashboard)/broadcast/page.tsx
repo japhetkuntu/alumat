@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, Send, MessageSquare, Bell } from "@alumni/ui";
+import { Loader2, Send, MessageSquare, Bell, Lock } from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
@@ -11,9 +11,11 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { getBroadcastRecipientCount, sendBroadcast, type BroadcastFilter } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Any status" },
@@ -23,6 +25,9 @@ const STATUS_OPTIONS = [
 ];
 
 export default function BroadcastPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SuperAdmin";
+
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [inApp, setInApp] = useState(true);
@@ -42,6 +47,7 @@ export default function BroadcastPage() {
     queryKey: ["broadcast-recipient-count", filter],
     queryFn: () => getBroadcastRecipientCount(filter),
     placeholderData: (prev) => prev,
+    enabled: isSuperAdmin,
   });
 
   const sendMut = useMutation({
@@ -63,6 +69,18 @@ export default function BroadcastPage() {
 
   const channelsSelected = inApp || sms;
   const canSend = message.trim().length > 0 && channelsSelected;
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
+        <EmptyState
+          icon={<Lock size={40} />}
+          title="Access denied"
+          description="Only Super Admins can send broadcasts."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[820px] mx-auto">
@@ -124,7 +142,7 @@ export default function BroadcastPage() {
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              SMS is sent to every matching member with a phone number on file, regardless of their individual SMS notification preference — this is intentional for urgent, time-sensitive announcements.
+              SMS is sent to every matching member with a phone number on file, regardless of their individual SMS notification preference. This is intentional for urgent, time-sensitive announcements.
             </p>
           </div>
 

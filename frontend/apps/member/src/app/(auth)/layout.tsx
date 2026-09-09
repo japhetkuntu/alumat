@@ -15,8 +15,8 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
     ? `Welcome to the ${institutionName} alumni network.`
     : "Welcome to your alumni network.");
   const subtext = theme?.authSubtext || (institutionName
-    ? `Stay connected with fellow graduates, find opportunities, and support ${institutionName} — all from one place built for you.`
-    : "Stay connected with fellow graduates, find opportunities, and support one another — all from one place built for you.");
+    ? `Stay connected with fellow graduates, find opportunities, and support ${institutionName}, all from one place built for you.`
+    : "Stay connected with fellow graduates, find opportunities, and support one another, all from one place built for you.");
   const markImage = theme?.iconUrl || theme?.logoUrl;
 
   return (

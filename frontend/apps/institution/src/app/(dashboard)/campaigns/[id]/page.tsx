@@ -175,7 +175,7 @@ export default function CampaignDetailPage() {
 
           <div className="mt-1 rounded-[6px] border border-border p-4">
             <h3 className="text-[13.5px] font-semibold">Online payment overview</h3>
-            <p className="text-xs text-muted-foreground mt-1">Online payments are processed securely — your institution receives the full amount members pay.</p>
+            <p className="text-xs text-muted-foreground mt-1">Online payments are processed securely; your institution receives the full amount members pay.</p>
             {loadingPaystackSummary ? (
               <p className="text-sm text-muted-foreground mt-2">Loading payment summary…</p>
             ) : paystackSummary ? (
@@ -279,7 +279,7 @@ export default function CampaignDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2"><Megaphone size={16} className="text-primary" />Updates</CardTitle>
-            <p className="text-[12.5px] text-muted-foreground">Post progress here so givers see what their money did — not just at the end.</p>
+            <p className="text-[12.5px] text-muted-foreground">Post progress here so givers see what their money did, not just at the end.</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <CampaignUpdatesSection campaignId={id} />
@@ -432,10 +432,10 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                   <Input type="number" value={membershipYear} onChange={(e) => { const y = Number(e.target.value); setMembershipYear(y); setTitle(`Dues ${y}`); }} required />
                   <p className="text-xs text-muted-foreground">
                     {membershipYear === currentYear
-                      ? "Current year — members must pay this to stay active."
+                      ? "Current year: members must pay this to stay active."
                       : membershipYear > currentYear
-                        ? "Future year — optional early payment, does not affect active status."
-                        : "Past year — for members who haven't paid for previous years."}
+                        ? "Future year: optional early payment, does not affect active status."
+                        : "Past year: for members who haven't paid for previous years."}
                   </p>
                 </div>
               </div>

@@ -170,7 +170,7 @@ export default function AdminLoginPage() {
               className="h-12 text-[15px] px-4"
             />
             <p className="text-[12.5px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>
-              Institution slug — stands in for real subdomain routing until wildcard DNS is set up.
+              Institution slug, stands in for real subdomain routing until wildcard DNS is set up.
             </p>
           </div>
         )}

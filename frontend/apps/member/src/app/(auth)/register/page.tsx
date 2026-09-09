@@ -209,7 +209,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
           style={{ background: "var(--primary)" }}
         >
           <CreditCard size={14} />
-          Activate — {formatCurrency(campaign.amountPerMember)}
+          Activate: {formatCurrency(campaign.amountPerMember)}
         </Link>
 
         <p className="text-center text-[11px]" style={{ color: "var(--muted-foreground)" }}>
@@ -378,13 +378,17 @@ function RegisterForm() {
   const { data: theme } = useQuery({
     queryKey: ["m-register-institution-theme"],
     queryFn: async () => {
-      const res = await publicMemberClient.get<{ data: { requireStudentId: boolean } }>("/public/institution/theme");
+      const res = await publicMemberClient.get<{ data: { requireStudentId: boolean; promptMembershipActivationAtSignup: boolean } }>("/public/institution/theme");
       return res.data.data;
     },
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
   const requireStudentId = theme?.requireStudentId ?? true;
+  // Opt-in per institution (default off) — most institutions don't want a
+  // payment ask on the registration success screen before a member is even
+  // approved. Defaults to false (not shown) until the real value loads.
+  const promptMembershipActivation = theme?.promptMembershipActivationAtSignup ?? false;
   const schema = useMemo(() => buildSchema(requireStudentId, !!googleIdToken), [requireStudentId, googleIdToken]);
 
   const {
@@ -592,7 +596,7 @@ function RegisterForm() {
                       onChange={(e) => updateWorkspaceSlug(e.target.value)}
                     />
                     <p className="text-[12px] text-muted-foreground">
-                      Institution slug — stands in for real subdomain routing until wildcard DNS is set up.
+                      Institution slug, stands in for real subdomain routing until wildcard DNS is set up.
                     </p>
                   </div>
                 )}
@@ -903,16 +907,18 @@ function RegisterForm() {
             </div>
           </div>
 
-          {/* Membership activation */}
-          <div>
-            <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--foreground)" }}>
-              Activate your membership
-            </p>
-            <p className="text-[12.5px] mb-3" style={{ color: "var(--muted-foreground)" }}>
-              Paying the activation fee confirms your alumni status and helps us approve you faster.
-            </p>
-            <MembershipCampaignSection email={email} />
-          </div>
+          {/* Membership activation — opt-in per institution, see Settings > Re-engagement & giving */}
+          {promptMembershipActivation && (
+            <div>
+              <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--foreground)" }}>
+                Activate your membership
+              </p>
+              <p className="text-[12.5px] mb-3" style={{ color: "var(--muted-foreground)" }}>
+                Paying the activation fee confirms your alumni status and helps us approve you faster.
+              </p>
+              <MembershipCampaignSection email={email} />
+            </div>
+          )}
 
           {/* Footer actions */}
           <div className="flex flex-col sm:flex-row gap-3 pt-1">

@@ -58,11 +58,11 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Payout setup — {batch.name}</DialogTitle>
+          <DialogTitle>Payout setup: {batch.name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-[13px] text-muted-foreground">
-            Choose whether this batch's contributions settle into the institution's own account, or its own dedicated one. Either way, this needs platform approval before it takes effect — until then, this batch keeps using the institution's account.
+            Choose whether this batch's contributions settle into the institution's own account, or its own dedicated one. Either way, this needs platform approval before it takes effect. Until then, this batch keeps using the institution's account.
           </p>
           <div className="flex gap-2">
             <Button type="button" size="sm" variant={!useOwn ? "default" : "outline"} onClick={() => setUseOwn(false)}>
@@ -182,7 +182,7 @@ export default function BatchesPage() {
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Batches</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
-            The graduating-class year groups your members register into — set your own list instead of a generic year range.
+            The graduating-class year groups your members register into. Set your own list instead of a generic year range.
           </p>
         </div>
         {isSuperAdmin && (
@@ -229,7 +229,7 @@ export default function BatchesPage() {
               {isLoading ? (
                 <TableSkeleton rows={5} cols={5} />
               ) : batches.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No batches yet — members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No batches yet. Members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
               ) : batches.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.name}</TableCell>

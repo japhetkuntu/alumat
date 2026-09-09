@@ -58,7 +58,7 @@ export function PaymentRedirectOverlay({
         )}
 
         <p className="text-[12.5px] mt-4" style={{ color: "var(--muted-foreground)" }}>
-          Please don&apos;t close this tab — you&apos;ll land on a secure checkout page in a moment.
+          Please don&apos;t close this tab. You&apos;ll land on a secure checkout page in a moment.
         </p>
 
         <div

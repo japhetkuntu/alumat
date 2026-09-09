@@ -203,7 +203,7 @@ export default function ThreadDetailPage() {
           className="flex items-center justify-center gap-2 py-5 card text-[13.5px] font-medium"
           style={{ color: "var(--muted-foreground)" }}
         >
-          <Lock size={14} /> This thread is closed — no new replies
+          <Lock size={14} /> This thread is closed, no new replies
         </div>
       ) : (
         <div className="card p-5 space-y-3">

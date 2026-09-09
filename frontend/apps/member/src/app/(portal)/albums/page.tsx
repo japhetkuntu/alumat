@@ -30,7 +30,7 @@ export default function MemberAlbumsPage() {
       <PageHeader
         eyebrow="Community"
         title="Photo Albums"
-        description="Relive the moments — browse photo albums from events, gatherings, and reunions."
+        description="Relive the moments: browse photo albums from events, gatherings, and reunions."
       />
 
       {isLoading ? (

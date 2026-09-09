@@ -27,7 +27,7 @@ import { toast } from "sonner";
 
 const STATUS_META: Record<BusinessListingStatus, { label: string; variant: "success" | "warning" | "destructive" | "neutral"; icon: typeof CheckCircle2; explanation: string }> = {
   Approved: { label: "Approved", variant: "success", icon: CheckCircle2, explanation: "Your listing is live and visible in the public directory." },
-  Pending: { label: "Pending Review", variant: "warning", icon: Clock, explanation: "An admin is reviewing your listing — it isn't visible in the public directory yet." },
+  Pending: { label: "Pending Review", variant: "warning", icon: Clock, explanation: "An admin is reviewing your listing. It isn't visible in the public directory yet." },
   Rejected: { label: "Rejected", variant: "destructive", icon: XCircle, explanation: "This listing was rejected. Edit it and it will be resubmitted for review." },
   Blacklisted: { label: "Blacklisted", variant: "neutral", icon: Ban, explanation: "This listing has been blacklisted by an admin and can no longer be edited. You can still hide it from the directory." },
 };
@@ -299,7 +299,7 @@ export default function MyBusinessListingPage() {
             )}
           </div>
           {listing.isHiddenByMember && (
-            <p className="text-[12px] text-muted-foreground">Hidden — members won&apos;t see this listing in the directory until you unhide it.</p>
+            <p className="text-[12px] text-muted-foreground">Hidden. Members won&apos;t see this listing in the directory until you unhide it.</p>
           )}
         </CardContent>
       </Card>
@@ -370,7 +370,7 @@ function BusinessFormFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label>Contact — at least one required</Label>
+        <Label>Contact (at least one required)</Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="Phone number" />
           <Input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email address" type="email" />

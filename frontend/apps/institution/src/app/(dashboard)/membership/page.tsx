@@ -116,7 +116,7 @@ export default function AdminMembershipPage() {
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Dues</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5 max-w-2xl">
-            Recurring dues cycles that determine active membership. Members must pay the <strong>current year&apos;s</strong> dues to remain active — future years are optional early payment.
+            Recurring dues cycles that determine active membership. Members must pay the <strong>current year&apos;s</strong> dues to remain active; future years are optional early payment.
           </p>
         </div>
         {isSuperAdmin && (
@@ -169,10 +169,10 @@ export default function AdminMembershipPage() {
                   <Input type="number" value={form.membershipYear} onChange={(e) => { const y = Number(e.target.value); f("membershipYear", y); f("title", `Dues ${y}`); }} required />
                   <p className="text-xs text-muted-foreground">
                     {form.membershipYear === currentYear
-                      ? "Current year — members must pay this to stay active."
+                      ? "Current year: members must pay this to stay active."
                       : form.membershipYear > currentYear
-                        ? "Future year — optional early payment, does not affect active status."
-                        : "Past year — for members who haven't paid for previous years."}
+                        ? "Future year: optional early payment, does not affect active status."
+                        : "Past year: for members who haven't paid for previous years."}
                   </p>
                 </div>
               </div>

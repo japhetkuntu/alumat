@@ -50,7 +50,7 @@ export default function SupportPage() {
     <div className="p-7 max-w-[1200px]">
       <div className="mb-6">
         <h1 className="text-[24px] font-bold">Support</h1>
-        <p className="text-muted-foreground text-[13px] mt-1">Report an issue or ask the platform team a question — they'll respond here.</p>
+        <p className="text-muted-foreground text-[13px] mt-1">Report an issue or ask the platform team a question. They'll respond here.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-4">

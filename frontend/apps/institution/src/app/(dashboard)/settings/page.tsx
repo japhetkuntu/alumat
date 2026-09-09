@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2, Copy,
+  Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2, Copy, Landmark,
 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -18,9 +18,12 @@ import { BrandPreview } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { LinkOrUpload } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
+import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateLandingContent, updateMemberActivePolicy,
-  updateSelfServiceFeatures,
+  updateSelfServiceFeatures, submitInstitutionPayoutSetup,
+  getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
 } from "@/lib/institution-api";
@@ -84,6 +87,104 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
         />
       </button>
     </div>
+  );
+}
+
+const payoutStatusVariant: Record<InstitutionProfileResponse["payoutStatus"], "neutral" | "warning" | "success" | "destructive"> = {
+  None: "neutral",
+  Pending: "warning",
+  Approved: "success",
+  Rejected: "destructive",
+};
+
+/**
+ * Submit (or resubmit) this institution's own settlement details for platform
+ * review — never takes effect immediately, mirroring the Batch payout setup
+ * flow exactly (see BatchesController.SubmitPayoutSetup / the "Payout setup"
+ * modal on the Batches page). SuperAdmin only.
+ */
+function PayoutSetupCard({ institution }: { institution: InstitutionProfileResponse | undefined }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<SettlementAccountValue>({
+    settlementBankCode: "",
+    settlementBankName: "",
+    settlementAccountNumber: "",
+    settlementAccountName: "",
+  });
+  const qc = useQueryClient();
+
+  const submitMut = useMutation({
+    mutationFn: () => submitInstitutionPayoutSetup(value),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["institution-profile"] });
+      toast.success("Submitted for platform review");
+      setOpen(false);
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const payoutStatus = institution?.payoutStatus ?? "None";
+
+  return (
+    <Card className="border-border/40 lg:col-span-2">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Landmark size={16} className="text-primary" />
+          <p className="font-semibold text-[15px]">Payments</p>
+          <Badge variant={payoutStatusVariant[payoutStatus]} className="ml-1">
+            {payoutStatus === "None" ? "Not set up" : payoutStatus}
+          </Badge>
+        </div>
+        <p className="text-[12.5px] text-muted-foreground -mt-1 mb-3">
+          Where your dues and campaign contributions settle. Submitting sends your details to the platform for review; nothing changes until they're approved.
+        </p>
+
+        {payoutStatus === "Approved" && institution?.settlementBankName && (
+          <p className="text-[13px] mb-3">
+            Currently settling to <span className="font-semibold">{institution.settlementBankName} · {institution.settlementAccountNumber} · {institution.settlementAccountName}</span>
+          </p>
+        )}
+        {payoutStatus === "Pending" && (
+          <p className="text-[13px] text-muted-foreground mb-3">Your submitted details are awaiting platform review.</p>
+        )}
+        {payoutStatus === "Rejected" && (
+          <p className="text-[13px] text-muted-foreground mb-3">Your last submission was declined by the platform. You can submit again below.</p>
+        )}
+
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          {payoutStatus === "None" ? "Set up payments" : "Update settlement details"}
+        </Button>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Payout setup</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-[13px] text-muted-foreground">
+                This needs platform approval before it takes effect. Until then, your current settlement details (if any) are unchanged.
+              </p>
+              <SettlementAccountFields
+                value={value}
+                onChange={setValue}
+                getBanks={getBatchPayoutBanks}
+                resolveAccount={resolveBatchPayoutAccount}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button
+                disabled={!value.settlementBankCode || !value.settlementAccountNumber || !value.settlementAccountName}
+                isLoading={submitMut.isPending}
+                onClick={() => submitMut.mutate()}
+              >
+                Submit for review
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -155,8 +256,8 @@ export default function BrandingSettingsPage() {
   });
 
   const featuresMutation = useMutation({
-    mutationFn: (features: { digestEnabled: boolean; recurringGivingEnabled: boolean }) =>
-      updateSelfServiceFeatures(features.digestEnabled, features.recurringGivingEnabled),
+    mutationFn: (features: { digestEnabled: boolean; recurringGivingEnabled: boolean; promptMembershipActivationAtSignup: boolean }) =>
+      updateSelfServiceFeatures(features.digestEnabled, features.recurringGivingEnabled, features.promptMembershipActivationAtSignup),
     onSuccess: () => {
       toast.success("Features updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
@@ -224,7 +325,7 @@ export default function BrandingSettingsPage() {
       </header>
 
       <div className="flex gap-6 border-b border-border mb-6 overflow-x-auto">
-        {TABS.map((t) => (
+        {TABS.filter((t) => !(isScopedAdmin && t === "Landing content")).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -256,7 +357,7 @@ export default function BrandingSettingsPage() {
               <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-2.5">
                 <Lock size={14} className="text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  These fields are locked. Branding, portal titles, and login page content are managed by the platform team — contact support to request a change.
+                  These fields are locked. Branding, portal titles, and login page content are managed by the platform team; contact support to request a change.
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -304,69 +405,78 @@ export default function BrandingSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 lg:col-span-2">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <Shield size={16} className="text-primary" />
-                <p className="font-semibold text-[15px]">Active member policy</p>
-              </div>
-              {isScopedAdmin ? (
-                <p className="text-muted-foreground mt-2">Only Admin and SuperAdmin users can manage the active member policy.</p>
-              ) : (
-                <>
-                  <p className="text-[12.5px] text-muted-foreground -mt-1">
-                    Decide what makes a member &quot;active&quot; across both portals — this changes the messages and restrictions members see.
-                  </p>
-                  <Toggle
-                    checked={institution?.memberActivePolicy === "DuesRequired"}
-                    onChange={(checked) => policyMutation.mutate(checked ? "DuesRequired" : "ApprovedOnly")}
-                    label="Require dues payment for active status"
-                    description={
-                      institution?.memberActivePolicy === "ApprovedOnly"
-                        ? "Off — any approved member is active regardless of dues paid."
-                        : "On — a member is active only once current and past dues are paid."
-                    }
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {/* SuperAdmin-only cards below — hidden entirely for a ScopedAdmin
+              rather than shown with a "you can't manage this" message, since
+              they have no access to manage any of it. */}
+          {!isScopedAdmin && (
+            <Card className="border-border/40 lg:col-span-2">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Shield size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">Active member policy</p>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-1">
+                  Decide what makes a member &quot;active&quot; across both portals: this changes the messages and restrictions members see.
+                </p>
+                <Toggle
+                  checked={institution?.memberActivePolicy === "DuesRequired"}
+                  onChange={(checked) => policyMutation.mutate(checked ? "DuesRequired" : "ApprovedOnly")}
+                  label="Require dues payment for active status"
+                  description={
+                    institution?.memberActivePolicy === "ApprovedOnly"
+                      ? "Off: any approved member is active regardless of dues paid."
+                      : "On: a member is active only once current and past dues are paid."
+                  }
+                />
+              </CardContent>
+            </Card>
+          )}
 
-          <Card className="border-border/40 lg:col-span-2">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-1">
-                <Megaphone size={16} className="text-primary" />
-                <p className="font-semibold text-[15px]">Re-engagement &amp; giving</p>
-              </div>
-              {isScopedAdmin ? (
-                <p className="text-muted-foreground mt-2">Only Admin and SuperAdmin users can manage these features.</p>
-              ) : (
-                <>
-                  <p className="text-[12.5px] text-muted-foreground -mt-1 mb-1">
-                    Turn these on or off for your members — no platform involvement needed.
-                  </p>
-                  <Toggle
-                    checked={!institution?.disabledFeatures?.includes("Digest")}
-                    onChange={(checked) => featuresMutation.mutate({
-                      digestEnabled: checked,
-                      recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
-                    })}
-                    label="Re-engagement digest"
-                    description="A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."
-                  />
-                  <Toggle
-                    checked={!institution?.disabledFeatures?.includes("RecurringGiving")}
-                    onChange={(checked) => featuresMutation.mutate({
-                      digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
-                      recurringGivingEnabled: checked,
-                    })}
-                    label="Recurring giving"
-                    description="Let members set up a standing monthly gift, charged automatically."
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {!isScopedAdmin && (
+            <Card className="border-border/40 lg:col-span-2">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Megaphone size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">Re-engagement &amp; giving</p>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-1 mb-1">
+                  Turn these on or off for your members. No platform involvement needed.
+                </p>
+                <Toggle
+                  checked={!institution?.disabledFeatures?.includes("Digest")}
+                  onChange={(checked) => featuresMutation.mutate({
+                    digestEnabled: checked,
+                    recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
+                    promptMembershipActivationAtSignup: !!institution?.promptMembershipActivationAtSignup,
+                  })}
+                  label="Re-engagement digest"
+                  description="A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."
+                />
+                <Toggle
+                  checked={!institution?.disabledFeatures?.includes("RecurringGiving")}
+                  onChange={(checked) => featuresMutation.mutate({
+                    digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
+                    recurringGivingEnabled: checked,
+                    promptMembershipActivationAtSignup: !!institution?.promptMembershipActivationAtSignup,
+                  })}
+                  label="Recurring giving"
+                  description="Let members set up a standing monthly gift, charged automatically."
+                />
+                <Toggle
+                  checked={!!institution?.promptMembershipActivationAtSignup}
+                  onChange={(checked) => featuresMutation.mutate({
+                    digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
+                    recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
+                    promptMembershipActivationAtSignup: checked,
+                  })}
+                  label="Prompt membership activation at signup"
+                  description="Show new members a payment ask (or a 'nothing due yet' notice) right on the registration success screen, before they're even approved. Off by default."
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {!isScopedAdmin && <PayoutSetupCard institution={institution} />}
         </div>
       )}
 
@@ -445,7 +555,7 @@ export default function BrandingSettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Banner text</Label>
-                  <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed — effective this year." />
+                  <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed, effective this year." />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -472,7 +582,7 @@ export default function BrandingSettingsPage() {
               </div>
               <CardContent className="p-6 space-y-5">
                 {stories.length === 0 && (
-                  <p className="text-[13px] text-muted-foreground">No custom stories — your landing page falls back to built-in default copy.</p>
+                  <p className="text-[13px] text-muted-foreground">No custom stories: your landing page falls back to built-in default copy.</p>
                 )}
                 {stories.map((story, i) => (
                   <div key={i} className="space-y-3 pb-5 border-b border-border/40 last:border-0 last:pb-0">

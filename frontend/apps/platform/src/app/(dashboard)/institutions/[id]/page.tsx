@@ -197,7 +197,7 @@ export default function InstitutionDetailPage() {
   const inviteMutation = useMutation({
     mutationFn: () => inviteInstitutionStaff(id, inviteForm),
     onSuccess: (created) => {
-      toast.success(`Invited ${created.email} — they'll get an email to set their password.`);
+      toast.success(`Invited ${created.email}. They'll get an email to set their password.`);
       queryClient.invalidateQueries({ queryKey: ["institution-staff", id] });
       setInviteOpen(false);
       setInviteForm({ firstName: "", lastName: "", email: "", role: "Admin" });
@@ -467,7 +467,7 @@ export default function InstitutionDetailPage() {
                 <div>
                   <p className="text-[13px] font-semibold">Require dues payment for active status</p>
                   <p className="text-[12px] text-muted-foreground mt-0.5">
-                    Off (default) — any approved member is active regardless of dues paid. On — a member is only active once current and past dues are paid. Normally the institution's own choice, editable from their own settings too.
+                    Off (default): any approved member is active regardless of dues paid. On: a member is only active once current and past dues are paid. Normally the institution's own choice, editable from their own settings too.
                   </p>
                 </div>
                 <button
@@ -581,7 +581,7 @@ export default function InstitutionDetailPage() {
                 />
                 <ImageUrlField
                   label="Icon URL"
-                  hint="Small square icon — used for the browser tab and app icon, separate from the logo."
+                  hint="Small square icon, used for the browser tab and app icon, separate from the logo."
                   value={branding.iconUrl}
                   onChange={(url) => setBranding((b) => ({ ...b!, iconUrl: url }))}
                   placeholder="https://…/icon.png"
@@ -662,7 +662,7 @@ export default function InstitutionDetailPage() {
           <div className="px-5 py-4 border-b border-border">
             <p className="text-[14px] font-semibold">Feature access</p>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              All features are enabled by default. Turning one off removes it from both this institution&apos;s staff and member portals — enforced on the backend too, not just hidden.
+              All features are enabled by default. Turning one off removes it from both this institution&apos;s staff and member portals; enforced on the backend too, not just hidden.
             </p>
           </div>
           <CardContent className="p-5">
@@ -753,7 +753,7 @@ export default function InstitutionDetailPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Banner text</Label>
-                  <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed — effective this year." />
+                  <Textarea rows={2} value={banner.text} onChange={(e) => setBanner((b) => ({ ...b!, text: e.target.value }))} placeholder="A new Vice Chancellor has been appointed, effective this year." />
                 </div>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
@@ -780,7 +780,7 @@ export default function InstitutionDetailPage() {
               </div>
               <CardContent className="p-5">
                 {stories.length === 0 && (
-                  <p className="text-[13px] text-muted-foreground">No custom stories — the landing page falls back to built-in default copy.</p>
+                  <p className="text-[13px] text-muted-foreground">No custom stories: the landing page falls back to built-in default copy.</p>
                 )}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   {stories.map((story, i) => (
@@ -852,7 +852,7 @@ export default function InstitutionDetailPage() {
             {staffLoading ? (
               <p className="px-5 py-6 text-[13px] text-muted-foreground">Loading…</p>
             ) : staff.length === 0 ? (
-              <p className="px-5 py-6 text-[13px] text-muted-foreground">No admins yet — invite one to get started.</p>
+              <p className="px-5 py-6 text-[13px] text-muted-foreground">No admins yet, invite one to get started.</p>
             ) : (
               staff.map((s) => (
                 <div key={s.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-b-0">
@@ -934,7 +934,7 @@ export default function InstitutionDetailPage() {
                 <div className="space-y-1.5 pt-1 border-t border-border/60">
                   <Label>Flat fee above a threshold (optional)</Label>
                   <p className="text-[12px] text-muted-foreground">
-                    Above the threshold, this flat fee replaces the percentage entirely — set both, or leave both blank for pure percentage pricing.
+                    Above the threshold, this flat fee replaces the percentage entirely. Set both, or leave both blank for pure percentage pricing.
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] text-muted-foreground">Above</span>
@@ -987,7 +987,7 @@ export default function InstitutionDetailPage() {
             <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <p className="text-[14px] font-semibold">All payments</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Every Contribution and Store order this institution has collected — every status — for troubleshooting.</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Every Contribution and Store order this institution has collected, every status, for troubleshooting.</p>
               </div>
               <div className="flex items-center gap-2">
                 <FormSelect
@@ -1102,7 +1102,7 @@ export default function InstitutionDetailPage() {
               />
             </div>
             <p className="text-[12px] text-muted-foreground">
-              They&apos;ll get an email with a link to set their own password — no temp password to relay.
+              They&apos;ll get an email with a link to set their own password, no temp password to relay.
             </p>
             <FormError message={inviteError} />
           </div>

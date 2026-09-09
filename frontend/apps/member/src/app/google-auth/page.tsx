@@ -108,7 +108,7 @@ function GoogleAuthBridgeContent() {
   const handleCredential = useCallback(async (idToken: string) => {
     if (!returnUrl) {
       setStatus("error");
-      setError("Missing return destination — please start sign-in from the portal again.");
+      setError("Missing return destination. Please start sign-in from the portal again.");
       return;
     }
 
@@ -150,7 +150,7 @@ function GoogleAuthBridgeContent() {
     }
     if (!returnUrl) {
       setStatus("error");
-      setError("Missing return destination — please start sign-in from the portal again.");
+      setError("Missing return destination. Please start sign-in from the portal again.");
       return;
     }
 
@@ -205,7 +205,7 @@ function GoogleAuthBridgeContent() {
               One sign-in for every alumni network.
             </h1>
             <p className="text-[18px] font-medium leading-relaxed max-w-[440px]" style={{ color: "rgba(255,255,255,0.7)" }}>
-              Just a moment — you'll be back in your portal, signed in, in a few seconds.
+              Just a moment, you'll be back in your portal, signed in, in a few seconds.
             </p>
           </div>
 

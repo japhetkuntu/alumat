@@ -103,7 +103,7 @@ function SetNewPasswordForm({ token, email }: { token: string; email: string }) 
     try {
       await platformClient.post("/auth/reset-password", { token, email, newPassword: data.newPassword });
       setDone(true);
-      toast.success("Password reset — sign in with your new password.");
+      toast.success("Password reset. Sign in with your new password.");
       setTimeout(() => router.push("/login"), 1800);
     } catch (err) {
       toast.error(handleApiError(err));

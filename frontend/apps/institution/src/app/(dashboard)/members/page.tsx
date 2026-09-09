@@ -487,7 +487,7 @@ export default function AdminMembersPage() {
           <DialogHeader>
             <DialogTitle>Add Member</DialogTitle>
             <DialogDescription>
-              Adds the member directly with an active status — they&apos;ll use &quot;Forgot password&quot; to set their own password on first login.
+              Adds the member directly with an active status; they&apos;ll use &quot;Forgot password&quot; to set their own password on first login.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

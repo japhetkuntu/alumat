@@ -40,7 +40,7 @@ export default function CommunitiesPage() {
 
   const joinMut = useMutation({
     mutationFn: (id: string) => joinCommunity(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-communities"] }); toast.success("Join request sent — a community leader will review it"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-communities"] }); toast.success("Join request sent, a community leader will review it"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -48,7 +48,7 @@ export default function CommunitiesPage() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-[1400px] mx-auto">
       <PageHeader
         title="Communities"
-        description="Find your people beyond the classroom — request to join the ones relevant to you."
+        description="Find your people beyond the classroom. Request to join the ones relevant to you."
       />
 
       {isLoading ? (

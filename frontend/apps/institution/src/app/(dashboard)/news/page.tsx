@@ -272,7 +272,7 @@ export default function AdminNewsPage() {
         <div className="space-y-2">
           {editError && <p className="text-sm text-destructive font-medium">{editError}</p>}
           <PostForm
-            title={`Edit — ${editPost.title}`}
+            title={`Edit ${editPost.title}`}
             init={{
               title: editPost.title ?? "",
               content: editPost.content ?? "",

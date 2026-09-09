@@ -100,7 +100,7 @@ export default function PublicCampaignContributionPage() {
       return initiatePaystackPaymentGuest({ campaignId, amount: amountToPay, email, callbackUrl, sharedByMemberId });
     },
     onSuccess: (result: { authorizationUrl: string; reference: string }) => {
-      setPaymentStatus("Payment initiated — redirecting…");
+      setPaymentStatus("Payment initiated, redirecting…");
       toast.success("Redirecting to secure payment…");
       setTimeout(() => { window.location.href = result.authorizationUrl; }, 400);
     },
@@ -141,8 +141,8 @@ export default function PublicCampaignContributionPage() {
   const isClosed = campaign.status !== "Active";
   const isMembershipFixed = campaign.isMembershipCampaign;
   const encodedShare = encodeURIComponent(shareUrl);
-  const shareText = encodeURIComponent(`Support "${campaign.title}" — every contribution counts!`);
-  const shareTextPlain = `Support "${campaign.title}" — every contribution counts!`;
+  const shareText = encodeURIComponent(`Support "${campaign.title}": every contribution counts!`);
+  const shareTextPlain = `Support "${campaign.title}": every contribution counts!`;
 
   const sharePlatforms = [
     {
@@ -302,7 +302,7 @@ export default function PublicCampaignContributionPage() {
                   </div>
                   <div>
                     <p className="font-black text-[15px]">Share {isMembershipFixed ? "these dues" : "this fundraiser"}</p>
-                    <p className="text-[12px] text-muted-foreground">Help spread the word — every share counts</p>
+                    <p className="text-[12px] text-muted-foreground">Help spread the word, every share counts</p>
                   </div>
                 </div>
                 {shareGrid}
@@ -476,7 +476,7 @@ export default function PublicCampaignContributionPage() {
                   </div>
                   <div>
                     <p className="font-black text-[15px]">Share {isMembershipFixed ? "these dues" : "this fundraiser"}</p>
-                    <p className="text-[12px] text-muted-foreground">Help spread the word — every share counts</p>
+                    <p className="text-[12px] text-muted-foreground">Help spread the word, every share counts</p>
                   </div>
                 </div>
                 {shareGrid}

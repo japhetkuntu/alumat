@@ -212,7 +212,7 @@ function NewInstitutionPageContent() {
                 <div className="space-y-1.5 pt-2">
                   <Label>Batches (optional)</Label>
                   <p className="text-[12px] text-muted-foreground -mt-0.5">
-                    Enter a graduation-year range to auto-create one batch per year — named after the year by default, renameable later. Leave blank to add batches manually afterward.
+                    Enter a graduation-year range to auto-create one batch per year, named after the year by default, renameable later. Leave blank to add batches manually afterward.
                   </p>
                   <div className="flex items-center gap-2">
                     <Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="Start year, e.g. 1990" className="w-[160px]" />
@@ -231,7 +231,7 @@ function NewInstitutionPageContent() {
                   <label htmlFor="require-dues" className="text-[13px]">
                     <span className="font-semibold block">Require dues payment for active status</span>
                     <span className="text-muted-foreground">
-                      Off by default — any approved member counts as active regardless of dues paid. The institution can change this later from its own settings.
+                      Off by default: any approved member counts as active regardless of dues paid. The institution can change this later from its own settings.
                     </span>
                   </label>
                 </div>
@@ -270,12 +270,12 @@ function NewInstitutionPageContent() {
                     </div>
                   </div>
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
-                    Optional for activation — platform defaults apply if you continue without custom assets.
+                    Optional for activation. Platform defaults apply if you continue without custom assets.
                   </p>
                   <div className="space-y-1.5 pt-2">
                     <Label>Preview</Label>
                     <p className="text-[12px] text-muted-foreground -mt-0.5">
-                      This is the actual palette that will be generated from your color — same math used for the live portals and outbound email.
+                      This is the actual palette that will be generated from your color, the same math used for the live portals and outbound email.
                     </p>
                     <BrandPreview color={form.primaryColor} secondaryColor={form.secondaryColor || undefined} name={form.appName || form.name || "Institution"} className="pt-1" />
                   </div>
@@ -308,7 +308,7 @@ function NewInstitutionPageContent() {
                   <div className="space-y-1.5">
                     <Label>Flat fee above a threshold (optional)</Label>
                     <p className="text-[12px] text-muted-foreground">
-                      Above the threshold, this flat fee replaces the percentage entirely — set both, or leave both blank for pure percentage pricing.
+                      Above the threshold, this flat fee replaces the percentage entirely. Set both, or leave both blank for pure percentage pricing.
                     </p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[13px] text-muted-foreground">Above GH₵</span>
@@ -340,7 +340,7 @@ function NewInstitutionPageContent() {
                     resolveAccount={resolveAccount}
                   />
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
-                    Optional — leave blank and configure later from the institution&apos;s Payments tab. Providing settlement details here sets up their payout account automatically.
+                    Optional: leave blank and configure later from the institution&apos;s Payments tab. Providing settlement details here sets up their payout account automatically.
                   </p>
                 </div>
               </>
@@ -368,7 +368,7 @@ function NewInstitutionPageContent() {
                   <div className="space-y-1.5">
                     <Label>Temporary password</Label>
                     <Input value={form.adminPassword} onChange={(e) => update("adminPassword", e.target.value)} />
-                    <p className="text-[12px] text-muted-foreground">Share this securely with the admin — they should change it after first login.</p>
+                    <p className="text-[12px] text-muted-foreground">Share this securely with the admin; they should change it after first login.</p>
                   </div>
                 </div>
               </>
@@ -384,7 +384,7 @@ function NewInstitutionPageContent() {
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Institution portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.adminBaseDomain}` : ""}</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Settlement account</span><span className="font-semibold">{form.settlementAccountName || "Not configured"}</span></div>
-                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Batches</span><span className="font-semibold">{form.batchStartYear && form.batchEndYear ? `${form.batchStartYear}–${form.batchEndYear} (${Number(form.batchEndYear) - Number(form.batchStartYear) + 1} batches)` : "None — add manually later"}</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Batches</span><span className="font-semibold">{form.batchStartYear && form.batchEndYear ? `${form.batchStartYear}–${form.batchEndYear} (${Number(form.batchEndYear) - Number(form.batchStartYear) + 1} batches)` : "None, add manually later"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminFirstName || "—"} {form.adminLastName} ({form.adminEmail || form.contactEmail || "—"})</span></div>
                 </div>
               </>

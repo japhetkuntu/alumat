@@ -89,13 +89,16 @@ public class InstitutionController(
     }
 
     /// <summary>
-    /// Toggles the two self-service features (see InstitutionFeatures.SelfService)
-    /// on or off for this institution — everything else in DisabledFeatures is
-    /// left untouched, since every other key stays platform-staff-only.
+    /// Toggles the self-service Digest/RecurringGiving features (see
+    /// InstitutionFeatures.SelfService — everything else in DisabledFeatures
+    /// is left untouched, since every other key stays platform-staff-only),
+    /// plus the signup membership-activation prompt, which isn't a
+    /// DisabledFeatures key at all since it's opt-in (default off) rather
+    /// than opt-out.
     /// </summary>
     [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("me/self-service-features")]
-    [SwaggerOperation(Summary = "Enable or disable the digest and recurring-giving features")]
+    [SwaggerOperation(Summary = "Enable or disable the digest and recurring-giving features, and the signup membership-activation prompt")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
     public async Task<IActionResult> UpdateSelfServiceFeatures([FromBody] UpdateSelfServiceFeaturesRequest request)
     {
@@ -113,10 +116,48 @@ public class InstitutionController(
         Set(InstitutionFeatures.RecurringGiving, request.RecurringGivingEnabled);
 
         institution.DisabledFeatures = disabled.ToList();
+        institution.PromptMembershipActivationAtSignup = request.PromptMembershipActivationAtSignup;
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Features updated", Code = 200, Data = ToDto(institution) });
+    }
+
+    /// <summary>
+    /// Submit (or resubmit) this institution's own settlement details for
+    /// platform staff to review — never takes effect immediately, mirroring
+    /// Batch payout setup exactly (see Institution.Api's
+    /// BatchesController.SubmitPayoutSetup / Platform.Api's
+    /// InstitutionPayoutsController for the approval step). SuperAdmin only —
+    /// unlike a batch's own payout setup, a ScopedAdmin never touches the
+    /// institution's own payment info.
+    /// </summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPost("me/payout-setup")]
+    [SwaggerOperation(Summary = "Submit institution payout setup for platform approval")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> SubmitPayoutSetup([FromBody] SubmitInstitutionPayoutSetupRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.SettlementBankCode) || string.IsNullOrWhiteSpace(request.SettlementAccountNumber))
+            return BadRequest(new ApiResponse<object> { Message = "Bank and account number are required", Code = 400 });
+
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        institution.PendingPayoutChanges = new InstitutionPayoutPendingChanges
+        {
+            SettlementBankCode = request.SettlementBankCode,
+            SettlementBankName = request.SettlementBankName,
+            SettlementAccountNumber = request.SettlementAccountNumber,
+            SettlementAccountName = request.SettlementAccountName,
+        };
+        institution.PayoutStatus = "Pending";
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Payout setup submitted for platform review", Code = 200, Data = ToDto(institution) });
     }
 
     private async Task<InstitutionEntity?> GetResolvedInstitutionAsync() =>
@@ -144,8 +185,9 @@ public class InstitutionController(
             i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.RequireStudentId, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
-            i.Status, memberPortalUrl);
+            i.Status, memberPortalUrl,
+            i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName);
     }
 }

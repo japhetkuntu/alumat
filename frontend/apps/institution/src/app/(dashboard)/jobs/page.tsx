@@ -205,7 +205,7 @@ export default function AdminJobsPage() {
       )}
       {editJob && (
         <JobForm
-          title={`Edit — ${editJob.title}`}
+          title={`Edit ${editJob.title}`}
           init={{ title: editJob.title, company: editJob.company, location: editJob.location, type: editJob.type,
             description: editJob.description ?? "", applyUrl: editJob.applyUrl ?? "",
             deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(editJob.communityId, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], communityId: editJob.communityId ?? "", bannerImage: null,

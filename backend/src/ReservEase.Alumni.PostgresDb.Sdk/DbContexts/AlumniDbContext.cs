@@ -385,6 +385,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<NewsBanner>(jsonOpts));
         modelBuilder.Entity<Institution>().Property(i => i.HeroImageUrls).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<Institution>().Property(i => i.PendingPayoutChanges).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<InstitutionPayoutPendingChanges>(jsonOpts));
 
         // ── PlatformStaff (global, not tenant-scoped) ───────────────────────
         modelBuilder.Entity<PlatformStaff>().HasIndex(p => p.Email).IsUnique();

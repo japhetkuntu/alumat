@@ -250,7 +250,7 @@ export default function AdminResourcesPage() {
 
       {editResource && (
         <ResourceForm
-          formTitle={`Edit — ${editResource.title}`}
+          formTitle={`Edit ${editResource.title}`}
           init={{ title: editResource.title, description: editResource.description ?? "",
             category: editResource.category, type: editResource.type,
             yearGroups: editResource.yearGroups ?? [],

@@ -249,7 +249,7 @@ export default function CampaignDetailPage() {
                 <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Loading updates…</p>
               ) : updates.length === 0 ? (
                 <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
-                  No updates yet — the alumni office will post progress here as this fundraiser moves forward.
+                  No updates yet. The alumni office will post progress here as this fundraiser moves forward.
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -310,7 +310,7 @@ export default function CampaignDetailPage() {
                   Share this {isMembership ? "dues link" : "fundraiser"}
                 </p>
                 <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                  Anyone with this link can contribute — no sign-in needed
+                  Anyone with this link can contribute, no sign-in needed
                 </p>
               </div>
             </div>
@@ -397,7 +397,7 @@ export default function CampaignDetailPage() {
                 <div className="flex items-center gap-3 p-4 rounded-xl bg-success/10 border border-success/20">
                   <CheckCircle2 size={18} className="text-success shrink-0" />
                   <div>
-                    <p className="text-[14px] font-semibold text-success">Membership paid — thank you!</p>
+                    <p className="text-[14px] font-semibold text-success">Membership paid, thank you!</p>
                     <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                       This is a one-time payment per membership year.
                     </p>
@@ -486,7 +486,7 @@ export default function CampaignDetailPage() {
                   />
                   <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
                     Show my name on this fundraiser&apos;s wall of support
-                    <span className="block text-[11px] mt-0.5 opacity-75">Only your name — never the amount you gave.</span>
+                    <span className="block text-[11px] mt-0.5 opacity-75">Only your name, never the amount you gave.</span>
                   </span>
                 </label>
               )}

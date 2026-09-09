@@ -132,7 +132,7 @@ export default function MemberAlbumDetailPage() {
           ))}
         </div>
       ) : allPhotos.length === 0 ? (
-        <EmptyState icon={<Images size={40} />} title="No photos in this album yet" description="Check back later — photos may still be uploading." />
+        <EmptyState icon={<Images size={40} />} title="No photos in this album yet" description="Check back later. Photos may still be uploading." />
       ) : (
         <PhotoAlbumGallery
           photos={allPhotos.map((p) => ({ id: p.id, url: p.url, caption: p.caption }))}

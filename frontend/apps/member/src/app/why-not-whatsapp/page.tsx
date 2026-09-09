@@ -15,15 +15,15 @@ import { MarketingFooter } from "../_marketing/footer";
    DATA — every claim here is sourced; see the Sources section on this page.
    ───────────────────────────────────────────────────────────────────────── */
 const LIMITS: { icon: LucideIcon; title: string; desc: string; source: string }[] = [
-  { icon: UserX, title: "It caps out", desc: "A WhatsApp group maxes out at 1,024 members. A Community stretches that to 5,000 across up to 50 sub-groups — still a hard ceiling a growing alumni base will eventually hit.", source: "WhatsApp's own published limits" },
-  { icon: SearchX, title: "You can't find anything", desc: "WhatsApp's search only finds text matches inside one chat at a time. There's no member directory, no filtering by class year or location — just scrolling and hoping.", source: "WhatsApp product limitations, widely documented" },
-  { icon: PhoneOff, title: "One phone, one point of failure", desc: "Group control is tied to whoever's personal phone number set it up. If that admin changes numbers, loses their phone, or steps down, there's no institutional account underneath — just a person's device.", source: "How WhatsApp group admin actually works" },
-  { icon: MessageCircleOff, title: "No structure, no data", desc: "No built-in directory, no RSVP tracking, no dues or fundraiser collection, and no engagement analytics — even in WhatsApp Communities, this stays a chat thread, not a management tool.", source: "WhatsApp Communities' documented feature set" },
-  { icon: ShieldAlert, title: "It's a real fraud target", desc: "The UK's Action Fraud logged 636 reports tied to WhatsApp group-chat scams in the first half of 2024 alone — a common tactic is impersonating a group member (or a charity) to solicit money. That's exactly the shape of a fundraising drive run over a WhatsApp group.", source: "UK Action Fraud, H1 2024" },
+  { icon: UserX, title: "It caps out", desc: "A WhatsApp group maxes out at 1,024 members. A Community stretches that to 5,000 across up to 50 sub-groups, still a hard ceiling a growing alumni base will eventually hit.", source: "WhatsApp's own published limits" },
+  { icon: SearchX, title: "You can't find anything", desc: "WhatsApp's search only finds text matches inside one chat at a time. There's no member directory, no filtering by class year or location, just scrolling and hoping.", source: "WhatsApp product limitations, widely documented" },
+  { icon: PhoneOff, title: "One phone, one point of failure", desc: "Group control is tied to whoever's personal phone number set it up. If that admin changes numbers, loses their phone, or steps down, there's no institutional account underneath, just a person's device.", source: "How WhatsApp group admin actually works" },
+  { icon: MessageCircleOff, title: "No structure, no data", desc: "No built-in directory, no RSVP tracking, no dues or fundraiser collection, and no engagement analytics. Even in WhatsApp Communities, this stays a chat thread, not a management tool.", source: "WhatsApp Communities' documented feature set" },
+  { icon: ShieldAlert, title: "It's a real fraud target", desc: "The UK's Action Fraud logged 636 reports tied to WhatsApp group-chat scams in the first half of 2024 alone. A common tactic is impersonating a group member (or a charity) to solicit money. That's exactly the shape of a fundraising drive run over a WhatsApp group.", source: "UK Action Fraud, H1 2024" },
 ];
 
 const COMPARISON: { row: string; whatsapp: string; alumunion: string }[] = [
-  { row: "Member capacity",        whatsapp: "Caps at 1,024 (5,000 for a Community)", alumunion: "No cap — built for your whole alumni base" },
+  { row: "Member capacity",        whatsapp: "Caps at 1,024 (5,000 for a Community)", alumunion: "No cap, built for your whole alumni base" },
   { row: "Finding people",         whatsapp: "Scroll and guess who's who",             alumunion: "Searchable directory by name, class year, location" },
   { row: "Search",                 whatsapp: "Text search, one chat at a time",        alumunion: "Search across events, jobs, directory, everything" },
   { row: "Who's in charge",        whatsapp: "Tied to one admin's personal phone",     alumunion: "Role-based admin accounts your institution controls" },
@@ -32,7 +32,7 @@ const COMPARISON: { row: string; whatsapp: string; alumunion: string }[] = [
   { row: "Jobs & mentorship",      whatsapp: "Buried somewhere in chat history",       alumunion: "Dedicated jobs board & mentorship matching" },
   { row: "Photos & memories",      whatsapp: "Lost when storage clears or phones change", alumunion: "Permanent photo albums, organized by event" },
   { row: "Engagement insight",     whatsapp: "No idea who's actually engaged",         alumunion: "Real engagement data for your admin team" },
-  { row: "Cost",                   whatsapp: "\"Free,\" but nobody's really running it", alumunion: "Free — and actually built for the job" },
+  { row: "Cost",                   whatsapp: "\"Free,\" but nobody's really running it", alumunion: "Free, and actually built for the job" },
 ];
 
 const SOURCES = [
@@ -100,7 +100,7 @@ function LimitCard({ item, index }: { item: typeof LIMITS[number]; index: number
 }
 
 const COMPARE_ROWS: { whatsapp: string; alumunion: string }[] = [
-  { whatsapp: "Caps at 1,024 members", alumunion: "No cap — built for the whole alumni base" },
+  { whatsapp: "Caps at 1,024 members", alumunion: "No cap, built for the whole alumni base" },
   { whatsapp: "Scroll and guess who's who", alumunion: "Searchable directory by name, year, location" },
   { whatsapp: "Tied to one admin's personal phone", alumunion: "Role-based accounts the association owns" },
   { whatsapp: "Manual, screenshot-and-trust dues", alumunion: "Secure online payments, automatic records" },
@@ -223,7 +223,7 @@ export default function WhyNotWhatsAppPage() {
             WhatsApp wasn&apos;t built to run your alumni community.
           </h1>
           <p className="max-w-[54ch] mb-10" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
-            It&apos;s free, familiar, and everyone already has it — that&apos;s exactly why so many institutions start there.
+            It&apos;s free, familiar, and everyone already has it, that&apos;s exactly why so many institutions start there.
             But a chat app is not a community platform. Here&apos;s the honest, sourced case for why it shows.
           </p>
 
@@ -244,7 +244,7 @@ export default function WhyNotWhatsAppPage() {
               Five ways it actually holds your community back.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Not opinions — every point below is sourced. See the full list under Sources.
+              Not opinions: every point below is sourced. See the full list under Sources.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-x-10 gap-y-10 sm:gap-y-12">
@@ -310,16 +310,16 @@ export default function WhyNotWhatsAppPage() {
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[20ch]" style={{ color: "var(--foreground)" }}>
-                Alumni engagement is a national problem — not just a WhatsApp one.
+                Alumni engagement is a national problem, not just a WhatsApp one.
               </h2>
               <p style={{ color: "var(--muted-foreground)", fontSize: "0.975rem", lineHeight: 1.75 }}>
                 To be clear: this isn&apos;t WhatsApp&apos;s fault. Alumni participation has been declining for decades,
                 across every kind of institution, no matter how they communicate. It&apos;s the industry-wide trend a
-                real platform can help push back against — a chat group alone won&apos;t.
+                real platform can help push back against; a chat group alone won&apos;t.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <StatCard end={7.8} decimals={1} suffix="%" desc="Average alumni giving participation in 2023 — down from 8.5% in 2016, and ~20% in the 1980s." />
+              <StatCard end={7.8} decimals={1} suffix="%" desc="Average alumni giving participation in 2023, down from 8.5% in 2016, and ~20% in the 1980s." />
               <StatCard end={75} decimals={0} suffix="%" desc="Of alumni say they'd engage more if access to their association were mobile-friendly." />
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function WhyNotWhatsAppPage() {
             Every claim on this page, sourced.
           </h2>
           <p className="mb-10 max-w-[56ch] mx-auto text-center" style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-            Nothing above is a guess. Here&apos;s exactly where each number and claim comes from — click through and check
+            Nothing above is a guess. Here&apos;s exactly where each number and claim comes from. Click through and check
             for yourself.
           </p>
           <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
@@ -350,7 +350,7 @@ export default function WhyNotWhatsAppPage() {
           <div className="section__inner--wide relative py-20 sm:py-24 text-center">
             <h2 className="font-[family-name:var(--font-display)] mb-6 max-w-[22ch]"
               style={{ fontSize: "clamp(1.9rem,3.8vw,2.75rem)", lineHeight: 1.15, color: "white", margin: "0 auto 1.5rem" }}>
-              Give your alumni something built for the job — free.
+              Give your alumni something built for the job, free.
             </h2>
             <Link href="/#onboard">
               <Button size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2"

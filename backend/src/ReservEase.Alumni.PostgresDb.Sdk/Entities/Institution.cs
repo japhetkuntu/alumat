@@ -42,6 +42,17 @@ public class Institution : BaseEntity
     public bool RequireStudentId { get; set; } = true;
 
     /// <summary>
+    /// Whether the just-registered member sees an "Activate your membership"
+    /// prompt (pay the current membership campaign, or a "nothing due yet"
+    /// notice) on the registration success screen. Defaults to false — most
+    /// institutions want a clean "you're pending approval" screen and would
+    /// rather not push a payment ask before a member is even approved; an
+    /// institution opts into it deliberately via InstitutionController's
+    /// self-service settings.
+    /// </summary>
+    public bool PromptMembershipActivationAtSignup { get; set; } = false;
+
+    /// <summary>
     /// How "active member" status is determined for this institution.
     /// "ApprovedOnly" (default) — any approved member (Member.Status ==
     /// "Active") counts as active regardless of dues. "DuesRequired" — a
@@ -128,6 +139,28 @@ public class Institution : BaseEntity
     public string? SettlementAccountName { get; set; }
 
     /// <summary>
+    /// None (never submitted) — Pending (the institution's own SuperAdmin
+    /// submitted settlement details via InstitutionController's self-service
+    /// payout-setup endpoint, awaiting platform review) — Approved (the
+    /// settlement fields above are live) — Rejected (platform staff declined;
+    /// the previous live settlement fields, if any, are unchanged). Platform
+    /// staff editing settlement fields directly (Platform.Api's
+    /// InstitutionsController.UpdatePaymentsAsync) always leaves this
+    /// Approved — that path is trusted by definition, no review needed.
+    /// </summary>
+    public string PayoutStatus { get; set; } = "None";
+
+    /// <summary>
+    /// Proposed values from the institution's most recent self-service
+    /// payout-setup submission, staged here until a platform staffer
+    /// approves or rejects them — the live fields above are only ever
+    /// written by that approval (or by platform staff directly), never by
+    /// the institution-side submission endpoint. Cleared on either approve
+    /// or reject.
+    /// </summary>
+    public InstitutionPayoutPendingChanges? PendingPayoutChanges { get; set; }
+
+    /// <summary>
     /// Fallback delivery/pickup instructions for new Store products — a
     /// product's own <c>DeliveryInfo</c> is used when set, otherwise this is
     /// shown to buyers. Saves institution staff from retyping the same
@@ -143,4 +176,12 @@ public class Institution : BaseEntity
     /// feature stays invisible (StoreOrder.DeliveryStatus is never set).
     /// </summary>
     public List<string> StoreDeliveryStages { get; set; } = [];
+}
+
+public class InstitutionPayoutPendingChanges
+{
+    public string? SettlementBankCode { get; set; }
+    public string? SettlementBankName { get; set; }
+    public string? SettlementAccountNumber { get; set; }
+    public string? SettlementAccountName { get; set; }
 }
