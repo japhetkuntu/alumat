@@ -200,8 +200,14 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
               className={cn(
                 "flex items-center gap-2.5 px-3 rounded-md transition-all duration-150 ease-[cubic-bezier(0.2,0,0,1)] group relative mb-0.5",
                 isHome ? "py-2.5 mb-2 text-[13.5px] font-semibold" : "py-2 text-[13px] font-medium",
+                // Matches the member portal's own active-nav treatment (see
+                // member-layout.tsx) — the vivid top-level --accent color
+                // directly, not --sidebar-accent (a muted light/dark pastel
+                // pair meant for a light sidebar), so the institution's
+                // secondary color actually reads here instead of disappearing
+                // into a barely-different shade of the dark sidebar.
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  ? "bg-accent/10 text-accent font-semibold"
                   : "text-sidebar-foreground hover:bg-white/5 hover:text-white active:scale-[0.99]"
               )}
             >
