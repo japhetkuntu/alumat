@@ -53,6 +53,29 @@ public class Institution : BaseEntity
     public bool PromptMembershipActivationAtSignup { get; set; } = false;
 
     /// <summary>
+    /// Whether this institution sends outbound notification emails — digest,
+    /// referral invitations, and any future non-transactional email. Defaults
+    /// to true (preserves existing behavior). Never gates authentication or
+    /// signup email (OTP, email-verification link, password reset, staff
+    /// invite) — those always send regardless, since a member who can't
+    /// receive them can't get into their account at all.
+    /// </summary>
+    public bool EmailNotificationsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Whether this institution sends outbound SMS — per-member alerts
+    /// (gated further by each member's own NotificationPreference.SmsAlerts)
+    /// and admin broadcasts. Off by default would silently break existing
+    /// institutions relying on it, so this defaults to true; an institution
+    /// watching its Arkesel bill turns it off deliberately. SMS is a real
+    /// per-message cost, unlike email, so this is the one most worth having
+    /// turned off intentionally rather than left on by accident. Never gates
+    /// authentication or signup SMS (there is none today — OTP/verification
+    /// is email-only).
+    /// </summary>
+    public bool SmsNotificationsEnabled { get; set; } = true;
+
+    /// <summary>
     /// How "active member" status is determined for this institution.
     /// "ApprovedOnly" (default) — any approved member (Member.Status ==
     /// "Active") counts as active regardless of dues. "DuesRequired" — a

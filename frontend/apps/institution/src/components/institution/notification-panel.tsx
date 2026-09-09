@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { Bell, Check, CheckCheck, Loader2, X } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -13,6 +14,16 @@ import {
 } from "@/lib/institution-api";
 import type { NotificationItem } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+
+/** Extracts the path from a full notification actionUrl — falls back to the string as-is if already a path. */
+function toNotificationPath(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url.startsWith("/") ? url : `/${url}`;
+  }
+}
 
 function useNotifications() {
   const qc = useQueryClient();
@@ -52,23 +63,33 @@ function useNotifications() {
 function NotificationRow({
   notif,
   onMarkRead,
+  onNavigate,
 }: {
   notif: NotificationItem;
   onMarkRead: (id: string) => void;
+  onNavigate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const path = toNotificationPath(notif.actionUrl);
 
   const toggle = () => {
+    if (path) return;
     setExpanded((v) => !v);
     if (!notif.isRead) onMarkRead(notif.id);
   };
 
-  return (
+  const inner = (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={toggle}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+      role={path ? undefined : "button"}
+      tabIndex={path ? undefined : 0}
+      onClick={() => {
+        toggle();
+        if (path) {
+          if (!notif.isRead) onMarkRead(notif.id);
+          onNavigate();
+        }
+      }}
+      onKeyDown={(e) => { if (!path && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
       className={cn(
         "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
         !notif.isRead && "bg-accent/5"
@@ -104,6 +125,9 @@ function NotificationRow({
       )}
     </div>
   );
+
+  if (path) return <Link href={path}>{inner}</Link>;
+  return inner;
 }
 
 export function NotificationPanel() {
@@ -207,6 +231,7 @@ export function NotificationPanel() {
                     key={n.id}
                     notif={n}
                     onMarkRead={(id) => markRead.mutate(id)}
+                    onNavigate={() => setOpen(false)}
                   />
                 ))}
               </div>

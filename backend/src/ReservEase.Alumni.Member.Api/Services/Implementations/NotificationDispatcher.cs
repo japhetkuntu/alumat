@@ -46,8 +46,6 @@ public class NotificationDispatcher(
         return cachedInstitution;
     }
 
-    private async Task<string?> GetInstitutionNameAsync() => (await GetInstitutionAsync())?.Name;
-
     /// <summary>
     /// Builds this institution's live subdomain URL from its slug + the
     /// configured base domain instead of a hardcoded localhost literal.
@@ -82,9 +80,11 @@ public class NotificationDispatcher(
     {
         if (string.IsNullOrWhiteSpace(member.Phone) || pref is null) return;
 
-        if (pref.SmsAlerts)
+        var institution = await GetInstitutionAsync();
+
+        if (pref.SmsAlerts && institution?.SmsNotificationsEnabled != false)
         {
-            var institutionName = await GetInstitutionNameAsync();
+            var institutionName = institution?.Name;
             var smsMessage = string.IsNullOrWhiteSpace(institutionName) ? message : $"{institutionName}: {message}";
             await smsService.SendSmsAsync(member.Phone, smsMessage);
         }

@@ -49,7 +49,7 @@ public class DigestService(
             return 0;
 
         var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
-        if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Digest))
+        if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Digest) || !institution.EmailNotificationsEnabled)
             return 0;
 
         var now = DateTime.UtcNow;

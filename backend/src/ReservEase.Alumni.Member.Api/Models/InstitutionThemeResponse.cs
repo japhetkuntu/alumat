@@ -16,6 +16,7 @@ public record InstitutionThemeResponse(
     string? AuthSubtext,
     bool RequireStudentId,
     bool PromptMembershipActivationAtSignup,
+    bool SmsNotificationsEnabled,
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,

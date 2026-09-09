@@ -256,14 +256,27 @@ export default function BrandingSettingsPage() {
   });
 
   const featuresMutation = useMutation({
-    mutationFn: (features: { digestEnabled: boolean; recurringGivingEnabled: boolean; promptMembershipActivationAtSignup: boolean }) =>
-      updateSelfServiceFeatures(features.digestEnabled, features.recurringGivingEnabled, features.promptMembershipActivationAtSignup),
+    mutationFn: (features: Parameters<typeof updateSelfServiceFeatures>[0]) => updateSelfServiceFeatures(features),
     onSuccess: () => {
-      toast.success("Features updated");
+      toast.success("Saved");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
+
+  // Every self-service-features Toggle patches just its own field — this
+  // fills in the other four from the institution's current live state so
+  // no call site has to repeat all five.
+  function patchFeatures(patch: Partial<Parameters<typeof updateSelfServiceFeatures>[0]>) {
+    featuresMutation.mutate({
+      digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
+      recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
+      promptMembershipActivationAtSignup: !!institution?.promptMembershipActivationAtSignup,
+      emailNotificationsEnabled: institution?.emailNotificationsEnabled ?? true,
+      smsNotificationsEnabled: institution?.smsNotificationsEnabled ?? true,
+      ...patch,
+    });
+  }
 
   const pwMut = useMutation({
     mutationFn: () => changeStaffPassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
@@ -444,33 +457,47 @@ export default function BrandingSettingsPage() {
                 </p>
                 <Toggle
                   checked={!institution?.disabledFeatures?.includes("Digest")}
-                  onChange={(checked) => featuresMutation.mutate({
-                    digestEnabled: checked,
-                    recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
-                    promptMembershipActivationAtSignup: !!institution?.promptMembershipActivationAtSignup,
-                  })}
+                  onChange={(checked) => patchFeatures({ digestEnabled: checked })}
                   label="Re-engagement digest"
                   description="A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."
                 />
                 <Toggle
                   checked={!institution?.disabledFeatures?.includes("RecurringGiving")}
-                  onChange={(checked) => featuresMutation.mutate({
-                    digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
-                    recurringGivingEnabled: checked,
-                    promptMembershipActivationAtSignup: !!institution?.promptMembershipActivationAtSignup,
-                  })}
+                  onChange={(checked) => patchFeatures({ recurringGivingEnabled: checked })}
                   label="Recurring giving"
                   description="Let members set up a standing monthly gift, charged automatically."
                 />
                 <Toggle
                   checked={!!institution?.promptMembershipActivationAtSignup}
-                  onChange={(checked) => featuresMutation.mutate({
-                    digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
-                    recurringGivingEnabled: !institution?.disabledFeatures?.includes("RecurringGiving"),
-                    promptMembershipActivationAtSignup: checked,
-                  })}
+                  onChange={(checked) => patchFeatures({ promptMembershipActivationAtSignup: checked })}
                   label="Prompt membership activation at signup"
                   description="Show new members a payment ask (or a 'nothing due yet' notice) right on the registration success screen, before they're even approved. Off by default."
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {!isScopedAdmin && (
+            <Card className="border-border/40 lg:col-span-2">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Bell size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">Notifications &amp; costs</p>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-1 mb-1">
+                  Every notification still appears in-app for free. Email and SMS are optional add-ons on top of that, and SMS costs real money per message. Neither switch ever touches account emails (verification codes, password resets), those always go through.
+                </p>
+                <Toggle
+                  checked={institution?.emailNotificationsEnabled ?? true}
+                  onChange={(checked) => patchFeatures({ emailNotificationsEnabled: checked })}
+                  label="Email notifications"
+                  description="The re-engagement digest and referral invitations. Turning this off doesn't touch verification, password-reset, or invite emails."
+                />
+                <Toggle
+                  checked={institution?.smsNotificationsEnabled ?? true}
+                  onChange={(checked) => patchFeatures({ smsNotificationsEnabled: checked })}
+                  label="SMS notifications"
+                  description="Per-member text alerts and admin broadcasts sent by SMS. Billed per message. Members can still opt into SMS individually, this is the institution-wide switch on top."
                 />
               </CardContent>
             </Card>

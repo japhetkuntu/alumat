@@ -117,6 +117,8 @@ interface NavThemeData {
   displayName?: string | null;
   logoUrl?: string | null;
   iconUrl?: string | null;
+  /** Institution-wide SMS switch — a real per-message cost. Defaults to true when absent (older cached responses). */
+  smsNotificationsEnabled?: boolean;
 }
 
 /** Shared across Sidebar, MobileBottomNav, and the mobile header — react-query dedupes the fetch since they all use the same queryKey. Exported so other screens (e.g. Settings) can show the real institution name instead of a generic placeholder. */

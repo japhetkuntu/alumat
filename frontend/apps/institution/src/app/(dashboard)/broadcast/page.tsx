@@ -13,7 +13,7 @@ import { FormSelect } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { getBroadcastRecipientCount, sendBroadcast, type BroadcastFilter } from "@/lib/institution-api";
+import { getBroadcastRecipientCount, sendBroadcast, getInstitutionProfile, type BroadcastFilter } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -50,9 +50,17 @@ export default function BroadcastPage() {
     enabled: isSuperAdmin,
   });
 
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
+    enabled: isSuperAdmin,
+    staleTime: 60 * 1000,
+  });
+  const smsNotificationsEnabled = institution?.smsNotificationsEnabled ?? true;
+
   const sendMut = useMutation({
     mutationFn: () => {
-      const channels = [inApp && "InApp", sms && "Sms"].filter(Boolean) as string[];
+      const channels = [inApp && "InApp", sms && smsNotificationsEnabled && "Sms"].filter(Boolean) as string[];
       return sendBroadcast({ title: title.trim() || undefined, message: message.trim(), channels, filter });
     },
     onSuccess: (result) => {
@@ -67,7 +75,7 @@ export default function BroadcastPage() {
     },
   });
 
-  const channelsSelected = inApp || sms;
+  const channelsSelected = inApp || (sms && smsNotificationsEnabled);
   const canSend = message.trim().length > 0 && channelsSelected;
 
   if (!isSuperAdmin) {
@@ -124,10 +132,13 @@ export default function BroadcastPage() {
               </button>
               <button
                 type="button"
+                disabled={!smsNotificationsEnabled}
+                title={smsNotificationsEnabled ? undefined : "SMS notifications are off for this institution — turn them on in Settings to use this channel"}
                 onClick={() => setSms((v) => !v)}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold transition-colors",
-                  sms ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
+                  !smsNotificationsEnabled ? "opacity-50 cursor-not-allowed bg-white text-muted-foreground border-border"
+                    : sms ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
                 )}
               >
                 <MessageSquare size={14} />SMS
@@ -141,6 +152,11 @@ export default function BroadcastPage() {
                 <MessageSquare size={14} />WhatsApp (coming soon)
               </button>
             </div>
+            {!smsNotificationsEnabled && (
+              <p className="text-[11px] text-warning">
+                SMS notifications are off for this institution (Settings &gt; Notifications &amp; costs). Turn them on to send this broadcast by SMS.
+              </p>
+            )}
             <p className="text-[11px] text-muted-foreground">
               SMS is sent to every matching member with a phone number on file, regardless of their individual SMS notification preference. This is intentional for urgent, time-sensitive announcements.
             </p>
@@ -184,7 +200,7 @@ export default function BroadcastPage() {
       <ConfirmModal
         open={showConfirm}
         title="Send Broadcast"
-        message={`This will send "${message.trim().slice(0, 80)}${message.trim().length > 80 ? "…" : ""}" to ${(recipientCount ?? 0).toLocaleString()} member(s) via ${[inApp && "in-app", sms && "SMS"].filter(Boolean).join(" and ")}. This cannot be undone. Continue?`}
+        message={`This will send "${message.trim().slice(0, 80)}${message.trim().length > 80 ? "…" : ""}" to ${(recipientCount ?? 0).toLocaleString()} member(s) via ${[inApp && "in-app", sms && smsNotificationsEnabled && "SMS"].filter(Boolean).join(" and ")}. This cannot be undone. Continue?`}
         confirmLabel="Send Broadcast"
         variant="destructive"
         isLoading={sendMut.isPending}

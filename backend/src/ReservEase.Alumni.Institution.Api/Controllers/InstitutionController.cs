@@ -92,13 +92,13 @@ public class InstitutionController(
     /// Toggles the self-service Digest/RecurringGiving features (see
     /// InstitutionFeatures.SelfService — everything else in DisabledFeatures
     /// is left untouched, since every other key stays platform-staff-only),
-    /// plus the signup membership-activation prompt, which isn't a
-    /// DisabledFeatures key at all since it's opt-in (default off) rather
-    /// than opt-out.
+    /// the signup membership-activation prompt, and whether this institution
+    /// sends outbound email/SMS notifications at all (cost control — never
+    /// affects authentication/signup email, which always sends).
     /// </summary>
     [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("me/self-service-features")]
-    [SwaggerOperation(Summary = "Enable or disable the digest and recurring-giving features, and the signup membership-activation prompt")]
+    [SwaggerOperation(Summary = "Enable or disable the digest/recurring-giving features, the signup prompt, and email/SMS notifications")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
     public async Task<IActionResult> UpdateSelfServiceFeatures([FromBody] UpdateSelfServiceFeaturesRequest request)
     {
@@ -117,6 +117,8 @@ public class InstitutionController(
 
         institution.DisabledFeatures = disabled.ToList();
         institution.PromptMembershipActivationAtSignup = request.PromptMembershipActivationAtSignup;
+        institution.EmailNotificationsEnabled = request.EmailNotificationsEnabled;
+        institution.SmsNotificationsEnabled = request.SmsNotificationsEnabled;
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
 
@@ -185,7 +187,8 @@ public class InstitutionController(
             i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.RequireStudentId, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
+            i.EmailNotificationsEnabled, i.SmsNotificationsEnabled, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
             i.Status, memberPortalUrl,
             i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName);

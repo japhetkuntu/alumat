@@ -38,8 +38,6 @@ public class NotificationDispatcher(
         return cachedInstitution;
     }
 
-    private async Task<string?> GetInstitutionNameAsync() => (await GetInstitutionAsync())?.Name;
-
     /// <summary>
     /// Builds this institution's live subdomain URL from its slug + the
     /// configured base domain (same "{slug}.{domain}" convention used by
@@ -77,7 +75,10 @@ public class NotificationDispatcher(
     {
         if (string.IsNullOrWhiteSpace(member.Phone) || pref is null || !pref.SmsAlerts) return;
 
-        var institutionName = await GetInstitutionNameAsync();
+        var institution = await GetInstitutionAsync();
+        if (institution?.SmsNotificationsEnabled == false) return;
+
+        var institutionName = institution?.Name;
         var smsMessage = string.IsNullOrWhiteSpace(institutionName) ? message : $"{institutionName}: {message}";
         await smsService.SendSmsAsync(member.Phone, smsMessage);
     }
@@ -421,15 +422,19 @@ public class NotificationDispatcher(
                 await notifRepo.AddRangeAsync(notifications);
             }
 
-            if (channels.Contains("Sms", StringComparer.OrdinalIgnoreCase))
+            var institution = await GetInstitutionAsync();
+            if (channels.Contains("Sms", StringComparer.OrdinalIgnoreCase) && institution?.SmsNotificationsEnabled != false)
             {
-                var institutionName = await GetInstitutionNameAsync();
-                var smsMessage = string.IsNullOrWhiteSpace(institutionName) ? message : $"{institutionName}: {message}";
+                var smsMessage = string.IsNullOrWhiteSpace(institution?.Name) ? message : $"{institution.Name}: {message}";
 
                 // Broadcasts override each member's individual SMS opt-in by
                 // design — an emergency/announcement notice should reach
                 // everyone with a phone number on file, unlike transactional
                 // notifications which respect NotificationPreference.SmsAlerts.
+                // The institution-wide SmsNotificationsEnabled switch still
+                // applies, though — if SMS is off for cost reasons, an admin
+                // composing a broadcast sees that up front (the SMS channel
+                // is disabled in the UI) rather than it silently no-op'ing here.
                 foreach (var r in recipients.Where(r => !string.IsNullOrWhiteSpace(r.Phone)))
                 {
                     await smsService.SendSmsAsync(r.Phone!, smsMessage);

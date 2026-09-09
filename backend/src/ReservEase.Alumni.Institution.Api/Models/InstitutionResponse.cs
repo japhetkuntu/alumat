@@ -24,6 +24,8 @@ public record InstitutionResponse(
     bool RequireStudentId,
     string MemberActivePolicy,
     bool PromptMembershipActivationAtSignup,
+    bool EmailNotificationsEnabled,
+    bool SmsNotificationsEnabled,
     List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
@@ -64,12 +66,19 @@ public record UpdateMemberActivePolicyRequest(string MemberActivePolicy);
 /// platform-only bulk feature toggle (Platform.Api's InstitutionsController).
 /// DigestEnabled/RecurringGivingEnabled toggle the two DisabledFeatures keys
 /// in InstitutionFeatures.SelfService — everything else in that list stays
-/// platform-staff-only. PromptMembershipActivationAtSignup is a separate,
-/// opt-in-by-default-false field (not a DisabledFeatures key), since most
-/// institutions don't want a payment ask on the registration success screen
-/// before a member is even approved.
+/// platform-staff-only. PromptMembershipActivationAtSignup,
+/// EmailNotificationsEnabled, and SmsNotificationsEnabled are separate
+/// dedicated fields (not DisabledFeatures keys): the first is opt-in
+/// (default false), the latter two are opt-out (default true, since the
+/// notifications already send today and turning them off is a deliberate
+/// cost decision, not a new capability being unlocked).
 /// </summary>
-public record UpdateSelfServiceFeaturesRequest(bool DigestEnabled, bool RecurringGivingEnabled, bool PromptMembershipActivationAtSignup);
+public record UpdateSelfServiceFeaturesRequest(
+    bool DigestEnabled,
+    bool RecurringGivingEnabled,
+    bool PromptMembershipActivationAtSignup,
+    bool EmailNotificationsEnabled,
+    bool SmsNotificationsEnabled);
 
 /// <summary>
 /// Submitted by this institution's own SuperAdmin only (unlike a batch's

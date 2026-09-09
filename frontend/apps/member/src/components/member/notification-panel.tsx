@@ -15,6 +15,7 @@ import {
 } from "@/lib/member-api";
 import type { NotificationItem } from "@/types";
 import { formatDistanceToNow } from "date-fns";
+import { getTypeMeta, TypeIcon, toNotificationPath } from "@/lib/notification-meta";
 
 function useNotifications() {
   const qc = useQueryClient();
@@ -54,37 +55,47 @@ function useNotifications() {
 function NotificationRow({
   notif,
   onMarkRead,
+  onNavigate,
 }: {
   notif: NotificationItem;
   onMarkRead: (id: string) => void;
+  onNavigate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const path = toNotificationPath(notif.actionUrl);
+  const meta = getTypeMeta(notif.type);
 
   const toggle = () => {
+    if (path) return;
     setExpanded((v) => !v);
     if (!notif.isRead) onMarkRead(notif.id);
   };
 
-  return (
+  const inner = (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={toggle}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+      role={path ? undefined : "button"}
+      tabIndex={path ? undefined : 0}
+      onClick={() => {
+        toggle();
+        if (path) {
+          if (!notif.isRead) onMarkRead(notif.id);
+          onNavigate();
+        }
+      }}
+      onKeyDown={(e) => { if (!path && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
       className={cn(
         "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
         !notif.isRead && "bg-accent/5"
       )}
     >
-      <div className="mt-1 shrink-0">
-        <div
-          className={cn(
-            "w-2 h-2 rounded-full mt-1",
-            notif.isRead ? "bg-transparent" : "bg-accent"
-          )}
-        />
-      </div>
+      <TypeIcon type={notif.type} size={14} boxPx={30} />
       <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: meta.color, opacity: 0.85 }}>
+            {meta.label}
+          </span>
+          {!notif.isRead && <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-accent" />}
+        </div>
         <p className={cn("text-[13px] leading-snug", !notif.isRead && "font-semibold")}>
           {notif.title}
         </p>
@@ -106,6 +117,9 @@ function NotificationRow({
       )}
     </div>
   );
+
+  if (path) return <Link href={path}>{inner}</Link>;
+  return inner;
 }
 
 export function NotificationPanel() {
@@ -139,9 +153,13 @@ export function NotificationPanel() {
       >
         <Bell size={20} className="text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-accent text-accent-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
+          <>
+            {/* Gentle ambient pulse — reinforces "something's waiting" without a full-on badge animation loop. */}
+            <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-accent/60 animate-ping" style={GPU_LAYER_STYLE} />
+            <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] rounded-full bg-accent text-accent-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          </>
         )}
       </Button>
 
@@ -223,6 +241,7 @@ export function NotificationPanel() {
                     key={n.id}
                     notif={n}
                     onMarkRead={(id) => markRead.mutate(id)}
+                    onNavigate={() => setOpen(false)}
                   />
                 ))}
               </div>

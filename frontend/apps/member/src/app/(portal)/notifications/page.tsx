@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import {
-  Bell, CheckCheck, Loader2, Briefcase, Megaphone, Calendar,
-  Star, CreditCard, MessageSquare, Check,
-} from "@alumni/ui";
+import { Bell, CheckCheck, Loader2, Check } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
@@ -18,17 +15,9 @@ import { toast } from "sonner";
 import { handleApiError } from "@/lib/api-client";
 import Link from "next/link";
 import { PageHeader } from "@alumni/ui";
+import { getTypeMeta, TypeIcon, toNotificationPath } from "@/lib/notification-meta";
 
-/* Extract path from a full URL — falls back to the string as-is if already a path */
-function toPath(url: string | null | undefined): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url).pathname;
-  } catch {
-    // Already a relative path
-    return url.startsWith("/") ? url : `/${url}`;
-  }
-}
+const toPath = toNotificationPath;
 
 /* Safe relative time */
 function relativeTime(dateStr: string | null | undefined): string {
@@ -36,38 +25,6 @@ function relativeTime(dateStr: string | null | undefined): string {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "";
   return formatDistanceToNow(d, { addSuffix: true });
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   NOTIFICATION TYPE META — inline styles, no hardcoded Tailwind color classes
-   ───────────────────────────────────────────────────────────────────────── */
-const TYPE_META: Record<string, {
-  icon: React.ElementType;
-  bg: string;
-  color: string;
-  label: string;
-}> = {
-  JobAlert:              { icon: Briefcase,     bg: "rgba(59,130,246,0.12)",  color: "#2563eb", label: "Job"          },
-  CampaignAlert:         { icon: Megaphone,     bg: "rgba(139,92,246,0.12)",  color: "#7c3aed", label: "Fundraiser"   },
-  EventReminder:         { icon: Calendar,      bg: "rgba(245,158,11,0.12)",  color: "#d97706", label: "Event"        },
-  SpotlightUpdate:       { icon: Star,          bg: "rgba(234,179,8,0.12)",   color: "#ca8a04", label: "Spotlight"    },
-  ContributionConfirmed: { icon: CreditCard,    bg: "rgba(16,185,129,0.12)",  color: "#059669", label: "Confirmed"    },
-  ContributionRejected:  { icon: CreditCard,    bg: "rgba(239,68,68,0.12)",   color: "#dc2626", label: "Rejected"     },
-  ClassNoteAlert:        { icon: MessageSquare, bg: "rgba(20,184,166,0.12)",  color: "#0d9488", label: "Class note"   },
-};
-const DEFAULT_META = { icon: Bell, bg: "var(--brand-primary-100, var(--color-background-info))", color: "var(--primary)", label: "Notification" };
-
-function TypeIcon({ type }: { type: string }) {
-  const m = TYPE_META[type] ?? DEFAULT_META;
-  const Icon = m.icon;
-  return (
-    <div
-      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-      style={{ background: m.bg, border: `1.5px solid ${m.bg.replace("0.12", "0.25")}` }}
-    >
-      <Icon size={16} style={{ color: m.color }} />
-    </div>
-  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -80,7 +37,7 @@ function NotifRow({
   onMarkRead: (id: string) => void;
   isPending: boolean;
 }) {
-  const meta = TYPE_META[notif.type] ?? DEFAULT_META;
+  const meta = getTypeMeta(notif.type);
   const path = toPath(notif.actionUrl);
   const time = relativeTime(notif.createdAt);
   const [expanded, setExpanded] = useState(false);

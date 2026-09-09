@@ -129,7 +129,17 @@ public class ReferralService(
 
             await referralRepo.AddAsync(referral);
 
-            // The actual send happens off-request in the notification actor.
+            // The actual send happens off-request in the notification actor —
+            // skipped entirely when the institution has email notifications
+            // turned off (cost control); the referral itself is still tracked
+            // above regardless, the referrer can still share their code manually.
+            var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            if (institution?.EmailNotificationsEnabled == false)
+            {
+                logger.LogInformation("Referral invitation email to {Email} skipped — email notifications are off for this institution", normalizedEmail);
+                return ((object)new { Message = "Invitation recorded." }).ToCreatedApiResponse("Invitation recorded.");
+            }
+
             var brand = await GetBrandVarsAsync();
             notificationActor.Tell(new SendEmailCommand(
                 new SendEmailRequest

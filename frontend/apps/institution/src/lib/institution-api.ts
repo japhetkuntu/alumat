@@ -138,6 +138,10 @@ export interface InstitutionProfileResponse {
   disabledFeatures: string[];
   /** Whether a just-registered member sees an "Activate your membership" payment prompt on the registration success screen. Opt-in, defaults to false. */
   promptMembershipActivationAtSignup: boolean;
+  /** Whether this institution sends outbound notification email (digest, referral invites). Never affects auth/signup email (OTP, verification, password reset), which always sends. Defaults to true. */
+  emailNotificationsEnabled: boolean;
+  /** Whether this institution sends outbound SMS (member alerts, broadcasts). A real per-message cost via Arkesel. Defaults to true. */
+  smsNotificationsEnabled: boolean;
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
   /** Overrides the Member Portal landing page's hero photo(s), shown as a carousel — falls back to generic stock art when empty. */
@@ -187,13 +191,15 @@ export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired
   return profile;
 }
 
-/** The two self-service feature toggles institution admins can flip themselves — the re-engagement digest email and recurring (monthly) giving. Everything else in disabledFeatures is platform-staff-only. */
-export async function updateSelfServiceFeatures(
-  digestEnabled: boolean,
-  recurringGivingEnabled: boolean,
-  promptMembershipActivationAtSignup: boolean,
-): Promise<InstitutionProfileResponse> {
-  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", { digestEnabled, recurringGivingEnabled, promptMembershipActivationAtSignup });
+/** The self-service toggles institution admins can flip themselves — the re-engagement digest, recurring (monthly) giving, the signup activation prompt, and outbound email/SMS notifications. Everything else in disabledFeatures is platform-staff-only. */
+export async function updateSelfServiceFeatures(features: {
+  digestEnabled: boolean;
+  recurringGivingEnabled: boolean;
+  promptMembershipActivationAtSignup: boolean;
+  emailNotificationsEnabled: boolean;
+  smsNotificationsEnabled: boolean;
+}): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", features);
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");

@@ -136,6 +136,7 @@ export default function MemberProfilePage() {
   const institutionName = navTheme?.displayName || "Alumni Member Portal";
   const disabledFeatures = useDisabledFeatures();
   const digestEnabled = !disabledFeatures.has("Digest");
+  const smsNotificationsEnabled = navTheme?.smsNotificationsEnabled ?? true;
 
   // Adjust local form state when the fetched profile changes — done during
   // render (React's documented alternative to an effect for this case)
@@ -607,12 +608,14 @@ export default function MemberProfilePage() {
               label="Spotlight Updates"
               description="Get notified about new alumni spotlights"
             />
-            <Toggle
-              checked={notifPrefs?.smsAlerts ?? false}
-              onChange={(v) => toggleNotif("smsAlerts", v)}
-              label="SMS Notifications"
-              description={profileForm.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number above to enable SMS alerts"}
-            />
+            {smsNotificationsEnabled && (
+              <Toggle
+                checked={notifPrefs?.smsAlerts ?? false}
+                onChange={(v) => toggleNotif("smsAlerts", v)}
+                label="SMS Notifications"
+                description={profileForm.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number above to enable SMS alerts"}
+              />
+            )}
             {/* WhatsApp notifications are wired up but hidden from the UI for
                 the pilot — email and SMS only for now. The underlying
                 whatsAppAlerts preference is left untouched, not forced off. */}
