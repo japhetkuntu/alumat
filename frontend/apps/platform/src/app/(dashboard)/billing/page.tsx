@@ -81,7 +81,7 @@ export default function BillingPage() {
   });
 
   const activeInstitutions = institutions.filter((i) => i.status === "Active");
-  const trialCount = institutions.filter((i) => i.status === "Trial").length;
+  const suspendedCount = institutions.filter((i) => i.status === "Suspended").length;
   const totalRevenue = institutions.reduce((s, i) => s + i.revenue, 0);
 
   // Last 6 months, Successful payments only, split by source.
@@ -117,7 +117,7 @@ export default function BillingPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Active institutions</p><p className="text-[24px] font-bold mt-1">{activeInstitutions.length}</p></CardContent></Card>
-        <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Trial institutions</p><p className="text-[24px] font-bold mt-1">{trialCount}</p></CardContent></Card>
+        <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Suspended institutions</p><p className="text-[24px] font-bold mt-1">{suspendedCount}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrency(totalRevenue, "GHS")}</p></CardContent></Card>
       </div>
 
@@ -320,7 +320,7 @@ export default function BillingPage() {
               <TableRow key={inst.id}>
                 <TableCell className="font-semibold">{inst.name}</TableCell>
                 <TableCell>
-                  <Badge variant={inst.status === "Suspended" ? "destructive" : inst.status === "Trial" ? "info" : "success"}>
+                  <Badge variant={inst.status === "Suspended" ? "destructive" : "success"}>
                     {inst.status}
                   </Badge>
                 </TableCell>

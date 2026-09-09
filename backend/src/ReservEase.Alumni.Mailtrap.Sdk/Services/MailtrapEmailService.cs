@@ -130,6 +130,12 @@ public class MailtrapEmailService(
         variables["brand_color_light"] = EmailColorPalette.Light(brandColor);
         variables["brand_color_soft"] = EmailColorPalette.Soft(brandColor);
         variables["brand_text_on_color"] = EmailColorPalette.TextOn(brandColor);
+        // Contrast-guaranteed text variants — for brand_color used as TEXT
+        // (an eyebrow label, a link) rather than as a fill. See TextSafeOn:
+        // without this, a light or pale picked color would be nearly
+        // invisible as small text on the email's white content background.
+        variables["brand_color_text"] = EmailColorPalette.TextSafeOn(brandColor, "#ffffff");
+        variables["brand_color_text_on_light"] = EmailColorPalette.TextSafeOn(brandColor, variables["brand_color_light"]);
 
         // Accent family, derived from the institution's own SecondaryColorHex
         // the same way the live UI derives --brand-accent* (see
@@ -149,6 +155,8 @@ public class MailtrapEmailService(
             variables["brand_accent_light"] = EmailColorPalette.Light(accentColor);
             variables["brand_accent_soft"] = EmailColorPalette.Soft(accentColor);
             variables["brand_text_on_accent"] = EmailColorPalette.TextOn(accentColor);
+            variables["brand_accent_text"] = EmailColorPalette.TextSafeOn(accentColor, "#ffffff");
+            variables["brand_accent_text_on_light"] = EmailColorPalette.TextSafeOn(accentColor, variables["brand_accent_light"]);
         }
         else
         {
@@ -157,6 +165,8 @@ public class MailtrapEmailService(
             variables["brand_accent_light"] = variables["brand_color_light"];
             variables["brand_accent_soft"] = variables["brand_color_soft"];
             variables["brand_text_on_accent"] = variables["brand_text_on_color"];
+            variables["brand_accent_text"] = variables["brand_color_text"];
+            variables["brand_accent_text_on_light"] = variables["brand_color_text_on_light"];
         }
 
         // The institution's own logo when they have one, otherwise the same
@@ -191,9 +201,14 @@ public class MailtrapEmailService(
 
         var brandColor = variables.GetValueOrDefault("brand_color", "#0e7143");
         var brandColorDark = variables.GetValueOrDefault("brand_color_dark", brandColor);
+        // The gradient runs brandColor -> brandColorDark, so the initial's
+        // text color needs to read against both ends, not just assume white
+        // always works — a light picked color would otherwise render a
+        // near-invisible white-on-pale-mark initial.
+        var textOnMark = variables.GetValueOrDefault("brand_text_on_color", EmailColorPalette.TextOn(brandColor));
         var initial = variables.GetValueOrDefault("brand_initial", "A");
         return "<div style=\"width:40px;height:40px;border-radius:11px;" +
-               $"background:linear-gradient(135deg,{brandColor},{brandColorDark});color:#ffffff;" +
+               $"background:linear-gradient(135deg,{brandColor},{brandColorDark});color:{textOnMark};" +
                "font-size:16px;font-weight:800;text-align:center;line-height:40px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">" +
                $"{initial}</div>";
     }
@@ -239,6 +254,12 @@ public class MailtrapEmailService(
         var brandColorDark = variables.GetValueOrDefault("brand_color_dark", EmailColorPalette.Dark(brandColor));
         var brandColorLight = variables.GetValueOrDefault("brand_color_light", EmailColorPalette.Light(brandColor));
         var brandColorSoft = variables.GetValueOrDefault("brand_color_soft", EmailColorPalette.Soft(brandColor));
+        // Contrast-guaranteed variants for text — see TextSafeOn: brandColorDark
+        // alone isn't guaranteed legible on white/pale backgrounds once a picked
+        // color is no longer forced into a mid-lightness band before use.
+        var brandColorText = variables.GetValueOrDefault("brand_color_text", EmailColorPalette.TextSafeOn(brandColor, "#ffffff"));
+        var brandColorTextOnLight = variables.GetValueOrDefault("brand_color_text_on_light", EmailColorPalette.TextSafeOn(brandColor, brandColorLight));
+        var brandTextOnColor = variables.GetValueOrDefault("brand_text_on_color", EmailColorPalette.TextOn(brandColor));
 
         var sb = new StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
@@ -248,17 +269,17 @@ public class MailtrapEmailService(
         sb.AppendLine(".wrapper{max-width:600px;margin:0 auto;padding:24px}");
         sb.AppendLine(".card{background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.08)}");
         sb.AppendLine(".header{text-align:center;padding-bottom:24px;border-bottom:1px solid #eee;margin-bottom:24px}");
-        sb.AppendLine($".header h1{{margin:0;font-size:22px;color:{brandColorDark}}}");
-        sb.AppendLine($".header .badge{{display:inline-block;background:{brandColor};color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:1px;margin-bottom:8px}}");
+        sb.AppendLine($".header h1{{margin:0;font-size:22px;color:{brandColorText}}}");
+        sb.AppendLine($".header .badge{{display:inline-block;background:{brandColor};color:{brandTextOnColor};font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:1px;margin-bottom:8px}}");
         sb.AppendLine(".content{font-size:15px;line-height:1.6}");
         sb.AppendLine($".var-block{{background:{brandColorLight};border:1px solid {brandColorSoft};border-radius:8px;padding:16px 20px;margin:16px 0;font-size:14px}}");
-        sb.AppendLine($".var-row{{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid {brandColorSoft}}}");
-        sb.AppendLine(".var-row:last-child{border-bottom:none}");
-        sb.AppendLine($".var-label{{font-weight:600;color:{brandColorDark};text-transform:capitalize}}");
-        sb.AppendLine(".var-value{color:#333}");
-        sb.AppendLine($".otp{{text-align:center;font-size:32px;font-weight:800;letter-spacing:8px;color:{brandColorDark};padding:16px 0}}");
+        sb.AppendLine($".var-row td{{padding:6px 0;border-bottom:1px solid {brandColorSoft}}}");
+        sb.AppendLine(".var-row:last-child td{border-bottom:none}");
+        sb.AppendLine($".var-label{{font-weight:600;color:{brandColorTextOnLight};text-transform:capitalize}}");
+        sb.AppendLine(".var-value{color:#333;text-align:right}");
+        sb.AppendLine($".otp{{text-align:center;font-size:32px;font-weight:800;letter-spacing:8px;color:{brandColorTextOnLight};padding:16px 0}}");
         sb.AppendLine(".footer{text-align:center;font-size:12px;color:#999;padding-top:20px;margin-top:24px;border-top:1px solid #eee}");
-        sb.AppendLine($".btn{{display:inline-block;background:{brandColor};color:#fff!important;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;margin:12px 0}}");
+        sb.AppendLine($".btn{{display:inline-block;background:{brandColor};color:{brandTextOnColor}!important;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;margin:12px 0}}");
         sb.AppendLine("</style></head><body>");
         sb.AppendLine("<div class=\"wrapper\"><div class=\"card\">");
 
@@ -302,14 +323,14 @@ public class MailtrapEmailService(
         var remaining = variables.Where(kv => !rendered.Contains(kv.Key)).ToList();
         if (remaining.Count > 0)
         {
-            sb.AppendLine("<div class=\"var-block\">");
+            sb.AppendLine("<div class=\"var-block\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">");
             foreach (var (key, value) in remaining)
             {
                 var label = string.Join(' ', key.Replace('_', ' ').Split(' ')
                     .Select(w => char.ToUpper(w[0]) + w[1..]));
-                sb.AppendLine($"<div class=\"var-row\"><span class=\"var-label\">{Sanitize(label)}</span><span class=\"var-value\">{Sanitize(value)}</span></div>");
+                sb.AppendLine($"<tr class=\"var-row\"><td class=\"var-label\">{Sanitize(label)}</td><td class=\"var-value\">{Sanitize(value)}</td></tr>");
             }
-            sb.AppendLine("</div>");
+            sb.AppendLine("</table></div>");
         }
 
         sb.AppendLine("</div>");

@@ -50,7 +50,7 @@ public class DigestSchedulerService(
         {
             var db = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
             institutionIds = await db.Institutions.IgnoreQueryFilters()
-                .Where(i => i.Status == "Active" || i.Status == "Trial")
+                .Where(i => i.Status == "Active")
                 .Select(i => i.Id)
                 .ToListAsync(stoppingToken);
         }

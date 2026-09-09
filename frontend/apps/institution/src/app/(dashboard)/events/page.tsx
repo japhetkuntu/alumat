@@ -13,7 +13,7 @@ import { FormSelect } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { formatDate, formatCurrency } from "@alumni/ui";
+import { formatDate, formatCurrency, cn } from "@alumni/ui";
 import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommunities } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
@@ -25,6 +25,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import type { AlumniEvent, EventStatus } from "@/types";
+
+function isPastEvent(e: { startDate: string; endDate?: string | null }): boolean {
+  return new Date(e.endDate ?? e.startDate).getTime() < Date.now();
+}
 
 const statusVariant: Record<EventStatus, "success" | "secondary" | "info" | "warning" | "destructive"> = {
   Upcoming: "info", Ongoing: "success", Completed: "secondary", Cancelled: "destructive",
@@ -264,7 +268,7 @@ export default function AdminEventsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {events.map((e) => (
-            <Card key={e.id} className="stagger-item hover:shadow-md transition-shadow overflow-hidden">
+            <Card key={e.id} className={cn("stagger-item hover:shadow-md transition-shadow overflow-hidden", isPastEvent(e) && "opacity-70")}>
               {e.bannerImageUrl && (
                 <div className="h-36 overflow-hidden">
                   <img src={e.bannerImageUrl} alt={e.title} className="w-full h-full object-cover" loading="lazy" />
@@ -272,7 +276,10 @@ export default function AdminEventsPage() {
               )}
               <CardContent className="p-5">
                 <div className="flex flex-wrap items-start justify-between mb-3 gap-2">
-                  <Badge variant={statusVariant[e.status]}>{e.status}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={statusVariant[e.status]}>{e.status}</Badge>
+                    {isPastEvent(e) && <Badge variant="secondary">Past</Badge>}
+                  </div>
                   {e.isTicketed && e.ticketPrice && (
                     <span className="text-sm font-semibold text-success">{formatCurrency(e.ticketPrice)}</span>
                   )}

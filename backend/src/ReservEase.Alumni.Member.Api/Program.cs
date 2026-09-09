@@ -84,6 +84,7 @@ builder.Services.AddScoped<IDigestService, DigestService>();
 builder.Services.AddHostedService<DigestSchedulerService>();
 builder.Services.AddScoped<IRecurringGivingProcessor, RecurringGivingProcessor>();
 builder.Services.AddHostedService<RecurringGivingSchedulerService>();
+builder.Services.AddHostedService<BirthdaySpotlightSchedulerService>();
 
 // Request body size limit (50 MB)
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 50 * 1024 * 1024);

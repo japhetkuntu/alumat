@@ -15,21 +15,19 @@
     .page { width: 100%; padding: 40px 20px 48px; }
     .email { width: 100%; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid {{brand_color_light}}; border-radius: 20px; overflow: hidden; box-shadow: 0 14px 38px rgba(20,24,31,0.08); }
     .bar { height: 6px; background: linear-gradient(90deg, {{brand_color}}, {{brand_color_dark}}); }
-    .email-header { padding: 26px 40px 4px; display: flex; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 10px; }
     .brand-name { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: #14181f; }
-    .eyebrow-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{brand_accent_dark}}; }
+    .eyebrow-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{brand_accent_text}}; white-space: nowrap; }
     .content { padding: 30px 40px 8px; }
-    .eyebrow { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {{brand_color}}; }
+    .eyebrow { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: {{brand_color_text}}; }
     h1 { margin: 0 0 16px; font-size: 26px; line-height: 1.25; letter-spacing: -0.01em; color: #14181f; font-weight: 800; }
     p { margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #4b5566; }
     p strong { color: #14181f; }
     .button { display: inline-block; padding: 15px 28px; background: {{brand_color}}; color: {{brand_text_on_color}} !important; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 15px; margin: 6px 0 22px; box-shadow: 0 8px 20px {{brand_color_soft}}; }
     .links { margin: 4px 0 26px; border: 1px solid {{brand_color_light}}; border-radius: 14px; overflow: hidden; }
-    .link-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; }
+    .link-row { padding: 16px 18px; }
     .link-row + .link-row { border-top: 1px solid {{brand_color_light}}; }
     .link-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8a93a3; margin: 0 0 3px; }
-    .link-url { font-size: 13.5px; font-weight: 600; color: {{brand_color_dark}}; word-break: break-all; }
+    .link-url { font-size: 13.5px; font-weight: 600; color: {{brand_color_text}}; word-break: break-all; }
     .footer { padding: 24px 40px 30px; background: #f5f3ee; border-top: 1px solid {{brand_color_light}}; text-align: center; }
     .footer p { margin: 0; color: #8a93a3; font-size: 12px; line-height: 1.6; }
   </style>
@@ -38,10 +36,15 @@
   <main class="page">
     <div class="email">
       <div class="bar"></div>
-      <div class="email-header">
-        <div class="brand">{{brand_mark_html}}<span class="brand-name">{{brand_name}}</span></div>
-        <span class="eyebrow-tag">Welcome</span>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="padding: 26px 0 4px 40px; width: 100%;" valign="middle">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td valign="middle">{{brand_mark_html}}</td>
+            <td valign="middle" class="brand-name" style="padding-left: 10px;">{{brand_name}}</td>
+          </tr></table>
+        </td>
+        <td style="padding: 26px 40px 4px 12px; white-space: nowrap;" valign="middle" align="right" class="eyebrow-tag">Welcome</td>
+      </tr></table>
       <div class="content">
         <p class="eyebrow">You're on the network</p>
         <h1>Welcome to {{brand_name}}</h1>

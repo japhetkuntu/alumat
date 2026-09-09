@@ -17,17 +17,13 @@ import { InstitutionStatus } from "@/types";
 
 const STATUS_FILTERS: { label: string; value: InstitutionStatus | "All" }[] = [
   { label: "All", value: "All" },
-  { label: "Trial", value: "Trial" },
   { label: "Active", value: "Active" },
   { label: "Suspended", value: "Suspended" },
-  { label: "Cancelled", value: "Cancelled" },
 ];
 
 const statusBadge: Record<string, { label: string; variant: "info" | "success" | "warning" | "destructive" }> = {
-  Trial: { label: "Trial", variant: "info" },
   Active: { label: "Active", variant: "success" },
   Suspended: { label: "Suspended", variant: "destructive" },
-  Cancelled: { label: "Cancelled", variant: "warning" },
 };
 
 export default function InstitutionsPage() {
@@ -160,8 +156,8 @@ export default function InstitutionsPage() {
                 <TableCell className="tabular-nums">{inst.memberCount.toLocaleString()}</TableCell>
                 <TableCell className="tabular-nums font-medium">{formatCurrency(inst.revenue, "GHS")}</TableCell>
                 <TableCell>
-                  <Badge variant={(statusBadge[inst.status] ?? statusBadge.Trial).variant}>
-                    {(statusBadge[inst.status] ?? statusBadge.Trial).label}
+                  <Badge variant={(statusBadge[inst.status] ?? statusBadge.Active).variant}>
+                    {(statusBadge[inst.status] ?? statusBadge.Active).label}
                   </Badge>
                 </TableCell>
                 <TableCell>{formatDate(inst.onboardedAt)}</TableCell>

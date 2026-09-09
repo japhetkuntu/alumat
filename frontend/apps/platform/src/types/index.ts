@@ -44,7 +44,7 @@ export interface LoginRequest {
   password: string;
 }
 
-export type InstitutionStatus = "Trial" | "Active" | "Suspended" | "Cancelled";
+export type InstitutionStatus = "Active" | "Suspended";
 
 export interface Institution {
   id: string;

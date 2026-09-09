@@ -129,7 +129,11 @@ public class Institution : BaseEntity
     /// </summary>
     public string? HeroHeadline { get; set; }
 
-    public string Status { get; set; } = "Trial";  // Trial, Active, Suspended, Cancelled
+    // Active or Suspended — a suspended institution's staff and members are
+    // locked out of login entirely, and every institution-scoped request is
+    // rejected except the Paystack payment callback (see
+    // TenantResolutionMiddleware), so in-flight transactions still settle.
+    public string Status { get; set; } = "Active";
     public DateTime? TrialEndsAt { get; set; }
     public DateTime OnboardedAt { get; set; } = DateTime.UtcNow;
 

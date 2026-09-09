@@ -161,7 +161,7 @@ public class InstitutionManagementService(
                 PrimaryColorHex = request.PrimaryColorHex,
                 SecondaryColorHex = request.SecondaryColorHex,
                 MemberActivePolicy = request.MemberActivePolicy,
-                Status = "Trial",
+                Status = "Active",
                 TrialEndsAt = DateTime.UtcNow.AddDays(14),
                 OnboardedAt = DateTime.UtcNow,
                 PlatformFeePercentage = request.PlatformFeePercentage,
@@ -251,6 +251,9 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateStatusAsync(string id, UpdateInstitutionStatusRequest request, string updatedBy, string actorName)
     {
+        if (request.Status != "Active" && request.Status != "Suspended")
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Status must be either \"Active\" or \"Suspended\"");
+
         var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -582,7 +585,7 @@ public class InstitutionManagementService(
     {
         var totalInstitutions = await db.Institutions.CountAsync();
         var activeCount = await db.Institutions.CountAsync(i => i.Status == "Active");
-        var trialCount = await db.Institutions.CountAsync(i => i.Status == "Trial");
+        var suspendedCount = await db.Institutions.CountAsync(i => i.Status == "Suspended");
         var totalMembers = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync();
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var newThisMonth = await db.Institutions.CountAsync(i => i.OnboardedAt >= monthStart);
@@ -605,7 +608,7 @@ public class InstitutionManagementService(
             growthLabels.Add(bucketStart.ToString("MMM"));
         }
 
-        return new PlatformDashboardSummary(totalInstitutions, activeCount, trialCount, totalMembers, newThisMonth, revenue, growthCounts, growthLabels)
+        return new PlatformDashboardSummary(totalInstitutions, activeCount, suspendedCount, totalMembers, newThisMonth, revenue, growthCounts, growthLabels)
             .ToOkApiResponse();
     }
 

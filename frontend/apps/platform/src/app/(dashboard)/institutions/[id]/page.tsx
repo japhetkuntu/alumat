@@ -42,10 +42,8 @@ const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
 
 const statusBadge: Record<string, { label: string; variant: "info" | "success" | "warning" | "destructive" }> = {
-  Trial: { label: "Trial", variant: "info" },
   Active: { label: "Active", variant: "success" },
   Suspended: { label: "Suspended", variant: "destructive" },
-  Cancelled: { label: "Cancelled", variant: "warning" },
 };
 
 /** A URL text field with an "Upload" button beside it — uploads to S3-backed storage and fills the field, instead of requiring a hand-pasted hosted URL. */
@@ -379,7 +377,7 @@ export default function InstitutionDetailPage() {
     setHeroHeadline(inst.heroHeadline ?? "");
   }
 
-  const badge = statusBadge[inst.status] ?? statusBadge.Trial;
+  const badge = statusBadge[inst.status] ?? statusBadge.Active;
 
   return (
     <div className="p-7 max-w-[1500px]">
@@ -408,20 +406,11 @@ export default function InstitutionDetailPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {inst.status !== "Active" && (
-                  <DropdownMenuItem onClick={() => statusMutation.mutate("Active")}>Activate</DropdownMenuItem>
-                )}
-                {inst.status !== "Trial" && (
-                  <DropdownMenuItem onClick={() => statusMutation.mutate("Trial")}>Move to trial</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => statusMutation.mutate("Active")}>Reactivate</DropdownMenuItem>
                 )}
                 {inst.status !== "Suspended" && (
                   <DropdownMenuItem onClick={() => statusMutation.mutate("Suspended")} className="text-destructive">
-                    Suspend
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {inst.status !== "Cancelled" && (
-                  <DropdownMenuItem onClick={() => statusMutation.mutate("Cancelled")} className="text-destructive">
-                    Cancel institution
+                    Suspend — locks out all staff and member logins
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

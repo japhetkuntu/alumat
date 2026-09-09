@@ -309,9 +309,19 @@ export default function BrandingSettingsPage() {
   if (institution && heroExistingImageUrls === null) setHeroExistingImageUrls(institution.heroImageUrls ?? []);
 
   const policyMutation = useMutation({
-    mutationFn: (policy: "DuesRequired" | "ApprovedOnly") => updateMemberActivePolicy(policy),
+    mutationFn: (policy: "DuesRequired" | "ApprovedOnly") => updateMemberActivePolicy(policy, !!institution?.requireStudentId),
     onSuccess: () => {
       toast.success("Active-member policy updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const requireStudentIdMutation = useMutation({
+    mutationFn: (requireStudentId: boolean) =>
+      updateMemberActivePolicy(institution?.memberActivePolicy ?? "DuesRequired", requireStudentId),
+    onSuccess: () => {
+      toast.success("Registration policy updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -327,8 +337,8 @@ export default function BrandingSettingsPage() {
   });
 
   // Every self-service-features Toggle patches just its own field — this
-  // fills in the other four from the institution's current live state so
-  // no call site has to repeat all five.
+  // fills in the others from the institution's current live state so no
+  // call site has to repeat them all.
   function patchFeatures(patch: Partial<Parameters<typeof updateSelfServiceFeatures>[0]>) {
     featuresMutation.mutate({
       digestEnabled: !institution?.disabledFeatures?.includes("Digest"),
@@ -336,6 +346,7 @@ export default function BrandingSettingsPage() {
       promptMembershipActivationAtSignup: !!institution?.promptMembershipActivationAtSignup,
       emailNotificationsEnabled: institution?.emailNotificationsEnabled ?? true,
       smsNotificationsEnabled: institution?.smsNotificationsEnabled ?? true,
+      birthdaySpotlightEnabled: !institution?.disabledFeatures?.includes("BirthdaySpotlight"),
       ...patch,
     });
   }
@@ -615,6 +626,12 @@ export default function BrandingSettingsPage() {
                       : "On: a member is active only once current and past dues are paid."
                   }
                 />
+                <Toggle
+                  checked={!!institution?.requireStudentId}
+                  onChange={(checked) => requireStudentIdMutation.mutate(checked)}
+                  label="Require student ID at registration"
+                  description="On: new members must enter a student/alumni ID number to register. Off: the field is optional."
+                />
               </CardContent>
             </Card>
           )}
@@ -646,6 +663,12 @@ export default function BrandingSettingsPage() {
                   onChange={(checked) => patchFeatures({ promptMembershipActivationAtSignup: checked })}
                   label="Prompt membership activation at signup"
                   description="Show new members a payment ask (or a 'nothing due yet' notice) right on the registration success screen, before they're even approved. Off by default."
+                />
+                <Toggle
+                  checked={!institution?.disabledFeatures?.includes("BirthdaySpotlight")}
+                  onChange={(checked) => patchFeatures({ birthdaySpotlightEnabled: checked })}
+                  label="Birthday spotlight"
+                  description="Members who add their date of birth get an automatic spotlight on their birthday, shown wherever spotlights appear. Several birthdays on the same day are combined into one."
                 />
               </CardContent>
             </Card>

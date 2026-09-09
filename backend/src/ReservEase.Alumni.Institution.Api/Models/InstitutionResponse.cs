@@ -81,10 +81,11 @@ public class UpdateInstitutionBrandingRequest
 
 /// <summary>
 /// Another institution-editable-themselves carve-out — how "active member"
-/// status is determined is this institution's own operational choice, not
-/// platform staff's, so it's edited here rather than via Platform.Api.
+/// status is determined, and whether a student ID is required at
+/// registration, are this institution's own operational choices, not
+/// platform staff's, so they're edited here rather than via Platform.Api.
 /// </summary>
-public record UpdateMemberActivePolicyRequest(string MemberActivePolicy);
+public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool RequireStudentId);
 
 /// <summary>
 /// Another institution-editable-themselves carve-out, distinct from the
@@ -103,7 +104,8 @@ public record UpdateSelfServiceFeaturesRequest(
     bool RecurringGivingEnabled,
     bool PromptMembershipActivationAtSignup,
     bool EmailNotificationsEnabled,
-    bool SmsNotificationsEnabled);
+    bool SmsNotificationsEnabled,
+    bool BirthdaySpotlightEnabled);
 
 /// <summary>
 /// Submitted by this institution's own SuperAdmin only (unlike a batch's

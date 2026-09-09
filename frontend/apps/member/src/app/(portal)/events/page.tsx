@@ -128,7 +128,8 @@ export default function MemberEventsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {events.map((e) => {
             const hasRsvp = rsvpSet.has(e.id);
-            const canRsvp = e.status === "Upcoming" || e.status === "Ongoing";
+            const isPast = new Date(e.endDate ?? e.startDate).getTime() < Date.now();
+            const canRsvp = (e.status === "Upcoming" || e.status === "Ongoing") && !isPast;
             const isFull  = e.capacity ? e.rsvpCount >= e.capacity : false;
             const isPending = pendingId === e.id;
 
@@ -137,7 +138,7 @@ export default function MemberEventsPage() {
                 key={e.id}
                 className={cn(
                   "rounded-2xl border overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
-                  e.status === "Cancelled" && "opacity-60",
+                  (e.status === "Cancelled" || isPast) && "opacity-60",
                 )}
                 style={{ borderColor: "var(--border)", background: "var(--background)" }}
               >
@@ -161,10 +162,15 @@ export default function MemberEventsPage() {
                   <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
 
                   {/* Status badge */}
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
                     <Badge variant={statusVariant[e.status]} className="text-[10px] font-semibold uppercase tracking-wide">
                       {e.status}
                     </Badge>
+                    {isPast && e.status !== "Completed" && e.status !== "Cancelled" && (
+                      <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">
+                        Past
+                      </Badge>
+                    )}
                   </div>
 
                   {/* RSVP tick */}

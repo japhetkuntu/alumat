@@ -118,6 +118,7 @@ public class InstitutionController(
             return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
 
         institution.MemberActivePolicy = request.MemberActivePolicy;
+        institution.RequireStudentId = request.RequireStudentId;
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
 
@@ -150,6 +151,7 @@ public class InstitutionController(
         }
         Set(InstitutionFeatures.Digest, request.DigestEnabled);
         Set(InstitutionFeatures.RecurringGiving, request.RecurringGivingEnabled);
+        Set(InstitutionFeatures.BirthdaySpotlight, request.BirthdaySpotlightEnabled);
 
         institution.DisabledFeatures = disabled.ToList();
         institution.PromptMembershipActivationAtSignup = request.PromptMembershipActivationAtSignup;

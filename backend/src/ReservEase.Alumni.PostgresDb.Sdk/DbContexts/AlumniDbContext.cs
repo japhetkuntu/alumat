@@ -26,6 +26,7 @@ internal sealed class IdentityJsonNamingPolicy : JsonNamingPolicy
 public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrentTenantService currentTenant) : DbContext(options)
 {
     public DbSet<Institution> Institutions => Set<Institution>();
+    public DbSet<PlatformSettings> PlatformSettings => Set<PlatformSettings>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
     public DbSet<SupportCase> SupportCases => Set<SupportCase>();
     public DbSet<OnboardingLead> OnboardingLeads => Set<OnboardingLead>();
@@ -339,6 +340,14 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
 
         // Spotlight
         modelBuilder.Entity<Spotlight>().Property(s => s.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
+        modelBuilder.Entity<Spotlight>().Property(s => s.MemberIds).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        var spotlightMemberListComparer = new ValueComparer<List<MemberSnapshot>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<MemberSnapshot>(l));
+        modelBuilder.Entity<Spotlight>().Property(s => s.Members).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<MemberSnapshot>>(jsonOpts)).Metadata.SetValueComparer(spotlightMemberListComparer);
         modelBuilder.Entity<Spotlight>().HasIndex(s => s.MemberId);
         modelBuilder.Entity<Spotlight>().HasIndex(s => s.Status);
 

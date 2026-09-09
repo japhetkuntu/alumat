@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Star, GraduationCap, Plus, Loader2, ChevronDown,
-  Send, X, CheckCircle2, Clock,
+  Send, X, CheckCircle2, Clock, PartyPopper,
 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
@@ -73,24 +73,51 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
       <div className="p-5">
         {/* Avatar + name row */}
         <div className="flex items-start gap-3 mb-4">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold overflow-hidden"
-            style={{ background: color.bg, border: `1.5px solid ${color.border}`, color: color.text }}
-          >
-            {spotlight.memberProfilePictureUrl ? (
-              <img src={spotlight.memberProfilePictureUrl} alt={spotlight.memberName ?? ""}
-                className="w-full h-full object-cover" />
-            ) : (
-              getInitials(spotlight.memberName ?? "A")
-            )}
-          </div>
+          {spotlight.type === "Birthday" && spotlight.coCelebrants && spotlight.coCelebrants.length > 0 ? (
+            <div className="flex items-center shrink-0" style={{ width: 10 + Math.min(spotlight.coCelebrants.length + 1, 3) * 26 }}>
+              {[{ memberId: spotlight.memberId, name: spotlight.memberName ?? "", profilePictureUrl: spotlight.memberProfilePictureUrl }, ...spotlight.coCelebrants]
+                .slice(0, 3)
+                .map((c, i) => {
+                  const cColor = avatarColor(c.name || "A");
+                  return (
+                    <div
+                      key={c.memberId}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-bold overflow-hidden ring-2"
+                      style={{ background: cColor.bg, color: cColor.text, borderColor: "transparent", marginLeft: i === 0 ? 0 : -10, zIndex: 3 - i, boxShadow: "0 0 0 2px var(--background)" }}
+                    >
+                      {c.profilePictureUrl ? (
+                        <img src={c.profilePictureUrl} alt={c.name} className="w-full h-full object-cover" />
+                      ) : (
+                        getInitials(c.name || "A")
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold overflow-hidden"
+              style={{ background: color.bg, border: `1.5px solid ${color.border}`, color: color.text }}
+            >
+              {spotlight.memberProfilePictureUrl ? (
+                <img src={spotlight.memberProfilePictureUrl} alt={spotlight.memberName ?? ""}
+                  className="w-full h-full object-cover" />
+              ) : (
+                getInitials(spotlight.memberName ?? "A")
+              )}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-[14px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
-                  {spotlight.memberName}
+                  {spotlight.type === "Birthday" && spotlight.coCelebrants && spotlight.coCelebrants.length > 0
+                    ? spotlight.coCelebrants.length === 1
+                      ? `${spotlight.memberName} & ${spotlight.coCelebrants[0].name}`
+                      : `${spotlight.memberName} + ${spotlight.coCelebrants.length} other${spotlight.coCelebrants.length === 1 ? "" : "s"}`
+                    : spotlight.memberName}
                 </p>
-                {spotlight.memberGraduationYear && (
+                {spotlight.memberGraduationYear && !(spotlight.coCelebrants && spotlight.coCelebrants.length > 0) && (
                   <p className="flex items-center gap-1 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     <GraduationCap size={11} /> Class of {spotlight.memberGraduationYear}
                   </p>
@@ -107,8 +134,9 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
 
         {/* Title */}
         {!featured && (
-          <p className="text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--accent)" }}>
-            Spotlight
+          <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--accent)" }}>
+            {spotlight.type === "Birthday" && <PartyPopper size={11} />}
+            {spotlight.type === "Birthday" ? "Birthday" : "Spotlight"}
           </p>
         )}
         <h3

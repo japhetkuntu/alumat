@@ -97,6 +97,38 @@ public static class EmailColorPalette
         return $"#{r:x2}{g:x2}{b:x2}";
     }
 
+    /// <summary>
+    /// A version of <paramref name="hex"/> guaranteed to be legible as TEXT
+    /// on <paramref name="backgroundHex"/> — walks lightness toward the
+    /// background's opposite extreme (darker for a light background,
+    /// lighter for a dark one) until WCAG contrast reaches
+    /// <paramref name="minContrast"/>, tapering chroma slightly along the
+    /// way so the result doesn't look neon, but keeping the original hue so
+    /// the text still reads as "that brand color" rather than generic gray.
+    /// Needed because <see cref="ClampSeed"/> no longer forces every picked
+    /// color into a mid-lightness band before use — an admin-picked color
+    /// that's very light or very dark would otherwise render as invisible,
+    /// or near-invisible, text.
+    /// </summary>
+    public static string TextSafeOn(string hex, string backgroundHex, double minContrast = 4.5)
+    {
+        var (l, c, h) = ToOklch(hex);
+        var bg = ParseHex(backgroundHex);
+        var darkening = RelativeLuminance(bg) > 0.4;
+        var testL = l;
+        var chroma = c;
+        for (var i = 0; i < 60; i++)
+        {
+            var candidate = FromOklch(testL, chroma, h);
+            if (ContrastRatio(ParseHex(candidate), bg) >= minContrast)
+                return candidate;
+            testL += darkening ? -0.015 : 0.015;
+            chroma *= 0.985;
+            if (testL <= 0.02 || testL >= 0.98) break;
+        }
+        return darkening ? "#111827" : "#f8fafc";
+    }
+
     private static string WithLightness(string hex, Func<double, double> adjustLightness, double chromaScale = 1.0)
     {
         var (l, c, h) = ToOklch(ClampSeed(hex));

@@ -303,6 +303,16 @@ public class ContributionService : IContributionService
             if (request.Amount <= 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Amount must be greater than zero.");
 
+            // Platform-wide toggle, off by default — deliberately never
+            // applies to membership-dues campaigns (handled entirely by the
+            // branch above, before this point is ever reached).
+            if (campaign.Deadline < DateTime.UtcNow)
+            {
+                var platformSettings = await db.PlatformSettings.FirstOrDefaultAsync(s => s.Id == PlatformSettings.SingletonId);
+                if (platformSettings?.BlockOverdueCampaignPayments == true)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<object>("This campaign's deadline has passed — contributions are no longer being accepted.");
+            }
+
             if (request.SetupRecurringGiving && member is null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("You must be logged in to set up a monthly gift.");
 

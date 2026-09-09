@@ -9,6 +9,8 @@ public class UpdateProfileRequest
     public string? Bio { get; set; }
     public string? Phone { get; set; }
     public string? EmploymentStatus { get; set; }
+    /// <summary>Opt-in. Only the month/day are ever used (the Birthday Spotlight feature) — the year carries no significance.</summary>
+    public DateTime? DateOfBirth { get; set; }
     public bool? ShowOnAlumniMap { get; set; }
     /// <summary>Real browser-geolocation coordinates, rounded client-side before sending — required whenever ShowOnAlumniMap is being turned on; ignored otherwise.</summary>
     public double? MapLatitude { get; set; }

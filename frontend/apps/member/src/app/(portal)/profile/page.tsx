@@ -101,7 +101,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 export default function MemberProfilePage() {
   const { logout } = useAuth();
   const [profileForm, setProfileForm] = useState({
-    company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "",
+    company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "", dateOfBirth: "",
   });
   const [showOnAlumniMap, setShowOnAlumniMap] = useState(false);
   const [employmentStatus, setEmploymentStatus] = useState("Employed");
@@ -152,6 +152,7 @@ export default function MemberProfilePage() {
       linkedInUrl: profile.linkedInUrl ?? "",
       bio:         profile.bio         ?? "",
       phone:       profile.phone       ?? "",
+      dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : "",
     });
     setEmploymentStatus(profile.employmentStatus ?? "Employed");
     setShowOnAlumniMap(profile.showOnAlumniMap ?? false);
@@ -165,6 +166,7 @@ export default function MemberProfilePage() {
       linkedInUrl:      profileForm.linkedInUrl || undefined,
       bio:              profileForm.bio         || undefined,
       phone:            profileForm.phone       || undefined,
+      dateOfBirth:      profileForm.dateOfBirth || undefined,
       employmentStatus,
       showOnAlumniMap,
     }),
@@ -405,6 +407,19 @@ export default function MemberProfilePage() {
                     value={profileForm.phone}
                     onChange={val => setProfileForm(f => ({ ...f, phone: val }))}
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="dateOfBirth" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Date of birth
+                  </Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={profileForm.dateOfBirth}
+                    onChange={e => setProfileForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                    className="h-11 text-[14px]"
+                  />
+                  <p className="text-[11.5px] text-muted-foreground">Optional — only the month and day are ever used, to celebrate your birthday with a spotlight.</p>
                 </div>
               </div>
 

@@ -13,6 +13,10 @@ public class Member : BaseEntity, ITenantScoped
     public string Password { get; set; } = string.Empty;
     public string? StudentId { get; set; }
     public int GraduationYear { get; set; }
+    // Opt-in — null unless the member has entered it themselves. Only the
+    // month/day are ever used (the Birthday Spotlight scheduler), so the
+    // year carries no real significance beyond what DateTime requires.
+    public DateTime? DateOfBirth { get; set; }
     public string DepartmentId { get; set; } = string.Empty;
     public string? Company { get; set; }
     public string? JobTitle { get; set; }

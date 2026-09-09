@@ -5,7 +5,7 @@ import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/rea
 import {
   CreditCard, Calendar, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
-  Briefcase, Star, UsersRound,
+  Briefcase, Star, UsersRound, UserCircle, MapPin, X,
 } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -213,6 +213,64 @@ function MembershipCardSkeleton() {
 /* ─────────────────────────────────────────────────────────────────────────
    ARREARS BANNER
    ───────────────────────────────────────────────────────────────────────── */
+const PROFILE_NUDGE_DISMISSED_KEY = "member-profile-nudge-dismissed";
+
+/**
+ * A quiet nudge toward the two things that make a profile actually useful to
+ * the rest of the community — a bio/photo people recognize them by, and a
+ * location so the Alumni Map isn't empty. Dismissible per-browser, and it
+ * naturally stops appearing on its own once both are filled in, so it never
+ * has to be dismissed at all if the member just does it.
+ */
+function ProfileCompletionBanner({ profile }: { profile: MemberProfileResponse | undefined }) {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(PROFILE_NUDGE_DISMISSED_KEY) === "true"; } catch { return false; }
+  });
+
+  if (dismissed || !profile) return null;
+
+  const missingBasics = !profile.bio && !profile.profilePictureUrl;
+  const missingLocation = !profile.location && !profile.showOnAlumniMap;
+  if (!missingBasics && !missingLocation) return null;
+
+  function dismiss() {
+    setDismissed(true);
+    try { localStorage.setItem(PROFILE_NUDGE_DISMISSED_KEY, "true"); } catch { /* ignore */ }
+  }
+
+  return (
+    <div className="relative rounded-2xl p-5 sm:p-6 bg-accent/5 border border-accent/25 animate-in fade-in slide-in-from-bottom-3 duration-500">
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss"
+        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+      >
+        <X size={14} />
+      </button>
+      <p className="font-bold text-[15px] text-foreground pr-6">Help classmates recognize you</p>
+      <p className="text-[13.5px] mt-1 mb-4 leading-relaxed text-muted-foreground max-w-lg">
+        A couple of quick additions make your profile — and the alumni network — a lot more useful.
+      </p>
+      <div className="flex flex-wrap gap-2.5">
+        {missingBasics && (
+          <Link href="/profile" className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:border-accent/50 transition-colors">
+            <UserCircle size={15} className="text-accent shrink-0" />
+            <span className="text-[12.5px] font-semibold">Add a photo &amp; bio</span>
+          </Link>
+        )}
+        {missingLocation && (
+          <Link href="/profile" className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:border-accent/50 transition-colors">
+            <MapPin size={15} className="text-accent shrink-0" />
+            <span className="text-[12.5px] font-semibold">Add your location</span>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ArrearsBanner({
   membershipStatus,
 }: {
@@ -557,6 +615,9 @@ export default function MemberDashboardPage() {
       {membershipStatus.isSuccess && (
         <ArrearsBanner membershipStatus={membershipStatus.data} />
       )}
+
+      {/* ── Profile completion nudge ── */}
+      <ProfileCompletionBanner profile={profile} />
 
       {/* ── Stat tiles ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100">

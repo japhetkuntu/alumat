@@ -109,12 +109,37 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
         if (institution is not null)
         {
+            // A suspended institution's staff and members are locked out of
+            // everything — including their own login — except the Paystack
+            // payment callback, which never goes through subdomain-based
+            // tenant resolution in the first place (it resolves the
+            // institution from the transaction reference instead, inside a
+            // background actor — see PaystackCallbackController), so an
+            // in-flight payment still settles even while the institution
+            // itself is locked out. This check exists purely to stop actual
+            // browser/app traffic reaching a suspended tenant; it is not
+            // what protects the callback (that's simply never reached here).
+            if (institution.Status == "Suspended" && !IsPaystackCallbackPath(context.Request.Path))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    message = "This institution's account has been suspended. Contact the platform team for help.",
+                    code = 403,
+                });
+                return;
+            }
+
             currentTenant.SetInstitutionId(institution.Id, institution.Slug);
             context.Items["Institution"] = institution;
         }
 
         await next(context);
     }
+
+    private static bool IsPaystackCallbackPath(PathString path) =>
+        path.Value?.Contains("/callbacks/paystack", StringComparison.OrdinalIgnoreCase) == true;
 
     /// <summary>Loopback, or one of the RFC1918/ULA private ranges Docker's default bridge networks draw from — never a publicly routable address.</summary>
     private static bool IsPrivateOrLoopback(System.Net.IPAddress ip)

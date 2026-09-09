@@ -205,9 +205,9 @@ export async function updateInstitutionBranding(branding: {
   return profile;
 }
 
-/** How "active member" status is determined — this institution's own operational choice. */
-export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly"): Promise<InstitutionProfileResponse> {
-  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy });
+/** How "active member" status is determined, and whether a student ID is required at registration — this institution's own operational choices. */
+export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly", requireStudentId: boolean): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy, requireStudentId });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -222,6 +222,7 @@ export async function updateSelfServiceFeatures(features: {
   promptMembershipActivationAtSignup: boolean;
   emailNotificationsEnabled: boolean;
   smsNotificationsEnabled: boolean;
+  birthdaySpotlightEnabled: boolean;
 }): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", features);
   const profile = res.data.data;

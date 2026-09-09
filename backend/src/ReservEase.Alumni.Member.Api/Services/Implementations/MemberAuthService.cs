@@ -590,6 +590,7 @@ public class MemberAuthService(
             member.LinkedInUrl = request.LinkedInUrl ?? member.LinkedInUrl;
             member.Bio = request.Bio ?? member.Bio;
             member.Phone = request.Phone ?? member.Phone;
+            member.DateOfBirth = request.DateOfBirth ?? member.DateOfBirth;
             member.ShowOnAlumniMap = request.ShowOnAlumniMap ?? member.ShowOnAlumniMap;
 
             if (!member.ShowOnAlumniMap)
@@ -821,5 +822,5 @@ public class MemberAuthService(
         m.Location, m.LinkedInUrl, m.Bio,
         m.ProfilePictureUrl, m.Status, m.EmploymentStatus,
         m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,
-        m.ShowOnAlumniMap, m.MapLatitude, m.MapLongitude);
+        m.ShowOnAlumniMap, m.MapLatitude, m.MapLongitude, m.DateOfBirth);
 }

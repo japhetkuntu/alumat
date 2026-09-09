@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909170701_SimplifyInstitutionStatus")]
+    partial class SimplifyInstitutionStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1207,9 +1210,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("DepartmentId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2107,14 +2107,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("MemberIds")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Members")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2124,10 +2116,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -2723,32 +2711,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PlatformNotifications", "alumni");
-                });
-
-            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.PlatformSettings", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("BlockOverdueCampaignPayments")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PlatformSettings", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.PlatformStaff", b =>

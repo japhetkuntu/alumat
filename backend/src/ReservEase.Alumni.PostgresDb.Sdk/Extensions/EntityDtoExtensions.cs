@@ -419,6 +419,15 @@ public static class EntityDtoExtensions
         Status = s.Status,
         FeaturedMonth = s.FeaturedMonth,
         CreatedAt = s.CreatedAt,
+        Type = s.Type,
+        // The first celebrant is already MemberId/Member above — everyone
+        // else in the group (a shared birthday) goes here.
+        CoCelebrants = s.Members.Skip(1).Select(m => new SpotlightCoCelebrantDto
+        {
+            MemberId = m.Id,
+            Name = $"{m.FirstName} {m.LastName}",
+            ProfilePictureUrl = m.ProfilePictureUrl,
+        }).ToList(),
     };
 
     public static ReferralDto ToDto(this Referral r) => new()

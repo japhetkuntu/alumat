@@ -1,22 +1,55 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { Lock, Eye, EyeOff, AlertCircle, Loader2 } from "@alumni/ui";
+import { Lock, Eye, EyeOff, AlertCircle, Loader2, Landmark } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { changePlatformPassword } from "@/lib/platform-api";
+import { changePlatformPassword, getPlatformSettings, updatePlatformSettings } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-60 disabled:cursor-not-allowed",
+        checked ? "bg-primary" : "bg-muted"
+      )}
+    >
+      <span className={cn("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform", checked ? "translate-x-5" : "translate-x-0")} />
+    </button>
+  );
+}
 
 export default function PlatformSettingsPage() {
   const { user, logout, setSession } = useAuth();
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
   const [showPw, setShowPw] = useState(false);
+  const qc = useQueryClient();
+
+  const { data: platformSettings } = useQuery({
+    queryKey: ["platform-settings"],
+    queryFn: getPlatformSettings,
+  });
+
+  const settingsMut = useMutation({
+    mutationFn: updatePlatformSettings,
+    onSuccess: (data) => {
+      qc.setQueryData(["platform-settings"], data);
+      toast.success("Platform settings updated");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
 
   const pwMut = useMutation({
     mutationFn: () => changePlatformPassword(pwForm.currentPassword, pwForm.newPassword),
@@ -148,6 +181,26 @@ export default function PlatformSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mb-4">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <Landmark size={15} className="text-primary" />
+          <p className="text-[14px] font-semibold">Fundraising</p>
+        </div>
+        <CardContent className="p-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[13.5px] font-semibold">Block payment for overdue fundraisers</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5 max-w-lg">
+              When on, a fundraising campaign whose deadline has passed stops accepting new contributions, across every institution. Membership dues are never affected — they have no deadline of their own.
+            </p>
+          </div>
+          <Toggle
+            checked={!!platformSettings?.blockOverdueCampaignPayments}
+            disabled={settingsMut.isPending}
+            onChange={(checked) => settingsMut.mutate({ blockOverdueCampaignPayments: checked })}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-5 flex items-center justify-between">

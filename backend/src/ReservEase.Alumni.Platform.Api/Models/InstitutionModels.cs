@@ -215,7 +215,7 @@ public record BankOption(string Name, string Code);
 public record ResolvedAccountResponse(string AccountNumber, string AccountName);
 
 public record PlatformDashboardSummary(
-    int TotalInstitutions, int ActiveCount, int TrialCount,
+    int TotalInstitutions, int ActiveCount, int SuspendedCount,
     int TotalMembers, int NewInstitutionsThisMonth,
     decimal Revenue, List<int> GrowthLast6Months, List<string> GrowthMonthLabels);
 

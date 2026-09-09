@@ -41,13 +41,15 @@ public static class InstitutionFeatures
     public const string Digest = "Digest";
     /// <summary>Members setting up a standing "give ₵X every month" gift, charged automatically via a saved Paystack authorization. Self-service — see SelfService below.</summary>
     public const string RecurringGiving = "RecurringGiving";
+    /// <summary>Members can add their date of birth; on that day the system auto-creates a Spotlight celebrating them (grouped with anyone else sharing the day). Self-service — see SelfService below. Meaningless if Spotlights itself is disabled.</summary>
+    public const string BirthdaySpotlight = "BirthdaySpotlight";
 
     public static readonly IReadOnlyList<string> All =
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
         Communities, ManualPayments, AlumniMap, Calendar, Store, PhotoAlbums,
-        BusinessDirectory, Digest, RecurringGiving,
+        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight,
     ];
 
     /// <summary>
@@ -58,7 +60,7 @@ public static class InstitutionFeatures
     /// small: only features where a wrong self-service call can't strand the
     /// institution's core data or billing, unlike e.g. Contributions or Store.
     /// </summary>
-    public static readonly IReadOnlyList<string> SelfService = [Digest, RecurringGiving];
+    public static readonly IReadOnlyList<string> SelfService = [Digest, RecurringGiving, BirthdaySpotlight];
 
     /// <summary>
     /// Label + one-line description per key — the single source of truth the
@@ -89,5 +91,6 @@ public static class InstitutionFeatures
         (BusinessDirectory, "Business directory", "Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable by other members."),
         (Digest, "Re-engagement digest", "A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."),
         (RecurringGiving, "Recurring giving", "Members can set up a standing monthly gift, charged automatically."),
+        (BirthdaySpotlight, "Birthday spotlight", "Members can add their date of birth; on their birthday the system automatically creates a spotlight celebrating them."),
     ];
 }

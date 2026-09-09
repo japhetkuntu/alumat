@@ -32,6 +32,22 @@ export async function changePlatformPassword(currentPassword: string, newPasswor
   return res.data.data!;
 }
 
+// ─── Platform-wide settings ──────────────────────────────────────────────
+
+export interface PlatformSettings {
+  blockOverdueCampaignPayments: boolean;
+}
+
+export async function getPlatformSettings(): Promise<PlatformSettings> {
+  const res = await platformClient.get<ApiResponse<PlatformSettings>>("/platform-settings");
+  return res.data.data!;
+}
+
+export async function updatePlatformSettings(settings: PlatformSettings): Promise<PlatformSettings> {
+  const res = await platformClient.patch<ApiResponse<PlatformSettings>>("/platform-settings", settings);
+  return res.data.data!;
+}
+
 // ─── Institutions ────────────────────────────────────────────────────────
 
 export interface InstitutionListItem {
@@ -520,7 +536,7 @@ export async function updatePlatformStaff(id: string, req: { name: string; role?
 export interface DashboardSummary {
   totalInstitutions: number;
   activeCount: number;
-  trialCount: number;
+  suspendedCount: number;
   totalMembers: number;
   newInstitutionsThisMonth: number;
   revenue: number;

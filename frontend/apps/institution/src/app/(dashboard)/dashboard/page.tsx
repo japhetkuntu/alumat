@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
@@ -9,8 +10,74 @@ import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getPayoutForecast } from "@/lib/institution-api";
+import { Sparkles, Landmark, X } from "@alumni/ui";
+import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getPayoutForecast, getInstitutionProfile } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
+
+const DEFAULT_PRIMARY_COLOR = "#2563eb";
+const SETUP_NUDGE_DISMISSED_KEY = "institution-setup-nudge-dismissed";
+
+/**
+ * A quiet, dismissible nudge for the two setup steps that actually matter —
+ * a real brand identity and a working payout — shown only to a SuperAdmin
+ * (both are SuperAdmin-only settings) and only while at least one is still
+ * outstanding. Dismissal is per-browser (localStorage), not permanent: it
+ * comes back on a fresh device/browser, which is deliberate — this is a
+ * reminder, not a one-time tour, and a still-incomplete institution is worth
+ * re-surfacing to whoever's looking.
+ */
+function SetupNudgeBanner() {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(SETUP_NUDGE_DISMISSED_KEY) === "true"; } catch { return false; }
+  });
+  const { data: institution } = useQuery({ queryKey: ["institution-profile"], queryFn: getInstitutionProfile });
+
+  if (dismissed || !institution) return null;
+
+  const brandingIncomplete = !institution.logoUrl && (!institution.primaryColorHex || institution.primaryColorHex.toLowerCase() === DEFAULT_PRIMARY_COLOR);
+  const payoutIncomplete = institution.payoutStatus === "None" || institution.payoutStatus === "Rejected";
+  if (!brandingIncomplete && !payoutIncomplete) return null;
+
+  function dismiss() {
+    setDismissed(true);
+    try { localStorage.setItem(SETUP_NUDGE_DISMISSED_KEY, "true"); } catch { /* ignore */ }
+  }
+
+  return (
+    <div className="relative rounded-lg border border-accent/30 bg-accent/5 px-4 py-3.5 mb-4 pr-10">
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss"
+        className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+      >
+        <X size={14} />
+      </button>
+      <p className="text-[13px] font-semibold mb-2">Finish setting up your institution</p>
+      <div className="flex flex-wrap gap-2.5">
+        {brandingIncomplete && (
+          <Link href="/settings" className="flex items-center gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:border-accent/50 transition-colors">
+            <Sparkles size={14} className="text-accent shrink-0" />
+            <span className="text-[12.5px]">
+              <span className="font-semibold">Add your logo and colors</span>
+              <span className="text-muted-foreground"> — right now members see the platform default.</span>
+            </span>
+          </Link>
+        )}
+        {payoutIncomplete && (
+          <Link href="/settings" className="flex items-center gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:border-accent/50 transition-colors">
+            <Landmark size={14} className="text-accent shrink-0" />
+            <span className="text-[12.5px]">
+              <span className="font-semibold">Set up payouts</span>
+              <span className="text-muted-foreground"> — dues and contributions can&apos;t settle to your account yet.</span>
+            </span>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -39,7 +106,8 @@ function PayoutPanel() {
     return (
       <div className="card p-[18px] mt-3.5">
         <p className="text-[13px] text-muted-foreground">
-          Settlement banking isn&apos;t set up yet. Ask the platform team to add your payout details to start seeing expected payouts here.
+          Settlement banking isn&apos;t set up yet.{" "}
+          <Link href="/settings" className="text-accent font-semibold hover:underline">Set up payouts</Link> to start seeing expected payouts here.
         </p>
       </div>
     );
@@ -77,7 +145,7 @@ function PayoutPanel() {
 }
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, isScopedAdmin } = useAuth();
   const results = useQueries({
     queries: [
       { queryKey: ["dash-members-total"], queryFn: () => getMembers({ pageSize: 1 }) },
@@ -159,6 +227,8 @@ export default function AdminDashboardPage() {
           All institution records
         </span>
       </div>
+
+      {!isScopedAdmin && <SetupNudgeBanner />}
 
       {hasNoBatches && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/50 px-4 py-3 mb-4">

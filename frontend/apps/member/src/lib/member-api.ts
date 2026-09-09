@@ -71,6 +71,8 @@ export interface MemberProfileResponse {
   showOnAlumniMap?: boolean;
   mapLatitude?: number;
   mapLongitude?: number;
+  /** Only month/day are ever used (Birthday Spotlight) — ISO date string, e.g. "1998-04-12". */
+  dateOfBirth?: string;
 }
 
 export interface MembershipStatusResponse {
@@ -103,6 +105,8 @@ export interface UpdateProfileBody {
   mapLatitude?: number;
   mapLongitude?: number;
   profilePicture?: File;
+  /** ISO date string, e.g. "1998-04-12" — only month/day are ever used. */
+  dateOfBirth?: string;
 }
 
 export async function updateMyProfile(body: UpdateProfileBody) {

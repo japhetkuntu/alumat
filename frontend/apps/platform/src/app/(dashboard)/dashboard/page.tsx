@@ -53,7 +53,7 @@ export default function PlatformDashboardPage() {
           <StatCard
             label="Total institutions"
             value={summary?.totalInstitutions ?? "—"}
-            sub={`${summary?.activeCount ?? 0} active · ${summary?.trialCount ?? 0} trial`}
+            sub={`${summary?.activeCount ?? 0} active · ${summary?.suspendedCount ?? 0} suspended`}
           />
           <StatCard
             label="Total members"
@@ -122,7 +122,7 @@ export default function PlatformDashboardPage() {
                 <p className="text-[13px] font-semibold truncate">{inst.name}</p>
                 <p className="text-[12px] text-muted-foreground font-mono truncate">{inst.memberPortalUrl.replace(/^https?:\/\//, "")}</p>
               </div>
-              <Badge variant={inst.status === "Trial" ? "info" : "success"}>{inst.status}</Badge>
+              <Badge variant={inst.status === "Suspended" ? "destructive" : "success"}>{inst.status}</Badge>
             </div>
           ))}
         </CardContent>

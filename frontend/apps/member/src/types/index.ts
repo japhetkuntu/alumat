@@ -493,6 +493,12 @@ export interface MemberBadge {
   createdAt: string;
 }
 
+export interface SpotlightCoCelebrant {
+  memberId: string;
+  name: string;
+  profilePictureUrl?: string;
+}
+
 export interface Spotlight {
   id: string;
   memberId: string;
@@ -505,6 +511,10 @@ export interface Spotlight {
   status: "Pending" | "Approved" | "Rejected";
   featuredMonth?: string;
   createdAt: string;
+  /** "Manual" (the original admin/self-submitted flow) or "Birthday" (system-generated). */
+  type?: "Manual" | "Birthday";
+  /** Only present (and only ever non-empty) on a "Birthday" spotlight covering several members who share a birthday — memberName/memberId above is just the first of them. */
+  coCelebrants?: SpotlightCoCelebrant[];
 }
 
 export interface Referral {
