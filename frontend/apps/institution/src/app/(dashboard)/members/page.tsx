@@ -28,6 +28,8 @@ const CSV_HEADERS = ["firstName", "lastName", "email", "phone", "studentId", "gr
 const CSV_TEMPLATE = [
   CSV_HEADERS.join(","),
   `Kwame,Mensah,kwame@example.com,+233241234567,ENG/20/0001,2020`,
+  // Shows optional columns (phone, studentId) can be left blank — only firstName/lastName/email/graduationYear are required.
+  `Ama,Owusu,ama@example.com,,,2019`,
 ].join("\n");
 
 function downloadCsvTemplate() {
@@ -558,10 +560,16 @@ export default function AdminMembersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <button type="button" onClick={downloadCsvTemplate} className="text-[12.5px] font-semibold text-accent hover:underline">
-              <Download size={12} className="inline mr-1 -mt-0.5" />
-              Download a CSV template
-            </button>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/5 px-3.5 py-3">
+              <div>
+                <p className="text-[13px] font-semibold">Not sure how to format your file?</p>
+                <p className="text-[11.5px] text-muted-foreground mt-0.5">Start from our template — it opens fine in Excel, Numbers, or Google Sheets. Fill it in and save as CSV.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={downloadCsvTemplate} className="shrink-0">
+                <Download size={13} />
+                Get template
+              </Button>
+            </div>
 
             <label
               className={cn(

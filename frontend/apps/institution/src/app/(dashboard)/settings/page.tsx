@@ -584,7 +584,7 @@ export default function BrandingSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 h-fit sticky top-4">
+          <Card className="border-border/40 h-fit">
             <CardContent className="p-5">
               <p className="font-semibold text-[14px] mb-1">Brand preview</p>
               <p className="text-[12px] text-muted-foreground mb-3">How your colors read across the portal, live as you edit.</p>

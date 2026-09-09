@@ -118,29 +118,32 @@ function hueDistanceDeg(h1: number, h2: number): number {
   return diff > 180 ? 360 - diff : diff;
 }
 
+function normalizeHex(hex: string): string {
+  const [r, g, b] = parseHex(hex);
+  return toHex(r, g, b);
+}
+
 /**
- * Softly clamps a seed color into a workable saturation/lightness band
- * before any derivation happens.
- *
- * `fallbackHueHex` (typically the institution's own secondary color) is
- * used only when the seed itself is achromatic (white/black/gray — hue is
- * meaningless there, and numerically noisy — atan2 near the origin). This
- * used to fall back to the platform's own default green hue, which meant
- * an institution whose primary happened to be white/gray rendered a
- * platform-green UI instead of anything derived from their own brand —
- * exactly the "hardcoded color leaking through" bug this now avoids: an
- * achromatic seed borrows hue from the institution's OTHER real color when
- * one is available, and otherwise stays genuinely neutral (nearly zero
- * chroma) rather than inventing a hue that isn't theirs.
+ * A picked color with any real chroma in it is used exactly as picked —
+ * admins expect the color they chose to be the color they see, not a
+ * "corrected" one. This used to also rebalance lightness into a fixed
+ * band, which pushed light, saturated seeds (e.g. a bright cyan) out of
+ * the sRGB gamut; the OKLCH-to-RGB conversion then silently channel-clips
+ * out-of-gamut values, which shifts the visible hue toward whatever
+ * channel got clipped — a light cyan clamped darker could come back out
+ * looking blue. Only a genuinely achromatic seed (white/black/gray — hue
+ * is meaningless there, and numerically noisy, atan2 near the origin)
+ * still gets a derived hue, via `fallbackHueHex` (typically the
+ * institution's own secondary color) when available, or stays neutral.
  */
 export function clampSeed(hex: string, fallbackHueHex?: string): string {
   const { l, c, h } = toOklch(hex);
-  const clampedL = Math.min(MAX_LIGHTNESS, Math.max(MIN_LIGHTNESS, l));
 
   if (c >= 0.02) {
-    return fromOklch(clampedL, Math.max(c, MIN_CHROMA), h);
+    return normalizeHex(hex);
   }
 
+  const clampedL = Math.min(MAX_LIGHTNESS, Math.max(MIN_LIGHTNESS, l));
   const fallback = fallbackHueHex ? toOklch(fallbackHueHex) : null;
   if (fallback && fallback.c >= 0.02) {
     // Borrow the institution's other real color's hue, at a muted chroma —

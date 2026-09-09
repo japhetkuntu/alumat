@@ -69,21 +69,32 @@ public static class EmailColorPalette
         return whiteContrast >= blackContrast ? "#ffffff" : "#111827";
     }
 
-    /// <summary>Softly clamps a seed color into a workable saturation/lightness band before any derivation happens.</summary>
+    /// <summary>
+    /// A picked color with any real chroma in it is used exactly as picked —
+    /// admins expect the color they chose to be the color they see, not a
+    /// "corrected" one. This used to also rebalance lightness into a fixed
+    /// band, which pushed light, saturated seeds (e.g. a bright cyan) out of
+    /// the sRGB gamut; the OKLCH-to-RGB conversion then silently
+    /// channel-clips out-of-gamut values, which shifts the visible hue
+    /// toward whatever channel got clipped — a light cyan clamped darker
+    /// could come back out looking blue. Only a genuinely achromatic seed
+    /// (white/black/gray — hue is meaningless there, and numerically noisy,
+    /// atan2 near the origin) still falls back to the platform's own hue.
+    /// </summary>
     public static string ClampSeed(string hex)
     {
         var (l, c, h) = ToOklch(hex);
-
-        // Hue is meaningless (and numerically noisy — atan2 near the origin)
-        // once chroma is this low: white, black, and every shade of gray all
-        // have "no real color", so deriving one from floating-point noise
-        // produces an arbitrary muddy tint instead of admitting there's no
-        // brand hue to work with. Fall back to the platform's own hue.
-        var hueSource = c < 0.02 ? DefaultHue : h;
+        if (c >= 0.02)
+            return NormalizeHex(hex);
 
         var clampedL = Math.Clamp(l, MinLightness, MaxLightness);
-        var clampedC = Math.Max(c, MinChroma);
-        return FromOklch(clampedL, clampedC, hueSource);
+        return FromOklch(clampedL, MinChroma, DefaultHue);
+    }
+
+    private static string NormalizeHex(string hex)
+    {
+        var (r, g, b) = ParseHex(hex);
+        return $"#{r:x2}{g:x2}{b:x2}";
     }
 
     private static string WithLightness(string hex, Func<double, double> adjustLightness, double chromaScale = 1.0)
