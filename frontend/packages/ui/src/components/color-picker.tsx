@@ -39,7 +39,13 @@ export interface ColorPickerProps {
 export function ColorPicker({ label, value, onChange, presets, placeholder = "#2563EB", helperText, className }: ColorPickerProps) {
   const [draft, setDraft] = React.useState(value);
   const [invalid, setInvalid] = React.useState(false);
-  const swatchColor = normalizeHex(value) ?? "#94A3B8";
+  // Nothing chosen yet is a real, distinct state — worth showing as visibly
+  // empty (not a filled-in color) so it's never mistaken for a deliberate
+  // pick. A caller substituting some other hex as a "default" here would
+  // recreate exactly that confusion, so this component owns the empty look
+  // itself rather than leaving it to callers to fake a placeholder color.
+  const isSet = normalizeHex(value) !== null;
+  const swatchColor = normalizeHex(value) ?? "#FFFFFF";
 
   React.useEffect(() => {
     setDraft(value);
@@ -61,8 +67,16 @@ export function ColorPicker({ label, value, onChange, presets, placeholder = "#2
       {label && <Label>{label}</Label>}
       <div className="flex items-center gap-2">
         <span
-          className="relative shrink-0 w-11 h-11 border border-input overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-105 active:scale-95"
-          style={{ background: swatchColor }}
+          className={cn(
+            "relative shrink-0 w-11 h-11 overflow-hidden cursor-pointer transition-transform duration-150 hover:scale-105 active:scale-95",
+            isSet ? "border border-input" : "border border-dashed border-muted-foreground/50"
+          )}
+          style={{
+            background: isSet
+              ? swatchColor
+              : "repeating-linear-gradient(45deg, transparent, transparent 4px, var(--muted) 4px, var(--muted) 8px)",
+          }}
+          title={isSet ? swatchColor : "Not set"}
         >
           <input
             type="color"
@@ -80,14 +94,15 @@ export function ColorPicker({ label, value, onChange, presets, placeholder = "#2
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => commit(draft)}
           onKeyDown={(e) => e.key === "Enter" && commit(draft)}
-          placeholder={placeholder}
+          placeholder={isSet ? placeholder : "Not set"}
           error={invalid}
           className="w-[140px] font-mono uppercase tracking-wide"
           maxLength={7}
         />
       </div>
       {invalid && <p className="text-[11.5px] text-destructive">Enter a valid hex color, like #2563EB.</p>}
-      {!invalid && helperText && <p className="text-[11.5px] text-muted-foreground">{helperText}</p>}
+      {!invalid && !isSet && <p className="text-[11.5px] text-muted-foreground">Click the swatch or type a hex to set this color.</p>}
+      {!invalid && isSet && helperText && <p className="text-[11.5px] text-muted-foreground">{helperText}</p>}
       {presets && presets.length > 0 && (
         <div className="flex items-center gap-1.5 pt-0.5">
           {presets.map((p) => {

@@ -34,7 +34,20 @@ public class RecurringGivingSchedulerService(
         using var timer = new PeriodicTimer(TickInterval);
         do
         {
-            await RunCycleAsync(stoppingToken);
+            // The institution lookup below (and anything else outside the
+            // per-institution try/catch) must never throw out of here.
+            // HostOptions.BackgroundServiceExceptionBehavior is StopHost
+            // (the app-wide default), so ANY unhandled exception from a
+            // BackgroundService takes down the entire process, not just this
+            // scheduler.
+            try
+            {
+                await RunCycleAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Recurring giving scheduler cycle failed");
+            }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }

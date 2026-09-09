@@ -32,6 +32,14 @@ public static class EmailColorPalette
     private const double MaxLightness = 0.62;
     private const double MinChroma = 0.06;
 
+    // A true neutral (pure white/black/gray) measures chroma essentially at
+    // 0 in OKLCH. Anything above this tiny epsilon is a deliberate color
+    // choice, even a subtle one — e.g. Tailwind's own "slate-200" (#E2E8F0)
+    // is a common pick for a cool-toned secondary brand color and measures
+    // ~0.013, which the old 0.02 cutoff wrongly treated as "no real color"
+    // and silently flattened to flat gray.
+    private const double AchromaticThreshold = 0.004;
+
     /// <summary>Hue (radians) of the platform's own default green (#0e7143) — used when a seed has no real hue to preserve (see <see cref="ClampSeed"/>).</summary>
     private static readonly double DefaultHue = ToOklch("#0e7143").h;
 
@@ -84,7 +92,7 @@ public static class EmailColorPalette
     public static string ClampSeed(string hex)
     {
         var (l, c, h) = ToOklch(hex);
-        if (c >= 0.02)
+        if (c >= AchromaticThreshold)
             return NormalizeHex(hex);
 
         var clampedL = Math.Clamp(l, MinLightness, MaxLightness);

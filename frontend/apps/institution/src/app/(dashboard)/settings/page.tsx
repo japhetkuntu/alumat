@@ -475,7 +475,10 @@ export default function BrandingSettingsPage() {
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Secondary color</Label>
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-md border border-border shrink-0" style={{ backgroundColor: institution?.secondaryColorHex || "#e2e8f0" }} />
+                    <span
+                      className={cn("w-7 h-7 rounded-md shrink-0", institution?.secondaryColorHex ? "border border-border" : "border border-dashed border-muted-foreground/50")}
+                      style={{ background: institution?.secondaryColorHex || "repeating-linear-gradient(45deg, transparent, transparent 4px, var(--muted) 4px, var(--muted) 8px)" }}
+                    />
                     <Input value={institution?.secondaryColorHex || "Not set"} disabled className="w-[140px]" />
                   </div>
                 </div>
@@ -530,7 +533,7 @@ export default function BrandingSettingsPage() {
                 />
                 <ColorPicker
                   label="Secondary color"
-                  value={brandingForm.secondaryColorHex || "#E2E8F0"}
+                  value={brandingForm.secondaryColorHex}
                   onChange={(hex) => setBrandingForm((f) => ({ ...f!, secondaryColorHex: hex }))}
                   helperText="Optional accent, used alongside the primary color where a second tone helps (badges, charts)."
                 />

@@ -27,14 +27,15 @@ function Blob({ tone, className, children }: { tone: "primary" | "accent"; class
 }
 
 /** Careers/jobs feature — a bulletin board with a few postings pinned on it, a briefcase badge overlapping the corner. */
-export function JobsIllustration({ className }: { className?: string; tone?: "primary" | "accent" }) {
+export function JobsIllustration({ className, tone = "primary" }: { className?: string; tone?: "primary" | "accent" }) {
+  const c = tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)";
   return (
-    <Blob tone="primary" className={className}>
+    <Blob tone={tone} className={className}>
       <svg viewBox="0 0 140 120" className="w-[68%] h-[68%]">
         <rect x="14" y="14" width="112" height="92" rx="10" fill="var(--card)" stroke="var(--border)" />
         <g transform="rotate(-6 44 46)">
-          <rect x="24" y="30" width="40" height="30" rx="4" fill="var(--brand-primary-100, var(--muted))" stroke="var(--primary)" strokeOpacity="0.35" />
-          <rect x="30" y="38" width="20" height="3" rx="1.5" fill="var(--primary)" opacity="0.6" />
+          <rect x="24" y="30" width="40" height="30" rx="4" fill="var(--brand-primary-100, var(--muted))" stroke={c} strokeOpacity="0.35" />
+          <rect x="30" y="38" width="20" height="3" rx="1.5" fill={c} opacity="0.6" />
           <rect x="30" y="45" width="26" height="3" rx="1.5" fill="var(--muted-foreground)" opacity="0.4" />
         </g>
         <g transform="rotate(4 96 52)">
@@ -44,12 +45,12 @@ export function JobsIllustration({ className }: { className?: string; tone?: "pr
         </g>
         <g transform="rotate(-3 60 88)">
           <rect x="40" y="74" width="44" height="26" rx="4" fill="var(--card)" stroke="var(--border)" />
-          <rect x="46" y="81" width="22" height="3" rx="1.5" fill="var(--primary)" opacity="0.5" />
+          <rect x="46" y="81" width="22" height="3" rx="1.5" fill={c} opacity="0.5" />
           <rect x="46" y="88" width="30" height="3" rx="1.5" fill="var(--muted-foreground)" opacity="0.35" />
         </g>
       </svg>
       <div className="absolute -bottom-2 -right-2 w-11 h-11 rounded-2xl flex items-center justify-center border"
-        style={{ background: "var(--primary)", borderColor: "var(--card)" }}>
+        style={{ background: c, borderColor: "var(--card)" }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
         </svg>
@@ -59,12 +60,13 @@ export function JobsIllustration({ className }: { className?: string; tone?: "pr
 }
 
 /** Mentorship feature — two avatars linked by a guiding dashed path with a spark at the midpoint. */
-export function MentorshipIllustration({ className }: { className?: string; tone?: "primary" | "accent" }) {
+export function MentorshipIllustration({ className, tone = "accent" }: { className?: string; tone?: "primary" | "accent" }) {
+  const c = tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)";
   return (
-    <Blob tone="accent" className={className}>
+    <Blob tone={tone} className={className}>
       <svg viewBox="0 0 140 120" className="w-[70%] h-[70%]">
         <path d="M34 78 C 55 40, 85 40, 106 78" fill="none" stroke="var(--muted-foreground)" strokeOpacity="0.35" strokeWidth="2.5" strokeDasharray="1 8" strokeLinecap="round" />
-        <circle cx="70" cy="34" r="9" fill="var(--brand-accent, var(--primary))" opacity="0.9" />
+        <circle cx="70" cy="34" r="9" fill={c} opacity="0.9" />
         <path d="M67 34 l2 2.5 l4.5 -5.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         <g>
           <circle cx="34" cy="82" r="20" fill="var(--card)" stroke="var(--border)" />
@@ -73,8 +75,8 @@ export function MentorshipIllustration({ className }: { className?: string; tone
         </g>
         <g>
           <circle cx="106" cy="82" r="20" fill="var(--card)" stroke="var(--border)" />
-          <circle cx="106" cy="76" r="6.5" fill="var(--brand-accent, var(--primary))" opacity="0.85" />
-          <path d="M94 92 a12 10 0 0 1 24 0" fill="var(--brand-accent, var(--primary))" opacity="0.85" />
+          <circle cx="106" cy="76" r="6.5" fill={c} opacity="0.85" />
+          <path d="M94 92 a12 10 0 0 1 24 0" fill={c} opacity="0.85" />
         </g>
       </svg>
     </Blob>

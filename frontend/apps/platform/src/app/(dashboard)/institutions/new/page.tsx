@@ -252,7 +252,7 @@ function NewInstitutionPageContent() {
                     <ColorPicker label="Primary color" value={form.primaryColor} onChange={(hex) => update("primaryColor", hex)} />
                     <ColorPicker
                       label="Secondary color"
-                      value={form.secondaryColor || "#E2E8F0"}
+                      value={form.secondaryColor}
                       onChange={(hex) => update("secondaryColor", hex)}
                       helperText="Optional"
                     />

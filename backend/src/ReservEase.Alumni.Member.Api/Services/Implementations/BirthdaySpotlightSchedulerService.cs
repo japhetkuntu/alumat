@@ -47,7 +47,21 @@ public class BirthdaySpotlightSchedulerService(
         using var timer = new PeriodicTimer(TickInterval);
         do
         {
-            await RunCycleAsync(stoppingToken);
+            // The whole cycle — including the institution lookup below, not
+            // just the per-institution loop — must never throw out of here.
+            // HostOptions.BackgroundServiceExceptionBehavior is StopHost
+            // (the app-wide default), so ANY unhandled exception from a
+            // BackgroundService takes down the entire process, not just this
+            // scheduler. A bad query, a transient DB hiccup, anything — this
+            // service logs it and waits for the next tick instead.
+            try
+            {
+                await RunCycleAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Birthday spotlight scheduler cycle failed");
+            }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
@@ -58,10 +72,18 @@ public class BirthdaySpotlightSchedulerService(
         await using (var scope = scopeFactory.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
-            institutionIds = await db.Institutions.IgnoreQueryFilters()
-                .Where(i => i.Status == "Active" && !i.DisabledFeatures.Contains(InstitutionFeatures.BirthdaySpotlight))
+            // DisabledFeatures is a jsonb column (see AlumniDbContext's
+            // JsonbConverter<List<string>>) — Contains() on it can't be
+            // translated to SQL, so the feature-toggle check has to happen
+            // in memory, after the (SQL-translatable) Status filter narrows
+            // the row count down first.
+            institutionIds = (await db.Institutions.IgnoreQueryFilters()
+                    .Where(i => i.Status == "Active")
+                    .Select(i => new { i.Id, i.DisabledFeatures })
+                    .ToListAsync(stoppingToken))
+                .Where(i => !i.DisabledFeatures.Contains(InstitutionFeatures.BirthdaySpotlight))
                 .Select(i => i.Id)
-                .ToListAsync(stoppingToken);
+                .ToList();
         }
 
         logger.LogInformation("Birthday spotlight scheduler cycle starting for {Count} institutions", institutionIds.Count);
@@ -86,7 +108,7 @@ public class BirthdaySpotlightSchedulerService(
                 var celebrants = (await memberRepo.GetAllAsync(m =>
                         m.DateOfBirth != null && m.Status == "Active"))
                     .Where(m => m.DateOfBirth!.Value.Month == today.Month && m.DateOfBirth.Value.Day == today.Day)
-                    .OrderBy(m => m.FirstName)
+                    .OrderByDescending(m => m.FirstName)
                     .ToList();
                 if (celebrants.Count == 0) continue;
 

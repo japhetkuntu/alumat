@@ -549,7 +549,7 @@ export default function InstitutionDetailPage() {
                 />
                 <ColorPicker
                   label="Secondary color"
-                  value={branding.secondaryColorHex || "#E2E8F0"}
+                  value={branding.secondaryColorHex}
                   onChange={(hex) => setBranding((b) => ({ ...b!, secondaryColorHex: hex }))}
                   helperText="Optional"
                 />

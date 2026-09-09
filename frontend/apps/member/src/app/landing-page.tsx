@@ -193,12 +193,16 @@ const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
 ];
 
-const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; featureKey: string | undefined; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
+const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; featureKey: string | undefined; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }>; tone?: "primary" | "accent" }[] = [
   { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards: first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
   { icon: Users,        label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora.", featureKey: "Directory", illustration: DirectoryIllustration },
   { icon: CreditCard,   label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support.", featureKey: "Contributions", illustration: FundraisingIllustration },
   { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events", illustration: EventsIllustration },
-  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration },
+  // Explicitly accent (not left to the grid's primary/accent alternation
+  // below) — one of the three "big", more-visible cards should always carry
+  // the secondary color, or an institution's secondary color ends up
+  // confined to small cards where it's easy to miss entirely.
+  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration, tone: "accent" },
   { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association, pay online, pick up or receive your order.", featureKey: "Store", illustration: StoreIllustration },
   { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between, added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
   { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights", illustration: SpotlightIllustration },
@@ -798,7 +802,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               </Link>
               <Link href="/login">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-[15px] font-medium"
-                  style={{ borderColor: "rgba(255,255,255,0.5)", color: "white", background: "rgba(255,255,255,0.08)" }}>
+                  style={{ borderColor: "var(--brand-accent, rgba(255,255,255,0.5))", color: "white", background: "color-mix(in oklch, var(--brand-accent, transparent) 22%, rgba(255,255,255,0.08))" }}>
                   Already a member
                 </Button>
               </Link>
@@ -858,7 +862,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
             {FEATURES
               .filter((feature) => !feature.featureKey || !content?.disabledFeatures?.includes(feature.featureKey))
               .map((feature, i) => (
-                <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
+                <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={feature.tone ?? (i % 2 === 0 ? "primary" : "accent")} />
               ))}
             {/* Filler tile — closes out the bento row instead of leaving a gap */}
             <Link href="/register" className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 transition-all duration-500 hover:-translate-y-1"

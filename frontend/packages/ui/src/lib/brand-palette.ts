@@ -136,16 +136,24 @@ function normalizeHex(hex: string): string {
  * still gets a derived hue, via `fallbackHueHex` (typically the
  * institution's own secondary color) when available, or stays neutral.
  */
+// A true neutral (pure white/black/gray) measures chroma essentially at 0 in
+// OKLCH. Anything above this tiny epsilon is a deliberate color choice, even
+// a subtle one — e.g. Tailwind's own "slate-200" (#E2E8F0) is a common pick
+// for a cool-toned secondary brand color and measures ~0.013, which the old
+// 0.02 cutoff wrongly treated as "no real color" and silently flattened to
+// flat gray, discarding the pale blue-gray tint the admin actually picked.
+const ACHROMATIC_THRESHOLD = 0.004;
+
 export function clampSeed(hex: string, fallbackHueHex?: string): string {
   const { l, c, h } = toOklch(hex);
 
-  if (c >= 0.02) {
+  if (c >= ACHROMATIC_THRESHOLD) {
     return normalizeHex(hex);
   }
 
   const clampedL = Math.min(MAX_LIGHTNESS, Math.max(MIN_LIGHTNESS, l));
   const fallback = fallbackHueHex ? toOklch(fallbackHueHex) : null;
-  if (fallback && fallback.c >= 0.02) {
+  if (fallback && fallback.c >= ACHROMATIC_THRESHOLD) {
     // Borrow the institution's other real color's hue, at a muted chroma —
     // ties the achromatic seed to their own identity instead of a fixed one.
     return fromOklch(clampedL, MIN_CHROMA, fallback.h);
