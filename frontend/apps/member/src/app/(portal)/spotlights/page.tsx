@@ -55,10 +55,18 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
       {/* Banner image — only if provided */}
       {spotlight.imageUrl && (
         <div className="relative w-full overflow-hidden" style={{ height: 160 }}>
+          {/* These are member-submitted headshots/portraits, rarely shaped like this
+              wide banner — object-cover (any crop position) always sacrifices part of
+              the photo, and for a person's photo that reliably means part of their
+              face. A blurred, scaled-up copy fills the frame edge-to-edge behind an
+              object-contain copy of the real photo, so the whole photo is always
+              fully visible with no crop guess involved. */}
+          <img src={spotlight.imageUrl} alt="" aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50" />
           <img
             src={spotlight.imageUrl}
             alt={spotlight.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
           {featured && (

@@ -209,12 +209,22 @@ body {
   width: 100%;
 }
 
-img,
-svg,
-video,
-iframe {
-  max-width: 100%;
-  height: auto;
+/* @layer base — not plain CSS — so Tailwind utilities (w-full/h-full/object-cover
+   etc., compiled into the later "utilities" layer) can still override this default.
+   Unlayered CSS always wins over ANY layered CSS regardless of specificity, so
+   without this every card's deliberately-sized cover image (h-full + object-cover)
+   was being forced back to its auto/intrinsic height by this rule — the fixed-height,
+   overflow-hidden card container then just clipped off the bottom of the now-too-tall
+   image instead of showing a centered crop, which is why "only part of the image"
+   was visible almost everywhere images render. */
+@layer base {
+  img,
+  svg,
+  video,
+  iframe {
+    max-width: 100%;
+    height: auto;
+  }
 }
 
 table {

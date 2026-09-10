@@ -209,6 +209,19 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Member>()
             .HasIndex(m => new { m.InstitutionId, m.Email }).IsUnique();
 
+        // Member.DateOfBirth is only ever used for its month/day (see the entity's
+        // doc comment) — mapped as Postgres "date" rather than the default
+        // "timestamp with time zone" so it also accepts DateTime.Kind=Unspecified.
+        // UpdateProfileAsync binds it via [FromForm] (multipart, for the profile
+        // picture upload alongside it), whose default model binder produces
+        // Kind=Unspecified DateTimes — against a timestamptz column, Npgsql throws
+        // "Cannot write DateTime with Kind=Unspecified to PostgreSQL type
+        // 'timestamp with time zone'" on every save. "date" has no timezone concept,
+        // so Npgsql accepts any Kind.
+        modelBuilder.Entity<Member>()
+            .Property(m => m.DateOfBirth)
+            .HasColumnType("date");
+
         // ── Lookup / filter indexes ─────────────────────────────────
 
         // Member: directory search by graduation year + department, status filter

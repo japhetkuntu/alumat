@@ -208,7 +208,12 @@ export default function AdminSpotlightsPage() {
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 mb-3">{s.story}</p>
 
                     {s.imageUrl && (
-                      <img src={s.imageUrl} alt={s.title} className="w-full rounded-xl max-h-48 object-cover mb-3 border border-border/30" />
+                      <div className="relative w-full rounded-xl mb-3 border border-border/30 overflow-hidden" style={{ height: 192 }}>
+                        {/* Blurred fill behind an object-contain copy — see the identical
+                            pattern (and its rationale) in the Member Portal's spotlights page. */}
+                        <img src={s.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50" />
+                        <img src={s.imageUrl} alt={s.title} className="absolute inset-0 w-full h-full object-contain" />
+                      </div>
                     )}
 
                     <div className="flex gap-2 mt-1">

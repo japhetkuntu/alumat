@@ -224,6 +224,16 @@ export default function CommunityDetailPage() {
         className="relative overflow-hidden rounded-3xl p-6 sm:p-10"
         style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
       >
+        {community.coverImageUrl && (
+          <>
+            <img
+              src={community.coverImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 88%, black) 0%, color-mix(in oklch, var(--primary) 55%, transparent) 100%)" }} />
+          </>
+        )}
         <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5 mb-3">

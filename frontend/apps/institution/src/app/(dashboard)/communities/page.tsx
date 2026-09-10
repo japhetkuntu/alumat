@@ -273,8 +273,19 @@ export default function CommunitiesPage() {
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
-                    <p className="font-medium">{c.name}</p>
-                    {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{c.description}</p>}
+                    <div className="flex items-center gap-3">
+                      {c.coverImageUrl ? (
+                        <img src={c.coverImageUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center bg-secondary">
+                          <Users size={16} className="text-muted-foreground opacity-40" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{c.name}</p>
+                        {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{c.description}</p>}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>{c.approvedCount}</TableCell>
                   <TableCell>{c.pendingCount > 0 ? <Badge variant="warning">{c.pendingCount}</Badge> : 0}</TableCell>

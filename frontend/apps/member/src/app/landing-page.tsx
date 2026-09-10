@@ -654,7 +654,12 @@ function NewsEventsSpotlight() {
               <Link href="/spotlights" className="card overflow-hidden group block">
                 <div className="relative w-full" style={{ aspectRatio: "16/10", background: "var(--muted)" }}>
                   {spotlight.imageUrl ? (
-                    <img src={spotlight.imageUrl} alt={spotlight.memberName} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <>
+                      {/* Blurred fill behind an object-contain copy — see the identical
+                          pattern (and its rationale) in apps/member's spotlights page. */}
+                      <img src={spotlight.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50" />
+                      <img src={spotlight.imageUrl} alt={spotlight.memberName} className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center"
                       style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>

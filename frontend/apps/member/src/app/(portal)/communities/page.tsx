@@ -66,20 +66,39 @@ export default function CommunitiesPage() {
               tabIndex={0}
               onClick={() => router.push(`/communities/${c.id}`)}
               onKeyDown={(e) => { if (e.key === "Enter") router.push(`/communities/${c.id}`); }}
-              className="card p-5 flex flex-col gap-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] group"
+              className="card overflow-hidden flex flex-col cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[var(--card-shadow-hover)] group"
             >
-              <div className="min-w-0 space-y-2">
-                <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-snug group-hover:text-primary transition-colors">
-                  {c.name}
-                </p>
-                {c.description && <p className="text-[13px] text-muted-foreground line-clamp-2">{c.description}</p>}
+              <div className="relative shrink-0 overflow-hidden" style={{ height: 120 }}>
+                {c.coverImageUrl ? (
+                  <img
+                    src={c.coverImageUrl}
+                    alt={c.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: "var(--secondary)" }}
+                  >
+                    <Users size={32} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-between gap-3 pt-2 mt-auto border-t border-border">
-                <span className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground pt-3">
-                  <Users size={13} /> {c.memberCount} {c.memberCount === 1 ? "member" : "members"}
-                </span>
-                <div className="pt-3" onClick={(e) => e.stopPropagation()}>
-                  <StatusAction community={c} onJoin={() => joinMut.mutate(c.id)} joining={joinMut.isPending} />
+              <div className="p-5 flex flex-col gap-3 flex-1">
+                <div className="min-w-0 space-y-2">
+                  <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-snug group-hover:text-primary transition-colors">
+                    {c.name}
+                  </p>
+                  {c.description && <p className="text-[13px] text-muted-foreground line-clamp-2">{c.description}</p>}
+                </div>
+                <div className="flex items-center justify-between gap-3 pt-2 mt-auto border-t border-border">
+                  <span className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground pt-3">
+                    <Users size={13} /> {c.memberCount} {c.memberCount === 1 ? "member" : "members"}
+                  </span>
+                  <div className="pt-3" onClick={(e) => e.stopPropagation()}>
+                    <StatusAction community={c} onJoin={() => joinMut.mutate(c.id)} joining={joinMut.isPending} />
+                  </div>
                 </div>
               </div>
             </div>
