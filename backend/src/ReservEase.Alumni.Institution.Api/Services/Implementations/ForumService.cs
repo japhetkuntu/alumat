@@ -13,6 +13,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class ForumService(
     IAlumniPgRepository<ForumCategory> categoryRepo,
     IAlumniPgRepository<ForumThread> threadRepo,
+    IAlumniPgRepository<Member> memberRepo,
     ILogger<ForumService> logger) : IForumService
 {
     public async Task<IApiResponse<PgPagedResult<ForumCategoryDto>>> GetCategoriesAsync(BaseFilter filter)
@@ -93,6 +94,23 @@ public class ForumService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(t => t.ToDto()).ToList(),
             };
+
+            // ToDto() reads the author's name/photo from the MemberSnapshot frozen on
+            // the ForumThread at creation time — refresh both from the live Member
+            // records here (one batched lookup, not one query per row) so a later
+            // name/photo change actually shows up. Falls back to the snapshot if the
+            // author has since been deleted.
+            var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();
+            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (authors.TryGetValue(dto.AuthorId, out var author))
+                {
+                    dto.AuthorName = $"{author.FirstName} {author.LastName}";
+                    dto.AuthorProfilePictureUrl = author.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

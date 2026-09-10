@@ -118,6 +118,18 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>The institution's actual name (distinct from Branding's PortalName) — see UpdateInstitutionNameRequest.</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPatch("{id}/name")]
+    [SwaggerOperation(Summary = "Rename an institution")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdateName(string id, [FromBody] UpdateInstitutionNameRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdateNameAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
     /// <summary>How "active member" status is determined for this institution — normally the institution's own choice, but platform staff can set it too (e.g. at onboarding, or a support request).</summary>
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/member-policy")]

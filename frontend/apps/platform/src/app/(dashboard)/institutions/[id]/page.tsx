@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Copy, ExternalLink, X } from "@alumni/ui";
+import { Plus, Trash2, Copy, ExternalLink, X, Pencil } from "@alumni/ui";
 import { notFound, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ import { BrandPreview } from "@alumni/ui";
 import { ColorPicker } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import {
-  getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionMemberPolicy,
+  getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionMemberPolicy,
   updateInstitutionFeatures, getFeatureCatalog,
   updateInstitutionPayments, getInstitutionRevenue, getInstitutionPayments, type PlatformPayment,
   getPaymentDetail, type PaymentDetail,
@@ -62,6 +62,11 @@ function ImageUrlField({ label, hint, value, onChange, placeholder, institutionS
       <Label>{label}</Label>
       {hint && <p className="text-[12px] text-muted-foreground -mt-0.5">{hint}</p>}
       <div className="flex items-center gap-2">
+        {value && (
+          <div className="shrink-0 h-9 w-9 rounded-lg overflow-hidden border border-border bg-muted/30">
+            <img src={value} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
         <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
         <input
           ref={fileInputRef}
@@ -177,6 +182,18 @@ export default function InstitutionDetailPage() {
     onSuccess: (updated) => {
       toast.success(`Institution status set to ${updated.status}`);
       invalidate();
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const nameMutation = useMutation({
+    mutationFn: (name: string) => updateInstitutionName(id, name),
+    onSuccess: () => {
+      toast.success("Institution renamed");
+      invalidate();
+      setRenameOpen(false);
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -392,6 +409,14 @@ export default function InstitutionDetailPage() {
             <div>
               <h1 className="text-[20px] font-bold flex items-center gap-2">
                 {inst.name}
+                <button
+                  type="button"
+                  aria-label="Rename institution"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => { setNameDraft(inst.name); setRenameOpen(true); }}
+                >
+                  <Pencil size={13} />
+                </button>
                 <Badge variant={badge.variant}>{badge.label}</Badge>
               </h1>
               <p className="text-[13px] text-muted-foreground font-mono mt-1">
@@ -1056,6 +1081,32 @@ export default function InstitutionDetailPage() {
           </Card>
         </div>
       )}
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename institution</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label>Institution name</Label>
+              <Input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} maxLength={200} />
+              <p className="text-[12px] text-muted-foreground">
+                This is separate from the portal display name under Branding — it&apos;s what shows here and in the audit log.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => nameMutation.mutate(nameDraft.trim())}
+              disabled={nameMutation.isPending || !nameDraft.trim()}
+            >
+              {nameMutation.isPending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o) setInviteError(null); }}>
         <DialogContent>

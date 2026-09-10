@@ -86,6 +86,22 @@ public class ClassNoteService(
 
             var dtos = result.Results.Select(n => n.ToDto(likedSet.Contains(n.Id))).ToList();
 
+            // ToDto() reads the author's name/photo from the MemberSnapshot frozen on
+            // the ClassNote at creation time — refresh both from the live Member
+            // records here (one batched lookup, not one query per row) so a later
+            // name/photo change actually shows up. Falls back to the snapshot if the
+            // author has since been deleted.
+            var authorIds = dtos.Select(d => d.AuthorId).Distinct().ToList();
+            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtos)
+            {
+                if (authors.TryGetValue(dto.AuthorId, out var author))
+                {
+                    dto.AuthorName = $"{author.FirstName} {author.LastName}";
+                    dto.AuthorProfilePictureUrl = author.ProfilePictureUrl;
+                }
+            }
+
             return new PgPagedResult<ClassNoteDto>
             {
                 PageIndex = result.PageIndex,

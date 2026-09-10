@@ -61,7 +61,11 @@ export default function MemberDetailPage() {
   });
   const duesRequired = institution?.memberActivePolicy !== "ApprovedOnly";
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-member", id] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["admin-member", id] });
+    qc.invalidateQueries({ queryKey: ["admin-members"] });
+    qc.invalidateQueries({ queryKey: ["admin-members-count"] });
+  };
 
   const approveMut = useMutation({
     mutationFn: () => approveMember(id),

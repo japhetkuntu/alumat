@@ -287,7 +287,7 @@ public class ContributionMemberForumServiceTests
         var mockCategoryRepo = new Mock<IAlumniPgRepository<ForumCategory>>();
         var mockThreadRepo = new Mock<IAlumniPgRepository<ForumThread>>();
 
-        var service = new ForumService(mockCategoryRepo.Object, mockThreadRepo.Object, new NullLogger<ForumService>());
+        var service = new ForumService(mockCategoryRepo.Object, mockThreadRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), new NullLogger<ForumService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var catResponse = await service.CreateCategoryAsync("Test", "Desc", admin);
@@ -320,7 +320,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Expression<Func<MentorshipRequest, bool>>>()))
             .ReturnsAsync(new PgPagedResult<MentorshipRequest> { PageIndex = 1, PageSize = 10, Count = 0, TotalCount = 0, TotalPages = 1, LowerBoundSize = 0, UpperBoundSize = 0, Results = new List<MentorshipRequest>() });
 
-        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
+        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var profilesResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, admin);
@@ -355,7 +355,7 @@ public class ContributionMemberForumServiceTests
         mockThreadRepo.Setup(r => r.UpdateAsync(It.IsAny<ForumThread>())).ReturnsAsync(1);
         mockThreadRepo.Setup(r => r.RemoveAsync(It.IsAny<ForumThread>())).ReturnsAsync(1);
 
-        var service = new ForumService(mockCategoryRepo.Object, mockThreadRepo.Object, new NullLogger<ForumService>());
+        var service = new ForumService(mockCategoryRepo.Object, mockThreadRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), new NullLogger<ForumService>());
         var superAdmin = new AuthData { Id = "super1", Role = "SuperAdmin" };
 
         var createResult = await service.CreateCategoryAsync("TestCat", "Desc", superAdmin);
@@ -393,7 +393,7 @@ public class ContributionMemberForumServiceTests
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1")).ReturnsAsync(mentorProfiles[0]);
         mockProfileRepo.Setup(r => r.UpdateAsync(It.IsAny<MentorProfile>())).ReturnsAsync(1);
 
-        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
+        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
         var superAdmin = new AuthData { Id = "super1", Role = "SuperAdmin" };
 
         var profileResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, superAdmin);
@@ -436,7 +436,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.UpdateAsync(It.IsAny<MentorProfile>()))
             .ReturnsAsync(1);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("New Area", "New bio", 5), member);
@@ -460,7 +460,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>() ))
             .ReturnsAsync(existingProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("Any", null, 3), member);
@@ -485,7 +485,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>() ))
             .ReturnsAsync(existingProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("Any", null, 3), member);
@@ -508,7 +508,7 @@ public class ContributionMemberForumServiceTests
         var mockProfileRepo = new Mock<IAlumniPgRepository<MentorProfile>>();
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1")).ReturnsAsync(mentorProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RequestMentorshipAsync(new RequestMentorshipRequest("p1", "Data Science", "Please mentor me"), member);

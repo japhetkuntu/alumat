@@ -38,6 +38,8 @@ function useNotifications() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["notifications-list"] });
+      // The full /notifications page keeps its own separate infinite-query cache.
+      qc.invalidateQueries({ queryKey: ["notifications-infinite"] });
     },
   });
 
@@ -46,6 +48,7 @@ function useNotifications() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["notifications-list"] });
+      qc.invalidateQueries({ queryKey: ["notifications-infinite"] });
     },
   });
 

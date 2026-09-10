@@ -49,6 +49,11 @@ export default function ThreadDetailPage() {
     onSuccess: () => {
       setReply("");
       qc.invalidateQueries({ queryKey: ["m-thread-posts", id] });
+      // replyCount is shown on this thread's own header, the forum list, and
+      // the community preview card — all need to reflect the new count.
+      qc.invalidateQueries({ queryKey: ["m-forum-thread", id] });
+      qc.invalidateQueries({ queryKey: ["m-forum-threads"] });
+      qc.invalidateQueries({ queryKey: ["m-community-threads-preview"] });
       toast.success("Reply posted.");
     },
     onError: (e) => toast.error(handleApiError(e)),

@@ -4,6 +4,7 @@ using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
@@ -18,6 +19,7 @@ public class MemberForumService(
     IAlumniPgRepository<ForumPost> postRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Community> communityRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
     ILogger<MemberForumService> logger) : IMemberForumService
@@ -112,6 +114,23 @@ public class MemberForumService(
                 Results = result.Results.Select(t => t.ToDto()).ToList(),
             };
             await EnrichCommunityNamesAsync(dtoResult.Results);
+
+            // ToDto() reads the author's name/photo from the MemberSnapshot frozen on
+            // the ForumThread at creation time — refresh both from the live Member
+            // records here (one batched lookup, not one query per row) so a later
+            // name/photo change actually shows up. Falls back to the snapshot if the
+            // author has since been deleted.
+            var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();
+            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (authors.TryGetValue(dto.AuthorId, out var author))
+                {
+                    dto.AuthorName = $"{author.FirstName} {author.LastName}";
+                    dto.AuthorProfilePictureUrl = author.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -134,7 +153,15 @@ public class MemberForumService(
             if (!string.IsNullOrEmpty(thread.CommunityId) && !await IsApprovedCommunityMemberAsync(thread.CommunityId, member.Id))
                 return ApiResponseExtensions.ToForbiddenApiResponse<ForumThreadDto>("You must be an approved member of this community to view its forum");
 
-            return thread.ToDto().ToOkApiResponse();
+            var dto = thread.ToDto();
+            var author = await memberRepo.GetByIdAsync(thread.AuthorId);
+            if (author is not null)
+            {
+                dto.AuthorName = $"{author.FirstName} {author.LastName}";
+                dto.AuthorProfilePictureUrl = author.ProfilePictureUrl;
+            }
+
+            return dto.ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -224,6 +251,19 @@ public class MemberForumService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(p => p.ToDto()).ToList(),
             };
+
+            // Same staleness fix as GetThreadsAsync above — batched, not per-row.
+            var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();
+            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (authors.TryGetValue(dto.AuthorId, out var author))
+                {
+                    dto.AuthorName = $"{author.FirstName} {author.LastName}";
+                    dto.AuthorProfilePictureUrl = author.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

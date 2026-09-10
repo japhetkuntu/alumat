@@ -30,13 +30,21 @@ public class SpotlightService(
 
             var dtos = result.Results.Select(s => s.ToDto()).ToList();
 
-            // Populate graduation year from member records
+            // ToDto() reads name/photo from the MemberSnapshot frozen on the
+            // Spotlight at creation time — refresh both from the live Member
+            // record here (one batched lookup, not one query per row) so a
+            // member's later name/photo change actually shows up. Falls back
+            // to the snapshot if the member has since been deleted.
             var memberIds = dtos.Select(d => d.MemberId).Distinct().ToList();
             var members = (await memberRepo.GetAllAsync(m => memberIds.Contains(m.Id))).ToDictionary(m => m.Id);
             foreach (var dto in dtos)
             {
                 if (members.TryGetValue(dto.MemberId, out var m))
+                {
                     dto.MemberGraduationYear = m.GraduationYear;
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberProfilePictureUrl = m.ProfilePictureUrl;
+                }
             }
 
             return new PgPagedResult<SpotlightDto>
@@ -69,7 +77,11 @@ public class SpotlightService(
             var dto = spotlight.ToDto();
             var member = await memberRepo.GetByIdAsync(spotlight.MemberId);
             if (member is not null)
+            {
                 dto.MemberGraduationYear = member.GraduationYear;
+                dto.MemberName = $"{member.FirstName} {member.LastName}";
+                dto.MemberProfilePictureUrl = member.ProfilePictureUrl;
+            }
 
             return dto.ToOkApiResponse();
         }
@@ -150,7 +162,20 @@ public class SpotlightService(
         try
         {
             var spotlights = await spotlightRepo.GetAllAsync(s => s.MemberId == memberId);
-            return spotlights.Select(s => s.ToDto()).OrderByDescending(s => s.CreatedAt).ToList().ToOkApiResponse();
+            var dtos = spotlights.Select(s => s.ToDto()).OrderByDescending(s => s.CreatedAt).ToList();
+
+            // Always the same one member (the caller) — a single lookup, not a batch.
+            var member = await memberRepo.GetByIdAsync(memberId);
+            if (member is not null)
+            {
+                foreach (var dto in dtos)
+                {
+                    dto.MemberName = $"{member.FirstName} {member.LastName}";
+                    dto.MemberProfilePictureUrl = member.ProfilePictureUrl;
+                }
+            }
+
+            return dtos.ToOkApiResponse();
         }
         catch (Exception e)
         {

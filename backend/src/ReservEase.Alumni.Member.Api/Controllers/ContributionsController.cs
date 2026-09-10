@@ -95,6 +95,10 @@ public class ContributionsController(IContributionService contributionService) :
         return result.ToActionResult();
     }
 
+    // Anonymous: a guest who just paid via the public campaign page has no
+    // session to check status with. Trusted the same way as the Verify
+    // endpoint above — by the reference itself, an unguessable Paystack id.
+    [AllowAnonymous]
     [HttpGet("paystack/status/{reference}")]
     [SwaggerOperation(Summary = "Get payment status", Description = "Get the current status of a Paystack payment transaction by its reference")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ContributionStatusResponse>))]
@@ -102,7 +106,11 @@ public class ContributionsController(IContributionService contributionService) :
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> GetPaymentStatus(string reference)
     {
-        var member = User.GetAccount();
+        AuthData? member = null;
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            member = User.GetAccount();
+        }
         var result = await contributionService.GetContributionStatusAsync(reference, member);
         return result.ToActionResult();
     }

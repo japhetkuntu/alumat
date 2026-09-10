@@ -15,6 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class MentorshipService(
     IAlumniPgRepository<MentorProfile> profileRepo,
     IAlumniPgRepository<MentorshipRequest> requestRepo,
+    IAlumniPgRepository<Member> memberRepo,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
     ILogger<MentorshipService> logger) : IMentorshipService
@@ -50,6 +51,22 @@ public class MentorshipService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(p => p.ToDto()).ToList(),
             };
+
+            // ToDto() reads name/photo from the MemberSnapshot frozen on the mentor
+            // profile at creation time — refresh both from the live Member records
+            // here (one batched lookup, not one query per row) so a later name/photo
+            // change actually shows up.
+            var mentorMemberIds = dtoResult.Results.Select(d => d.MemberId).Distinct().ToList();
+            var mentorMembers = (await memberRepo.GetAllAsync(m => mentorMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (mentorMembers.TryGetValue(dto.MemberId, out var m))
+                {
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberProfilePictureUrl = m.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -167,6 +184,27 @@ public class MentorshipService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(r => r.ToDto()).ToList(),
             };
+
+            // ToDto() reads the mentor's and mentee's names/photo from the snapshots
+            // frozen on the request at creation time — refresh both from the live
+            // Member records here (batched lookups, not one query per row) so a later
+            // name/photo change actually shows up.
+            var mentorProfileIds = dtoResult.Results.Select(d => d.MentorProfileId).Distinct().ToList();
+            var mentorProfiles = (await profileRepo.GetAllAsync(p => mentorProfileIds.Contains(p.Id))).ToDictionary(p => p.Id);
+            var menteeIds = dtoResult.Results.Select(d => d.MenteeId).Distinct().ToList();
+            var involvedMemberIds = mentorProfiles.Values.Select(p => p.MemberId).Concat(menteeIds).Distinct().ToList();
+            var involvedMembers = (await memberRepo.GetAllAsync(m => involvedMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (mentorProfiles.TryGetValue(dto.MentorProfileId, out var mp) && involvedMembers.TryGetValue(mp.MemberId, out var mentorMember))
+                    dto.MentorProfileName = $"{mentorMember.FirstName} {mentorMember.LastName}";
+                if (involvedMembers.TryGetValue(dto.MenteeId, out var mentee))
+                {
+                    dto.MenteeName = $"{mentee.FirstName} {mentee.LastName}";
+                    dto.MenteeProfilePictureUrl = mentee.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

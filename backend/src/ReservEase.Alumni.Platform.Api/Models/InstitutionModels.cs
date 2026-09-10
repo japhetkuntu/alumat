@@ -85,6 +85,19 @@ public class UpdateInstitutionStatusRequest
     public string Status { get; set; } = string.Empty; // Trial, Active, Suspended, Cancelled
 }
 
+/// <summary>
+/// The institution's actual/legal name — distinct from Branding's PortalName,
+/// which is a tenant-customizable display label for their own portal. This
+/// is what platform staff see everywhere in their own admin views (the
+/// institutions list, audit log, etc.), so it needs its own edit path
+/// instead of assuming PortalName is the same thing.
+/// </summary>
+public class UpdateInstitutionNameRequest
+{
+    [Required, MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+}
+
 public class UpdateInstitutionBrandingRequest
 {
     [Required, MaxLength(200)]

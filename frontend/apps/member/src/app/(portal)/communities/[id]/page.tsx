@@ -152,13 +152,23 @@ export default function CommunityDetailPage() {
 
   const joinMut = useMutation({
     mutationFn: () => joinCommunity(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-community", id] }); toast.success("Join request sent"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-community", id] });
+      // Communities list shows each card's myStatus/myRole badge too.
+      qc.invalidateQueries({ queryKey: ["m-communities"] });
+      toast.success("Join request sent");
+    },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
   const leaveMut = useMutation({
     mutationFn: () => leaveCommunity(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-community", id] }); toast.success("You left the community"); router.push("/communities"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-community", id] });
+      qc.invalidateQueries({ queryKey: ["m-communities"] });
+      toast.success("You left the community");
+      router.push("/communities");
+    },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -180,6 +190,7 @@ export default function CommunityDetailPage() {
       qc.invalidateQueries({ queryKey: ["m-community-requests", id] });
       qc.invalidateQueries({ queryKey: ["m-community-members", id] });
       qc.invalidateQueries({ queryKey: ["m-community", id] });
+      qc.invalidateQueries({ queryKey: ["m-communities"] });
       toast.success(vars.approve ? "Request approved" : "Request rejected");
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -189,6 +200,9 @@ export default function CommunityDetailPage() {
     mutationFn: (memberId: string) => removeCommunityMember(id, memberId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-community-members", id] });
+      // memberCount lives on the community object itself.
+      qc.invalidateQueries({ queryKey: ["m-community", id] });
+      qc.invalidateQueries({ queryKey: ["m-communities"] });
       toast.success("Member removed");
     },
     onError: (e) => toast.error(handleApiError(e)),

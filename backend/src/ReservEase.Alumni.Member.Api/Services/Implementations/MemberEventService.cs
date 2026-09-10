@@ -239,7 +239,22 @@ public class MemberEventService(
                 await rsvpRepo.UpdateRangeAsync(needsBackfill);
             }
 
-            return rsvps.Select(r => r.ToDto()).ToOkApiResponse();
+            var dtos = rsvps.Select(r => r.ToDto()).ToList();
+
+            // ToDto() reads name/photo from the MemberSnapshot frozen on the RSVP at
+            // creation time — always the same one member (the caller), so a single
+            // lookup, not a batch.
+            var callerMember = await memberRepo.GetByIdAsync(memberId);
+            if (callerMember is not null)
+            {
+                foreach (var dto in dtos)
+                {
+                    dto.MemberName = $"{callerMember.FirstName} {callerMember.LastName}";
+                    dto.MemberProfilePictureUrl = callerMember.ProfilePictureUrl;
+                }
+            }
+
+            return ((IEnumerable<EventRsvpDto>)dtos).ToOkApiResponse();
         }
         catch (Exception e)
         {

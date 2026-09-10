@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -38,6 +38,7 @@ export default function CampaignDetailPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [showOnWall, setShowOnWall] = useState(false);
+  const qc = useQueryClient();
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["campaign", id],
@@ -79,6 +80,8 @@ export default function CampaignDetailPage() {
       } else {
         setRedirecting(false);
         toast.success("Payment initiated.");
+        qc.invalidateQueries({ queryKey: ["campaign", id] });
+        qc.invalidateQueries({ queryKey: ["m-contributions"] });
       }
     },
     onError: (e) => { setRedirecting(false); toast.error(handleApiError(e)); },

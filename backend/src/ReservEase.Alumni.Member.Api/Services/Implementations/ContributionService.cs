@@ -178,6 +178,20 @@ public class ContributionService : IContributionService
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(c => c.ToDto()).ToList(),
             };
+
+            // Backfill above only fills in rows that never got a snapshot — this
+            // refreshes name/photo too, from the live Member record. Always the
+            // same one member (the caller), so a single lookup, not a batch.
+            var callerMember = await memberRepo.GetByIdAsync(memberId);
+            if (callerMember is not null)
+            {
+                foreach (var dto in dtoResult.Results)
+                {
+                    dto.MemberName = $"{callerMember.FirstName} {callerMember.LastName}";
+                    dto.MemberProfilePictureUrl = callerMember.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -1104,17 +1118,21 @@ public class ContributionService : IContributionService
         }
     }
 
-    public async Task<IApiResponse<ContributionStatusResponse>> GetContributionStatusAsync(string reference, AuthData member)
+    public async Task<IApiResponse<ContributionStatusResponse>> GetContributionStatusAsync(string reference, AuthData? member)
     {
         try
         {
-            logger.LogInformation("GetContributionStatus for reference {Reference} by member {MemberId}", reference, member.Id);
+            logger.LogInformation("GetContributionStatus for reference {Reference} by member {MemberId}", reference, member?.Id ?? "(guest)");
 
             // If we already have a payment transaction record, return its status.
             var transaction = await paymentTransactionRepo.GetOneAsync(t => t.Reference == reference);
             if (transaction is not null)
             {
-                if (transaction.MemberId != member.Id)
+                // A logged-in caller must own the transaction; an anonymous caller (a
+                // guest checking their own guest payment) is trusted purely by knowing
+                // this reference — same trust model as the [AllowAnonymous] Verify
+                // endpoint above, since the reference is an unguessable Paystack id.
+                if (member is not null && transaction.MemberId != member.Id)
                     return ApiResponseExtensions.ToBadRequestApiResponse<ContributionStatusResponse>("Reference does not belong to the current member");
 
                 if (transaction.Status == "Pending")
@@ -1142,7 +1160,9 @@ public class ContributionService : IContributionService
             }
 
             // If there is already a recorded contribution (legacy flow), return it immediately.
-            var contribution = await contributionRepo.GetOneAsync(c => c.TransactionRef == reference && c.MemberId == member.Id);
+            // A guest contribution's MemberId is empty, so an anonymous caller (member
+            // is null) is only ever matched against those, not another member's rows.
+            var contribution = await contributionRepo.GetOneAsync(c => c.TransactionRef == reference && c.MemberId == (member != null ? member.Id : ""));
             if (contribution is not null)
             {
                 return new ContributionStatusResponse
@@ -1198,7 +1218,7 @@ public class ContributionService : IContributionService
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Error retrieving payment status for reference {Reference} and member {MemberId}", reference, member.Id);
+            logger.LogError(e, "Error retrieving payment status for reference {Reference} and member {MemberId}", reference, member?.Id ?? "(guest)");
             return ApiResponseExtensions.ToServerErrorApiResponse<ContributionStatusResponse>("Failed to retrieve payment status");
         }
     }

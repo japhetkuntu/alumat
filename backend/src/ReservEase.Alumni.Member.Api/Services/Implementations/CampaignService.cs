@@ -174,14 +174,25 @@ public class CampaignService(
     {
         try
         {
-            var contributions = await contributionRepo.GetAllAsync(
-                c => c.CampaignId == campaignId && c.Status == "Successful" && c.ShowOnWallOfSupport);
-            var entries = contributions
+            var contributions = (await contributionRepo.GetAllAsync(
+                c => c.CampaignId == campaignId && c.Status == "Successful" && c.ShowOnWallOfSupport))
                 .Where(c => c.Member is not null)
+                .ToList();
+
+            // The name here comes from the MemberSnapshot frozen on the contribution
+            // at payment time — refresh it from the live Member records (one batched
+            // lookup, not one query per row) so a later name change actually shows
+            // up. Falls back to the snapshot if the member has since been deleted.
+            var contributorIds = contributions.Select(c => c.MemberId).Distinct().ToList();
+            var contributors = (await memberRepo.GetAllAsync(m => contributorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+
+            var entries = contributions
                 .OrderByDescending(c => c.ConfirmedAt ?? c.CreatedAt)
                 .Select(c => new WallOfSupportEntryDto
                 {
-                    Name = $"{c.Member!.FirstName} {c.Member.LastName}".Trim(),
+                    Name = (contributors.TryGetValue(c.MemberId, out var m)
+                        ? $"{m.FirstName} {m.LastName}"
+                        : $"{c.Member!.FirstName} {c.Member.LastName}").Trim(),
                     ContributedAt = c.ConfirmedAt ?? c.CreatedAt,
                 })
                 .ToList();

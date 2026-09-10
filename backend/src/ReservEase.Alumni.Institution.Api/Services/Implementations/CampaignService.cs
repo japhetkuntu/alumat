@@ -646,6 +646,23 @@ public class ContributionService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(c => c.ToDto()).ToList(),
             };
+
+            // Backfill above only fills in rows that never got a snapshot — this
+            // refreshes name/photo on every row from the live Member records (one
+            // batched lookup, not one query per row) so a later name/photo change
+            // actually shows up, not just missing snapshots.
+            var contributorIds = dtoResult.Results.Select(d => d.MemberId).Distinct().ToList();
+            var contributorMembers = (await memberRepo.GetAllAsync(m => contributorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (contributorMembers.TryGetValue(dto.MemberId, out var m))
+                {
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberEmail = m.Email;
+                    dto.MemberProfilePictureUrl = m.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

@@ -175,7 +175,26 @@ public class ReferralService(
         try
         {
             var referrals = await referralRepo.GetAllAsync(r => r.ReferrerId == memberId);
-            return referrals.Select(r => r.ToDto()).OrderByDescending(r => r.CreatedAt).ToList().ToOkApiResponse();
+            var dtos = referrals.Select(r => r.ToDto()).OrderByDescending(r => r.CreatedAt).ToList();
+
+            // ToDto() reads names from the MemberSnapshots frozen at referral time —
+            // ReferrerName is always the same one member (the caller, a single
+            // lookup), but ReferredMemberName is a different person per row, so
+            // that's a batched lookup, not one query per row.
+            var caller = await memberRepo.GetByIdAsync(memberId);
+            var referredIds = dtos.Where(d => d.ReferredMemberId != null).Select(d => d.ReferredMemberId!).Distinct().ToList();
+            var referredMembers = referredIds.Count > 0
+                ? (await memberRepo.GetAllAsync(m => referredIds.Contains(m.Id))).ToDictionary(m => m.Id)
+                : new Dictionary<string, MemberEntity>();
+            foreach (var dto in dtos)
+            {
+                if (caller is not null)
+                    dto.ReferrerName = $"{caller.FirstName} {caller.LastName}";
+                if (dto.ReferredMemberId != null && referredMembers.TryGetValue(dto.ReferredMemberId, out var rm))
+                    dto.ReferredMemberName = $"{rm.FirstName} {rm.LastName}";
+            }
+
+            return dtos.ToOkApiResponse();
         }
         catch (Exception e)
         {

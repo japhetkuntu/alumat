@@ -84,6 +84,21 @@ public class MemberNewsService(
                 Results = result.Results.Select(p => p.ToDto()).ToList(),
             };
             await EnrichCommunityNamesAsync(dtoResult.Results);
+
+            // ToDto() reads the author's name from the MemberSnapshot frozen on the
+            // NewsPost at creation time (a news post is authored by staff, not a
+            // member, hence adminRepo) — refresh it from the live InstitutionStaff
+            // records here (one batched lookup, not one query per row) so a later
+            // name change actually shows up. Falls back to the snapshot if the
+            // staff account has since been deleted.
+            var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();
+            var authors = (await adminRepo.GetAllAsync(a => authorIds.Contains(a.Id))).ToDictionary(a => a.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (authors.TryGetValue(dto.AuthorId, out var author))
+                    dto.AuthorName = $"{author.FirstName} {author.LastName}";
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -115,7 +130,12 @@ public class MemberNewsService(
                 post.Author = await BuildAuthorSnapshotAsync(post.AuthorId);
             }
 
-            return post.ToDto().ToOkApiResponse();
+            var dto = post.ToDto();
+            var author = await adminRepo.GetByIdAsync(post.AuthorId);
+            if (author is not null)
+                dto.AuthorName = $"{author.FirstName} {author.LastName}";
+
+            return dto.ToOkApiResponse();
         }
         catch (Exception e)
         {

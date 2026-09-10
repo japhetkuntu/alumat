@@ -4,6 +4,7 @@ using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
@@ -15,6 +16,7 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class MemberMentorshipService(
     IAlumniPgRepository<MentorProfile> profileRepo,
     IAlumniPgRepository<MentorshipRequest> requestRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
     ILogger<MemberMentorshipService> logger) : IMemberMentorshipService
@@ -47,6 +49,23 @@ public class MemberMentorshipService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(p => p.ToDto()).ToList(),
             };
+
+            // ToDto() reads name/photo from the MemberSnapshot frozen on the mentor
+            // profile at creation time — refresh both from the live Member records
+            // here (one batched lookup, not one query per row) so a later name/photo
+            // change actually shows up. Falls back to the snapshot if the member has
+            // since been deleted.
+            var mentorMemberIds = dtoResult.Results.Select(d => d.MemberId).Distinct().ToList();
+            var mentorMembers = (await memberRepo.GetAllAsync(m => mentorMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (mentorMembers.TryGetValue(dto.MemberId, out var m))
+                {
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberProfilePictureUrl = m.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -199,6 +218,21 @@ public class MemberMentorshipService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(r => r.ToDto(includeContact: r.Status == "Accepted")).ToList(),
             };
+
+            // ToDto() reads the mentor's name from the MentorProfileSnapshot frozen on
+            // the request at creation time — refresh it from the live mentor profile's
+            // Member record (two batched lookups: profiles then members, not one query
+            // per row) so a later name/photo change actually shows up.
+            var mentorProfileIds = dtoResult.Results.Select(d => d.MentorProfileId).Distinct().ToList();
+            var mentorProfiles = (await profileRepo.GetAllAsync(p => mentorProfileIds.Contains(p.Id))).ToDictionary(p => p.Id);
+            var mentorMemberIds = mentorProfiles.Values.Select(p => p.MemberId).Distinct().ToList();
+            var mentorMembers = (await memberRepo.GetAllAsync(m => mentorMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (mentorProfiles.TryGetValue(dto.MentorProfileId, out var mp) && mentorMembers.TryGetValue(mp.MemberId, out var m))
+                    dto.MentorProfileName = $"{m.FirstName} {m.LastName}";
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -216,7 +250,17 @@ public class MemberMentorshipService(
             var profile = await profileRepo.GetOneAsync(p => p.MemberId == memberId);
             if (profile is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MentorProfileDto>("You don't have a mentor profile");
-            return profile.ToDto(includeContact: true).ToOkApiResponse();
+
+            var dto = profile.ToDto(includeContact: true);
+            // Always the same one member (the caller) — a single lookup, not a batch.
+            var callerMember = await memberRepo.GetByIdAsync(memberId);
+            if (callerMember is not null)
+            {
+                dto.MemberName = $"{callerMember.FirstName} {callerMember.LastName}";
+                dto.MemberProfilePictureUrl = callerMember.ProfilePictureUrl;
+            }
+
+            return dto.ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -250,6 +294,22 @@ public class MemberMentorshipService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(r => r.ToDto()).ToList(),
             };
+
+            // ToDto() reads the mentee's name/photo from the MemberSnapshot frozen on
+            // the request at creation time — refresh both from the live Member records
+            // here (one batched lookup, not one query per row) so a later name/photo
+            // change actually shows up.
+            var menteeIds = dtoResult.Results.Select(d => d.MenteeId).Distinct().ToList();
+            var mentees = (await memberRepo.GetAllAsync(m => menteeIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (mentees.TryGetValue(dto.MenteeId, out var m))
+                {
+                    dto.MenteeName = $"{m.FirstName} {m.LastName}";
+                    dto.MenteeProfilePictureUrl = m.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

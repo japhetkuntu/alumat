@@ -47,6 +47,8 @@ export default function EventDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["event", id] });
+      // rsvpCount is also shown on the events list cards.
+      qc.invalidateQueries({ queryKey: ["m-events-list"] });
       setRsvpConfirmOpen(false);
       toast.success("You're in! We'll see you there.");
     },
@@ -58,6 +60,7 @@ export default function EventDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["event", id] });
+      qc.invalidateQueries({ queryKey: ["m-events-list"] });
       toast.success("RSVP cancelled.");
     },
     onError: (e) => toast.error(handleApiError(e)),

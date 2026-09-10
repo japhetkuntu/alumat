@@ -76,7 +76,15 @@ export default function CampaignDetailPage() {
 
   const confirmMut = useMutation({
     mutationFn: (cid: string) => confirmContribution(cid),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-contributions", id] }); setConfirmTarget(null); toast.success("Contribution confirmed!"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-contributions", id] });
+      // Confirming changes this campaign's collected amount and paid-member
+      // count, both shown above in the progress summary on this same page.
+      qc.invalidateQueries({ queryKey: ["admin-campaign", id] });
+      qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
+      setConfirmTarget(null);
+      toast.success("Contribution confirmed!");
+    },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -84,7 +92,13 @@ export default function CampaignDetailPage() {
 
   const rejectMut = useMutation({
     mutationFn: (cid: string) => rejectContribution(cid),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-contributions", id] }); setRejectTarget(null); toast.success("Contribution rejected."); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-contributions", id] });
+      qc.invalidateQueries({ queryKey: ["admin-campaign", id] });
+      qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
+      setRejectTarget(null);
+      toast.success("Contribution rejected.");
+    },
     onError: (e) => toast.error(handleApiError(e)),
   });
 

@@ -23,7 +23,19 @@ public class BadgeService(
         try
         {
             var badges = await badgeRepo.GetAllAsync(b => b.MemberId == memberId);
-            return badges.Select(b => b.ToDto()).OrderByDescending(b => b.EarnedAt).ToList().ToOkApiResponse();
+            var dtos = badges.Select(b => b.ToDto()).OrderByDescending(b => b.EarnedAt).ToList();
+
+            // ToDto() reads name from the MemberSnapshot frozen on the badge at award
+            // time — always the same one member (the caller), so a single lookup, not
+            // a batch.
+            var member = await memberRepo.GetByIdAsync(memberId);
+            if (member is not null)
+            {
+                foreach (var dto in dtos)
+                    dto.MemberName = $"{member.FirstName} {member.LastName}";
+            }
+
+            return dtos.ToOkApiResponse();
         }
         catch (Exception e)
         {

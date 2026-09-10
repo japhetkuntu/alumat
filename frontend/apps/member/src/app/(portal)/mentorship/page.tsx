@@ -213,6 +213,8 @@ export default function MemberMentorshipPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-incoming-requests"] });
       qc.invalidateQueries({ queryKey: ["m-my-mentor-profile"] });
+      // currentMenteeCount on this mentor's card in the "Find a mentor" list also changes.
+      qc.invalidateQueries({ queryKey: ["m-mentors"] });
       setConfirmAction(null);
       toast.success("Request accepted.");
     },

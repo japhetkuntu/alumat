@@ -157,6 +157,8 @@ export default function NotificationsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["notifications-infinite"] });
+      // The notification bell dropdown keeps its own separate list cache.
+      qc.invalidateQueries({ queryKey: ["notifications-list"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -167,6 +169,7 @@ export default function NotificationsPage() {
       toast.success("All notifications marked as read.");
       qc.invalidateQueries({ queryKey: ["notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["notifications-infinite"] });
+      qc.invalidateQueries({ queryKey: ["notifications-list"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });

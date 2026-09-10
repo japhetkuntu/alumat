@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -13,9 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import {
   Copy, Check, Share2, MessageCircle, Twitter, Facebook, Send, Linkedin, Mail, MessageSquare,
   Users, Target, Calendar, ChevronDown, ChevronUp,
-  Loader2, Lock, ArrowRight, ExternalLink, RefreshCcw,
+  Loader2, Lock, ArrowRight, ExternalLink, RefreshCcw, CheckCircle2, XCircle,
 } from "@alumni/ui";
-import { getCampaignById, initiatePaystackPayment, initiatePaystackPaymentGuest } from "@/lib/member-api";
+import { getCampaignById, getPaystackPaymentStatus, initiatePaystackPayment, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { useAuth } from "@/hooks/use-auth";
 import { useDisabledFeatures } from "@/components/member/member-layout";
 import { handleApiError } from "@/lib/api-client";
@@ -36,6 +36,8 @@ function useShareUrl() {
 export default function PublicCampaignContributionPage() {
   const { campaignId } = useParams() as { campaignId: string };
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const qc = useQueryClient();
   const sharedByMemberId = searchParams.get("ref") || undefined;
   const { user, isMember } = useAuth();
   const disabledFeatures = useDisabledFeatures();
@@ -71,6 +73,34 @@ export default function PublicCampaignContributionPage() {
     enabled: Boolean(campaignId),
   });
 
+  // Paystack appends these to whatever callbackUrl the payment was initiated
+  // with — since that now points back to this same page (see payMutation
+  // below), a returning payer's status is checked and shown right here
+  // instead of bouncing them to a separate page. Guests in particular have
+  // no account to land anywhere else useful.
+  const paymentReference = searchParams.get("reference") || searchParams.get("trxref") || undefined;
+  const { data: paymentStatusResult } = useQuery({
+    queryKey: ["campaign-payment-status", paymentReference],
+    queryFn: () => getPaystackPaymentStatus(paymentReference!),
+    enabled: Boolean(paymentReference),
+    refetchInterval: (query) => {
+      const s = query.state.data?.status?.toLowerCase();
+      return s && s !== "pending" && s !== "unknown" ? false : 4000;
+    },
+  });
+  const returnedPaymentStatus = paymentReference
+    ? (paymentStatusResult?.status?.toLowerCase() ?? "loading")
+    : null;
+  const returnedPaymentIsFinal = returnedPaymentStatus
+    ? !["loading", "pending", "unknown"].includes(returnedPaymentStatus)
+    : false;
+  const returnedPaymentSucceeded = ["confirmed", "success", "successful"].includes(returnedPaymentStatus ?? "");
+  const [creditedThisVisit, setCreditedThisVisit] = useState(false);
+  if (returnedPaymentSucceeded && !creditedThisVisit) {
+    setCreditedThisVisit(true);
+    qc.invalidateQueries({ queryKey: ["pub-campaign", campaignId] });
+  }
+
   // Prefill the amount field when the campaign loads — done during render
   // (React's documented alternative to an effect for this case) rather than
   // in a useEffect, guarded so it only fires once per distinct `campaign`
@@ -89,8 +119,10 @@ export default function PublicCampaignContributionPage() {
         ? campaign.amountPerMember
         : Number(amount || campaign?.amountPerMember || 0);
       // Built client-side so the Paystack redirect lands back on THIS
-      // institution's own subdomain, not the backend's shared fallback host.
-      const callbackUrl = `${window.location.origin}/contributions/callback`;
+      // institution's own subdomain, not the backend's shared fallback host —
+      // and back to this same campaign page (not /contributions, which a
+      // guest can't even reach) so they see their result right where they paid.
+      const callbackUrl = `${window.location.origin}/payment-campaign/${campaignId}`;
       // A logged-in viewer pays as themselves, even on this public link —
       // only a logged-out payer goes through the guest flow, which attributes
       // the payment to whoever shared the link (via ?ref=) when present.
@@ -311,7 +343,7 @@ export default function PublicCampaignContributionPage() {
 
             {/* Footer (desktop only, mobile footer is at the very end) */}
             <p className="hidden lg:block text-center text-[11px] text-muted-foreground pb-2">
-              Powered by the Alumni Portal · Payments secured online
+              Powered by AlumUnion · Payments secured online
             </p>
           </div>
 
@@ -484,7 +516,7 @@ export default function PublicCampaignContributionPage() {
             </Card>
 
             <p className="lg:hidden text-center text-[11px] text-muted-foreground pt-5 pb-2">
-              Powered by the Alumni Portal · Payments secured online
+              Powered by AlumUnion · Payments secured online
             </p>
           </div>
         </div>
@@ -520,6 +552,56 @@ export default function PublicCampaignContributionPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setStatusModalOpen(false)}>Dismiss</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Returning from Paystack: show the result right here, no redirect ──────────── */}
+      <Dialog open={Boolean(paymentReference)} onOpenChange={() => {}}>
+        <DialogContent size="default">
+          <DialogHeader>
+            <DialogTitle>
+              {!returnedPaymentIsFinal ? "Verifying your payment" : returnedPaymentSucceeded ? "Payment successful" : "We couldn't confirm this payment"}
+            </DialogTitle>
+            <DialogDescription>
+              {!returnedPaymentIsFinal
+                ? "This only takes a moment."
+                : returnedPaymentSucceeded
+                  ? (paymentStatusResult?.message ?? "Thank you — your contribution has been recorded.")
+                  : (paymentStatusResult?.message ?? "We're not able to confirm this payment yet. If money left your account, it will be reflected shortly.")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 space-y-4">
+            <div
+              className={cn(
+                "flex items-center gap-3 rounded-xl border p-4",
+                !returnedPaymentIsFinal ? "border-primary/20 bg-primary/5"
+                  : returnedPaymentSucceeded ? "border-success/20 bg-success/5" : "border-warning/20 bg-warning/5",
+              )}
+            >
+              {!returnedPaymentIsFinal ? (
+                <Loader2 size={18} className="animate-spin text-primary shrink-0" />
+              ) : returnedPaymentSucceeded ? (
+                <CheckCircle2 size={18} className="text-success shrink-0" />
+              ) : (
+                <XCircle size={18} className="text-warning shrink-0" />
+              )}
+              <p
+                className={cn(
+                  "text-sm font-semibold",
+                  !returnedPaymentIsFinal ? "text-primary" : returnedPaymentSucceeded ? "text-success" : "text-warning",
+                )}
+              >
+                {!returnedPaymentIsFinal ? "Checking payment status…" : returnedPaymentSucceeded ? "You're all set!" : "Status unclear"}
+              </p>
+            </div>
+          </div>
+          {returnedPaymentIsFinal && (
+            <DialogFooter>
+              <Button onClick={() => router.replace(`/payment-campaign/${campaignId}`)}>
+                {returnedPaymentSucceeded ? "Done" : "Close"}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

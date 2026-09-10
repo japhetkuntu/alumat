@@ -34,6 +34,7 @@ public class StoreOrderService(
     IAlumniPgRepository<StoreProduct> productRepo,
     IAlumniPgRepository<StoreProductVariant> variantRepo,
     IAlumniPgRepository<Institution> institutionRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
     ICurrentTenantService currentTenant,
     AlumniDbContext db,
     IPaystackService paystackService,
@@ -438,6 +439,20 @@ public class StoreOrderService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(o => o.ToDto()).ToList(),
             };
+
+            // ToDto() reads name/email from the MemberSnapshot frozen on the order at
+            // creation time — always the same one member (the caller), so a single
+            // lookup, not a batch.
+            var member = await memberRepo.GetByIdAsync(memberId);
+            if (member is not null)
+            {
+                foreach (var dto in dtoResult.Results)
+                {
+                    dto.MemberName = $"{member.FirstName} {member.LastName}";
+                    dto.MemberEmail = member.Email;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

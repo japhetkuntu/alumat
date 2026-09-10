@@ -268,6 +268,23 @@ public class InstitutionManagementService(
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Status updated");
     }
 
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdateNameAsync(string id, UpdateInstitutionNameRequest request, string updatedBy, string actorName)
+    {
+        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+        var previousName = institution.Name;
+        institution.Name = request.Name.Trim();
+        institution.UpdatedAt = DateTime.UtcNow;
+        institution.UpdatedBy = updatedBy;
+        await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(updatedBy, actorName, $"renamed institution from \"{previousName}\" to \"{institution.Name}\"", institution.Name);
+
+        return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Institution renamed");
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateMemberActivePolicyAsync(string id, UpdateInstitutionMemberPolicyRequest request, string updatedBy, string actorName)
     {
         var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);

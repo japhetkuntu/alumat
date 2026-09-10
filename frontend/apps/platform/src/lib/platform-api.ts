@@ -200,6 +200,11 @@ export async function updateInstitutionStatus(id: string, status: string) {
   return res.data.data!;
 }
 
+export async function updateInstitutionName(id: string, name: string) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/name`, { name });
+  return res.data.data!;
+}
+
 export async function updateInstitutionMemberPolicy(id: string, memberActivePolicy: "ApprovedOnly" | "DuesRequired") {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/member-policy`, { memberActivePolicy });
   return res.data.data!;

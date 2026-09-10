@@ -338,6 +338,23 @@ public class EventService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(r => r.ToDto()).ToList(),
             };
+
+            // Backfill above only fills in RSVPs that never got a snapshot — this
+            // refreshes name/photo on every row from the live Member records (one
+            // batched lookup, not one query per row) so a later name/photo change
+            // actually shows up, not just missing snapshots.
+            var rsvpMemberIds = dtoResult.Results.Select(d => d.MemberId).Distinct().ToList();
+            var rsvpMembers = (await memberRepo.GetAllAsync(m => rsvpMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (rsvpMembers.TryGetValue(dto.MemberId, out var m))
+                {
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberEmail = m.Email;
+                    dto.MemberProfilePictureUrl = m.ProfilePictureUrl;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)

@@ -183,7 +183,12 @@ export default function AdminMembersPage() {
     })),
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-members"] });
+  // "admin-members-count" is a separate key prefix (used by the status
+  // filter pills), so it needs its own invalidation alongside the roster.
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["admin-members"] });
+    qc.invalidateQueries({ queryKey: ["admin-members-count"] });
+  };
 
   const approveMut = useMutation({
     mutationFn: (id: string) => approveMember(id),

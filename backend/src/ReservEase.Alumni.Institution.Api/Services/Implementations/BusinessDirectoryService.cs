@@ -13,6 +13,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class BusinessDirectoryService(
     IAlumniPgRepository<BusinessListing> listingRepo,
+    IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
     ILogger<BusinessDirectoryService> logger) : IBusinessDirectoryService
@@ -37,6 +38,24 @@ public class BusinessDirectoryService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(l => l.ToDto()).ToList(),
             };
+
+            // ToDto() reads the owner's name/email from the MemberSnapshot frozen on
+            // the listing at creation time (denormalized owner snapshot, for admin
+            // display) — refresh both from the live Member records here (one batched
+            // lookup, not one query per row) so a later name/email change actually
+            // shows up. Falls back to the snapshot if the member has since been
+            // deleted (or the listing is admin-created, with no MemberId at all).
+            var listingMemberIds = dtoResult.Results.Where(d => d.MemberId != null).Select(d => d.MemberId!).Distinct().ToList();
+            var listingMembers = (await memberRepo.GetAllAsync(m => listingMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (dto.MemberId != null && listingMembers.TryGetValue(dto.MemberId, out var m))
+                {
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberEmail = m.Email;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
@@ -54,7 +73,18 @@ public class BusinessDirectoryService(
             if (listing is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<BusinessListingDto>("Business listing not found");
 
-            return listing.ToDto().ToOkApiResponse();
+            var dto = listing.ToDto();
+            if (listing.MemberId is not null)
+            {
+                var owner = await memberRepo.GetByIdAsync(listing.MemberId);
+                if (owner is not null)
+                {
+                    dto.MemberName = $"{owner.FirstName} {owner.LastName}";
+                    dto.MemberEmail = owner.Email;
+                }
+            }
+
+            return dto.ToOkApiResponse();
         }
         catch (Exception e)
         {

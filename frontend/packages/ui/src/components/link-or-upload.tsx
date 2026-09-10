@@ -29,7 +29,11 @@ export interface LinkOrUploadProps {
  * never disagree about which one wins.
  */
 export function LinkOrUpload({ label, url, onUrlChange, file, onFileChange, accept, placeholder = "https://...", helperText, className }: LinkOrUploadProps) {
-  const [mode, setMode] = useState<"link" | "upload">(file ? "upload" : "link");
+  // Defaults to the preview mode whenever there's already something to show —
+  // a pending file, or a URL saved from a previous save — so reopening a form
+  // with an existing image renders it, instead of showing the raw link text
+  // and making the admin switch modes just to see what's actually saved.
+  const [mode, setMode] = useState<"link" | "upload">(file || url ? "upload" : "link");
 
   return (
     <div className={className ? `space-y-2 ${className}` : "space-y-2"}>

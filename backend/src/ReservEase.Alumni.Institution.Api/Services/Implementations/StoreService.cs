@@ -19,6 +19,7 @@ public class StoreService(
     IAlumniPgRepository<StoreOrder> orderRepo,
     IAlumniPgRepository<StoreProductVariant> variantRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
+    IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
     INotificationActor notificationActor,
     ICurrentTenantService currentTenant,
@@ -272,6 +273,23 @@ public class StoreService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(o => o.ToDto()).ToList(),
             };
+
+            // ToDto() reads name/email from the MemberSnapshot frozen on the order at
+            // creation time — refresh both from the live Member records here (one
+            // batched lookup, not one query per row) so a later name/email change
+            // actually shows up. Falls back to the snapshot if the member has since
+            // been deleted.
+            var orderMemberIds = dtoResult.Results.Select(d => d.MemberId).Distinct().ToList();
+            var orderMembers = (await memberRepo.GetAllAsync(m => orderMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            foreach (var dto in dtoResult.Results)
+            {
+                if (orderMembers.TryGetValue(dto.MemberId, out var m))
+                {
+                    dto.MemberName = $"{m.FirstName} {m.LastName}";
+                    dto.MemberEmail = m.Email;
+                }
+            }
+
             return dtoResult.ToOkApiResponse();
         }
         catch (Exception e)
