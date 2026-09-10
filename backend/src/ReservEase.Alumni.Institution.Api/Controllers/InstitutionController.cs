@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -73,7 +74,8 @@ public class InstitutionController(
         institution.MemberAuthHeadline = request.MemberAuthHeadline;
         institution.MemberAuthSubtext = request.MemberAuthSubtext;
         institution.UpdatedAt = DateTime.UtcNow;
-        await institutionRepo.UpdateAsync(institution);
+        if (!await TryUpdateInstitutionAsync(institution))
+            return BadRequest(new ApiResponse<object> { Message = "This institution was updated somewhere else in the meantime. Refresh and try again.", Code = 400 });
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Branding updated", Code = 200, Data = ToDto(institution) });
     }
@@ -94,7 +96,8 @@ public class InstitutionController(
         institution.HeroImageUrls = request.HeroImageUrls;
         institution.HeroHeadline = request.HeroHeadline;
         institution.UpdatedAt = DateTime.UtcNow;
-        await institutionRepo.UpdateAsync(institution);
+        if (!await TryUpdateInstitutionAsync(institution))
+            return BadRequest(new ApiResponse<object> { Message = "This institution was updated somewhere else in the meantime. Refresh and try again.", Code = 400 });
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Landing content updated", Code = 200, Data = ToDto(institution) });
     }
@@ -120,7 +123,8 @@ public class InstitutionController(
         institution.MemberActivePolicy = request.MemberActivePolicy;
         institution.RequireStudentId = request.RequireStudentId;
         institution.UpdatedAt = DateTime.UtcNow;
-        await institutionRepo.UpdateAsync(institution);
+        if (!await TryUpdateInstitutionAsync(institution))
+            return BadRequest(new ApiResponse<object> { Message = "This institution was updated somewhere else in the meantime. Refresh and try again.", Code = 400 });
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Active-member policy updated", Code = 200, Data = ToDto(institution) });
     }
@@ -158,7 +162,8 @@ public class InstitutionController(
         institution.EmailNotificationsEnabled = request.EmailNotificationsEnabled;
         institution.SmsNotificationsEnabled = request.SmsNotificationsEnabled;
         institution.UpdatedAt = DateTime.UtcNow;
-        await institutionRepo.UpdateAsync(institution);
+        if (!await TryUpdateInstitutionAsync(institution))
+            return BadRequest(new ApiResponse<object> { Message = "This institution was updated somewhere else in the meantime. Refresh and try again.", Code = 400 });
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Features updated", Code = 200, Data = ToDto(institution) });
     }
@@ -195,7 +200,8 @@ public class InstitutionController(
         };
         institution.PayoutStatus = "Pending";
         institution.UpdatedAt = DateTime.UtcNow;
-        await institutionRepo.UpdateAsync(institution);
+        if (!await TryUpdateInstitutionAsync(institution))
+            return BadRequest(new ApiResponse<object> { Message = "This institution was updated somewhere else in the meantime. Refresh and try again.", Code = 400 });
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Payout setup submitted for platform review", Code = 200, Data = ToDto(institution) });
     }
@@ -204,6 +210,27 @@ public class InstitutionController(
         string.IsNullOrEmpty(currentTenant.InstitutionId)
             ? null
             : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+
+    /// <summary>
+    /// Institution rows carry an xmin optimistic-concurrency token (see
+    /// AlumniDbContext) — two admins saving different settings on this same
+    /// institution at the same time would otherwise throw an unhandled
+    /// DbUpdateConcurrencyException. Every self-service save below goes
+    /// through this instead of calling institutionRepo.UpdateAsync directly.
+    /// </summary>
+    private async Task<bool> TryUpdateInstitutionAsync(InstitutionEntity institution)
+    {
+        try
+        {
+            await institutionRepo.UpdateAsync(institution);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+    }
+
 
     /// <summary>
     /// The Member Portal lives on a completely different base domain from this

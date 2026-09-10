@@ -11,7 +11,8 @@ import {
 
 interface PlatformTokenResponse {
   user: { id: string; email: string; name: string; role: string };
-  tokens: { accessToken: string; refreshToken: string; expiresIn: number };
+  // Token strings never reach the client — see AuthTokens in @/types.
+  tokens: { expiresIn: number };
 }
 
 export async function loginPlatformStaff(req: LoginRequest) {

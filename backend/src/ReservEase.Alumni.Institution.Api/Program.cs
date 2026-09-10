@@ -1,5 +1,6 @@
 using Serilog;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Services;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Options;
 using ReservEase.Alumni.Institution.Api.Services;
@@ -10,6 +11,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
@@ -46,13 +48,22 @@ builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
 
 // Auth + API
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-    // WithExposedHeaders: without it, browsers hide Content-Disposition from
-    // JS on a cross-origin response (frontend/backend are different origins
-    // in every real deployment) — the Reports page's CSV export reads it to
-    // name the downloaded file, and would otherwise silently fall back to a
-    // generic filename.
-    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Content-Disposition")));
+// Custom-domain institutions (a real feature — see TenantResolutionMiddleware's
+// byCustomDomain lookup) don't match the base-domain suffix check CORS uses
+// otherwise, so a background refresher keeps this cache in sync with
+// Institution.CustomDomain — see CustomDomainCacheRefresher and
+// CorsExtensions.IsAllowedOrigin. Registered as the concrete instance (not
+// just the interface) so both DI-resolved consumers and the CORS setup below
+// share the exact same object.
+var customDomainCache = new CustomDomainCache();
+builder.Services.AddSingleton<ICustomDomainCache>(customDomainCache);
+builder.Services.AddHostedService<CustomDomainCacheRefresher>();
+
+// WithExposedHeaders: without it, browsers hide Content-Disposition from JS on
+// a cross-origin response (frontend/backend are different origins in every
+// real deployment) — the Reports page's CSV export reads it to name the
+// downloaded file, and would otherwise silently fall back to a generic filename.
+builder.Services.AddTenantAwareCors(builder.Configuration, customDomainCache, policy => policy.WithExposedHeaders("Content-Disposition"));
 builder.Services.AddAlumniRateLimiting();
 builder.Services.AddBearerAuth(tokenConfig);
 builder.Services.AddGoogleAuth(builder.Configuration);
@@ -95,6 +106,12 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Must be the very first middleware — everything downstream that reads
+// Connection.RemoteIpAddress (rate limiting) or Request.Scheme depends on
+// this having already run.
+app.UseAlumniForwardedHeaders();
+app.UseAlumniSecurityHeaders();
+
 var enableSwagger = builder.Configuration.GetValue<bool>("ENABLE_SWAGGER", false);
 
 // Swagger only in development, or when explicitly enabled in production.
@@ -115,8 +132,10 @@ if (!app.Environment.IsDevelopment())
     }
 }
 
-// Global exception handler — never expose server errors to the frontend
-app.UseExceptionHandler(!app.Environment.IsProduction());
+// Global exception handler — never expose server errors to the frontend.
+// Gated on IsDevelopment(), not "!IsProduction()": a Staging/QA environment
+// name would otherwise also leak stack traces to anyone who can reach it.
+app.UseExceptionHandler(app.Environment.IsDevelopment());
 
 app.UseSerilogRequestLogging();
 app.UseRouting();

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
+using Npgsql;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Actors;
@@ -769,6 +770,19 @@ public class ContributionService : IContributionService
 
             var existingContribution = await db.Set<Contribution>().IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.TransactionRef == reference && c.MemberId == transaction.MemberId);
+            // This whole block is reachable concurrently for the same
+            // reference from two independent, unserialized paths — the
+            // Paystack webhook and the member's own "check payment status"
+            // poll — so the existingContribution read above can't fully
+            // prevent a double-insert on its own; it only narrows the race
+            // window. The unique index on Contribution.TransactionRef (see
+            // AlumniDbContext) is what actually closes it: if a concurrent
+            // call already inserted between the read above and this one's
+            // AddAsync, the insert throws a unique-violation, caught below
+            // and treated exactly like "existingContribution was found" —
+            // silently skip crediting again rather than erroring the request.
+            try
+            {
             if (existingContribution is null)
             {
                 var campaign = await db.Set<Campaign>().IgnoreQueryFilters()
@@ -929,6 +943,11 @@ public class ContributionService : IContributionService
                     }
                 }
             }
+            }
+            catch (DbUpdateException ex) when (IsDuplicateTransactionRef(ex))
+            {
+                logger.LogWarning("Duplicate Paystack callback for reference {Reference} — a Contribution already exists, skipping re-credit.", reference);
+            }
 
             await paymentTransactionRepo.UpdateAsync(transaction);
             await redis.RemoveAsync($"paystack:ref:{reference}");
@@ -945,6 +964,18 @@ public class ContributionService : IContributionService
 
         return ApiResponseExtensions.ToOkApiResponse<object>("Payment status updated");
     }
+
+    /// <summary>
+    /// Postgres SQLSTATE 23505 ("unique_violation") specifically on the
+    /// TransactionRef unique index — the actual DB-level guard against a
+    /// double Paystack callback. Checking the constraint name too (not just
+    /// the SQLSTATE) matters because this catch wraps a ~170-line block that
+    /// also updates campaigns/members/notifications — a unique violation
+    /// from a different constraint in there is a real data-integrity bug
+    /// that should surface, not get silently logged as "duplicate callback".
+    /// </summary>
+    private static bool IsDuplicateTransactionRef(DbUpdateException ex) =>
+        ex.InnerException is PostgresException { SqlState: "23505", ConstraintName: "IX_Contributions_TransactionRef" };
 
     private static string GetFriendlyPaymentFailureMessage(string? raw)
     {

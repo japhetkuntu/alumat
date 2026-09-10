@@ -15,8 +15,10 @@ public interface IMemberAuthService
     Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
     Task<IApiResponse<MemberTokenResponse>> LoginAsync(LoginRequest request);
     Task<IApiResponse<MemberTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
-    Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+    /// <summary>Reads both tokens from the request's own httpOnly cookies — see AuthCookieExtensions.</summary>
+    Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync();
     Task<IApiResponse<MemberProfileResponse>> GetProfileAsync(AuthData auth);
     Task<IApiResponse<MemberProfileResponse>> UpdateProfileAsync(UpdateProfileRequest request, AuthData auth);
     Task<IApiResponse<object>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);
+    Task LogoutAsync(AuthData auth);
 }

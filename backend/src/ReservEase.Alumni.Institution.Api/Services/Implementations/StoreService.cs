@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -298,7 +299,14 @@ public class StoreService(
             institution.StoreDeliveryStages = request.DeliveryStages;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = admin.Id;
-        await institutionRepo.UpdateAsync(institution);
+        try
+        {
+            await institutionRepo.UpdateAsync(institution);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ApiResponseExtensions.ToBadRequestApiResponse<StoreSettingsResponse>("This institution was updated somewhere else in the meantime. Refresh and try again.");
+        }
         logger.LogInformation("Store settings updated by admin {AdminId}", admin.Id);
         return new StoreSettingsResponse(institution.DefaultStoreDeliveryInfo, institution.StoreDeliveryStages).ToOkApiResponse("Store settings updated");
     }

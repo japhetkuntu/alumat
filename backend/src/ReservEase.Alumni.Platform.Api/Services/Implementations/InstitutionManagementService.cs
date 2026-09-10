@@ -51,6 +51,29 @@ public class InstitutionManagementService(
         var domain = config["AdminBaseDomain"];
         return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{slug}.{domain}";
     }
+
+    /// <summary>
+    /// Institution rows track xmin-based optimistic concurrency (see AlumniDbContext),
+    /// so two platform staffers editing different settings on the same institution at
+    /// the same time no longer silently overwrite each other — the second save now
+    /// throws instead. Every settings-update method below goes through this instead
+    /// of calling db.SaveChangesAsync() directly, so that conflict becomes a normal
+    /// 400 response rather than an unhandled 500.
+    /// </summary>
+    private async Task<bool> TrySaveInstitutionAsync(string institutionName)
+    {
+        try
+        {
+            await db.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            logger.LogWarning("Institution {InstitutionName} was updated by someone else at the same time — save skipped", institutionName);
+            return false;
+        }
+    }
+
     public async Task<IApiResponse<PgPagedResult<InstitutionListItemResponse>>> GetInstitutionsAsync(
         int page, int pageSize, string? search, string? status)
     {
@@ -261,7 +284,8 @@ public class InstitutionManagementService(
         institution.Status = request.Status;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        if (!await TrySaveInstitutionAsync(institution.Name))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("This institution was updated by someone else in the meantime. Refresh and try again.");
 
         await auditLog.LogAsync(updatedBy, actorName, $"set institution status to {request.Status}", institution.Name);
 
@@ -281,7 +305,8 @@ public class InstitutionManagementService(
         institution.MemberActivePolicy = request.MemberActivePolicy;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        if (!await TrySaveInstitutionAsync(institution.Name))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("This institution was updated by someone else in the meantime. Refresh and try again.");
 
         await auditLog.LogAsync(updatedBy, actorName, $"set active-member policy to {request.MemberActivePolicy}", institution.Name);
 
@@ -311,7 +336,8 @@ public class InstitutionManagementService(
         institution.RequireStudentId = request.RequireStudentId;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        if (!await TrySaveInstitutionAsync(institution.Name))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("This institution was updated by someone else in the meantime. Refresh and try again.");
 
         await auditLog.LogAsync(updatedBy, actorName, "updated institution branding", institution.Name);
 
@@ -331,7 +357,8 @@ public class InstitutionManagementService(
         institution.DisabledFeatures = request.DisabledFeatures.Distinct().ToList();
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        if (!await TrySaveInstitutionAsync(institution.Name))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("This institution was updated by someone else in the meantime. Refresh and try again.");
 
         var summary = institution.DisabledFeatures.Count == 0 ? "all features enabled" : $"disabled: {string.Join(", ", institution.DisabledFeatures)}";
         await auditLog.LogAsync(updatedBy, actorName, $"updated institution features ({summary})", institution.Name);
@@ -394,7 +421,8 @@ public class InstitutionManagementService(
             institution.PaystackSubaccountCode = subaccount.Data.SubaccountCode;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        if (!await TrySaveInstitutionAsync(institution.Name))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("This institution was updated by someone else in the meantime. Refresh and try again.");
 
         await auditLog.LogAsync(updatedBy, actorName, $"updated institution payment settings (fee {request.PlatformFeePercentage}%)", institution.Name);
 
@@ -564,7 +592,8 @@ public class InstitutionManagementService(
         institution.HeroHeadline = request.HeroHeadline;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        if (!await TrySaveInstitutionAsync(institution.Name))
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("This institution was updated by someone else in the meantime. Refresh and try again.");
 
         await auditLog.LogAsync(updatedBy, actorName, "updated institution landing page content", institution.Name);
 

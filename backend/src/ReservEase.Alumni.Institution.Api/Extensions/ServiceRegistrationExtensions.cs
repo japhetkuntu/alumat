@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 
@@ -44,6 +45,7 @@ public static class ServiceRegistrationExtensions
                     },
                     RoleClaimType = ClaimTypes.Role,
                 };
+                opts.UseAccessTokenCookieFallback();
             });
 
         services.AddAuthorization();

@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
   },
   // @alumni/ui ships raw TS/TSX source (no build step), so Next must transpile it itself.
   transpilePackages: ["@alumni/ui"],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

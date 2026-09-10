@@ -58,6 +58,31 @@ public class RecurringGivingProcessor(
         {
             try
             {
+                // Atomically "claim" this row before calling Paystack — a
+                // single UPDATE ... WHERE is a single round-trip Postgres
+                // itself serializes, so exactly one caller can ever win it,
+                // unlike the read-then-later-write this used to be (which
+                // let two concurrent runs — a second Member.Api instance
+                // under normal horizontal scaling, or this same scheduler
+                // firing again after a crash mid-charge — both read the row
+                // as "due", both charge the member's card, and only then
+                // both try to write the result). The claim bumps
+                // NextChargeDate forward by a short, bounded window rather
+                // than the real one-month cycle; if charging fails partway
+                // (e.g. this process crashes right after claiming), the row
+                // becomes due again in a day instead of being stuck forever
+                // or double-charged today. A genuinely successful/failed
+                // charge overwrites this placeholder with its real
+                // NextChargeDate immediately after, in ChargeOneAsync.
+                var claimed = await db.Set<RecurringContribution>()
+                    .Where(r => r.Id == recurring.Id && r.Status == "Active" && r.NextChargeDate <= now)
+                    .ExecuteUpdateAsync(s => s.SetProperty(r => r.NextChargeDate, now.AddDays(1)));
+                if (claimed == 0)
+                {
+                    logger.LogInformation("Recurring gift {RecurringId} was already claimed by another run — skipping", recurring.Id);
+                    continue;
+                }
+
                 if (await ChargeOneAsync(recurring, institution, now))
                     chargedCount++;
             }

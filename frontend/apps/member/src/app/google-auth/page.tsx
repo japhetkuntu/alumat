@@ -53,6 +53,37 @@ function hostnameOf(url: string | null): string | null {
 }
 
 /**
+ * Every portal's own login page builds `return` from its OWN `window.location.origin`
+ * (see e.g. apps/member/(auth)/login/page.tsx's GoogleSignInButton) — never
+ * user-typed — but this bridge still receives it as a plain, attacker-forgeable
+ * URL query parameter, since anyone can link straight to this page with any
+ * `?return=` they like. This page's whole job is to hand a live Google ID
+ * token (register mode) or a freshly-issued session (login mode) to whatever
+ * `return` says, via a fetch target and a redirect — so an unvalidated
+ * `return` turns this into a one-click account-takeover primitive: point it
+ * at an attacker's own domain and both the ID token and the session tokens
+ * are delivered straight there. Every legitimate destination is this
+ * platform's own shared base domain or one of its subdomains (any
+ * institution's own member/staff subdomain, or the platform portal) — so
+ * validating the host against `NEXT_PUBLIC_BASE_DOMAIN` (bare or as a
+ * suffix) rejects everything else without needing a fixed, ever-growing
+ * allowlist of individual institution subdomains.
+ */
+function isAllowedReturnUrl(url: string): boolean {
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+  if (!baseDomain) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    const [baseHost, basePort] = baseDomain.split(":");
+    if (basePort && parsed.port !== basePort) return false;
+    return parsed.hostname === baseHost || parsed.hostname.endsWith(`.${baseHost}`);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Shared Google sign-in bridge for all three portals. Google's OAuth client
  * only allows a fixed, pre-registered set of origins — it can't authorize
  * every institution's own subdomain (there can be any number of them, and
@@ -72,7 +103,10 @@ function hostnameOf(url: string | null): string | null {
  */
 function GoogleAuthBridgeContent() {
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("return");
+  const rawReturnUrl = searchParams.get("return");
+  // Validated once, here — everything downstream (the token-exchange fetch
+  // target and the final redirect) reads only this, never rawReturnUrl.
+  const returnUrl = rawReturnUrl && isAllowedReturnUrl(rawReturnUrl) ? rawReturnUrl : null;
   const portal = searchParams.get("portal") ?? "member";
   // "register" never completes anything itself — the register page still
   // needs alumni-specific fields (phone, student ID, graduation year) Google
@@ -123,10 +157,16 @@ function GoogleAuthBridgeContent() {
 
     setStatus("signing-in");
     try {
+      // This bridge lives on the member app's own origin but is signing the
+      // user into `returnUrl`'s origin (a different institution subdomain,
+      // or the platform portal) — a cross-origin request, so the httpOnly
+      // auth cookies that origin's response sets are only kept by the
+      // browser with credentials explicitly included.
       const res = await fetch(`${returnUrl}/api/v1/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
+        credentials: "include",
       });
       const body = await res.json();
       if (!res.ok || !body?.data?.user || !body?.data?.tokens) {

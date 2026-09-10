@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useSyncExternalStore } from "react";
 import { AuthData, AuthTokens, LoginRequest } from "@/types";
 import { loginPlatformStaff } from "@/lib/platform-api";
-import { handleApiError } from "@/lib/api-client";
+import { handleApiError, platformClient } from "@/lib/api-client";
 
 interface AuthContextValue {
   user: AuthData | null;
@@ -70,8 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       localStorage.setItem("platform_user", JSON.stringify(userData));
       localStorage.setItem("platform_tokens", JSON.stringify(tokens));
-      localStorage.setItem("access_token", tokens.accessToken);
-      localStorage.setItem("refresh_token", tokens.refreshToken);
       notifyAuth();
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -81,16 +79,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function setSession(user: AuthData, tokens: AuthTokens) {
     localStorage.setItem("platform_user", JSON.stringify(user));
     localStorage.setItem("platform_tokens", JSON.stringify(tokens));
-    localStorage.setItem("access_token", tokens.accessToken);
-    localStorage.setItem("refresh_token", tokens.refreshToken);
     notifyAuth();
   }
 
-  function logout() {
+  async function logout() {
+    // Awaited (not fire-and-forget) — the cookies are httpOnly, so only this
+    // backend response can clear them; navigating away immediately risks the
+    // browser cancelling the in-flight request, leaving the session live
+    // server-side even though the UI looks logged out. Still best-effort: a
+    // failed/slow request shouldn't trap the user on the page.
+    await platformClient.post("/auth/logout").catch(() => {});
     localStorage.removeItem("platform_user");
     localStorage.removeItem("platform_tokens");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     notifyAuth();
     window.location.href = "/login";
   }

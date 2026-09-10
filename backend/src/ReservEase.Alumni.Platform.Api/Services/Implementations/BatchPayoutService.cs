@@ -119,7 +119,20 @@ public class BatchPayoutService(
         batch.PendingPayoutChanges = null;
         batch.UpdatedAt = DateTime.UtcNow;
         batch.UpdatedBy = approvedBy;
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Someone else already approved/rejected this batch's payout
+            // between our read above and this write — the live Paystack
+            // subaccount call already happened by the time we get here, so
+            // without this check both callers would otherwise both succeed
+            // and silently overwrite each other's result.
+            logger.LogWarning("Batch {BatchId} payout was already approved/rejected by another request — skipping duplicate approval", batch.Id);
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("This payout was already reviewed by someone else. Refresh and check its current status.");
+        }
 
         await auditLog.LogAsync(approvedBy, actorName, $"approved payout setup for batch \"{batch.Name}\"", institution.Name);
 
@@ -140,7 +153,15 @@ public class BatchPayoutService(
         batch.PendingPayoutChanges = null;
         batch.UpdatedAt = DateTime.UtcNow;
         batch.UpdatedBy = rejectedBy;
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            logger.LogWarning("Batch {BatchId} payout was already approved/rejected by another request — skipping duplicate rejection", batch.Id);
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("This payout was already reviewed by someone else. Refresh and check its current status.");
+        }
 
         var institution = await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == batch.InstitutionId);
         await auditLog.LogAsync(rejectedBy, actorName, $"rejected payout setup for batch \"{batch.Name}\"{(string.IsNullOrWhiteSpace(request.Notes) ? "" : $": {request.Notes}")}", institution?.Name ?? batch.InstitutionId);

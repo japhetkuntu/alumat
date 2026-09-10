@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
@@ -59,6 +60,18 @@ public class MemberAuthService(
     }
 
     /// <summary>
+    /// Email uniqueness for Member is scoped per institution (InstitutionId,
+    /// Email), not global — the same email can legitimately have a pending
+    /// registration at two different institutions at once. The Redis cache
+    /// key for a pending (not-yet-verified) registration must be scoped the
+    /// same way, or a registration started at institution B silently
+    /// overwrites — password, OTP, and all — a still-pending registration
+    /// for the same email at institution A, since both would otherwise share
+    /// one global key.
+    /// </summary>
+    private string RegistrationCacheKey(string email) => $"reg:otp:{currentTenant.InstitutionId}:{email}";
+
+    /// <summary>
     /// The current tenant's own name/color/logo for tenant-branded email —
     /// every field falls back to the platform default (null) when unset, so
     /// mailtrap's own MailtrapEmailService.RenderHtmlAsync fallback logic
@@ -108,7 +121,7 @@ public class MemberAuthService(
                 ReferralCode = request.ReferralCode?.Trim(),
             };
 
-            await redis.SetAsync($"reg:otp:{email}", cached, TimeSpan.FromMinutes(15));
+            await redis.SetAsync(RegistrationCacheKey(email), cached, TimeSpan.FromMinutes(15));
 
             // The actual send happens off-request in the notification actor —
             // this just resolves brand vars and enqueues it.
@@ -207,7 +220,7 @@ public class MemberAuthService(
             logger.LogInformation("VerifyOtp request for email: {Email}", request.Email);
 
             var email = request.Email.ToLower().Trim();
-            var cached = await redis.GetAsync<CachedRegistration>($"reg:otp:{email}");
+            var cached = await redis.GetAsync<CachedRegistration>(RegistrationCacheKey(email));
             if (cached is null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("No pending registration found. Please register again.");
 
@@ -257,7 +270,7 @@ public class MemberAuthService(
             }
 
             // Clean up Redis
-            await redis.RemoveAsync($"reg:otp:{email}");
+            await redis.RemoveAsync(RegistrationCacheKey(email));
 
             logger.LogInformation("Member {MemberId} registered successfully after OTP verification", member.Id);
             return new object().ToCreatedApiResponse("Email verified successfully. Your account is pending admin approval.");
@@ -276,7 +289,7 @@ public class MemberAuthService(
             logger.LogInformation("ResendOtp request for email: {Email}", request.Email);
 
             var email = request.Email.ToLower().Trim();
-            var cached = await redis.GetAsync<CachedRegistration>($"reg:otp:{email}");
+            var cached = await redis.GetAsync<CachedRegistration>(RegistrationCacheKey(email));
             if (cached is null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("No pending registration found. Please register again.");
 
@@ -288,7 +301,7 @@ public class MemberAuthService(
             cached.Otp = otp;
             cached.ResendCount++;
 
-            await redis.SetAsync($"reg:otp:{email}", cached, TimeSpan.FromMinutes(15));
+            await redis.SetAsync(RegistrationCacheKey(email), cached, TimeSpan.FromMinutes(15));
 
             // The actual send happens off-request in the notification actor —
             // this just resolves brand vars and enqueues it.
@@ -453,9 +466,10 @@ public class MemberAuthService(
             var refreshToken = GenerateRefreshToken();
             await redis.SetAsync($"member:refresh:{member.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             var userResp = new AuthUserResponse(member.Id, member.Email, member.FirstName, member.LastName, "Member", member.GraduationYear, member.ProfilePictureUrl);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
 
             logger.LogInformation("Member {MemberId} logged in successfully", member.Id);
             return new MemberTokenResponse(userResp, tokensResp).ToOkApiResponse("Login successful");
@@ -504,9 +518,10 @@ public class MemberAuthService(
             var refreshToken = GenerateRefreshToken();
             await redis.SetAsync($"member:refresh:{member.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             var userResp = new AuthUserResponse(member.Id, member.Email, member.FirstName, member.LastName, "Member", member.GraduationYear, member.ProfilePictureUrl);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
 
             logger.LogInformation("Member {MemberId} logged in via Google", member.Id);
             return new MemberTokenResponse(userResp, tokensResp).ToOkApiResponse("Login successful");
@@ -518,20 +533,26 @@ public class MemberAuthService(
         }
     }
 
-    public async Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
+    public async Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync()
     {
         try
         {
             logger.LogInformation("RefreshToken request received");
 
+            var cookies = httpContextAccessor.HttpContext?.Request.Cookies;
+            var oldAccessToken = cookies?[AuthCookieExtensions.AccessTokenCookieName];
+            var refreshToken = cookies?[AuthCookieExtensions.RefreshTokenCookieName];
+            if (string.IsNullOrEmpty(oldAccessToken) || string.IsNullOrEmpty(refreshToken))
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Invalid or expired refresh token");
+
             // Extract member ID from the expired access token
-            var memberId = ExtractUserIdFromExpiredToken(request.AccessToken, tokenConfig.MemberSigningKey);
+            var memberId = ExtractUserIdFromExpiredToken(oldAccessToken, tokenConfig.MemberSigningKey);
             if (string.IsNullOrEmpty(memberId))
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Invalid token");
 
             var stored = await redis.GetAsync<string>($"member:refresh:{memberId}");
             if (stored is null || !CryptographicOperations.FixedTimeEquals(
-                    Encoding.UTF8.GetBytes(stored), Encoding.UTF8.GetBytes(request.RefreshToken)))
+                    Encoding.UTF8.GetBytes(stored), Encoding.UTF8.GetBytes(refreshToken)))
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Invalid or expired refresh token");
 
             var member = await memberRepo.GetByIdAsync(memberId);
@@ -543,9 +564,10 @@ public class MemberAuthService(
             var newRefresh = GenerateRefreshToken();
             await redis.SetAsync($"member:refresh:{member.Id}", newRefresh,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, newRefresh);
 
             var userResp = new AuthUserResponse(member.Id, member.Email, member.FirstName, member.LastName, "Member", member.GraduationYear, member.ProfilePictureUrl);
-            var tokensResp = new AuthTokensResponse(accessToken, newRefresh, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new MemberTokenResponse(userResp, tokensResp).ToOkApiResponse();
         }
         catch (Exception e)
@@ -553,6 +575,21 @@ public class MemberAuthService(
             logger.LogError(e, "Error during token refresh");
             return ApiResponseExtensions.ToServerErrorApiResponse<MemberTokenResponse>("Token refresh failed");
         }
+    }
+
+    /// <summary>Invalidates the server-side refresh token and clears both auth cookies — see AuthCookieExtensions.</summary>
+    public async Task LogoutAsync(AuthData auth)
+    {
+        await redis.RemoveAsync($"member:refresh:{auth.Id}");
+        httpContextAccessor.HttpContext?.Response.ClearAuthCookies();
+    }
+
+    private void SetAuthCookies(string accessToken, string refreshToken)
+    {
+        httpContextAccessor.HttpContext?.Response.SetAuthCookies(
+            accessToken, refreshToken,
+            TimeSpan.FromHours(tokenConfig.AccessTokenLifetime),
+            TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
     }
 
     public async Task<IApiResponse<MemberProfileResponse>> GetProfileAsync(AuthData auth)

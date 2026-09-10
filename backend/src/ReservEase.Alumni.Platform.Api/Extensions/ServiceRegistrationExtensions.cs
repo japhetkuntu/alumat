@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Platform.Api.Actors;
@@ -78,6 +79,7 @@ public static class ServiceRegistrationExtensions
                     },
                     RoleClaimType = ClaimTypes.Role,
                 };
+                opts.UseAccessTokenCookieFallback();
             });
 
         services.AddAuthorization();

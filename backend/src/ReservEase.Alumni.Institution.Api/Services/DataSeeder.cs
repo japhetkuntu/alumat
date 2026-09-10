@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -61,13 +62,19 @@ public static class DataSeeder
         if (!await db.Set<StaffEntity>().AnyAsync())
         {
             var adminEmail = seed["AdminEmail"] ?? "admin@example.com";
+            // A fixed fallback password here would be a permanent, source-visible
+            // credential for every fresh deployment's first SuperAdmin — generate
+            // one instead and surface it once, only in the boot log, for whoever
+            // operates this deployment to capture and rotate.
+            var configuredPassword = seed["AdminPassword"];
+            var generatedPassword = string.IsNullOrWhiteSpace(configuredPassword) ? GenerateRandomPassword() : null;
             var admin = new StaffEntity
             {
                 InstitutionId = institution.Id,
                 FirstName = seed["AdminFirstName"] ?? "Admin",
                 LastName = seed["AdminLastName"] ?? "User",
                 Email = adminEmail,
-                Password = BCrypt.Net.BCrypt.HashPassword(string.IsNullOrWhiteSpace(seed["AdminPassword"]) ? "admin@2026" : seed["AdminPassword"]),
+                Password = BCrypt.Net.BCrypt.HashPassword(generatedPassword ?? configuredPassword!),
                 Role = "SuperAdmin",
                 CreatedBy = "seeder",
                 CreatedAt = DateTime.UtcNow,
@@ -75,7 +82,13 @@ public static class DataSeeder
             db.Set<StaffEntity>().Add(admin);
             await db.SaveChangesAsync();
 
-            logger.LogInformation("Seeded default SuperAdmin: {Email}", admin.Email);
+            if (generatedPassword is not null)
+                logger.LogWarning("Seeded default SuperAdmin {Email} with generated password: {Password} — log in and change it immediately.", admin.Email, generatedPassword);
+            else
+                logger.LogInformation("Seeded default SuperAdmin: {Email}", admin.Email);
         }
     }
+
+    private static string GenerateRandomPassword() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(18));
 }

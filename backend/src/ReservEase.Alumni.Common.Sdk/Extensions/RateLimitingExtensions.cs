@@ -64,19 +64,21 @@ public static class RateLimitingExtensions
         return services;
     }
 
-    // X-Forwarded-For first, since these APIs sit behind nginx in every real
-    // deployment — falling back to the socket address covers local dev. Host
-    // is read directly off the request (cheap — no DB lookup), never from
-    // TenantResolutionMiddleware's resolved Institution, since that runs
-    // after UseRateLimiter() in the pipeline and would still cost a query
-    // even for requests about to be rejected.
+    // RemoteIpAddress, not a hand-parsed "X-Forwarded-For" — as long as
+    // Program.cs calls app.UseAlumniForwardedHeaders() before UseRateLimiter()
+    // (it must run first in the pipeline), ForwardedHeadersMiddleware has
+    // already validated the header came from a known proxy and swapped
+    // RemoteIpAddress for the real client IP by this point. Reading the raw
+    // header directly here, as this used to, meant a client could just send
+    // a fresh forged value on every request to get a brand-new rate-limit
+    // bucket each time — see ForwardedHeadersExtensions for the full story.
+    // Host is read directly off the request (cheap — no DB lookup), never
+    // from TenantResolutionMiddleware's resolved Institution, since that
+    // runs after UseRateLimiter() in the pipeline and would still cost a
+    // query even for requests about to be rejected.
     private static string PartitionKey(HttpContext httpContext)
     {
-        var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].ToString();
-        var ip = !string.IsNullOrWhiteSpace(forwardedFor)
-            ? forwardedFor.Split(',')[0].Trim()
-            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var host = httpContext.Request.Host.Host.ToLowerInvariant();
         return $"{host}:{ip}";
     }

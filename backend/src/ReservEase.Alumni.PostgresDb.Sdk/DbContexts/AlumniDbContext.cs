@@ -158,6 +158,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // Batch: payout-setup proposal awaiting platform approval, same jsonb pending-changes pattern as BusinessListing.
         modelBuilder.Entity<Batch>().Property(b => b.PendingPayoutChanges).HasColumnType("jsonb").HasConversion(new JsonbConverter<BatchPayoutPendingChanges>(jsonOpts));
         modelBuilder.Entity<Batch>().HasIndex(b => b.PayoutStatus);
+        // Optimistic concurrency for payout approval — two staff approving the
+        // same batch payout within the same window (the check-then-act window
+        // is widened further by a live Paystack API call in between) used to
+        // both pass the "still Pending" check and both mutate it. Postgres's
+        // own xmin system column, already present on every row for free, is
+        // enough to guard this with zero migration — EF Core throws
+        // DbUpdateConcurrencyException on the second writer instead of
+        // silently letting the last write win.
+        modelBuilder.Entity<Batch>().Property<uint>("xmin").HasColumnName("xmin").IsRowVersion();
 
         // ── JSONB array columns ──────────────────────────────────────────────
         // YearGroups stored as integer array to allow efficient filtering by member graduation year.
@@ -248,8 +257,18 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(c => c.CampaignId);
         modelBuilder.Entity<Contribution>()
             .HasIndex(c => c.Status);
+        // Unique (not just indexed): HandlePaystackReferenceAsync's "does a
+        // Contribution for this reference already exist" check is a
+        // read-then-insert with no transaction/lock around it — reachable
+        // concurrently from both the Paystack webhook and the member's own
+        // "check payment status" poll for the same reference. Without a DB
+        // constraint, both can pass the check and both insert, double-crediting
+        // the member. Null TransactionRef (manual/offline contributions) is
+        // excluded from the constraint, matching Postgres's own "NULLs are
+        // distinct" default, so those are unaffected.
         modelBuilder.Entity<Contribution>()
-            .HasIndex(c => c.TransactionRef);
+            .HasIndex(c => c.TransactionRef)
+            .IsUnique();
 
         // RecurringContribution: scheduler scans by Status+NextChargeDate; member's own list by MemberId
         modelBuilder.Entity<RecurringContribution>()
@@ -381,6 +400,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Institution>().HasIndex(i => i.Slug).IsUnique();
         modelBuilder.Entity<Institution>().HasIndex(i => i.CustomDomain).IsUnique();
         modelBuilder.Entity<Institution>().HasIndex(i => i.Status);
+        // Same institution-payout-approval race as Batch above — same fix.
+        modelBuilder.Entity<Institution>().Property<uint>("xmin").HasColumnName("xmin").IsRowVersion();
         modelBuilder.Entity<Institution>().Property(i => i.DisabledFeatures).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
 

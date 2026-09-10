@@ -24,9 +24,10 @@ export interface PagedResult<T> {
   results: T[];
 }
 
+// Token strings never reach the client — they travel only as httpOnly cookies
+// the backend sets directly. expiresIn is all that's left in the response body,
+// kept for a future proactive-refresh scheduler.
 export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
   expiresIn: number;
 }
 

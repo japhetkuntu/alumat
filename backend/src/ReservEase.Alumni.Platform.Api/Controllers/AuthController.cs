@@ -42,10 +42,19 @@ public class AuthController(IPlatformAuthService authService) : DefaultControlle
     [HttpPost("refreshtoken")]
     [SwaggerOperation(Summary = "Refresh token")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformTokenResponse>))]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> RefreshToken()
     {
-        var result = await authService.RefreshTokenAsync(request);
+        var result = await authService.RefreshTokenAsync();
         return result.ToActionResult();
+    }
+
+    [HttpPost("logout")]
+    [SwaggerOperation(Summary = "Logout")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Logout()
+    {
+        await authService.LogoutAsync(User.GetAccount());
+        return new object().ToOkApiResponse("Logged out").ToActionResult();
     }
 
     [AllowAnonymous]

@@ -7,8 +7,10 @@ public interface IPlatformAuthService
 {
     Task<IApiResponse<PlatformTokenResponse>> LoginAsync(LoginRequest request);
     Task<IApiResponse<PlatformTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
-    Task<IApiResponse<PlatformTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+    /// <summary>Reads both tokens from the request's own httpOnly cookies — see AuthCookieExtensions.</summary>
+    Task<IApiResponse<PlatformTokenResponse>> RefreshTokenAsync();
     Task<IApiResponse<PlatformTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);
     Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
     Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
+    Task LogoutAsync(AuthData auth);
 }

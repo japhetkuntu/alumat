@@ -1,6 +1,7 @@
 using Serilog;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Common.Sdk.Services;
 using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Options;
@@ -9,6 +10,7 @@ using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
@@ -48,8 +50,11 @@ builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
 
 // Auth + API
-builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+// See Institution.Api's Program.cs for why this cache exists and how it's shared.
+var customDomainCache = new CustomDomainCache();
+builder.Services.AddSingleton<ICustomDomainCache>(customDomainCache);
+builder.Services.AddHostedService<CustomDomainCacheRefresher>();
+builder.Services.AddTenantAwareCors(builder.Configuration, customDomainCache);
 builder.Services.AddAlumniRateLimiting();
 builder.Services.AddBearerAuth(tokenConfig);
 builder.Services.AddGoogleAuth(builder.Configuration);
@@ -102,6 +107,12 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Must be the very first middleware — everything downstream that reads
+// Connection.RemoteIpAddress (rate limiting) or Request.Scheme depends on
+// this having already run.
+app.UseAlumniForwardedHeaders();
+app.UseAlumniSecurityHeaders();
+
 var enableSwagger = builder.Configuration.GetValue<bool>("ENABLE_SWAGGER", false);
 
 // Swagger only in development, or when explicitly enabled in production.
@@ -122,8 +133,10 @@ if (!app.Environment.IsDevelopment())
     }
 }
 
-// Global exception handler — never expose server errors to the frontend
-app.UseExceptionHandler(!app.Environment.IsProduction());
+// Global exception handler — never expose server errors to the frontend.
+// Gated on IsDevelopment(), not "!IsProduction()": a Staging/QA environment
+// name would otherwise also leak stack traces to anyone who can reach it.
+app.UseExceptionHandler(app.Environment.IsDevelopment());
 
 app.UseSerilogRequestLogging();
 app.UseRouting();

@@ -7,9 +7,11 @@ public interface IInstitutionAuthService
 {
     Task<IApiResponse<InstitutionTokenResponse>> LoginAsync(LoginRequest request);
     Task<IApiResponse<InstitutionTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
-    Task<IApiResponse<InstitutionTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+    /// <summary>Reads both tokens from the request's own httpOnly cookies — see AuthCookieExtensions.</summary>
+    Task<IApiResponse<InstitutionTokenResponse>> RefreshTokenAsync();
     Task<IApiResponse<InstitutionStaffProfileResponse>> GetProfileAsync(AuthData auth);
     Task<IApiResponse<InstitutionTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);
     Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request);
     Task<IApiResponse<object>> ResetPasswordAsync(ResetPasswordRequest request);
+    Task LogoutAsync(AuthData auth);
 }

@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
@@ -130,11 +131,12 @@ public class PlatformAuthService(
 
             await redis.SetAsync($"platform:refresh:{staff.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             logger.LogInformation("Platform staff {StaffId} logged in successfully", staff.Id);
 
             var user = new AuthUserResponse(staff.Id, staff.Email, staff.Name, staff.Role);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new PlatformTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
         }
         catch (Exception e)
@@ -171,11 +173,12 @@ public class PlatformAuthService(
 
             await redis.SetAsync($"platform:refresh:{staff.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             logger.LogInformation("Platform staff {StaffId} logged in via Google", staff.Id);
 
             var user = new AuthUserResponse(staff.Id, staff.Email, staff.Name, staff.Role);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new PlatformTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
         }
         catch (Exception e)
@@ -185,17 +188,23 @@ public class PlatformAuthService(
         }
     }
 
-    public async Task<IApiResponse<PlatformTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
+    public async Task<IApiResponse<PlatformTokenResponse>> RefreshTokenAsync()
     {
         try
         {
-            var staffId = ExtractUserIdFromExpiredToken(request.AccessToken);
+            var cookies = httpContextAccessor.HttpContext?.Request.Cookies;
+            var oldAccessToken = cookies?[AuthCookieExtensions.AccessTokenCookieName];
+            var refreshToken = cookies?[AuthCookieExtensions.RefreshTokenCookieName];
+            if (string.IsNullOrEmpty(oldAccessToken) || string.IsNullOrEmpty(refreshToken))
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<PlatformTokenResponse>("Invalid or expired refresh token");
+
+            var staffId = ExtractUserIdFromExpiredToken(oldAccessToken);
             if (string.IsNullOrEmpty(staffId))
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<PlatformTokenResponse>("Invalid token");
 
             var stored = await redis.GetAsync<string>($"platform:refresh:{staffId}");
             if (stored is null || !CryptographicOperations.FixedTimeEquals(
-                    Encoding.UTF8.GetBytes(stored), Encoding.UTF8.GetBytes(request.RefreshToken)))
+                    Encoding.UTF8.GetBytes(stored), Encoding.UTF8.GetBytes(refreshToken)))
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<PlatformTokenResponse>("Invalid or expired refresh token");
 
             var staff = await staffRepo.GetByIdAsync(staffId);
@@ -207,9 +216,10 @@ public class PlatformAuthService(
             var newRefresh = GenerateRefreshToken();
             await redis.SetAsync($"platform:refresh:{staff.Id}", newRefresh,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, newRefresh);
 
             var user = new AuthUserResponse(staff.Id, staff.Email, staff.Name, staff.Role);
-            var tokensResp = new AuthTokensResponse(accessToken, newRefresh, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new PlatformTokenResponse(user, tokensResp).ToOkApiResponse();
         }
         catch (Exception e)
@@ -217,6 +227,21 @@ public class PlatformAuthService(
             logger.LogError(e, "Error during platform token refresh");
             return ApiResponseExtensions.ToServerErrorApiResponse<PlatformTokenResponse>("Token refresh failed");
         }
+    }
+
+    /// <summary>Invalidates the server-side refresh token and clears both auth cookies — see AuthCookieExtensions.</summary>
+    public async Task LogoutAsync(AuthData auth)
+    {
+        await redis.RemoveAsync($"platform:refresh:{auth.Id}");
+        httpContextAccessor.HttpContext?.Response.ClearAuthCookies();
+    }
+
+    private void SetAuthCookies(string accessToken, string refreshToken)
+    {
+        httpContextAccessor.HttpContext?.Response.SetAuthCookies(
+            accessToken, refreshToken,
+            TimeSpan.FromHours(tokenConfig.AccessTokenLifetime),
+            TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
     }
 
     public async Task<IApiResponse<PlatformTokenResponse>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth)
@@ -242,9 +267,10 @@ public class PlatformAuthService(
             var refreshToken = GenerateRefreshToken();
             await redis.SetAsync($"platform:refresh:{staff.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             var user = new AuthUserResponse(staff.Id, staff.Email, staff.Name, staff.Role);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new PlatformTokenResponse(user, tokensResp).ToOkApiResponse("Password changed");
         }
         catch (Exception e)

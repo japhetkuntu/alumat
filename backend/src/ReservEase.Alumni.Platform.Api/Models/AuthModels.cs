@@ -3,13 +3,15 @@ namespace ReservEase.Alumni.Platform.Api.Models;
 public record LoginRequest(string Email, string Password);
 /// <summary>ID token minted client-side by Google Identity Services, verified server-side before any staff lookup (see IGoogleTokenVerifier).</summary>
 public record GoogleLoginRequest(string IdToken);
-public record RefreshTokenRequest(string RefreshToken, string AccessToken);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Token, string Email, string NewPassword);
 
 public record AuthUserResponse(string Id, string Email, string Name, string Role);
-public record AuthTokensResponse(string AccessToken, string RefreshToken, int ExpiresIn);
+// Token strings never leave the server in the response body — they travel only as
+// httpOnly cookies (see AuthCookieExtensions). ExpiresIn stays here since it isn't
+// a secret and the frontend uses it to schedule a proactive refresh.
+public record AuthTokensResponse(int ExpiresIn);
 public record PlatformTokenResponse(AuthUserResponse User, AuthTokensResponse Tokens);
 
 public class PlatformAuthClaimData

@@ -86,7 +86,21 @@ public class InstitutionPayoutService(
         institution.PendingPayoutChanges = null;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = approvedBy;
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Someone else (another staffer double-clicking, or a retried
+            // request) already approved/rejected this institution's payout
+            // between our read above and this write — the live Paystack
+            // subaccount call already happened by the time we get here, so
+            // without this check both callers would otherwise both succeed
+            // and silently overwrite each other's result.
+            logger.LogWarning("Institution {InstitutionId} payout was already approved/rejected by another request — skipping duplicate approval", institution.Id);
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("This payout was already reviewed by someone else. Refresh and check its current status.");
+        }
 
         await auditLog.LogAsync(approvedBy, actorName, "approved institution payout setup", institution.Name);
 
@@ -107,7 +121,15 @@ public class InstitutionPayoutService(
         institution.PendingPayoutChanges = null;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = rejectedBy;
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            logger.LogWarning("Institution {InstitutionId} payout was already approved/rejected by another request — skipping duplicate rejection", institution.Id);
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("This payout was already reviewed by someone else. Refresh and check its current status.");
+        }
 
         await auditLog.LogAsync(rejectedBy, actorName, $"rejected institution payout setup{(string.IsNullOrWhiteSpace(request.Notes) ? "" : $": {request.Notes}")}", institution.Name);
 

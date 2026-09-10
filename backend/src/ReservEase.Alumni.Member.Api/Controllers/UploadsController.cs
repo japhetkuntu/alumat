@@ -16,10 +16,8 @@ public class UploadsController(
     IStorageService storageService, ICurrentTenantService currentTenant, ILogger<UploadsController> logger) : DefaultController
 {
     private const string FolderName = "alumni";
-    private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"
-    };
+    // SVG deliberately excluded — see FileContentValidator's doc comment.
+    private static readonly HashSet<string> AllowedImageTypes = new(UploadFileTypes.ImageExtensions.Keys, StringComparer.OrdinalIgnoreCase);
     private const long MaxImageSize = 5 * 1024 * 1024; // 5MB
 
     /// <summary>
@@ -35,12 +33,15 @@ public class UploadsController(
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("No file provided").ToActionResult();
 
         if (!AllowedImageTypes.Contains(file.ContentType))
-            return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid image type. Allowed: JPEG, PNG, GIF, WebP, SVG").ToActionResult();
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid image type. Allowed: JPEG, PNG, GIF, WebP").ToActionResult();
 
         if (file.Length > MaxImageSize)
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("Image exceeds 5MB limit").ToActionResult();
 
-        var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
+        if (!await FileContentValidator.LooksLikeDeclaredImageTypeAsync(file))
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("File content doesn't match its declared image type.").ToActionResult();
+
+        var objectName = $"{Guid.NewGuid():N}{UploadFileTypes.SafeExtension(file.ContentType)}";
         var url = await storageService.UploadFileAsync(file, objectName, FolderName, currentTenant.InstitutionSlug ?? "");
 
         logger.LogInformation("Image uploaded by member: {ObjectName}", objectName);

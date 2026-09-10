@@ -116,13 +116,24 @@ public class MembersController(IMemberAuthService authService) : DefaultControll
     }
 
     [HttpPost("refreshtoken")]
-    [SwaggerOperation(Summary = "Refresh token", Description = "Exchange a refresh token for new access/refresh tokens")]
+    [SwaggerOperation(Summary = "Refresh token", Description = "Exchange the refresh token cookie for new access/refresh tokens")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MemberTokenResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> RefreshToken()
     {
-        var result = await authService.RefreshTokenAsync(request);
+        var result = await authService.RefreshTokenAsync();
         return result.ToActionResult();
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    [SwaggerOperation(Summary = "Logout", Description = "Invalidate the member's refresh token and clear auth cookies")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Logout()
+    {
+        var member = User.GetAccount();
+        await authService.LogoutAsync(member);
+        return new object().ToOkApiResponse("Logged out").ToActionResult();
     }
 
     [Authorize]

@@ -13,33 +13,30 @@ import { ApiResponse } from "@/types";
 const API_URL = process.env.NEXT_PUBLIC_MEMBER_API_URL || "/api/v1";
 
 let isRefreshing = false;
-let failedQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];
+let failedQueue: { resolve: () => void; reject: (err: unknown) => void }[] = [];
 
-function processQueue(error: unknown, token: string | null) {
+function processQueue(error: unknown) {
   failedQueue.forEach((p) => {
-    if (token) p.resolve(token);
-    else p.reject(error);
+    if (error) p.reject(error);
+    else p.resolve();
   });
   failedQueue = [];
 }
 
 function clearAuthAndRedirect() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
+  // access_token/refresh_token are httpOnly cookies now — only the backend's
+  // own logout/refresh-failure response can clear those. This just drops the
+  // non-sensitive client-side copy of who's signed in.
   localStorage.removeItem("user");
   localStorage.removeItem("tokens");
   window.location.href = "/login";
 }
 
 function createClient(baseURL: string): AxiosInstance {
-  const instance = axios.create({ baseURL, timeout: 30000 });
+  const instance = axios.create({ baseURL, timeout: 30000, withCredentials: true });
 
   instance.interceptors.request.use((config) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
       // Dev-only tenant override — see TenantResolutionMiddleware. Ignored by
       // the backend outside Development, so this is a no-op once real
       // wildcard-subdomain routing is live in production.
@@ -59,52 +56,23 @@ function createClient(baseURL: string): AxiosInstance {
         return Promise.reject(error);
       }
 
-      const refreshToken = localStorage.getItem("refresh_token");
-      if (!refreshToken) {
-        clearAuthAndRedirect();
-        return Promise.reject(error);
-      }
-
       if (isRefreshing) {
-        return new Promise<string>((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return instance(originalRequest);
-        });
+        }).then(() => instance(originalRequest));
       }
 
       isRefreshing = true;
       originalRequest._retry = true;
 
       try {
-        const res = await axios.post(`${baseURL}/auth/refresh`, {
-          accessToken: localStorage.getItem("access_token"),
-          refreshToken,
-        });
-        const newTokens = res.data?.data?.tokens ?? res.data?.data;
-        const newAccessToken = newTokens?.accessToken;
-        const newRefreshToken = newTokens?.refreshToken;
-
-        if (newAccessToken) {
-          localStorage.setItem("access_token", newAccessToken);
-          if (newRefreshToken) localStorage.setItem("refresh_token", newRefreshToken);
-          const storedTokens = localStorage.getItem("tokens");
-          if (storedTokens) {
-            try {
-              const parsed = JSON.parse(storedTokens);
-              parsed.accessToken = newAccessToken;
-              if (newRefreshToken) parsed.refreshToken = newRefreshToken;
-              localStorage.setItem("tokens", JSON.stringify(parsed));
-            } catch { /* ignore */ }
-          }
-          processQueue(null, newAccessToken);
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return instance(originalRequest);
-        }
-        throw new Error("No access token in refresh response");
+        // No body needed — the refresh token travels as its own httpOnly
+        // cookie, and the new tokens come back the same way.
+        await axios.post(`${baseURL}/auth/refreshtoken`, null, { withCredentials: true });
+        processQueue(null);
+        return instance(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
+        processQueue(refreshError);
         clearAuthAndRedirect();
         return Promise.reject(refreshError);
       } finally {

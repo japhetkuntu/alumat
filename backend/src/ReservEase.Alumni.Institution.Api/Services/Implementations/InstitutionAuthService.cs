@@ -9,6 +9,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Options;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
@@ -151,11 +152,12 @@ public class InstitutionAuthService(
 
             await redis.SetAsync($"admin:refresh:{admin.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             logger.LogInformation("Admin {AdminId} logged in successfully", admin.Id);
 
             var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
         }
         catch (Exception e)
@@ -198,11 +200,12 @@ public class InstitutionAuthService(
 
             await redis.SetAsync($"admin:refresh:{admin.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             logger.LogInformation("Admin {AdminId} logged in via Google", admin.Id);
 
             var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse("Login successful");
         }
         catch (Exception e)
@@ -212,19 +215,25 @@ public class InstitutionAuthService(
         }
     }
 
-    public async Task<IApiResponse<InstitutionTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
+    public async Task<IApiResponse<InstitutionTokenResponse>> RefreshTokenAsync()
     {
         try
         {
             logger.LogInformation("Refresh token request received");
 
-            var adminId = ExtractUserIdFromExpiredToken(request.AccessToken, tokenConfig.InstitutionSigningKey);
+            var cookies = httpContextAccessor.HttpContext?.Request.Cookies;
+            var oldAccessToken = cookies?[AuthCookieExtensions.AccessTokenCookieName];
+            var refreshToken = cookies?[AuthCookieExtensions.RefreshTokenCookieName];
+            if (string.IsNullOrEmpty(oldAccessToken) || string.IsNullOrEmpty(refreshToken))
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<InstitutionTokenResponse>("Invalid or expired refresh token");
+
+            var adminId = ExtractUserIdFromExpiredToken(oldAccessToken, tokenConfig.InstitutionSigningKey);
             if (string.IsNullOrEmpty(adminId))
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<InstitutionTokenResponse>("Invalid token");
 
             var stored = await redis.GetAsync<string>($"admin:refresh:{adminId}");
             if (stored is null || !CryptographicOperations.FixedTimeEquals(
-                    Encoding.UTF8.GetBytes(stored), Encoding.UTF8.GetBytes(request.RefreshToken)))
+                    Encoding.UTF8.GetBytes(stored), Encoding.UTF8.GetBytes(refreshToken)))
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<InstitutionTokenResponse>("Invalid or expired refresh token");
 
             var admin = await adminRepo.GetByIdAsync(adminId);
@@ -236,11 +245,12 @@ public class InstitutionAuthService(
             var newRefresh = GenerateRefreshToken();
             await redis.SetAsync($"admin:refresh:{admin.Id}", newRefresh,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, newRefresh);
 
             logger.LogInformation("Tokens refreshed for admin {AdminId}", admin.Id);
 
             var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
-            var tokensResp = new AuthTokensResponse(accessToken, newRefresh, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse();
         }
         catch (Exception e)
@@ -248,6 +258,21 @@ public class InstitutionAuthService(
             logger.LogError(e, "Error during token refresh");
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionTokenResponse>("Token refresh failed");
         }
+    }
+
+    /// <summary>Invalidates the server-side refresh token and clears both auth cookies — see AuthCookieExtensions.</summary>
+    public async Task LogoutAsync(AuthData auth)
+    {
+        await redis.RemoveAsync($"admin:refresh:{auth.Id}");
+        httpContextAccessor.HttpContext?.Response.ClearAuthCookies();
+    }
+
+    private void SetAuthCookies(string accessToken, string refreshToken)
+    {
+        httpContextAccessor.HttpContext?.Response.SetAuthCookies(
+            accessToken, refreshToken,
+            TimeSpan.FromHours(tokenConfig.AccessTokenLifetime),
+            TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
     }
 
     public async Task<IApiResponse<InstitutionStaffProfileResponse>> GetProfileAsync(AuthData auth)
@@ -296,11 +321,12 @@ public class InstitutionAuthService(
             var refreshToken = GenerateRefreshToken();
             await redis.SetAsync($"admin:refresh:{admin.Id}", refreshToken,
                 TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+            SetAuthCookies(accessToken, refreshToken);
 
             logger.LogInformation("Password changed successfully for admin {AdminId}", admin.Id);
 
             var user = new AuthUserResponse(admin.Id, admin.Email, admin.FirstName, admin.LastName, admin.Role, admin.YearGroups, admin.CommunityIds, null);
-            var tokensResp = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            var tokensResp = new AuthTokensResponse(tokenConfig.AccessTokenLifetime * 3600);
             return new InstitutionTokenResponse(user, tokensResp).ToOkApiResponse("Password changed");
         }
         catch (Exception e)

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
@@ -13,11 +14,15 @@ public static class DataSeeder
 
         if (!await db.PlatformStaff.AnyAsync())
         {
+            // A fixed password here would be a permanent, source-visible credential
+            // for the platform's own SuperAdmin on every fresh deployment — generate
+            // one instead and surface it once, only in the boot log.
+            var password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(18));
             var staff = new PlatformStaff
             {
                 Name = "Japhet Kuntu Blankson",
                 Email = "japhetkuntublankson1@gmail.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("platform@2026"),
+                Password = BCrypt.Net.BCrypt.HashPassword(password),
                 Role = "SuperAdmin",
                 CreatedBy = "seeder",
             };
@@ -25,7 +30,7 @@ public static class DataSeeder
             await db.SaveChangesAsync();
 
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Seeded default platform SuperAdmin: {Email}", staff.Email);
+            logger.LogWarning("Seeded default platform SuperAdmin {Email} with generated password: {Password} — log in and change it immediately.", staff.Email, password);
         }
     }
 }

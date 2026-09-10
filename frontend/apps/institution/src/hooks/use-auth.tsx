@@ -75,8 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const user: AuthData = { ...u, name: derivedName };
     localStorage.setItem("user", JSON.stringify(user));
     localStorage.setItem("tokens", JSON.stringify(t));
-    localStorage.setItem("access_token", t.accessToken);
-    localStorage.setItem("refresh_token", t.refreshToken);
     notifyAuth();
   }
 
@@ -88,11 +86,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(res.data.data.user, res.data.data.tokens);
   }
 
-  function logout() {
+  async function logout() {
+    // Awaited (not fire-and-forget) — the cookies are httpOnly, so only this
+    // backend response can clear them; navigating away immediately risks the
+    // browser cancelling the in-flight request, leaving the session live
+    // server-side even though the UI looks logged out. Still best-effort: a
+    // failed/slow request shouldn't trap the user on the page.
+    await institutionClient.post("/auth/logout").catch(() => {});
     localStorage.removeItem("user");
     localStorage.removeItem("tokens");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     notifyAuth();
     window.location.href = "/login";
   }

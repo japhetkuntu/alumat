@@ -6,6 +6,7 @@ import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
+import DOMPurify from "dompurify";
 import {
   Bold,
   Italic,
@@ -28,7 +29,7 @@ import {
 } from "./icons";
 import { Button } from "./button";
 import { cn } from "../lib/utils";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface RichTextEditorProps {
   value: string;
@@ -277,13 +278,22 @@ export function RichTextEditor({
 }
 
 export function RichTextViewer({ content, className }: { content: string; className?: string }) {
+  // DOMPurify needs a real DOM, so this only runs client-side (after mount)
+  // rather than being called during SSR — the empty initial state means the
+  // server never emits unsanitized HTML into the response either.
+  const [sanitized, setSanitized] = useState("");
+
+  useEffect(() => {
+    setSanitized(DOMPurify.sanitize(content));
+  }, [content]);
+
   return (
     <div
       className={cn(
         "prose prose-sm max-w-none text-foreground [&_a]:text-accent [&_a]:underline [&_p]:my-1.5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-muted-foreground/20 [&_blockquote]:pl-4 [&_blockquote]:italic [&_hr]:my-4 [&_img]:max-w-full",
         className
       )}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: sanitized }}
     />
   );
 }

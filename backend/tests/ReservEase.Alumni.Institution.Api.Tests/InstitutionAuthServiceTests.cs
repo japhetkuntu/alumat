@@ -147,6 +147,8 @@ public class InstitutionAuthServiceTests
 
         Assert.Equal(200, response.Code);
         Assert.NotNull(response.Data);
-        Assert.False(string.IsNullOrEmpty(response.Data!.Tokens.AccessToken));
+        // Token strings no longer travel in the response body — they're set as
+        // httpOnly cookies instead (see AuthCookieExtensions). ExpiresIn is what's left.
+        Assert.True(response.Data!.Tokens.ExpiresIn > 0);
     }
 }

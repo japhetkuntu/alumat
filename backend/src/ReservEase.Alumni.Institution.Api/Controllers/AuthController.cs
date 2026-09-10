@@ -51,12 +51,25 @@ public class AuthController(IInstitutionAuthService authService) : DefaultContro
     /// </summary>
     [AllowAnonymous]
     [HttpPost("refreshtoken")]
-    [SwaggerOperation(Summary = "Refresh token", Description = "Exchange a valid refresh token for new access and refresh tokens.")]
+    [SwaggerOperation(Summary = "Refresh token", Description = "Exchange the refresh token cookie for new access and refresh tokens.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionTokenResponse>))]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> RefreshToken()
     {
-        var result = await authService.RefreshTokenAsync(request);
+        var result = await authService.RefreshTokenAsync();
         return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Invalidate the current staff session — clears the server-side refresh token and both auth cookies.
+    /// </summary>
+    [HttpPost("logout")]
+    [SwaggerOperation(Summary = "Logout")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Logout()
+    {
+        var admin = User.GetAccount();
+        await authService.LogoutAsync(admin);
+        return new object().ToOkApiResponse("Logged out").ToActionResult();
     }
 
     /// <summary>
