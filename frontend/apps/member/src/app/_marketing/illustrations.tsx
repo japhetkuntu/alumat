@@ -235,6 +235,29 @@ export function BusinessIllustration({ className, tone = "primary" }: { classNam
   );
 }
 
+/** Services feature — an official document (transcript/letter) with a letterhead stripe and text lines, an "approved" stamp overlapping the corner. */
+export function ServicesIllustration({ className, tone = "primary" }: { className?: string; tone?: "primary" | "accent" }) {
+  const c = tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)";
+  return (
+    <Blob tone={tone} className={className}>
+      <svg viewBox="0 0 140 120" className="w-[64%] h-[64%]">
+        <g transform="rotate(-4 62 58)">
+          <rect x="26" y="16" width="72" height="92" rx="8" fill="var(--card)" stroke="var(--border)" strokeWidth="2" />
+          <rect x="26" y="16" width="72" height="14" rx="8" fill={c} opacity="0.85" />
+          <rect x="38" y="42" width="48" height="4" rx="2" fill="var(--muted-foreground)" opacity="0.35" />
+          <rect x="38" y="52" width="40" height="4" rx="2" fill="var(--muted-foreground)" opacity="0.35" />
+          <rect x="38" y="62" width="44" height="4" rx="2" fill="var(--muted-foreground)" opacity="0.35" />
+          <rect x="38" y="72" width="30" height="4" rx="2" fill="var(--muted-foreground)" opacity="0.35" />
+          <rect x="38" y="86" width="26" height="8" rx="4" fill="var(--muted)" />
+        </g>
+        <circle cx="100" cy="90" r="20" fill="var(--card)" />
+        <circle cx="100" cy="90" r="17" fill={c} />
+        <path d="M91 90 l6 6 12 -13" fill="none" stroke="white" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Blob>
+  );
+}
+
 /** Notifications feature — a bell with radiating sound arcs and a small unread badge. */
 export function NotificationsIllustration({ className, tone = "primary" }: { className?: string; tone?: "primary" | "accent" }) {
   const c = tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)";

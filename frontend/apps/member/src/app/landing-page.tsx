@@ -7,7 +7,7 @@ import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   GraduationCap, Users, Briefcase, Heart, Globe,
   Menu, X, ArrowRight, ChevronRight,
-  BookOpen, Trophy, CreditCard, Bell,
+  BookOpen, Trophy, CreditCard, Bell, FileText,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
   Images, Building2, Newspaper, Clock,
   Facebook, Twitter, Instagram, Linkedin, Youtube, Tiktok,
@@ -19,7 +19,7 @@ import { publicMemberClient } from "@/lib/api-client";
 import {
   JobsIllustration, MentorshipIllustration, DirectoryIllustration, FundraisingIllustration,
   EventsIllustration, StoreIllustration, AlbumsIllustration, SpotlightIllustration,
-  BusinessIllustration, NotificationsIllustration,
+  BusinessIllustration, NotificationsIllustration, ServicesIllustration,
 } from "./_marketing/illustrations";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -236,6 +236,7 @@ const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; 
   // confined to small cards where it's easy to miss entirely.
   { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration, tone: "accent" },
   { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association, pay online, pick up or receive your order.", featureKey: "Store", illustration: StoreIllustration },
+  { icon: FileText,     label: "Services",      title: "Request official documents online", desc: "Transcripts, attestation letters, certificate reissues: submit your request, pay online, and track it right from your account.", big: true, featureKey: "Services", illustration: ServicesIllustration },
   { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between, added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
   { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights", illustration: SpotlightIllustration },
   { icon: Building2,    label: "Businesses",    title: "Support alumni-owned business", desc: "Browse businesses run by fellow graduates, or list your own and get discovered by the network.", featureKey: "BusinessDirectory", illustration: BusinessIllustration },

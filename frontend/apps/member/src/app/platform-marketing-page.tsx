@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   Menu, X, ArrowRight, ChevronRight, ChevronDown,
-  Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell,
+  Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell, FileText,
   Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
   Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
   Wallet, CalendarCheck, CheckCircle2, PartyPopper,
@@ -18,7 +18,7 @@ import {
   JobsIllustration, MentorshipIllustration, ScatteredChatIllustration,
   DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
   AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration,
-  FormIllustration, LaunchIllustration, JoinIllustration, ControlIllustration,
+  ServicesIllustration, FormIllustration, LaunchIllustration, JoinIllustration, ControlIllustration,
 } from "./_marketing/illustrations";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; 
   { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",           desc: "Speech days, AGMs, reunions, chapter meetups, all in one shared calendar.", illustration: EventsIllustration },
   { icon: Heart,       label: "Mentorship",    title: "Built-in mentor matching",             desc: "Alumni who've walked the path connect with those just starting out.", big: true, illustration: MentorshipIllustration },
   { icon: ShoppingBag, label: "Store",         title: "Sell branded merchandise",             desc: "An online store for association gear, with online payment and order tracking.", illustration: StoreIllustration },
+  { icon: FileText,    label: "Services",      title: "Offer paid services like transcripts", desc: "Configure custom request forms for transcripts, letters, and certificate reissues — members request and pay online, you fulfill it your way.", big: true, illustration: ServicesIllustration },
   { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever.", illustration: AlbumsIllustration },
   { icon: Trophy,      label: "Spotlight",     title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page.", illustration: SpotlightIllustration },
   { icon: Building2,   label: "Businesses",    title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
