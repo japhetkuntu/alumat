@@ -36,7 +36,7 @@ public class BatchPayoutService(
             .ToDictionaryAsync(i => i.Id, i => i.Name);
 
         var items = pending
-            .OrderBy(b => b.UpdatedAt)
+            .OrderByDescending(b => b.UpdatedAt)
             .Select(b => new PendingBatchPayoutItem(
                 b.Id, b.Name, b.Year,
                 b.InstitutionId, institutionNames.GetValueOrDefault(b.InstitutionId, "Unknown institution"),

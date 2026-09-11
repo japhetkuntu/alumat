@@ -26,7 +26,7 @@ public class InstitutionPayoutService(
             .ToListAsync();
 
         var items = pending
-            .OrderBy(i => i.UpdatedAt)
+            .OrderByDescending(i => i.UpdatedAt)
             .Select(i => new PendingInstitutionPayoutItem(
                 i.Id, i.Name,
                 i.PendingPayoutChanges!.SettlementBankName, i.PendingPayoutChanges.SettlementAccountNumber, i.PendingPayoutChanges.SettlementAccountName,
