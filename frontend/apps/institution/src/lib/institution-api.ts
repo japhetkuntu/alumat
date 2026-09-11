@@ -23,6 +23,9 @@ import type {
   NotificationItem,
   StoreProduct,
   StoreOrder,
+  ServiceType,
+  ServiceRequest,
+  ServiceFieldDefinition,
 } from "@/types";
 
 /**
@@ -135,6 +138,8 @@ export interface InstitutionProfileResponse {
   /** Off by default. When on, registration shows a program-of-study dropdown built from programsOfStudy, with a "not listed" custom text fallback. */
   programOfStudyEnabled: boolean;
   programsOfStudy: string[];
+  /** Social media profile URLs shown as icon links in the Member Portal's footer, keyed by platform slug (facebook, twitter, instagram, linkedin, youtube, tiktok). Missing/empty key = that icon doesn't show. */
+  socialLinks: Record<string, string>;
   /** "DuesRequired" (default) — active only once dues are paid. "ApprovedOnly" — any approved member is active regardless of dues. */
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
   /** Platform-controlled feature gates, plus the two self-service ones below (see updateSelfServiceFeatures) — a key's presence here means that feature is OFF. */
@@ -221,6 +226,16 @@ export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired
 /** Program/Course of Study collection at registration — off by default. programsOfStudy is this institution's own dropdown list; members can still type a custom value when their program isn't listed. */
 export async function updateProgramOfStudy(programOfStudyEnabled: boolean, programsOfStudy: string[]): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/program-of-study", { programOfStudyEnabled, programsOfStudy });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** Social media links shown in the Member Portal's footer. Send the full set each edit — an empty/missing value for a platform clears its icon. */
+export async function updateSocialLinks(socialLinks: Record<string, string>): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/social-links", { socialLinks });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -1132,6 +1147,77 @@ export async function updateStoreSettings(body: { defaultDeliveryInfo?: string; 
   const res = await institutionClient.patch<ApiResponse<StoreSettings>>("/store/settings", body);
   return res.data.data!;
 }
+
+// ─── Alumni Services (SuperAdmin only) ─────────────────────────────────────
+
+export interface ServiceFieldDefinitionBody {
+  key?: string;
+  label: string;
+  type: ServiceFieldDefinition["type"];
+  required: boolean;
+  options?: string[];
+  helpText?: string;
+}
+
+export interface ServiceTypeBody {
+  name: string;
+  description?: string;
+  price: number;
+  status: ServiceType["status"];
+  fields: ServiceFieldDefinitionBody[];
+  stages: string[];
+}
+
+export async function getServiceTypes(page = 1, pageSize = 50, status?: string, search?: string) {
+  const res = await institutionClient.get<ApiResponse<PagedResult<ServiceType>>>("/services/types", {
+    params: { page, pageSize, status, search },
+  });
+  return res.data.data!;
+}
+
+export async function getServiceType(id: string) {
+  const res = await institutionClient.get<ApiResponse<ServiceType>>(`/services/types/${id}`);
+  return res.data.data!;
+}
+
+export async function createServiceType(body: ServiceTypeBody) {
+  const res = await institutionClient.post<ApiResponse<ServiceType>>("/services/types", body);
+  return res.data.data!;
+}
+
+export async function updateServiceType(id: string, body: ServiceTypeBody) {
+  const res = await institutionClient.put<ApiResponse<ServiceType>>(`/services/types/${id}`, body);
+  return res.data.data!;
+}
+
+export async function deleteServiceType(id: string) {
+  const res = await institutionClient.delete<ApiResponse<unknown>>(`/services/types/${id}`);
+  return res.data;
+}
+
+export async function getServiceRequests(page = 1, pageSize = 20, opts?: { serviceTypeId?: string; stage?: string; paymentStatus?: string }) {
+  const res = await institutionClient.get<ApiResponse<PagedResult<ServiceRequest>>>("/services/requests", {
+    params: { page, pageSize, ...opts },
+  });
+  return res.data.data!;
+}
+
+export async function getServiceRequest(id: string) {
+  const res = await institutionClient.get<ApiResponse<ServiceRequest>>(`/services/requests/${id}`);
+  return res.data.data!;
+}
+
+export async function updateServiceRequest(id: string, body: { stage?: string; note?: string; attachment?: File | null }) {
+  const fd = new FormData();
+  if (body.stage) fd.append("stage", body.stage);
+  if (body.note) fd.append("note", body.note);
+  if (body.attachment) fd.append("attachment", body.attachment);
+  const res = await institutionClient.patch<ApiResponse<ServiceRequest>>(`/services/requests/${id}`, fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
 
 // ─── Notification Preferences ──────────────────────────────────────────────
 

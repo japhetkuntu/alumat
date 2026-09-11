@@ -33,6 +33,7 @@ import {
   Receipt,
   Images,
   Building2,
+  FileText,
 } from "@alumni/ui";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -52,6 +53,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/contributions", label: "Give", icon: CreditCard },
       { href: "/store", label: "Store", icon: ShoppingBag },
       { href: "/store/orders", label: "My Orders", icon: Receipt },
+      { href: "/services", label: "Alumni Services", icon: FileText },
     ],
   },
   {
@@ -97,6 +99,7 @@ const navItems = navGroups.flatMap((g) => g.items);
 const NAV_FEATURE_KEYS: Record<string, string> = {
   "/contributions": "Contributions",
   "/store": "Store",
+  "/services": "Services",
   "/jobs": "Jobs",
   "/events": "Events",
   "/directory": "Directory",

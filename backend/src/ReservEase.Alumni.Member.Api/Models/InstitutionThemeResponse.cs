@@ -17,6 +17,7 @@ public record InstitutionThemeResponse(
     bool RequireStudentId,
     bool ProgramOfStudyEnabled,
     List<string> ProgramsOfStudy,
+    Dictionary<string, string> SocialLinks,
     bool PromptMembershipActivationAtSignup,
     bool SmsNotificationsEnabled,
     List<string> DisabledFeatures,

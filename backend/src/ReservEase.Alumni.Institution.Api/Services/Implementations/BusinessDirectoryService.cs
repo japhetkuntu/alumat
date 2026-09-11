@@ -1,4 +1,6 @@
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -7,6 +9,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -16,8 +19,13 @@ public class BusinessDirectoryService(
     IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
+    IRedisService<PublicContentCacheConfig> publicCache,
     ILogger<BusinessDirectoryService> logger) : IBusinessDirectoryService
 {
+    private Task InvalidatePublicBusinessesCacheAsync()
+        => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.Businesses(id)) : Task.CompletedTask;
+
+
     public async Task<IApiResponse<PgPagedResult<BusinessListingDto>>> GetListingsAsync(BusinessListingFilter filter)
     {
         try
@@ -133,6 +141,7 @@ public class BusinessDirectoryService(
             }
 
             await listingRepo.AddAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
 
             logger.LogInformation("Business listing {ListingId} created by admin {AdminId}", listing.Id, admin.Id);
             return listing.ToDto().ToCreatedApiResponse("Business listing created");
@@ -160,6 +169,7 @@ public class BusinessDirectoryService(
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
 
             return listing.ToDto().ToOkApiResponse("Business listing approved.");
         }
@@ -223,6 +233,7 @@ public class BusinessDirectoryService(
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
 
             return listing.ToDto().ToOkApiResponse("Pending edit approved and applied.");
         }
@@ -272,6 +283,7 @@ public class BusinessDirectoryService(
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
 
             return listing.ToDto().ToOkApiResponse("Business listing blacklisted.");
         }
@@ -297,6 +309,7 @@ public class BusinessDirectoryService(
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
 
             return listing.ToDto().ToOkApiResponse("Business listing unblacklisted.");
         }
@@ -346,6 +359,7 @@ public class BusinessDirectoryService(
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
 
             logger.LogInformation("Business listing {ListingId} updated by admin {AdminId}", listing.Id, admin.Id);
             return listing.ToDto().ToOkApiResponse();
@@ -366,6 +380,7 @@ public class BusinessDirectoryService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Business listing not found");
 
             await listingRepo.RemoveAsync(listing);
+            await InvalidatePublicBusinessesCacheAsync();
             logger.LogInformation("Business listing {ListingId} deleted", listingId);
             return new object().ToOkApiResponse("Business listing deleted");
         }

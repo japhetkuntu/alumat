@@ -1,5 +1,5 @@
 import { memberClient, publicMemberClient } from "@/lib/api-client";
-import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder } from "@/types";
+import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder, ServiceType, ServiceRequest } from "@/types";
 
 function toFormData(data: object): FormData {
   const fd = new FormData();
@@ -732,6 +732,52 @@ export async function getStoreOrderStatus(reference: string): Promise<StoreOrder
 
 export async function getMyStoreOrders(page = 1, pageSize = 20): Promise<PagedResult<StoreOrder>> {
   const res = await memberClient.get("/store/orders", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+// ── Alumni Services ──────────────────────────────────────────────────────────
+
+export interface ServiceRequestCheckoutResponse {
+  authorizationUrl?: string | null;
+  requestId: string;
+  reference?: string | null;
+}
+
+export interface ServiceRequestStatusResponse {
+  reference: string;
+  paymentStatus: string;
+  amount?: number;
+  message: string;
+}
+
+export async function getServiceTypes(page = 1, pageSize = 20): Promise<PagedResult<ServiceType>> {
+  const res = await memberClient.get("/services/types", { params: { page, pageSize } });
+  return res.data.data!;
+}
+
+export async function getServiceType(id: string): Promise<ServiceType> {
+  const res = await memberClient.get(`/services/types/${id}`);
+  return res.data.data!;
+}
+
+/** answers: fieldKey -> value for every non-File field. files: fieldKey -> File for every File-type field. */
+export async function createServiceRequest(serviceTypeId: string, answers: Record<string, string>, files: Record<string, File>, callbackUrl?: string): Promise<ServiceRequestCheckoutResponse> {
+  const fd = new FormData();
+  fd.append("serviceTypeId", serviceTypeId);
+  fd.append("answersJson", JSON.stringify(answers));
+  if (callbackUrl) fd.append("callbackUrl", callbackUrl);
+  Object.entries(files).forEach(([key, file]) => fd.append(key, file));
+  const res = await memberClient.post("/services/requests", fd, { headers: { "Content-Type": "multipart/form-data" } });
+  return res.data.data!;
+}
+
+export async function getServiceRequestStatus(reference: string): Promise<ServiceRequestStatusResponse> {
+  const res = await memberClient.get(`/services/requests/${reference}/status`);
+  return res.data.data!;
+}
+
+export async function getMyServiceRequests(page = 1, pageSize = 20): Promise<PagedResult<ServiceRequest>> {
+  const res = await memberClient.get("/services/requests", { params: { page, pageSize } });
   return res.data.data!;
 }
 

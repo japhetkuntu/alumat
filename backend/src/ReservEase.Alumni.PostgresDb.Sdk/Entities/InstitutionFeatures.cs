@@ -33,6 +33,8 @@ public static class InstitutionFeatures
     public const string ManualPayments = "ManualPayments";
     /// <summary>Institution SuperAdmins list physical/merch products with inventory; members buy them online. Same platform-fee model as Contributions.</summary>
     public const string Store = "Store";
+    /// <summary>Institution SuperAdmins define paid services (transcripts, attestation letters, certificate reissue, etc.) with a custom request form and fulfillment pipeline; members request and pay online. Same platform-fee model as Contributions.</summary>
+    public const string Services = "Services";
     /// <summary>Institution admins create photo albums and add photos to them incrementally over time; members browse albums and view photos.</summary>
     public const string PhotoAlbums = "PhotoAlbums";
     /// <summary>Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable in a public directory.</summary>
@@ -49,7 +51,7 @@ public static class InstitutionFeatures
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
         Communities, ManualPayments, AlumniMap, Calendar, Store, PhotoAlbums,
-        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight,
+        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight, Services,
     ];
 
     /// <summary>
@@ -87,6 +89,7 @@ public static class InstitutionFeatures
         (Calendar, "Calendar", "Unified view of upcoming events and payment deadlines."),
         (Communities, "Communities", "Member-created sub-communities with their own forum, events, resources, and campaigns."),
         (Store, "Store", "SuperAdmins list products with inventory; members buy them online, same platform-fee model as Contributions."),
+        (Services, "Alumni services", "SuperAdmins define paid services (transcripts, attestation letters, certificate reissue, etc.) with a custom request form and fulfillment pipeline; members request and pay online, same platform-fee model as Contributions."),
         (PhotoAlbums, "Photo albums", "Institution admins create albums and add photos to them over time; members browse albums and view photos."),
         (BusinessDirectory, "Business directory", "Members list their businesses for admin approval, or admins add listings directly; approved listings are browsable by other members."),
         (Digest, "Re-engagement digest", "A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."),

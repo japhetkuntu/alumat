@@ -11,5 +11,6 @@ public static class PublicContentCacheKeys
     public static string News(string institutionId) => $"public-content:news:{institutionId}";
     public static string Events(string institutionId) => $"public-content:events:{institutionId}";
     public static string Spotlights(string institutionId) => $"public-content:spotlights:{institutionId}";
+    public static string Businesses(string institutionId) => $"public-content:businesses:{institutionId}";
     public static string Theme(string institutionId) => $"public-content:theme:{institutionId}";
 }

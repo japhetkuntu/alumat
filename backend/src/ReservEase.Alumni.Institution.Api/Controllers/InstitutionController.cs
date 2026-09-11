@@ -194,6 +194,38 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Program of study settings updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>Set this institution's social media profile URLs, shown as icon links in the Member Portal's footer — see UpdateSocialLinksRequest.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/social-links")]
+    [SwaggerOperation(Summary = "Update social media links")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateSocialLinks([FromBody] UpdateSocialLinksRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        var links = new Dictionary<string, string>();
+        foreach (var (key, url) in request.SocialLinks)
+        {
+            var trimmedKey = key.Trim().ToLowerInvariant();
+            var trimmedUrl = url.Trim();
+            if (trimmedUrl.Length == 0) continue;
+            if (!SocialLinkPlatforms.All.Contains(trimmedKey))
+                return BadRequest(new ApiResponse<object> { Message = $"\"{key}\" is not a supported social platform", Code = 400 });
+            if (trimmedUrl.Length > 500 || !(trimmedUrl.StartsWith("http://") || trimmedUrl.StartsWith("https://")))
+                return BadRequest(new ApiResponse<object> { Message = $"Enter a valid URL for {trimmedKey} (starting with http:// or https://)", Code = 400 });
+            links[trimmedKey] = trimmedUrl;
+        }
+
+        institution.SocialLinks = links;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Social links updated", Code = 200, Data = ToDto(institution) });
+    }
+
     /// <summary>
     /// Submit (or resubmit) this institution's own settlement details for
     /// platform staff to review — never takes effect immediately, mirroring
@@ -256,7 +288,7 @@ public class InstitutionController(
             i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.ProgramOfStudyEnabled, i.ProgramsOfStudy, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
+            i.RequireStudentId, i.ProgramOfStudyEnabled, i.ProgramsOfStudy, i.SocialLinks, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
             i.EmailNotificationsEnabled, i.SmsNotificationsEnabled, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
             i.Status, memberPortalUrl,

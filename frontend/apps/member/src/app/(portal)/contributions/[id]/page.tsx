@@ -82,6 +82,15 @@ export default function CampaignDetailPage() {
         toast.success("Payment initiated.");
         qc.invalidateQueries({ queryKey: ["campaign", id] });
         qc.invalidateQueries({ queryKey: ["m-contributions"] });
+        qc.invalidateQueries({ queryKey: ["m-contributions-all"] });
+        qc.invalidateQueries({ queryKey: ["m-contributions-recent"] });
+        qc.invalidateQueries({ queryKey: ["m-campaigns"] });
+        qc.invalidateQueries({ queryKey: ["m-membership-status"] });
+        qc.invalidateQueries({ queryKey: ["m-membership-current-unpaid"] });
+        qc.invalidateQueries({ queryKey: ["m-current-membership-campaign"] });
+        qc.invalidateQueries({ queryKey: ["cal-campaigns"] });
+        qc.invalidateQueries({ queryKey: ["cal-contributions"] });
+        qc.invalidateQueries({ queryKey: ["cal-membership"] });
       }
     },
     onError: (e) => { setRedirecting(false); toast.error(handleApiError(e)); },

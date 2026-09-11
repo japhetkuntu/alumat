@@ -46,6 +46,9 @@ function useNotifications() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["admin-notifications-list"] });
+      // The full Notifications page reads the same notifications through its
+      // own infinite-scroll query — keep it in sync too.
+      qc.invalidateQueries({ queryKey: ["admin-notifications-infinite"] });
     },
   });
 
@@ -54,6 +57,7 @@ function useNotifications() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["admin-notifications-list"] });
+      qc.invalidateQueries({ queryKey: ["admin-notifications-infinite"] });
     },
   });
 

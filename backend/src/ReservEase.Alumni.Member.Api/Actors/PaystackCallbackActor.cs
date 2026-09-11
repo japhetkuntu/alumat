@@ -37,6 +37,14 @@ public class PaystackCallbackActor : ReceiveActor
                     return;
                 }
 
+                // ServiceRequest rows are also created synchronously at initiation, same as StoreOrder.
+                var serviceRequestService = scope.ServiceProvider.GetRequiredService<IServiceRequestService>();
+                if (await serviceRequestService.OwnsReferenceAsync(msg.Reference))
+                {
+                    await serviceRequestService.ProcessPaystackCallbackAsync(msg.Reference, msg.RawBody);
+                    return;
+                }
+
                 var contributionService = scope.ServiceProvider.GetRequiredService<IContributionService>();
                 await contributionService.ProcessPaystackCallbackAsync(msg.Reference, msg.RawBody);
             }

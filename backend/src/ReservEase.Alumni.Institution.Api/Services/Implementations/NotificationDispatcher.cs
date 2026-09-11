@@ -399,6 +399,32 @@ public class NotificationDispatcher(
         }
     }
 
+    public async Task DispatchServiceRequestUpdatedAsync(string memberId, string requestId, string requestNumber, string serviceTypeName, string newStage)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                RecipientId = memberId,
+                RecipientType = "Member",
+                Title = "Service Request Update",
+                Body = $"Your \"{serviceTypeName}\" request #{requestNumber} is now \"{newStage}\".",
+                Type = "ServiceRequestUpdated",
+                RelatedEntityId = requestId,
+                RelatedEntityType = "ServiceRequest",
+                ActionUrl = $"{await GetMemberPortalUrlAsync()}/services/requests",
+                CreatedBy = "system",
+            };
+            await notifRepo.AddAsync(notification);
+
+            logger.LogInformation("Dispatched ServiceRequestUpdated ({Stage}) to member {MemberId} for request {RequestId}", newStage, memberId, requestId);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to dispatch ServiceRequestUpdated for request {RequestId}", requestId);
+        }
+    }
+
     public async Task DispatchBroadcastAsync(List<BroadcastRecipient> recipients, string? title, string message, List<string> channels)
     {
         try

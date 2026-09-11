@@ -900,9 +900,21 @@ export default function MemberContributionsPage() {
         onClose={closeModal}
         onConfirmed={() => {
           closeModal();
-          qc.invalidateQueries({ queryKey: ["m-contributions", page] });
+          // Broad "m-contributions" prefix (not the current page's exact key)
+          // so every page/variant of this query — including the campaign
+          // detail page's ["m-contributions", { campaignId }] — refreshes too.
+          qc.invalidateQueries({ queryKey: ["m-contributions"] });
           qc.invalidateQueries({ queryKey: ["m-contributions-all"] });
+          qc.invalidateQueries({ queryKey: ["m-contributions-recent"] });
           qc.invalidateQueries({ queryKey: ["m-membership-status"] });
+          qc.invalidateQueries({ queryKey: ["m-membership-current-unpaid"] });
+          qc.invalidateQueries({ queryKey: ["m-current-membership-campaign"] });
+          qc.invalidateQueries({ queryKey: ["m-campaigns"] });
+          // The Calendar page reads its own separate campaigns/contributions/
+          // membership queries over the same underlying data.
+          qc.invalidateQueries({ queryKey: ["cal-campaigns"] });
+          qc.invalidateQueries({ queryKey: ["cal-contributions"] });
+          qc.invalidateQueries({ queryKey: ["cal-membership"] });
         }}
       />
     </div>

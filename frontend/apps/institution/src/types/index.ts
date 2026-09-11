@@ -589,3 +589,55 @@ export interface StoreOrder {
   deliveryStatusUpdatedAt?: string;
   deliveryStatusHistory?: StoreOrderDeliveryEvent[];
 }
+
+export type ServiceFieldType = "Text" | "TextArea" | "Number" | "Date" | "Select" | "File";
+
+export interface ServiceFieldDefinition {
+  key: string;
+  label: string;
+  type: ServiceFieldType;
+  required: boolean;
+  options?: string[];
+  helpText?: string;
+}
+
+export type ServiceTypeStatus = "Active" | "Draft" | "Archived";
+
+export interface ServiceType {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  status: ServiceTypeStatus;
+  fields: ServiceFieldDefinition[];
+  stages: string[];
+  createdAt: string;
+}
+
+export interface ServiceRequestUpdate {
+  changedAt: string;
+  stage?: string;
+  note?: string;
+  attachmentUrl?: string;
+  changedByStaffName?: string;
+}
+
+export interface ServiceRequest {
+  id: string;
+  requestNumber: string;
+  memberId: string;
+  memberName?: string;
+  memberEmail?: string;
+  memberProfilePictureUrl?: string;
+  serviceTypeId: string;
+  serviceTypeName: string;
+  amount: number;
+  fieldAnswers: Record<string, string>;
+  attachments: Record<string, string>;
+  paymentStatus: "NotRequired" | "Pending" | "Successful" | "Failed";
+  transactionRef?: string;
+  confirmedAt?: string;
+  currentStage: string;
+  updates: ServiceRequestUpdate[];
+  createdAt: string;
+}

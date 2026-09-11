@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2, Copy, Landmark,
+  Facebook, Twitter, Instagram, Linkedin, Youtube, Tiktok,
 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -23,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy,
-  updateSelfServiceFeatures, updateProgramOfStudy, submitInstitutionPayoutSetup,
+  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
@@ -32,6 +33,15 @@ import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { toast } from "sonner";
+
+const SOCIAL_PLATFORMS: { key: string; label: string; icon: typeof Facebook; placeholder: string }[] = [
+  { key: "facebook", label: "Facebook", icon: Facebook, placeholder: "https://facebook.com/yourpage" },
+  { key: "twitter", label: "X (Twitter)", icon: Twitter, placeholder: "https://x.com/yourhandle" },
+  { key: "instagram", label: "Instagram", icon: Instagram, placeholder: "https://instagram.com/yourhandle" },
+  { key: "linkedin", label: "LinkedIn", icon: Linkedin, placeholder: "https://linkedin.com/company/yourorg" },
+  { key: "youtube", label: "YouTube", icon: Youtube, placeholder: "https://youtube.com/@yourchannel" },
+  { key: "tiktok", label: "TikTok", icon: Tiktok, placeholder: "https://tiktok.com/@yourhandle" },
+];
 
 const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario: "", description: "", imageUrl: "" };
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
@@ -260,6 +270,14 @@ export default function BrandingSettingsPage() {
     onSuccess: (updated) => {
       toast.success("Branding updated");
       queryClient.setQueryData(["institution-profile"], updated);
+      // The sidebar/nav (and other spots that render the same public
+      // institution theme, like the auth pages and the Google-sign-in
+      // bridge) read a separate query keyed off /public/institution/theme —
+      // invalidate those too so the logo/name/colors refresh everywhere,
+      // not just on this settings page.
+      queryClient.invalidateQueries({ queryKey: ["institution-nav-theme"] });
+      queryClient.invalidateQueries({ queryKey: ["auth-brand-mark-theme"] });
+      queryClient.invalidateQueries({ queryKey: ["google-bridge-theme"] });
       setBrandingError(null);
       setLogoFile(null);
       setIconFile(null);
@@ -367,11 +385,44 @@ export default function BrandingSettingsPage() {
     programsMutation.mutate({ enabled: !!institution?.programOfStudyEnabled, list: cleaned });
   }
 
+  const [socialLinks, setSocialLinks] = useState<Record<string, string> | null>(null);
+  if (institution && socialLinks === null) setSocialLinks(institution.socialLinks);
+
+  const socialLinksMutation = useMutation({
+    mutationFn: (links: Record<string, string>) => updateSocialLinks(links),
+    onSuccess: () => {
+      toast.success("Social links updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const savedSocialLinks = institution?.socialLinks ?? {};
+  const socialLinksDirty =
+    socialLinks !== null &&
+    SOCIAL_PLATFORMS.some((p) => (socialLinks[p.key] ?? "") !== (savedSocialLinks[p.key] ?? ""));
+
+  function saveSocialLinks() {
+    const cleaned: Record<string, string> = {};
+    for (const p of SOCIAL_PLATFORMS) {
+      const value = (socialLinks?.[p.key] ?? "").trim();
+      if (!value) continue;
+      if (!/^https?:\/\//i.test(value)) {
+        toast.error(`Enter a valid URL for ${p.label} (starting with http:// or https://)`);
+        return;
+      }
+      cleaned[p.key] = value;
+    }
+    socialLinksMutation.mutate(cleaned);
+  }
+
   const featuresMutation = useMutation({
     mutationFn: (features: Parameters<typeof updateSelfServiceFeatures>[0]) => updateSelfServiceFeatures(features),
     onSuccess: () => {
       toast.success("Saved");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+      // disabledFeatures also drives which nav items the sidebar shows.
+      queryClient.invalidateQueries({ queryKey: ["institution-nav-theme"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -773,6 +824,51 @@ export default function BrandingSettingsPage() {
                       <span className="text-[12px] text-muted-foreground">All changes saved</span>
                     )}
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isScopedAdmin && (
+            <Card className="border-border/40 lg:col-span-2">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Globe size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">Social links</p>
+                  {socialLinksDirty && (
+                    <Badge variant="outline" className="text-[10.5px] font-medium text-amber-600 border-amber-300 bg-amber-50">
+                      Unsaved changes
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-1">
+                  Shown as icon links in your Member Portal's footer. Leave a field blank to hide that icon.
+                </p>
+
+                <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                  {SOCIAL_PLATFORMS.map((p) => (
+                    <div key={p.key} className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5"><p.icon size={13} /> {p.label}</Label>
+                      <Input
+                        value={socialLinks?.[p.key] ?? ""}
+                        onChange={(e) => setSocialLinks((s) => ({ ...(s ?? {}), [p.key]: e.target.value }))}
+                        placeholder={p.placeholder}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4 flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    onClick={saveSocialLinks}
+                    disabled={socialLinksMutation.isPending || !socialLinksDirty}
+                  >
+                    {socialLinksMutation.isPending ? "Saving…" : "Save social links"}
+                  </Button>
+                  {!socialLinksDirty && (
+                    <span className="text-[12px] text-muted-foreground">All changes saved</span>
+                  )}
                 </div>
               </CardContent>
             </Card>

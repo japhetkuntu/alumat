@@ -152,6 +152,21 @@ public class NotificationDispatcherActor : ReceiveActor
             }
         });
 
+        ReceiveAsync<DispatchServiceRequestUpdatedCommand>(async cmd =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>().SetInstitutionId(cmd.InstitutionId);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchServiceRequestUpdatedAsync(cmd.MemberId, cmd.RequestId, cmd.RequestNumber, cmd.ServiceTypeName, cmd.NewStage);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Error dispatching ServiceRequestUpdated for request {0}", cmd.RequestId);
+            }
+        });
+
         ReceiveAsync<SendBroadcastCommand>(async cmd =>
         {
             try

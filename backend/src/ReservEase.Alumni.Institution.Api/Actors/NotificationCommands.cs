@@ -63,6 +63,14 @@ public sealed record DispatchStoreDeliveryStatusUpdatedCommand(
     string OrderNumber,
     string NewStatus) : NotificationCommand(InstitutionId);
 
+public sealed record DispatchServiceRequestUpdatedCommand(
+    string InstitutionId,
+    string MemberId,
+    string RequestId,
+    string RequestNumber,
+    string ServiceTypeName,
+    string NewStage) : NotificationCommand(InstitutionId);
+
 public sealed record SendBroadcastCommand(
     string InstitutionId,
     List<BroadcastRecipient> Recipients,

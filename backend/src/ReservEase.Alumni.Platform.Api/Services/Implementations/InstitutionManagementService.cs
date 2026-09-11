@@ -18,6 +18,7 @@ using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Institution
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
 using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
+using ServiceRequestEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.ServiceRequest;
 using PaymentTransactionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.PaymentTransaction;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
@@ -93,7 +94,10 @@ public class InstitutionManagementService(
             var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
                 .Where(o => o.InstitutionId == i.Id && o.Status == "Successful")
                 .SumAsync(o => o.PlatformFeeAmount);
-            var revenue = contributionRevenue + storeRevenue;
+            var serviceRevenue = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+                .Where(r => r.InstitutionId == i.Id && r.PaymentStatus == "Successful")
+                .SumAsync(r => r.PlatformFeeAmount);
+            var revenue = contributionRevenue + storeRevenue + serviceRevenue;
             items.Add(new InstitutionListItemResponse(
                 i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
                 i.LogoUrl, i.Status, memberCount, i.OnboardedAt,
@@ -430,25 +434,84 @@ public class InstitutionManagementService(
         var confirmedOrders = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
             .Where(o => o.InstitutionId == id && o.Status == "Successful")
             .ToListAsync();
+        var confirmedRequests = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+            .Where(r => r.InstitutionId == id && r.PaymentStatus == "Successful")
+            .ToListAsync();
+
+        // A campaign targeting exactly one batch settles straight into that
+        // batch's own Paystack subaccount once its payout setup is approved
+        // (see Member.Api's ContributionService.ResolveSubaccountAsync) — that
+        // money never reaches this institution's own account, so it must be
+        // excluded from "Gross collected"/"Net to institution" here or those
+        // labels would overstate what this institution actually receives.
+        // The platform still earns its fee identically either way (the payer's
+        // grossed-up charge, same PlatformFeePercentage, regardless of which
+        // subaccount gets the institution's share) — so "Platform fee" below
+        // deliberately keeps every contribution, batch-settled or not.
+        var institutionSettledContributions = await ExcludeBatchSettledAsync(confirmed);
 
         // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
-        // (Contribution) / PlatformFeeAmount (StoreOrder — same charge-building
-        // logic, just not carrying Contribution's legacy pre-Zero-Deduction
-        // field name); net to each is always equal to gross now (nothing
-        // deducted). Store orders included alongside contributions — they earn
-        // the platform fee identically, through the same Zero-Deduction charge.
-        var gross = confirmed.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount);
-        var fee = confirmed.Sum(c => c.PlatformRevenueAmount) + confirmedOrders.Sum(o => o.PlatformFeeAmount);
-        var net = confirmed.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount);
+        // (Contribution) / PlatformFeeAmount (StoreOrder, ServiceRequest — same
+        // charge-building logic, just not carrying Contribution's legacy
+        // pre-Zero-Deduction field name); net to each is always equal to gross
+        // now (nothing deducted). Store orders and service requests included
+        // alongside contributions — they earn the platform fee identically,
+        // through the same Zero-Deduction charge.
+        var gross = institutionSettledContributions.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount);
+        var fee = confirmed.Sum(c => c.PlatformRevenueAmount) + confirmedOrders.Sum(o => o.PlatformFeeAmount) + confirmedRequests.Sum(r => r.PlatformFeeAmount);
+        var net = institutionSettledContributions.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount);
 
-        return new InstitutionRevenueResponse(id, gross, fee, net, confirmed.Count + confirmedOrders.Count).ToOkApiResponse();
+        return new InstitutionRevenueResponse(id, gross, fee, net, institutionSettledContributions.Count + confirmedOrders.Count + confirmedRequests.Count).ToOkApiResponse();
     }
 
     /// <summary>
-    /// Every payment an institution has ever collected — Contributions and
-    /// Store orders, every status — so platform support can see the full
-    /// picture when helping troubleshoot, not just the confirmed-and-settled
-    /// revenue figure GetRevenueAsync reports.
+    /// A campaign targeting exactly one batch settles straight into that
+    /// batch's own Paystack subaccount once its payout setup is approved
+    /// (see Member.Api's ContributionService.ResolveSubaccountAsync, which
+    /// this mirrors) — money that never reaches the institution's own
+    /// account. Deliberately duplicated in Platform.Api's own PayoutService
+    /// rather than shared, same as the rest of that file's own comment
+    /// explains for why cross-tenant code here stays separate.
+    /// </summary>
+    private async Task<List<ContributionEntity>> ExcludeBatchSettledAsync(List<ContributionEntity> contributions)
+    {
+        if (contributions.Count == 0)
+            return contributions;
+
+        var campaignIds = contributions.Select(c => c.CampaignId).Distinct().ToList();
+        var campaigns = await db.Set<Campaign>().IgnoreQueryFilters()
+            .Where(c => campaignIds.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id);
+
+        var singleBatchYears = campaigns.Values
+            .Where(c => c.YearGroups is { Count: 1 })
+            .Select(c => c.YearGroups![0])
+            .Distinct()
+            .ToList();
+        if (singleBatchYears.Count == 0)
+            return contributions;
+
+        var approvedBatchYears = (await db.Set<Batch>().IgnoreQueryFilters()
+                .Where(b => b.InstitutionId == contributions[0].InstitutionId && singleBatchYears.Contains(b.Year)
+                            && b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null)
+                .Select(b => b.Year)
+                .ToListAsync())
+            .ToHashSet();
+        if (approvedBatchYears.Count == 0)
+            return contributions;
+
+        return contributions
+            .Where(c => !(campaigns.TryGetValue(c.CampaignId, out var campaign)
+                          && campaign.YearGroups is { Count: 1 } yg
+                          && approvedBatchYears.Contains(yg[0])))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Every payment an institution has ever collected — Contributions, Store
+    /// orders, and Service requests, every status — so platform support can
+    /// see the full picture when helping troubleshoot, not just the
+    /// confirmed-and-settled revenue figure GetRevenueAsync reports.
     /// </summary>
     public async Task<IApiResponse<PgPagedResult<PlatformPaymentDto>>> GetPaymentsAsync(string? id, int page, int pageSize, string? status, string? source)
     {
@@ -480,6 +543,19 @@ public class InstitutionManagementService(
                 o.Items.Count == 1 ? o.Items[0].ProductName : $"{o.Items.Count} items",
                 o.TotalAmount, o.Status, o.PaymentMethod, o.TransactionRef,
                 o.CreatedAt, o.ConfirmedAt, o.PlatformFeeAmount, o.GatewayFeeAmount)));
+        }
+
+        if (string.IsNullOrEmpty(source) || source == "ServiceRequest")
+        {
+            var requests = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+                .Where(r => string.IsNullOrEmpty(id) || r.InstitutionId == id)
+                .ToListAsync();
+            payments.AddRange(requests.Select(r => new PlatformPaymentDto(
+                r.Id, "ServiceRequest", r.InstitutionId,
+                r.Member is null ? null : $"{r.Member.FirstName} {r.Member.LastName}", r.Member?.Email,
+                r.ServiceTypeName,
+                r.Amount, r.PaymentStatus, r.PaymentMethod, r.TransactionRef,
+                r.CreatedAt, r.ConfirmedAt, r.PlatformFeeAmount, r.GatewayFeeAmount)));
         }
 
         if (!string.IsNullOrEmpty(status))
@@ -566,6 +642,25 @@ public class InstitutionManagementService(
             }
         }
 
+        if (string.IsNullOrEmpty(source) || source == "ServiceRequest")
+        {
+            var request = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(r => r.Id == paymentId && r.InstitutionId == institutionId);
+            if (request is not null)
+            {
+                return new PaymentDetailDto(
+                    request.Id, "ServiceRequest", request.InstitutionId,
+                    request.Member is null ? null : $"{request.Member.FirstName} {request.Member.LastName}",
+                    request.Member?.Email, request.Member?.MemberNumber,
+                    request.ServiceTypeName, null,
+                    request.Amount, request.PlatformFeeAmount, request.GatewayFeeAmount,
+                    request.TransactionChargeAmount, request.GrossChargeAmount,
+                    request.PaymentStatus, request.CreatedAt, request.ConfirmedAt,
+                    request.PaymentMethod, request.Channel, request.GatewayResponse, request.TransactionRef)
+                    .ToOkApiResponse();
+            }
+        }
+
         return ApiResponseExtensions.ToNotFoundApiResponse<PaymentDetailDto>("Payment not found");
     }
 
@@ -613,7 +708,10 @@ public class InstitutionManagementService(
         var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
             .Where(o => o.Status == "Successful")
             .SumAsync(o => o.PlatformFeeAmount);
-        var revenue = contributionRevenue + storeRevenue;
+        var serviceRevenue = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+            .Where(r => r.PaymentStatus == "Successful")
+            .SumAsync(r => r.PlatformFeeAmount);
+        var revenue = contributionRevenue + storeRevenue + serviceRevenue;
 
         var growthCounts = new List<int>();
         var growthLabels = new List<string>();
@@ -795,7 +893,10 @@ public class InstitutionManagementService(
         var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
             .Where(o => o.InstitutionId == i.Id && o.Status == "Successful")
             .SumAsync(o => o.PlatformFeeAmount);
-        var revenue = contributionRevenue + storeRevenue;
+        var serviceRevenue = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+            .Where(r => r.InstitutionId == i.Id && r.PaymentStatus == "Successful")
+            .SumAsync(r => r.PlatformFeeAmount);
+        var revenue = contributionRevenue + storeRevenue + serviceRevenue;
         return new InstitutionDetailResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain,
             i.PortalName, i.Tagline, i.ContactName, i.ContactEmail, i.SupportEmail,

@@ -44,6 +44,8 @@ public class ServiceConstructorTests
         var resourceRepo = new Mock<IAlumniPgRepository<Resource>>();
         var institutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
+        var storeOrderRepo = new Mock<IAlumniPgRepository<StoreOrder>>();
+        var serviceRequestRepo = new Mock<IAlumniPgRepository<ServiceRequest>>();
         var currentTenant = new Mock<ICurrentTenantService>();
         var campaignUpdateRepo = new Mock<IAlumniPgRepository<CampaignUpdate>>();
         var storageService = new Mock<IStorageService>();
@@ -67,7 +69,7 @@ public class ServiceConstructorTests
         var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, membershipRepo.Object, currentTenant.Object, Mock.Of<IConfiguration>(), mailtrapOptions, notificationActor.Object, new NullLogger<MemberManagementService>());
         var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, memberRepo.Object, notificationActor.Object, currentTenant.Object, new NullLogger<MentorshipService>());
         var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, currentTenant.Object, publicCache.Object, new NullLogger<NewsService>());
-        var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, new NullLogger<ReportService>());
+        var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new NullLogger<ReportService>());
         var ___________ = new ResourceService(resourceRepo.Object, storageService.Object, currentTenant.Object, new NullLogger<ResourceService>());
         var ____________ = new UploadService(storageService.Object, currentTenant.Object, new NullLogger<UploadService>());
 

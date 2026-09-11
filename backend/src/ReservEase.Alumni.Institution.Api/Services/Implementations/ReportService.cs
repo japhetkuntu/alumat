@@ -16,6 +16,8 @@ public class ReportService(
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<Job> jobRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<StoreOrder> storeOrderRepo,
+    IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
     ILogger<ReportService> logger) : IReportService
 {
     /// <summary>
@@ -98,6 +100,16 @@ public class ReportService(
 
             var totalContributions = contributionsStats?.Count ?? 0;
             var totalCollected = contributionsStats?.Collected ?? 0;
+
+            // Store and Services aren't campaign/community-scoped (no YearGroups/CommunityId of
+            // their own), so their revenue only rolls into a SuperAdmin's institution-wide total —
+            // a ScopedAdmin's TotalCollected stays Contribution-only, same as before this existed.
+            if (isSuper)
+            {
+                var storeCollected = await storeOrderRepo.GetQueryable(o => o.Status == "Successful").SumAsync(o => o.TotalAmount);
+                var serviceCollected = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful").SumAsync(r => r.Amount);
+                totalCollected += storeCollected + serviceCollected;
+            }
 
             // Events — year-scoped or community-scoped
             var eventsQueryFiltered = isSuper

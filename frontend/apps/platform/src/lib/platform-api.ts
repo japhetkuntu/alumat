@@ -343,7 +343,7 @@ export async function rejectInstitutionPayout(institutionId: string, notes?: str
 /** One payment, normalized across both payment sources — every status, not just Successful, so support staff can see the full picture. */
 export interface PlatformPayment {
   id: string;
-  source: "Contribution" | "StoreOrder";
+  source: "Contribution" | "StoreOrder" | "ServiceRequest";
   institutionId: string;
   payerName?: string | null;
   payerEmail?: string | null;
@@ -376,7 +376,7 @@ export interface PaymentDetailItem {
 /** Full detail for one payment (Contribution or StoreOrder) — fee breakdown, gateway channel/response, and line items where applicable. */
 export interface PaymentDetail {
   id: string;
-  source: "Contribution" | "StoreOrder";
+  source: "Contribution" | "StoreOrder" | "ServiceRequest";
   institutionId: string;
   payerName?: string | null;
   payerEmail?: string | null;

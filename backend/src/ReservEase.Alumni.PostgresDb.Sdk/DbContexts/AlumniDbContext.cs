@@ -64,6 +64,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
+    public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
     public DbSet<StoreProductVariant> StoreProductVariants => Set<StoreProductVariant>();
     public DbSet<PhotoAlbum> PhotoAlbums => Set<PhotoAlbum>();
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
@@ -145,6 +147,31 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // Note: VariantOptions on StoreOrderItem is nested inside StoreOrder.Items' jsonb blob above — no separate column needed.
 
         modelBuilder.Entity<StoreProductVariant>().HasIndex(v => v.ProductId);
+
+        // ServiceType/ServiceRequest: fully customizable per-institution service catalog
+        // (transcripts, attestation letters, etc.) — same jsonb patterns as Store above.
+        var serviceFieldListComparer = new ValueComparer<List<ServiceFieldDefinition>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<ServiceFieldDefinition>(l));
+        modelBuilder.Entity<ServiceType>().Property(s => s.Fields).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<ServiceFieldDefinition>>(jsonOpts)).Metadata.SetValueComparer(serviceFieldListComparer);
+        modelBuilder.Entity<ServiceType>().Property(s => s.Stages).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+
+        modelBuilder.Entity<ServiceRequest>().Property(r => r.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
+        modelBuilder.Entity<ServiceRequest>().Property(r => r.FieldAnswers).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
+        modelBuilder.Entity<ServiceRequest>().Property(r => r.Attachments).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
+        var serviceUpdateListComparer = new ValueComparer<List<ServiceRequestUpdate>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<ServiceRequestUpdate>(l));
+        modelBuilder.Entity<ServiceRequest>().Property(r => r.Updates).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<ServiceRequestUpdate>>(jsonOpts)).Metadata.SetValueComparer(serviceUpdateListComparer);
+        modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.MemberId);
+        modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.ServiceTypeId);
 
         // AlbumPhoto: list a given album's photos
         modelBuilder.Entity<AlbumPhoto>().HasIndex(p => p.AlbumId);
@@ -398,6 +425,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<Institution>().Property(i => i.ProgramsOfStudy).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<Institution>().Property(i => i.SocialLinks).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
 
         var landingStoryListComparer = new ValueComparer<List<LandingPageStory>>(
             (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),

@@ -113,6 +113,9 @@ import {
   faXmark,
   faBolt,
   faMagnifyingGlassPlus,
+  faScroll,
+  faLanguage,
+  faStamp,
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -145,6 +148,8 @@ import {
   faLinkedin,
   faXTwitter,
   faYoutube,
+  faInstagram,
+  faTiktok,
 } from "@fortawesome/free-brands-svg-icons";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -244,11 +249,16 @@ export const ExternalLink = makeIcon(faArrowUpRightFromSquare);
 export const Eye = makeIcon(faEye);
 export const EyeOff = makeIcon(faEyeSlash);
 export const Facebook = makeIcon(faFacebook);
+export const Instagram = makeIcon(faInstagram);
+export const Tiktok = makeIcon(faTiktok);
 export const FileIcon = makeIcon(faFile);
 export const FileText = makeIcon(faFileLines);
 export const FolderOpen = makeIcon(faFolderOpen);
 export const Globe = makeIcon(faGlobe);
 export const GraduationCap = makeIcon(faGraduationCap);
+export const ScrollText = makeIcon(faScroll);
+export const Languages = makeIcon(faLanguage);
+export const Stamp = makeIcon(faStamp);
 export const HandCoins = makeIcon(faHandHoldingDollar);
 export const Heading1 = makeIcon(faHeading);
 export const Heading2 = makeIcon(faHeading);

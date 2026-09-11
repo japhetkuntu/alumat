@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -32,6 +32,7 @@ export default function NewInstitutionPage() {
 function NewInstitutionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const fromLead = searchParams.get("fromLead") ?? undefined;
   const { data: baseDomains } = useQuery({ queryKey: ["base-domains"], queryFn: getBaseDomains, staleTime: Infinity });
   const { data: lead } = useQuery({
@@ -127,6 +128,11 @@ function NewInstitutionPageContent() {
         toast.success("Institution created", {
           description: `${created.name} has been onboarded. We've emailed ${form.adminEmail || form.contactEmail} a welcome message with their setup link.`,
         });
+        // So the institutions list and platform dashboard summary counts
+        // reflect the new institution immediately if the admin navigates
+        // back to them, instead of showing cached pre-creation data.
+        queryClient.invalidateQueries({ queryKey: ["institutions"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
         if (fromLead) {
           // Fire-and-forget — linking the lead to the new institution is secondary
           // and must not block navigation to the newly created institution.

@@ -56,6 +56,15 @@ public class Institution : BaseEntity
     public List<string> ProgramsOfStudy { get; set; } = [];
 
     /// <summary>
+    /// The institution's own social media profile URLs, shown as icon links
+    /// in the Member Portal's footer. Keyed by a fixed platform slug
+    /// (facebook, twitter, instagram, linkedin, youtube, tiktok) — a missing
+    /// or empty key just means that icon doesn't render, no schema change
+    /// needed to add a platform later.
+    /// </summary>
+    public Dictionary<string, string> SocialLinks { get; set; } = [];
+
+    /// <summary>
     /// Whether the just-registered member sees an "Activate your membership"
     /// prompt (pay the current membership campaign, or a "nothing due yet"
     /// notice) on the registration success screen. Defaults to false — most

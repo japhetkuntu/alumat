@@ -83,6 +83,7 @@ builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddScoped<IBroadcastService, BroadcastService>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IAlbumService, AlbumService>();
 builder.Services.AddScoped<IBusinessDirectoryService, BusinessDirectoryService>();
 builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();

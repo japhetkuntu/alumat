@@ -96,3 +96,16 @@ public class StoreOrderFilter : BaseFilter
     /// <summary>Optional exact-match filter on StoreOrder.DeliveryStatus — lets staff triage orders by fulfillment stage.</summary>
     public string? DeliveryStatus { get; set; }
 }
+
+public class ServiceTypeFilter : BaseFilter
+{
+    public string? Status { get; set; }
+}
+
+public class ServiceRequestFilter : BaseFilter
+{
+    public string? ServiceTypeId { get; set; }
+    /// <summary>Optional exact-match filter on ServiceRequest.CurrentStage — lets staff triage requests by fulfillment stage.</summary>
+    public string? Stage { get; set; }
+    public string? PaymentStatus { get; set; }
+}

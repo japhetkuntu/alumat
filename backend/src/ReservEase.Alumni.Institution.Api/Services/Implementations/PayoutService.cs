@@ -17,6 +17,9 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class PayoutService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
+    IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
+    IAlumniPgRepository<Campaign> campaignRepo,
+    IAlumniPgRepository<Batch> batchRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     ICurrentTenantService currentTenant) : IPayoutService
 {
@@ -27,23 +30,23 @@ public class PayoutService(
 
         var windows = PayoutWindowCalculator.GetWindows(DateTime.UtcNow);
 
-        var (lastContribs, lastOrders) = await FetchSuccessfulPaystackAsync(windows.LastWindowStart, windows.LastWindowEnd);
-        var (nextContribs, nextOrders) = await FetchSuccessfulPaystackAsync(windows.NextWindowStart, windows.NextWindowEnd);
+        var (lastContribs, lastOrders, lastRequests) = await FetchSuccessfulPaystackAsync(windows.LastWindowStart, windows.LastWindowEnd);
+        var (nextContribs, nextOrders, nextRequests) = await FetchSuccessfulPaystackAsync(windows.NextWindowStart, windows.NextWindowEnd);
 
         var lastPayout = new PayoutWindowDto(
             windows.LastPayoutDate,
-            lastContribs.Sum(c => c.Amount) + lastOrders.Sum(o => o.TotalAmount),
-            lastContribs.Count + lastOrders.Count);
+            lastContribs.Sum(c => c.Amount) + lastOrders.Sum(o => o.TotalAmount) + lastRequests.Sum(r => r.Amount),
+            lastContribs.Count + lastOrders.Count + lastRequests.Count);
 
         var nextPayout = new PayoutWindowDto(
             windows.NextPayoutDate,
-            nextContribs.Sum(c => c.Amount) + nextOrders.Sum(o => o.TotalAmount),
-            nextContribs.Count + nextOrders.Count);
+            nextContribs.Sum(c => c.Amount) + nextOrders.Sum(o => o.TotalAmount) + nextRequests.Sum(r => r.Amount),
+            nextContribs.Count + nextOrders.Count + nextRequests.Count);
 
         return new PayoutForecastResponse(payoutsConfigured, lastPayout, nextPayout).ToOkApiResponse();
     }
 
-    private async Task<(List<Contribution> Contributions, List<StoreOrder> Orders)> FetchSuccessfulPaystackAsync(DateTime start, DateTime end)
+    private async Task<(List<Contribution> Contributions, List<StoreOrder> Orders, List<ServiceRequest> Requests)> FetchSuccessfulPaystackAsync(DateTime start, DateTime end)
     {
         var contributions = await contributionRepo.GetAllAsync(c =>
             c.Status == "Successful" && c.PaymentMethod == "Paystack" &&
@@ -53,6 +56,50 @@ public class PayoutService(
             o.Status == "Successful" && o.PaymentMethod == "Paystack" &&
             o.ConfirmedAt != null && o.ConfirmedAt >= start && o.ConfirmedAt < end);
 
-        return (contributions.ToList(), orders.ToList());
+        var requests = await serviceRequestRepo.GetAllAsync(r =>
+            r.PaymentStatus == "Successful" && r.PaymentMethod == "Paystack" &&
+            r.ConfirmedAt != null && r.ConfirmedAt >= start && r.ConfirmedAt < end);
+
+        // Store orders and service requests always settle to the institution's own
+        // account (see StoreOrderService/ServiceRequestService — neither resolves a
+        // batch subaccount), so only contributions need filtering here. A campaign
+        // targeting exactly one batch settles straight into THAT batch's own Paystack
+        // subaccount once its payout setup is approved (see ContributionService.
+        // ResolveSubaccountAsync, which this mirrors) — money that never reaches this
+        // institution's own account, so it must never be counted as if it will.
+        var institutionSettledContributions = await ExcludeBatchSettledAsync(contributions.ToList());
+
+        return (institutionSettledContributions, orders.ToList(), requests.ToList());
+    }
+
+    private async Task<List<Contribution>> ExcludeBatchSettledAsync(List<Contribution> contributions)
+    {
+        if (contributions.Count == 0)
+            return contributions;
+
+        var campaignIds = contributions.Select(c => c.CampaignId).Distinct().ToList();
+        var campaigns = (await campaignRepo.GetAllAsync(c => campaignIds.Contains(c.Id)))
+            .ToDictionary(c => c.Id);
+
+        var singleBatchYears = campaigns.Values
+            .Where(c => c.YearGroups is { Count: 1 })
+            .Select(c => c.YearGroups![0])
+            .Distinct()
+            .ToList();
+        if (singleBatchYears.Count == 0)
+            return contributions;
+
+        var approvedBatchYears = (await batchRepo.GetAllAsync(b =>
+                singleBatchYears.Contains(b.Year) && b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null))
+            .Select(b => b.Year)
+            .ToHashSet();
+        if (approvedBatchYears.Count == 0)
+            return contributions;
+
+        return contributions
+            .Where(c => !(campaigns.TryGetValue(c.CampaignId, out var campaign)
+                          && campaign.YearGroups is { Count: 1 } yg
+                          && approvedBatchYears.Contains(yg[0])))
+            .ToList();
     }
 }

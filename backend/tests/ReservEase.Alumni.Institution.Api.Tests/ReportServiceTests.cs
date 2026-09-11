@@ -26,7 +26,9 @@ public class ReportServiceTests
         var eventRepo = new Mock<IAlumniPgRepository<AlumniEvent>>();
         var jobRepo = new Mock<IAlumniPgRepository<Job>>();
         var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
-        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, new NullLogger<ReportService>());
+        var storeOrderRepo = new Mock<IAlumniPgRepository<StoreOrder>>();
+        var serviceRequestRepo = new Mock<IAlumniPgRepository<ServiceRequest>>();
+        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new NullLogger<ReportService>());
 
         var result = await service.ExportEntityCsvAsync("unknown", new AuthData { Role = "SuperAdmin" });
 
@@ -43,6 +45,8 @@ public class ReportServiceTests
         var eventRepo = new Mock<IAlumniPgRepository<AlumniEvent>>();
         var jobRepo = new Mock<IAlumniPgRepository<Job>>();
         var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
+        var storeOrderRepo = new Mock<IAlumniPgRepository<StoreOrder>>();
+        var serviceRequestRepo = new Mock<IAlumniPgRepository<ServiceRequest>>();
 
         var campaigns = new List<Campaign>
         {
@@ -55,7 +59,7 @@ public class ReportServiceTests
                     ? campaigns.AsQueryable()
                     : campaigns.AsQueryable().Where(predicate.Compile()).AsQueryable());
 
-        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, new NullLogger<ReportService>());
+        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new NullLogger<ReportService>());
 
         var result = await service.ExportEntityCsvAsync("campaigns", new AuthData { Role = "SuperAdmin" });
 

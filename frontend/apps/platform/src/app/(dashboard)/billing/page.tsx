@@ -89,7 +89,7 @@ export default function BillingPage() {
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const trendMonths = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0 };
+    return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0, Services: 0 };
   });
   payments.filter((p) => p.status === "Successful").forEach((p) => {
     const d = new Date(p.confirmedAt ?? p.createdAt);
@@ -97,7 +97,8 @@ export default function BillingPage() {
     const slot = trendMonths.find((m) => m.key === key);
     if (!slot) return;
     if (p.source === "Contribution") slot.Contributions += p.amount;
-    else slot.Store += p.amount;
+    else if (p.source === "StoreOrder") slot.Store += p.amount;
+    else slot.Services += p.amount;
   });
   const statusCounts = payments.reduce<Record<string, number>>((acc, p) => {
     acc[p.status] = (acc[p.status] ?? 0) + 1;
@@ -273,6 +274,7 @@ export default function BillingPage() {
               series={[
                 { key: "Contributions", label: "Contributions", color: "var(--brand-primary-500, var(--primary))" },
                 { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
+                { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
               ]}
               variant="area"
               stacked

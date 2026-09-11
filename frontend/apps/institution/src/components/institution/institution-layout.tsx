@@ -27,6 +27,7 @@ import {
   ShoppingBag,
   Images,
   Store,
+  FileText,
 } from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -54,6 +55,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/resources": "Resources",
   "/spotlights": "Spotlights",
   "/store": "Store",
+  "/services": "Services",
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",
 };
@@ -68,6 +70,7 @@ const baseNavItems = [
   { href: "/membership", label: "Dues", icon: CreditCard },
   { href: "/contributions", label: "Contributions", icon: CreditCard },
   { href: "/store", label: "Store", icon: ShoppingBag },
+  { href: "/services", label: "Alumni Services", icon: FileText },
   { label: "People", isHeader: true },
   { href: "/members", label: "Members", icon: Users },
   { href: "/batches", label: "Batches", icon: Layers },
@@ -127,7 +130,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       if (item.href === "/mentorship" || item.href === "/albums") {
         if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
-      if (item.href === "/store" && user?.role !== "SuperAdmin") return false;
+      if ((item.href === "/store" || item.href === "/services") && user?.role !== "SuperAdmin") return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
       if (featureKey && disabledFeatures.has(featureKey)) return false;
       return true;

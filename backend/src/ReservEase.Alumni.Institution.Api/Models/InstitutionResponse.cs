@@ -24,6 +24,7 @@ public record InstitutionResponse(
     bool RequireStudentId,
     bool ProgramOfStudyEnabled,
     List<string> ProgramsOfStudy,
+    Dictionary<string, string> SocialLinks,
     string MemberActivePolicy,
     bool PromptMembershipActivationAtSignup,
     bool EmailNotificationsEnabled,
@@ -96,6 +97,30 @@ public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool Re
 /// the list never needs to be exhaustive on day one.
 /// </summary>
 public record UpdateProgramOfStudyRequest(bool ProgramOfStudyEnabled, List<string> ProgramsOfStudy);
+
+/// <summary>
+/// The institution's own social media profile URLs, shown as icon links in
+/// the Member Portal's footer. Keys are validated against
+/// SocialLinkPlatforms.All — an unrecognized key is rejected rather than
+/// silently stored, so the frontend's fixed icon set never has to guess
+/// what an arbitrary key means.
+/// </summary>
+public record UpdateSocialLinksRequest(Dictionary<string, string> SocialLinks);
+
+public static class SocialLinkPlatforms
+{
+    public const string Facebook = "facebook";
+    public const string Twitter = "twitter";
+    public const string Instagram = "instagram";
+    public const string LinkedIn = "linkedin";
+    public const string Youtube = "youtube";
+    public const string Tiktok = "tiktok";
+
+    public static readonly IReadOnlySet<string> All = new HashSet<string>
+    {
+        Facebook, Twitter, Instagram, LinkedIn, Youtube, Tiktok,
+    };
+}
 
 /// <summary>
 /// Another institution-editable-themselves carve-out, distinct from the

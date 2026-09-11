@@ -10,6 +10,7 @@ import {
   BookOpen, Trophy, CreditCard, Bell,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
   Images, Building2, Newspaper, Clock,
+  Facebook, Twitter, Instagram, Linkedin, Youtube, Tiktok,
 } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -52,6 +53,17 @@ interface DynamicNewsBanner {
   linkUrl?: string | null;
 }
 
+const SOCIAL_ICONS: Record<string, LucideIcon> = {
+  facebook: Facebook,
+  twitter: Twitter,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  tiktok: Tiktok,
+};
+/** Fixed display order, independent of however the backend returns the keys. */
+const SOCIAL_ORDER = ["facebook", "twitter", "instagram", "linkedin", "youtube", "tiktok"];
+
 interface LandingContent {
   landingPageStories?: DynamicLandingStory[] | null;
   newsBanner?: DynamicNewsBanner | null;
@@ -62,6 +74,7 @@ interface LandingContent {
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
   disabledFeatures?: string[] | null;
+  socialLinks?: Record<string, string> | null;
 }
 
 function useLandingContent(initialContent?: LandingContent | null) {
@@ -93,12 +106,21 @@ function useLandingContent(initialContent?: LandingContent | null) {
 interface PublicNewsItem { id: string; title: string; excerpt: string; imageUrl?: string | null; publishedAt?: string | null; category: string; }
 interface PublicEventItem { id: string; title: string; startDate: string; venue: string; bannerImageUrl?: string | null; }
 interface PublicSpotlightItem { id: string; title: string; story: string; imageUrl?: string | null; memberName: string; featuredMonth?: string | null; }
+interface PublicBusinessItem { id: string; businessName: string; description: string; logoUrl?: string | null; bannerUrl?: string | null; location: string; websiteUrl?: string | null; externalLinkUrl?: string | null; }
+
+// Content is persisted to localStorage (see providers.tsx) so this paints
+// instantly from the last-known result on load; the staleTime just governs
+// how soon React Query quietly refetches in the background afterwards, and
+// refetchInterval keeps a tab that's been open a while from going stale —
+// neither ever blocks or re-shows a loading state, they just swap the data
+// in once the response lands.
+const PUBLIC_CONTENT_REFETCH_INTERVAL = 2 * 60 * 1000;
 
 function usePublicNews() {
   const { data, isPending } = useQuery({
     queryKey: ["public-news"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicNewsItem[] }>("/public/news", { params: { take: 3 } })).data.data,
-    staleTime: 5 * 60 * 1000, retry: false,
+    staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
   return { items: data ?? [], isPending };
 }
@@ -106,7 +128,7 @@ function usePublicEvents() {
   const { data, isPending } = useQuery({
     queryKey: ["public-events"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicEventItem[] }>("/public/events", { params: { take: 3 } })).data.data,
-    staleTime: 5 * 60 * 1000, retry: false,
+    staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
   return { items: data ?? [], isPending };
 }
@@ -114,9 +136,17 @@ function usePublicSpotlight() {
   const { data, isPending } = useQuery({
     queryKey: ["public-spotlight"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicSpotlightItem[] }>("/public/spotlights", { params: { take: 1 } })).data.data,
-    staleTime: 5 * 60 * 1000, retry: false,
+    staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
   return { item: data?.[0], isPending };
+}
+function usePublicBusinesses() {
+  const { data, isPending } = useQuery({
+    queryKey: ["public-businesses"],
+    queryFn: async () => (await publicMemberClient.get<{ data: PublicBusinessItem[] }>("/public/businesses", { params: { take: 6 } })).data.data,
+    staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
+  });
+  return { items: data ?? [], isPending };
 }
 
 function formatNewsDate(iso?: string | null) {
@@ -188,6 +218,8 @@ function HeroCarousel({ images }: { images: string[] }) {
    ───────────────────────────────────────────────────────────────────────── */
 const NAV_LINKS = [
   { label: "News",         href: "#news"         },
+  { label: "Events",       href: "#events"       },
+  { label: "Businesses",   href: "#businesses"   },
   { label: "Features",     href: "#features"     },
   { label: "Stories",      href: "#stories"      },
   { label: "How it works", href: "#how-it-works" },
@@ -514,28 +546,41 @@ function NewsCard({ item, big }: { item: PublicNewsItem; big?: boolean }) {
   );
 }
 
-function EventRow({ item }: { item: PublicEventItem }) {
+/** Full card treatment (same visual weight as NewsCard) — a real event date deserves more than a line in a sidebar. */
+function EventCard({ item }: { item: PublicEventItem }) {
   const d = formatEventDate(item.startDate);
   return (
-    <Link href={`/events/${item.id}`} className="group flex items-start gap-3.5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
-      <div className="shrink-0 w-12 rounded-lg overflow-hidden text-center" style={{ border: "1px solid var(--border)" }}>
-        <div className="text-[9.5px] font-bold uppercase py-0.5" style={{ background: "var(--primary)", color: "white" }}>{d.month}</div>
-        <div className="text-[16px] font-bold py-1 font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)" }}>{d.day}</div>
-      </div>
-      {item.bannerImageUrl && (
-        <img src={item.bannerImageUrl} alt="" className="shrink-0 w-12 h-12 rounded-lg object-cover" style={{ border: "1px solid var(--border)" }} />
-      )}
-      <div className="min-w-0 pt-0.5">
-        <h4 className="text-[13.5px] font-semibold leading-snug mb-1 truncate transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h4>
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="flex items-center gap-1 text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
-            <Clock size={11} /> {d.time}
-          </span>
-          <span className="flex items-center gap-1 text-[11.5px] truncate" style={{ color: "var(--muted-foreground)" }}>
-            <MapPin size={11} /> {item.venue}
+    <Link href={`/events/${item.id}`} className="group block">
+      <article className="card overflow-hidden h-full flex flex-col">
+        <div className="relative overflow-hidden" style={{ aspectRatio: "16/10" }}>
+          {item.bannerImageUrl ? (
+            <img src={item.bannerImageUrl} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
+              <Clock size={26} style={{ color: "var(--primary)", opacity: 0.4 }} />
+            </div>
+          )}
+          <div className="absolute top-3 left-3 rounded-lg overflow-hidden text-center shadow-sm" style={{ border: "1px solid rgba(255,255,255,0.4)" }}>
+            <div className="text-[9.5px] font-bold uppercase px-3 py-0.5" style={{ background: "var(--primary)", color: "white" }}>{d.month}</div>
+            <div className="text-[17px] font-bold px-3 py-1 font-[family-name:var(--font-display)]" style={{ background: "var(--background)", color: "var(--foreground)" }}>{d.day}</div>
+          </div>
+        </div>
+        <div className="card__content flex-1 flex flex-col">
+          <h4 className="text-[14.5px] font-semibold leading-snug mb-2 transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h4>
+          <div className="flex items-center gap-3 flex-wrap mb-2.5">
+            <span className="flex items-center gap-1 text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+              <Clock size={11} /> {d.time}
+            </span>
+            <span className="flex items-center gap-1 text-[11.5px] truncate" style={{ color: "var(--muted-foreground)" }}>
+              <MapPin size={11} /> {item.venue}
+            </span>
+          </div>
+          <span className="mt-auto flex items-center gap-1 text-[11.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+            Sign in to RSVP <ArrowRight size={10} />
           </span>
         </div>
-      </div>
+      </article>
     </Link>
   );
 }
@@ -565,13 +610,68 @@ function NewsCardSkeleton({ big }: { big?: boolean }) {
   );
 }
 
-function EventRowSkeleton() {
+function EventCardSkeleton() {
   return (
-    <div className="flex items-start gap-3.5 py-3.5" style={{ borderBottom: "1px solid var(--border)" }}>
-      <Skeleton className="shrink-0 w-12 h-12 rounded-lg" />
-      <div className="min-w-0 pt-0.5 flex-1 space-y-2">
-        <Skeleton className="h-3.5 w-3/4" variant="text" />
+    <div className="card overflow-hidden">
+      <Skeleton className="w-full" style={{ aspectRatio: "16/10" }} />
+      <div className="card__content space-y-2">
+        <Skeleton className="h-4 w-4/5" variant="text" />
+        <Skeleton className="h-2.5 w-2/3" variant="text" />
+        <Skeleton className="h-2.5 w-20" variant="text" />
+      </div>
+    </div>
+  );
+}
+
+/** Business directory listing — logo, name, location, and an excerpt, the way a chamber-of-commerce page shows off its members. */
+function BusinessCard({ item }: { item: PublicBusinessItem }) {
+  const link = item.externalLinkUrl || item.websiteUrl;
+  return (
+    <article className="card overflow-hidden h-full flex flex-col">
+      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9", background: "var(--muted)" }}>
+        {item.bannerUrl ? (
+          <img src={item.bannerUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
+            <Building2 size={26} style={{ color: "var(--primary)", opacity: 0.4 }} />
+          </div>
+        )}
+        {item.logoUrl && (
+          <img src={item.logoUrl} alt="" className="absolute bottom-3 left-3 w-11 h-11 rounded-lg object-cover shadow-sm"
+            style={{ border: "2px solid var(--background)", background: "var(--background)" }} />
+        )}
+      </div>
+      <div className="card__content flex-1 flex flex-col">
+        <h4 className="text-[14.5px] font-semibold leading-snug mb-1" style={{ color: "var(--foreground)" }}>{item.businessName}</h4>
+        <span className="flex items-center gap-1 text-[11.5px] mb-2.5" style={{ color: "var(--muted-foreground)" }}>
+          <MapPin size={11} /> {item.location}
+        </span>
+        <p className="text-[12.5px] leading-relaxed line-clamp-2 mb-3" style={{ color: "var(--muted-foreground)" }}>{item.description}</p>
+        {link ? (
+          <a href={link} target="_blank" rel="noopener noreferrer"
+            className="mt-auto flex items-center gap-1 text-[11.5px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+            Visit business <ArrowRight size={10} />
+          </a>
+        ) : (
+          <Link href="/login" className="mt-auto flex items-center gap-1 text-[11.5px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+            Sign in for contact info <ArrowRight size={10} />
+          </Link>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function BusinessCardSkeleton() {
+  return (
+    <div className="card overflow-hidden">
+      <Skeleton className="w-full" style={{ aspectRatio: "16/9" }} />
+      <div className="card__content space-y-2">
+        <Skeleton className="h-4 w-3/4" variant="text" />
         <Skeleton className="h-2.5 w-1/2" variant="text" />
+        <Skeleton className="h-2.5 w-full" variant="text" />
+        <Skeleton className="h-2.5 w-20" variant="text" />
       </div>
     </div>
   );
@@ -593,7 +693,6 @@ function SpotlightCardSkeleton() {
 
 function NewsEventsSpotlight() {
   const { items: news, isPending: newsPending } = usePublicNews();
-  const { items: events, isPending: eventsPending } = usePublicEvents();
   const { item: spotlight, isPending: spotlightPending } = usePublicSpotlight();
 
   return (
@@ -630,24 +729,8 @@ function NewsEventsSpotlight() {
             )}
           </div>
 
-          {/* Sidebar — upcoming events + spotlight */}
+          {/* Sidebar — alumni spotlight */}
           <div className="flex flex-col gap-10">
-            <div>
-              <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)", fontSize: "1.15rem" }}>Upcoming events</h2>
-              {eventsPending ? (
-                <div>{[0, 1, 2].map((i) => <EventRowSkeleton key={i} />)}</div>
-              ) : events.length > 0 ? (
-                <>
-                  <div>{events.map((e) => <EventRow key={e.id} item={e} />)}</div>
-                  <Link href="/login" className="mt-4 flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: "var(--primary)" }}>
-                    See full calendar <ArrowRight size={12} />
-                  </Link>
-                </>
-              ) : (
-                <EmptyPanel icon={Clock} title="No events scheduled yet" desc="Reunions, chapter meetups, and Speech Day will show up here." />
-              )}
-            </div>
-
             {spotlightPending ? (
               <SpotlightCardSkeleton />
             ) : spotlight ? (
@@ -686,6 +769,78 @@ function NewsEventsSpotlight() {
           </div>
 
         </div>
+      </div>
+    </Section>
+  );
+}
+
+/** Upcoming events get a full-width strip of their own, with real cards, rather than being squeezed into a sidebar. */
+function UpcomingEventsSection() {
+  const { items: events, isPending } = usePublicEvents();
+
+  return (
+    <Section id="events" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
+      <div className="section__inner--wide section">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
+              Don&apos;t miss out
+            </p>
+            <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Upcoming events</h2>
+          </div>
+          {events.length > 0 && (
+            <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
+              See full calendar <ArrowRight size={12} />
+            </Link>
+          )}
+        </div>
+        {isPending ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => <EventCardSkeleton key={i} />)}
+          </div>
+        ) : events.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {events.map((e) => <EventCard key={e.id} item={e} />)}
+          </div>
+        ) : (
+          <EmptyPanel icon={Clock} big title="No events scheduled yet" desc="Reunions, chapter meetups, and Speech Day will show up here." />
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/** Alumni-owned businesses, showcased the way a chamber of commerce would — proof of what the network is doing out in the world, not just inside the portal. */
+function BusinessDirectorySection() {
+  const { items: businesses, isPending } = usePublicBusinesses();
+
+  if (!isPending && businesses.length === 0) return null;
+
+  return (
+    <Section id="businesses" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+      <div className="section__inner--wide section">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
+              Out in the world
+            </p>
+            <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Alumni business directory</h2>
+          </div>
+          {businesses.length > 0 && (
+            <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
+              Browse full directory <ArrowRight size={12} />
+            </Link>
+          )}
+        </div>
+        {isPending ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => <BusinessCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {businesses.map((b) => <BusinessCard key={b.id} item={b} />)}
+          </div>
+        )}
       </div>
     </Section>
   );
@@ -830,12 +985,73 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
-          NEWS · EVENTS · SPOTLIGHT — this institution's own real content,
-          in an editorial layout (masthead feed + sidebar), the way an
-          actual association website leads rather than a product pitch.
-          Hidden per-section when the institution has nothing published yet.
+          NEWS · SPOTLIGHT — this institution's own real content, in an
+          editorial layout (masthead feed + sidebar), the way an actual
+          association website leads rather than a product pitch. Hidden
+          per-section when the institution has nothing published yet.
       ════════════════════════════════════════════════════════════════ */}
       <NewsEventsSpotlight />
+
+      {/* ════════════════════════════════════════════════════════════════
+          UPCOMING EVENTS — its own full-width strip with real cards
+          (date badge, banner photo, venue), rather than a few lines
+          squeezed into the news sidebar.
+      ════════════════════════════════════════════════════════════════ */}
+      <UpcomingEventsSection />
+
+      {/* ════════════════════════════════════════════════════════════════
+          BUSINESS DIRECTORY — alumni-owned businesses, showing what the
+          network is doing out in the world, not just inside the portal.
+          Hidden entirely when the institution has no approved listings.
+      ════════════════════════════════════════════════════════════════ */}
+      <BusinessDirectorySection />
+
+      {/* ════════════════════════════════════════════════════════════════
+          CTA — moved right after the real content (not buried after every
+          other section) so a visitor who's just seen what's happening here
+          gets a clear, immediate "here's how to join in" moment, the way an
+          actual association site puts its direct actions up front rather
+          than at the very bottom of the page.
+      ════════════════════════════════════════════════════════════════ */}
+      <Section style={{ background: "var(--primary)" }}>
+        <div className="relative overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
+
+          <div className="section__inner--wide relative py-20 sm:py-24">
+            <div className="grid gap-10 lg:grid-cols-[1.2fr_auto] items-end">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  Take the next step
+                </p>
+                <h2 className="font-[family-name:var(--font-display)] mb-5 max-w-[16ch]"
+                  style={{ fontSize: "clamp(2rem,4.2vw,3.4rem)", lineHeight: 1.06, color: "white" }}>
+                  Your journey shaped you. Now shape what comes next.
+                </h2>
+                <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
+                  Join thousands of alumni already using the portal to connect, contribute, and grow with trusted peers.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
+                <Link href="/register">
+                  <Button size="lg" className="w-full h-12 px-10 text-[15px] font-semibold gap-2"
+                    style={{ background: "white", color: "var(--primary)" }}>
+                    Create my account <ChevronRight size={16} />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[15px] font-medium"
+                    style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
+                    Sign in instead
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
 
       {/* ════════════════════════════════════════════════════════════════
           STATS — full-bleed banded row, not a card grid
@@ -952,49 +1168,6 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       </Section>
 
       {/* ════════════════════════════════════════════════════════════════
-          FINAL CTA
-      ════════════════════════════════════════════════════════════════ */}
-      <Section style={{ background: "var(--primary)" }}>
-        <div className="relative overflow-hidden">
-          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)" }} />
-          <div className="absolute -bottom-32 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
-
-          <div className="section__inner--wide relative py-20 sm:py-24">
-            <div className="grid gap-10 lg:grid-cols-[1.2fr_auto] items-end">
-              <div>
-                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
-                  Take the next step
-                </p>
-                <h2 className="font-[family-name:var(--font-display)] mb-5 max-w-[16ch]"
-                  style={{ fontSize: "clamp(2rem,4.2vw,3.4rem)", lineHeight: 1.06, color: "white" }}>
-                  Your journey shaped you. Now shape what comes next.
-                </h2>
-                <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
-                  Join thousands of alumni already using the portal to connect, contribute, and grow with trusted peers.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
-                <Link href="/register">
-                  <Button size="lg" className="w-full h-12 px-10 text-[15px] font-semibold gap-2"
-                    style={{ background: "white", color: "var(--primary)" }}>
-                    Create my account <ChevronRight size={16} />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[15px] font-medium"
-                    style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
-                    Sign in instead
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
           FOOTER
       ════════════════════════════════════════════════════════════════ */}
       <footer className="border-t py-9" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
@@ -1022,6 +1195,27 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               </Link>
             ))}
           </nav>
+
+          {content?.socialLinks && SOCIAL_ORDER.some((k) => content.socialLinks?.[k]) && (
+            <div className="flex items-center gap-4" aria-label="Social media links">
+              {SOCIAL_ORDER.filter((k) => content.socialLinks?.[k]).map((key) => {
+                const Icon = SOCIAL_ICONS[key];
+                return (
+                  <a
+                    key={key}
+                    href={content.socialLinks![key]}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={key}
+                    className="transition-colors hover:text-foreground"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    <Icon size={16} />
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </div>
       </footer>
 

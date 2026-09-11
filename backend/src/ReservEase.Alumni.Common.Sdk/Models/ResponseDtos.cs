@@ -238,6 +238,58 @@ public class ManualPaymentBankAccountDto
     public string Branch { get; set; } = string.Empty;
 }
 
+public class ServiceFieldDefinitionDto
+{
+    public string Key { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public bool Required { get; set; }
+    public List<string>? Options { get; set; }
+    public string? HelpText { get; set; }
+}
+
+public class ServiceTypeDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Price { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public List<ServiceFieldDefinitionDto> Fields { get; set; } = [];
+    public List<string> Stages { get; set; } = [];
+    public DateTime CreatedAt { get; set; }
+}
+
+public class ServiceRequestUpdateDto
+{
+    public DateTime ChangedAt { get; set; }
+    public string? Stage { get; set; }
+    public string? Note { get; set; }
+    public string? AttachmentUrl { get; set; }
+    public string? ChangedByStaffName { get; set; }
+}
+
+public class ServiceRequestDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string RequestNumber { get; set; } = string.Empty;
+    public string MemberId { get; set; } = string.Empty;
+    public string? MemberName { get; set; }
+    public string? MemberEmail { get; set; }
+    public string? MemberProfilePictureUrl { get; set; }
+    public string ServiceTypeId { get; set; } = string.Empty;
+    public string ServiceTypeName { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public Dictionary<string, string> FieldAnswers { get; set; } = [];
+    public Dictionary<string, string> Attachments { get; set; } = [];
+    public string PaymentStatus { get; set; } = string.Empty;
+    public string? TransactionRef { get; set; }
+    public DateTime? ConfirmedAt { get; set; }
+    public string CurrentStage { get; set; } = string.Empty;
+    public List<ServiceRequestUpdateDto> Updates { get; set; } = [];
+    public DateTime CreatedAt { get; set; }
+}
+
 public class ManualPaymentMobileMoneyAccountDto
 {
     public string MobileMoneyNumber { get; set; } = string.Empty;

@@ -182,6 +182,9 @@ export default function InstitutionDetailPage() {
     onSuccess: (updated) => {
       toast.success(`Institution status set to ${updated.status}`);
       invalidate();
+      // The platform dashboard's summary counts (active/suspended, etc.)
+      // read a separate query keyed off dashboard-summary.
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -999,7 +1002,7 @@ export default function InstitutionDetailPage() {
             <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <p className="text-[14px] font-semibold">All payments</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Every Contribution and Store order this institution has collected, every status, for troubleshooting.</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Every Contribution, Store order, and Service request this institution has collected, every status, for troubleshooting.</p>
               </div>
               <div className="flex items-center gap-2">
                 <FormSelect
@@ -1009,6 +1012,7 @@ export default function InstitutionDetailPage() {
                     { value: "All", label: "All sources" },
                     { value: "Contribution", label: "Contributions" },
                     { value: "StoreOrder", label: "Store orders" },
+                    { value: "ServiceRequest", label: "Service requests" },
                   ]}
                   className="w-[150px]"
                 />
@@ -1058,7 +1062,7 @@ export default function InstitutionDetailPage() {
                             <p className="text-[11.5px] text-muted-foreground">{p.payerEmail}</p>
                           </td>
                           <td className="px-5 py-3">{p.description}</td>
-                          <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : "Store order"}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : p.source === "StoreOrder" ? "Store order" : "Service request"}</td>
                           <td className="px-5 py-3 font-semibold">{formatCurrency(p.amount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.platformFeeAmount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.gatewayFeeAmount, "GHS")}</td>

@@ -35,6 +35,7 @@ public interface INotificationDispatcher
 
     /// <summary>Notify the order's buyer that its delivery status changed. Always delivered — personal/transactional, not preference-gated.</summary>
     Task DispatchStoreDeliveryStatusUpdatedAsync(string memberId, string orderId, string orderNumber, string newStatus);
+    Task DispatchServiceRequestUpdatedAsync(string memberId, string requestId, string requestNumber, string serviceTypeName, string newStage);
 
     /// <summary>
     /// Fan-out an admin-composed broadcast to a pre-resolved set of recipients.

@@ -234,6 +234,54 @@ public static class EntityDtoExtensions
         }).ToList(),
     };
 
+    public static ServiceTypeDto ToDto(this ServiceType s) => new()
+    {
+        Id = s.Id,
+        Name = s.Name,
+        Description = s.Description,
+        Price = s.Price,
+        Status = s.Status,
+        Fields = s.Fields.Select(f => new ServiceFieldDefinitionDto
+        {
+            Key = f.Key,
+            Label = f.Label,
+            Type = f.Type,
+            Required = f.Required,
+            Options = f.Options,
+            HelpText = f.HelpText,
+        }).ToList(),
+        Stages = s.Stages,
+        CreatedAt = s.CreatedAt,
+    };
+
+    public static ServiceRequestDto ToDto(this ServiceRequest r) => new()
+    {
+        Id = r.Id,
+        RequestNumber = r.RequestNumber,
+        MemberId = r.MemberId,
+        MemberName = r.Member != null ? $"{r.Member.FirstName} {r.Member.LastName}" : null,
+        MemberEmail = r.Member?.Email,
+        MemberProfilePictureUrl = r.Member?.ProfilePictureUrl,
+        ServiceTypeId = r.ServiceTypeId,
+        ServiceTypeName = r.ServiceTypeName,
+        Amount = r.Amount,
+        FieldAnswers = r.FieldAnswers,
+        Attachments = r.Attachments,
+        PaymentStatus = r.PaymentStatus,
+        TransactionRef = r.TransactionRef,
+        ConfirmedAt = r.ConfirmedAt,
+        CurrentStage = r.CurrentStage,
+        Updates = r.Updates.Select(u => new ServiceRequestUpdateDto
+        {
+            ChangedAt = u.ChangedAt,
+            Stage = u.Stage,
+            Note = u.Note,
+            AttachmentUrl = u.AttachmentUrl,
+            ChangedByStaffName = u.ChangedByStaffName,
+        }).ToList(),
+        CreatedAt = r.CreatedAt,
+    };
+
     public static ContributionDto ToDto(this Contribution c) => new()
     {
         Id = c.Id,

@@ -61,6 +61,9 @@ export default function MemberEventsPage() {
       setPendingId(null);
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["m-events-list"] });
+      // The Calendar page reads its own separate RSVP/events queries.
+      qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
+      qc.invalidateQueries({ queryKey: ["cal-events"] });
       toast.success("You're in! We'll see you there.");
     },
     onError: (e) => { setPendingId(null); toast.error(handleApiError(e)); },
@@ -72,6 +75,8 @@ export default function MemberEventsPage() {
       setPendingId(null);
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["m-events-list"] });
+      qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
+      qc.invalidateQueries({ queryKey: ["cal-events"] });
       toast.success("RSVP cancelled.");
     },
     onError: (e) => { setPendingId(null); toast.error(handleApiError(e)); },

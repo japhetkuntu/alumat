@@ -29,6 +29,7 @@ public class PublicController(
     IAlumniPgRepository<NewsPost> newsRepo,
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<Spotlight> spotlightRepo,
+    IAlumniPgRepository<BusinessListing> businessListingRepo,
     IRedisService<PublicContentCacheConfig> publicCache) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
@@ -73,6 +74,7 @@ public class PublicController(
             institution.RequireStudentId,
             institution.ProgramOfStudyEnabled,
             institution.ProgramsOfStudy,
+            institution.SocialLinks,
             institution.PromptMembershipActivationAtSignup,
             institution.SmsNotificationsEnabled,
             institution.DisabledFeatures,
@@ -204,5 +206,29 @@ public class PublicController(
         });
 
         return Ok(new ApiResponse<List<PublicSpotlightItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
+    }
+
+    /// <summary>Approved, non-hidden alumni business listings, for the public landing page's business directory.</summary>
+    [HttpGet("businesses")]
+    [SwaggerOperation(Summary = "Get approved alumni business listings for the public landing page")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<PublicBusinessListingItemResponse>>))]
+    public async Task<IActionResult> GetPublicBusinesses([FromQuery] int take = 6)
+    {
+        if (HttpContext.Items["Institution"] is not Institution institution)
+            return Ok(new ApiResponse<List<PublicBusinessListingItemResponse>> { Message = "Success", Code = 200, Data = [] });
+
+        var all = await GetOrCacheAsync(PublicContentCacheKeys.Businesses(institution.Id), async () =>
+        {
+            var items = await businessListingRepo.GetQueryable(b => b.Status == "Approved" && !b.IsHiddenByMember)
+                .OrderByDescending(b => b.CreatedAt)
+                .Take(MaxCacheableItems)
+                .ToListAsync();
+
+            return items.Select(b => new PublicBusinessListingItemResponse(
+                b.Id, b.BusinessName, ExcerptFromHtml(b.Description, 160), b.LogoUrl, b.BannerUrl,
+                b.Location, b.WebsiteUrl, b.ExternalLinkUrl)).ToList();
+        });
+
+        return Ok(new ApiResponse<List<PublicBusinessListingItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
     }
 }

@@ -145,6 +145,11 @@ export default function CommunityDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["m-community-events-preview", id] });
+      // The full Events list and the Calendar page each read this same
+      // RSVP/event data through their own separate query keys.
+      qc.invalidateQueries({ queryKey: ["m-events-list"] });
+      qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
+      qc.invalidateQueries({ queryKey: ["cal-events"] });
       toast.success("You're in!");
     },
     onError: (e) => toast.error(handleApiError(e)),

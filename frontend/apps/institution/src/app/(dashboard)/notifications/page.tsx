@@ -140,6 +140,9 @@ export default function AdminNotificationsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["admin-notifications-infinite"] });
+      // The header bell's dropdown reads a separate, non-infinite query over
+      // the same notifications — keep it in sync too.
+      qc.invalidateQueries({ queryKey: ["admin-notifications-list"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -150,6 +153,7 @@ export default function AdminNotificationsPage() {
       toast.success("All notifications marked as read");
       qc.invalidateQueries({ queryKey: ["admin-notifications-unread-count"] });
       qc.invalidateQueries({ queryKey: ["admin-notifications-infinite"] });
+      qc.invalidateQueries({ queryKey: ["admin-notifications-list"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });

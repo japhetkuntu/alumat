@@ -6,3 +6,4 @@ public record PublicNewsItemResponse(string Id, string Title, string Excerpt, st
 public record PublicEventItemResponse(string Id, string Title, DateTime StartDate, string Venue, string? BannerImageUrl);
 
 public record PublicSpotlightItemResponse(string Id, string Title, string Story, string? ImageUrl, string MemberName, DateTime? FeaturedMonth);
+public record PublicBusinessListingItemResponse(string Id, string BusinessName, string Description, string? LogoUrl, string? BannerUrl, string Location, string? WebsiteUrl, string? ExternalLinkUrl);
