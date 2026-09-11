@@ -168,7 +168,7 @@ public class PublicController(
             var items = await eventRepo.GetQueryable(e =>
                     e.Status == "Upcoming" && e.CommunityId == null && (e.YearGroups == null || e.YearGroups.Count == 0)
                     && e.StartDate >= DateTime.UtcNow)
-                .OrderBy(e => e.StartDate)
+                .OrderByDescending(e => e.StartDate)
                 .Take(MaxCacheableItems)
                 .ToListAsync();
 
