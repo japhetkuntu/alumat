@@ -71,6 +71,8 @@ public class PublicController(
             institution.MemberAuthHeadline,
             institution.MemberAuthSubtext,
             institution.RequireStudentId,
+            institution.ProgramOfStudyEnabled,
+            institution.ProgramsOfStudy,
             institution.PromptMembershipActivationAtSignup,
             institution.SmsNotificationsEnabled,
             institution.DisabledFeatures,

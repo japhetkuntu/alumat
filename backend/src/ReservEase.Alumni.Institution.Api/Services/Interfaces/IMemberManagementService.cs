@@ -27,7 +27,7 @@ public record MemberListItem(
 
 public record MemberDetailItem(
     string Id, string FirstName, string LastName, string Email,
-    string? Phone, int GraduationYear, string DepartmentId,
+    string? Phone, int GraduationYear, string DepartmentId, string? Program,
     string Status, string? Company, string? JobTitle, string? Location,
     string? LinkedInUrl, string? Bio, string? ProfilePictureUrl,
     string? StudentId, DateTime CreatedAt, DateTime? LastLoginAt,

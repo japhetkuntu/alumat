@@ -2,6 +2,7 @@ namespace ReservEase.Alumni.Member.Api.Models;
 
 public class UpdateProfileRequest
 {
+    public string? Program { get; set; }
     public string? Company { get; set; }
     public string? JobTitle { get; set; }
     public string? Location { get; set; }

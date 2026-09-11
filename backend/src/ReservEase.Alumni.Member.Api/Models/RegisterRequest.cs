@@ -3,7 +3,7 @@ namespace ReservEase.Alumni.Member.Api.Models;
 public record RegisterRequest(
     string FirstName, string LastName, string Email, string Password,
     string Phone, string StudentId, int GraduationYear, string? DepartmentId,
-    string? ReferralCode = null);
+    string? ReferralCode = null, string? Program = null);
 
 /// <summary>
 /// Registration via a verified Google identity — skips the OTP step entirely
@@ -14,4 +14,4 @@ public record RegisterRequest(
 /// </summary>
 public record GoogleRegisterRequest(
     string IdToken, string Phone, string StudentId, int GraduationYear, string? DepartmentId,
-    string? ReferralCode = null);
+    string? ReferralCode = null, string? Program = null);

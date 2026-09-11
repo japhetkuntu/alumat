@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard, ChevronRight, Check, Share2 } from "@alumni/ui";
+import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard, ChevronRight, Check, Share2, BookOpen } from "@alumni/ui";
 import { useState } from "react";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -188,6 +188,7 @@ export default function MemberDetailPage() {
           <CardHeader><CardTitle className="text-base">Personal information</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <InfoRow icon={<GraduationCap size={14} />} label="Graduation Year" value={String(member.graduationYear)} />
+            {member.program && <InfoRow icon={<BookOpen size={14} />} label="Program" value={member.program} />}
             <InfoRow icon={<Calendar size={14} />} label="Joined" value={formatDate(member.createdAt)} />
             {member.phone && <InfoRow icon={<Smartphone size={14} />} label="Phone" value={member.phone} />}
           </CardContent>

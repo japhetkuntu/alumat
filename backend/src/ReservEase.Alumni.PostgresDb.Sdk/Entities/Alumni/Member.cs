@@ -18,6 +18,13 @@ public class Member : BaseEntity, ITenantScoped
     // year carries no real significance beyond what DateTime requires.
     public DateTime? DateOfBirth { get; set; }
     public string DepartmentId { get; set; } = string.Empty;
+    /// <summary>
+    /// Program/course of study, e.g. "BSc Mining Engineering" — always stored
+    /// as freeform text regardless of whether it came from the registration
+    /// form's dropdown (Institution.ProgramsOfStudy) or a typed custom value.
+    /// Null when the institution doesn't collect this (ProgramOfStudyEnabled).
+    /// </summary>
+    public string? Program { get; set; }
     public string? Company { get; set; }
     public string? JobTitle { get; set; }
     public string? Location { get; set; }

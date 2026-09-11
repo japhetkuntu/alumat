@@ -56,6 +56,7 @@ export interface MemberProfileResponse {
   graduationYear: number;
   departmentId: string;
   departmentName?: string;
+  program?: string;
   company?: string;
   jobTitle?: string;
   location?: string;
@@ -94,6 +95,7 @@ export async function getMyProfile(): Promise<MemberProfileResponse> {
 }
 
 export interface UpdateProfileBody {
+  program?: string;
   company?: string;
   jobTitle?: string;
   location?: string;

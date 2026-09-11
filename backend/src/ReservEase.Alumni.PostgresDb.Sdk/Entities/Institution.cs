@@ -42,6 +42,20 @@ public class Institution : BaseEntity
     public bool RequireStudentId { get; set; } = true;
 
     /// <summary>
+    /// Whether member self-registration collects a Program/Course of Study —
+    /// off by default, since not every institution's programs map cleanly
+    /// onto Department (a Department can offer several distinct programs).
+    /// When on, ProgramsOfStudy below drives a dropdown on the registration
+    /// form; the member can still type a custom value when their program
+    /// isn't listed (see RegisterRequest.Program — always freeform text on
+    /// the wire either way, the dropdown is purely a frontend convenience).
+    /// </summary>
+    public bool ProgramOfStudyEnabled { get; set; }
+
+    /// <summary>The institution's own admin-managed list of selectable programs — see ProgramOfStudyEnabled.</summary>
+    public List<string> ProgramsOfStudy { get; set; } = [];
+
+    /// <summary>
     /// Whether the just-registered member sees an "Activate your membership"
     /// prompt (pay the current membership campaign, or a "nothing due yet"
     /// notice) on the registration success screen. Defaults to false — most

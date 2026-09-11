@@ -78,7 +78,7 @@ function createClient(baseURL: string): AxiosInstance {
       originalRequest._retry = true;
 
       try {
-        const res = await axios.post(`${baseURL}/auth/refresh`, {
+        const res = await axios.post(`${baseURL}/auth/refreshtoken`, {
           accessToken: localStorage.getItem("access_token"),
           refreshToken,
         });

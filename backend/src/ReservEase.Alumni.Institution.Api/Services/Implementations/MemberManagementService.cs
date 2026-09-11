@@ -189,7 +189,7 @@ public class MemberManagementService(
 
             var detail = new MemberDetailItem(
                 member.Id, member.FirstName, member.LastName, member.Email, member.Phone,
-                member.GraduationYear, member.DepartmentId, member.Status,
+                member.GraduationYear, member.DepartmentId, member.Program, member.Status,
                 member.Company, member.JobTitle, member.Location,
                 member.LinkedInUrl, member.Bio, member.ProfilePictureUrl,
                 member.StudentId, member.CreatedAt, member.LastLoginAt,

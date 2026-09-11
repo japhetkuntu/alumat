@@ -396,6 +396,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Institution>().HasIndex(i => i.Status);
         modelBuilder.Entity<Institution>().Property(i => i.DisabledFeatures).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<Institution>().Property(i => i.ProgramsOfStudy).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
 
         var landingStoryListComparer = new ValueComparer<List<LandingPageStory>>(
             (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),

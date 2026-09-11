@@ -22,6 +22,8 @@ public record InstitutionResponse(
     string? MemberAuthHeadline,
     string? MemberAuthSubtext,
     bool RequireStudentId,
+    bool ProgramOfStudyEnabled,
+    List<string> ProgramsOfStudy,
     string MemberActivePolicy,
     bool PromptMembershipActivationAtSignup,
     bool EmailNotificationsEnabled,
@@ -86,6 +88,14 @@ public class UpdateInstitutionBrandingRequest
 /// platform staff's, so they're edited here rather than via Platform.Api.
 /// </summary>
 public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool RequireStudentId);
+
+/// <summary>
+/// Program/Course of Study collection at registration — off by default. The
+/// list is this institution's own admin-managed dropdown; members can still
+/// type a custom value at registration when their program isn't listed, so
+/// the list never needs to be exhaustive on day one.
+/// </summary>
+public record UpdateProgramOfStudyRequest(bool ProgramOfStudyEnabled, List<string> ProgramsOfStudy);
 
 /// <summary>
 /// Another institution-editable-themselves carve-out, distinct from the

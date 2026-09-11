@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy,
-  updateSelfServiceFeatures, submitInstitutionPayoutSetup,
+  updateSelfServiceFeatures, updateProgramOfStudy, submitInstitutionPayoutSetup,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
@@ -326,6 +326,46 @@ export default function BrandingSettingsPage() {
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
+
+  const [programs, setPrograms] = useState<string[] | null>(null);
+  const [newProgram, setNewProgram] = useState("");
+  if (institution && programs === null) setPrograms(institution.programsOfStudy);
+
+  const programsMutation = useMutation({
+    mutationFn: ({ enabled, list }: { enabled: boolean; list: string[] }) => updateProgramOfStudy(enabled, list),
+    onSuccess: () => {
+      toast.success("Program of study settings updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  function addProgram() {
+    const value = newProgram.trim();
+    if (!value) return;
+    if ((programs ?? []).some((p) => p.trim().toLowerCase() === value.toLowerCase())) {
+      toast.error("That program is already in the list");
+      return;
+    }
+    setPrograms((p) => [...(p ?? []), value]);
+    setNewProgram("");
+  }
+
+  const savedPrograms = institution?.programsOfStudy ?? [];
+  const programsDirty =
+    programs !== null &&
+    (programs.length !== savedPrograms.length || programs.some((p, i) => p !== savedPrograms[i]));
+
+  function saveProgramsList() {
+    const cleaned = (programs ?? []).map((p) => p.trim()).filter(Boolean);
+    const lower = cleaned.map((p) => p.toLowerCase());
+    if (new Set(lower).size !== lower.length) {
+      toast.error("Remove duplicate programs before saving");
+      return;
+    }
+    setPrograms(cleaned);
+    programsMutation.mutate({ enabled: !!institution?.programOfStudyEnabled, list: cleaned });
+  }
 
   const featuresMutation = useMutation({
     mutationFn: (features: Parameters<typeof updateSelfServiceFeatures>[0]) => updateSelfServiceFeatures(features),
@@ -653,6 +693,87 @@ export default function BrandingSettingsPage() {
                   label="Require student ID at registration"
                   description="On the Member Portal's registration form: on, the student/alumni ID field becomes required; off, it stays optional."
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {!isScopedAdmin && (
+            <Card className="border-border/40 lg:col-span-2">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">Program / course of study</p>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-1">
+                  Let members pick their program at registration, from a list you manage below. A member can still type in a program that isn&apos;t on the list.
+                </p>
+                <Toggle
+                  checked={!!institution?.programOfStudyEnabled}
+                  onChange={(checked) => programsMutation.mutate({ enabled: checked, list: programs ?? [] })}
+                  label="Collect program of study at registration"
+                  description="Off by default. Turning this on shows a program dropdown on the Member Portal's registration form."
+                />
+
+                <div className="mt-4 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Label>Programs</Label>
+                    {programsDirty && (
+                      <Badge variant="outline" className="text-[10.5px] font-medium text-amber-600 border-amber-300 bg-amber-50">
+                        Unsaved changes
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newProgram}
+                      onChange={(e) => setNewProgram(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addProgram(); } }}
+                      placeholder="e.g. BSc Mining Engineering"
+                      maxLength={200}
+                    />
+                    <Button type="button" variant="outline" onClick={addProgram} disabled={!newProgram.trim()}>
+                      <Plus size={14} className="mr-1.5" /> Add
+                    </Button>
+                  </div>
+
+                  {(programs ?? []).length === 0 ? (
+                    <p className="text-[12.5px] text-muted-foreground py-2">No programs added yet.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {(programs ?? []).map((program, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <Input
+                            value={program}
+                            onChange={(e) => setPrograms((p) => p!.map((it, idx) => (idx === i ? e.target.value : it)))}
+                            className="h-9"
+                            maxLength={200}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPrograms((p) => p!.filter((_, idx) => idx !== i))}
+                            className="text-destructive hover:opacity-70 shrink-0"
+                            aria-label={`Remove ${program}`}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="pt-1 flex items-center gap-3">
+                    <Button
+                      size="sm"
+                      onClick={saveProgramsList}
+                      disabled={programsMutation.isPending || !programsDirty}
+                    >
+                      {programsMutation.isPending ? "Saving…" : "Save programs"}
+                    </Button>
+                    {!programsDirty && (programs ?? []).length > 0 && (
+                      <span className="text-[12px] text-muted-foreground">All changes saved</span>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

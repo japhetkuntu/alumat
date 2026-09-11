@@ -103,6 +103,7 @@ public class MemberAuthService(
                 StudentId = request.StudentId,
                 GraduationYear = request.GraduationYear,
                 DepartmentId = request.DepartmentId,
+                Program = request.Program?.Trim(),
                 Otp = otp,
                 ResendCount = 0,
                 ReferralCode = request.ReferralCode?.Trim(),
@@ -162,6 +163,7 @@ public class MemberAuthService(
                 StudentId = request.StudentId,
                 GraduationYear = request.GraduationYear,
                 DepartmentId = request.DepartmentId ?? string.Empty,
+                Program = request.Program?.Trim(),
                 Status = "Pending",
                 IsEmailVerified = true,
                 CreatedBy = "google",
@@ -226,6 +228,7 @@ public class MemberAuthService(
                 StudentId = cached.StudentId,
                 GraduationYear = cached.GraduationYear,
                 DepartmentId = cached.DepartmentId ?? string.Empty,
+                Program = cached.Program,
                 Status = "Pending",
                 IsEmailVerified = true,
                 CreatedBy = "self",
@@ -584,6 +587,7 @@ public class MemberAuthService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MemberProfileResponse>("Member not found");
 
+            member.Program = request.Program ?? member.Program;
             member.Company = request.Company ?? member.Company;
             member.JobTitle = request.JobTitle ?? member.JobTitle;
             member.Location = request.Location ?? member.Location;
@@ -818,7 +822,7 @@ public class MemberAuthService(
     private static MemberProfileResponse ToProfile(MemberEntity m) => new(
         m.Id, m.FirstName, m.LastName, m.Email,
         m.Phone, m.MemberNumber, m.GraduationYear,
-        m.DepartmentId, m.Company, m.JobTitle,
+        m.DepartmentId, m.Program, m.Company, m.JobTitle,
         m.Location, m.LinkedInUrl, m.Bio,
         m.ProfilePictureUrl, m.Status, m.EmploymentStatus,
         m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,

@@ -132,6 +132,9 @@ export interface InstitutionProfileResponse {
   memberAuthHeadline?: string | null;
   memberAuthSubtext?: string | null;
   requireStudentId: boolean;
+  /** Off by default. When on, registration shows a program-of-study dropdown built from programsOfStudy, with a "not listed" custom text fallback. */
+  programOfStudyEnabled: boolean;
+  programsOfStudy: string[];
   /** "DuesRequired" (default) — active only once dues are paid. "ApprovedOnly" — any approved member is active regardless of dues. */
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
   /** Platform-controlled feature gates, plus the two self-service ones below (see updateSelfServiceFeatures) — a key's presence here means that feature is OFF. */
@@ -208,6 +211,16 @@ export async function updateInstitutionBranding(branding: {
 /** How "active member" status is determined, and whether a student ID is required at registration — this institution's own operational choices. */
 export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly", requireStudentId: boolean): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy, requireStudentId });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** Program/Course of Study collection at registration — off by default. programsOfStudy is this institution's own dropdown list; members can still type a custom value when their program isn't listed. */
+export async function updateProgramOfStudy(programOfStudyEnabled: boolean, programsOfStudy: string[]): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/program-of-study", { programOfStudyEnabled, programsOfStudy });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");

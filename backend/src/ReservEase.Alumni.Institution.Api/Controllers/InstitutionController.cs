@@ -163,6 +163,37 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Features updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>Enable/disable Program of Study collection at registration and manage this institution's own program list — see UpdateProgramOfStudyRequest.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/program-of-study")]
+    [SwaggerOperation(Summary = "Update program-of-study settings")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateProgramOfStudy([FromBody] UpdateProgramOfStudyRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        // Trim + dedupe (case-insensitive) + drop blanks, same shape as any
+        // other admin-managed string list in this codebase — the frontend
+        // sends the whole list each edit, there's no per-item endpoint.
+        var programs = request.ProgramsOfStudy
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (programs.Any(p => p.Length > 200))
+            return BadRequest(new ApiResponse<object> { Message = "Each program name must be 200 characters or fewer", Code = 400 });
+
+        institution.ProgramOfStudyEnabled = request.ProgramOfStudyEnabled;
+        institution.ProgramsOfStudy = programs;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Program of study settings updated", Code = 200, Data = ToDto(institution) });
+    }
+
     /// <summary>
     /// Submit (or resubmit) this institution's own settlement details for
     /// platform staff to review — never takes effect immediately, mirroring
@@ -225,7 +256,7 @@ public class InstitutionController(
             i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
+            i.RequireStudentId, i.ProgramOfStudyEnabled, i.ProgramsOfStudy, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
             i.EmailNotificationsEnabled, i.SmsNotificationsEnabled, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
             i.Status, memberPortalUrl,

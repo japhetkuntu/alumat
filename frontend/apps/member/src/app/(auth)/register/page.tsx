@@ -62,6 +62,7 @@ function buildSchema(requireStudentId: boolean, googleMode: boolean) {
     studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
     graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
     departmentId: z.string().optional(),
+    program: z.string().optional(),
     password: googleMode ? z.string().optional() : z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().optional(),
   });
@@ -378,13 +379,20 @@ function RegisterForm() {
   const { data: theme } = useQuery({
     queryKey: ["m-register-institution-theme"],
     queryFn: async () => {
-      const res = await publicMemberClient.get<{ data: { requireStudentId: boolean; promptMembershipActivationAtSignup: boolean } }>("/public/institution/theme");
+      const res = await publicMemberClient.get<{ data: {
+        requireStudentId: boolean; promptMembershipActivationAtSignup: boolean;
+        programOfStudyEnabled: boolean; programsOfStudy: string[];
+      } }>("/public/institution/theme");
       return res.data.data;
     },
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
   const requireStudentId = theme?.requireStudentId ?? true;
+  const programOfStudyEnabled = theme?.programOfStudyEnabled ?? false;
+  const programsOfStudy = theme?.programsOfStudy ?? [];
+  const CUSTOM_PROGRAM_VALUE = "__custom__";
+  const [programMode, setProgramMode] = useState<"select" | "custom">("select");
   // Opt-in per institution (default off) — most institutions don't want a
   // payment ask on the registration success screen before a member is even
   // approved. Defaults to false (not shown) until the real value loads.
@@ -448,6 +456,7 @@ function RegisterForm() {
         studentId: data.studentId,
         graduationYear: data.graduationYear,
         departmentId: data.departmentId,
+        program: data.program,
       });
       setEmail(data.email);
       setStep("pending");
@@ -716,6 +725,49 @@ function RegisterForm() {
                         placeholder="Select"
                         options={departments.map((d) => ({ value: d.id, label: d.name }))}
                       />
+                    </div>
+                  )}
+                  {programOfStudyEnabled && (
+                    <div className={cn("space-y-1.5", programMode === "custom" && "col-span-2")}>
+                      <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                        Program / course of study{" "}
+                        <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
+                      </Label>
+                      {programMode === "select" ? (
+                        <FormSelect
+                          value={watch("program") ?? ""}
+                          onValueChange={(v) => {
+                            if (v === CUSTOM_PROGRAM_VALUE) {
+                              setProgramMode("custom");
+                              setValue("program", "", { shouldValidate: true });
+                            } else {
+                              setValue("program", v, { shouldValidate: true });
+                            }
+                          }}
+                          placeholder="Select your program"
+                          options={[
+                            ...programsOfStudy.map((p) => ({ value: p, label: p })),
+                            { value: CUSTOM_PROGRAM_VALUE, label: "Not listed — let me type it" },
+                          ]}
+                        />
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            className="h-11 text-[14px]"
+                            placeholder="Type your program"
+                            autoFocus
+                            {...register("program")}
+                          />
+                          {programsOfStudy.length > 0 && (
+                            <Button
+                              type="button" variant="outline" className="shrink-0 text-[13px]"
+                              onClick={() => { setProgramMode("select"); setValue("program", "", { shouldValidate: true }); }}
+                            >
+                              Choose from list
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

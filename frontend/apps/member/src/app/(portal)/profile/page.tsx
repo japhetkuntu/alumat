@@ -101,7 +101,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 export default function MemberProfilePage() {
   const { logout } = useAuth();
   const [profileForm, setProfileForm] = useState({
-    company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "", dateOfBirth: "",
+    program: "", company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "", dateOfBirth: "",
   });
   const [showOnAlumniMap, setShowOnAlumniMap] = useState(false);
   const [employmentStatus, setEmploymentStatus] = useState("Employed");
@@ -146,6 +146,7 @@ export default function MemberProfilePage() {
   if (profile && profile !== syncedProfile) {
     setSyncedProfile(profile);
     setProfileForm({
+      program:     profile.program     ?? "",
       company:     profile.company     ?? "",
       jobTitle:    profile.jobTitle    ?? "",
       location:    profile.location    ?? "",
@@ -160,6 +161,7 @@ export default function MemberProfilePage() {
 
   const updateMut = useMutation({
     mutationFn: () => updateMyProfile({
+      program:          profileForm.program     || undefined,
       company:          profileForm.company     || undefined,
       jobTitle:         profileForm.jobTitle    || undefined,
       location:         profileForm.location    || undefined,
@@ -379,6 +381,7 @@ export default function MemberProfilePage() {
             <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateMut.mutate(); }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
+                  { id: "program",  label: "Program / course of study", placeholder: "e.g. BSc Mining Engineering", type: "text" },
                   { id: "company",  label: "Company",  placeholder: "Where you work",    type: "text"  },
                   { id: "jobTitle", label: "Job title", placeholder: "Your current role", type: "text"  },
                   { id: "location", label: "Location",  placeholder: "City, Country",     type: "text"  },

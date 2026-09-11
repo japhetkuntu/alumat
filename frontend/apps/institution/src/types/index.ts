@@ -102,6 +102,7 @@ export interface Member {
   graduationYear: number;
   departmentId: string;
   department?: Department;
+  program?: string;
   profilePictureUrl?: string;
   status: MemberStatus;
   role: UserRole;

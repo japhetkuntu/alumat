@@ -15,6 +15,8 @@ public record InstitutionThemeResponse(
     string? AuthHeadline,
     string? AuthSubtext,
     bool RequireStudentId,
+    bool ProgramOfStudyEnabled,
+    List<string> ProgramsOfStudy,
     bool PromptMembershipActivationAtSignup,
     bool SmsNotificationsEnabled,
     List<string> DisabledFeatures,
