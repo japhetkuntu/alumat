@@ -193,7 +193,7 @@ function HeroCarousel({ images }: { images: string[] }) {
         />
       ))}
       {images.length > 1 && (
-        <div className="absolute top-3 sm:top-4 left-0 right-0 flex items-center justify-center gap-1.5 z-10">
+        <div className="absolute bottom-4 sm:bottom-5 left-0 right-0 flex items-center justify-center gap-1.5 z-10">
           {images.map((_, i) => (
             <button
               key={i}
