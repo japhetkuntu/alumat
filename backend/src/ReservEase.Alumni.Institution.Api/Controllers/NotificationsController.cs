@@ -3,17 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Institution.Api.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.Redis.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Controllers;
 
 [Authorize]
 public class NotificationsController(
-    IAlumniPgRepository<Notification> notifRepo) : DefaultController
+    IAlumniPgRepository<Notification> notifRepo,
+    IRedisService<InstitutionRedisConfig> cache) : DefaultController
 {
+    /// <summary>See Member.Api's identical NotificationsController for the rationale — a short cache the two mutations below evict immediately.</summary>
+    private static string UnreadCountCacheKey(string adminId) => $"notif-unread-count:{adminId}";
     [HttpGet]
     [SwaggerOperation(Summary = "Get notifications", Description = "Get paginated in-app notifications for the current admin")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<NotificationDto>>))]
@@ -44,9 +49,13 @@ public class NotificationsController(
     public async Task<IActionResult> GetUnreadCount()
     {
         var admin = User.GetAccount();
-        var all = await notifRepo.GetAllAsync(
-            n => n.RecipientId == admin.Id && n.RecipientType == "Admin" && !n.IsRead);
-        return all.Count().ToOkApiResponse().ToActionResult();
+        var cacheKey = UnreadCountCacheKey(admin.Id);
+        var cached = await cache.GetAsync<int?>(cacheKey);
+        if (cached is { } count) return count.ToOkApiResponse().ToActionResult();
+
+        var fresh = await notifRepo.CountAsync(n => n.RecipientId == admin.Id && n.RecipientType == "Admin" && !n.IsRead);
+        await cache.SetAsync(cacheKey, fresh, TimeSpan.FromSeconds(20));
+        return fresh.ToOkApiResponse().ToActionResult();
     }
 
     [HttpPut("{id}/read")]
@@ -65,6 +74,7 @@ public class NotificationsController(
             notif.IsRead = true;
             notif.ReadAt = DateTime.UtcNow;
             await notifRepo.UpdateAsync(notif);
+            await cache.RemoveAsync(UnreadCountCacheKey(admin.Id));
         }
         return new object().ToOkApiResponse().ToActionResult();
     }
@@ -87,6 +97,7 @@ public class NotificationsController(
                 n.ReadAt = now;
             }
             await notifRepo.UpdateRangeAsync(unread);
+            await cache.RemoveAsync(UnreadCountCacheKey(admin.Id));
         }
         return new object().ToOkApiResponse("All notifications marked as read").ToActionResult();
     }

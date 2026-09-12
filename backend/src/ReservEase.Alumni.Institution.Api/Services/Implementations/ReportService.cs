@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
+using ReservEase.Alumni.Institution.Api.Options;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
@@ -18,6 +21,8 @@ public class ReportService(
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
     IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
+    ICurrentTenantService currentTenant,
+    IRedisService<InstitutionRedisConfig> cache,
     ILogger<ReportService> logger) : IReportService
 {
     /// <summary>
@@ -41,6 +46,19 @@ public class ReportService(
             .ToList();
     }
 
+    /// <summary>
+    /// Every SuperAdmin of one institution sees the same unscoped result, so
+    /// they share one cache entry ("super"); a ScopedAdmin's result depends on
+    /// their own YearGroups/CommunityIds, so it's keyed by their own id
+    /// instead — two different scoped admins never collide. A blunt short TTL
+    /// (not write-triggered invalidation) is deliberate here too: this report
+    /// touches members/contributions/campaigns/events/jobs/store/services, far
+    /// too many write paths to chase, and nobody needs a reports page accurate
+    /// to the second.
+    /// </summary>
+    private string ReportSummaryCacheKey(AuthData admin, bool isSuper) =>
+        $"report-summary:{currentTenant.InstitutionId}:{(isSuper ? "super" : admin.Id)}";
+
     public async Task<IApiResponse<ReportSummaryDto>> GetReportSummaryAsync(AuthData admin)
     {
         try
@@ -48,6 +66,10 @@ public class ReportService(
             logger.LogInformation("GetReportSummary request (admin: {AdminId}, role: {Role})", admin.Id, admin.Role);
 
             var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var cacheKey = ReportSummaryCacheKey(admin, isSuper);
+            var cached = await cache.GetAsync<ReportSummaryDto>(cacheKey);
+            if (cached is not null) return cached.ToOkApiResponse();
+
             var yearGroups = admin.YearGroups ?? new List<int>();
             var communityIds = admin.CommunityIds ?? new List<string>();
             var communityMemberIds = await GetScopedCommunityMemberIdsAsync(admin);
@@ -141,6 +163,7 @@ public class ReportService(
                 TotalJobs = totalJobs,
             };
 
+            await cache.SetAsync(cacheKey, summary, TimeSpan.FromSeconds(60));
             return summary.ToOkApiResponse();
         }
         catch (Exception e)

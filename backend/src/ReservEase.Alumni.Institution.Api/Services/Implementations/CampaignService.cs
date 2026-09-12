@@ -48,11 +48,18 @@ public class CampaignService(
 
             var dtos = result.Results.Select(c => c.ToDto()).ToList();
 
-            // Populate TotalEligibleMembers for membership campaigns (only members whose graduation year <= campaign's membership year)
+            // Populate TotalEligibleMembers for membership campaigns (only members whose graduation year <= campaign's membership year).
+            // Cached per distinct year within this call — repeat annual membership campaigns commonly share one — instead of one query per campaign row.
+            var eligibleCountsByYear = new Dictionary<int, int>();
             foreach (var dto in dtos.Where(d => d.IsMembershipCampaign && d.MembershipYear.HasValue))
             {
                 var year = dto.MembershipYear!.Value;
-                dto.TotalEligibleMembers = await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= year);
+                if (!eligibleCountsByYear.TryGetValue(year, out var count))
+                {
+                    count = await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= year);
+                    eligibleCountsByYear[year] = count;
+                }
+                dto.TotalEligibleMembers = count;
             }
 
             var dtoResult = new PgPagedResult<CampaignDto>

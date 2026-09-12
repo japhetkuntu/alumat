@@ -39,6 +39,7 @@ builder.Services.Configure<BearerTokenConfig>(
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<InstitutionRedisConfig>(builder.Configuration);
 builder.Services.AddRedisDatabase<PublicContentCacheConfig>(builder.Configuration);
+builder.Services.AddRedisDatabase<TenantResolutionCacheConfig>(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddHttpContextAccessor();

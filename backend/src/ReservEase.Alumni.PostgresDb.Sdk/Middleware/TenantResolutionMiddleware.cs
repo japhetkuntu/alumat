@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 
 namespace ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 
@@ -55,7 +57,7 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(
         HttpContext context, AlumniDbContext db, ICurrentTenantService currentTenant,
-        IConfiguration config, IWebHostEnvironment env)
+        IConfiguration config, IWebHostEnvironment env, IRedisService<TenantResolutionCacheConfig> tenantCache)
     {
         var baseDomain = config["PlatformBaseDomain"];
 
@@ -74,8 +76,29 @@ public class TenantResolutionMiddleware(RequestDelegate next)
             return null;
         }
 
+        async Task<Institution?> ResolveBySlugAsync(string slug) =>
+            await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Slug == slug);
+
+        // Wraps every lookup below (host or slug) behind the shared, short-TTL
+        // cache — this runs on every single request, so an uncached miss here
+        // means an uncached Postgres hit on every single request. Negative
+        // results (no institution for this host/slug) are cached too, keyed
+        // through the same wrapper, so a wrong/bogus host can't bypass the
+        // cache and hammer the DB — TenantCacheEntry.Institution being null is
+        // a valid cached "nothing here", distinct from "not cached yet".
+        async Task<Institution?> CachedAsync(string cacheKeyPart, Func<Task<Institution?>> loader)
+        {
+            var cacheKey = $"tenant-resolution:{cacheKeyPart}";
+            var cached = await tenantCache.GetAsync<TenantCacheEntry>(cacheKey);
+            if (cached is not null) return cached.Institution;
+
+            var resolved = await loader();
+            await tenantCache.SetAsync(cacheKey, new TenantCacheEntry(resolved));
+            return resolved;
+        }
+
         var host = context.Request.Host.Host.ToLowerInvariant();
-        var institution = await ResolveByHostAsync(host);
+        var institution = await CachedAsync($"host:{host}", () => ResolveByHostAsync(host));
 
         var remoteIp = context.Connection.RemoteIpAddress;
         if (institution is null && remoteIp is not null && IsPrivateOrLoopback(remoteIp) &&
@@ -83,7 +106,7 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         {
             var internalHost = internalHostValues.ToString().Trim().ToLowerInvariant();
             if (!string.IsNullOrWhiteSpace(internalHost))
-                institution = await ResolveByHostAsync(internalHost);
+                institution = await CachedAsync($"host:{internalHost}", () => ResolveByHostAsync(internalHost));
         }
 
         if (institution is null && env.IsDevelopment() &&
@@ -91,20 +114,14 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         {
             var devSlug = devSlugValues.ToString().Trim().ToLowerInvariant();
             if (!string.IsNullOrWhiteSpace(devSlug))
-            {
-                institution = await db.Institutions.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(i => i.Slug == devSlug);
-            }
+                institution = await CachedAsync($"slug:{devSlug}", () => ResolveBySlugAsync(devSlug));
         }
 
         if (institution is null)
         {
             var defaultSlug = config["DefaultInstitutionSlug"];
             if (!string.IsNullOrWhiteSpace(defaultSlug))
-            {
-                institution = await db.Institutions.IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(i => i.Slug == defaultSlug);
-            }
+                institution = await CachedAsync($"slug:{defaultSlug}", () => ResolveBySlugAsync(defaultSlug));
         }
 
         if (institution is not null)
@@ -171,3 +188,6 @@ public static class TenantResolutionMiddlewareExtensions
     public static IApplicationBuilder UseTenantResolution(this IApplicationBuilder app)
         => app.UseMiddleware<TenantResolutionMiddleware>();
 }
+
+/// <summary>Non-null wrapper so a cached "no institution for this host/slug" (Institution null) is distinguishable from "not cached yet" (the GetAsync call itself returning null).</summary>
+public record TenantCacheEntry(Institution? Institution);

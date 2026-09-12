@@ -41,6 +41,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<MemberRedisConfig>(builder.Configuration);
 builder.Services.AddRedisDatabase<PublicContentCacheConfig>(builder.Configuration);
+builder.Services.AddRedisDatabase<TenantResolutionCacheConfig>(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);

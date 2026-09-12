@@ -130,6 +130,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             l => l == null ? null : new List<StoreOrderDeliveryEvent>(l));
         modelBuilder.Entity<StoreOrder>().Property(o => o.DeliveryStatusHistory).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<StoreOrderDeliveryEvent>>(jsonOpts)).Metadata.SetValueComparer(deliveryHistoryComparer);
+        modelBuilder.Entity<StoreOrder>().HasIndex(o => new { o.InstitutionId, o.CreatedAt });
 
         modelBuilder.Entity<StoreProduct>().Property(p => p.VariantOptionTypes).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
@@ -138,7 +139,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
 
         var stringDictComparer = new ValueComparer<Dictionary<string, string>>(
-            (d1, d2) => (d1 == null && d2 == null) || (d1 != null && d2 != null && d1.OrderBy(kv => kv.Key).SequenceEqual(d2.OrderBy(kv => kv.Key))),
+            (d1, d2) => (d1 == null && d2 == null) || (d1 != null && d2 != null && d1.OrderByDescending(kv => kv.Key).SequenceEqual(d2.OrderByDescending(kv => kv.Key))),
             d => d == null ? 0 : d.Aggregate(0, (a, kv) => HashCode.Combine(a, kv.Key.GetHashCode(), kv.Value == null ? 0 : kv.Value.GetHashCode())),
             d => d == null ? null : new Dictionary<string, string>(d));
 
@@ -172,6 +173,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<ServiceRequestUpdate>>(jsonOpts)).Metadata.SetValueComparer(serviceUpdateListComparer);
         modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.MemberId);
         modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.ServiceTypeId);
+        modelBuilder.Entity<ServiceRequest>().HasIndex(r => new { r.InstitutionId, r.CreatedAt });
 
         // AlbumPhoto: list a given album's photos
         modelBuilder.Entity<AlbumPhoto>().HasIndex(p => p.AlbumId);
@@ -262,6 +264,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // a leading-wildcard Contains) a plain btree index serves directly.
         modelBuilder.Entity<Member>()
             .HasIndex(m => m.MemberNumber);
+        // Composite (InstitutionId, CreatedAt) — matches the actual shape of the
+        // dashboard/report aggregations (ReportService, InstitutionManagementService's
+        // platform dashboard, PayoutService's date-window forecasts): always a
+        // tenant filter plus a CreatedAt range, which a lone InstitutionId index
+        // (already present via the ITenantScoped convention) or a lone CreatedAt
+        // index can't serve as one range scan. Same rationale for Contribution,
+        // StoreOrder, ServiceRequest, and CommunityMembership below.
+        modelBuilder.Entity<Member>()
+            .HasIndex(m => new { m.InstitutionId, m.CreatedAt });
 
         // Campaign: list by status + sort by deadline
         modelBuilder.Entity<Campaign>().Property(c => c.YearGroups).HasColumnType("integer[]");
@@ -290,6 +301,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(c => c.Status);
         modelBuilder.Entity<Contribution>()
             .HasIndex(c => c.TransactionRef);
+        modelBuilder.Entity<Contribution>()
+            .HasIndex(c => new { c.InstitutionId, c.CreatedAt });
 
         // RecurringContribution: scheduler scans by Status+NextChargeDate; member's own list by MemberId
         modelBuilder.Entity<RecurringContribution>()
@@ -352,6 +365,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(m => new { m.CommunityId, m.MemberId }).IsUnique();
         modelBuilder.Entity<CommunityMembership>()
             .HasIndex(m => m.MemberId);
+        modelBuilder.Entity<CommunityMembership>()
+            .HasIndex(m => new { m.InstitutionId, m.CreatedAt });
 
         // MentorProfile: filter by status, member lookup
         modelBuilder.Entity<MentorProfile>()

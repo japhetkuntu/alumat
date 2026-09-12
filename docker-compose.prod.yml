@@ -128,6 +128,8 @@ services:
       Redis__InstitutionRedisConfig__DbNumber: 0
       Redis__PublicContentCacheConfig__ConnectionString: redis:6379
       Redis__PublicContentCacheConfig__DbNumber: 3
+      Redis__TenantResolutionCacheConfig__ConnectionString: redis:6379
+      Redis__TenantResolutionCacheConfig__DbNumber: 4
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}
@@ -182,6 +184,8 @@ services:
       Redis__MemberRedisConfig__DbNumber: 1
       Redis__PublicContentCacheConfig__ConnectionString: redis:6379
       Redis__PublicContentCacheConfig__DbNumber: 3
+      Redis__TenantResolutionCacheConfig__ConnectionString: redis:6379
+      Redis__TenantResolutionCacheConfig__DbNumber: 4
       BearerTokenConfig__Issuer: ${JWT_ISSUER}
       BearerTokenConfig__Audience: ${JWT_AUDIENCE}
       BearerTokenConfig__InstitutionSigningKey: ${INSTITUTION_SIGNING_KEY}

@@ -5,10 +5,13 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using ReservEase.Alumni.Institution.Api.Options;
 using ReservEase.Alumni.Institution.Api.Services.Implementations;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using Xunit;
 
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -28,7 +31,7 @@ public class ReportServiceTests
         var membershipRepo = new Mock<IAlumniPgRepository<CommunityMembership>>();
         var storeOrderRepo = new Mock<IAlumniPgRepository<StoreOrder>>();
         var serviceRequestRepo = new Mock<IAlumniPgRepository<ServiceRequest>>();
-        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new NullLogger<ReportService>());
+        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new Mock<ICurrentTenantService>().Object, new Mock<IRedisService<InstitutionRedisConfig>>().Object, new NullLogger<ReportService>());
 
         var result = await service.ExportEntityCsvAsync("unknown", new AuthData { Role = "SuperAdmin" });
 
@@ -59,7 +62,7 @@ public class ReportServiceTests
                     ? campaigns.AsQueryable()
                     : campaigns.AsQueryable().Where(predicate.Compile()).AsQueryable());
 
-        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new NullLogger<ReportService>());
+        var service = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, new Mock<ICurrentTenantService>().Object, new Mock<IRedisService<InstitutionRedisConfig>>().Object, new NullLogger<ReportService>());
 
         var result = await service.ExportEntityCsvAsync("campaigns", new AuthData { Role = "SuperAdmin" });
 

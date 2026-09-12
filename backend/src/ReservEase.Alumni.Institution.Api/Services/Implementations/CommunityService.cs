@@ -16,18 +16,24 @@ public class CommunityService(
     {
         try
         {
-            var communities = await communityRepo.GetAllAsync(_ => true);
-            var items = new List<CommunityListItem>();
-            foreach (var c in communities.OrderByDescending(c => c.CreatedAt))
+            var communities = (await communityRepo.GetAllAsync(_ => true)).ToList();
+            var communityIds = communities.Select(c => c.Id).ToList();
+
+            // One fetch of every membership row across every community instead
+            // of a separate query (pulling full rows) per community.
+            var membershipsByCommunity = (await membershipRepo.GetAllAsync(m => communityIds.Contains(m.CommunityId)))
+                .ToLookup(m => m.CommunityId);
+
+            var items = communities.OrderByDescending(c => c.CreatedAt).Select(c =>
             {
-                var memberships = (await membershipRepo.GetAllAsync(m => m.CommunityId == c.Id)).ToList();
-                items.Add(new CommunityListItem(
+                var memberships = membershipsByCommunity[c.Id];
+                return new CommunityListItem(
                     c.Id, c.Name, c.Description, c.CoverImageUrl, c.IsActive,
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                     memberships.Count(m => m.Status == "Pending"),
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                    c.CreatedAt));
-            }
+                    c.CreatedAt);
+            }).ToList();
             return items.ToOkApiResponse();
         }
         catch (Exception e)

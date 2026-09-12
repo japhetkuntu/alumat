@@ -11,8 +11,10 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using Microsoft.Extensions.Options;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -31,7 +33,7 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 public class InstitutionManagementService(
     AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
     IConfiguration config, INotificationActor notificationActor, IOptions<MailtrapConfig> mailtrapConfigOptions,
-    ILogger<InstitutionManagementService> logger)
+    IRedisService<PlatformRedisConfig> cache, ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
@@ -78,31 +80,46 @@ public class InstitutionManagementService(
             .Take(pageSize)
             .ToListAsync();
 
-        var items = new List<InstitutionListItemResponse>();
-        foreach (var i in institutions)
-        {
-            var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
-            // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
-            // (collected from the payer's grossed-up charge), not PlatformFeeAmount
-            // (which is always 0 for online payments now — nothing is deducted
-            // from the institution). Store orders earn the same way, through the
-            // identical charge-building logic in StoreOrderService — counted here
-            // too, not just contributions.
-            var contributionRevenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-                .Where(c => c.InstitutionId == i.Id && c.Status == "Successful")
-                .SumAsync(c => c.PlatformRevenueAmount);
-            var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-                .Where(o => o.InstitutionId == i.Id && o.Status == "Successful")
-                .SumAsync(o => o.PlatformFeeAmount);
-            var serviceRevenue = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-                .Where(r => r.InstitutionId == i.Id && r.PaymentStatus == "Successful")
-                .SumAsync(r => r.PlatformFeeAmount);
-            var revenue = contributionRevenue + storeRevenue + serviceRevenue;
-            items.Add(new InstitutionListItemResponse(
-                i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
-                i.LogoUrl, i.Status, memberCount, i.OnboardedAt,
-                i.PlatformFeePercentage, revenue, MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug)));
-        }
+        // Batched as one grouped aggregate per metric instead of 4 queries per
+        // row (a 20-row page used to mean ~80 extra round trips) — same
+        // arithmetic as before, just computed for every institution on the
+        // page at once and looked up from the resulting dictionaries.
+        var instIds = institutions.Select(i => i.Id).ToList();
+
+        var memberCounts = await db.Set<MemberEntity>().IgnoreQueryFilters()
+            .Where(m => instIds.Contains(m.InstitutionId))
+            .GroupBy(m => m.InstitutionId)
+            .Select(g => new { InstitutionId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.InstitutionId, x => x.Count);
+
+        // Zero-Deduction model: our actual revenue is PlatformRevenueAmount
+        // (collected from the payer's grossed-up charge), not PlatformFeeAmount
+        // (which is always 0 for online payments now — nothing is deducted
+        // from the institution). Store orders earn the same way, through the
+        // identical charge-building logic in StoreOrderService — counted here
+        // too, not just contributions.
+        var contributionRevenues = await db.Set<ContributionEntity>().IgnoreQueryFilters()
+            .Where(c => instIds.Contains(c.InstitutionId) && c.Status == "Successful")
+            .GroupBy(c => c.InstitutionId)
+            .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(c => c.PlatformRevenueAmount) })
+            .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
+        var storeRevenues = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
+            .Where(o => instIds.Contains(o.InstitutionId) && o.Status == "Successful")
+            .GroupBy(o => o.InstitutionId)
+            .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(o => o.PlatformFeeAmount) })
+            .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
+        var serviceRevenues = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
+            .Where(r => instIds.Contains(r.InstitutionId) && r.PaymentStatus == "Successful")
+            .GroupBy(r => r.InstitutionId)
+            .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(r => r.PlatformFeeAmount) })
+            .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
+
+        var items = institutions.Select(i => new InstitutionListItemResponse(
+            i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
+            i.LogoUrl, i.Status, memberCounts.GetValueOrDefault(i.Id), i.OnboardedAt,
+            i.PlatformFeePercentage,
+            contributionRevenues.GetValueOrDefault(i.Id) + storeRevenues.GetValueOrDefault(i.Id) + serviceRevenues.GetValueOrDefault(i.Id),
+            MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug))).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var result = new PgPagedResult<InstitutionListItemResponse>
@@ -693,7 +710,29 @@ public class InstitutionManagementService(
         return new SlugAvailabilityResponse(normalized, !taken).ToOkApiResponse();
     }
 
+    private const string DashboardSummaryCacheKey = "platform-dashboard-summary";
+
+    /// <summary>
+    /// ~15 sequential count/sum queries (including a 6-iteration monthly-growth
+    /// loop) on a page platform staff open often. A blunt 90s TTL — not
+    /// write-triggered invalidation — is the deliberate choice: this number
+    /// moves with practically every write path in the system (a new member,
+    /// a successful payment, a new institution), so there is no single place
+    /// to invalidate from; nobody needs a staff dashboard accurate to the
+    /// second, so a 90s bound is a fine trade for cutting ~15 queries per
+    /// view down to roughly one per staffer per 90s.
+    /// </summary>
     public async Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync()
+    {
+        var cached = await cache.GetAsync<PlatformDashboardSummary>(DashboardSummaryCacheKey);
+        if (cached is not null) return cached.ToOkApiResponse();
+
+        var summary = await ComputeDashboardSummaryAsync();
+        await cache.SetAsync(DashboardSummaryCacheKey, summary, TimeSpan.FromSeconds(90));
+        return summary.ToOkApiResponse();
+    }
+
+    private async Task<PlatformDashboardSummary> ComputeDashboardSummaryAsync()
     {
         var totalInstitutions = await db.Institutions.CountAsync();
         var activeCount = await db.Institutions.CountAsync(i => i.Status == "Active");
@@ -723,8 +762,7 @@ public class InstitutionManagementService(
             growthLabels.Add(bucketStart.ToString("MMM"));
         }
 
-        return new PlatformDashboardSummary(totalInstitutions, activeCount, suspendedCount, totalMembers, newThisMonth, revenue, growthCounts, growthLabels)
-            .ToOkApiResponse();
+        return new PlatformDashboardSummary(totalInstitutions, activeCount, suspendedCount, totalMembers, newThisMonth, revenue, growthCounts, growthLabels);
     }
 
     public async Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId)

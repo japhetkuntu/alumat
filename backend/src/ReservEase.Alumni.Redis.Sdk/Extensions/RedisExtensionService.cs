@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ReservEase.Alumni.Redis.Sdk.Models;
 using ReservEase.Alumni.Redis.Sdk.Services;
 
@@ -15,7 +16,7 @@ public static class RedisExtensionService
         configuration.GetSection($"Redis:{typeof(TConfig).Name}").Bind(config);
         services.AddSingleton(config);
         services.AddSingleton<IRedisService<TConfig>, RedisService<TConfig>>(
-            sp => new RedisService<TConfig>(sp.GetRequiredService<TConfig>()));
+            sp => new RedisService<TConfig>(sp.GetRequiredService<TConfig>(), sp.GetRequiredService<ILogger<RedisService<TConfig>>>()));
 
         return services;
     }

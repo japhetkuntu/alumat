@@ -4,19 +4,26 @@ using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
+using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.Redis.Sdk.Services;
 
 namespace ReservEase.Alumni.Platform.Api.Controllers;
 
 /// <summary>In-app notifications for the current platform staff member — currently only raised when an institution opens a support ticket.</summary>
 [Authorize]
 [Route("api/v{version:apiVersion}/notifications")]
-public class PlatformNotificationsController(IAlumniPgRepository<PlatformNotification> notifRepo) : DefaultController
+public class PlatformNotificationsController(
+    IAlumniPgRepository<PlatformNotification> notifRepo,
+    IRedisService<PlatformRedisConfig> cache) : DefaultController
 {
     private static PlatformNotificationDto ToDto(PlatformNotification n) => new(
         n.Id, n.Title, n.Body, n.Type, n.IsRead, n.ReadAt, n.RelatedEntityId, n.RelatedEntityType, n.ActionUrl, n.CreatedAt);
+
+    /// <summary>See Member.Api's identical NotificationsController for the rationale — a short cache the two mutations below evict immediately.</summary>
+    private static string UnreadCountCacheKey(string staffId) => $"notif-unread-count:{staffId}";
 
     [HttpGet]
     [SwaggerOperation(Summary = "Get notifications", Description = "Paginated in-app notifications for the current platform staff member")]
@@ -46,8 +53,13 @@ public class PlatformNotificationsController(IAlumniPgRepository<PlatformNotific
     public async Task<IActionResult> GetUnreadCount()
     {
         var staff = User.GetAccount();
-        var all = await notifRepo.GetAllAsync(n => n.RecipientStaffId == staff.Id && !n.IsRead);
-        return all.Count().ToOkApiResponse().ToActionResult();
+        var cacheKey = UnreadCountCacheKey(staff.Id);
+        var cached = await cache.GetAsync<int?>(cacheKey);
+        if (cached is { } count) return count.ToOkApiResponse().ToActionResult();
+
+        var fresh = await notifRepo.CountAsync(n => n.RecipientStaffId == staff.Id && !n.IsRead);
+        await cache.SetAsync(cacheKey, fresh, TimeSpan.FromSeconds(20));
+        return fresh.ToOkApiResponse().ToActionResult();
     }
 
     [HttpPut("{id}/read")]
@@ -66,6 +78,7 @@ public class PlatformNotificationsController(IAlumniPgRepository<PlatformNotific
             notif.IsRead = true;
             notif.ReadAt = DateTime.UtcNow;
             await notifRepo.UpdateAsync(notif);
+            await cache.RemoveAsync(UnreadCountCacheKey(staff.Id));
         }
         return new object().ToOkApiResponse().ToActionResult();
     }
@@ -87,6 +100,7 @@ public class PlatformNotificationsController(IAlumniPgRepository<PlatformNotific
                 n.ReadAt = now;
             }
             await notifRepo.UpdateRangeAsync(unread);
+            await cache.RemoveAsync(UnreadCountCacheKey(staff.Id));
         }
         return new object().ToOkApiResponse("All notifications marked as read").ToActionResult();
     }

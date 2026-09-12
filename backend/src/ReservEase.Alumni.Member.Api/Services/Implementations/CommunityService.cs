@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
@@ -24,16 +25,21 @@ public class CommunityService(
         try
         {
             var communities = (await communityRepo.GetAllAsync(c => c.IsActive)).ToList();
+            var communityIds = communities.Select(c => c.Id).ToList();
             var myMemberships = (await membershipRepo.GetAllAsync(m => m.MemberId == memberId))
                 .ToDictionary(m => m.CommunityId);
 
-            var items = new List<CommunityDto>();
-            foreach (var c in communities.OrderBy(c => c.Name))
+            // One grouped count instead of one query per community.
+            var approvedCounts = await membershipRepo.GetQueryable(m => communityIds.Contains(m.CommunityId) && m.Status == "Approved")
+                .GroupBy(m => m.CommunityId)
+                .Select(g => new { CommunityId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.CommunityId, x => x.Count);
+
+            var items = communities.OrderByDescending(c => c.Name).Select(c =>
             {
-                var approvedCount = await membershipRepo.CountAsync(m => m.CommunityId == c.Id && m.Status == "Approved");
                 myMemberships.TryGetValue(c.Id, out var mine);
-                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCount, mine?.Status, mine?.Status == "Approved" ? mine.Role : null));
-            }
+                return new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), mine?.Status, mine?.Status == "Approved" ? mine.Role : null);
+            }).ToList();
             return items.ToOkApiResponse();
         }
         catch (Exception e)
@@ -52,14 +58,18 @@ public class CommunityService(
             var communities = (await communityRepo.GetAllAsync(c => communityIds.Contains(c.Id) && c.IsActive))
                 .ToDictionary(c => c.Id);
 
+            var approvedCounts = await membershipRepo.GetQueryable(m => communityIds.Contains(m.CommunityId) && m.Status == "Approved")
+                .GroupBy(m => m.CommunityId)
+                .Select(g => new { CommunityId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.CommunityId, x => x.Count);
+
             var items = new List<CommunityDto>();
             foreach (var m in myMemberships)
             {
                 if (!communities.TryGetValue(m.CommunityId, out var c)) continue;
-                var approvedCount = await membershipRepo.CountAsync(mm => mm.CommunityId == c.Id && mm.Status == "Approved");
-                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCount, m.Status, m.Role));
+                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), m.Status, m.Role));
             }
-            return items.OrderBy(i => i.Name).ToList().ToOkApiResponse();
+            return items.OrderByDescending(i => i.Name).ToList().ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -169,7 +179,7 @@ public class CommunityService(
                     var mem = members[m.MemberId];
                     return new CommunityMemberDto(mem.Id, $"{mem.FirstName} {mem.LastName}", mem.ProfilePictureUrl, m.Role);
                 })
-                .OrderBy(d => d.Name)
+                .OrderByDescending(d => d.Name)
                 .ToList();
 
             return items.ToOkApiResponse();
@@ -194,7 +204,7 @@ public class CommunityService(
 
             var items = pending
                 .Where(m => members.ContainsKey(m.MemberId))
-                .OrderBy(m => m.RequestedAt)
+                .OrderByDescending(m => m.RequestedAt)
                 .Select(m =>
                 {
                     var mem = members[m.MemberId];
