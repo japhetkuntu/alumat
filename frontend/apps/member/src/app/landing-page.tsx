@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   GraduationCap, Users, Briefcase, Heart, Globe,
-  Menu, X, ArrowRight, ChevronRight,
+  Menu, X, ArrowRight, ChevronRight, ChevronLeft,
   BookOpen, Trophy, CreditCard, Bell, FileText,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
   Images, Building2, Newspaper, Clock,
@@ -193,21 +193,20 @@ function HeroCarousel({ images }: { images: string[] }) {
         />
       ))}
       {images.length > 1 && (
-        <div className="absolute bottom-4 sm:bottom-5 left-0 right-0 flex items-center justify-center gap-1.5 z-10">
-          {images.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={`Show photo ${i + 1}`}
-              onClick={() => setIndex(i)}
-              className="h-1.5 rounded-full transition-all"
-              style={{
-                width: i === index ? "18px" : "6px",
-                background: i === index ? "white" : "rgba(255,255,255,0.5)",
-              }}
-            />
-          ))}
-        </div>
+        <>
+          <button type="button" aria-label="Previous photo"
+            onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
+            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors hover:bg-black/50"
+            style={{ background: "rgba(0,0,0,0.35)" }}>
+            <ChevronLeft size={18} className="text-white" />
+          </button>
+          <button type="button" aria-label="Next photo"
+            onClick={() => setIndex((i) => (i + 1) % images.length)}
+            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors hover:bg-black/50"
+            style={{ background: "rgba(0,0,0,0.35)" }}>
+            <ChevronRight size={18} className="text-white" />
+          </button>
+        </>
       )}
     </>
   );
