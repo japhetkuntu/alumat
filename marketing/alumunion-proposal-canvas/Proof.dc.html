@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body{ width:794px; height:1123px; overflow:hidden; position:relative; background:#FCFCFD; font-family:'Inter',system-ui,sans-serif; color:#0F172A; }
+  a{color:#2563EB;} a:hover{color:#1d4fd1;}
+  .page{ width:794px; height:1123px; padding:56px 64px 0; display:flex; flex-direction:column; }
+  .hdr{display:flex; align-items:center; gap:10px; margin-bottom:44px;}
+  .mark{width:26px; height:26px; border-radius:7px; background:#0F172A; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .wordmark{font-weight:700; font-size:13.5px;}
+  .eyebrow{font-size:12.5px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#F59E0B; margin:0 0 14px;}
+  .headline{font-family:'Newsreader',Georgia,serif; font-weight:600; font-size:38px; line-height:1.18; margin:0 0 48px; max-width:600px; letter-spacing:-0.3px;}
+
+  .stats{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:22px; margin-bottom:44px;}
+  .stat{border:1px solid rgba(15,23,42,.1); border-radius:14px; padding:26px 22px; background:#fff;}
+  .stat .sv{font-family:'Newsreader',Georgia,serif; font-size:26px; font-weight:600; color:#2563EB; margin:0 0 10px; line-height:1.15;}
+  .stat .sl{font-size:12.5px; color:rgba(15,23,42,.6); line-height:1.5; margin:0;}
+
+  .quote{background:#0F172A; border-radius:18px; padding:40px; flex:1; display:flex; flex-direction:column; justify-content:center; position:relative; overflow:hidden;}
+  .qtext{font-family:'Newsreader',Georgia,serif; font-size:26px; line-height:1.45; color:#F9F9FB; max-width:560px; font-weight:500;}
+  .qtext b{color:#F59E0B; font-weight:600;}
+  .qmeta{margin-top:22px; font-size:12.5px; color:rgba(249,249,251,.55); letter-spacing:.5px;}
+  .qdot{position:absolute; right:-40px; top:-40px; width:180px; height:180px; border-radius:50%; border:1px solid rgba(245,158,11,.18);}
+
+  .footer{display:flex; justify-content:space-between; align-items:center; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(15,23,42,.38); border-top:1px solid rgba(15,23,42,.08); padding:18px 0 24px; margin-top:32px;}
+</style>
+</helmet>
+
+<div class="page">
+  <div class="hdr">
+    <div class="mark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <path d="M4 18 9 6l5 12" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5.8 14h6.4" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M13 12v3.5c0 2.5 1.8 4 4 4s4-1.5 4-4V12" stroke="#2563EB" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="19.5" cy="7" r="1.3" fill="#F59E0B"/>
+      </svg>
+    </div>
+    <div class="wordmark">AlumUnion</div>
+  </div>
+
+  <div class="eyebrow">Proven in Production</div>
+  <h1 class="headline">Already live. Already working.</h1>
+
+  <div class="stats">
+    <div class="stat">
+      <p class="sv">Live since [YEAR]</p>
+      <p class="sl">Running today, not a concept or a prototype.</p>
+    </div>
+    <div class="stat">
+      <p class="sv">One platform</p>
+      <p class="sl">Dues, campaigns and community in a single system — no separate tools to reconcile.</p>
+    </div>
+    <div class="stat">
+      <p class="sv">Built for Ghana</p>
+      <p class="sl">Paystack-native payments, cedi pricing, and local support.</p>
+    </div>
+  </div>
+
+  <div class="quote">
+    <div class="qdot"></div>
+    <p class="qtext">AlumUnion runs the <b>University of Mines and Technology (UMaT) Old Students Association</b> today — membership dues, fundraising campaigns and community, in daily use.</p>
+    <p class="qmeta">Live reference available on request — ask for a walkthrough at [DEMO LINK / CONTACT].</p>
+  </div>
+
+  <div class="footer">
+    <span>AlumUnion Proposal</span>
+    <span>07 / 08</span>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

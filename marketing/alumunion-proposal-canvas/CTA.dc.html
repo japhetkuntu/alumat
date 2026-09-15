@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body{ width:794px; height:1123px; overflow:hidden; position:relative; background:#0F172A; font-family:'Inter',system-ui,sans-serif; color:#F9F9FB; }
+  a{color:#F59E0B;}
+  .page{ width:794px; height:1123px; padding:56px 64px 0; display:flex; flex-direction:column; position:relative; }
+  .hdr{display:flex; align-items:center; gap:10px; margin-bottom:64px;}
+  .mark{width:26px; height:26px; border-radius:7px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .wordmark{font-weight:700; font-size:13.5px; color:#fff;}
+  .eyebrow{font-size:12.5px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#F59E0B; margin:0 0 16px;}
+  .headline{font-family:'Newsreader',Georgia,serif; font-weight:600; font-size:44px; line-height:1.18; margin:0 0 20px; max-width:600px; letter-spacing:-0.4px; color:#fff;}
+  .sub{font-size:16px; line-height:1.6; color:rgba(249,249,251,.65); max-width:460px; margin:0 0 40px;}
+
+  .note{border:1.5px dashed rgba(249,249,251,.28); border-radius:16px; padding:28px 30px; flex:1; display:flex; flex-direction:column; justify-content:center; margin-bottom:36px;}
+  .note .nl{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:rgba(249,249,251,.4); margin:0 0 10px;}
+  .note .nt{font-family:'Newsreader',Georgia,serif; font-size:19px; line-height:1.6; color:rgba(249,249,251,.55); font-style:italic;}
+
+  .contact{display:flex; align-items:center; justify-content:space-between; border-top:1px solid rgba(249,249,251,.14); padding-top:28px; padding-bottom:40px;}
+  .cname{font-weight:700; font-size:16px; color:#fff; margin:0 0 4px;}
+  .cdetail{font-size:13px; color:rgba(249,249,251,.55);}
+  .cta-btn{background:#F59E0B; color:#0F172A; font-weight:700; font-size:14px; padding:13px 24px; border-radius:10px;}
+
+  .footer{display:flex; justify-content:space-between; align-items:center; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(249,249,251,.35); border-top:1px solid rgba(249,249,251,.12); padding:18px 0 24px;}
+</style>
+</helmet>
+
+<div class="page">
+  <div class="hdr">
+    <div class="mark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <path d="M4 18 9 6l5 12" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5.8 14h6.4" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M13 12v3.5c0 2.5 1.8 4 4 4s4-1.5 4-4V12" stroke="#5B9CFF" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="19.5" cy="7" r="1.3" fill="#F59E0B"/>
+      </svg>
+    </div>
+    <div class="wordmark">AlumUnion</div>
+  </div>
+
+  <div class="eyebrow">Let's Talk</div>
+  <h1 class="headline">Ready to modernize your alumni association?</h1>
+  <p class="sub">A short call is all it takes to see AlumUnion running live and talk through what it would look like for your institution.</p>
+
+  <div class="note">
+    <p class="nl">A note for you</p>
+    <p class="nt">[ Personal note for this institution goes here — why we're reaching out, and what caught our attention about their alumni program. ]</p>
+  </div>
+
+  <div class="contact">
+    <div>
+      <p class="cname">[YOUR NAME]</p>
+      <div class="cdetail">[YOUR PHONE] &nbsp;·&nbsp; [YOUR EMAIL]</div>
+    </div>
+    <div class="cta-btn">Book a 15-min demo</div>
+  </div>
+
+  <div class="footer">
+    <span>AlumUnion Proposal</span>
+    <span>08 / 08</span>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

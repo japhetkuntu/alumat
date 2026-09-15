@@ -15,8 +15,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
             // Active; a cancelled one was already effectively unusable, so
             // it maps to the new Suspended (which now actually enforces a
             // lockout, unlike the old unused "Cancelled" value).
-            migrationBuilder.Sql("UPDATE \"Institutions\" SET \"Status\" = 'Active' WHERE \"Status\" = 'Trial';");
-            migrationBuilder.Sql("UPDATE \"Institutions\" SET \"Status\" = 'Suspended' WHERE \"Status\" = 'Cancelled';");
+            migrationBuilder.Sql("UPDATE alumni.\"Institutions\" SET \"Status\" = 'Active' WHERE \"Status\" = 'Trial';");
+            migrationBuilder.Sql("UPDATE alumni.\"Institutions\" SET \"Status\" = 'Suspended' WHERE \"Status\" = 'Cancelled';");
         }
 
         /// <inheritdoc />

@@ -3,6 +3,7 @@ using System.Text;
 using Akka.Actor;
 using Akka.Actor.Setup;
 using Akka.DependencyInjection;
+using Akka.Routing;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -121,11 +122,17 @@ public static class ServiceRegistrationExtensions
             return ActorSystem.Create("alumni-member", setup);
         });
 
-        // Create a single shared actor to process Paystack callback messages.
+        // A consistent-hash pool of Paystack callback processors, keyed by payment
+        // Reference at the Tell call site (ConsistentHashableEnvelope). Callbacks for
+        // the same reference always land on the same routee and stay strictly ordered;
+        // callbacks for different references can now run in parallel instead of all
+        // queueing behind one shared mailbox, as a single actor previously forced.
         services.AddSingleton(provider =>
         {
             var system = provider.GetRequiredService<ActorSystem>();
-            return system.ActorOf(DependencyResolver.For(system).Props<PaystackCallbackActor>(), "paystackCallbackProcessor");
+            var props = DependencyResolver.For(system).Props<PaystackCallbackActor>()
+                .WithRouter(new ConsistentHashingPool(8));
+            return system.ActorOf(props, "paystackCallbackProcessor");
         });
 
         // Notification dispatcher actor — processes all fan-out notification commands.

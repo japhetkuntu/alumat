@@ -211,6 +211,7 @@ public class StoreOrderService(
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
+                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.StoreOrder),
                 Email = member.Email,
                 Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,

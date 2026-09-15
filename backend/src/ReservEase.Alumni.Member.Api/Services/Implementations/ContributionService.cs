@@ -350,6 +350,7 @@ public class ContributionService : IContributionService
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
+                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.Contribution),
                 Email = memberEmail,
                 Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
@@ -500,6 +501,7 @@ public class ContributionService : IContributionService
 
             var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
+                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.Contribution),
                 Email = member.Email,
                 Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
@@ -695,6 +697,13 @@ public class ContributionService : IContributionService
 
             if (!string.IsNullOrEmpty(rawBody))
                 transaction.CallbackPayload = rawBody;
+        }
+
+        if (transaction.Status == "Successful")
+        {
+            if (!string.IsNullOrEmpty(rawBody))
+                await paymentTransactionRepo.UpdateAsync(transaction);
+            return ApiResponseExtensions.ToOkApiResponse<object>("Payment already verified and recorded");
         }
 
         var verifyResponse = await paystackService.VerifyPaymentAsync(reference);
@@ -1116,6 +1125,21 @@ public class ContributionService : IContributionService
             logger.LogError(e, "Error processing Paystack callback reference: {Reference}", reference);
             return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to process callback");
         }
+    }
+
+    /// <summary>
+    /// Unlike StoreOrder/ServiceRequest, a contribution's PaymentTransaction row isn't
+    /// guaranteed to exist yet when the webhook arrives (it's only created once the
+    /// webhook confirms — see HandlePaystackReferenceAsync) — so also check the Redis
+    /// reference metadata written at initiation before concluding "not ours".
+    /// </summary>
+    public async Task<bool> OwnsReferenceAsync(string reference)
+    {
+        var hasTransaction = await db.Set<PaymentTransaction>().IgnoreQueryFilters().AnyAsync(t => t.Reference == reference);
+        if (hasTransaction)
+            return true;
+
+        return await GetReferenceInfoAsync(reference) is not null;
     }
 
     public async Task<IApiResponse<ContributionStatusResponse>> GetContributionStatusAsync(string reference, AuthData? member)

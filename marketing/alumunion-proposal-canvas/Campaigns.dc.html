@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body{ width:794px; height:1123px; overflow:hidden; position:relative; background:#FCFCFD; font-family:'Inter',system-ui,sans-serif; color:#0F172A; }
+  a{color:#2563EB;} a:hover{color:#1d4fd1;}
+  .page{ width:794px; height:1123px; padding:56px 64px 0; display:flex; flex-direction:column; }
+  .hdr{display:flex; align-items:center; gap:10px; margin-bottom:44px;}
+  .mark{width:26px; height:26px; border-radius:7px; background:#0F172A; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .wordmark{font-weight:700; font-size:13.5px;}
+  .eyebrow{font-size:12.5px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#F59E0B; margin:0 0 14px;}
+  .headline{font-family:'Newsreader',Georgia,serif; font-weight:600; font-size:36px; line-height:1.2; margin:0 0 40px; max-width:600px; letter-spacing:-0.3px;}
+
+  .cols{display:flex; gap:40px; flex:1;}
+  .mock{width:360px; flex:0 0 auto;}
+  .mcard{background:#fff; border:1px solid rgba(15,23,42,.1); border-radius:16px; overflow:hidden;}
+  .mbanner{height:120px; background:#0F172A; position:relative;}
+  .mbody{padding:22px 22px 24px;}
+  .mtag{display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(15,23,42,.4); border:1px solid rgba(15,23,42,.15); border-radius:999px; padding:3px 9px; margin-bottom:12px;}
+  .mtitle{font-weight:700; font-size:18px; margin:0 0 6px;}
+  .mdesc{font-size:12.5px; color:rgba(15,23,42,.55); margin:0 0 18px; line-height:1.5;}
+  .track{height:8px; border-radius:99px; background:#F1F3F6; overflow:hidden; margin-bottom:8px;}
+  .fill{height:100%; width:68%; background:#2563EB; border-radius:99px;}
+  .mstats{display:flex; justify-content:space-between; font-size:12px; color:rgba(15,23,42,.55); margin-bottom:18px;}
+  .mstats b{color:#0F172A;}
+  .mbtn{background:#F59E0B; color:#0F172A; font-weight:700; font-size:13.5px; text-align:center; padding:11px; border-radius:9px;}
+  .sample{font-size:10.5px; color:rgba(15,23,42,.35); text-align:center; margin-top:10px; letter-spacing:.5px;}
+
+  .feats{flex:1; display:flex; flex-direction:column; gap:22px; padding-top:6px;}
+  .fitem{display:flex; gap:16px; align-items:flex-start;}
+  .ico{width:42px; height:42px; border-radius:10px; background:#F9F9FB; border:1px solid rgba(15,23,42,.08); display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .ft{font-weight:700; font-size:15.5px; margin:0 0 4px;}
+  .fd{font-size:13px; line-height:1.5; color:rgba(15,23,42,.58); margin:0;}
+
+  .footer{display:flex; justify-content:space-between; align-items:center; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(15,23,42,.38); border-top:1px solid rgba(15,23,42,.08); padding:18px 0 24px; margin-top:auto;}
+</style>
+</helmet>
+
+<div class="page">
+  <div class="hdr">
+    <div class="mark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <path d="M4 18 9 6l5 12" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5.8 14h6.4" stroke="#F59E0B" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M13 12v3.5c0 2.5 1.8 4 4 4s4-1.5 4-4V12" stroke="#2563EB" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="19.5" cy="7" r="1.3" fill="#F59E0B"/>
+      </svg>
+    </div>
+    <div class="wordmark">AlumUnion</div>
+  </div>
+
+  <div class="eyebrow">Fundraising Campaigns</div>
+  <h1 class="headline">Launch a drive, watch it grow.</h1>
+
+  <div class="cols">
+    <div class="mock">
+      <div class="mcard">
+        <div class="mbanner">
+          <svg width="360" height="120" viewBox="0 0 360 120">
+            <line x1="0" y1="130" x2="130" y2="0" stroke="#F59E0B" stroke-opacity=".5" stroke-width="1"/>
+            <line x1="40" y1="130" x2="170" y2="0" stroke="#2563EB" stroke-opacity=".4" stroke-width="1"/>
+            <line x1="90" y1="130" x2="220" y2="0" stroke="#F59E0B" stroke-opacity=".3" stroke-width="1"/>
+            <line x1="150" y1="130" x2="280" y2="0" stroke="#2563EB" stroke-opacity=".3" stroke-width="1"/>
+            <line x1="220" y1="130" x2="350" y2="0" stroke="#F59E0B" stroke-opacity=".35" stroke-width="1"/>
+            <line x1="290" y1="130" x2="400" y2="10" stroke="#2563EB" stroke-opacity=".3" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="mbody">
+          <div class="mtag">Class of 2010–2020</div>
+          <p class="mtitle">Engineering Lab Fund</p>
+          <p class="mdesc">Refurbishing the workshop for current students.</p>
+          <div class="track"><div class="fill"></div></div>
+          <div class="mstats"><span><b>GHS 34,000</b> of 50,000</span><span>18 days left</span></div>
+          <div class="mbtn">Contribute</div>
+        </div>
+      </div>
+      <div class="sample">Illustrative sample — not real data</div>
+    </div>
+
+    <div class="feats">
+      <div class="fitem">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="#0F172A"/></svg></div>
+        <div><p class="ft">Targeted by class year</p><p class="fd">Aim a drive at every member, or just the classes most likely to give.</p></div>
+      </div>
+      <div class="fitem">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 14 15 20 7"/><polyline points="14 7 20 7 20 13"/></svg></div>
+        <div><p class="ft">Live progress tracking</p><p class="fd">Every contributor sees the running total move — momentum sells itself.</p></div>
+      </div>
+      <div class="fitem">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg></div>
+        <div><p class="ft">Online and manual payment options</p><p class="fd">Card, mobile money, or a recorded cash/transfer gift — whichever suits the giver.</p></div>
+      </div>
+      <div class="fitem">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="20" y2="21"/><line x1="5" y1="10" x2="5" y2="18"/><line x1="9.5" y1="10" x2="9.5" y2="18"/><line x1="14.5" y1="10" x2="14.5" y2="18"/><line x1="19" y1="10" x2="19" y2="18"/><polygon points="12 3 21 9 3 9"/></svg></div>
+        <div><p class="ft">Disbursement tracking</p><p class="fd">See exactly what's been forwarded to the institution's bank account, and what's outstanding.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>AlumUnion Proposal</span>
+    <span>04 / 08</span>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body{
+    width:794px; height:1123px; overflow:hidden; position:relative;
+    background:#FCFCFD; font-family:'Inter',system-ui,sans-serif; color:#0F172A;
+  }
+  a{color:#2563EB;} a:hover{color:#1d4fd1;}
+  .wrap{display:flex; width:794px; height:1123px;}
+  .left{width:480px; height:1123px; padding:64px 48px 56px 64px; display:flex; flex-direction:column;}
+  .right{width:314px; height:1123px; background:#0F172A; position:relative; overflow:hidden;}
+  .eyebrow{font-size:12.5px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#F59E0B; margin:0 0 26px;}
+  .headline{font-family:'Newsreader',Georgia,serif; font-weight:600; font-size:52px; line-height:1.12; margin:0 0 20px; letter-spacing:-0.5px;}
+  .headline em{font-style:normal; color:#2563EB;}
+  .sub{font-size:16.5px; line-height:1.6; color:rgba(15,23,42,.64); max-width:400px; margin:0 0 auto;}
+  .chips{display:flex; gap:10px; margin-top:40px;}
+  .chip{border:1px solid rgba(15,23,42,.14); border-radius:999px; padding:8px 16px; font-size:12.5px; font-weight:600; color:#0F172A; background:#fff;}
+  .foot{display:flex; align-items:center; gap:10px; margin-top:48px;}
+  .mark{width:30px; height:30px; border-radius:8px; background:#0F172A; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .wordmark{font-weight:700; font-size:15px; letter-spacing:-0.2px;}
+  .tag{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:rgba(15,23,42,.4); margin-left:4px;}
+</style>
+</helmet>
+
+<div class="wrap">
+  <div class="left">
+    <div class="foot" style="margin-top:0; margin-bottom:auto;">
+      <div class="mark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M4 18 9 6l5 12" stroke="#F59E0B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5.8 14h6.4" stroke="#F59E0B" stroke-width="2.3" stroke-linecap="round"/>
+          <path d="M13 12v3.5c0 2.5 1.8 4 4 4s4-1.5 4-4V12" stroke="#2563EB" stroke-width="2.3" stroke-linecap="round"/>
+          <circle cx="19.5" cy="7" r="1.4" fill="#F59E0B"/>
+        </svg>
+      </div>
+      <div class="wordmark">AlumUnion</div>
+    </div>
+
+    <div>
+      <div class="eyebrow">Alumni Engagement Platform</div>
+      <h1 class="headline">Built for<br>institutions<br>that never<br>lose <em>touch</em>.</h1>
+      <p class="sub">Membership dues, fundraising campaigns and alumni community — one platform, branded to your institution.</p>
+    </div>
+
+    <div>
+      <div class="chips">
+        <div class="chip">Dues Collection</div>
+        <div class="chip">Campaigns</div>
+        <div class="chip">Community</div>
+      </div>
+      <div style="margin-top:40px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(15,23,42,.4);">A proposal for old student &amp; alumni associations</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <svg width="314" height="1123" viewBox="0 0 314 1123" style="position:absolute; top:0; left:0;">
+      <g stroke="#2563EB" stroke-opacity="0.35" stroke-width="1">
+        <line x1="60" y1="120" x2="150" y2="220"/>
+        <line x1="150" y1="220" x2="90" y2="340"/>
+        <line x1="150" y1="220" x2="250" y2="260"/>
+        <line x1="250" y1="260" x2="220" y2="400"/>
+        <line x1="90" y1="340" x2="220" y2="400"/>
+        <line x1="220" y1="400" x2="130" y2="520"/>
+        <line x1="130" y1="520" x2="260" y2="560"/>
+        <line x1="130" y1="520" x2="70" y2="660"/>
+        <line x1="260" y1="560" x2="200" y2="700"/>
+        <line x1="70" y1="660" x2="200" y2="700"/>
+        <line x1="200" y1="700" x2="150" y2="840"/>
+        <line x1="150" y1="840" x2="250" y2="900"/>
+        <line x1="150" y1="840" x2="90" y2="960"/>
+        <line x1="250" y1="900" x2="180" y2="1020"/>
+        <line x1="90" y1="960" x2="180" y2="1020"/>
+      </g>
+      <g fill="#F59E0B">
+        <circle cx="60" cy="120" r="4.5"/>
+        <circle cx="250" cy="260" r="3.5"/>
+        <circle cx="130" cy="520" r="5"/>
+        <circle cx="70" cy="660" r="3.5"/>
+        <circle cx="150" cy="840" r="4.5"/>
+        <circle cx="180" cy="1020" r="4"/>
+      </g>
+      <g fill="#2563EB">
+        <circle cx="150" cy="220" r="5.5"/>
+        <circle cx="90" cy="340" r="4"/>
+        <circle cx="220" cy="400" r="4.5"/>
+        <circle cx="260" cy="560" r="4"/>
+        <circle cx="200" cy="700" r="5"/>
+        <circle cx="250" cy="900" r="3.5"/>
+        <circle cx="90" cy="960" r="4"/>
+      </g>
+    </svg>
+    <div style="position:absolute; left:36px; bottom:40px; right:36px; color:#F9F9FB;">
+      <div style="font-size:11px; letter-spacing:2px; text-transform:uppercase; color:rgba(249,249,251,.5); margin-bottom:8px;">Connections that last</div>
+      <div style="font-family:'Newsreader',Georgia,serif; font-size:20px; line-height:1.4; color:#F9F9FB;">Every graduate, one network.</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

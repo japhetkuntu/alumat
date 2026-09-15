@@ -2,12 +2,15 @@ using System.Security.Cryptography;
 using System.Text;
 using Akka.Actor;
 using Akka.DependencyInjection;
+using Akka.Routing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Member.Api.Controllers;
 
@@ -19,15 +22,18 @@ public class PaystackCallbackController : ControllerBase
     private readonly ILogger<PaystackCallbackController> _logger;
     private readonly IConfiguration _configuration;
     private readonly IActorRef _callbackActor;
+    private readonly IAlumniPgRepository<WebhookEvent> _webhookEventRepo;
 
     public PaystackCallbackController(
         ILogger<PaystackCallbackController> logger,
         IConfiguration configuration,
-        IActorRef callbackActor)
+        IActorRef callbackActor,
+        IAlumniPgRepository<WebhookEvent> webhookEventRepo)
     {
         _logger = logger;
         _configuration = configuration;
         _callbackActor = callbackActor;
+        _webhookEventRepo = webhookEventRepo;
     }
 
     [HttpPost]
@@ -72,9 +78,22 @@ public class PaystackCallbackController : ControllerBase
         _logger.LogInformation("Paystack webhook received. Event={Event}, Reference={Reference}", callback.Event, callback.Data?.Reference);
 
         // Only act on successful charges
-        if ( !string.IsNullOrEmpty(callback.Data?.Reference))
+        if (!string.IsNullOrEmpty(callback.Data?.Reference))
         {
-            _callbackActor.Tell(new ProcessPaystackCallbackCommand(callback.Data.Reference, rawBody));
+            // Persist the raw delivery before handing off to the actor — a crash between
+            // here and the actor finishing must not lose the event; it stays in the inbox
+            // as unprocessed (ProcessedAt == null) and can be replayed/audited.
+            var webhookEvent = new WebhookEvent
+            {
+                Provider = "Paystack",
+                Reference = callback.Data.Reference,
+                RawBody = rawBody,
+                ReceivedAt = DateTime.UtcNow,
+            };
+            await _webhookEventRepo.AddAsync(webhookEvent);
+
+            var command = new ProcessPaystackCallbackCommand(callback.Data.Reference, rawBody, webhookEvent.Id);
+            _callbackActor.Tell(new ConsistentHashableEnvelope(command, callback.Data.Reference));
         }
 
         // Always return 200 to stop Paystack retries.

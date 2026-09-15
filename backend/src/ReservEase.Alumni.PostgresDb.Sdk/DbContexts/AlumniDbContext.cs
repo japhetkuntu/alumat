@@ -70,6 +70,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<PhotoAlbum> PhotoAlbums => Set<PhotoAlbum>();
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
     public DbSet<BusinessListing> BusinessListings => Set<BusinessListing>();
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,6 +132,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<StoreOrder>().Property(o => o.DeliveryStatusHistory).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<StoreOrderDeliveryEvent>>(jsonOpts)).Metadata.SetValueComparer(deliveryHistoryComparer);
         modelBuilder.Entity<StoreOrder>().HasIndex(o => new { o.InstitutionId, o.CreatedAt });
+        // TransactionRef: looked up on every Paystack webhook/status-poll, always via
+        // IgnoreQueryFilters() (webhooks have no ambient tenant) — without this index
+        // that lookup is a full-table scan across every institution's orders.
+        modelBuilder.Entity<StoreOrder>().HasIndex(o => o.TransactionRef).IsUnique();
 
         modelBuilder.Entity<StoreProduct>().Property(p => p.VariantOptionTypes).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
@@ -174,6 +179,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.MemberId);
         modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.ServiceTypeId);
         modelBuilder.Entity<ServiceRequest>().HasIndex(r => new { r.InstitutionId, r.CreatedAt });
+        // TransactionRef: same webhook/status-poll lookup pattern as StoreOrder above —
+        // unindexed, this is a full-table scan across every institution's requests.
+        modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.TransactionRef).IsUnique();
 
         // AlbumPhoto: list a given album's photos
         modelBuilder.Entity<AlbumPhoto>().HasIndex(p => p.AlbumId);
@@ -314,6 +322,12 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<PaymentTransaction>()
             .HasIndex(t => t.Reference)
             .IsUnique();
+
+        // WebhookEvent: dedup/lookup redelivered webhooks by provider+reference; sweep unprocessed ones
+        modelBuilder.Entity<WebhookEvent>()
+            .HasIndex(w => new { w.Provider, w.Reference });
+        modelBuilder.Entity<WebhookEvent>()
+            .HasIndex(w => w.ProcessedAt);
 
         // Event: list by status, sort by date
         modelBuilder.Entity<AlumniEvent>()

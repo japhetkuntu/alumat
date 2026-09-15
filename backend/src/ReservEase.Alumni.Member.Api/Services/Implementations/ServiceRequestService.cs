@@ -193,6 +193,7 @@ public class ServiceRequestService(
 
             var paymentResponse = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
             {
+                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.ServiceRequest),
                 Email = member.Email,
                 Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
