@@ -14,6 +14,7 @@ import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, S
 import { memberClient, handleApiError } from "@/lib/api-client";
 import { Section, scrollToSection, useFadeUp, useCountUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, useScrollActiveStep, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
+import { FAQS } from "./_marketing/faqs";
 import {
   JobsIllustration, MentorshipIllustration, ScatteredChatIllustration,
   DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
@@ -30,18 +31,42 @@ const NAV_LINKS = [
   { label: "FAQ",          href: "#faq"          },
 ];
 
-const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
-  { icon: Briefcase,   label: "Careers",       title: "A jobs board just for your alumni",  desc: "Alumni employers post roles straight to your community, before they hit public boards.", big: true, illustration: JobsIllustration },
-  { icon: Users,       label: "Directory",     title: "Every member, one searchable list", desc: "Name, join year, location: members find each other in seconds.", illustration: DirectoryIllustration },
-  { icon: CreditCard,  label: "Fundraising",   title: "Collect dues & fund projects",        desc: "Online payments for development projects, year-group dues, and welfare support.", illustration: FundraisingIllustration },
-  { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",           desc: "Speech days, AGMs, reunions, chapter meetups, all in one shared calendar.", illustration: EventsIllustration },
-  { icon: Heart,       label: "Mentorship",    title: "Built-in mentor matching",             desc: "Alumni who've walked the path connect with those just starting out.", big: true, illustration: MentorshipIllustration },
-  { icon: ShoppingBag, label: "Store",         title: "Sell branded merchandise",             desc: "An online store for association gear, with online payment and order tracking.", illustration: StoreIllustration },
-  { icon: FileText,    label: "Services",      title: "Offer any paid service, your way", desc: "Transcripts, letters, certificate reissues, or anything else your institution wants to offer: configure the request form, members request and pay online, you fulfill it.", illustration: ServicesIllustration },
-  { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever.", illustration: AlbumsIllustration },
-  { icon: Trophy,      label: "Spotlight",     title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page.", illustration: SpotlightIllustration },
-  { icon: Building2,   label: "Businesses",    title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
-  { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events: members choose exactly what reaches them.", illustration: NotificationsIllustration },
+type Feature = { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> };
+
+// Grouped into three jobs-to-be-done instead of one flat 11-card list — a
+// visitor scanning the page gets a mental model ("oh, it does connection,
+// growth, and money") in three headings before ever reading a single card,
+// rather than needing to read all 11 titles to notice a pattern themselves.
+const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
+  {
+    label: "Stay connected",
+    blurb: "Everyone finds their way back to each other, and to what's happening now.",
+    items: [
+      { icon: Users,       label: "Directory",     title: "Every member, one searchable list",    desc: "Name, join year, location: members find each other in seconds.", big: true, illustration: DirectoryIllustration },
+      { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",             desc: "Speech days, AGMs, reunions, chapter meetups, all in one shared calendar.", illustration: EventsIllustration },
+      { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever.", illustration: AlbumsIllustration },
+      { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events: members choose exactly what reaches them.", illustration: NotificationsIllustration },
+    ],
+  },
+  {
+    label: "Grow together",
+    blurb: "The network alumni actually stay around for: opportunity and each other.",
+    items: [
+      { icon: Briefcase,   label: "Careers",    title: "A jobs board just for your alumni",   desc: "Alumni employers post roles straight to your community, before they hit public boards.", big: true, illustration: JobsIllustration },
+      { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Alumni who've walked the path connect with those just starting out.", illustration: MentorshipIllustration },
+      { icon: Building2,   label: "Businesses", title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
+      { icon: Trophy,      label: "Spotlight",  title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page.", illustration: SpotlightIllustration },
+    ],
+  },
+  {
+    label: "Raise funds & offer services",
+    blurb: "Money moves online, with a record, instead of screenshots and trust.",
+    items: [
+      { icon: CreditCard,  label: "Fundraising", title: "Collect dues & fund projects", desc: "Online payments for development projects, year-group dues, and welfare support.", big: true, illustration: FundraisingIllustration },
+      { icon: ShoppingBag, label: "Store",       title: "Sell branded merchandise",     desc: "An online store for association gear, with online payment and order tracking.", illustration: StoreIllustration },
+      { icon: FileText,    label: "Services",    title: "Offer any paid service, your way", desc: "Transcripts, letters, certificate reissues, or anything else your institution wants to offer: configure the request form, members request and pay online, you fulfill it.", illustration: ServicesIllustration },
+    ],
+  },
 ];
 
 const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
@@ -49,17 +74,6 @@ const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; 
   { n: "02", icon: Rocket,            title: "We set your portal up",          desc: "Our team configures your branding, your subdomain, and your first admin account.", illustration: LaunchIllustration },
   { n: "03", icon: Users,             title: "Your alumni join, free",         desc: "Share the link. Every member creates an account and steps into their new home.", illustration: JoinIllustration },
   { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules: approve members, manage content, run the show.", illustration: ControlIllustration },
-];
-
-// Exported so page.tsx can build FAQPage structured data from the exact same
-// copy rendered on the page, instead of a second hand-maintained list that
-// silently drifts out of sync with what's actually on screen.
-export const FAQS = [
-  { q: "Is it really free?", a: "Yes. There's no setup fee, no monthly bill, and no cost to your institution to run your alumni portal. We handle the details on our side, you focus on your alumni community." },
-  { q: "How long does setup take?", a: "Submit the form below and our team will typically reach out within one business day to get your institution's portal configured and ready to launch." },
-  { q: "Can we use our own domain or subdomain?", a: "Yes, every institution gets a branded subdomain out of the box, and a custom domain can be configured for your institution as well." },
-  { q: "What if our alumni currently coordinate over WhatsApp or spreadsheets?", a: "That's exactly what this replaces. Import your existing contact list, invite your alumni, and everything (directory, events, dues, jobs) moves into one place built for it." },
-  { q: "Is our alumni data secure?", a: "Every institution's data is isolated from every other institution's on the platform, with role-based access control for your admin team." },
 ];
 
 const WHATSAPP_PROBLEMS = [
@@ -87,7 +101,7 @@ function HeroStat({ icon, end, format, label }: { icon: LucideIcon; end: number;
   );
 }
 
-function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEATURES[number]; delay: string; tone?: "primary" | "accent" }) {
+function FeatureCard({ feature, delay, tone = "primary" }: { feature: Feature; delay: string; tone?: "primary" | "accent" }) {
   const { ref, visible } = useFadeUp();
   const tilt = useTilt<HTMLDivElement>(2.5);
   const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
@@ -571,37 +585,12 @@ export default function PlatformMarketingPage() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
-          FEATURES
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="mb-12 max-w-[56ch]">
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              One portal. Every alumni need.
-            </h2>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Everything your alumni association needs to stay connected, none of it costs your institution anything.
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
-            {FEATURES.map((feature, i) => (
-              <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
-            ))}
-            <button onClick={() => scrollToSection("#onboard")}
-              className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 text-left transition-all duration-500 hover:-translate-y-1"
-              style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
-              <div>
-                <p className="text-[14px] font-semibold text-white mb-1">Ready to bring this to your alumni?</p>
-                <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution, it's free to get started.</p>
-              </div>
-              <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
-            </button>
-          </div>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          "SOUND FAMILIAR?" — WhatsApp teaser, links to /why-not-whatsapp
+          "SOUND FAMILIAR?" — WhatsApp teaser, links to /why-not-whatsapp.
+          Placed right after the hero, before Features: agitate the pain
+          you're already living with before pitching the fix — a visitor
+          reads their own situation first, which is why they keep reading,
+          rather than being sold a feature list before the page has
+          established there's a problem worth solving.
       ════════════════════════════════════════════════════════════════ */}
       <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
@@ -629,6 +618,53 @@ export default function PlatformMarketingPage() {
               See the full comparison <ArrowRight size={14} />
             </Button>
           </Link>
+        </div>
+      </Section>
+
+      {/* ════════════════════════════════════════════════════════════════
+          FEATURES — the solution to the problem just raised above. Grouped
+          into three named pillars (see FEATURE_GROUPS) instead of one flat
+          11-card grid, so a scanning visitor gets the shape of the product
+          in three headings before reading a single card.
+      ════════════════════════════════════════════════════════════════ */}
+      <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
+        <div className="section__inner section">
+          <div className="mb-14 max-w-[56ch]">
+            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
+              Here&apos;s what replaces it.
+            </h2>
+            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+              One portal, three jobs done: everyone stays connected, opportunity moves through the community, and money
+              gets collected properly, none of it costs your institution anything.
+            </p>
+          </div>
+
+          <div className="space-y-14">
+            {FEATURE_GROUPS.map((group, gi) => (
+              <div key={group.label}>
+                <div className="flex items-baseline gap-3 mb-5">
+                  <h3 className="text-[15px] sm:text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>{group.label}</h3>
+                  <span className="h-px flex-1" style={{ background: "var(--border)" }} aria-hidden="true" />
+                  <span className="hidden sm:inline text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{group.blurb}</span>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
+                  {group.items.map((feature, i) => (
+                    <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={gi % 2 === 0 ? "primary" : "accent"} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => scrollToSection("#onboard")}
+            className="mt-10 w-full card group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 text-left transition-all duration-500 hover:-translate-y-1"
+            style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
+            <div>
+              <p className="text-[14px] font-semibold text-white mb-1">Ready to bring this to your alumni?</p>
+              <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution, it's free to get started.</p>
+            </div>
+            <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
+          </button>
         </div>
       </Section>
 

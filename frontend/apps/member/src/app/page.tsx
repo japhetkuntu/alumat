@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getInstitutionThemeStatus } from "@/lib/theme";
 import LandingPage from "./landing-page";
-import PlatformMarketingPage, { FAQS } from "./platform-marketing-page";
+import PlatformMarketingPage from "./platform-marketing-page";
+import { FAQS } from "./_marketing/faqs";
 import { getRequestOrigin, MARKETING_DESCRIPTION, MARKETING_KEYWORDS, MARKETING_TITLE, SITE_NAME } from "@/lib/seo";
 
 // Same Host-resolved branch as the page component below, but metadata is
