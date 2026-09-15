@@ -38,6 +38,9 @@ export async function generateMetadata(): Promise<Metadata> {
       statusBarStyle: "default",
       title,
     },
+    // Institution-staff backoffice, sits behind login on every tenant subdomain
+    // — never meant to be discoverable or indexed.
+    robots: { index: false, follow: false, nocache: true },
   };
 }
 

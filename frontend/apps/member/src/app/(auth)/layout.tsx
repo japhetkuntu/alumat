@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getInstitutionTheme } from "@/lib/theme";
 import { RedirectIfAuthenticated } from "@/components/member/redirect-if-authenticated";
+
+// Login/register/password flows: no content value to a search result, and
+// indexing them just sends searchers straight to a form instead of a page
+// that answers what they searched for.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const theme = await getInstitutionTheme();

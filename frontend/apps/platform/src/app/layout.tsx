@@ -22,6 +22,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Platform Portal",
   },
+  // Internal staff backoffice — never meant to be discoverable or indexed.
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

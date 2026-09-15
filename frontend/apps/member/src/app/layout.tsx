@@ -3,6 +3,7 @@ import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shared/providers";
 import { getInstitutionTheme, themeStyleVars } from "@/lib/theme";
+import { getRequestOrigin, SITE_NAME } from "@/lib/seo";
 
 // IBM Plex Sans is the platform's single, permanent typeface — every portal,
 // every tenant. Assigned to both --font-sans and (via globals.css's @theme
@@ -29,11 +30,21 @@ export const dynamic = "force-dynamic";
 // platform staff (MemberPortalTitle / IconUrl), not hardcoded — falls back
 // to generic copy when an institution hasn't set one.
 export async function generateMetadata(): Promise<Metadata> {
-  const theme = await getInstitutionTheme();
+  const [theme, origin] = await Promise.all([getInstitutionTheme(), getRequestOrigin()]);
   const title = theme?.portalTitle || theme?.portalName || "Alumni Portal";
+  const description = theme?.tagline
+    ? `${theme.tagline} — the official ${theme.displayName ?? "alumni"} portal.`
+    : "A searchable directory, events, dues, jobs, and mentorship for every graduate, in one place.";
+
+  // Root-level defaults only — every route inherits these unless it sets its
+  // own (page.tsx overrides title/description/OG for "/", legal pages set
+  // their own title, (portal)/(auth) route groups override robots to
+  // noindex). metadataBase is set here once so every other generateMetadata
+  // in this app can hand back relative OG/icon paths.
   return {
-    title,
-    description: "Alumni Member Portal",
+    metadataBase: new URL(origin),
+    title: { default: title, template: `%s · ${title}` },
+    description,
     manifest: "/manifest.json",
     icons: theme?.iconUrl ? { icon: theme.iconUrl } : undefined,
     appleWebApp: {
@@ -41,6 +52,19 @@ export async function generateMetadata(): Promise<Metadata> {
       statusBarStyle: "default",
       title,
     },
+    openGraph: {
+      siteName: theme?.displayName ? `${theme.displayName} — ${SITE_NAME}` : SITE_NAME,
+      title,
+      description,
+      type: "website",
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: { index: true, follow: true },
   };
 }
 

@@ -51,7 +51,10 @@ const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; 
   { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules: approve members, manage content, run the show.", illustration: ControlIllustration },
 ];
 
-const FAQS = [
+// Exported so page.tsx can build FAQPage structured data from the exact same
+// copy rendered on the page, instead of a second hand-maintained list that
+// silently drifts out of sync with what's actually on screen.
+export const FAQS = [
   { q: "Is it really free?", a: "Yes. There's no setup fee, no monthly bill, and no cost to your institution to run your alumni portal. We handle the details on our side, you focus on your alumni community." },
   { q: "How long does setup take?", a: "Submit the form below and our team will typically reach out within one business day to get your institution's portal configured and ready to launch." },
   { q: "Can we use our own domain or subdomain?", a: "Yes, every institution gets a branded subdomain out of the box, and a custom domain can be configured for your institution as well." },

@@ -1,6 +1,9 @@
 import { LegalPageShell, Section } from "@/components/member/legal-page-shell";
 
-export const metadata = { title: "Privacy Policy" };
+export const metadata = {
+  title: "Privacy Policy",
+  description: "How AlumUnion collects, uses, and protects alumni and institution data across every portal on the platform.",
+};
 
 export default function PrivacyPage() {
   return (

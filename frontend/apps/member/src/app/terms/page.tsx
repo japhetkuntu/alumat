@@ -1,6 +1,9 @@
 import { LegalPageShell, Section } from "@/components/member/legal-page-shell";
 
-export const metadata = { title: "Terms of Service" };
+export const metadata = {
+  title: "Terms of Service",
+  description: "The terms governing use of AlumUnion's alumni portal platform by institutions and their members.",
+};
 
 export default function TermsPage() {
   return (
