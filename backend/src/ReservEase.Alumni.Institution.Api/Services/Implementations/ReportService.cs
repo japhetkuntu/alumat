@@ -199,7 +199,7 @@ public class ReportService(
                 "contributions" => contributionRepo.GetQueryable(isSuper ? null : c => campaignRepo.GetQueryable(isSuper ? null : cc =>
                     cc.CreatedBy == admin.Id
                     || (cc.YearGroups != null && cc.YearGroups.Any(__y => yearGroups.Contains(__y)))
-                    || (cc.CommunityId != null && communityIds.Contains(cc.CommunityId))).Select(cc => cc.Id).Contains(c.CampaignId)),
+                    || (cc.CommunityId != null && communityIds.Contains(cc.CommunityId)), false).Select(cc => cc.Id).Contains(c.CampaignId)),
                 "events" => eventRepo.GetQueryable(isSuper ? null : e =>
                     e.CreatedBy == admin.Id
                     || (e.YearGroups != null && e.YearGroups.Any(__y => yearGroups.Contains(__y)))

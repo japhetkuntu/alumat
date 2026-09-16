@@ -13,6 +13,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using Microsoft.Extensions.Options;
@@ -31,7 +32,17 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// (unlike the institution/member APIs) is not itself scoped to one tenant.
 /// </summary>
 public class InstitutionManagementService(
-    AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
+    AlumniDbContext db,
+    IAlumniPgRepository<Institution> institutionRepo,
+    IAlumniPgRepository<StaffEntity> staffRepo,
+    IAlumniPgRepository<MemberEntity> memberRepo,
+    IAlumniPgRepository<ContributionEntity> contributionRepo,
+    IAlumniPgRepository<StoreOrderEntity> storeOrderRepo,
+    IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
+    IAlumniPgRepository<PaymentTransactionEntity> paymentTransactionRepo,
+    IAlumniPgRepository<Campaign> campaignRepo,
+    IAlumniPgRepository<Batch> batchRepo,
+    IAuditLogService auditLog, IPaystackService paystackService,
     IConfiguration config, INotificationActor notificationActor, IOptions<MailtrapConfig> mailtrapConfigOptions,
     IRedisService<PlatformRedisConfig> cache, ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
@@ -60,7 +71,7 @@ public class InstitutionManagementService(
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 200) pageSize = 20;
 
-        var query = db.Institutions.AsQueryable();
+        var query = institutionRepo.GetQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -86,8 +97,7 @@ public class InstitutionManagementService(
         // page at once and looked up from the resulting dictionaries.
         var instIds = institutions.Select(i => i.Id).ToList();
 
-        var memberCounts = await db.Set<MemberEntity>().IgnoreQueryFilters()
-            .Where(m => instIds.Contains(m.InstitutionId))
+        var memberCounts = await memberRepo.GetQueryable(m => instIds.Contains(m.InstitutionId), ignoreQueryFilters: true)
             .GroupBy(m => m.InstitutionId)
             .Select(g => new { InstitutionId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.InstitutionId, x => x.Count);
@@ -98,18 +108,15 @@ public class InstitutionManagementService(
         // from the institution). Store orders earn the same way, through the
         // identical charge-building logic in StoreOrderService — counted here
         // too, not just contributions.
-        var contributionRevenues = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => instIds.Contains(c.InstitutionId) && c.Status == "Successful")
+        var contributionRevenues = await contributionRepo.GetQueryable(c => instIds.Contains(c.InstitutionId) && c.Status == "Successful", ignoreQueryFilters: true)
             .GroupBy(c => c.InstitutionId)
             .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(c => c.PlatformRevenueAmount) })
             .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
-        var storeRevenues = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-            .Where(o => instIds.Contains(o.InstitutionId) && o.Status == "Successful")
+        var storeRevenues = await storeOrderRepo.GetQueryable(o => instIds.Contains(o.InstitutionId) && o.Status == "Successful", ignoreQueryFilters: true)
             .GroupBy(o => o.InstitutionId)
             .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(o => o.PlatformFeeAmount) })
             .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
-        var serviceRevenues = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-            .Where(r => instIds.Contains(r.InstitutionId) && r.PaymentStatus == "Successful")
+        var serviceRevenues = await serviceRequestRepo.GetQueryable(r => instIds.Contains(r.InstitutionId) && r.PaymentStatus == "Successful", ignoreQueryFilters: true)
             .GroupBy(r => r.InstitutionId)
             .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(r => r.PlatformFeeAmount) })
             .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
@@ -139,7 +146,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> GetInstitutionAsync(string id)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -149,7 +156,7 @@ public class InstitutionManagementService(
     public async Task<IApiResponse<InstitutionDetailResponse>> CreateInstitutionAsync(CreateInstitutionRequest request, string createdBy, string actorName)
     {
         var slug = request.Slug.Trim().ToLowerInvariant();
-        if (await db.Institutions.AnyAsync(i => i.Slug == slug))
+        if (await institutionRepo.GetOneAsync(i => i.Slug == slug) is not null)
             return ApiResponseExtensions.ToConflictApiResponse<InstitutionDetailResponse>("Slug is already taken");
 
         var email = request.AdminEmail.Trim().ToLowerInvariant();
@@ -216,8 +223,7 @@ public class InstitutionManagementService(
                     logger.LogWarning("Paystack subaccount creation failed during onboarding for {Slug}: {Message}", slug, subaccount.Message);
             }
 
-            db.Institutions.Add(institution);
-            await db.SaveChangesAsync();
+            await institutionRepo.AddAsync(institution);
 
             // No password is ever generated or transmitted here — same
             // reset-token mechanism as inviting a regular staff member (see
@@ -236,8 +242,7 @@ public class InstitutionManagementService(
                 PasswordResetSentAt = DateTime.UtcNow,
                 CreatedBy = createdBy,
             };
-            db.Set<StaffEntity>().Add(admin);
-            await db.SaveChangesAsync();
+            await staffRepo.AddAsync(admin);
 
             if (request.BatchStartYear.HasValue && request.BatchEndYear.HasValue)
             {
@@ -248,9 +253,9 @@ public class InstitutionManagementService(
                         Name = year.ToString(),
                         Year = year,
                         CreatedBy = createdBy,
-                    });
-                db.Batches.AddRange(batches);
-                await db.SaveChangesAsync();
+                    })
+                    .ToList();
+                await batchRepo.AddRangeAsync(batches);
             }
 
             await transaction.CommitAsync();
@@ -275,14 +280,14 @@ public class InstitutionManagementService(
         if (request.Status != "Active" && request.Status != "Suspended")
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Status must be either \"Active\" or \"Suspended\"");
 
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
         institution.Status = request.Status;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(updatedBy, actorName, $"set institution status to {request.Status}", institution.Name);
 
@@ -291,7 +296,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateNameAsync(string id, UpdateInstitutionNameRequest request, string updatedBy, string actorName)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -299,7 +304,7 @@ public class InstitutionManagementService(
         institution.Name = request.Name.Trim();
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(updatedBy, actorName, $"renamed institution from \"{previousName}\" to \"{institution.Name}\"", institution.Name);
 
@@ -308,7 +313,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateMemberActivePolicyAsync(string id, UpdateInstitutionMemberPolicyRequest request, string updatedBy, string actorName)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -319,7 +324,7 @@ public class InstitutionManagementService(
         institution.MemberActivePolicy = request.MemberActivePolicy;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(updatedBy, actorName, $"set active-member policy to {request.MemberActivePolicy}", institution.Name);
 
@@ -328,7 +333,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -349,7 +354,7 @@ public class InstitutionManagementService(
         institution.RequireStudentId = request.RequireStudentId;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(updatedBy, actorName, "updated institution branding", institution.Name);
 
@@ -358,7 +363,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateFeaturesAsync(string id, UpdateInstitutionFeaturesRequest request, string updatedBy, string actorName)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -369,7 +374,7 @@ public class InstitutionManagementService(
         institution.DisabledFeatures = request.DisabledFeatures.Distinct().ToList();
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         var summary = institution.DisabledFeatures.Count == 0 ? "all features enabled" : $"disabled: {string.Join(", ", institution.DisabledFeatures)}";
         await auditLog.LogAsync(updatedBy, actorName, $"updated institution features ({summary})", institution.Name);
@@ -379,7 +384,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -432,7 +437,7 @@ public class InstitutionManagementService(
             institution.PaystackSubaccountCode = subaccount.Data.SubaccountCode;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(updatedBy, actorName, $"updated institution payment settings (fee {request.PlatformFeePercentage}%)", institution.Name);
 
@@ -441,19 +446,13 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionRevenueResponse>> GetRevenueAsync(string id)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionRevenueResponse>("Institution not found");
 
-        var confirmed = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.InstitutionId == id && c.Status == "Successful")
-            .ToListAsync();
-        var confirmedOrders = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-            .Where(o => o.InstitutionId == id && o.Status == "Successful")
-            .ToListAsync();
-        var confirmedRequests = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-            .Where(r => r.InstitutionId == id && r.PaymentStatus == "Successful")
-            .ToListAsync();
+        var confirmed = (await contributionRepo.GetAllAsync(c => c.InstitutionId == id && c.Status == "Successful", ignoreQueryFilters: true)).ToList();
+        var confirmedOrders = (await storeOrderRepo.GetAllAsync(o => o.InstitutionId == id && o.Status == "Successful", ignoreQueryFilters: true)).ToList();
+        var confirmedRequests = (await serviceRequestRepo.GetAllAsync(r => r.InstitutionId == id && r.PaymentStatus == "Successful", ignoreQueryFilters: true)).ToList();
 
         // A campaign targeting exactly one batch settles straight into that
         // batch's own Paystack subaccount once its payout setup is approved
@@ -496,8 +495,7 @@ public class InstitutionManagementService(
             return contributions;
 
         var campaignIds = contributions.Select(c => c.CampaignId).Distinct().ToList();
-        var campaigns = await db.Set<Campaign>().IgnoreQueryFilters()
-            .Where(c => campaignIds.Contains(c.Id))
+        var campaigns = await campaignRepo.GetQueryable(c => campaignIds.Contains(c.Id), ignoreQueryFilters: true)
             .ToDictionaryAsync(c => c.Id);
 
         var singleBatchYears = campaigns.Values
@@ -508,9 +506,10 @@ public class InstitutionManagementService(
         if (singleBatchYears.Count == 0)
             return contributions;
 
-        var approvedBatchYears = (await db.Set<Batch>().IgnoreQueryFilters()
-                .Where(b => b.InstitutionId == contributions[0].InstitutionId && singleBatchYears.Contains(b.Year)
-                            && b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null)
+        var approvedBatchYears = (await batchRepo.GetQueryable(
+                b => b.InstitutionId == contributions[0].InstitutionId && singleBatchYears.Contains(b.Year)
+                     && b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null,
+                ignoreQueryFilters: true)
                 .Select(b => b.Year)
                 .ToListAsync())
             .ToHashSet();
@@ -539,9 +538,7 @@ public class InstitutionManagementService(
 
         if (string.IsNullOrEmpty(source) || source == "Contribution")
         {
-            var contributions = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-                .Where(c => string.IsNullOrEmpty(id) || c.InstitutionId == id)
-                .ToListAsync();
+            var contributions = await contributionRepo.GetAllAsync(c => string.IsNullOrEmpty(id) || c.InstitutionId == id, ignoreQueryFilters: true);
             payments.AddRange(contributions.Select(c => new PlatformPaymentDto(
                 c.Id, "Contribution", c.InstitutionId,
                 c.Member is null ? null : $"{c.Member.FirstName} {c.Member.LastName}", c.Member?.Email,
@@ -551,9 +548,7 @@ public class InstitutionManagementService(
 
         if (string.IsNullOrEmpty(source) || source == "StoreOrder")
         {
-            var orders = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-                .Where(o => string.IsNullOrEmpty(id) || o.InstitutionId == id)
-                .ToListAsync();
+            var orders = await storeOrderRepo.GetAllAsync(o => string.IsNullOrEmpty(id) || o.InstitutionId == id, ignoreQueryFilters: true);
             payments.AddRange(orders.Select(o => new PlatformPaymentDto(
                 o.Id, "StoreOrder", o.InstitutionId,
                 o.Member is null ? null : $"{o.Member.FirstName} {o.Member.LastName}", o.Member?.Email,
@@ -564,9 +559,7 @@ public class InstitutionManagementService(
 
         if (string.IsNullOrEmpty(source) || source == "ServiceRequest")
         {
-            var requests = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-                .Where(r => string.IsNullOrEmpty(id) || r.InstitutionId == id)
-                .ToListAsync();
+            var requests = await serviceRequestRepo.GetAllAsync(r => string.IsNullOrEmpty(id) || r.InstitutionId == id, ignoreQueryFilters: true);
             payments.AddRange(requests.Select(r => new PlatformPaymentDto(
                 r.Id, "ServiceRequest", r.InstitutionId,
                 r.Member is null ? null : $"{r.Member.FirstName} {r.Member.LastName}", r.Member?.Email,
@@ -609,15 +602,13 @@ public class InstitutionManagementService(
     {
         if (string.IsNullOrEmpty(source) || source == "Contribution")
         {
-            var contribution = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == paymentId && c.InstitutionId == institutionId);
+            var contribution = await contributionRepo.GetOneAsync(c => c.Id == paymentId && c.InstitutionId == institutionId, ignoreQueryFilters: true);
             if (contribution is not null)
             {
                 PaymentTransactionEntity? transaction = null;
                 if (!string.IsNullOrEmpty(contribution.TransactionRef))
                 {
-                    transaction = await db.Set<PaymentTransactionEntity>().IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(t => t.Reference == contribution.TransactionRef);
+                    transaction = await paymentTransactionRepo.GetOneAsync(t => t.Reference == contribution.TransactionRef, ignoreQueryFilters: true);
                 }
 
                 return new PaymentDetailDto(
@@ -638,8 +629,7 @@ public class InstitutionManagementService(
 
         if (string.IsNullOrEmpty(source) || source == "StoreOrder")
         {
-            var order = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(o => o.Id == paymentId && o.InstitutionId == institutionId);
+            var order = await storeOrderRepo.GetOneAsync(o => o.Id == paymentId && o.InstitutionId == institutionId, ignoreQueryFilters: true);
             if (order is not null)
             {
                 var items = order.Items
@@ -661,8 +651,7 @@ public class InstitutionManagementService(
 
         if (string.IsNullOrEmpty(source) || source == "ServiceRequest")
         {
-            var request = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(r => r.Id == paymentId && r.InstitutionId == institutionId);
+            var request = await serviceRequestRepo.GetOneAsync(r => r.Id == paymentId && r.InstitutionId == institutionId, ignoreQueryFilters: true);
             if (request is not null)
             {
                 return new PaymentDetailDto(
@@ -683,7 +672,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName)
     {
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == id);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
@@ -693,7 +682,7 @@ public class InstitutionManagementService(
         institution.HeroHeadline = request.HeroHeadline;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(updatedBy, actorName, "updated institution landing page content", institution.Name);
 
@@ -706,7 +695,7 @@ public class InstitutionManagementService(
     public async Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug)
     {
         var normalized = slug.Trim().ToLowerInvariant();
-        var taken = await db.Institutions.AnyAsync(i => i.Slug == normalized);
+        var taken = await institutionRepo.GetOneAsync(i => i.Slug == normalized) is not null;
         return new SlugAvailabilityResponse(normalized, !taken).ToOkApiResponse();
     }
 
@@ -734,21 +723,18 @@ public class InstitutionManagementService(
 
     private async Task<PlatformDashboardSummary> ComputeDashboardSummaryAsync()
     {
-        var totalInstitutions = await db.Institutions.CountAsync();
-        var activeCount = await db.Institutions.CountAsync(i => i.Status == "Active");
-        var suspendedCount = await db.Institutions.CountAsync(i => i.Status == "Suspended");
-        var totalMembers = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync();
+        var totalInstitutions = await institutionRepo.CountAsync();
+        var activeCount = await institutionRepo.CountAsync(i => i.Status == "Active");
+        var suspendedCount = await institutionRepo.CountAsync(i => i.Status == "Suspended");
+        var totalMembers = await memberRepo.CountAsync(ignoreQueryFilters: true);
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var newThisMonth = await db.Institutions.CountAsync(i => i.OnboardedAt >= monthStart);
+        var newThisMonth = await institutionRepo.CountAsync(i => i.OnboardedAt >= monthStart);
 
-        var contributionRevenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.Status == "Successful")
+        var contributionRevenue = await contributionRepo.GetQueryable(c => c.Status == "Successful", ignoreQueryFilters: true)
             .SumAsync(c => c.PlatformRevenueAmount);
-        var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-            .Where(o => o.Status == "Successful")
+        var storeRevenue = await storeOrderRepo.GetQueryable(o => o.Status == "Successful", ignoreQueryFilters: true)
             .SumAsync(o => o.PlatformFeeAmount);
-        var serviceRevenue = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-            .Where(r => r.PaymentStatus == "Successful")
+        var serviceRevenue = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful", ignoreQueryFilters: true)
             .SumAsync(r => r.PlatformFeeAmount);
         var revenue = contributionRevenue + storeRevenue + serviceRevenue;
 
@@ -758,7 +744,7 @@ public class InstitutionManagementService(
         {
             var bucketStart = monthStart.AddMonths(-offset);
             var bucketEnd = bucketStart.AddMonths(1);
-            growthCounts.Add(await db.Institutions.CountAsync(i => i.OnboardedAt < bucketEnd));
+            growthCounts.Add(await institutionRepo.CountAsync(i => i.OnboardedAt < bucketEnd));
             growthLabels.Add(bucketStart.ToString("MMM"));
         }
 
@@ -767,8 +753,7 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId)
     {
-        var staff = await db.Set<StaffEntity>().IgnoreQueryFilters()
-            .Where(s => s.InstitutionId == institutionId)
+        var staff = await staffRepo.GetQueryable(s => s.InstitutionId == institutionId, ignoreQueryFilters: true)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
 
@@ -803,12 +788,12 @@ public class InstitutionManagementService(
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffDto>(
                 "Only a platform SuperAdmin can grant institution SuperAdmin access.");
 
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == institutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Institution not found");
 
         var email = request.Email.Trim().ToLowerInvariant();
-        if (await db.Set<StaffEntity>().IgnoreQueryFilters().AnyAsync(s => s.Email == email && s.InstitutionId == institutionId))
+        if (await staffRepo.GetOneAsync(s => s.Email == email && s.InstitutionId == institutionId, ignoreQueryFilters: true) is not null)
             return ApiResponseExtensions.ToConflictApiResponse<InstitutionStaffDto>("An admin with that email already exists");
 
         // No password is ever set or transmitted here — the invitee gets a
@@ -828,8 +813,7 @@ public class InstitutionManagementService(
             PasswordResetSentAt = DateTime.UtcNow,
             CreatedBy = createdBy,
         };
-        db.Set<StaffEntity>().Add(staff);
-        await db.SaveChangesAsync();
+        await staffRepo.AddAsync(staff);
 
         var institutionDisplayName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
         SendStaffInviteEmailAsync(
@@ -846,17 +830,16 @@ public class InstitutionManagementService(
     public async Task<IApiResponse<InstitutionStaffDto>> SetInstitutionStaffDisabledAsync(
         string institutionId, string staffId, bool isDisabled, string updatedBy, string actorName)
     {
-        var staff = await db.Set<StaffEntity>().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(s => s.Id == staffId && s.InstitutionId == institutionId);
+        var staff = await staffRepo.GetOneAsync(s => s.Id == staffId && s.InstitutionId == institutionId, ignoreQueryFilters: true);
         if (staff is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Admin not found");
 
         staff.IsDisabled = isDisabled;
         staff.UpdatedAt = DateTime.UtcNow;
         staff.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await staffRepo.UpdateAsync(staff);
 
-        var institution = await db.Institutions.FirstOrDefaultAsync(i => i.Id == institutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId);
         await auditLog.LogAsync(updatedBy, actorName, $"{(isDisabled ? "disabled" : "re-enabled")} admin {staff.Email}", institution?.Name ?? institutionId);
 
         return new InstitutionStaffDto(staff.Id, staff.FirstName, staff.LastName, staff.Email, staff.Role, staff.IsDisabled, staff.LastLoginAt, staff.CreatedAt)
@@ -924,15 +907,12 @@ public class InstitutionManagementService(
 
     private async Task<InstitutionDetailResponse> ToDetailDtoAsync(Institution i)
     {
-        var memberCount = await db.Set<MemberEntity>().IgnoreQueryFilters().CountAsync(m => m.InstitutionId == i.Id);
-        var contributionRevenue = await db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.InstitutionId == i.Id && c.Status == "Successful")
+        var memberCount = await memberRepo.CountAsync(m => m.InstitutionId == i.Id, ignoreQueryFilters: true);
+        var contributionRevenue = await contributionRepo.GetQueryable(c => c.InstitutionId == i.Id && c.Status == "Successful", ignoreQueryFilters: true)
             .SumAsync(c => c.PlatformRevenueAmount);
-        var storeRevenue = await db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-            .Where(o => o.InstitutionId == i.Id && o.Status == "Successful")
+        var storeRevenue = await storeOrderRepo.GetQueryable(o => o.InstitutionId == i.Id && o.Status == "Successful", ignoreQueryFilters: true)
             .SumAsync(o => o.PlatformFeeAmount);
-        var serviceRevenue = await db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-            .Where(r => r.InstitutionId == i.Id && r.PaymentStatus == "Successful")
+        var serviceRevenue = await serviceRequestRepo.GetQueryable(r => r.InstitutionId == i.Id && r.PaymentStatus == "Successful", ignoreQueryFilters: true)
             .SumAsync(r => r.PlatformFeeAmount);
         var revenue = contributionRevenue + storeRevenue + serviceRevenue;
         return new InstitutionDetailResponse(

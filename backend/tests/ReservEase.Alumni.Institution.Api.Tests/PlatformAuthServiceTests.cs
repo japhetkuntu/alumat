@@ -58,7 +58,7 @@ public class PlatformAuthServiceTests
     public async Task GoogleLoginAsync_ReturnsBadRequest_WhenNoMatchingStaff()
     {
         var staffRepo = new Mock<IAlumniPgRepository<PlatformStaff>>();
-        staffRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<PlatformStaff, bool>>>())).ReturnsAsync((PlatformStaff?)null);
+        staffRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<PlatformStaff, bool>>>(), It.IsAny<bool>())).ReturnsAsync((PlatformStaff?)null);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("nomatch@test.com", "Ama", "Owusu", null));
@@ -74,7 +74,7 @@ public class PlatformAuthServiceTests
     {
         var staff = new PlatformStaff { Id = "s1", Email = "disabled@test.com", Name = "Ama Owusu", Password = "x", IsDisabled = true };
         var staffRepo = new Mock<IAlumniPgRepository<PlatformStaff>>();
-        staffRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<PlatformStaff, bool>>>())).ReturnsAsync(staff);
+        staffRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<PlatformStaff, bool>>>(), It.IsAny<bool>())).ReturnsAsync(staff);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("disabled@test.com", "Ama", "Owusu", null));
@@ -91,7 +91,7 @@ public class PlatformAuthServiceTests
     {
         var staff = new PlatformStaff { Id = "s1", Email = "active@test.com", Name = "Ama Owusu", Password = "x", Role = "Support" };
         var staffRepo = new Mock<IAlumniPgRepository<PlatformStaff>>();
-        staffRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<PlatformStaff, bool>>>())).ReturnsAsync(staff);
+        staffRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<PlatformStaff, bool>>>(), It.IsAny<bool>())).ReturnsAsync(staff);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("active@test.com", "Ama", "Owusu", null));

@@ -38,7 +38,6 @@ public class StoreOrderService(
     IAlumniPgRepository<Institution> institutionRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     ICurrentTenantService currentTenant,
-    AlumniDbContext db,
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
     ITemporalClientProvider temporalProvider,
@@ -280,7 +279,7 @@ public class StoreOrderService(
 
     public async Task<bool> OwnsReferenceAsync(string reference)
     {
-        return await db.Set<StoreOrder>().IgnoreQueryFilters().AnyAsync(o => o.TransactionRef == reference);
+        return await orderRepo.GetOneAsync(o => o.TransactionRef == reference, ignoreQueryFilters: true) is not null;
     }
 
 

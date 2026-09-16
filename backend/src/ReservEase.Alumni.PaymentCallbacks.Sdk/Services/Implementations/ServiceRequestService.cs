@@ -38,7 +38,6 @@ public class ServiceRequestService(
     IAlumniPgRepository<Institution> institutionRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     ICurrentTenantService currentTenant,
-    AlumniDbContext db,
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
     IStorageService storageService,
@@ -258,7 +257,7 @@ public class ServiceRequestService(
 
     public async Task<bool> OwnsReferenceAsync(string reference)
     {
-        return await db.Set<ServiceRequest>().IgnoreQueryFilters().AnyAsync(r => r.TransactionRef == reference);
+        return await requestRepo.GetOneAsync(r => r.TransactionRef == reference, ignoreQueryFilters: true) is not null;
     }
 
 

@@ -2,16 +2,19 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog) : IOnboardingLeadService
+public class OnboardingLeadService(
+    IAlumniPgRepository<OnboardingLead> onboardingLeadRepo,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
+    IAuditLogService auditLog) : IOnboardingLeadService
 {
     public async Task<IApiResponse<List<OnboardingLeadResponse>>> GetLeadsAsync(string? status)
     {
-        var query = db.OnboardingLeads.AsQueryable();
+        var query = onboardingLeadRepo.GetQueryable();
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(l => l.Status == status);
 
@@ -22,7 +25,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
 
     public async Task<IApiResponse<OnboardingLeadResponse>> GetLeadByIdAsync(string id)
     {
-        var lead = await db.OnboardingLeads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
         if (lead is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
@@ -42,8 +45,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
             EstimatedMemberCount = request.EstimatedMemberCount,
             Message = request.Message,
         };
-        db.OnboardingLeads.Add(lead);
-        await db.SaveChangesAsync();
+        await onboardingLeadRepo.AddAsync(lead);
 
         var dto = (await ToDtosAsync([lead])).Single();
         return dto.ToCreatedApiResponse();
@@ -51,7 +53,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
 
     public async Task<IApiResponse<OnboardingLeadResponse>> UpdateStatusAsync(string id, UpdateOnboardingLeadStatusRequest request, string actorId, string actorName)
     {
-        var lead = await db.OnboardingLeads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
         if (lead is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
@@ -60,7 +62,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
             lead.ApprovedInstitutionId = request.ApprovedInstitutionId;
         lead.UpdatedAt = DateTime.UtcNow;
         lead.UpdatedBy = actorId;
-        await db.SaveChangesAsync();
+        await onboardingLeadRepo.UpdateAsync(lead);
 
         await auditLog.LogAsync(actorId, actorName, $"set onboarding lead status to {request.Status}", lead.InstitutionName);
 
@@ -70,7 +72,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
 
     public async Task<IApiResponse<OnboardingLeadResponse>> AddNoteAsync(string id, AddInternalNoteRequest request, string actorId, string actorName)
     {
-        var lead = await db.OnboardingLeads.FirstOrDefaultAsync(l => l.Id == id);
+        var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
         if (lead is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
@@ -78,7 +80,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
         lead.AssigneeStaffId ??= actorId;
         lead.UpdatedAt = DateTime.UtcNow;
         lead.UpdatedBy = actorId;
-        await db.SaveChangesAsync();
+        await onboardingLeadRepo.UpdateAsync(lead);
 
         await auditLog.LogAsync(actorId, actorName, "added internal note", lead.InstitutionName);
 
@@ -89,7 +91,7 @@ public class OnboardingLeadService(AlumniDbContext db, IAuditLogService auditLog
     private async Task<List<OnboardingLeadResponse>> ToDtosAsync(List<OnboardingLead> leads)
     {
         var assigneeIds = leads.Where(l => l.AssigneeStaffId != null).Select(l => l.AssigneeStaffId!).Distinct().ToList();
-        var assigneeNames = await db.PlatformStaff.Where(s => assigneeIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
+        var assigneeNames = await platformStaffRepo.GetQueryable(s => assigneeIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
 
         var now = DateTime.UtcNow;
         return leads.Select(l => new OnboardingLeadResponse(

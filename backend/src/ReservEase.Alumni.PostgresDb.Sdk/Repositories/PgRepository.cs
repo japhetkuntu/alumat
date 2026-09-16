@@ -2,12 +2,14 @@ using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 
 namespace ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 public partial class PgRepository<T, TContext>(TContext context) : IPgRepository<T, TContext>
-    where T : class
+    where T : BaseEntity
     where TContext : DbContext
 {
     protected readonly TContext _context = context;
@@ -16,21 +18,30 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
     [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9_]*$")]
     private static partial Regex SafeColumnNameRegex();
 
-    public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? predicate = null)
+    private IQueryable<T> Query(bool ignoreQueryFilters) =>
+        ignoreQueryFilters ? _dbSet.IgnoreQueryFilters() : _dbSet;
+
+    public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? predicate = null, bool ignoreQueryFilters = false)
     {
-        IQueryable<T> query = _dbSet;
+        var query = Query(ignoreQueryFilters);
         if (predicate is not null) query = query.Where(predicate);
         return await query.ToListAsync();
     }
 
-    public async Task<T?> GetByIdAsync(string id)
+    public async Task<T?> GetByIdAsync(string id, bool ignoreQueryFilters = false)
     {
-        return await _dbSet.FindAsync(id);
+        // DbSet.FindAsync already bypasses global query filters (it resolves by key,
+        // checking the change tracker first), so the tenant-scoped and cross-tenant
+        // paths only diverge when the entity isn't already tracked.
+        if (!ignoreQueryFilters)
+            return await _dbSet.FindAsync(id);
+
+        return await _dbSet.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Id == id);
     }
 
-    public async Task<T?> GetOneAsync(Expression<Func<T, bool>> predicate)
+    public async Task<T?> GetOneAsync(Expression<Func<T, bool>> predicate, bool ignoreQueryFilters = false)
     {
-        return await _dbSet.FirstOrDefaultAsync(predicate);
+        return await Query(ignoreQueryFilters).FirstOrDefaultAsync(predicate);
     }
 
     public async Task<int> AddAsync(T entity)
@@ -63,24 +74,29 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
         return await _context.SaveChangesAsync();
     }
 
-    public IQueryable<T> GetQueryable(Expression<Func<T, bool>>? predicate = null)
+    public IQueryable<T> GetQueryable(Expression<Func<T, bool>>? predicate = null, bool ignoreQueryFilters = false)
     {
-        IQueryable<T> query = _dbSet;
+        var query = Query(ignoreQueryFilters);
         if (predicate is not null) query = query.Where(predicate);
         return query;
     }
 
-    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, bool ignoreQueryFilters = false)
     {
-        IQueryable<T> query = _dbSet;
+        var query = Query(ignoreQueryFilters);
         if (predicate is not null) query = query.Where(predicate);
         return await query.CountAsync();
+    }
+
+    public async Task<int> ExecuteUpdateAsync(Expression<Func<T, bool>> predicate, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> setPropertyCalls, bool ignoreQueryFilters = false)
+    {
+        return await Query(ignoreQueryFilters).Where(predicate).ExecuteUpdateAsync(setPropertyCalls);
     }
 
     public async Task<PgPagedResult<T>> GetPagedAsync(
         int pageIndex, int pageSize,
         string sortColumn = "Id", string sortDir = "desc",
-        Expression<Func<T, bool>>? filter = null)
+        Expression<Func<T, bool>>? filter = null, bool ignoreQueryFilters = false)
     {
         if (pageIndex < 1) pageIndex = 1;
         if (pageSize < 1) pageSize = 10;
@@ -93,7 +109,7 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
         // Validate sort direction
         sortDir = sortDir?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true ? "asc" : "desc";
 
-        IQueryable<T> query = _dbSet;
+        var query = Query(ignoreQueryFilters);
         if (filter is not null) query = query.Where(filter);
 
         var totalCount = await query.CountAsync();

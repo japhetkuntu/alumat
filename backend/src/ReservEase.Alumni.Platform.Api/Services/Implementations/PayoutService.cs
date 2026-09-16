@@ -2,7 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
 using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
@@ -22,13 +23,19 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// since both start from PayoutWindowCalculator and the same raw formula
 /// (including the same batch-settlement exclusion — see ExcludeBatchSettledAsync).
 /// </summary>
-public class PayoutService(AlumniDbContext db) : IPayoutService
+public class PayoutService(
+    IAlumniPgRepository<Institution> institutionRepo,
+    IAlumniPgRepository<ContributionEntity> contributionRepo,
+    IAlumniPgRepository<StoreOrderEntity> storeOrderRepo,
+    IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
+    IAlumniPgRepository<CampaignEntity> campaignRepo,
+    IAlumniPgRepository<BatchEntity> batchRepo) : IPayoutService
 {
     public async Task<IApiResponse<PlatformPayoutForecastResponse>> GetForecastAsync()
     {
         var windows = PayoutWindowCalculator.GetWindows(DateTime.UtcNow);
 
-        var institutions = await db.Institutions.IgnoreQueryFilters()
+        var institutions = await institutionRepo.GetQueryable(ignoreQueryFilters: true)
             .Select(i => new { i.Id, i.Name, i.PaystackSubaccountCode })
             .ToListAsync();
 
@@ -65,20 +72,20 @@ public class PayoutService(AlumniDbContext db) : IPayoutService
         return new PlatformPayoutForecastResponse(totals, perInstitution).ToOkApiResponse();
     }
 
-    private Task<List<ContributionEntity>> FetchContributionsAsync(DateTime start, DateTime end) =>
-        db.Set<ContributionEntity>().IgnoreQueryFilters()
-            .Where(c => c.Status == "Successful" && c.PaymentMethod == "Paystack" && c.ConfirmedAt != null && c.ConfirmedAt >= start && c.ConfirmedAt < end)
-            .ToListAsync();
+    private async Task<List<ContributionEntity>> FetchContributionsAsync(DateTime start, DateTime end) =>
+        (await contributionRepo.GetAllAsync(
+            c => c.Status == "Successful" && c.PaymentMethod == "Paystack" && c.ConfirmedAt != null && c.ConfirmedAt >= start && c.ConfirmedAt < end,
+            ignoreQueryFilters: true)).ToList();
 
-    private Task<List<StoreOrderEntity>> FetchOrdersAsync(DateTime start, DateTime end) =>
-        db.Set<StoreOrderEntity>().IgnoreQueryFilters()
-            .Where(o => o.Status == "Successful" && o.PaymentMethod == "Paystack" && o.ConfirmedAt != null && o.ConfirmedAt >= start && o.ConfirmedAt < end)
-            .ToListAsync();
+    private async Task<List<StoreOrderEntity>> FetchOrdersAsync(DateTime start, DateTime end) =>
+        (await storeOrderRepo.GetAllAsync(
+            o => o.Status == "Successful" && o.PaymentMethod == "Paystack" && o.ConfirmedAt != null && o.ConfirmedAt >= start && o.ConfirmedAt < end,
+            ignoreQueryFilters: true)).ToList();
 
-    private Task<List<ServiceRequestEntity>> FetchServiceRequestsAsync(DateTime start, DateTime end) =>
-        db.Set<ServiceRequestEntity>().IgnoreQueryFilters()
-            .Where(r => r.PaymentStatus == "Successful" && r.PaymentMethod == "Paystack" && r.ConfirmedAt != null && r.ConfirmedAt >= start && r.ConfirmedAt < end)
-            .ToListAsync();
+    private async Task<List<ServiceRequestEntity>> FetchServiceRequestsAsync(DateTime start, DateTime end) =>
+        (await serviceRequestRepo.GetAllAsync(
+            r => r.PaymentStatus == "Successful" && r.PaymentMethod == "Paystack" && r.ConfirmedAt != null && r.ConfirmedAt >= start && r.ConfirmedAt < end,
+            ignoreQueryFilters: true)).ToList();
 
     /// <summary>
     /// A campaign targeting exactly one batch settles straight into that
@@ -95,8 +102,7 @@ public class PayoutService(AlumniDbContext db) : IPayoutService
             return contributions;
 
         var campaignIds = contributions.Select(c => c.CampaignId).Distinct().ToList();
-        var campaigns = await db.Set<CampaignEntity>().IgnoreQueryFilters()
-            .Where(c => campaignIds.Contains(c.Id))
+        var campaigns = await campaignRepo.GetQueryable(c => campaignIds.Contains(c.Id), ignoreQueryFilters: true)
             .ToDictionaryAsync(c => c.Id);
 
         var singleBatchByInstitutionYear = campaigns.Values
@@ -107,8 +113,9 @@ public class PayoutService(AlumniDbContext db) : IPayoutService
         if (singleBatchByInstitutionYear.Count == 0)
             return contributions;
 
-        var approvedBatches = await db.Set<BatchEntity>().IgnoreQueryFilters()
-            .Where(b => b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null)
+        var approvedBatches = await batchRepo.GetQueryable(
+                b => b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null,
+                ignoreQueryFilters: true)
             .Select(b => new { b.InstitutionId, b.Year })
             .ToListAsync();
         if (approvedBatches.Count == 0)

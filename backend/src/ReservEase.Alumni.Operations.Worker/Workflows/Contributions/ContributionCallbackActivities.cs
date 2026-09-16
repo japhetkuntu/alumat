@@ -4,7 +4,6 @@ using ReservEase.Alumni.Operations.Worker.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -27,7 +26,8 @@ public class ContributionCallbackActivities(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo,
-    AlumniDbContext db,
+    IAlumniPgRepository<RecurringContribution> recurringRepo,
+    IAlumniPgRepository<Institution> institutionRepo,
     IPaystackService paystackService,
     IRedisService<MemberRedisConfig> redis,
     INotificationDispatcher notificationDispatcher,
@@ -36,15 +36,15 @@ public class ContributionCallbackActivities(
 {
     [Activity("ContributionCallback.LoadTransaction")]
     public virtual Task<PaymentTransaction?> LoadTransactionAsync(string reference) =>
-        Wrap(() => db.Set<PaymentTransaction>().IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Reference == reference), "load payment transaction", reference);
+        Wrap(() => paymentTransactionRepo.GetOneAsync(t => t.Reference == reference, ignoreQueryFilters: true), "load payment transaction", reference);
 
     [Activity("ContributionCallback.LoadCampaign")]
     public virtual Task<Campaign?> LoadCampaignAsync(string campaignId) =>
-        Wrap(() => db.Set<Campaign>().IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == campaignId), "load campaign", campaignId);
+        Wrap(() => campaignRepo.GetOneAsync(c => c.Id == campaignId, ignoreQueryFilters: true), "load campaign", campaignId);
 
     [Activity("ContributionCallback.LoadMember")]
     public virtual Task<MemberEntity?> LoadMemberAsync(string memberId) =>
-        Wrap(() => db.Set<MemberEntity>().IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == memberId), "load member", memberId);
+        Wrap(() => memberRepo.GetOneAsync(m => m.Id == memberId, ignoreQueryFilters: true), "load member", memberId);
 
     [Activity("ContributionCallback.CreateTransaction")]
     public virtual Task<PaymentTransaction> CreateTransactionAsync(PaymentTransaction transaction) =>
@@ -73,11 +73,11 @@ public class ContributionCallbackActivities(
 
     [Activity("ContributionCallback.LoadContributionByReference")]
     public virtual Task<Contribution?> LoadContributionByReferenceAsync(string reference, string memberId) =>
-        Wrap(() => db.Set<Contribution>().IgnoreQueryFilters().FirstOrDefaultAsync(c => c.TransactionRef == reference && c.MemberId == memberId), "load contribution by reference", reference);
+        Wrap(() => contributionRepo.GetOneAsync(c => c.TransactionRef == reference && c.MemberId == memberId, ignoreQueryFilters: true), "load contribution by reference", reference);
 
     [Activity("ContributionCallback.LoadPriorSuccessfulMembershipContribution")]
     public virtual Task<Contribution?> LoadPriorSuccessfulMembershipContributionAsync(string campaignId, string memberId) =>
-        Wrap(() => db.Set<Contribution>().IgnoreQueryFilters().FirstOrDefaultAsync(c => c.CampaignId == campaignId && c.MemberId == memberId && c.Status == "Successful"), "load prior membership contribution", campaignId);
+        Wrap(() => contributionRepo.GetOneAsync(c => c.CampaignId == campaignId && c.MemberId == memberId && c.Status == "Successful", ignoreQueryFilters: true), "load prior membership contribution", campaignId);
 
     [Activity("ContributionCallback.CreateContribution")]
     public virtual Task<Contribution> CreateContributionAsync(Contribution contribution) =>
@@ -96,22 +96,17 @@ public class ContributionCallbackActivities(
 
     [Activity("ContributionCallback.LoadActiveRecurringGiving")]
     public virtual Task<RecurringContribution?> LoadActiveRecurringGivingAsync(string memberId, string campaignId) =>
-        Wrap(() => db.Set<RecurringContribution>().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(r => r.MemberId == memberId && r.CampaignId == campaignId && r.Status == "Active"), "load active recurring giving", memberId);
+        Wrap(() => recurringRepo.GetOneAsync(r => r.MemberId == memberId && r.CampaignId == campaignId && r.Status == "Active", ignoreQueryFilters: true), "load active recurring giving", memberId);
 
     [Activity("ContributionCallback.CreateRecurringGiving")]
     public virtual Task CreateRecurringGivingAsync(RecurringContribution recurring) =>
-        Wrap(async () =>
-        {
-            await db.Set<RecurringContribution>().AddAsync(recurring);
-            await db.SaveChangesAsync();
-        }, "create recurring giving", recurring.MemberId);
+        Wrap(() => recurringRepo.AddAsync(recurring), "create recurring giving", recurring.MemberId);
 
     [Activity("ContributionCallback.UpdateCampaignTotals")]
     public virtual Task UpdateCampaignTotalsAsync(string campaignId, decimal amount) =>
         Wrap(async () =>
         {
-            var campaign = await db.Set<Campaign>().IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == campaignId);
+            var campaign = await campaignRepo.GetOneAsync(c => c.Id == campaignId, ignoreQueryFilters: true);
             if (campaign is null) return;
             campaign.CollectedAmount += amount;
             campaign.PaidCount += 1;
@@ -125,19 +120,18 @@ public class ContributionCallbackActivities(
     public virtual Task<MembershipReevalData> LoadMembershipReevalDataAsync(string institutionId, string memberId, int? graduationYear, int currentYear) =>
         Wrap(async () =>
         {
-            // Institution scoped explicitly since IgnoreQueryFilters() bypasses the usual tenant filter.
-            var requiredCampaigns = await db.Set<Campaign>().IgnoreQueryFilters()
-                .Where(c => c.InstitutionId == institutionId
+            // Institution scoped explicitly since ignoreQueryFilters bypasses the usual tenant filter.
+            var requiredCampaigns = await campaignRepo.GetQueryable(c => c.InstitutionId == institutionId
                     && c.IsMembershipCampaign && c.MembershipYear.HasValue
                     && c.MembershipYear.Value >= graduationYear
-                    && c.MembershipYear.Value <= currentYear)
-                .ToListAsync();
+                    && c.MembershipYear.Value <= currentYear,
+                ignoreQueryFilters: true).ToListAsync();
 
-            var confirmedContributions = await db.Set<Contribution>().IgnoreQueryFilters()
-                .Where(c => c.InstitutionId == institutionId && c.MemberId == memberId && c.Status == "Successful")
-                .ToListAsync();
+            var confirmedContributions = await contributionRepo.GetQueryable(
+                c => c.InstitutionId == institutionId && c.MemberId == memberId && c.Status == "Successful",
+                ignoreQueryFilters: true).ToListAsync();
 
-            var institution = await db.Set<Institution>().IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == institutionId);
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
 
             return new MembershipReevalData
             {
@@ -151,13 +145,13 @@ public class ContributionCallbackActivities(
     public virtual Task<string> GetNextMemberNumberAsync(string institutionId, int? graduationYear) =>
         Wrap(async () =>
         {
-            var institution = await db.Set<Institution>().IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == institutionId);
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
             var slug = !string.IsNullOrWhiteSpace(institution?.Slug) ? institution.Slug.ToUpperInvariant() : "MEMBER";
             var prefix = $"{slug}-{graduationYear}-";
 
-            var existingWithNumber = await db.Set<MemberEntity>().IgnoreQueryFilters()
-                .Where(m => m.InstitutionId == institutionId && m.MemberNumber != null && m.MemberNumber.StartsWith(prefix))
-                .ToListAsync();
+            var existingWithNumber = await memberRepo.GetQueryable(
+                m => m.InstitutionId == institutionId && m.MemberNumber != null && m.MemberNumber.StartsWith(prefix),
+                ignoreQueryFilters: true).ToListAsync();
             var maxSeq = existingWithNumber
                 .Select(m => int.TryParse(m.MemberNumber![prefix.Length..], out var n) ? n : 0)
                 .DefaultIfEmpty(0)

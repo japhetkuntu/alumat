@@ -56,8 +56,8 @@ public class ReportServiceTests
             new Campaign { Id = "c1", Title = "Test", Status = CampaignStatus.Active, TargetAmount = 100, CollectedAmount = 20, PaidCount = 1 }
         };
 
-        campaignRepo.Setup(r => r.GetQueryable(It.IsAny<Expression<Func<Campaign, bool>>>() ) )
-            .Returns((Expression<Func<Campaign, bool>>? predicate) =>
+        campaignRepo.Setup(r => r.GetQueryable(It.IsAny<Expression<Func<Campaign, bool>>>() , It.IsAny<bool>()) )
+            .Returns((Expression<Func<Campaign, bool>>? predicate, bool _) =>
                 predicate == null
                     ? campaigns.AsQueryable()
                     : campaigns.AsQueryable().Where(predicate.Compile()).AsQueryable());

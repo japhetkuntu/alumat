@@ -30,8 +30,10 @@ public class ContributionService : IContributionService
     private readonly IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member> memberRepo;
     private readonly IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo;
     private readonly IAlumniPgRepository<Institution> institutionRepo;
+    private readonly IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Batch> batchRepo;
+    private readonly IAlumniPgRepository<RecurringContribution> recurringRepo;
+    private readonly IAlumniPgRepository<PlatformSettings> platformSettingsRepo;
     private readonly ICurrentTenantService currentTenant;
-    private readonly AlumniDbContext db;
     private readonly IPaystackService paystackService;
     private readonly PaystackConfig paystackConfig;
     private readonly IRedisService<MemberRedisConfig> redis;
@@ -59,8 +61,7 @@ public class ContributionService : IContributionService
         string slug = "MEMBER";
         if (!string.IsNullOrEmpty(institutionId))
         {
-            var institution = await db.Set<Institution>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(i => i.Id == institutionId);
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
             if (!string.IsNullOrWhiteSpace(institution?.Slug))
                 slug = institution.Slug.ToUpperInvariant();
         }
@@ -83,8 +84,7 @@ public class ContributionService : IContributionService
         if (campaign?.YearGroups is { Count: 1 } && !string.IsNullOrEmpty(currentTenant.InstitutionId))
         {
             var year = campaign.YearGroups[0];
-            var batch = await db.Set<PostgresDb.Sdk.Entities.Alumni.Batch>()
-                .FirstOrDefaultAsync(b => b.InstitutionId == currentTenant.InstitutionId && b.Year == year);
+            var batch = await batchRepo.GetOneAsync(b => b.InstitutionId == currentTenant.InstitutionId && b.Year == year);
             if (batch is { PayoutStatus: "Approved", UseInstitutionAccount: false } && !string.IsNullOrEmpty(batch.PaystackSubaccountCode))
                 return batch.PaystackSubaccountCode;
         }
@@ -209,8 +209,10 @@ public class ContributionService : IContributionService
         IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member> memberRepo,
         IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo,
         IAlumniPgRepository<Institution> institutionRepo,
+        IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Batch> batchRepo,
+        IAlumniPgRepository<RecurringContribution> recurringRepo,
+        IAlumniPgRepository<PlatformSettings> platformSettingsRepo,
         ICurrentTenantService currentTenant,
-        AlumniDbContext db,
         IPaystackService paystackService,
         PaystackConfig paystackConfig,
         IRedisService<MemberRedisConfig> redis,
@@ -224,8 +226,10 @@ public class ContributionService : IContributionService
         this.memberRepo = memberRepo;
         this.paymentTransactionRepo = paymentTransactionRepo;
         this.institutionRepo = institutionRepo;
+        this.batchRepo = batchRepo;
+        this.recurringRepo = recurringRepo;
+        this.platformSettingsRepo = platformSettingsRepo;
         this.currentTenant = currentTenant;
-        this.db = db;
         this.paystackService = paystackService;
         this.paystackConfig = paystackConfig;
         this.redis = redis;
@@ -326,7 +330,7 @@ public class ContributionService : IContributionService
             // branch above, before this point is ever reached).
             if (campaign.Deadline < DateTime.UtcNow)
             {
-                var platformSettings = await db.PlatformSettings.FirstOrDefaultAsync(s => s.Id == PlatformSettings.SingletonId);
+                var platformSettings = await platformSettingsRepo.GetByIdAsync(PlatformSettings.SingletonId);
                 if (platformSettings?.BlockOverdueCampaignPayments == true)
                     return ApiResponseExtensions.ToBadRequestApiResponse<object>("This campaign's deadline has passed — contributions are no longer being accepted.");
             }
@@ -753,7 +757,7 @@ public class ContributionService : IContributionService
     /// </summary>
     public async Task<bool> OwnsReferenceAsync(string reference)
     {
-        var hasTransaction = await db.Set<PaymentTransaction>().IgnoreQueryFilters().AnyAsync(t => t.Reference == reference);
+        var hasTransaction = await paymentTransactionRepo.GetOneAsync(t => t.Reference == reference, ignoreQueryFilters: true) is not null;
         if (hasTransaction)
             return true;
 
@@ -985,8 +989,7 @@ public class ContributionService : IContributionService
     {
         try
         {
-            var recurring = await db.Set<RecurringContribution>()
-                .Where(r => r.MemberId == memberId)
+            var recurring = await recurringRepo.GetQueryable(r => r.MemberId == memberId)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
             return recurring.Select(r => r.ToDto()).ToList().ToOkApiResponse();
@@ -1002,8 +1005,7 @@ public class ContributionService : IContributionService
     {
         try
         {
-            var recurring = await db.Set<RecurringContribution>()
-                .FirstOrDefaultAsync(r => r.Id == recurringContributionId);
+            var recurring = await recurringRepo.GetByIdAsync(recurringContributionId);
             if (recurring is null || recurring.MemberId != memberId)
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Recurring gift not found");
 
@@ -1012,7 +1014,7 @@ public class ContributionService : IContributionService
 
             recurring.Status = "Cancelled";
             recurring.UpdatedBy = memberId;
-            await db.SaveChangesAsync();
+            await recurringRepo.UpdateAsync(recurring);
 
             logger.LogInformation("Member {MemberId} cancelled recurring gift {RecurringId}", memberId, recurring.Id);
             return new object().ToOkApiResponse("Recurring gift cancelled");

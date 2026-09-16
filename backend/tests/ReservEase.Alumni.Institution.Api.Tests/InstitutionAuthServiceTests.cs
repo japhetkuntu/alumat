@@ -43,7 +43,7 @@ public class InstitutionAuthServiceTests
             IsDisabled = true,
         };
 
-        mockRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>() ))
+        mockRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>() , It.IsAny<bool>()))
             .ReturnsAsync(disabledAdmin);
 
         var mockInstitutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
@@ -97,14 +97,14 @@ public class InstitutionAuthServiceTests
         var response = await sut.GoogleLoginAsync(new GoogleLoginRequest("bad-token"));
 
         Assert.Equal(401, response.Code);
-        adminRepo.Verify(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>()), Times.Never);
+        adminRepo.Verify(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
     public async Task GoogleLoginAsync_ReturnsBadRequest_WhenNoMatchingStaff()
     {
         var adminRepo = new Mock<IAlumniPgRepository<StaffEntity>>();
-        adminRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>())).ReturnsAsync((StaffEntity?)null);
+        adminRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync((StaffEntity?)null);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("nomatch@test.com", "Kwame", "Mensah", null));
@@ -120,7 +120,7 @@ public class InstitutionAuthServiceTests
     {
         var admin = new StaffEntity { Id = "a1", Email = "disabled@test.com", Password = "x", Role = "SuperAdmin", IsDisabled = true };
         var adminRepo = new Mock<IAlumniPgRepository<StaffEntity>>();
-        adminRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>())).ReturnsAsync(admin);
+        adminRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync(admin);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("disabled@test.com", "Kwame", "Mensah", null));
@@ -137,7 +137,7 @@ public class InstitutionAuthServiceTests
     {
         var admin = new StaffEntity { Id = "a1", Email = "active@test.com", FirstName = "Kwame", LastName = "Mensah", Password = "x", Role = "SuperAdmin", IsDisabled = false };
         var adminRepo = new Mock<IAlumniPgRepository<StaffEntity>>();
-        adminRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>())).ReturnsAsync(admin);
+        adminRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<StaffEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync(admin);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("active@test.com", "Kwame", "Mensah", null));

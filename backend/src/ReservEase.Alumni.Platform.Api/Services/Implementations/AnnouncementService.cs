@@ -2,18 +2,22 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using NotificationEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Notification;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class AnnouncementService(AlumniDbContext db, IAuditLogService auditLog) : IAnnouncementService
+public class AnnouncementService(
+    IAlumniPgRepository<Announcement> announcementRepo,
+    IAlumniPgRepository<StaffEntity> staffRepo,
+    IAlumniPgRepository<NotificationEntity> notificationRepo,
+    IAuditLogService auditLog) : IAnnouncementService
 {
     public async Task<IApiResponse<List<AnnouncementResponse>>> GetAnnouncementsAsync()
     {
-        var items = await db.Announcements
+        var items = await announcementRepo.GetQueryable()
             .OrderByDescending(a => a.SentAt)
             .Select(a => new AnnouncementResponse(a.Id, a.Title, a.Body, a.Audience, a.SentAt, a.SeenByAdmins, a.TotalAdmins))
             .ToListAsync();
@@ -27,8 +31,7 @@ public class AnnouncementService(AlumniDbContext db, IAuditLogService auditLog) 
         // across every institution, gets an in-app notification fanned out
         // directly (Platform.Api has no actor system of its own and doesn't
         // need one for a single batch write like this).
-        var recipients = await db.Set<StaffEntity>().IgnoreQueryFilters()
-            .Where(s => !s.IsDisabled)
+        var recipients = await staffRepo.GetQueryable(s => !s.IsDisabled, ignoreQueryFilters: true)
             .Select(s => new { s.Id, s.InstitutionId })
             .ToListAsync();
 
@@ -42,23 +45,21 @@ public class AnnouncementService(AlumniDbContext db, IAuditLogService auditLog) 
             SeenByAdmins = 0,
             CreatedBy = actorId,
         };
-        db.Announcements.Add(announcement);
+        await announcementRepo.AddAsync(announcement);
 
-        foreach (var recipient in recipients)
+        var notifications = recipients.Select(recipient => new NotificationEntity
         {
-            db.Set<NotificationEntity>().Add(new NotificationEntity
-            {
-                InstitutionId = recipient.InstitutionId,
-                RecipientId = recipient.Id,
-                RecipientType = "Admin",
-                Title = request.Title,
-                Body = request.Body,
-                Type = "PlatformAnnouncement",
-                CreatedBy = actorId,
-            });
-        }
+            InstitutionId = recipient.InstitutionId,
+            RecipientId = recipient.Id,
+            RecipientType = "Admin",
+            Title = request.Title,
+            Body = request.Body,
+            Type = "PlatformAnnouncement",
+            CreatedBy = actorId,
+        }).ToList();
 
-        await db.SaveChangesAsync();
+        if (notifications.Count > 0)
+            await notificationRepo.AddRangeAsync(notifications);
 
         await auditLog.LogAsync(actorId, actorName, "sent announcement", announcement.Title);
 

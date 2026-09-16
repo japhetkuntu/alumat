@@ -68,14 +68,14 @@ public class MemberAuthServiceTests
         var response = await sut.GoogleLoginAsync(new GoogleLoginRequest("bad-token"));
 
         Assert.Equal(401, response.Code);
-        memberRepo.Verify(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>()), Times.Never);
+        memberRepo.Verify(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
     public async Task GoogleLoginAsync_ReturnsBadRequest_WhenNoMatchingMember()
     {
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>())).ReturnsAsync((MemberEntity?)null);
+        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync((MemberEntity?)null);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("nomatch@test.com", "Kwame", "Mensah", null));
@@ -96,7 +96,7 @@ public class MemberAuthServiceTests
     {
         var member = new MemberEntity { Id = "m1", Email = "match@test.com", Status = status, Password = "x" };
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>())).ReturnsAsync(member);
+        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync(member);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("match@test.com", "Kwame", "Mensah", null));
@@ -116,7 +116,7 @@ public class MemberAuthServiceTests
             Status = "Active", Password = "x", GraduationYear = 2020,
         };
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>())).ReturnsAsync(member);
+        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync(member);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("active@test.com", "Kwame", "Mensah", null));
@@ -139,7 +139,7 @@ public class MemberAuthServiceTests
     {
         var existing = new MemberEntity { Id = "m1", Email = "taken@test.com", Status = "Active", Password = "x" };
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>())).ReturnsAsync(existing);
+        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync(existing);
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
         googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
             .ReturnsAsync(new GoogleIdentity("taken@test.com", "Ama", "Owusu", null));
@@ -155,7 +155,7 @@ public class MemberAuthServiceTests
     public async Task GoogleRegisterAsync_CreatesPendingMember_WhenNoExistingAccount()
     {
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>())).ReturnsAsync((MemberEntity?)null);
+        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync((MemberEntity?)null);
         MemberEntity? created = null;
         memberRepo.Setup(r => r.AddAsync(It.IsAny<MemberEntity>()))
             .Callback<MemberEntity>(m => created = m)

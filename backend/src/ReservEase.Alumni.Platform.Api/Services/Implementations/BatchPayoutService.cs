@@ -4,7 +4,8 @@ using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using BatchEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch;
 using BatchPendingChanges = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.BatchPayoutPendingChanges;
 
@@ -18,21 +19,20 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// since this service is not scoped to one tenant.
 /// </summary>
 public class BatchPayoutService(
-    AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
+    IAlumniPgRepository<BatchEntity> batchRepo, IAlumniPgRepository<Institution> institutionRepo,
+    IAuditLogService auditLog, IPaystackService paystackService,
     ILogger<BatchPayoutService> logger) : IBatchPayoutService
 {
     public async Task<IApiResponse<List<PendingBatchPayoutItem>>> GetPendingAsync()
     {
-        var pending = await db.Batches.IgnoreQueryFilters()
-            .Where(b => b.PayoutStatus == "Pending" && b.PendingPayoutChanges != null)
-            .ToListAsync();
+        var pending = (await batchRepo.GetAllAsync(
+            b => b.PayoutStatus == "Pending" && b.PendingPayoutChanges != null, ignoreQueryFilters: true)).ToList();
 
         if (pending.Count == 0)
             return new List<PendingBatchPayoutItem>().ToOkApiResponse();
 
         var institutionIds = pending.Select(b => b.InstitutionId).Distinct().ToList();
-        var institutionNames = await db.Institutions.IgnoreQueryFilters()
-            .Where(i => institutionIds.Contains(i.Id))
+        var institutionNames = await institutionRepo.GetQueryable(i => institutionIds.Contains(i.Id), ignoreQueryFilters: true)
             .ToDictionaryAsync(i => i.Id, i => i.Name);
 
         var items = pending
@@ -50,7 +50,7 @@ public class BatchPayoutService(
 
     public async Task<IApiResponse<object>> ApproveAsync(string batchId, string approvedBy, string actorName)
     {
-        var batch = await db.Batches.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == batchId);
+        var batch = await batchRepo.GetOneAsync(b => b.Id == batchId, ignoreQueryFilters: true);
         if (batch is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Batch not found");
 
@@ -58,7 +58,7 @@ public class BatchPayoutService(
         if (batch.PayoutStatus != "Pending" || pending is null)
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("This batch has no pending payout setup to approve");
 
-        var institution = await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == batch.InstitutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == batch.InstitutionId, ignoreQueryFilters: true);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Institution not found");
 
@@ -119,7 +119,7 @@ public class BatchPayoutService(
         batch.PendingPayoutChanges = null;
         batch.UpdatedAt = DateTime.UtcNow;
         batch.UpdatedBy = approvedBy;
-        await db.SaveChangesAsync();
+        await batchRepo.UpdateAsync(batch);
 
         await auditLog.LogAsync(approvedBy, actorName, $"approved payout setup for batch \"{batch.Name}\"", institution.Name);
 
@@ -129,7 +129,7 @@ public class BatchPayoutService(
 
     public async Task<IApiResponse<object>> RejectAsync(string batchId, RejectBatchPayoutRequest request, string rejectedBy, string actorName)
     {
-        var batch = await db.Batches.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == batchId);
+        var batch = await batchRepo.GetOneAsync(b => b.Id == batchId, ignoreQueryFilters: true);
         if (batch is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Batch not found");
 
@@ -140,9 +140,9 @@ public class BatchPayoutService(
         batch.PendingPayoutChanges = null;
         batch.UpdatedAt = DateTime.UtcNow;
         batch.UpdatedBy = rejectedBy;
-        await db.SaveChangesAsync();
+        await batchRepo.UpdateAsync(batch);
 
-        var institution = await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == batch.InstitutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == batch.InstitutionId, ignoreQueryFilters: true);
         await auditLog.LogAsync(rejectedBy, actorName, $"rejected payout setup for batch \"{batch.Name}\"{(string.IsNullOrWhiteSpace(request.Notes) ? "" : $": {request.Notes}")}", institution?.Name ?? batch.InstitutionId);
 
         logger.LogInformation("Batch {BatchId} payout setup rejected by {RejecterId}", batch.Id, rejectedBy);

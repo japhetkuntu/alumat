@@ -2,18 +2,24 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using NotificationEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Notification;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) : ISupportCaseService
+public class SupportCaseService(
+    IAlumniPgRepository<SupportCase> supportCaseRepo,
+    IAlumniPgRepository<Institution> institutionRepo,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
+    IAlumniPgRepository<StaffEntity> staffRepo,
+    IAlumniPgRepository<NotificationEntity> notificationRepo,
+    IAuditLogService auditLog) : ISupportCaseService
 {
     public async Task<IApiResponse<List<SupportCaseResponse>>> GetCasesAsync(string? status)
     {
-        var query = db.SupportCases.AsQueryable();
+        var query = supportCaseRepo.GetQueryable();
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(c => c.Status == status);
 
@@ -34,8 +40,7 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
             Message = request.Message,
             CreatedBy = createdBy,
         };
-        db.SupportCases.Add(supportCase);
-        await db.SaveChangesAsync();
+        await supportCaseRepo.AddAsync(supportCase);
 
         var dto = (await ToDtosAsync([supportCase])).Single();
         return dto.ToCreatedApiResponse();
@@ -43,7 +48,7 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
 
     public async Task<IApiResponse<SupportCaseResponse>> UpdateStatusAsync(string id, UpdateSupportCaseStatusRequest request, string actorId, string actorName)
     {
-        var supportCase = await db.SupportCases.FirstOrDefaultAsync(c => c.Id == id);
+        var supportCase = await supportCaseRepo.GetOneAsync(c => c.Id == id);
         if (supportCase is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<SupportCaseResponse>("Support case not found");
 
@@ -51,7 +56,7 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
         supportCase.Status = request.Status;
         supportCase.UpdatedAt = DateTime.UtcNow;
         supportCase.UpdatedBy = actorId;
-        await db.SaveChangesAsync();
+        await supportCaseRepo.UpdateAsync(supportCase);
 
         await auditLog.LogAsync(actorId, actorName, $"set support case status to {request.Status}", supportCase.Subject);
 
@@ -61,27 +66,26 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
         // has no route in from here.
         if (request.Status == "Resolved" && !wasAlreadyResolved && !string.IsNullOrEmpty(supportCase.InstitutionId))
         {
-            var admins = await db.Set<StaffEntity>().IgnoreQueryFilters()
-                .Where(s => s.InstitutionId == supportCase.InstitutionId && (s.Role == "Admin" || s.Role == "SuperAdmin") && !s.IsDisabled)
-                .ToListAsync();
+            var admins = await staffRepo.GetAllAsync(
+                s => s.InstitutionId == supportCase.InstitutionId && (s.Role == "Admin" || s.Role == "SuperAdmin") && !s.IsDisabled,
+                ignoreQueryFilters: true);
 
-            foreach (var admin in admins)
+            var notifications = admins.Select(admin => new NotificationEntity
             {
-                db.Set<NotificationEntity>().Add(new NotificationEntity
-                {
-                    InstitutionId = supportCase.InstitutionId,
-                    RecipientId = admin.Id,
-                    RecipientType = "Admin",
-                    Title = "Support ticket resolved",
-                    Body = $"\"{supportCase.Subject}\" has been resolved by the platform team.",
-                    Type = "SupportTicketResolved",
-                    RelatedEntityId = supportCase.Id,
-                    RelatedEntityType = "SupportCase",
-                    ActionUrl = "/support",
-                    CreatedBy = actorId,
-                });
-            }
-            await db.SaveChangesAsync();
+                InstitutionId = supportCase.InstitutionId,
+                RecipientId = admin.Id,
+                RecipientType = "Admin",
+                Title = "Support ticket resolved",
+                Body = $"\"{supportCase.Subject}\" has been resolved by the platform team.",
+                Type = "SupportTicketResolved",
+                RelatedEntityId = supportCase.Id,
+                RelatedEntityType = "SupportCase",
+                ActionUrl = "/support",
+                CreatedBy = actorId,
+            }).ToList();
+
+            if (notifications.Count > 0)
+                await notificationRepo.AddRangeAsync(notifications);
         }
 
         var dto = (await ToDtosAsync([supportCase])).Single();
@@ -90,7 +94,7 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
 
     public async Task<IApiResponse<SupportCaseResponse>> AddNoteAsync(string id, AddInternalNoteRequest request, string actorId, string actorName)
     {
-        var supportCase = await db.SupportCases.FirstOrDefaultAsync(c => c.Id == id);
+        var supportCase = await supportCaseRepo.GetOneAsync(c => c.Id == id);
         if (supportCase is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<SupportCaseResponse>("Support case not found");
 
@@ -98,7 +102,7 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
         supportCase.AssigneeStaffId ??= actorId;
         supportCase.UpdatedAt = DateTime.UtcNow;
         supportCase.UpdatedBy = actorId;
-        await db.SaveChangesAsync();
+        await supportCaseRepo.UpdateAsync(supportCase);
 
         await auditLog.LogAsync(actorId, actorName, "added internal note", supportCase.Subject);
 
@@ -109,10 +113,10 @@ public class SupportCaseService(AlumniDbContext db, IAuditLogService auditLog) :
     private async Task<List<SupportCaseResponse>> ToDtosAsync(List<SupportCase> cases)
     {
         var institutionIds = cases.Where(c => c.InstitutionId != null).Select(c => c.InstitutionId!).Distinct().ToList();
-        var institutionNames = await db.Institutions.Where(i => institutionIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.Name);
+        var institutionNames = await institutionRepo.GetQueryable(i => institutionIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.Name);
 
         var assigneeIds = cases.Where(c => c.AssigneeStaffId != null).Select(c => c.AssigneeStaffId!).Distinct().ToList();
-        var assigneeNames = await db.PlatformStaff.Where(s => assigneeIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
+        var assigneeNames = await platformStaffRepo.GetQueryable(s => assigneeIds.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Name);
 
         var now = DateTime.UtcNow;
         return cases.Select(c => new SupportCaseResponse(

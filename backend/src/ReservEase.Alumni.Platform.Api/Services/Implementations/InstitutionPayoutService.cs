@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -16,14 +16,13 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// since this service is not scoped to one tenant.
 /// </summary>
 public class InstitutionPayoutService(
-    AlumniDbContext db, IAuditLogService auditLog, IPaystackService paystackService,
+    IAlumniPgRepository<Institution> institutionRepo, IAuditLogService auditLog, IPaystackService paystackService,
     ILogger<InstitutionPayoutService> logger) : IInstitutionPayoutService
 {
     public async Task<IApiResponse<List<PendingInstitutionPayoutItem>>> GetPendingAsync()
     {
-        var pending = await db.Institutions.IgnoreQueryFilters()
-            .Where(i => i.PayoutStatus == "Pending" && i.PendingPayoutChanges != null)
-            .ToListAsync();
+        var pending = await institutionRepo.GetAllAsync(
+            i => i.PayoutStatus == "Pending" && i.PendingPayoutChanges != null, ignoreQueryFilters: true);
 
         var items = pending
             .OrderByDescending(i => i.UpdatedAt)
@@ -38,7 +37,7 @@ public class InstitutionPayoutService(
 
     public async Task<IApiResponse<object>> ApproveAsync(string institutionId, string approvedBy, string actorName)
     {
-        var institution = await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == institutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Institution not found");
 
@@ -86,7 +85,7 @@ public class InstitutionPayoutService(
         institution.PendingPayoutChanges = null;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = approvedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(approvedBy, actorName, "approved institution payout setup", institution.Name);
 
@@ -96,7 +95,7 @@ public class InstitutionPayoutService(
 
     public async Task<IApiResponse<object>> RejectAsync(string institutionId, RejectInstitutionPayoutRequest request, string rejectedBy, string actorName)
     {
-        var institution = await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == institutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Institution not found");
 
@@ -107,7 +106,7 @@ public class InstitutionPayoutService(
         institution.PendingPayoutChanges = null;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = rejectedBy;
-        await db.SaveChangesAsync();
+        await institutionRepo.UpdateAsync(institution);
 
         await auditLog.LogAsync(rejectedBy, actorName, $"rejected institution payout setup{(string.IsNullOrWhiteSpace(request.Notes) ? "" : $": {request.Notes}")}", institution.Name);
 

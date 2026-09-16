@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services;
 
@@ -9,9 +8,9 @@ public static class DataSeeder
     public static async Task SeedAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
+        var staffRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<PlatformStaff>>();
 
-        if (!await db.PlatformStaff.AnyAsync())
+        if (await staffRepo.CountAsync() == 0)
         {
             var staff = new PlatformStaff
             {
@@ -21,8 +20,7 @@ public static class DataSeeder
                 Role = "SuperAdmin",
                 CreatedBy = "seeder",
             };
-            db.PlatformStaff.Add(staff);
-            await db.SaveChangesAsync();
+            await staffRepo.AddAsync(staff);
 
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Seeded default platform SuperAdmin: {Email}", staff.Email);

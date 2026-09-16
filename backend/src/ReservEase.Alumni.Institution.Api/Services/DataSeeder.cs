@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
@@ -23,13 +22,14 @@ public static class DataSeeder
     public static async Task SeedAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
+        var institutionRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<InstitutionEntity>>();
+        var staffRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<StaffEntity>>();
         var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         var seed = config.GetSection("DefaultInstitutionSeed");
 
         // Seed the starter institution if it doesn't exist yet.
-        var institution = await db.Institutions.IgnoreQueryFilters().FirstOrDefaultAsync(i => i.Id == DefaultInstitutionId);
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == DefaultInstitutionId, ignoreQueryFilters: true);
         if (institution is null)
         {
             institution = new InstitutionEntity
@@ -47,8 +47,7 @@ public static class DataSeeder
                 OnboardedAt = DateTime.UtcNow,
                 CreatedBy = "seeder",
             };
-            db.Institutions.Add(institution);
-            await db.SaveChangesAsync();
+            await institutionRepo.AddAsync(institution);
             logger.LogInformation("Seeded starter institution: {Slug}", institution.Slug);
         }
 
@@ -58,7 +57,7 @@ public static class DataSeeder
         currentTenant.SetInstitutionId(institution.Id);
 
         // Seed default SuperAdmin if none exists
-        if (!await db.Set<StaffEntity>().AnyAsync())
+        if (await staffRepo.CountAsync() == 0)
         {
             var adminEmail = seed["AdminEmail"] ?? "admin@example.com";
             var admin = new StaffEntity
@@ -72,8 +71,7 @@ public static class DataSeeder
                 CreatedBy = "seeder",
                 CreatedAt = DateTime.UtcNow,
             };
-            db.Set<StaffEntity>().Add(admin);
-            await db.SaveChangesAsync();
+            await staffRepo.AddAsync(admin);
 
             logger.LogInformation("Seeded default SuperAdmin: {Email}", admin.Email);
         }

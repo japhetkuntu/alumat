@@ -1,23 +1,21 @@
-using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class PlatformSettingsService(AlumniDbContext db, IAuditLogService auditLog) : IPlatformSettingsService
+public class PlatformSettingsService(IAlumniPgRepository<PlatformSettings> platformSettingsRepo, IAuditLogService auditLog) : IPlatformSettingsService
 {
     /// <summary>Fetches the one settings row, creating it with all-defaults on first access rather than requiring a seed migration.</summary>
     private async Task<PlatformSettings> GetOrCreateAsync()
     {
-        var settings = await db.PlatformSettings.FirstOrDefaultAsync(s => s.Id == PlatformSettings.SingletonId);
+        var settings = await platformSettingsRepo.GetOneAsync(s => s.Id == PlatformSettings.SingletonId);
         if (settings is not null) return settings;
 
         settings = new PlatformSettings { Id = PlatformSettings.SingletonId };
-        db.PlatformSettings.Add(settings);
-        await db.SaveChangesAsync();
+        await platformSettingsRepo.AddAsync(settings);
         return settings;
     }
 
@@ -33,7 +31,7 @@ public class PlatformSettingsService(AlumniDbContext db, IAuditLogService auditL
         settings.BlockOverdueCampaignPayments = request.BlockOverdueCampaignPayments;
         settings.UpdatedAt = DateTime.UtcNow;
         settings.UpdatedBy = updatedBy;
-        await db.SaveChangesAsync();
+        await platformSettingsRepo.UpdateAsync(settings);
 
         await auditLog.LogAsync(updatedBy, actorName,
             $"set platform-wide \"block overdue campaign payments\" to {request.BlockOverdueCampaignPayments}", "Platform settings");

@@ -71,14 +71,13 @@ public class BirthdaySpotlightSchedulerService(
         List<string> institutionIds;
         await using (var scope = scopeFactory.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
+            var institutionRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<Institution>>();
             // DisabledFeatures is a jsonb column (see AlumniDbContext's
             // JsonbConverter<List<string>>) — Contains() on it can't be
             // translated to SQL, so the feature-toggle check has to happen
             // in memory, after the (SQL-translatable) Status filter narrows
             // the row count down first.
-            institutionIds = (await db.Institutions.IgnoreQueryFilters()
-                    .Where(i => i.Status == "Active")
+            institutionIds = (await institutionRepo.GetQueryable(i => i.Status == "Active", ignoreQueryFilters: true)
                     .Select(i => new { i.Id, i.DisabledFeatures })
                     .ToListAsync(stoppingToken))
                 .Where(i => !i.DisabledFeatures.Contains(InstitutionFeatures.BirthdaySpotlight))

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
@@ -57,9 +58,8 @@ public class RecurringGivingSchedulerService(
         List<string> institutionIds;
         await using (var scope = scopeFactory.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
-            institutionIds = await db.Institutions.IgnoreQueryFilters()
-                .Where(i => i.Status == "Active")
+            var institutionRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<Institution>>();
+            institutionIds = await institutionRepo.GetQueryable(i => i.Status == "Active", ignoreQueryFilters: true)
                 .Select(i => i.Id)
                 .ToListAsync(stoppingToken);
         }

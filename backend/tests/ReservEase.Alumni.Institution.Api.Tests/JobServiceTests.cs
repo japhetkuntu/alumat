@@ -31,7 +31,7 @@ public class JobServiceTests
             CreatedBy = "other-admin",
         };
 
-        mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
+        mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
         var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "ScopedAdmin", YearGroups = new List<int> { 2025 } };
@@ -68,7 +68,7 @@ public class JobServiceTests
             CreatedBy = "other-admin",
         };
 
-        mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
+        mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
         var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin" };
@@ -102,7 +102,7 @@ public class JobServiceTests
             CreatedBy = "other-admin",
         };
 
-        mockRepo.Setup(r => r.GetByIdAsync(job.Id)).ReturnsAsync(job);
+        mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
         var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "SuperAdmin" };

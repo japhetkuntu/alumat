@@ -2,20 +2,20 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class AuditLogService(AlumniDbContext db) : IAuditLogService
+public class AuditLogService(IAlumniPgRepository<AuditLogEntry> auditLogRepo) : IAuditLogService
 {
     public async Task<IApiResponse<PgPagedResult<AuditLogEntryResponse>>> GetEntriesAsync(int page, int pageSize, string? search)
     {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 200) pageSize = 50;
 
-        var query = db.AuditLogEntries.AsQueryable();
+        var query = auditLogRepo.GetQueryable();
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
@@ -49,7 +49,7 @@ public class AuditLogService(AlumniDbContext db) : IAuditLogService
 
     public async Task LogAsync(string? actorId, string actorName, string action, string target)
     {
-        db.AuditLogEntries.Add(new AuditLogEntry
+        await auditLogRepo.AddAsync(new AuditLogEntry
         {
             ActorId = actorId,
             Actor = actorName,
@@ -57,6 +57,5 @@ public class AuditLogService(AlumniDbContext db) : IAuditLogService
             Target = target,
             CreatedBy = actorId ?? "system",
         });
-        await db.SaveChangesAsync();
     }
 }

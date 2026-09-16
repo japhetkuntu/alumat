@@ -1,10 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
-using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -29,7 +27,7 @@ public class RecurringGivingProcessor(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Institution> institutionRepo,
     IAlumniPgRepository<Notification> notifRepo,
-    AlumniDbContext db,
+    IAlumniPgRepository<Batch> batchRepo,
     ICurrentTenantService currentTenant,
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
@@ -231,8 +229,7 @@ public class RecurringGivingProcessor(
         if (campaign.YearGroups is { Count: 1 } && !string.IsNullOrEmpty(currentTenant.InstitutionId))
         {
             var year = campaign.YearGroups[0];
-            var batch = await db.Set<Batch>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(b => b.InstitutionId == currentTenant.InstitutionId && b.Year == year);
+            var batch = await batchRepo.GetOneAsync(b => b.InstitutionId == currentTenant.InstitutionId && b.Year == year, ignoreQueryFilters: true);
             if (batch is { PayoutStatus: "Approved", UseInstitutionAccount: false } && !string.IsNullOrEmpty(batch.PaystackSubaccountCode))
                 return batch.PaystackSubaccountCode;
         }

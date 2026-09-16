@@ -31,9 +31,9 @@ public class DbContextConfigurationTests
         var contributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
 
         var member = new MemberEntity { Id = "member-1", GraduationYear = 2025 };
-        memberRepo.Setup(m => m.GetByIdAsync("member-1")).ReturnsAsync(member);
+        memberRepo.Setup(m => m.GetByIdAsync("member-1", It.IsAny<bool>())).ReturnsAsync(member);
         membershipRepo
-            .Setup(m => m.GetAllAsync(It.IsAny<Expression<Func<CommunityMembership, bool>>>()))
+            .Setup(m => m.GetAllAsync(It.IsAny<Expression<Func<CommunityMembership, bool>>>(), It.IsAny<bool>()))
             .ReturnsAsync(new List<CommunityMembership>());
 
         var activeCampaign = new Campaign
@@ -63,9 +63,9 @@ public class DbContextConfigurationTests
         };
 
         campaignRepo
-            .Setup(r => r.GetPagedAsync(1, 10, "CreatedAt", "desc", It.IsAny<Expression<Func<Campaign, bool>>>()))
+            .Setup(r => r.GetPagedAsync(1, 10, "CreatedAt", "desc", It.IsAny<Expression<Func<Campaign, bool>>>(), It.IsAny<bool>()))
             .ReturnsAsync(filteredPagedResult)
-            .Callback<int, int, string, string, Expression<Func<Campaign, bool>>>((p, ps, c, d, filterExpr) =>
+            .Callback<int, int, string, string, Expression<Func<Campaign, bool>>, bool>((p, ps, c, d, filterExpr, ignoreQueryFilters) =>
             {
                 var predicate = filterExpr.Compile();
                 Assert.True(predicate(activeCampaign));
