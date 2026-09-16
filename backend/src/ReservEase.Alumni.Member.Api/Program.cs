@@ -87,6 +87,7 @@ builder.Services.AddHostedService<DigestSchedulerService>();
 builder.Services.AddScoped<IRecurringGivingProcessor, RecurringGivingProcessor>();
 builder.Services.AddHostedService<RecurringGivingSchedulerService>();
 builder.Services.AddHostedService<BirthdaySpotlightSchedulerService>();
+builder.Services.AddHostedService<WebhookSweeperService>();
 
 // Defense in depth, on top of each scheduler already catching its own
 // exceptions internally: the default (StopHost) kills the ENTIRE API

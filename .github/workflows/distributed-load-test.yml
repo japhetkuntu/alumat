@@ -1,0 +1,96 @@
+# Runs scripts/load-test/load-test.js from several PARALLEL GitHub-hosted
+# runners at once — each is a separate ephemeral VM with its own IP, so this
+# is how you get past nginx's per-IP rate limit (deploy/nginx.ssl.conf's
+# api_general zone: 50r/s, burst 100) to see what the app itself can
+# actually handle under load from many distinct sources, the way real
+# traffic from many different institutions' members would look — instead of
+# what one laptop's one IP can push through the limiter.
+#
+# manual trigger ONLY (workflow_dispatch) — this hits live production. It
+# must never run on push/PR/schedule, and the `confirm` input below is a
+# second gate against triggering it by an accidental click in the Actions
+# UI. Only the public/read-only load-test.js is wired up here (not
+# authenticated-load-test.js) — that script needs real test-account
+# credentials, which don't belong in CI secrets for a load test; run that
+# one locally instead (see its own header comment).
+name: Distributed Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Target URL (e.g. https://alumunion.com or https://someslug.alumunion.com)"
+        required: true
+      load_profile:
+        description: "Ramp profile"
+        required: true
+        default: "smoke"
+        type: choice
+        options:
+          - smoke
+          - full
+      parallel_runners:
+        description: "How many parallel runners (= distinct source IPs) to run from"
+        required: true
+        default: "3"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+          - "5"
+      confirm:
+        description: 'This hits LIVE PRODUCTION. Type "yes-load-test-production" to proceed.'
+        required: true
+
+jobs:
+  check-confirmation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify confirmation phrase
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "yes-load-test-production" ]; then
+            echo "::error::Confirmation phrase didn't match — refusing to run a load test against ${{ github.event.inputs.base_url }}. Re-run and type exactly: yes-load-test-production"
+            exit 1
+          fi
+
+  generate-matrix:
+    needs: check-confirmation
+    runs-on: ubuntu-latest
+    outputs:
+      runner_ids: ${{ steps.gen.outputs.runner_ids }}
+    steps:
+      - id: gen
+        run: |
+          N="${{ github.event.inputs.parallel_runners }}"
+          IDS=$(seq 1 "$N" | jq -R . | jq -sc .)
+          echo "runner_ids=$IDS" >> "$GITHUB_OUTPUT"
+
+  load-test:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast off — one runner hitting a problem shouldn't cancel the
+      # others; you want to see all of them finish so results are comparable.
+      fail-fast: false
+      matrix:
+        runner_id: ${{ fromJson(needs.generate-matrix.outputs.runner_ids) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run load test (runner ${{ matrix.runner_id }})
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url }}
+          LOAD_PROFILE: ${{ github.event.inputs.load_profile }}
+        run: k6 run scripts/load-test/load-test.js
+
+      - name: Upload results (runner ${{ matrix.runner_id }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results-runner-${{ matrix.runner_id }}
+          path: load-test-results.json
+          if-no-files-found: warn

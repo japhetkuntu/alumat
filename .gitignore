@@ -7,6 +7,12 @@ secrets.json
 appsettings.Development.json
 appsettings.Local.json
 
+# ── Load test credentials & output (real test-account passwords, never commit) ─
+scripts/load-test/test-accounts.json
+scripts/load-test/*-load-test-results.json
+load-test-results.json
+authenticated-load-test-results.json
+
 # ── .NET / C# build artifacts ─────────────────────────────────────────────────
 **/bin/
 **/obj/

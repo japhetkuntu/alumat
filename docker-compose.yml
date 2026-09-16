@@ -309,6 +309,9 @@ services:
     volumes:
       - ${NGINX_CONF_FILE:-./docker/nginx/nginx.conf}:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/ssl-params.conf:/etc/nginx/ssl-params.conf:ro
+      - ./docker/nginx/security-headers-app.conf:/etc/nginx/security-headers-app.conf:ro
+      - ./docker/nginx/security-headers-api.conf:/etc/nginx/security-headers-api.conf:ro
+      - ./docker/nginx/security-headers-cdn.conf:/etc/nginx/security-headers-cdn.conf:ro
       - certbot_www:/var/www/certbot:ro
       - certbot_conf:/etc/letsencrypt:ro
     depends_on:
