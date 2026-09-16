@@ -70,7 +70,6 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<PhotoAlbum> PhotoAlbums => Set<PhotoAlbum>();
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
     public DbSet<BusinessListing> BusinessListings => Set<BusinessListing>();
-    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -322,12 +321,6 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<PaymentTransaction>()
             .HasIndex(t => t.Reference)
             .IsUnique();
-
-        // WebhookEvent: dedup/lookup redelivered webhooks by provider+reference; sweep unprocessed ones
-        modelBuilder.Entity<WebhookEvent>()
-            .HasIndex(w => new { w.Provider, w.Reference });
-        modelBuilder.Entity<WebhookEvent>()
-            .HasIndex(w => w.ProcessedAt);
 
         // Event: list by status, sort by date
         modelBuilder.Entity<AlumniEvent>()

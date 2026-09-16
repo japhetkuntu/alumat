@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -61,6 +63,21 @@ public static class PostgresExtensionService
         {
             try
             {
+                // Postgres has no "default admin database" to connect to and issue CREATE
+                // DATABASE from the way SQL Server has `master` — a session can only be
+                // opened against a database that already exists, so the OpenConnectionAsync
+                // below would fail outright against a not-yet-provisioned database.
+                // IRelationalDatabaseCreator manages its own connection (against Postgres's
+                // own default maintenance database) to check for and create ours first — it
+                // only creates the empty database, never tables, so MigrateAsync below still
+                // owns schema creation and migration-history tracking is unaffected.
+                var databaseCreator = context.GetService<IRelationalDatabaseCreator>();
+                if (!await databaseCreator.ExistsAsync())
+                {
+                    logger.LogInformation("Target database does not exist yet — creating it before migrating.");
+                    await databaseCreator.CreateAsync();
+                }
+
                 // The lock is session-level (tied to this connection) and released
                 // automatically when the connection closes, even if the process crashes
                 // mid-migration — no separate unlock bookkeeping needed on the failure path.

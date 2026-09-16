@@ -2529,57 +2529,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.ToTable("StoreProductVariants", "alumni");
                 });
 
-            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.WebhookEvent", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Attempts")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("LastError")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("RawBody")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("ReceivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Reference")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProcessedAt");
-
-                    b.HasIndex("Provider", "Reference");
-
-                    b.ToTable("WebhookEvents", "alumni");
-                });
-
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Announcement", b =>
                 {
                     b.Property<string>("Id")

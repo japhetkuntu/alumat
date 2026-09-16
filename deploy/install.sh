@@ -118,7 +118,7 @@ systemctl enable --now nginx
 echo "== 8/11: app directories =="
 # Runs as www-data (the user Nginx already runs as) rather than a dedicated
 # custom user — no home directory quirks to work around.
-for d in institution-api member-api platform-api frontend-institution frontend-member frontend-platform; do
+for d in institution-api member-api platform-api operations-worker frontend-institution frontend-member frontend-platform; do
   mkdir -p "/var/www/alumunion/${d}/logs"
 done
 chown -R www-data:www-data /var/www/alumunion
@@ -130,7 +130,7 @@ if [[ ! -d "$SRC_DIR/.git" ]]; then
   git clone "$REPO_URL" "$SRC_DIR"
 fi
 
-for f in alumni-institution-api alumni-member-api alumni-platform-api \
+for f in alumni-institution-api alumni-member-api alumni-platform-api alumni-operations-worker \
          alumni-frontend-institution alumni-frontend-member alumni-frontend-platform; do
   install -m 644 "$SRC_DIR/deploy/${f}.service" "/etc/systemd/system/${f}.service"
 done
@@ -143,7 +143,7 @@ sed \
 ln -sf /etc/nginx/sites-available/alumunion /etc/nginx/sites-enabled/alumunion
 nginx -t
 
-for f in institution-api member-api platform-api; do
+for f in institution-api member-api platform-api operations-worker; do
   target="/etc/alumunion/${f}.env"
   if [[ ! -f "$target" ]]; then
     install -m 600 "$SRC_DIR/deploy/${f}.env.example" "$target"
@@ -156,7 +156,7 @@ systemctl daemon-reload
 # without this, services would work right after install.sh but silently not
 # come back on a droplet reboot. Not started (--now) here since nothing's
 # published to /var/www/alumunion yet; deploy.sh's `systemctl restart` does that.
-systemctl enable alumni-institution-api alumni-member-api alumni-platform-api \
+systemctl enable alumni-institution-api alumni-member-api alumni-platform-api alumni-operations-worker \
   alumni-frontend-institution alumni-frontend-member alumni-frontend-platform
 systemctl reload nginx
 
@@ -170,11 +170,13 @@ echo "== 11/11: done =="
 cat <<EOF
 
 Provisioning done. Remaining manual steps:
-  1. Edit /etc/alumunion/institution-api.env, member-api.env and platform-api.env
-     (JWT keys, the Postgres password you just set, DigitalOcean Spaces keys,
-     Mailtrap/Arkesel/WaSender creds). See deploy/*.env.example for what each
-     key means — the ConnectionStrings__AlumniConnection password must match
-     what you set above.
+  1. Edit /etc/alumunion/institution-api.env, member-api.env, platform-api.env
+     and operations-worker.env (JWT keys, the Postgres password you just set,
+     DigitalOcean Spaces keys, Mailtrap/Arkesel/WaSender creds, and — new —
+     a Temporal Cloud namespace/API key in member-api.env and
+     operations-worker.env, same values in both). See deploy/*.env.example
+     for what each key means — the ConnectionStrings__AlumniConnection
+     password must match what you set above.
   2. Point DNS at this droplet's IP (via whichever provider hosts your DNS —
      Netlify DNS works fine here, it's just an authoritative zone):
        *.${PLATFORM_BASE_DOMAIN}   (wildcard, member portal — one label only,

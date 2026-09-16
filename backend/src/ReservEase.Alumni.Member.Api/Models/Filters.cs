@@ -2,11 +2,6 @@ using ReservEase.Alumni.Common.Sdk.Models;
 
 namespace ReservEase.Alumni.Member.Api.Models;
 
-public class ContributionFilter : BaseFilter
-{
-    public string? CampaignId { get; set; }
-}
-
 public class JobFilter : BaseFilter
 {
     public string? Type { get; set; }

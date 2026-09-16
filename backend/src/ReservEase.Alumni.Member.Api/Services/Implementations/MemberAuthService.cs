@@ -11,7 +11,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
-using ReservEase.Alumni.Member.Api.Options;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;

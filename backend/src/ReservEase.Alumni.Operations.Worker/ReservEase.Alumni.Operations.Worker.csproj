@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Temporalio" Version="1.*" />
+    <PackageReference Include="Temporalio.Extensions.Hosting" Version="1.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReservEase.Alumni.PaymentCallbacks.Sdk\ReservEase.Alumni.PaymentCallbacks.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.PostgresDb.Sdk\ReservEase.Alumni.PostgresDb.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Redis.Sdk\ReservEase.Alumni.Redis.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Paystack.Sdk\ReservEase.Alumni.Paystack.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Sms.Sdk\ReservEase.Alumni.Sms.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Whatsapp.Sdk\ReservEase.Alumni.Whatsapp.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Common.Sdk\ReservEase.Alumni.Common.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Storage.Sdk\ReservEase.Alumni.Storage.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

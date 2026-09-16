@@ -25,9 +25,11 @@ using ReservEase.Alumni.Paystack.Sdk.Options;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Member.Api.Models;
-using ReservEase.Alumni.Member.Api.Options;
 using ReservEase.Alumni.Member.Api.Services.Implementations;
-using MemberContributionService = ReservEase.Alumni.Member.Api.Services.Implementations.ContributionService;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
+using MemberContributionService = ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Implementations.ContributionService;
 using INotificationActor = ReservEase.Alumni.Member.Api.Services.Interfaces.INotificationActor;
 using IAdminNotificationActor = ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor;
 using DbMember = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -713,7 +715,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -753,7 +755,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -783,7 +785,7 @@ public class ContributionMemberForumServiceTests
         mockCampaignRepo.Setup(r => r.GetByIdAsync("membership-campaign")).ReturnsAsync(new Campaign { Id = "membership-campaign", Title = "Membership", AmountPerMember = 100, IsMembershipCampaign = true, AllowManualPayments = true });
         mockContributionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new Contribution { Id = "c1", MemberId = "m1", CampaignId = "membership-campaign", Status = "Successful" });
 
-        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, CreateInMemoryDbContext(), mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<INotificationActor>(), config.Object, logger);
+        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, CreateInMemoryDbContext(), mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<INotificationDispatcher>(), config.Object, logger);
 
         var response = await service.InitiateMembershipRenewalAsync(new InitiateMembershipRenewalRequest("membership-campaign", 1, "manual"), new AuthData { Id = "m1", Email = "john@example.com" });
 
@@ -825,7 +827,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -869,7 +871,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -916,7 +918,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -957,7 +959,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 
@@ -1015,7 +1017,7 @@ public class ContributionMemberForumServiceTests
             Mock.Of<IPaystackService>(),
             new PaystackConfig(),
             Mock.Of<IRedisService<MemberRedisConfig>>(),
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             Mock.Of<IConfiguration>(),
             new NullLogger<MemberContributionService>());
 
@@ -1068,7 +1070,7 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationActor>(),
+            Mock.Of<INotificationDispatcher>(),
             config.Object,
             logger);
 

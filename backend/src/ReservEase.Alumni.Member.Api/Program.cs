@@ -3,15 +3,18 @@ using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
 using ReservEase.Alumni.Member.Api.Extensions;
-using ReservEase.Alumni.Member.Api.Options;
 using ReservEase.Alumni.Member.Api.Services.Implementations;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Implementations;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
+using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +50,7 @@ builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
+builder.Services.AddTemporalClientProvider(builder.Configuration);
 
 // Auth + API
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
@@ -87,7 +91,6 @@ builder.Services.AddHostedService<DigestSchedulerService>();
 builder.Services.AddScoped<IRecurringGivingProcessor, RecurringGivingProcessor>();
 builder.Services.AddHostedService<RecurringGivingSchedulerService>();
 builder.Services.AddHostedService<BirthdaySpotlightSchedulerService>();
-builder.Services.AddHostedService<WebhookSweeperService>();
 
 // Defense in depth, on top of each scheduler already catching its own
 // exceptions internally: the default (StopHost) kills the ENTIRE API
@@ -104,6 +107,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// Establish (or attempt) the Temporal connection at startup so a failure is visible
+// immediately in logs, rather than surfacing silently on the first webhook request.
+app.Services.GetRequiredService<ITemporalClientProvider>();
 
 var enableSwagger = builder.Configuration.GetValue<bool>("ENABLE_SWAGGER", false);
 

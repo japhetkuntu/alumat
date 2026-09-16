@@ -3,6 +3,7 @@ using Akka.Event;
 using Microsoft.Extensions.DependencyInjection;
 using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 
 namespace ReservEase.Alumni.Member.Api.Actors;

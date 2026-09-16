@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReservEase.Alumni.PostgresDb.Sdk\ReservEase.Alumni.PostgresDb.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Redis.Sdk\ReservEase.Alumni.Redis.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Paystack.Sdk\ReservEase.Alumni.Paystack.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Sms.Sdk\ReservEase.Alumni.Sms.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Whatsapp.Sdk\ReservEase.Alumni.Whatsapp.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Storage.Sdk\ReservEase.Alumni.Storage.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Common.Sdk\ReservEase.Alumni.Common.Sdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.NET.Sdk.Web (unlike this plain Sdk) implicitly brings these in for every
+         file — added explicitly here since the moved services assume they're ambient. -->
+    <Using Include="Microsoft.Extensions.Configuration" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Temporalio" Version="1.*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

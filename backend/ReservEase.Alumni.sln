@@ -31,6 +31,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.Sms.Sdk",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.Whatsapp.Sdk", "src\ReservEase.Alumni.Whatsapp.Sdk\ReservEase.Alumni.Whatsapp.Sdk.csproj", "{29568CE2-C814-41B7-93B9-2867649A1B7F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.PaymentCallbacks.Sdk", "src\ReservEase.Alumni.PaymentCallbacks.Sdk\ReservEase.Alumni.PaymentCallbacks.Sdk.csproj", "{75A6A9C7-FAAD-462E-9CFF-B618E23A63D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.Temporal.Sdk", "src\ReservEase.Alumni.Temporal.Sdk\ReservEase.Alumni.Temporal.Sdk.csproj", "{492CCC19-B6F4-4A48-B3BC-9728BD5E201A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.Operations.Worker", "src\ReservEase.Alumni.Operations.Worker\ReservEase.Alumni.Operations.Worker.csproj", "{0274B6CB-D708-418B-98D4-5261FF761C5D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +94,18 @@ Global
 		{29568CE2-C814-41B7-93B9-2867649A1B7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29568CE2-C814-41B7-93B9-2867649A1B7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29568CE2-C814-41B7-93B9-2867649A1B7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75A6A9C7-FAAD-462E-9CFF-B618E23A63D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75A6A9C7-FAAD-462E-9CFF-B618E23A63D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75A6A9C7-FAAD-462E-9CFF-B618E23A63D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75A6A9C7-FAAD-462E-9CFF-B618E23A63D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{492CCC19-B6F4-4A48-B3BC-9728BD5E201A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{492CCC19-B6F4-4A48-B3BC-9728BD5E201A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{492CCC19-B6F4-4A48-B3BC-9728BD5E201A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{492CCC19-B6F4-4A48-B3BC-9728BD5E201A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0274B6CB-D708-418B-98D4-5261FF761C5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0274B6CB-D708-418B-98D4-5261FF761C5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0274B6CB-D708-418B-98D4-5261FF761C5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0274B6CB-D708-418B-98D4-5261FF761C5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5DBF1CC1-4609-4D52-8EBC-940BC92C6926} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
@@ -102,5 +120,8 @@ Global
 		{2E19B993-5C9E-4BE5-9C74-5A4426FE6763} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
 		{CD203904-BEEA-457C-93EA-AA6C37BB2845} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
 		{29568CE2-C814-41B7-93B9-2867649A1B7F} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
+		{75A6A9C7-FAAD-462E-9CFF-B618E23A63D6} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
+		{492CCC19-B6F4-4A48-B3BC-9728BD5E201A} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
+		{0274B6CB-D708-418B-98D4-5261FF761C5D} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
 	EndGlobalSection
 EndGlobal

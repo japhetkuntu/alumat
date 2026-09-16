@@ -13,12 +13,13 @@
 set -euo pipefail
 
 echo "== stopping/disabling services =="
-systemctl stop alumni-institution-api alumni-member-api alumni-platform-api \
+systemctl stop alumni-institution-api alumni-member-api alumni-platform-api alumni-operations-worker \
   alumni-frontend-institution alumni-frontend-member alumni-frontend-platform 2>/dev/null || true
-systemctl disable alumni-institution-api alumni-member-api alumni-platform-api \
+systemctl disable alumni-institution-api alumni-member-api alumni-platform-api alumni-operations-worker \
   alumni-frontend-institution alumni-frontend-member alumni-frontend-platform 2>/dev/null || true
 rm -f /etc/systemd/system/alumni-institution-api.service /etc/systemd/system/alumni-member-api.service \
-  /etc/systemd/system/alumni-platform-api.service /etc/systemd/system/alumni-frontend-institution.service \
+  /etc/systemd/system/alumni-platform-api.service /etc/systemd/system/alumni-operations-worker.service \
+  /etc/systemd/system/alumni-frontend-institution.service \
   /etc/systemd/system/alumni-frontend-member.service /etc/systemd/system/alumni-frontend-platform.service
 systemctl daemon-reload
 

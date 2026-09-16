@@ -1,0 +1,36 @@
+[Unit]
+Description=Alumni Portal Operations Worker (Temporal)
+# After institution-api by the same convention institution-api documents for
+# itself: it applies EF Core migrations on boot first, so anything else
+# sharing the same migrations project starts after it to avoid a race on the
+# very first (empty-database) boot. The Postgres advisory lock in
+# PostgresExtensionService.ApplyMigrationsAsync makes this non-strict, but the
+# ordering avoids the wasted retry/backoff either way.
+After=network.target postgresql.service redis-server.service alumni-institution-api.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/alumunion/operations-worker
+ExecStart=/usr/bin/dotnet /var/www/alumunion/operations-worker/ReservEase.Alumni.Operations.Worker.dll
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStartSec=300
+SyslogIdentifier=alumni-operations-worker
+StandardOutput=journal
+StandardError=journal
+
+# Not a web app — a plain generic host, so it's DOTNET_ENVIRONMENT (what
+# Host.CreateApplicationBuilder reads), not ASPNETCORE_ENVIRONMENT, and there
+# is no ASPNETCORE_URLS: it serves no HTTP traffic, only long-polls Temporal.
+Environment=DOTNET_ENVIRONMENT=Production
+Environment=DOTNET_NOLOGO=1
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+Environment=DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+EnvironmentFile=/etc/alumunion/operations-worker.env
+
+[Install]
+WantedBy=multi-user.target

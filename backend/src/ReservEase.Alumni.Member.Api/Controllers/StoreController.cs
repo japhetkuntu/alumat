@@ -6,6 +6,8 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Filters;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
