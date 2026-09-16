@@ -14,7 +14,7 @@ public class Spotlight : BaseEntity, ITenantScoped
 
     // "Manual" (the existing admin/self-submitted flow, untouched — these
     // stay empty) or "Birthday" (system-generated; see
-    // BirthdaySpotlightSchedulerService). A Birthday spotlight can cover
+    // BirthdaySpotlightDispatchWorkflow (Operations.Worker)). A Birthday spotlight can cover
     // more than one member at once when several share a birthday — MemberId/
     // Member above hold the first of them, MemberIds/Members hold everyone.
     public string Type { get; set; } = "Manual";

@@ -4,7 +4,7 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 
 /// <summary>
 /// A member's standing "give ₵X every month" commitment to one campaign,
-/// charged automatically by RecurringGivingSchedulerService via Paystack's
+/// charged automatically by RecurringGivingWorkflow (Operations.Worker) via Paystack's
 /// charge_authorization endpoint against a saved, reusable card token — no
 /// separate Paystack Plan/Subscription object involved, so the existing
 /// Zero-Deduction split (BuildZeroDeductionCharge/ResolveSubaccountAsync) and

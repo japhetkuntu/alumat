@@ -80,20 +80,6 @@ builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();
 builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
 builder.Services.AddScoped<IAlbumService, AlbumService>();
 builder.Services.AddScoped<IBusinessDirectoryService, BusinessDirectoryService>();
-builder.Services.AddScoped<IDigestService, DigestService>();
-builder.Services.AddHostedService<DigestSchedulerService>();
-builder.Services.AddScoped<IRecurringGivingProcessor, RecurringGivingProcessor>();
-builder.Services.AddHostedService<RecurringGivingSchedulerService>();
-builder.Services.AddHostedService<BirthdaySpotlightSchedulerService>();
-
-// Defense in depth, on top of each scheduler already catching its own
-// exceptions internally: the default (StopHost) kills the ENTIRE API
-// process — not just the offending scheduler — the moment any
-// BackgroundService lets an exception escape. A background job going wrong
-// should degrade (that one cycle skipped, logged, retried next tick), never
-// take the whole API down with it.
-builder.Services.Configure<HostOptions>(o => o.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
-
 // Request body size limit (50 MB)
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 50 * 1024 * 1024);
 

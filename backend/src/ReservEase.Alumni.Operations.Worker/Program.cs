@@ -5,8 +5,10 @@ using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
 using ReservEase.Alumni.Notifications.Sdk.Workflows;
+using ReservEase.Alumni.Operations.Worker;
 using ReservEase.Alumni.Operations.Worker.Workflows.Contributions;
 using ReservEase.Alumni.Operations.Worker.Workflows.Notifications;
+using ReservEase.Alumni.Operations.Worker.Workflows.ScheduledJobs;
 using ReservEase.Alumni.Operations.Worker.Workflows.ServiceRequests;
 using ReservEase.Alumni.Operations.Worker.Workflows.StoreOrders;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
@@ -60,8 +62,20 @@ builder.Services
     .AddWorkflow<NotificationDispatchWorkflow>()
     .AddScopedActivities<NotificationDispatchActivities>();
 
+// Periodic jobs — digest emails, birthday spotlights, recurring giving charges —
+// driven by Temporal Schedules (see ScheduledJobsRegistration) instead of Member.Api's
+// old in-process PeriodicTimer BackgroundServices.
+builder.Services
+    .AddHostedTemporalWorker(OperationsTaskQueues.ScheduledJobs)
+    .AddWorkflow<DigestDispatchWorkflow>()
+    .AddWorkflow<BirthdaySpotlightDispatchWorkflow>()
+    .AddWorkflow<RecurringGivingWorkflow>()
+    .AddScopedActivities<ScheduledJobsActivities>();
+
 var host = builder.Build();
 
 await PostgresExtensionService.ApplyMigrationsAsync(host.Services);
+
+await ScheduledJobsRegistration.EnsureSchedulesAsync(host.Services);
 
 await host.RunAsync();
