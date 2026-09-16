@@ -127,6 +127,8 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
             (ContributionCallbackActivities a) => a.LoadContributionByReferenceAsync(reference, transaction.MemberId),
             PaymentActivityOptions.DatabaseRead);
 
+         Contribution? contribution=null;
+         string? contributionInstitutionId = null;
         if (existingContribution is null)
         {
             var campaign = await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.LoadCampaignAsync(transaction.CampaignId), PaymentActivityOptions.DatabaseRead);
@@ -164,8 +166,7 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
                     };
                 }
             }
-
-            var contributionInstitutionId = campaign?.InstitutionId ?? transaction.InstitutionId;
+            contributionInstitutionId = campaign?.InstitutionId ?? transaction.InstitutionId;
 
             // Zero-Deduction model: the institution's Amount is never reduced by a
             // fee. PlatformFeeAmount/NetAmountToInstitution stay 0-deduction (0 and
@@ -174,7 +175,7 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
             // Paystack's fee are recorded separately on
             // PlatformRevenueAmount/GatewayFeeAmount/GrossChargeAmount, never
             // surfaced via ContributionDto.
-            var contribution = new Contribution
+             contribution = new Contribution
             {
                 InstitutionId = contributionInstitutionId,
                 MemberId = transaction.MemberId,
@@ -188,7 +189,7 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
                 ConfirmedAt = Workflow.UtcNow,
                 ConfirmedBy = "Paystack",
                 CreatedBy = transaction.MemberId,
-                PlatformFeeAmount = 0m,
+                PlatformFeeAmount = transaction.PlatformFeeAmount,
                 NetAmountToInstitution = transaction.Amount,
                 PlatformRevenueAmount = transaction.TransactionChargeAmount - transaction.GatewayFeeAmount,
                 GatewayFeeAmount = transaction.GatewayFeeAmount,
@@ -200,18 +201,7 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
 
             contribution = await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.CreateContributionAsync(contribution), PaymentActivityOptions.DatabaseWrite);
 
-            // Expression-tree lambdas below (needed so Workflow.ExecuteActivityAsync can
-            // resolve the activity name via reflection) can't contain `?.` — compute the
-            // fallback values as plain locals first.
-            var confirmedMemberEmail = contribution.Member?.Email ?? string.Empty;
-            var confirmedMemberFirstName = contribution.Member?.FirstName ?? string.Empty;
-            var confirmedCampaignTitle = contribution.Campaign?.Title ?? "your contribution";
-            await Workflow.ExecuteActivityAsync(
-                (ContributionCallbackActivities a) => a.DispatchContributionConfirmedAsync(
-                    contributionInstitutionId, contribution.MemberId, confirmedMemberEmail,
-                    confirmedMemberFirstName, contribution.Amount,
-                    confirmedCampaignTitle, contribution.Id),
-                PaymentActivityOptions.Notification);
+         
 
             if (transaction.SetupRecurringGiving && !string.IsNullOrEmpty(transaction.MemberId))
                 await TrySetUpRecurringGivingAsync(transaction, contribution, verify.Authorization);
@@ -228,6 +218,21 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
         await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.SaveTransactionAsync(transaction), PaymentActivityOptions.DatabaseWrite);
         await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.ClearReferenceCacheAsync(reference), PaymentActivityOptions.DatabaseWrite);
 
+        if (contribution !=null && !string.IsNullOrEmpty(contributionInstitutionId))
+        {
+            // Expression-tree lambdas below (needed so Workflow.ExecuteActivityAsync can
+            // resolve the activity name via reflection) can't contain `?.` — compute the
+            // fallback values as plain locals first.
+            var confirmedMemberEmail = contribution.Member?.Email ?? string.Empty;
+            var confirmedMemberFirstName = contribution.Member?.FirstName ?? string.Empty;
+            var confirmedCampaignTitle = contribution.Campaign?.Title ?? "your contribution";
+            await Workflow.ExecuteActivityAsync(
+                (ContributionCallbackActivities a) => a.DispatchContributionConfirmedAsync(
+                    contributionInstitutionId, contribution.MemberId, confirmedMemberEmail,
+                    confirmedMemberFirstName, contribution.Amount,
+                    confirmedCampaignTitle, contribution.Id),
+                PaymentActivityOptions.Notification);
+        }
         Workflow.Logger.LogInformation("Paystack payment verified and contribution recorded for member {MemberId}", transaction.MemberId);
         return PaymentCallbackResult.Ok("Payment verified and contribution recorded");
     }
