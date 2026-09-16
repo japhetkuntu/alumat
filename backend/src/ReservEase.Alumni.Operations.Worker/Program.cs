@@ -15,7 +15,9 @@ using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
+using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
+using Temporalio.Client;
 using Temporalio.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -71,6 +73,11 @@ builder.Services
     .AddWorkflow<BirthdaySpotlightDispatchWorkflow>()
     .AddWorkflow<RecurringGivingWorkflow>()
     .AddScopedActivities<ScheduledJobsActivities>();
+
+// ContributionCallbackActivities/ScheduledJobsActivities enqueue notifications via
+// ITemporalClientProvider.EnqueueNotificationAsync — reuse the lazy ITemporalClient
+// AddTemporalClient already registered above rather than opening a second connection.
+builder.Services.AddSingleton<ITemporalClientProvider, AlwaysAvailableTemporalClientProvider>();
 
 var host = builder.Build();
 
