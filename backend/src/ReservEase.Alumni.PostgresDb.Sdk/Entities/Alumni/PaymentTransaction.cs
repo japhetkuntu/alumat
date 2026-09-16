@@ -37,7 +37,7 @@ public class PaymentTransaction : BaseEntity, ITenantScoped
     public string Reference { get; set; } = string.Empty;
     /// <summary>The intended amount — what the campaign/membership actually costs, and what the institution nets. Never overwritten by Paystack's gross charge.</summary>
     public decimal Amount { get; set; }
-    public string Status { get; set; } = "Pending"; // Pending, Successful, Failed
+    public string Status { get; set; } = "Pending"; // Pending, Successful, Failed, Duplicate (charged successfully but not applied — see ProcessContributionCallbackWorkflow's prior-membership check; needs manual refund)
 
     // ── Zero-Deduction breakdown (Paystack payments only) ───────────────────
     /// <summary>Our target platform fee for this transaction, computed at initiation from the institution's PlatformFeePercentage. 0 for non-split payments.</summary>

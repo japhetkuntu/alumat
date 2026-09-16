@@ -141,11 +141,25 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
 
                 if (priorMembership is not null)
                 {
-                    transaction.Status = "Failed";
-                    transaction.FailureMessage = "Membership campaign already paid.";
+                    // Paystack already confirmed this charge (we're past the
+                    // verify.Status/paystackStatus checks above) — the money left
+                    // the member's account. This is NOT a failed payment; it's a
+                    // race between two initiations for the same membership
+                    // campaign where the second one also got paid before either
+                    // recorded a Contribution. We deliberately don't create a
+                    // second Contribution (no double-crediting membership), but
+                    // "Failed" would wrongly tell admins/the member that no money
+                    // moved. Use a distinct status so the transaction table
+                    // reflects reality: charged, but not applied — needs a manual
+                    // refund until that flow is automated.
+                    transaction.Status = "Duplicate";
+                    transaction.FailureMessage = "This charge succeeded, but the membership campaign was already paid by an earlier transaction, so it was not recorded again. This payment needs to be refunded to the member.";
                     transaction.ProcessedAt = Workflow.UtcNow;
                     await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.SaveTransactionAsync(transaction), PaymentActivityOptions.DatabaseWrite);
                     await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.ClearReferenceCacheAsync(reference), PaymentActivityOptions.DatabaseWrite);
+                    Workflow.Logger.LogError(
+                        "Duplicate successful charge for reference {Reference}: membership campaign {CampaignId} already paid by member {MemberId}. Manual refund required.",
+                        reference, campaign.Id, transaction.MemberId);
                     return PaymentCallbackResult.BadRequest("Membership campaign has already been paid.");
                 }
             }
