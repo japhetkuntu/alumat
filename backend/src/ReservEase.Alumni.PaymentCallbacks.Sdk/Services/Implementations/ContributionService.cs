@@ -6,6 +6,7 @@ using ReservEase.Alumni.PaymentCallbacks.Sdk.Extensions;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
@@ -17,6 +18,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Implementations;
@@ -34,6 +36,7 @@ public class ContributionService : IContributionService
     private readonly PaystackConfig paystackConfig;
     private readonly IRedisService<MemberRedisConfig> redis;
     private readonly INotificationDispatcher notificationDispatcher;
+    private readonly ITemporalClientProvider temporalProvider;
     private readonly ILogger<ContributionService> logger;
     private readonly string _paystackCallbackUrl;
 
@@ -212,6 +215,7 @@ public class ContributionService : IContributionService
         PaystackConfig paystackConfig,
         IRedisService<MemberRedisConfig> redis,
         INotificationDispatcher notificationDispatcher,
+        ITemporalClientProvider temporalProvider,
         IConfiguration configuration,
         ILogger<ContributionService> logger)
     {
@@ -226,6 +230,7 @@ public class ContributionService : IContributionService
         this.paystackConfig = paystackConfig;
         this.redis = redis;
         this.notificationDispatcher = notificationDispatcher;
+        this.temporalProvider = temporalProvider;
         this.logger = logger;
 
         // Ensure callback goes to our callback route so the app can show status modal.
@@ -347,28 +352,14 @@ public class ContributionService : IContributionService
                 "Zero-Deduction charge for campaign {CampaignId}, institution {InstitutionId}: schoolAmount={SchoolAmount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}, subaccount={Subaccount}, bearer={Bearer}",
                 request.CampaignId, currentInstitution?.Id, request.Amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, subaccount, charge.bearer);
 
-            var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
-            {
-                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.Contribution),
-                Email = memberEmail,
-                Amount = charge.amountSubunit,
-                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
-                Metadata = new Dictionary<string, string>
-                {
-                    { "memberId", memberId },
-                    { "campaignId", request.CampaignId },
-                },
-                Subaccount = subaccount,
-                TransactionCharge = charge.transactionCharge,
-                Bearer = charge.bearer,
-            });
-
-            if (!response.Status)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>(response.Message);
-
-            var reference = response.Data?.Reference ?? string.Empty;
-
-            // Persist a pending transaction record so we can report back status and store details from the webhook.
+            // Generate our reference and persist the Pending transaction BEFORE ever
+            // telling Paystack about it. This guarantees any callback Paystack could
+            // possibly send for this reference already has a matching row — the
+            // callback workflow can then treat "reference not found" as a wrong/bogus
+            // reference rather than a data-loss case it needs to recover from. If this
+            // write fails, we never call Paystack at all, so no reference exists
+            // anywhere that we don't already know about.
+            var reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.Contribution);
             var transaction = new PaymentTransaction
             {
                 MemberId = memberId,
@@ -403,6 +394,34 @@ public class ContributionService : IContributionService
 
             await paymentTransactionRepo.AddAsync(transaction);
             await redis.SetAsync($"paystack:ref:{reference}", new PaystackReferenceInfo { MemberId = memberId, CampaignId = request.CampaignId, IsGuestPayment = isGuestPayment, SharedByMemberId = sharedByMemberId, SetupRecurringGiving = request.SetupRecurringGiving }, TimeSpan.FromHours(24));
+
+            var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
+            {
+                Reference = reference,
+                Email = memberEmail,
+                Amount = charge.amountSubunit,
+                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "memberId", memberId },
+                    { "campaignId", request.CampaignId },
+                },
+                Subaccount = subaccount,
+                TransactionCharge = charge.transactionCharge,
+                Bearer = charge.bearer,
+            });
+
+            if (!response.Status)
+            {
+                // Paystack never accepted this reference, so it will never send a
+                // callback for it either — mark it Failed rather than leaving a
+                // phantom Pending row nothing will ever resolve.
+                transaction.Status = "Failed";
+                transaction.FailureMessage = response.Message;
+                await paymentTransactionRepo.UpdateAsync(transaction);
+                await redis.RemoveAsync($"paystack:ref:{reference}");
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(response.Message);
+            }
 
             logger.LogInformation("Paystack payment initiated for member {MemberId}, campaign {CampaignId}", string.IsNullOrEmpty(memberId) ? "anonymous" : memberId, request.CampaignId);
             return ((object)new { authorizationUrl = response.Data?.AuthorizationUrl, reference })
@@ -498,28 +517,9 @@ public class ContributionService : IContributionService
                 "Zero-Deduction charge for membership renewal, campaign {CampaignId}, institution {InstitutionId}: schoolAmount={SchoolAmount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}, subaccount={Subaccount}, bearer={Bearer}",
                 campaign.Id, currentInstitution?.Id, amount, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge, subaccount, charge.bearer);
 
-            var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
-            {
-                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.Contribution),
-                Email = member.Email,
-                Amount = charge.amountSubunit,
-                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
-                Metadata = new Dictionary<string, string>
-                {
-                    { "memberId", member.Id },
-                    { "campaignId", campaign.Id },
-                    { "membershipYears", request.Years.ToString() }
-                },
-                Subaccount = subaccount,
-                TransactionCharge = charge.transactionCharge,
-                Bearer = charge.bearer,
-            });
-
-            if (!response.Status)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>(response.Message);
-
-            var reference = response.Data?.Reference ?? string.Empty;
-
+            // Same ordering fix as InitiatePaystackPaymentAsync — create the Pending
+            // transaction before Paystack ever knows about the reference.
+            var reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.Contribution);
             var transaction = new PaymentTransaction
             {
                 MemberId = member.Id,
@@ -547,6 +547,32 @@ public class ContributionService : IContributionService
 
             await paymentTransactionRepo.AddAsync(transaction);
             await redis.SetAsync($"paystack:ref:{reference}", new PaystackReferenceInfo { MemberId = member.Id, CampaignId = campaign.Id }, TimeSpan.FromHours(24));
+
+            var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
+            {
+                Reference = reference,
+                Email = member.Email,
+                Amount = charge.amountSubunit,
+                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "memberId", member.Id },
+                    { "campaignId", campaign.Id },
+                    { "membershipYears", request.Years.ToString() }
+                },
+                Subaccount = subaccount,
+                TransactionCharge = charge.transactionCharge,
+                Bearer = charge.bearer,
+            });
+
+            if (!response.Status)
+            {
+                transaction.Status = "Failed";
+                transaction.FailureMessage = response.Message;
+                await paymentTransactionRepo.UpdateAsync(transaction);
+                await redis.RemoveAsync($"paystack:ref:{reference}");
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(response.Message);
+            }
 
             return ((object)new { authorizationUrl = response.Data?.AuthorizationUrl, reference, amount, years = request.Years })
                 .ToOkApiResponse("Membership payment initiated");
@@ -579,431 +605,34 @@ public class ContributionService : IContributionService
         }
     }
 
-    /// <summary>
-    /// Turns this just-confirmed, member-present charge into a standing
-    /// monthly gift — only possible when Paystack reports the authorization
-    /// as reusable (true for most cards, false for most mobile money and
-    /// bank-transfer channels, which can't be re-charged without the
-    /// customer present). Silently does nothing otherwise: the one-off
-    /// contribution the member actually paid for already succeeded either
-    /// way, so a channel that can't support recurring is not an error.
-    /// </summary>
-    private async Task TrySetUpRecurringGivingAsync(PaymentTransaction transaction, Contribution contribution, PaystackAuthorization? authorization)
-    {
-        if (authorization is null || !authorization.Reusable || string.IsNullOrWhiteSpace(authorization.AuthorizationCode))
-        {
-            logger.LogInformation(
-                "Recurring giving requested for contribution {ContributionId} but the charge channel isn't reusable — skipping recurring setup.",
-                contribution.Id);
-            return;
-        }
-
-        var existing = await db.Set<RecurringContribution>().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(r => r.MemberId == transaction.MemberId && r.CampaignId == transaction.CampaignId && r.Status == "Active");
-        if (existing is not null)
-        {
-            logger.LogInformation("Member {MemberId} already has an active recurring gift to campaign {CampaignId} — not creating a duplicate.", transaction.MemberId, transaction.CampaignId);
-            return;
-        }
-
-        var recurring = new RecurringContribution
-        {
-            InstitutionId = contribution.InstitutionId,
-            MemberId = transaction.MemberId,
-            Member = contribution.Member,
-            CampaignId = transaction.CampaignId,
-            Campaign = contribution.Campaign,
-            Amount = contribution.Amount,
-            Status = "Active",
-            AuthorizationCode = authorization.AuthorizationCode,
-            CardLast4 = authorization.Last4,
-            CardType = authorization.CardType,
-            CardBank = authorization.Bank,
-            NextChargeDate = DateTime.UtcNow.AddMonths(1),
-            LastChargeAt = DateTime.UtcNow,
-            LastChargeStatus = "Successful",
-            CreatedBy = transaction.MemberId,
-        };
-
-        await db.Set<RecurringContribution>().AddAsync(recurring);
-        await db.SaveChangesAsync();
-
-        logger.LogInformation("Set up recurring monthly gift {RecurringId} for member {MemberId} to campaign {CampaignId}, amount {Amount}", recurring.Id, transaction.MemberId, transaction.CampaignId, contribution.Amount);
-    }
-
-    /// <summary>
-    /// Paystack's webhook always calls one fixed platform-wide URL (there is no
-    /// per-institution routing), so the request's Host header cannot be trusted to
-    /// resolve the correct tenant the way normal browser-originated requests can.
-    /// This method must therefore be entirely tenant-agnostic: every read bypasses
-    /// the ambient EF Core tenant filter via IgnoreQueryFilters(), and the correct
-    /// institution is instead derived from the data itself (the campaign the
-    /// payment belongs to) and stamped explicitly onto every new record.
-    /// </summary>
-    private async Task<IApiResponse<object>> HandlePaystackReferenceAsync(string reference, string? callingMemberId = null, string? rawBody = null)
-    {
-        // Attempt to load an existing transaction record.
-        var transaction = await db.Set<PaymentTransaction>().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(t => t.Reference == reference);
-        // Whether this transaction already had its Zero-Deduction fee breakdown
-        // computed at initiation — false only in the rare fallback path where the
-        // PaymentTransaction record is missing (e.g. Redis reference metadata
-        // outlived the record) and we have no choice but to trust Paystack's
-        // gross-reported amount as-is, with no fee breakdown available.
-        var hadFeeBreakdown = transaction is not null;
-        PaystackReferenceInfo? referenceInfo = null;
-
-        if (transaction is null)
-        {
-            referenceInfo = await GetReferenceInfoAsync(reference);
-            if (referenceInfo is null)
-            {
-                logger.LogWarning("Paystack reference metadata missing for {Reference}. Cannot record contribution.", reference);
-                return ApiResponseExtensions.ToOkApiResponse<object>("Payment verified, but metadata missing so contribution was not recorded.");
-            }
-
-            if (!string.IsNullOrEmpty(callingMemberId) && callingMemberId != referenceInfo.MemberId)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Reference does not belong to the current member");
-
-            var campaign = await db.Set<Campaign>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == referenceInfo.CampaignId);
-            var member = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == referenceInfo.MemberId);
-
-            transaction = new PaymentTransaction
-            {
-                InstitutionId = campaign?.InstitutionId ?? member?.InstitutionId ?? string.Empty,
-                MemberId = referenceInfo.MemberId,
-                Member = member is not null ? new MemberSnapshot { Id = member.Id, FirstName = member.FirstName, LastName = member.LastName, Email = member.Email, ProfilePictureUrl = member.ProfilePictureUrl } : null,
-                CampaignId = referenceInfo.CampaignId,
-                Campaign = campaign is not null ? new CampaignSnapshot { Id = campaign.Id, Title = campaign.Title } : null,
-                Reference = reference,
-                Status = "Pending",
-                PaymentMethod = "Paystack",
-                CreatedBy = referenceInfo.MemberId,
-                CallbackPayload = rawBody,
-                IsGuestPayment = referenceInfo.IsGuestPayment,
-                SharedByMemberId = referenceInfo.SharedByMemberId,
-                SetupRecurringGiving = referenceInfo.SetupRecurringGiving,
-            };
-
-            await paymentTransactionRepo.AddAsync(transaction);
-        }
-        else
-        {
-            if (!string.IsNullOrEmpty(callingMemberId) && callingMemberId != transaction.MemberId)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Reference does not belong to the current member");
-
-            if (!string.IsNullOrEmpty(rawBody))
-                transaction.CallbackPayload = rawBody;
-        }
-
-        if (transaction.Status == "Successful")
-        {
-            if (!string.IsNullOrEmpty(rawBody))
-                await paymentTransactionRepo.UpdateAsync(transaction);
-            return ApiResponseExtensions.ToOkApiResponse<object>("Payment already verified and recorded");
-        }
-
-        var verifyResponse = await paystackService.VerifyPaymentAsync(reference);
-        if (!verifyResponse.Status)
-        {
-            var friendly = GetFriendlyPaymentFailureMessage(verifyResponse.Message);
-            transaction.Status = "Failed";
-            transaction.FailureMessage = friendly;
-            transaction.ProcessedAt = DateTime.UtcNow;
-            await paymentTransactionRepo.UpdateAsync(transaction);
-            return ApiResponseExtensions.ToBadRequestApiResponse<object>(friendly);
-        }
-
-        var paystackStatus = verifyResponse.Data?.Status?.ToLowerInvariant() ?? "unknown";
-        var verifiedGrossAmount = (verifyResponse.Data?.Amount ?? 0) / 100m;
-
-        if (hadFeeBreakdown)
-        {
-            // transaction.Amount already holds the school-intended amount set at
-            // initiation — never overwrite it with Paystack's gross (grossed-up)
-            // figure, or the institution's ledger would show the wrong number.
-            // Reconcile against Paystack's real reported fee when available;
-            // fall back to our own estimate from initiation otherwise, and flag
-            // any material mismatch for investigation rather than silently
-            // trusting either side.
-            transaction.GrossChargeAmount = verifiedGrossAmount;
-            var actualGatewayFee = verifyResponse.Data?.Fees.HasValue == true
-                ? verifyResponse.Data!.Fees!.Value / 100m
-                : transaction.GatewayFeeAmount;
-
-            var expectedGross = transaction.Amount + transaction.PlatformFeeAmount + actualGatewayFee;
-            if (Math.Abs(expectedGross - verifiedGrossAmount) > 0.02m)
-            {
-                logger.LogWarning(
-                    "Zero-Deduction reconciliation mismatch for {Reference}: expected gross {Expected}, Paystack reported {Actual}. Institution amount is unaffected.",
-                    reference, expectedGross, verifiedGrossAmount);
-            }
-
-            // Our actual net revenue: the fixed transaction_charge we told Paystack
-            // to route to our main account, minus whatever Paystack's real fee
-            // (bearer="account") actually deducted from it. The safety buffer
-            // baked into TransactionChargeAmount at initiation should keep this
-            // at or above PlatformFeeAmount — if it doesn't, the buffer wasn't
-            // big enough and needs raising, so flag it loudly rather than
-            // silently letting the platform net less than its exact fee.
-            var actualPlatformNet = transaction.TransactionChargeAmount - actualGatewayFee;
-            if (transaction.TransactionChargeAmount > 0 && actualPlatformNet < transaction.PlatformFeeAmount)
-            {
-                logger.LogWarning(
-                    "Zero-Deduction safety buffer insufficient for {Reference}: platform netted {ActualNet}, target was {TargetFee}. Consider raising PaystackConfig.GatewayFeeSafetyBufferSubunit.",
-                    reference, actualPlatformNet, transaction.PlatformFeeAmount);
-            }
-
-            transaction.GatewayFeeAmount = actualGatewayFee;
-        }
-        else
-        {
-            // No fee breakdown was recorded at initiation — best effort, matches
-            // pre-Zero-Deduction behavior. Do not fabricate a fee split we can't
-            // actually verify.
-            transaction.Amount = verifiedGrossAmount;
-            transaction.GrossChargeAmount = verifiedGrossAmount;
-            logger.LogWarning("No Zero-Deduction fee breakdown available for {Reference}; recording Paystack's gross amount as-is.", reference);
-        }
-
-        transaction.GatewayResponse = verifyResponse.Data?.GatewayResponse;
-        transaction.ProcessedAt = DateTime.UtcNow;
-
-        if (!string.IsNullOrEmpty(rawBody))
-        {
-            try
-            {
-                var payload = JObject.Parse(rawBody);
-                transaction.Currency ??= payload.SelectToken("data.currency")?.ToString();
-                transaction.Channel ??= payload.SelectToken("data.authorization.channel")?.ToString();
-            }
-            catch
-            {
-                // best effort; ignore if parsing fails
-            }
-        }
-
-        if (paystackStatus == "success")
-        {
-            transaction.Status = "Successful";
-
-            var existingContribution = await db.Set<Contribution>().IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.TransactionRef == reference && c.MemberId == transaction.MemberId);
-            if (existingContribution is null)
-            {
-                var campaign = await db.Set<Campaign>().IgnoreQueryFilters()
-                    .FirstOrDefaultAsync(c => c.Id == transaction.CampaignId);
-
-                if (campaign is not null && campaign.IsMembershipCampaign)
-                {
-                    var priorMembership = await db.Set<Contribution>().IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(c => c.CampaignId == campaign.Id && c.MemberId == transaction.MemberId && c.Status == "Successful");
-                    if (priorMembership is not null)
-                    {
-                        transaction.Status = "Failed";
-                        transaction.FailureMessage = "Membership campaign already paid.";
-                        transaction.ProcessedAt = DateTime.UtcNow;
-                        await paymentTransactionRepo.UpdateAsync(transaction);
-                        await redis.RemoveAsync($"paystack:ref:{reference}");
-                        return ApiResponseExtensions.ToBadRequestApiResponse<object>("Membership campaign has already been paid.");
-                    }
-                }
-
-                var memberSnapshot = transaction.Member;
-                if (memberSnapshot is null && !string.IsNullOrEmpty(transaction.MemberId))
-                {
-                    var member = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(m => m.Id == transaction.MemberId);
-                    if (member is not null)
-                    {
-                        memberSnapshot = new MemberSnapshot
-                        {
-                            Id = member.Id,
-                            FirstName = member.FirstName,
-                            LastName = member.LastName,
-                            Email = member.Email,
-                            ProfilePictureUrl = member.ProfilePictureUrl,
-                        };
-                    }
-                }
-
-                var contributionInstitutionId = campaign?.InstitutionId ?? transaction.InstitutionId;
-
-                // Zero-Deduction model: the institution's Amount is never reduced by a
-                // fee. PlatformFeeAmount/NetAmountToInstitution stay 0-deduction (0 and
-                // == Amount respectively) so every institution-facing view — which reads
-                // exactly these two fields — shows the full intended amount with nothing
-                // subtracted. Our actual revenue and Paystack's fee, both collected from
-                // the payer's grossed-up charge at initiation, are recorded separately on
-                // PlatformRevenueAmount/GatewayFeeAmount/GrossChargeAmount, which are
-                // never surfaced via ContributionDto.
-                var contribution = new Contribution
-                {
-                    InstitutionId = contributionInstitutionId,
-                    MemberId = transaction.MemberId,
-                    CampaignId = transaction.CampaignId,
-                    Member = memberSnapshot,
-                    Campaign = campaign is not null ? new CampaignSnapshot { Id = campaign.Id, Title = campaign.Title } : null,
-                    Amount = transaction.Amount,
-                    PaymentMethod = "Paystack",
-                    TransactionRef = reference,
-                    Status = "Successful",
-                    ConfirmedAt = DateTime.UtcNow,
-                    ConfirmedBy = "Paystack",
-                    CreatedBy = transaction.MemberId,
-                    PlatformFeeAmount = 0m,
-                    NetAmountToInstitution = transaction.Amount,
-                    // Actual net revenue, not the initiation-time estimate: the fixed
-                    // transaction_charge minus Paystack's real fee. The safety buffer
-                    // baked into TransactionChargeAmount means this is normally >=
-                    // transaction.PlatformFeeAmount (our target %), never less.
-                    PlatformRevenueAmount = transaction.TransactionChargeAmount - transaction.GatewayFeeAmount,
-                    GatewayFeeAmount = transaction.GatewayFeeAmount,
-                    GrossChargeAmount = transaction.GrossChargeAmount,
-                    IsGuestPayment = transaction.IsGuestPayment,
-                    SharedByMemberId = transaction.SharedByMemberId,
-                    ShowOnWallOfSupport = transaction.ShowOnWallOfSupport,
-                };
-
-                await contributionRepo.AddAsync(contribution);
-
-                // Runs inside a Temporal activity now (no HTTP context to have set this via
-                // middleware), so the tenant must be set explicitly before the dispatcher's
-                // tenant-scoped queries/saves run — this used to be NotificationDispatcherActor's
-                // job (see its doc comment) before ContributionService called it directly.
-                currentTenant.SetInstitutionId(contributionInstitutionId);
-                await notificationDispatcher.DispatchContributionConfirmedAsync(
-                    contribution.MemberId,
-                    contribution.Member?.Email ?? string.Empty,
-                    contribution.Member?.FirstName ?? string.Empty,
-                    contribution.Amount,
-                    contribution.Campaign?.Title ?? "your contribution",
-                    contribution.Id);
-
-                if (transaction.SetupRecurringGiving && !string.IsNullOrEmpty(transaction.MemberId))
-                    await TrySetUpRecurringGivingAsync(transaction, contribution, verifyResponse.Data?.Authorization);
-
-                if (campaign is not null)
-                {
-                    campaign.CollectedAmount += contribution.Amount;
-                    campaign.PaidCount += 1;
-                    await campaignRepo.UpdateAsync(campaign);
-
-                    if (campaign.IsMembershipCampaign && !string.IsNullOrEmpty(transaction.MemberId))
-                    {
-                        var memberToUpdate = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
-                            .FirstOrDefaultAsync(m => m.Id == transaction.MemberId);
-                        if (memberToUpdate is not null)
-                        {
-                            var now = DateTime.UtcNow;
-                            var currentYear = now.Year;
-                            var gradYear = memberToUpdate.GraduationYear;
-                            var institutionId = campaign.InstitutionId;
-
-                            // Re-evaluate full membership: active = paid ALL campaigns from grad year through current year.
-                            // Institution is scoped explicitly here since IgnoreQueryFilters() bypasses the usual tenant filter.
-                            var requiredCampaigns = await db.Set<Campaign>().IgnoreQueryFilters()
-                                .Where(c => c.InstitutionId == institutionId
-                                    && c.IsMembershipCampaign && c.MembershipYear.HasValue
-                                    && c.MembershipYear.Value >= gradYear
-                                    && c.MembershipYear.Value <= currentYear)
-                                .ToListAsync();
-
-                            var confirmedContributions = await db.Set<Contribution>().IgnoreQueryFilters()
-                                .Where(c => c.InstitutionId == institutionId
-                                    && c.MemberId == transaction.MemberId && c.Status == "Successful")
-                                .ToListAsync();
-                            var paidCampaignIds = new HashSet<string>(confirmedContributions.Select(c => c.CampaignId));
-                            var allPaid = requiredCampaigns.All(c => paidCampaignIds.Contains(c.Id));
-
-                            var institutionForPolicy = await db.Set<Institution>().IgnoreQueryFilters()
-                                .FirstOrDefaultAsync(i => i.Id == institutionId);
-                            var isActive = MembershipActivityCalculator.ResolveActive(institutionForPolicy?.MemberActivePolicy, memberToUpdate.Status, allPaid);
-
-                            memberToUpdate.IsMembershipActive = isActive;
-                            memberToUpdate.MembershipExpiry = allPaid
-                                ? new DateTime(currentYear, 12, 31, 23, 59, 59, DateTimeKind.Utc)
-                                : null;
-                            memberToUpdate.MembershipYearsPaid = requiredCampaigns.Count(c => paidCampaignIds.Contains(c.Id));
-                            memberToUpdate.LastMembershipPaidAt = now;
-
-                            // Auto-approve pending members who confirmed their membership payment
-                            if (memberToUpdate.Status == "Pending")
-                            {
-                                if (string.IsNullOrEmpty(memberToUpdate.MemberNumber))
-                                {
-                                    var prefix = await GetMemberNumberPrefixForInstitutionAsync(institutionId, memberToUpdate.GraduationYear);
-                                    var existingWithNumber = await db.Set<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>().IgnoreQueryFilters()
-                                        .Where(m => m.InstitutionId == institutionId && m.MemberNumber != null && m.MemberNumber.StartsWith(prefix))
-                                        .ToListAsync();
-                                    var maxSeq = existingWithNumber
-                                        .Select(m => int.TryParse(m.MemberNumber![(prefix.Length)..], out var n) ? n : 0)
-                                        .DefaultIfEmpty(0)
-                                        .Max();
-                                    memberToUpdate.MemberNumber = $"{prefix}{(maxSeq + 1):D4}";
-                                }
-                                memberToUpdate.Status = "Active";
-                                memberToUpdate.UpdatedAt = DateTime.UtcNow;
-                                memberToUpdate.UpdatedBy = "system";
-                                logger.LogInformation("Auto-approved pending member {MemberId} with number {MemberNumber} after membership payment", memberToUpdate.Id, memberToUpdate.MemberNumber);
-                            }
-
-                            await memberRepo.UpdateAsync(memberToUpdate);
-                        }
-                    }
-                }
-            }
-
-            await paymentTransactionRepo.UpdateAsync(transaction);
-            await redis.RemoveAsync($"paystack:ref:{reference}");
-
-            logger.LogInformation("Paystack payment verified and contribution recorded for member {MemberId}", transaction.MemberId);
-            return new object().ToOkApiResponse("Payment verified and contribution recorded");
-        }
-
-        transaction.Status = paystackStatus == "pending" ? "Pending" : "Failed";
-        await paymentTransactionRepo.UpdateAsync(transaction);
-
-        if (transaction.Status != "Pending")
-            await redis.RemoveAsync($"paystack:ref:{reference}");
-
-        return ApiResponseExtensions.ToOkApiResponse<object>("Payment status updated");
-    }
-
-    private static string GetFriendlyPaymentFailureMessage(string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw))
-            return "We couldn't confirm your payment. Please try again or contact support.";
-
-        var normalized = raw.Trim().ToLowerInvariant();
-
-        if (normalized.Contains("invalid reference") || normalized.Contains("could not find"))
-            return "We couldn't find that payment reference. Please try again.";
-
-        if (normalized.Contains("already verified") || normalized.Contains("already been verified"))
-            return "This payment has already been processed.";
-
-        if (normalized.Contains("insufficient funds") || normalized.Contains("card declined"))
-            return "Your card was declined. Please check with your bank or try another payment method.";
-
-        if (normalized.Contains("expired") || normalized.Contains("expired card"))
-            return "Your payment method has expired. Please use a different card.";
-
-        if (normalized.Contains("not authorised") || normalized.Contains("authorization"))
-            return "The payment was not authorized. Please try again or use another payment method.";
-
-        return "We couldn't confirm your payment. Please try again or contact support.";
-    }
-
     public async Task<IApiResponse<object>> VerifyPaystackPaymentAsync(string reference, AuthData? member)
     {
         try
         {
             var memberId = member?.Id;
             logger.LogInformation("VerifyPaystackPayment for reference: {Reference}, member {MemberId}", reference, memberId ?? "anonymous");
-            return await HandlePaystackReferenceAsync(reference, memberId);
+
+            if (!temporalProvider.IsAvailable)
+                return ApiResponseExtensions.ToServerErrorApiResponse<object>("Payment verification is temporarily unavailable. Please try again shortly.");
+
+            var handle = await temporalProvider.Client!.StartOrAttachAsync<IProcessContributionCallbackWorkflow, PaymentCallbackResult>(
+                wf => wf.RunAsync(new ProcessPaymentCallbackRequest("Paystack", reference, null!)),
+                $"payment-callback-contribution-{reference}", OperationsTaskQueues.PaymentCallbackProcessing);
+            var result = await handle.GetResultAsync();
+
+            // Ownership is checked here, not inside the workflow — the workflow processes
+            // a reference on behalf of whichever caller (webhook or this endpoint) reaches
+            // it first, with no notion of "who's asking"; only this HTTP layer knows that.
+            if (!string.IsNullOrEmpty(memberId))
+            {
+                var transaction = await paymentTransactionRepo.GetOneAsync(t => t.Reference == reference);
+                if (transaction is not null && transaction.MemberId != memberId)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<object>("Reference does not belong to the current member");
+            }
+
+            return result.IsBadRequest
+                ? ApiResponseExtensions.ToBadRequestApiResponse<object>(result.Message)
+                : new object().ToOkApiResponse(result.Message);
         }
         catch (Exception e)
         {
@@ -1116,25 +745,11 @@ public class ContributionService : IContributionService
         }
     }
 
-    public async Task<IApiResponse<object>> ProcessPaystackCallbackAsync(string reference, string rawBody)
-    {
-        try
-        {
-            logger.LogInformation("ProcessPaystackCallback for reference: {Reference}", reference);
-            return await HandlePaystackReferenceAsync(reference, rawBody: rawBody);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error processing Paystack callback reference: {Reference}", reference);
-            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to process callback");
-        }
-    }
-
     /// <summary>
     /// Unlike StoreOrder/ServiceRequest, a contribution's PaymentTransaction row isn't
     /// guaranteed to exist yet when the webhook arrives (it's only created once the
-    /// webhook confirms — see HandlePaystackReferenceAsync) — so also check the Redis
-    /// reference metadata written at initiation before concluding "not ours".
+    /// Temporal workflow confirms it) — so also check the Redis reference metadata
+    /// written at initiation before concluding "not ours".
     /// </summary>
     public async Task<bool> OwnsReferenceAsync(string reference)
     {
@@ -1203,43 +818,45 @@ public class ContributionService : IContributionService
                 .ToOkApiResponse("Payment status retrieved");
             }
 
-            // Fallback: query Paystack directly for status (handles cases where a webhook was missed or the cache expired)
-            var verifyResponse = await paystackService.VerifyPaymentAsync(reference);
-            if (!verifyResponse.Status)
+            // Fallback: nothing recorded locally yet — ask the workflow to verify &
+            // record (handles cases where a webhook was missed or the cache expired).
+            if (temporalProvider.IsAvailable)
             {
+                var handle = await temporalProvider.Client!.StartOrAttachAsync<IProcessContributionCallbackWorkflow, PaymentCallbackResult>(
+                    wf => wf.RunAsync(new ProcessPaymentCallbackRequest("Paystack", reference, null!)),
+                    $"payment-callback-contribution-{reference}", OperationsTaskQueues.PaymentCallbackProcessing);
+                var result = await handle.GetResultAsync();
+
+                transaction = await paymentTransactionRepo.GetOneAsync(t => t.Reference == reference);
+                if (transaction is not null)
+                {
+                    return new ContributionStatusResponse
+                    {
+                        Reference = reference,
+                        Status = transaction.Status,
+                        Amount = transaction.Amount,
+                        PaymentMethod = transaction.PaymentMethod,
+                        Message = transaction.Status == "Successful"
+                            ? "Payment confirmed"
+                            : transaction.FailureMessage ?? "Payment failed or rejected",
+                    }
+                    .ToOkApiResponse("Payment status retrieved");
+                }
+
                 return new ContributionStatusResponse
                 {
                     Reference = reference,
-                    Status = "Failed",
-                    Message = verifyResponse.Message,
+                    Status = "Pending",
+                    Message = result.Message,
                 }
                 .ToOkApiResponse("Payment status retrieved");
-            }
-
-            var paystackStatus = verifyResponse.Data?.Status?.ToLowerInvariant() ?? "unknown";
-
-            if (paystackStatus == "success")
-            {
-                // Ensure we record the contribution if it hasn't been created yet.
-                await HandlePaystackReferenceAsync(reference);
-                return new ContributionStatusResponse
-                {
-                    Reference = reference,
-                    Status = "Successful",
-                    Amount = (verifyResponse.Data?.Amount ?? 0) / 100m,
-                    PaymentMethod = "Paystack",
-                    Message = "Payment confirmed",
-                }
-                .ToOkApiResponse("Payment confirmed");
             }
 
             return new ContributionStatusResponse
             {
                 Reference = reference,
-                Status = paystackStatus,
-                Amount = verifyResponse.Data?.Amount / 100m,
-                PaymentMethod = "Paystack",
-                Message = "Payment not completed yet.",
+                Status = "Pending",
+                Message = "Payment status could not be verified right now. Please try again shortly.",
             }
             .ToOkApiResponse("Payment status retrieved");
         }

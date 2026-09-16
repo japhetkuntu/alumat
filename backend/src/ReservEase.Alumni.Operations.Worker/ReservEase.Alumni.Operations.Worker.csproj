@@ -30,7 +30,6 @@
     <ProjectReference Include="..\ReservEase.Alumni.Sms.Sdk\ReservEase.Alumni.Sms.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Whatsapp.Sdk\ReservEase.Alumni.Whatsapp.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Common.Sdk\ReservEase.Alumni.Common.Sdk.csproj" />
-    <ProjectReference Include="..\ReservEase.Alumni.Storage.Sdk\ReservEase.Alumni.Storage.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

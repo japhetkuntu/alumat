@@ -11,7 +11,6 @@ public interface IContributionService
     Task<IApiResponse<object>> InitiatePaystackPaymentAsync(InitiatePaystackPaymentRequest request, AuthData? member);
     Task<IApiResponse<object>> InitiateMembershipRenewalAsync(InitiateMembershipRenewalRequest request, AuthData member);
     Task<IApiResponse<object>> VerifyPaystackPaymentAsync(string reference, AuthData? member);
-    Task<IApiResponse<object>> ProcessPaystackCallbackAsync(string reference, string rawBody);
     Task<bool> OwnsReferenceAsync(string reference);
     Task<IApiResponse<ContributionStatusResponse>> GetContributionStatusAsync(string reference, AuthData? member);
     Task<IApiResponse<ActivationStatusResponse>> GetActivationStatusAsync(string reference);

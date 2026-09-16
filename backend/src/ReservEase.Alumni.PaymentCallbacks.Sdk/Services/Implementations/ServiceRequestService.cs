@@ -5,6 +5,7 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Extensions;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
@@ -15,6 +16,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
@@ -40,6 +42,7 @@ public class ServiceRequestService(
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
     IStorageService storageService,
+    ITemporalClientProvider temporalProvider,
     IConfiguration configuration,
     ILogger<ServiceRequestService> logger) : IServiceRequestService
 {
@@ -191,22 +194,10 @@ public class ServiceRequestService(
                 "Zero-Deduction charge for service request by member {MemberId}, institution {InstitutionId}: amount={Amount}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}",
                 member.Id, currentInstitution?.Id, serviceType.Price, charge.platformFee, charge.gatewayFee, charge.grossCharge);
 
-            var paymentResponse = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
-            {
-                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.ServiceRequest),
-                Email = member.Email,
-                Amount = charge.amountSubunit,
-                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
-                Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "serviceRequest", "true" } },
-                Subaccount = currentInstitution?.PaystackSubaccountCode,
-                TransactionCharge = charge.transactionCharge,
-                Bearer = charge.bearer,
-            });
-
-            if (!paymentResponse.Status)
-                return ApiResponseExtensions.ToBadRequestApiResponse<ServiceRequestCheckoutResponse>(paymentResponse.Message);
-
-            var reference = paymentResponse.Data?.Reference ?? string.Empty;
+            // Generate our reference and persist the Pending request BEFORE ever
+            // telling Paystack about it, so any callback Paystack could possibly
+            // send for this reference already has a matching row.
+            var reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.ServiceRequest);
 
             var serviceRequest = new ServiceRequest
             {
@@ -229,6 +220,30 @@ public class ServiceRequestService(
             };
 
             await requestRepo.AddAsync(serviceRequest);
+
+            var paymentResponse = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
+            {
+                Reference = reference,
+                Email = member.Email,
+                Amount = charge.amountSubunit,
+                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
+                Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "serviceRequest", "true" } },
+                Subaccount = currentInstitution?.PaystackSubaccountCode,
+                TransactionCharge = charge.transactionCharge,
+                Bearer = charge.bearer,
+            });
+
+            if (!paymentResponse.Status)
+            {
+                // Paystack never accepted this reference, so it will never send a
+                // callback for it either — mark it Failed rather than leaving a
+                // phantom Pending row nothing will ever resolve.
+                serviceRequest.PaymentStatus = "Failed";
+                serviceRequest.FailureMessage = paymentResponse.Message;
+                await requestRepo.UpdateAsync(serviceRequest);
+                return ApiResponseExtensions.ToBadRequestApiResponse<ServiceRequestCheckoutResponse>(paymentResponse.Message);
+            }
+
             logger.LogInformation("Service request checkout initiated for member {MemberId}, request {RequestId}, reference {Reference}", member.Id, serviceRequest.Id, reference);
 
             return new ServiceRequestCheckoutResponse { AuthorizationUrl = paymentResponse.Data?.AuthorizationUrl, RequestId = serviceRequest.Id, Reference = reference }
@@ -246,84 +261,6 @@ public class ServiceRequestService(
         return await db.Set<ServiceRequest>().IgnoreQueryFilters().AnyAsync(r => r.TransactionRef == reference);
     }
 
-    public async Task<IApiResponse<object>> ProcessPaystackCallbackAsync(string reference, string rawBody)
-    {
-        try
-        {
-            await ProcessReferenceAsync(reference, rawBody);
-            return ApiResponseExtensions.ToOkApiResponse<object>("Callback processed");
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error processing service-request Paystack callback for reference {Reference}", reference);
-            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to process callback");
-        }
-    }
-
-    private async Task ProcessReferenceAsync(string reference, string? rawBody = null)
-    {
-        var request = await db.Set<ServiceRequest>().IgnoreQueryFilters().FirstOrDefaultAsync(r => r.TransactionRef == reference);
-        if (request is null)
-        {
-            logger.LogWarning("Service request not found for Paystack reference {Reference}", reference);
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(rawBody))
-            request.CallbackPayload = rawBody;
-
-        if (request.PaymentStatus == "Successful")
-        {
-            if (!string.IsNullOrEmpty(rawBody))
-                await db.SaveChangesAsync();
-            return; // Already processed — webhook + poll fallback can both fire.
-        }
-
-        var verifyResponse = await paystackService.VerifyPaymentAsync(reference);
-        if (!verifyResponse.Status)
-        {
-            request.PaymentStatus = "Failed";
-            request.FailureMessage = verifyResponse.Message;
-            await db.SaveChangesAsync();
-            return;
-        }
-
-        var paystackStatus = verifyResponse.Data?.Status?.ToLowerInvariant() ?? "unknown";
-        request.GrossChargeAmount = (verifyResponse.Data?.Amount ?? 0) / 100m;
-        if (verifyResponse.Data?.Fees.HasValue == true)
-            request.GatewayFeeAmount = verifyResponse.Data!.Fees!.Value / 100m;
-        request.GatewayResponse = verifyResponse.Data?.GatewayResponse;
-
-        if (!string.IsNullOrEmpty(rawBody))
-        {
-            try
-            {
-                var payload = JObject.Parse(rawBody);
-                request.Channel ??= payload.SelectToken("data.authorization.channel")?.ToString();
-            }
-            catch
-            {
-                // best effort; ignore if parsing fails
-            }
-        }
-
-        if (paystackStatus == "success")
-        {
-            request.PaymentStatus = "Successful";
-            request.ConfirmedAt = DateTime.UtcNow;
-
-            var serviceType = await db.Set<ServiceType>().IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == request.ServiceTypeId);
-            request.CurrentStage = serviceType?.Stages.FirstOrDefault() ?? "Submitted";
-            request.Updates.Add(new ServiceRequestUpdate { ChangedAt = DateTime.UtcNow, Stage = request.CurrentStage });
-        }
-        else
-        {
-            request.PaymentStatus = "Failed";
-            request.FailureMessage = $"Payment {paystackStatus}.";
-        }
-
-        await db.SaveChangesAsync();
-    }
 
     public async Task<IApiResponse<ServiceRequestStatusResponse>> GetRequestStatusAsync(string reference, AuthData member)
     {
@@ -335,10 +272,13 @@ public class ServiceRequestService(
             if (request.MemberId != member.Id)
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceRequestStatusResponse>("Reference does not belong to the current member");
 
-            if (request.PaymentStatus == "Pending")
+            if (request.PaymentStatus == "Pending" && temporalProvider.IsAvailable)
             {
                 // Fallback in case the webhook hasn't landed yet.
-                await ProcessReferenceAsync(reference);
+                var handle = await temporalProvider.Client!.StartOrAttachAsync<IProcessServiceRequestCallbackWorkflow, PaymentCallbackResult>(
+                    wf => wf.RunAsync(new ProcessPaymentCallbackRequest("Paystack", reference, null!)),
+                    $"payment-callback-servicerequest-{reference}", OperationsTaskQueues.PaymentCallbackProcessing);
+                await handle.GetResultAsync();
                 request = await requestRepo.GetOneAsync(r => r.TransactionRef == reference) ?? request;
             }
 

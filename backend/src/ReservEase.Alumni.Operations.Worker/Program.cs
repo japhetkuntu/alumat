@@ -12,7 +12,6 @@ using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
-using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 using Temporalio.Extensions.Hosting;
 
@@ -23,19 +22,17 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-// Data + external services — same registrations Member.Api makes for the services this
-// worker now hosts (payment-callback processing needs the same DB/gateway/notification
-// access the old in-process actor had).
+// Data + external services the granular activities call directly — no domain
+// service classes registered here anymore (IStoreOrderService/IServiceRequestService/
+// IContributionService and their large, mostly-unrelated method surfaces belong to
+// Member.Api; this worker's activities talk to repositories/DbContext/Paystack/Redis
+// directly, and only NotificationDispatcher survives as a real dependency).
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<MemberRedisConfig>(builder.Configuration);
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
-builder.Services.AddStorageService(builder.Configuration);
 
-builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();
-builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
-builder.Services.AddScoped<IContributionService, ContributionService>();
 builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 
 builder.Services

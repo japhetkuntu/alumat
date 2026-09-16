@@ -11,5 +11,5 @@ namespace ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
 public interface IProcessContributionCallbackWorkflow
 {
     [WorkflowRun]
-    Task RunAsync(ProcessPaymentCallbackRequest request);
+    Task<PaymentCallbackResult> RunAsync(ProcessPaymentCallbackRequest request);
 }

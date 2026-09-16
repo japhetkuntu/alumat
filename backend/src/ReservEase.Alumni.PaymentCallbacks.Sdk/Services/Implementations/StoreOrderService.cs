@@ -5,6 +5,7 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Extensions;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
+using ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
@@ -14,6 +15,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
@@ -39,6 +41,7 @@ public class StoreOrderService(
     AlumniDbContext db,
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
+    ITemporalClientProvider temporalProvider,
     IConfiguration configuration,
     ILogger<StoreOrderService> logger) : IStoreOrderService
 {
@@ -209,22 +212,10 @@ public class StoreOrderService(
                 "Zero-Deduction charge for store checkout by member {MemberId}, institution {InstitutionId}: total={Total}, platformFee={PlatformFee}, gatewayFee={GatewayFee}, chargeAmount={ChargeAmount}, transactionCharge={TransactionCharge}",
                 member.Id, currentInstitution?.Id, total, charge.platformFee, charge.gatewayFee, charge.grossCharge, charge.transactionCharge);
 
-            var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
-            {
-                Reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.StoreOrder),
-                Email = member.Email,
-                Amount = charge.amountSubunit,
-                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
-                Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "storeOrder", "true" } },
-                Subaccount = currentInstitution?.PaystackSubaccountCode,
-                TransactionCharge = charge.transactionCharge,
-                Bearer = charge.bearer,
-            });
-
-            if (!response.Status)
-                return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>(response.Message);
-
-            var reference = response.Data?.Reference ?? string.Empty;
+            // Generate our reference and persist the Pending order BEFORE ever
+            // telling Paystack about it, so any callback Paystack could possibly
+            // send for this reference already has a matching row.
+            var reference = PaystackReferencePrefix.NewReference(PaystackReferencePrefix.StoreOrder);
 
             var order = new StoreOrder
             {
@@ -251,6 +242,30 @@ public class StoreOrderService(
             };
 
             await orderRepo.AddAsync(order);
+
+            var response = await paystackService.InitializePaymentAsync(new InitializePaymentRequest
+            {
+                Reference = reference,
+                Email = member.Email,
+                Amount = charge.amountSubunit,
+                CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
+                Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "storeOrder", "true" } },
+                Subaccount = currentInstitution?.PaystackSubaccountCode,
+                TransactionCharge = charge.transactionCharge,
+                Bearer = charge.bearer,
+            });
+
+            if (!response.Status)
+            {
+                // Paystack never accepted this reference, so it will never send a
+                // callback for it either — mark it Failed rather than leaving a
+                // phantom Pending row nothing will ever resolve.
+                order.Status = "Failed";
+                order.FailureMessage = response.Message;
+                await orderRepo.UpdateAsync(order);
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>(response.Message);
+            }
+
             logger.LogInformation("Store checkout initiated for member {MemberId}, order {OrderId}, reference {Reference}", member.Id, order.Id, reference);
 
             return new StoreCheckoutResponse { AuthorizationUrl = response.Data?.AuthorizationUrl, Reference = reference }
@@ -268,121 +283,6 @@ public class StoreOrderService(
         return await db.Set<StoreOrder>().IgnoreQueryFilters().AnyAsync(o => o.TransactionRef == reference);
     }
 
-    public async Task<IApiResponse<object>> ProcessPaystackCallbackAsync(string reference, string rawBody)
-    {
-        try
-        {
-            await ProcessReferenceAsync(reference, rawBody);
-            return ApiResponseExtensions.ToOkApiResponse<object>("Callback processed");
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error processing store Paystack callback for reference {Reference}", reference);
-            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to process callback");
-        }
-    }
-
-    private async Task ProcessReferenceAsync(string reference, string? rawBody = null)
-    {
-        var order = await db.Set<StoreOrder>().IgnoreQueryFilters().FirstOrDefaultAsync(o => o.TransactionRef == reference);
-        if (order is null)
-        {
-            logger.LogWarning("Store order not found for Paystack reference {Reference}", reference);
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(rawBody))
-            order.CallbackPayload = rawBody;
-
-        if (order.Status == "Successful")
-        {
-            if (!string.IsNullOrEmpty(rawBody))
-                await db.SaveChangesAsync();
-            return; // Already processed — webhook + poll fallback can both fire.
-        }
-
-        var verifyResponse = await paystackService.VerifyPaymentAsync(reference);
-        if (!verifyResponse.Status)
-        {
-            order.Status = "Failed";
-            order.FailureMessage = verifyResponse.Message;
-            await db.SaveChangesAsync();
-            return;
-        }
-
-        var paystackStatus = verifyResponse.Data?.Status?.ToLowerInvariant() ?? "unknown";
-        var verifiedGrossAmount = (verifyResponse.Data?.Amount ?? 0) / 100m;
-        order.GrossChargeAmount = verifiedGrossAmount;
-        if (verifyResponse.Data?.Fees.HasValue == true)
-            order.GatewayFeeAmount = verifyResponse.Data!.Fees!.Value / 100m;
-
-        order.GatewayResponse = verifyResponse.Data?.GatewayResponse;
-
-        if (!string.IsNullOrEmpty(rawBody))
-        {
-            try
-            {
-                var payload = JObject.Parse(rawBody);
-                order.Channel ??= payload.SelectToken("data.authorization.channel")?.ToString();
-            }
-            catch
-            {
-                // best effort; ignore if parsing fails
-            }
-        }
-
-        if (paystackStatus == "success")
-        {
-            order.Status = "Successful";
-            order.ConfirmedAt = DateTime.UtcNow;
-
-            // Best-effort inventory decrement — clamped at zero rather than
-            // blocking an already-paid order; simultaneous last-unit
-            // checkouts are a known, accepted edge case for v1.
-            var touchedProductIds = new HashSet<string>();
-            foreach (var item in order.Items)
-            {
-                var product = await db.Set<StoreProduct>().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == item.ProductId);
-                if (product is null) continue;
-
-                if (!string.IsNullOrEmpty(item.VariantId))
-                {
-                    var variant = await db.Set<StoreProductVariant>().IgnoreQueryFilters().FirstOrDefaultAsync(v => v.Id == item.VariantId);
-                    if (variant is not null)
-                    {
-                        variant.QuantityAvailable = Math.Max(0, variant.QuantityAvailable - item.Quantity);
-                        if (variant.QuantityAvailable < item.Quantity)
-                            logger.LogWarning("Store product variant {VariantId} oversold on order {OrderId}: requested {Requested}, had {Available}", variant.Id, order.Id, item.Quantity, variant.QuantityAvailable + item.Quantity);
-                        touchedProductIds.Add(product.Id);
-                    }
-                }
-                else
-                {
-                    product.QuantityAvailable = Math.Max(0, product.QuantityAvailable - item.Quantity);
-                    if (product.QuantityAvailable < item.Quantity)
-                        logger.LogWarning("Store product {ProductId} oversold on order {OrderId}: requested {Requested}, had {Available}", product.Id, order.Id, item.Quantity, product.QuantityAvailable + item.Quantity);
-                }
-            }
-
-            // Roll the parent product's QuantityAvailable back up from its
-            // variants so grid-level stock displays stay correct after a
-            // variant-level decrement above.
-            foreach (var productId in touchedProductIds)
-            {
-                var product = await db.Set<StoreProduct>().IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == productId);
-                if (product is null) continue;
-                var variants = await db.Set<StoreProductVariant>().IgnoreQueryFilters().Where(v => v.ProductId == productId).ToListAsync();
-                product.QuantityAvailable = variants.Sum(v => v.QuantityAvailable);
-            }
-        }
-        else
-        {
-            order.Status = "Failed";
-            order.FailureMessage = $"Payment {paystackStatus}.";
-        }
-
-        await db.SaveChangesAsync();
-    }
 
     public async Task<IApiResponse<StoreOrderStatusResponse>> GetOrderStatusAsync(string reference, AuthData member)
     {
@@ -394,10 +294,13 @@ public class StoreOrderService(
             if (order.MemberId != member.Id)
                 return ApiResponseExtensions.ToBadRequestApiResponse<StoreOrderStatusResponse>("Reference does not belong to the current member");
 
-            if (order.Status == "Pending")
+            if (order.Status == "Pending" && temporalProvider.IsAvailable)
             {
                 // Fallback in case the webhook hasn't landed yet.
-                await ProcessReferenceAsync(reference);
+                var handle = await temporalProvider.Client!.StartOrAttachAsync<IProcessStoreOrderCallbackWorkflow, PaymentCallbackResult>(
+                    wf => wf.RunAsync(new ProcessPaymentCallbackRequest("Paystack", reference, null!)),
+                    $"payment-callback-storeorder-{reference}", OperationsTaskQueues.PaymentCallbackProcessing);
+                await handle.GetResultAsync();
                 order = await orderRepo.GetOneAsync(o => o.TransactionRef == reference) ?? order;
             }
 

@@ -29,6 +29,7 @@ using ReservEase.Alumni.Member.Api.Services.Implementations;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberContributionService = ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Implementations.ContributionService;
 using INotificationActor = ReservEase.Alumni.Member.Api.Services.Interfaces.INotificationActor;
 using IAdminNotificationActor = ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor;
@@ -716,6 +717,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
@@ -756,6 +758,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
@@ -785,7 +788,7 @@ public class ContributionMemberForumServiceTests
         mockCampaignRepo.Setup(r => r.GetByIdAsync("membership-campaign")).ReturnsAsync(new Campaign { Id = "membership-campaign", Title = "Membership", AmountPerMember = 100, IsMembershipCampaign = true, AllowManualPayments = true });
         mockContributionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<Contribution, bool>>>())).ReturnsAsync(new Contribution { Id = "c1", MemberId = "m1", CampaignId = "membership-campaign", Status = "Successful" });
 
-        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, CreateInMemoryDbContext(), mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<INotificationDispatcher>(), config.Object, logger);
+        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, CreateInMemoryDbContext(), mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<INotificationDispatcher>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), config.Object, logger);
 
         var response = await service.InitiateMembershipRenewalAsync(new InitiateMembershipRenewalRequest("membership-campaign", 1, "manual"), new AuthData { Id = "m1", Email = "john@example.com" });
 
@@ -828,6 +831,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
@@ -872,6 +876,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
@@ -919,6 +924,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
@@ -960,6 +966,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
@@ -1018,6 +1025,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             Mock.Of<IRedisService<MemberRedisConfig>>(),
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             Mock.Of<IConfiguration>(),
             new NullLogger<MemberContributionService>());
 
@@ -1071,6 +1079,7 @@ public class ContributionMemberForumServiceTests
             new PaystackConfig(),
             mockRedis.Object,
             Mock.Of<INotificationDispatcher>(),
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
 
