@@ -16,6 +16,4 @@ public class SendBroadcastRequest
     public BroadcastFilter Filter { get; set; } = new();
 }
 
-public record BroadcastRecipient(string Id, string Email, string FirstName, string? Phone);
-
 public record BroadcastResult(int RecipientCount, List<string> Channels);

@@ -3,13 +3,15 @@ using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
@@ -22,7 +24,7 @@ public class ReferralService(
     ICurrentTenantService currentTenant,
     IHttpContextAccessor httpContextAccessor,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ILogger<ReferralService> logger) : IReferralService
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
@@ -141,25 +143,27 @@ public class ReferralService(
             }
 
             var brand = await GetBrandVarsAsync();
-            notificationActor.Tell(new SendEmailCommand(
-                new SendEmailRequest
-                {
-                    To = [new EmailContact { Email = normalizedEmail }],
-                    TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ReferralInvitation)
-                        ? "referral-invitation"
-                        : mailtrapConfig.Templates.ReferralInvitation,
-                    TemplateVariables = new
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.Email(
+                    new SendEmailRequest
                     {
-                        referrer_name = member.Name,
-                        referral_code = memberEntity.ReferralCode,
-                        register_url = $"{GetRequestBaseUrl()}/register?ref={memberEntity.ReferralCode}",
-                        brand_name = brand.Name,
-                        brand_color = brand.Color,
-                        brand_secondary_color = brand.SecondaryColor,
-                        brand_logo = brand.Logo,
+                        To = [new EmailContact { Email = normalizedEmail }],
+                        TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ReferralInvitation)
+                            ? "referral-invitation"
+                            : mailtrapConfig.Templates.ReferralInvitation,
+                        TemplateVariables = new
+                        {
+                            referrer_name = member.Name,
+                            referral_code = memberEntity.ReferralCode,
+                            register_url = $"{GetRequestBaseUrl()}/register?ref={memberEntity.ReferralCode}",
+                            brand_name = brand.Name,
+                            brand_color = brand.Color,
+                            brand_secondary_color = brand.SecondaryColor,
+                            brand_logo = brand.Logo,
+                        },
                     },
-                },
-                $"referral invitation email to {normalizedEmail}"));
+                    $"referral invitation email to {normalizedEmail}"),
+                logger);
 
             return ((object)new { Message = "Invitation sent successfully." }).ToCreatedApiResponse("Invitation sent.");
         }

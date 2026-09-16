@@ -1,14 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -19,7 +21,7 @@ public class ClassNoteService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<ClassNoteService> logger) : IClassNoteService
 {
@@ -164,7 +166,8 @@ public class ClassNoteService(
             if (string.IsNullOrEmpty(request.CommunityId))
             {
                 var authorName = $"{member.FirstName} {member.LastName}";
-                notificationActor.Tell(new DispatchClassNoteAlertCommand(currentTenant.InstitutionId!, note, authorName));
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.ClassNoteAlert(currentTenant.InstitutionId!, note.Id, authorName), logger);
             }
             return note.ToDto().ToCreatedApiResponse("Class note posted.");
         }

@@ -19,10 +19,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Akka" Version="1.5.52" />
-    <PackageReference Include="Akka.Cluster" Version="1.5.52" />
-    <PackageReference Include="Akka.Cluster.Tools" Version="1.5.52" />
-    <PackageReference Include="Akka.DependencyInjection" Version="1.5.52" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +28,8 @@
     <ProjectReference Include="..\ReservEase.Alumni.Storage.Sdk\ReservEase.Alumni.Storage.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Paystack.Sdk\ReservEase.Alumni.Paystack.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Mailtrap.Sdk\ReservEase.Alumni.Mailtrap.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Temporal.Sdk\ReservEase.Alumni.Temporal.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Notifications.Sdk\ReservEase.Alumni.Notifications.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

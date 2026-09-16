@@ -1,15 +1,17 @@
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -17,7 +19,7 @@ public class MemberMentorshipService(
     IAlumniPgRepository<MentorProfile> profileRepo,
     IAlumniPgRepository<MentorshipRequest> requestRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<MemberMentorshipService> logger) : IMemberMentorshipService
 {
@@ -184,8 +186,10 @@ public class MemberMentorshipService(
             };
             await requestRepo.AddAsync(mentorshipReq);
 
-            notificationActor.Tell(new DispatchMentorshipRequestReceivedCommand(
-                currentTenant.InstitutionId!, mentor.MemberId, $"{member.FirstName} {member.LastName}", request.Area, mentorshipReq.Id));
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MentorshipRequestReceived(
+                    currentTenant.InstitutionId!, mentor.MemberId, $"{member.FirstName} {member.LastName}", request.Area, mentorshipReq.Id),
+                logger);
 
             logger.LogInformation("Mentorship request {RequestId} sent by member {MemberId} to mentor {MentorProfileId}", mentorshipReq.Id, member.Id, request.MentorProfileId);
             return new object().ToCreatedApiResponse("Mentorship request sent");
@@ -357,8 +361,10 @@ public class MemberMentorshipService(
             profile.UpdatedAt = DateTime.UtcNow;
             await profileRepo.UpdateAsync(profile);
 
-            notificationActor.Tell(new DispatchMentorshipRequestDecisionCommand(
-                currentTenant.InstitutionId!, request.MenteeId, true, request.Area, request.Id));
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MentorshipRequestDecision(
+                    currentTenant.InstitutionId!, request.MenteeId, true, request.Area, request.Id),
+                logger);
 
             logger.LogInformation("Request {RequestId} accepted by mentor {MentorId}", requestId, mentor.Id);
             return new object().ToOkApiResponse("Mentorship request accepted");
@@ -392,8 +398,10 @@ public class MemberMentorshipService(
             request.UpdatedBy = mentor.Id;
             await requestRepo.UpdateAsync(request);
 
-            notificationActor.Tell(new DispatchMentorshipRequestDecisionCommand(
-                currentTenant.InstitutionId!, request.MenteeId, false, request.Area, request.Id));
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MentorshipRequestDecision(
+                    currentTenant.InstitutionId!, request.MenteeId, false, request.Area, request.Id),
+                logger);
 
             logger.LogInformation("Request {RequestId} rejected by mentor {MentorId}", requestId, mentor.Id);
             return new object().ToOkApiResponse("Mentorship request rejected");

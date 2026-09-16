@@ -1,23 +1,25 @@
 using Microsoft.EntityFrameworkCore;
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class JobService(
     IAlumniPgRepository<Job> jobRepo,
     IStorageService storageService,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<JobService> logger) : IJobService
 {
@@ -99,7 +101,7 @@ public class JobService(
 
             await jobRepo.AddAsync(job);
             logger.LogInformation("Job {JobId} created by admin {AdminId}", job.Id, admin.Id);
-            notificationActor.Tell(new DispatchJobAlertCommand(currentTenant.InstitutionId!, job));
+            await temporalProvider.EnqueueNotificationAsync(NotificationRequest.JobAlert(currentTenant.InstitutionId!, job.Id), logger);
             return job.ToDto().ToCreatedApiResponse("Job posted");
         }
         catch (Exception e)

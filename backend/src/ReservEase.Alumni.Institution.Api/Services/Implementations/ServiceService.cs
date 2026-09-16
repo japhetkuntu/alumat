@@ -1,16 +1,18 @@
 using System.Text.RegularExpressions;
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -27,7 +29,7 @@ public class ServiceService(
     IAlumniPgRepository<ServiceRequest> requestRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IStorageService storageService,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<ServiceService> logger) : IServiceService
 {
@@ -305,9 +307,9 @@ public class ServiceService(
 
             if (!string.IsNullOrWhiteSpace(request.Stage) || attachmentUrl is not null || !string.IsNullOrWhiteSpace(request.Note))
             {
-                notificationActor.Tell(new DispatchServiceRequestUpdatedCommand(
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.ServiceRequestUpdated(
                     currentTenant.InstitutionId!, serviceRequest.MemberId, serviceRequest.Id, serviceRequest.RequestNumber,
-                    serviceRequest.ServiceTypeName, serviceRequest.CurrentStage));
+                    serviceRequest.ServiceTypeName, serviceRequest.CurrentStage), logger);
             }
 
             logger.LogInformation("Service request {RequestId} updated by admin {AdminId} — stage={Stage}", requestId, admin.Id, request.Stage);

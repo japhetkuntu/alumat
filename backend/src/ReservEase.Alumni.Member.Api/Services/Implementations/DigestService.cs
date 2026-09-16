@@ -2,12 +2,14 @@ using System.Net;
 using Microsoft.Extensions.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
@@ -33,7 +35,7 @@ public class DigestService(
     IAlumniPgRepository<Institution> institutionRepo,
     ICurrentTenantService currentTenant,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     IConfiguration configuration,
     ILogger<DigestService> logger) : IDigestService
 {
@@ -107,7 +109,7 @@ public class DigestService(
             }
             else
             {
-                SendDigestEmail(member, institution, frequency, portalUrl, jobs, ev, campaign, spotlight);
+                await SendDigestEmailAsync(member, institution, frequency, portalUrl, jobs, ev, campaign, spotlight);
                 sentCount++;
             }
 
@@ -182,7 +184,7 @@ public class DigestService(
         return new ContentBucket(jobs, eventItem, campaignItem, spotlightItem);
     }
 
-    private void SendDigestEmail(
+    private async Task SendDigestEmailAsync(
         MemberEntity member, Institution institution, string frequency, string portalUrl,
         List<DigestItem> jobs, DigestItem? ev, DigestItem? campaign, DigestItem? spotlight)
     {
@@ -194,26 +196,28 @@ public class DigestService(
 
         var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
 
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
-            {
-                To = [new EmailContact { Email = member.Email, Name = $"{member.FirstName} {member.LastName}".Trim() }],
-                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.Digest) ? "digest" : mailtrapConfig.Templates.Digest,
-                TemplateVariables = new
+        await temporalProvider.EnqueueNotificationAsync(
+            NotificationRequest.Email(
+                new SendEmailRequest
                 {
-                    member_first_name = member.FirstName,
-                    digest_period_label = frequency,
-                    digest_frequency_label = frequency.ToLowerInvariant(),
-                    digest_sections_html = string.Join("", sections),
-                    portal_url = portalUrl,
-                    preferences_url = $"{portalUrl}/profile",
-                    brand_name = brandName,
-                    brand_color = institution.PrimaryColorHex,
-                    brand_secondary_color = institution.SecondaryColorHex,
-                    brand_logo = institution.LogoUrl,
+                    To = [new EmailContact { Email = member.Email, Name = $"{member.FirstName} {member.LastName}".Trim() }],
+                    TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.Digest) ? "digest" : mailtrapConfig.Templates.Digest,
+                    TemplateVariables = new
+                    {
+                        member_first_name = member.FirstName,
+                        digest_period_label = frequency,
+                        digest_frequency_label = frequency.ToLowerInvariant(),
+                        digest_sections_html = string.Join("", sections),
+                        portal_url = portalUrl,
+                        preferences_url = $"{portalUrl}/profile",
+                        brand_name = brandName,
+                        brand_color = institution.PrimaryColorHex,
+                        brand_secondary_color = institution.SecondaryColorHex,
+                        brand_logo = institution.LogoUrl,
+                    },
                 },
-            },
-            $"{frequency.ToLowerInvariant()} digest to {member.Email}"));
+                $"{frequency.ToLowerInvariant()} digest to {member.Email}"),
+            logger);
     }
 
     private static string BuildSection(string title, List<DigestItem> items)

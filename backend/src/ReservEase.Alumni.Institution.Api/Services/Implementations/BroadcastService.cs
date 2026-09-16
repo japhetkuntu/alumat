@@ -1,19 +1,21 @@
 using System.Linq.Expressions;
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class BroadcastService(
     IAlumniPgRepository<MemberEntity> memberRepo,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<BroadcastService> logger) : IBroadcastService
 {
@@ -59,7 +61,8 @@ public class BroadcastService(
 
             if (recipients.Count > 0)
             {
-                notificationActor.Tell(new SendBroadcastCommand(currentTenant.InstitutionId!, recipients, request.Title, request.Message, channels));
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.Broadcast(currentTenant.InstitutionId!, recipients, request.Title, request.Message, channels), logger);
             }
 
             logger.LogInformation("Broadcast queued by admin {AdminId} to {Count} recipients via [{Channels}]",

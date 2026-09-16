@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Implementations;
-using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
+using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
+using ReservEase.Alumni.Notifications.Sdk.Workflows;
 using ReservEase.Alumni.Operations.Worker.Workflows.Contributions;
+using ReservEase.Alumni.Operations.Worker.Workflows.Notifications;
 using ReservEase.Alumni.Operations.Worker.Workflows.ServiceRequests;
 using ReservEase.Alumni.Operations.Worker.Workflows.StoreOrders;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
@@ -26,14 +27,16 @@ builder.Configuration
 // service classes registered here anymore (IStoreOrderService/IServiceRequestService/
 // IContributionService and their large, mostly-unrelated method surfaces belong to
 // Member.Api; this worker's activities talk to repositories/DbContext/Paystack/Redis
-// directly, and only NotificationDispatcher survives as a real dependency).
+// directly). Sms/WhatsApp/Email are registered here now, not in each web API project —
+// NotificationDispatchActivities is the only thing in the whole solution that still
+// sends any of them, since every other notification call site now just signals the
+// NotificationDispatch workflow instead.
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<MemberRedisConfig>(builder.Configuration);
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
-
-builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+builder.Services.AddMailtrapEmailService(builder.Configuration);
 
 builder.Services
     .AddTemporalClient(opts =>
@@ -49,6 +52,13 @@ builder.Services
     .AddScopedActivities<ContributionCallbackActivities>()
     .AddScopedActivities<ServiceRequestCallbackActivities>()
     .AddScopedActivities<StoreOrderCallbackActivities>();
+
+// Its own queue, isolated from payment-callback processing — see
+// NotificationTaskQueues' doc comment for why.
+builder.Services
+    .AddHostedTemporalWorker(NotificationTaskQueues.Dispatch)
+    .AddWorkflow<NotificationDispatchWorkflow>()
+    .AddScopedActivities<NotificationDispatchActivities>();
 
 var host = builder.Build();
 

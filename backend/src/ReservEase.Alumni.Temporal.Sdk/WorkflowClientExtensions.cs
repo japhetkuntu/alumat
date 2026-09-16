@@ -66,4 +66,25 @@ public static class WorkflowClientExtensions
             return client.GetWorkflowHandle<TWorkflow, TResult>(workflowId);
         }
     }
+
+    /// <summary>
+    /// Ensures a long-lived, perpetual workflow instance exists (starting it if this is
+    /// the very first signal it's ever received) and delivers a signal to it, atomically,
+    /// in one server round trip — the primitive behind "fire and forget a message to a
+    /// singleton workflow acting as a durable queue," used by NotificationDispatchWorkflow.
+    /// Unlike StartOrAttachAsync, this never races a separate start-then-signal: Temporal's
+    /// own signal-with-start guarantees the signal is delivered to whichever execution
+    /// (new or already-running) ends up owning workflowId.
+    /// </summary>
+    public static Task<WorkflowHandle<TWorkflow>> SignalWithStartAsync<TWorkflow>(
+        this ITemporalClient client,
+        Expression<Func<TWorkflow, Task>> runCall,
+        Expression<Func<TWorkflow, Task>> signalCall,
+        string workflowId,
+        string taskQueue)
+    {
+        var options = new WorkflowOptions { Id = workflowId, TaskQueue = taskQueue };
+        options.SignalWithStart(signalCall);
+        return client.StartWorkflowAsync(runCall, options);
+    }
 }

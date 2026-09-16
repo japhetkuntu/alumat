@@ -31,8 +31,6 @@ using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
 using ReservEase.Alumni.Temporal.Sdk;
 using MemberContributionService = ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Implementations.ContributionService;
-using INotificationActor = ReservEase.Alumni.Member.Api.Services.Interfaces.INotificationActor;
-using IAdminNotificationActor = ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor;
 using DbMember = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
@@ -84,7 +82,7 @@ public class ContributionMemberForumServiceTests
         var mockCampaignRepo2 = new Mock<IAlumniPgRepository<Campaign>>();
         mockCampaignRepo2.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Campaign, bool>>>(), It.IsAny<bool>())).ReturnsAsync(new List<Campaign>());
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo2.Object, Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo2.Object, Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var response = await service.GetContributionsAsync(new ContributionInstitutionStaffFilter { Page = 1, PageSize = 10 }, admin);
@@ -112,7 +110,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
 
         var campaign = new Campaign { Id = "camp1", Title = "Test Campaign", CollectedAmount = 0m, PaidCount = 0 };
         mockCampaignRepo.Setup(r => r.GetByIdAsync("camp1", It.IsAny<bool>())).ReturnsAsync(campaign);
@@ -172,7 +170,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>())).ReturnsAsync(existingMember);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(existingMember);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
 
         var result = await service.RecordManualContributionAsync(new RecordManualContributionRequest(
             "camp1",
@@ -218,7 +216,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
 
         var result = await service.RecordManualContributionAsync(new RecordManualContributionRequest(
             "camp1",
@@ -271,7 +269,7 @@ public class ContributionMemberForumServiceTests
         var mockInstitutionRepoForMembers = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var mockMembershipRepoForMembers = new Mock<IAlumniPgRepository<CommunityMembership>>();
         var mockCurrentTenantForMembers = new Mock<ICurrentTenantService>();
-        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, mockCurrentTenantForMembers.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<IAdminNotificationActor>(), new NullLogger<MemberManagementService>());
+        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, mockCurrentTenantForMembers.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), new NullLogger<MemberManagementService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var listResponse = await service.GetMembersAsync(new MemberListFilter { Page = 1, PageSize = 10 }, admin);
@@ -323,7 +321,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetPagedAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Expression<Func<MentorshipRequest, bool>>>(), It.IsAny<bool>()))
             .ReturnsAsync(new PgPagedResult<MentorshipRequest> { PageIndex = 1, PageSize = 10, Count = 0, TotalCount = 0, TotalPages = 1, LowerBoundSize = 0, UpperBoundSize = 0, Results = new List<MentorshipRequest>() });
 
-        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
+        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var profilesResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, admin);
@@ -396,7 +394,7 @@ public class ContributionMemberForumServiceTests
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1", It.IsAny<bool>())).ReturnsAsync(mentorProfiles[0]);
         mockProfileRepo.Setup(r => r.UpdateAsync(It.IsAny<MentorProfile>())).ReturnsAsync(1);
 
-        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
+        var service = new MentorshipService(mockProfileRepo.Object, mockRequestRepo.Object, Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<MentorshipService>());
         var superAdmin = new AuthData { Id = "super1", Role = "SuperAdmin" };
 
         var profileResponse = await service.GetMentorProfilesAsync(new MentorProfileFilter { Page = 1, PageSize = 10 }, superAdmin);
@@ -439,7 +437,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.UpdateAsync(It.IsAny<MentorProfile>()))
             .ReturnsAsync(1);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("New Area", "New bio", 5), member);
@@ -463,7 +461,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>() , It.IsAny<bool>()))
             .ReturnsAsync(existingProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("Any", null, 3), member);
@@ -488,7 +486,7 @@ public class ContributionMemberForumServiceTests
             .Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MentorProfile, bool>>>() , It.IsAny<bool>()))
             .ReturnsAsync(existingProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RegisterAsMentorAsync(new RegisterAsMentorRequest("Any", null, 3), member);
@@ -511,7 +509,7 @@ public class ContributionMemberForumServiceTests
         var mockProfileRepo = new Mock<IAlumniPgRepository<MentorProfile>>();
         mockProfileRepo.Setup(r => r.GetByIdAsync("p1", It.IsAny<bool>())).ReturnsAsync(mentorProfile);
 
-        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<INotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
+        var service = new MemberMentorshipService(mockProfileRepo.Object, Mock.Of<IAlumniPgRepository<MentorshipRequest>>(), Mock.Of<IAlumniPgRepository<MemberEntity>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<MemberMentorshipService>());
         var member = new AuthData { Id = "m1", Role = "Member" };
 
         var response = await service.RequestMentorshipAsync(new RequestMentorshipRequest("p1", "Data Science", "Please mentor me"), member);
@@ -545,7 +543,7 @@ public class ContributionMemberForumServiceTests
             .ReturnsAsync(1)
             .Callback<AlumniEvent>(e => createdEvent = e);
 
-        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), Mock.Of<IRedisService<PublicContentCacheConfig>>(), new NullLogger<EventService>());
+        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IRedisService<PublicContentCacheConfig>>(), new NullLogger<EventService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateEventRequest
@@ -573,7 +571,7 @@ public class ContributionMemberForumServiceTests
         var mockMemberRepo = new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>>();
         var mockStorage = new Mock<IStorageService>();
 
-        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), Mock.Of<IRedisService<PublicContentCacheConfig>>(), new NullLogger<EventService>());
+        var service = new EventService(mockEventRepo.Object, mockRsvpRepo.Object, mockMemberRepo.Object, mockStorage.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IRedisService<PublicContentCacheConfig>>(), new NullLogger<EventService>());
         var admin = new AuthData { Id = "admin1", Role = "SuperAdmin", GraduationYear = 2026 };
 
         var request = new CreateEventRequest
@@ -606,7 +604,7 @@ public class ContributionMemberForumServiceTests
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateCampaignRequest
@@ -641,7 +639,7 @@ public class ContributionMemberForumServiceTests
 
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin", GraduationYear = 2025 };
 
         var request = new CreateCampaignRequest
@@ -671,7 +669,7 @@ public class ContributionMemberForumServiceTests
         var mockContributionRepo = new Mock<IAlumniPgRepository<Contribution>>();
         var mockMemberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
 
-        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<IAdminNotificationActor>(), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
+        var service = new AdminCampaignService(mockCampaignRepo.Object, mockContributionRepo.Object, mockMemberRepo.Object, Mock.Of<IAlumniPgRepository<CampaignUpdate>>(), mockStorage.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminCampaignService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var request = new CreateCampaignRequest
@@ -718,7 +716,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
@@ -761,7 +758,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
@@ -792,7 +788,7 @@ public class ContributionMemberForumServiceTests
         mockCampaignRepo.Setup(r => r.GetByIdAsync("membership-campaign", It.IsAny<bool>())).ReturnsAsync(new Campaign { Id = "membership-campaign", Title = "Membership", AmountPerMember = 100, IsMembershipCampaign = true, AllowManualPayments = true });
         mockContributionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<Contribution, bool>>>(), It.IsAny<bool>())).ReturnsAsync(new Contribution { Id = "c1", MemberId = "m1", CampaignId = "membership-campaign", Status = "Successful" });
 
-        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch>>(), Mock.Of<IAlumniPgRepository<RecurringContribution>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.PlatformSettings>>(), mockCurrentTenant.Object, mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<INotificationDispatcher>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), config.Object, logger);
+        var service = new MemberContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, mockPaymentTransactionRepo.Object, mockInstitutionRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch>>(), Mock.Of<IAlumniPgRepository<RecurringContribution>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.PlatformSettings>>(), mockCurrentTenant.Object, mockPaystackService.Object, new PaystackConfig(), mockRedis.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), config.Object, logger);
 
         var response = await service.InitiateMembershipRenewalAsync(new InitiateMembershipRenewalRequest("membership-campaign", 1, "manual"), new AuthData { Id = "m1", Email = "john@example.com" });
 
@@ -836,7 +832,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
@@ -883,7 +878,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
@@ -933,7 +927,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
@@ -977,7 +970,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);
@@ -1038,7 +1030,6 @@ public class ContributionMemberForumServiceTests
             Mock.Of<IPaystackService>(),
             new PaystackConfig(),
             Mock.Of<IRedisService<MemberRedisConfig>>(),
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             Mock.Of<IConfiguration>(),
             new NullLogger<MemberContributionService>());
@@ -1094,7 +1085,6 @@ public class ContributionMemberForumServiceTests
             mockPaystackService.Object,
             new PaystackConfig(),
             mockRedis.Object,
-            Mock.Of<INotificationDispatcher>(),
             Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
             config.Object,
             logger);

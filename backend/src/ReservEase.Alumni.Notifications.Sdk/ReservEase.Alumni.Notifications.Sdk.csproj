@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReservEase.Alumni.Temporal.Sdk\ReservEase.Alumni.Temporal.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Mailtrap.Sdk\ReservEase.Alumni.Mailtrap.Sdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Temporalio" Version="1.*" />
+  </ItemGroup>
+
+</Project>

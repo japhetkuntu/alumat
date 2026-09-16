@@ -1,16 +1,11 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Akka.Actor;
-using Akka.Actor.Setup;
-using Akka.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using ReservEase.Alumni.Institution.Api.Actors;
-using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 
@@ -108,41 +103,6 @@ public static class ServiceRegistrationExtensions
         });
 
         return services;
-    }
-
-    public static IServiceCollection AddActorSystem(
-        this IServiceCollection services, Action<ActorSystemSetup>? configure = null)
-    {
-        services.AddSingleton(provider =>
-        {
-            var setup = BootstrapSetup.Create()
-                .And(DependencyResolverSetup.Create(provider));
-            configure?.Invoke(setup);
-            return ActorSystem.Create("alumni-admin", setup);
-        });
-
-        // Notification dispatcher actor — processes all fan-out notification commands.
-        services.AddSingleton<INotificationActor>(provider =>
-        {
-            var system = provider.GetRequiredService<ActorSystem>();
-            var actorRef = system.ActorOf(
-                DependencyResolver.For(system).Props<NotificationDispatcherActor>(),
-                "notificationDispatcher");
-            return new NotificationActorRef(actorRef);
-        });
-
-        return services;
-    }
-
-    public static WebApplication UseActorSystem(this WebApplication app)
-    {
-        var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-        lifetime.ApplicationStopping.Register(() =>
-        {
-            var actorSystem = app.Services.GetService<ActorSystem>();
-            actorSystem?.Terminate().Wait(TimeSpan.FromSeconds(5));
-        });
-        return app;
     }
 
     public static IServiceCollection AddAlumniControllers(this IServiceCollection services)

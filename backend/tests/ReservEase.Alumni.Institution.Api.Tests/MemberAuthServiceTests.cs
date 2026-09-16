@@ -10,12 +10,12 @@ using ReservEase.Alumni.Common.Sdk.Services;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Implementations;
-using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Xunit;
 
 namespace ReservEase.Alumni.Institution.Api.Tests;
@@ -47,13 +47,13 @@ public class MemberAuthServiceTests
             Issuer = "test", Audience = "test", AccessTokenLifetime = 1, RefreshTokenLifetime = 1,
         });
         var mailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
-        var notificationActor = new Mock<INotificationActor>();
+        var temporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false);
         var storageService = new Mock<IStorageService>();
 
         return new MemberAuthService(
             memberRepo.Object, referralRepo.Object, institutionRepo.Object, currentTenant.Object,
             httpContextAccessor.Object, redis.Object, tokenOptions, mailtrapOptions,
-            notificationActor.Object, storageService.Object, googleTokenVerifier.Object,
+            temporalProvider, storageService.Object, googleTokenVerifier.Object,
             new NullLogger<MemberAuthService>());
     }
 

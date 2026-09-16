@@ -12,7 +12,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
-using ReservEase.Alumni.Sms.Sdk.Extensions;
+using ReservEase.Alumni.Temporal.Sdk;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +44,7 @@ builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddPaystackService(builder.Configuration);
-builder.Services.AddArkeselSmsService(builder.Configuration);
+builder.Services.AddTemporalClientProvider(builder.Configuration);
 
 // Auth + API
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
@@ -60,7 +60,6 @@ builder.Services.AddGoogleAuth(builder.Configuration);
 builder.Services.AddApiVersioning(1);
 builder.Services.AddSwagger("Institution API");
 builder.Services.AddAlumniControllers();
-builder.Services.AddActorSystem();
 
 // Application services
 builder.Services.AddScoped<IInstitutionAuthService, InstitutionAuthService>();
@@ -80,7 +79,6 @@ builder.Services.AddScoped<IInstitutionStaffService, InstitutionStaffService>();
 builder.Services.AddScoped<IInstitutionSpotlightService, InstitutionSpotlightService>();
 builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
-builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddScoped<IBroadcastService, BroadcastService>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
@@ -96,6 +94,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// Establish (or attempt) the Temporal connection at startup so a failure is visible
+// immediately in logs, rather than surfacing silently on the first notification.
+app.Services.GetRequiredService<ITemporalClientProvider>();
 
 var enableSwagger = builder.Configuration.GetValue<bool>("ENABLE_SWAGGER", false);
 
@@ -129,7 +131,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
-app.UseActorSystem();
 
 await PostgresExtensionService.ApplyMigrationsAsync(app.Services);
 if (!app.Environment.IsDevelopment())

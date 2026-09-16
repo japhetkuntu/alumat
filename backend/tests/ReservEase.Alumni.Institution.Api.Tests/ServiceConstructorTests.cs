@@ -15,6 +15,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Xunit;
 
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
@@ -53,21 +54,21 @@ public class ServiceConstructorTests
         var publicCache = new Mock<IRedisService<PublicContentCacheConfig>>();
         var tokenOptions = Microsoft.Extensions.Options.Options.Create(new BearerTokenConfig { InstitutionSigningKey = "x", Issuer = "x", Audience = "x", AccessTokenLifetime = 1, RefreshTokenLifetime = 1 });
 
-        var notificationActor = new Mock<INotificationActor>();
+        var temporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false);
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
         var mailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
         var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
 
         var _ = new InstitutionAuthService(
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
-            redisService.Object, tokenOptions, mailtrapOptions, notificationActor.Object, googleTokenVerifier.Object, new NullLogger<InstitutionAuthService>());
+            redisService.Object, tokenOptions, mailtrapOptions, temporalProvider, googleTokenVerifier.Object, new NullLogger<InstitutionAuthService>());
         var __ = new InstitutionStaffService(adminRepo.Object, new NullLogger<InstitutionStaffService>());
-        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, campaignUpdateRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<CampaignService>());
-        var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, publicCache.Object, new NullLogger<EventService>());
+        var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, campaignUpdateRepo.Object, storageService.Object, temporalProvider, currentTenant.Object, new NullLogger<CampaignService>());
+        var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, temporalProvider, currentTenant.Object, publicCache.Object, new NullLogger<EventService>());
         var _____ = new ForumService(forumCategoryRepo.Object, forumThreadRepo.Object, memberRepo.Object, new NullLogger<ForumService>());
-        var ______ = new JobService(jobRepo.Object, storageService.Object, notificationActor.Object, currentTenant.Object, new NullLogger<JobService>());
-        var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, membershipRepo.Object, currentTenant.Object, Mock.Of<IConfiguration>(), mailtrapOptions, notificationActor.Object, new NullLogger<MemberManagementService>());
-        var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, memberRepo.Object, notificationActor.Object, currentTenant.Object, new NullLogger<MentorshipService>());
+        var ______ = new JobService(jobRepo.Object, storageService.Object, temporalProvider, currentTenant.Object, new NullLogger<JobService>());
+        var _______ = new MemberManagementService(memberRepo.Object, campaignRepo.Object, contributionRepo.Object, institutionRepo.Object, membershipRepo.Object, currentTenant.Object, Mock.Of<IConfiguration>(), mailtrapOptions, temporalProvider, new NullLogger<MemberManagementService>());
+        var ________ = new MentorshipService(mentorProfileRepo.Object, mentorshipRequestRepo.Object, memberRepo.Object, temporalProvider, currentTenant.Object, new NullLogger<MentorshipService>());
         var _________ = new NewsService(newsRepo.Object, adminRepo.Object, storageService.Object, currentTenant.Object, publicCache.Object, new NullLogger<NewsService>());
         var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, currentTenant.Object, redisService.Object, new NullLogger<ReportService>());
         var ___________ = new ResourceService(resourceRepo.Object, storageService.Object, currentTenant.Object, new NullLogger<ResourceService>());

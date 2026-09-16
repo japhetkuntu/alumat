@@ -8,13 +8,15 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Platform.Api.Actors;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Options;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Common.Sdk.Services;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
@@ -24,7 +26,7 @@ public class PlatformAuthService(
     IRedisService<PlatformRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     IHttpContextAccessor httpContextAccessor,
     IGoogleTokenVerifier googleTokenVerifier,
     ILogger<PlatformAuthService> logger) : IPlatformAuthService
@@ -41,19 +43,18 @@ public class PlatformAuthService(
 
     private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
 
-    private void SendResetPasswordEmailAsync(string name, string email, string token, string baseUrl)
+    private async Task SendResetPasswordEmailAsync(string name, string email, string token, string baseUrl)
     {
         var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
-            {
-                To = [new EmailContact { Email = email, Name = name }],
-                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
-                    ? "reset-password"
-                    : mailtrapConfig.Templates.ResetPassword,
-                TemplateVariables = new { first_name = name, reset_url = link },
-            },
-            $"reset password email to {email}"));
+        var request = new SendEmailRequest
+        {
+            To = [new EmailContact { Email = email, Name = name }],
+            TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
+                ? "reset-password"
+                : mailtrapConfig.Templates.ResetPassword,
+            TemplateVariables = new { first_name = name, reset_url = link },
+        };
+        await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(request, $"reset password email to {email}"), logger);
     }
 
     public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -70,7 +71,7 @@ public class PlatformAuthService(
             staff.PasswordResetSentAt = DateTime.UtcNow;
             await staffRepo.UpdateAsync(staff);
 
-            SendResetPasswordEmailAsync(staff.Name, staff.Email, token, GetRequestBaseUrl());
+            await SendResetPasswordEmailAsync(staff.Name, staff.Email, token, GetRequestBaseUrl());
             return new object().ToOkApiResponse("Password reset instructions sent to your email.");
         }
         catch (Exception e)

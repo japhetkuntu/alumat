@@ -33,7 +33,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "ScopedAdmin", YearGroups = new List<int> { 2025 } };
 
         // Act
@@ -70,7 +70,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), logger);
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin" };
 
         var response = await service.UpdateJobAsync(new UpdateJobRequest
@@ -104,7 +104,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.INotificationActor>(), Mock.Of<ICurrentTenantService>(), logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "SuperAdmin" };
 
         var response = await service.UpdateJobAsync(new UpdateJobRequest

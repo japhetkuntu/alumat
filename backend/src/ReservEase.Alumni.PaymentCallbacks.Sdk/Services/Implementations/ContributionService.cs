@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Extensions;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
@@ -37,7 +39,6 @@ public class ContributionService : IContributionService
     private readonly IPaystackService paystackService;
     private readonly PaystackConfig paystackConfig;
     private readonly IRedisService<MemberRedisConfig> redis;
-    private readonly INotificationDispatcher notificationDispatcher;
     private readonly ITemporalClientProvider temporalProvider;
     private readonly ILogger<ContributionService> logger;
     private readonly string _paystackCallbackUrl;
@@ -216,7 +217,6 @@ public class ContributionService : IContributionService
         IPaystackService paystackService,
         PaystackConfig paystackConfig,
         IRedisService<MemberRedisConfig> redis,
-        INotificationDispatcher notificationDispatcher,
         ITemporalClientProvider temporalProvider,
         IConfiguration configuration,
         ILogger<ContributionService> logger)
@@ -233,7 +233,6 @@ public class ContributionService : IContributionService
         this.paystackService = paystackService;
         this.paystackConfig = paystackConfig;
         this.redis = redis;
-        this.notificationDispatcher = notificationDispatcher;
         this.temporalProvider = temporalProvider;
         this.logger = logger;
 
@@ -972,8 +971,9 @@ public class ContributionService : IContributionService
             var memberName = uploadingMember is not null ? $"{uploadingMember.FirstName} {uploadingMember.LastName}" : member.Email;
             // HTTP-driven flow (member upload) — currentTenant is already set by
             // TenantResolutionMiddleware, unlike the webhook path above.
-            await notificationDispatcher.DispatchPaymentReceivedToAdminsAsync(
-                memberName, member.Email, 0, campaign.Title, contribution.Id);
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.PaymentReceivedToAdmins(currentTenant.InstitutionId, memberName, member.Email, 0, campaign.Title, contribution.Id),
+                logger);
 
             logger.LogInformation("Proof uploaded, contribution {ContributionId} created for member {MemberId}", contribution.Id, member.Id);
             return contribution.ToDto().ToCreatedApiResponse("Proof uploaded. Awaiting admin confirmation.");

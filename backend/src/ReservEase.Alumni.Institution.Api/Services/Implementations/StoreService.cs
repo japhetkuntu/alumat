@@ -1,15 +1,17 @@
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -21,7 +23,7 @@ public class StoreService(
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<StoreService> logger) : IStoreService
 {
@@ -347,8 +349,8 @@ public class StoreService(
 
             if (!string.IsNullOrEmpty(newStatus))
             {
-                notificationActor.Tell(new DispatchStoreDeliveryStatusUpdatedCommand(
-                    currentTenant.InstitutionId!, order.MemberId, order.Id, order.OrderNumber, newStatus));
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.StoreDeliveryStatusUpdated(
+                    currentTenant.InstitutionId!, order.MemberId, order.Id, order.OrderNumber, newStatus), logger);
             }
 
             logger.LogInformation("Store order {OrderId} delivery status set to {DeliveryStatus} by admin {AdminId}", orderId, newStatus, admin.Id);

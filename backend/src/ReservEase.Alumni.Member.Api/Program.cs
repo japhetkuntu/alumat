@@ -12,10 +12,8 @@ using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
-using ReservEase.Alumni.Sms.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Temporal.Sdk;
-using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,8 +46,6 @@ builder.Services.AddRedisDatabase<TenantResolutionCacheConfig>(builder.Configura
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
-builder.Services.AddArkeselSmsService(builder.Configuration);
-builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
 builder.Services.AddTemporalClientProvider(builder.Configuration);
 
 // Auth + API
@@ -61,7 +57,6 @@ builder.Services.AddGoogleAuth(builder.Configuration);
 builder.Services.AddApiVersioning(1);
 builder.Services.AddSwagger("Member API");
 builder.Services.AddMemberControllers();
-builder.Services.AddActorSystem();
 
 // Application services
 builder.Services.AddScoped<IMemberAuthService, MemberAuthService>();
@@ -80,7 +75,6 @@ builder.Services.AddScoped<ISpotlightService, SpotlightService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddScoped<IClassNoteService, ClassNoteService>();
 builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
-builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();
 builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
@@ -144,7 +138,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
-app.UseActorSystem();
 
 await PostgresExtensionService.ApplyMigrationsAsync(app.Services);
 

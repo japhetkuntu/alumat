@@ -8,9 +8,10 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -18,6 +19,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Referral = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Referral;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
@@ -33,7 +35,7 @@ public class MemberAuthService(
     IRedisService<MemberRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     IStorageService storageService,
     IGoogleTokenVerifier googleTokenVerifier,
     ILogger<MemberAuthService> logger) : IMemberAuthService
@@ -401,32 +403,36 @@ public class MemberAuthService(
     {
         var link = $"{baseUrl}/auth/verify-email?token={token}&email={Uri.EscapeDataString(email)}";
         var brand = await GetBrandVarsAsync();
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
-            {
-                To = [new EmailContact { Email = email, Name = firstName }],
-                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.EmailVerificationLink)
-                    ? "email-verification-link"
-                    : mailtrapConfig.Templates.EmailVerificationLink,
-                TemplateVariables = new { first_name = firstName, verify_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
-            },
-            $"verification link email to {email}"));
+        await temporalProvider.EnqueueNotificationAsync(
+            NotificationRequest.Email(
+                new SendEmailRequest
+                {
+                    To = [new EmailContact { Email = email, Name = firstName }],
+                    TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.EmailVerificationLink)
+                        ? "email-verification-link"
+                        : mailtrapConfig.Templates.EmailVerificationLink,
+                    TemplateVariables = new { first_name = firstName, verify_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
+                },
+                $"verification link email to {email}"),
+            logger);
     }
 
     private async Task SendResetPasswordEmailAsync(string firstName, string email, string token, string baseUrl)
     {
         var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
         var brand = await GetBrandVarsAsync();
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
-            {
-                To = [new EmailContact { Email = email, Name = firstName }],
-                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
-                    ? "reset-password"
-                    : mailtrapConfig.Templates.ResetPassword,
-                TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
-            },
-            $"reset password email to {email}"));
+        await temporalProvider.EnqueueNotificationAsync(
+            NotificationRequest.Email(
+                new SendEmailRequest
+                {
+                    To = [new EmailContact { Email = email, Name = firstName }],
+                    TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
+                        ? "reset-password"
+                        : mailtrapConfig.Templates.ResetPassword,
+                    TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
+                },
+                $"reset password email to {email}"),
+            logger);
     }
 
     public async Task<IApiResponse<MemberTokenResponse>> LoginAsync(LoginRequest request)
@@ -770,14 +776,16 @@ public class MemberAuthService(
     private async Task SendOtpEmailAsync(string firstName, string email, string otp)
     {
         var brand = await GetBrandVarsAsync();
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
-            {
-                To = [new EmailContact { Email = email, Name = firstName }],
-                TemplateId = mailtrapConfig.Templates.EmailVerification,
-                TemplateVariables = new { first_name = firstName, otp_code = otp, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
-            },
-            $"OTP email to {email}"));
+        await temporalProvider.EnqueueNotificationAsync(
+            NotificationRequest.Email(
+                new SendEmailRequest
+                {
+                    To = [new EmailContact { Email = email, Name = firstName }],
+                    TemplateId = mailtrapConfig.Templates.EmailVerification,
+                    TemplateVariables = new { first_name = firstName, otp_code = otp, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
+                },
+                $"OTP email to {email}"),
+            logger);
     }
 
     private MemberAuthClaimData BuildClaimData(MemberEntity member) => new()

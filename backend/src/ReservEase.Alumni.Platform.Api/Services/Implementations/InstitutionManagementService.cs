@@ -2,9 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
-using ReservEase.Alumni.Platform.Api.Actors;
 using ReservEase.Alumni.Platform.Api.Extensions;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
@@ -16,6 +17,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Microsoft.Extensions.Options;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -43,7 +45,7 @@ public class InstitutionManagementService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Batch> batchRepo,
     IAuditLogService auditLog, IPaystackService paystackService,
-    IConfiguration config, INotificationActor notificationActor, IOptions<MailtrapConfig> mailtrapConfigOptions,
+    IConfiguration config, ITemporalClientProvider temporalProvider, IOptions<MailtrapConfig> mailtrapConfigOptions,
     IRedisService<PlatformRedisConfig> cache, ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
@@ -260,7 +262,7 @@ public class InstitutionManagementService(
 
             await transaction.CommitAsync();
 
-            SendInstitutionWelcomeEmailAsync(admin, institution);
+            await SendInstitutionWelcomeEmailAsync(admin, institution);
 
             logger.LogInformation("Onboarded institution {Slug} ({InstitutionId}) with first admin {AdminEmail}", slug, institution.Id, email);
             await auditLog.LogAsync(createdBy, actorName, "onboarded institution", institution.Name);
@@ -816,7 +818,7 @@ public class InstitutionManagementService(
         await staffRepo.AddAsync(staff);
 
         var institutionDisplayName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
-        SendStaffInviteEmailAsync(
+        await SendStaffInviteEmailAsync(
             staff.FirstName, staff.Email, staff.PasswordResetToken, institutionDisplayName, InstitutionPortalUrl(institution.Slug),
             institution.PrimaryColorHex, institution.SecondaryColorHex, institution.LogoUrl);
 
@@ -854,55 +856,53 @@ public class InstitutionManagementService(
     /// set-your-password link, plus both portal URLs spelled out) since this
     /// is someone's very first touch with the platform, not a routine invite.
     /// </summary>
-    private void SendInstitutionWelcomeEmailAsync(StaffEntity admin, Institution institution)
+    private async Task SendInstitutionWelcomeEmailAsync(StaffEntity admin, Institution institution)
     {
         var portalUrl = InstitutionPortalUrl(institution.Slug);
         var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
         var link = $"{baseUrl}/reset-password?token={admin.PasswordResetToken}&email={Uri.EscapeDataString(admin.Email)}";
         var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
 
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
+        var request = new SendEmailRequest
+        {
+            To = [new EmailContact { Email = admin.Email, Name = admin.FirstName }],
+            TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.InstitutionWelcome)
+                ? "institution-welcome"
+                : mailtrapConfig.Templates.InstitutionWelcome,
+            TemplateVariables = new
             {
-                To = [new EmailContact { Email = admin.Email, Name = admin.FirstName }],
-                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.InstitutionWelcome)
-                    ? "institution-welcome"
-                    : mailtrapConfig.Templates.InstitutionWelcome,
-                TemplateVariables = new
-                {
-                    first_name = admin.FirstName,
-                    set_password_url = link,
-                    institution_portal_url = portalUrl,
-                    member_portal_url = MemberPortalUrl(institution.Slug),
-                    brand_name = brandName,
-                    brand_color = institution.PrimaryColorHex,
-                    brand_secondary_color = institution.SecondaryColorHex,
-                    brand_logo = institution.LogoUrl,
-                },
+                first_name = admin.FirstName,
+                set_password_url = link,
+                institution_portal_url = portalUrl,
+                member_portal_url = MemberPortalUrl(institution.Slug),
+                brand_name = brandName,
+                brand_color = institution.PrimaryColorHex,
+                brand_secondary_color = institution.SecondaryColorHex,
+                brand_logo = institution.LogoUrl,
             },
-            $"institution welcome email to {admin.Email}"));
+        };
+        await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(request, $"institution welcome email to {admin.Email}"), logger);
     }
 
-    private void SendStaffInviteEmailAsync(
+    private async Task SendStaffInviteEmailAsync(
         string firstName, string email, string token, string institutionName, string portalUrl,
         string? primaryColor, string? secondaryColor, string? logoUrl)
     {
         var baseUrl = string.IsNullOrWhiteSpace(portalUrl) ? "https://example.com" : portalUrl;
         var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
-        notificationActor.Tell(new SendEmailCommand(
-            new SendEmailRequest
+        var request = new SendEmailRequest
+        {
+            To = [new EmailContact { Email = email, Name = firstName }],
+            TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
+                ? "reset-password"
+                : mailtrapConfig.Templates.ResetPassword,
+            TemplateVariables = new
             {
-                To = [new EmailContact { Email = email, Name = firstName }],
-                TemplateId = string.IsNullOrWhiteSpace(mailtrapConfig.Templates.ResetPassword)
-                    ? "reset-password"
-                    : mailtrapConfig.Templates.ResetPassword,
-                TemplateVariables = new
-                {
-                    first_name = firstName, reset_url = link, brand_name = institutionName,
-                    brand_color = primaryColor, brand_secondary_color = secondaryColor, brand_logo = logoUrl,
-                },
+                first_name = firstName, reset_url = link, brand_name = institutionName,
+                brand_color = primaryColor, brand_secondary_color = secondaryColor, brand_logo = logoUrl,
             },
-            $"staff invite email to {email}"));
+        };
+        await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(request, $"staff invite email to {email}"), logger);
     }
 
     private async Task<InstitutionDetailResponse> ToDetailDtoAsync(Institution i)

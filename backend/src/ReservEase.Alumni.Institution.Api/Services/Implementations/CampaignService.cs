@@ -1,15 +1,17 @@
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -20,7 +22,7 @@ public class CampaignService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<CampaignUpdate> updateRepo,
     IStorageService storageService,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<CampaignService> logger) : ICampaignService
 {
@@ -185,7 +187,7 @@ public class CampaignService(
             await campaignRepo.AddAsync(campaign);
 
             logger.LogInformation("Campaign {CampaignId} created by admin {AdminId}", campaign.Id, admin.Id);
-            notificationActor.Tell(new DispatchCampaignAlertCommand(currentTenant.InstitutionId!, campaign));
+            await temporalProvider.EnqueueNotificationAsync(NotificationRequest.CampaignAlert(currentTenant.InstitutionId!, campaign.Id), logger);
             return campaign.ToDto().ToCreatedApiResponse("Campaign created");
         }
         catch (Exception e)
@@ -586,7 +588,7 @@ public class ContributionService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<ContributionService> logger) : IContributionService
 {
@@ -769,8 +771,8 @@ public class ContributionService(
                 campaign.PaidCount += 1;
                 await campaignRepo.UpdateAsync(campaign);
 
-                notificationActor.Tell(new DispatchContributionConfirmedCommand(
-                    currentTenant.InstitutionId!, memberSnapshot.Id, memberSnapshot.Email ?? string.Empty, memberSnapshot.FirstName, contribution.Amount, campaign.Title, contribution.Id));
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.ContributionConfirmed(
+                    currentTenant.InstitutionId!, memberSnapshot.Id, memberSnapshot.Email ?? string.Empty, memberSnapshot.FirstName, contribution.Amount, campaign.Title, contribution.Id), logger);
             }
 
             logger.LogInformation("Contribution {ContributionId} recorded by admin {AdminId} (confirmed={Confirmed})", contribution.Id, admin.Id, request.Confirmed);
@@ -822,8 +824,8 @@ public class ContributionService(
             if (member is not null)
             {
                 var campaignTitle = campaign?.Title ?? contribution.Campaign?.Title ?? "campaign";
-                notificationActor.Tell(new DispatchContributionConfirmedCommand(
-                    currentTenant.InstitutionId!, member.Id, member.Email, member.FirstName, contribution.Amount, campaignTitle, contributionId));
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.ContributionConfirmed(
+                    currentTenant.InstitutionId!, member.Id, member.Email, member.FirstName, contribution.Amount, campaignTitle, contributionId), logger);
             }
 
             return new object().ToOkApiResponse("Contribution confirmed");
@@ -864,8 +866,8 @@ public class ContributionService(
                 var rejectedContrib = contribution;
                 var campaignForReject = await campaignRepo.GetByIdAsync(rejectedContrib.CampaignId);
                 var campaignTitle = campaignForReject?.Title ?? rejectedContrib.Campaign?.Title ?? "campaign";
-                notificationActor.Tell(new DispatchContributionRejectedCommand(
-                    currentTenant.InstitutionId!, memberForReject.Id, memberForReject.Email, memberForReject.FirstName, campaignTitle, reason, contributionId));
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.ContributionRejected(
+                    currentTenant.InstitutionId!, memberForReject.Id, memberForReject.Email, memberForReject.FirstName, campaignTitle, reason, contributionId), logger);
             }
 
             return new object().ToOkApiResponse("Contribution rejected");

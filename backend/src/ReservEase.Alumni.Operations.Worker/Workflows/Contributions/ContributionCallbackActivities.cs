@@ -1,14 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.Operations.Worker.Models;
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
-using ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Temporalio.Activities;
 using Temporalio.Exceptions;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -30,8 +32,7 @@ public class ContributionCallbackActivities(
     IAlumniPgRepository<Institution> institutionRepo,
     IPaystackService paystackService,
     IRedisService<MemberRedisConfig> redis,
-    INotificationDispatcher notificationDispatcher,
-    ICurrentTenantService currentTenant,
+    ITemporalClientProvider temporalProvider,
     ILogger<ContributionCallbackActivities> logger)
 {
     [Activity("ContributionCallback.LoadTransaction")]
@@ -85,14 +86,9 @@ public class ContributionCallbackActivities(
 
     [Activity("ContributionCallback.DispatchContributionConfirmed")]
     public virtual Task DispatchContributionConfirmedAsync(string institutionId, string memberId, string memberEmail, string memberFirstName, decimal amount, string campaignTitle, string contributionId) =>
-        Wrap(async () =>
-        {
-            // Runs inside a Temporal activity (no HTTP context to have set this via
-            // middleware), so the tenant must be set explicitly before the
-            // dispatcher's tenant-scoped queries/saves run.
-            currentTenant.SetInstitutionId(institutionId);
-            await notificationDispatcher.DispatchContributionConfirmedAsync(memberId, memberEmail, memberFirstName, amount, campaignTitle, contributionId);
-        }, "dispatch contribution confirmed notification", contributionId);
+        Wrap(() => temporalProvider.EnqueueNotificationAsync(
+            NotificationRequest.ContributionConfirmed(institutionId, memberId, memberEmail, memberFirstName, amount, campaignTitle, contributionId),
+            logger), "dispatch contribution confirmed notification", contributionId);
 
     [Activity("ContributionCallback.LoadActiveRecurringGiving")]
     public virtual Task<RecurringContribution?> LoadActiveRecurringGivingAsync(string memberId, string campaignId) =>

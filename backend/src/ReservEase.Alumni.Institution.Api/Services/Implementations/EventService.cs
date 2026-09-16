@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
@@ -13,6 +14,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
@@ -21,7 +23,7 @@ public class EventService(
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     IRedisService<PublicContentCacheConfig> publicCache,
     ILogger<EventService> logger) : IEventService
@@ -148,7 +150,7 @@ public class EventService(
             await eventRepo.AddAsync(ev);
             await InvalidatePublicEventsCacheAsync();
             logger.LogInformation("Event {EventId} created by admin {AdminId}", ev.Id, admin.Id);
-            notificationActor.Tell(new DispatchEventReminderCommand(currentTenant.InstitutionId!, ev));
+            await temporalProvider.EnqueueNotificationAsync(NotificationRequest.EventReminder(currentTenant.InstitutionId!, ev.Id), logger);
             return ev.ToDto().ToCreatedApiResponse("Event created");
         }
         catch (Exception e)

@@ -11,6 +11,7 @@ using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
+using ReservEase.Alumni.Temporal.Sdk;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,7 @@ builder.Services.AddRedisDatabase<PlatformRedisConfig>(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
+builder.Services.AddTemporalClientProvider(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 
 // Auth + API
@@ -50,7 +52,6 @@ builder.Services.AddGoogleAuth(builder.Configuration);
 builder.Services.AddApiVersioning(1);
 builder.Services.AddSwagger("Platform API");
 builder.Services.AddPlatformControllers();
-builder.Services.AddActorSystem();
 
 // Application services
 builder.Services.AddScoped<IPlatformAuthService, PlatformAuthService>();
@@ -72,6 +73,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// Establish (or attempt) the Temporal connection at startup so a failure is visible
+// immediately in logs, rather than surfacing silently on the first request.
+app.Services.GetRequiredService<ITemporalClientProvider>();
 
 var enableSwagger = builder.Configuration.GetValue<bool>("ENABLE_SWAGGER", false);
 
@@ -105,7 +110,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
-app.UseActorSystem();
 
 await PostgresExtensionService.ApplyMigrationsAsync(app.Services);
 await DataSeeder.SeedAsync(app.Services);

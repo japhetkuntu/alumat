@@ -14,6 +14,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Xunit;
 
 namespace ReservEase.Alumni.Institution.Api.Tests;
@@ -32,12 +33,12 @@ public class PlatformAuthServiceTests
             Issuer = "test", Audience = "test", AccessTokenLifetime = 1, RefreshTokenLifetime = 1,
         });
         var mailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
-        var notificationActor = new Mock<INotificationActor>();
+        var temporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false);
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
 
         return new PlatformAuthService(
             staffRepo.Object, redis.Object, tokenOptions, mailtrapOptions,
-            notificationActor.Object, httpContextAccessor.Object, googleTokenVerifier.Object,
+            temporalProvider, httpContextAccessor.Object, googleTokenVerifier.Object,
             new NullLogger<PlatformAuthService>());
     }
 

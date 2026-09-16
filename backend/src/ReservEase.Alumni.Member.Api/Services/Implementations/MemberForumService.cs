@@ -1,15 +1,17 @@
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -20,7 +22,7 @@ public class MemberForumService(
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Community> communityRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<MemberForumService> logger) : IMemberForumService
 {
@@ -305,8 +307,10 @@ public class MemberForumService(
             // participant) — skip when they're replying to their own thread.
             if (thread.AuthorId != member.Id)
             {
-                notificationActor.Tell(new DispatchForumReplyCommand(
-                    currentTenant.InstitutionId!, thread.AuthorId, $"{member.FirstName} {member.LastName}", thread.Title, thread.Id));
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.ForumReply(
+                        currentTenant.InstitutionId!, thread.AuthorId, $"{member.FirstName} {member.LastName}", thread.Title, thread.Id),
+                    logger);
             }
 
             logger.LogInformation("Reply {PostId} added to thread {ThreadId} by member {MemberId}", post.Id, request.ThreadId, member.Id);

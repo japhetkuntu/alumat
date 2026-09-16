@@ -4,7 +4,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Options;
@@ -13,10 +12,13 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
@@ -30,7 +32,7 @@ public class InstitutionAuthService(
     IRedisService<InstitutionRedisConfig> redis,
     IOptions<BearerTokenConfig> tokenConfigOptions,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     IGoogleTokenVerifier googleTokenVerifier,
     ILogger<InstitutionAuthService> logger) : IInstitutionAuthService
 {
@@ -60,7 +62,7 @@ public class InstitutionAuthService(
     {
         var link = $"{baseUrl}/reset-password?token={token}&email={Uri.EscapeDataString(email)}";
         var brand = await GetBrandVarsAsync();
-        notificationActor.Tell(new SendEmailCommand(
+        await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
             new SendEmailRequest
             {
                 To = [new EmailContact { Email = email, Name = firstName }],
@@ -69,7 +71,7 @@ public class InstitutionAuthService(
                     : mailtrapConfig.Templates.ResetPassword,
                 TemplateVariables = new { first_name = firstName, reset_url = link, brand_name = brand.Name, brand_color = brand.Color, brand_secondary_color = brand.SecondaryColor, brand_logo = brand.Logo },
             },
-            $"reset password email to {email}"));
+            $"reset password email to {email}"), logger);
     }
 
     public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)

@@ -1,5 +1,6 @@
-using ReservEase.Alumni.Member.Api.Actors;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Models;
 using ReservEase.Alumni.Paystack.Sdk.Options;
 using ReservEase.Alumni.Paystack.Sdk.Services;
@@ -7,6 +8,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
@@ -31,7 +33,7 @@ public class RecurringGivingProcessor(
     ICurrentTenantService currentTenant,
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ILogger<RecurringGivingProcessor> logger) : IRecurringGivingProcessor
 {
     private const int MaxFailedAttempts = 3;
@@ -146,9 +148,11 @@ public class RecurringGivingProcessor(
             campaign.PaidCount += 1;
             await campaignRepo.UpdateAsync(campaign);
 
-            notificationActor.Tell(new DispatchContributionConfirmedCommand(
-                campaign.InstitutionId, recurring.MemberId, email, recurring.Member?.FirstName ?? string.Empty,
-                contribution.Amount, campaign.Title, contribution.Id));
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.ContributionConfirmed(
+                    campaign.InstitutionId, recurring.MemberId, email, recurring.Member?.FirstName ?? string.Empty,
+                    contribution.Amount, campaign.Title, contribution.Id),
+                logger);
 
             recurring.LastChargeAt = now;
             recurring.LastChargeStatus = "Successful";

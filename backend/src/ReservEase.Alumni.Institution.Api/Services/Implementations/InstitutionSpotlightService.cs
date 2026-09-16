@@ -1,14 +1,16 @@
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -16,7 +18,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class InstitutionSpotlightService(
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     IRedisService<PublicContentCacheConfig> publicCache,
     ILogger<InstitutionSpotlightService> logger) : IInstitutionSpotlightService
@@ -93,7 +95,7 @@ public class InstitutionSpotlightService(
             await spotlightRepo.AddAsync(spotlight);
             await InvalidatePublicSpotlightsCacheAsync();
 
-            notificationActor.Tell(new DispatchSpotlightAlertCommand(currentTenant.InstitutionId!, spotlight));
+            await temporalProvider.EnqueueNotificationAsync(NotificationRequest.SpotlightAlert(currentTenant.InstitutionId!, spotlight.Id), logger);
 
             var dto = spotlight.ToDto();
             dto.MemberGraduationYear = member.GraduationYear;

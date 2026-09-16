@@ -1,15 +1,17 @@
 using Microsoft.Extensions.Options;
-using ReservEase.Alumni.Institution.Api.Actors;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
@@ -23,7 +25,7 @@ public class MemberManagementService(
     ICurrentTenantService currentTenant,
     IConfiguration config,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
-    INotificationActor notificationActor,
+    ITemporalClientProvider temporalProvider,
     ILogger<MemberManagementService> logger) : IMemberManagementService
 {
     private const int MaxRejections = 3;
@@ -51,7 +53,7 @@ public class MemberManagementService(
         var link = $"{memberPortalUrl}/reset-password?token={member.EmailVerificationToken}&email={Uri.EscapeDataString(member.Email)}";
         var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
 
-        notificationActor.Tell(new SendEmailCommand(
+        await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
             new SendEmailRequest
             {
                 To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
@@ -69,7 +71,7 @@ public class MemberManagementService(
                     brand_logo = institution.LogoUrl,
                 },
             },
-            $"member welcome email to {member.Email}"));
+            $"member welcome email to {member.Email}"), logger);
     }
 
     /// <summary>

@@ -16,6 +16,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Services;
+using ReservEase.Alumni.Temporal.Sdk;
 using Xunit;
 
 namespace ReservEase.Alumni.Institution.Api.Tests;
@@ -50,12 +51,12 @@ public class InstitutionAuthServiceTests
         var mockCurrentTenant = new Mock<ICurrentTenantService>();
         var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
         var mockMailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
-        var mockNotificationActor = new Mock<INotificationActor>();
+        var mockTemporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false);
         var mockGoogleTokenVerifier = new Mock<IGoogleTokenVerifier>();
 
         var sut = new InstitutionAuthService(
             mockRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, mockHttpContextAccessor.Object,
-            mockRedis.Object, options, mockMailtrapOptions, mockNotificationActor.Object, mockGoogleTokenVerifier.Object, logger);
+            mockRedis.Object, options, mockMailtrapOptions, mockTemporalProvider, mockGoogleTokenVerifier.Object, logger);
 
         // Act
         var response = await sut.LoginAsync(new LoginRequest("disabled@test.com", "password"));
@@ -78,11 +79,11 @@ public class InstitutionAuthServiceTests
         var currentTenant = new Mock<ICurrentTenantService>();
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
         var mailtrapOptions = Microsoft.Extensions.Options.Options.Create(new MailtrapConfig());
-        var notificationActor = new Mock<INotificationActor>();
+        var temporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false);
 
         return new InstitutionAuthService(
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
-            redis.Object, options, mailtrapOptions, notificationActor.Object, googleTokenVerifier.Object,
+            redis.Object, options, mailtrapOptions, temporalProvider, googleTokenVerifier.Object,
             new NullLogger<InstitutionAuthService>());
     }
 
