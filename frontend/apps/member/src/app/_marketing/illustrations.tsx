@@ -362,6 +362,54 @@ export function ControlIllustration({ className, tone = "primary" }: { className
   );
 }
 
+/** "Nobody knows who your alumni are" problem — a record card where every row is a "?" placeholder instead of a real name, a magnifying glass overlapping the corner turning up nothing. */
+export function UnknownAlumniIllustration({ className }: { className?: string }) {
+  return (
+    <Blob tone="primary" className={className}>
+      <svg viewBox="0 0 140 120" className="w-[68%] h-[68%]">
+        <rect x="16" y="14" width="108" height="92" rx="10" fill="var(--card)" stroke="var(--border)" />
+        {[32, 54, 76, 96].map((y, i) => (
+          <g key={y} opacity={0.9 - i * 0.14}>
+            <circle cx="34" cy={y} r="7" fill="none" stroke="var(--destructive)" strokeOpacity="0.5" strokeWidth="1.6" strokeDasharray="2 2.5" />
+            <text x="34" y={y + 3.5} textAnchor="middle" fontSize="8" fill="var(--destructive)" opacity="0.6" fontFamily="Georgia,serif">?</text>
+            <rect x="48" y={y - 5} width={i % 2 === 0 ? 40 : 30} height="3.2" rx="1.6" fill="var(--muted-foreground)" opacity="0.25" />
+            <rect x="48" y={y + 1} width={i % 2 === 0 ? 26 : 34} height="3.2" rx="1.6" fill="var(--muted-foreground)" opacity="0.15" />
+          </g>
+        ))}
+      </svg>
+      <div className="absolute -bottom-2 -right-2 w-11 h-11 rounded-2xl flex items-center justify-center border"
+        style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted-foreground)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="10" cy="10" r="6.5" /><line x1="15" y1="15" x2="20.5" y2="20.5" />
+        </svg>
+      </div>
+    </Blob>
+  );
+}
+
+/** "Mobilising alumni for money is painful" problem — a phone with a screenshot chat bubble, a squiggly hand-effort line, and a ledger with an uncertain "?" balance instead of a clean total. */
+export function ManualReconciliationIllustration({ className }: { className?: string }) {
+  return (
+    <Blob tone="primary" className={className}>
+      <svg viewBox="0 0 140 120" className="w-[70%] h-[70%]">
+        <rect x="16" y="22" width="34" height="58" rx="8" fill="var(--card)" stroke="var(--border)" strokeWidth="2" />
+        <rect x="22" y="30" width="22" height="30" rx="4" fill="var(--muted)" />
+        <path d="M27 40 l5 6 l9 -12" stroke="var(--muted-foreground)" strokeOpacity="0.5" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="33" cy="68" r="2.4" fill="var(--muted-foreground)" opacity="0.4" />
+
+        <path d="M54 40 Q 70 30, 78 50 T 96 58" fill="none" stroke="var(--destructive)" strokeOpacity="0.4" strokeWidth="2" strokeLinecap="round" strokeDasharray="1 6" />
+
+        <rect x="92" y="34" width="34" height="52" rx="6" fill="var(--card)" stroke="var(--border)" strokeWidth="2" />
+        <line x1="99" y1="45" x2="119" y2="45" stroke="var(--muted-foreground)" strokeOpacity="0.35" strokeWidth="2" strokeLinecap="round" />
+        <line x1="99" y1="53" x2="113" y2="53" stroke="var(--muted-foreground)" strokeOpacity="0.35" strokeWidth="2" strokeLinecap="round" />
+        <line x1="99" y1="61" x2="119" y2="61" stroke="var(--muted-foreground)" strokeOpacity="0.35" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="109" cy="76" r="8" fill="none" stroke="var(--destructive)" strokeWidth="1.8" strokeOpacity="0.6" />
+        <text x="109" y="79.5" textAnchor="middle" fontSize="9" fill="var(--destructive)" opacity="0.7" fontFamily="Georgia,serif">?</text>
+      </svg>
+    </Blob>
+  );
+}
+
 /** WhatsApp-comparison section — a scattered, disconnected chat bubble cluster (the chaos of coordinating over chat) fading into a single organized node. */
 export function ScatteredChatIllustration({ className }: { className?: string }) {
   return (

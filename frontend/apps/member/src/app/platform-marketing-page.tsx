@@ -20,13 +20,15 @@ import {
   DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
   AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration,
   ServicesIllustration, FormIllustration, LaunchIllustration, JoinIllustration, ControlIllustration,
+  UnknownAlumniIllustration, ManualReconciliationIllustration,
 } from "./_marketing/illustrations";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DATA
    ───────────────────────────────────────────────────────────────────────── */
 const NAV_LINKS = [
-  { label: "Features",    href: "#features"     },
+  { label: "The Problem", href: "#problems"     },
+  { label: "How We Help", href: "#features"     },
   { label: "How it works", href: "#how-it-works" },
   { label: "FAQ",          href: "#faq"          },
 ];
@@ -74,6 +76,40 @@ const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; 
   { n: "02", icon: Rocket,            title: "We set your portal up",          desc: "Our team configures your branding, your subdomain, and your first admin account.", illustration: LaunchIllustration },
   { n: "03", icon: Users,             title: "Your alumni join, free",         desc: "Share the link. Every member creates an account and steps into their new home.", illustration: JoinIllustration },
   { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules: approve members, manage content, run the show.", illustration: ControlIllustration },
+];
+
+// The three problems every alumni association actually has — sold first,
+// before a single feature is named. Each ties to real feature labels used in
+// FEATURE_GROUPS below, so a visitor who reads this section and then scrolls
+// into "Here's how" sees the same names come back, not a new vocabulary.
+type ProblemItem = {
+  n: string; icon: LucideIcon; eyebrow: string; title: string; desc: string;
+  fix: string; chips: string[];
+  illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> | typeof ScatteredChatIllustration;
+};
+
+const PROBLEMS: ProblemItem[] = [
+  {
+    n: "01", icon: MessageCircleOff, eyebrow: "Problem one", title: "Your alumni are scattered",
+    desc: "A WhatsApp group for one year group. A Facebook group nobody moderates. A spreadsheet that's two executives out of date. Different year groups, different channels, no single place any of it lives, so a little more of the network quietly disappears every year.",
+    fix: "One searchable directory organised by year group automatically, plus notifications that actually reach people instead of dying in a chat.",
+    chips: ["Directory", "Notifications", "Events"],
+    illustration: ScatteredChatIllustration,
+  },
+  {
+    n: "02", icon: SearchX, eyebrow: "Problem two", title: "Nobody knows who your alumni actually are",
+    desc: "Ask “how many alumni do we have, and who are they?” and the honest answer is a guess, a headcount from years ago, or a folder of screenshots. There's no reliable, verified, searchable record of who your alumni actually are.",
+    fix: "A verified member database, searchable by name, year and location, with real profiles, not a spreadsheet someone's cousin made.",
+    chips: ["Directory", "Businesses"],
+    illustration: UnknownAlumniIllustration,
+  },
+  {
+    n: "03", icon: Wallet, eyebrow: "Problem three", title: "Mobilising alumni for money is painful",
+    desc: "You need GH₵100 from 500 alumni. Someone drafts a broadcast message. People pay however they can and send screenshots as proof. Someone reconciles every one by hand. Two weeks in, someone asks “how much have we raised?” and the honest answer is “let me check.”",
+    fix: "Built-in campaigns and dues with real payment collection, reconciled automatically the moment it clears, with a live total instead of a guess.",
+    chips: ["Fundraising", "Store", "Services"],
+    illustration: ManualReconciliationIllustration,
+  },
 ];
 
 const WHATSAPP_PROBLEMS = [
@@ -134,6 +170,55 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: Feature; d
           <p className={cn("leading-relaxed", feature.big ? "text-[13.5px] max-w-[42ch]" : "text-[13px]")} style={{ color: "var(--muted-foreground)" }}>
             {feature.desc}
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** One problem, told in full before any feature is named — the illustration
+ *  and text alternate sides down the section (see `reverse`) so this reads
+ *  as a deliberate story being walked through, not another repeated card. */
+function ProblemRow({ item, reverse }: { item: ProblemItem; reverse: boolean }) {
+  const { ref, visible } = useFadeUp();
+  const tilt = useTilt<HTMLDivElement>(3);
+  return (
+    <div ref={ref}
+      className={cn(
+        "grid items-center gap-10 sm:gap-12 lg:grid-cols-2 transition-all duration-700",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      )}>
+      <div className={cn(reverse && "lg:order-2")}>
+        <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className="mx-auto max-w-[280px] lg:max-w-none">
+          <item.illustration className="w-full aspect-square" />
+        </div>
+      </div>
+      <div className={cn(reverse && "lg:order-1")}>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="font-[family-name:var(--font-display)] text-[13px] font-bold px-2.5 py-1 rounded-full"
+            style={{ color: "var(--destructive)", background: "color-mix(in oklch, var(--destructive) 10%, transparent)" }}>
+            {item.n}
+          </span>
+          <p className="text-[11px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--muted-foreground)" }}>{item.eyebrow}</p>
+        </div>
+        <h3 className="font-[family-name:var(--font-display)] mb-3.5" style={{ fontSize: "clamp(1.35rem,2.4vw,1.65rem)", lineHeight: 1.25, color: "var(--foreground)" }}>
+          {item.title}
+        </h3>
+        <p className="mb-5" style={{ fontSize: "0.975rem", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
+          {item.desc}
+        </p>
+        <div className="rounded-2xl p-4 sm:p-5 border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+          <div className="flex items-start gap-2.5 mb-3">
+            <ArrowRight size={15} className="shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
+            <p className="text-[13.5px] leading-relaxed font-medium" style={{ color: "var(--foreground)" }}>{item.fix}</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5 pl-[1.6rem]">
+            {item.chips.map((chip) => (
+              <span key={chip} className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ color: "var(--primary)", background: "var(--brand-primary-100, var(--color-background-info))" }}>
+                {chip}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -453,8 +538,8 @@ export default function PlatformMarketingPage() {
           </h1>
           <p className="mb-10 max-w-[52ch] mx-auto"
             style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-            One home for your alumni: jobs, fundraising, mentorship, and events, all in one place.{" "}
-            Built for schools, universities, and any community that wants to stay connected.
+            Alumni scattered across WhatsApp groups. No reliable record of who they even are.{" "}
+            Money raised with screenshots and reconciled by hand. AlumUnion fixes all three.
           </p>
           <div className="flex flex-col items-center gap-4 mb-14">
             <Button ref={heroCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="px-9 text-[15.5px] font-semibold gap-2 rounded-full shadow-sm"
@@ -585,39 +670,55 @@ export default function PlatformMarketingPage() {
       </div>
 
       {/* ════════════════════════════════════════════════════════════════
-          "SOUND FAMILIAR?" — WhatsApp teaser, links to /why-not-whatsapp.
-          Placed right after the hero, before Features: agitate the pain
-          you're already living with before pitching the fix — a visitor
-          reads their own situation first, which is why they keep reading,
-          rather than being sold a feature list before the page has
-          established there's a problem worth solving.
+          THE PROBLEM — three real problems, told in full, before a single
+          feature is named. Placed right after the hero, before Features:
+          agitate the pain you're already living with before pitching the
+          fix — a visitor reads their own situation first, which is why
+          they keep reading, rather than being sold a feature list before
+          the page has established there's a problem worth solving.
       ════════════════════════════════════════════════════════════════ */}
-      <Section className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+      <Section id="problems" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-8 mb-12">
-            <div className="max-w-[60ch]">
-              <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-                You&apos;re already running this over WhatsApp. It shows.
-              </h2>
-              <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-                It&apos;s free and everyone already has it, but a chat app was never built to run a community. Here&apos;s
-                what that actually costs you.
-              </p>
-            </div>
-            <ScatteredChatIllustration className="w-32 h-32 sm:w-40 sm:h-40 shrink-0 mx-auto sm:mx-0" />
+          <div className="mb-16 sm:mb-20 max-w-[62ch]">
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>The reality</p>
+            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
+              Every association we talk to is fighting the same three problems.
+            </h2>
+            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+              Not a lack of features, a lack of one place where alumni, records and money all live together.
+            </p>
           </div>
-          <div className="grid gap-10 sm:gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x mb-10" style={{ borderColor: "var(--border)" }}>
-            {WHATSAPP_PROBLEMS.map((item, i) => (
-              <div key={item.title} className={i > 0 ? "lg:pl-8" : undefined}>
-                <WhatsAppProblemCard item={item} index={i} delay={`${i * 65}ms`} />
+
+          <div className="space-y-20 sm:space-y-24">
+            {PROBLEMS.map((item, i) => (
+              <div key={item.n}>
+                <ProblemRow item={item} reverse={i % 2 === 1} />
+
+                {/* Supporting proof, nested under Problem 1 only — the
+                    concrete WhatsApp specifics back up the general claim
+                    without needing their own top-level section. */}
+                {i === 0 && (
+                  <div className="mt-10 rounded-2xl border p-6 sm:p-8" style={{ borderColor: "var(--border)", background: "var(--muted)" }}>
+                    <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--muted-foreground)" }}>
+                      Specifically, if you&apos;re running this over WhatsApp
+                    </p>
+                    <div className="grid gap-8 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x mb-6" style={{ borderColor: "var(--border)" }}>
+                      {WHATSAPP_PROBLEMS.map((wItem, wi) => (
+                        <div key={wItem.title} className={wi > 0 ? "lg:pl-6" : undefined}>
+                          <WhatsAppProblemCard item={wItem} index={wi} delay={`${wi * 65}ms`} />
+                        </div>
+                      ))}
+                    </div>
+                    <Link href="/why-not-whatsapp">
+                      <Button variant="outline" size="sm" className="h-10 px-5 font-semibold gap-2">
+                        See the full comparison <ArrowRight size={13} />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          <Link href="/why-not-whatsapp">
-            <Button variant="outline" className="h-11 px-6 font-semibold gap-2">
-              See the full comparison <ArrowRight size={14} />
-            </Button>
-          </Link>
         </div>
       </Section>
 
@@ -630,12 +731,13 @@ export default function PlatformMarketingPage() {
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
           <div className="mb-14 max-w-[56ch]">
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>The fix</p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              Here&apos;s what replaces it.
+              One digital home. All three problems, solved.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              One portal, three jobs done: everyone stays connected, opportunity moves through the community, and money
-              gets collected properly, none of it costs your institution anything.
+              Everyone stays connected, your records finally mean something, and money gets collected and reconciled
+              properly, all in the same place, none of it costs your institution anything.
             </p>
           </div>
 
