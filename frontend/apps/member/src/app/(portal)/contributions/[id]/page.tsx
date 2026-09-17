@@ -28,6 +28,7 @@ import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
 import type { Campaign } from "@/types";
 import { PaymentRedirectOverlay } from "@/components/member/payment-redirect-overlay";
+import { useDisabledFeatures } from "@/components/member/member-layout";
 
 export default function CampaignDetailPage() {
   useAuth();
@@ -38,6 +39,9 @@ export default function CampaignDetailPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [showOnWall, setShowOnWall] = useState(false);
+  const [makeMonthly, setMakeMonthly] = useState(false);
+  const disabledFeatures = useDisabledFeatures();
+  const recurringGivingEnabled = !disabledFeatures.has("RecurringGiving");
   const qc = useQueryClient();
 
   const { data: campaign, isLoading } = useQuery({
@@ -72,7 +76,7 @@ export default function CampaignDetailPage() {
       const callbackUrl = `${window.location.origin}/contributions/callback`;
       return campaign?.isMembershipCampaign
         ? renewMembership(id, 1, "online", callbackUrl)
-        : initiatePaystackPayment({ campaignId: id, amount: payAmount, callbackUrl, showOnWallOfSupport: showOnWall });
+        : initiatePaystackPayment({ campaignId: id, amount: payAmount, callbackUrl, showOnWallOfSupport: showOnWall, setupRecurringGiving: makeMonthly });
     },
     onSuccess: (data: { authorizationUrl?: string }) => {
       if (data?.authorizationUrl) {
@@ -487,6 +491,27 @@ export default function CampaignDetailPage() {
                 </div>
               )}
 
+              {/* Make it monthly — logged-in members only; recurring needs an
+                  identity to re-charge later, guests have none (this page is
+                  portal-only anyway). Mirrors the public campaign share page's
+                  identical toggle. */}
+              {!isMembership && isActive && recurringGivingEnabled && (
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={makeMonthly}
+                    onChange={(e) => setMakeMonthly(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-input shrink-0"
+                  />
+                  <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
+                    Make this monthly
+                    <span className="block text-[11px] mt-0.5 opacity-75">
+                      Automatically give {formatCurrency(numericAmount || campaign.amountPerMember)} every month. Cancel anytime from your contributions.
+                    </span>
+                  </span>
+                </label>
+              )}
+
               {/* Wall of support opt-in — off by default; amounts are never shown regardless */}
               {!isMembership && isActive && (
                 <label className="flex items-start gap-2.5 cursor-pointer select-none">
@@ -519,6 +544,8 @@ export default function CampaignDetailPage() {
                     <><CreditCard size={16} />
                       {isMembership
                         ? `Pay ${formatCurrency(memberAmount)}`
+                        : makeMonthly
+                        ? `Set up ${formatCurrency(numericAmount || campaign.amountPerMember)}/month`
                         : hasPaid ? `Contribute again` : `Pay ${formatCurrency(numericAmount || campaign.amountPerMember)}`}
                     </>
                   )}

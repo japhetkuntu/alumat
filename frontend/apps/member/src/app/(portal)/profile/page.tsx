@@ -4,8 +4,9 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award,
-  User, Lock, Bell, Link as LinkIcon,
+  User, Lock, Bell, Link as LinkIcon, AlertCircle, RefreshCcw,
 } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -112,7 +113,7 @@ export default function MemberProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["m-profile"],
     queryFn:  getMyProfile,
   });
@@ -277,6 +278,29 @@ export default function MemberProfilePage() {
       whatsAppAlerts: notifPrefs.whatsAppAlerts,
       digestFrequency: frequency,
     });
+  }
+
+  // A transient network hiccup right after navigating here (retry budget is 1,
+  // set globally in Providers) used to leave this page stuck on skeletons
+  // forever, with a full page reload the only way out — isError fires once
+  // TanStack Query gives up retrying, so this gives the user a visible way to
+  // try again instead.
+  if (isError) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto">
+        <EmptyState
+          icon={<AlertCircle size={40} />}
+          title="Couldn't load your profile"
+          description="Something went wrong while fetching your profile. Please try again."
+          action={
+            <Button onClick={() => refetch()} disabled={isRefetching} className="gap-2 font-semibold">
+              <RefreshCcw size={14} className={isRefetching ? "animate-spin" : undefined} />
+              {isRefetching ? "Retrying..." : "Try again"}
+            </Button>
+          }
+        />
+      </div>
+    );
   }
 
   if (isLoading || !profile) {

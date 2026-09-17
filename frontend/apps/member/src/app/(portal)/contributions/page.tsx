@@ -37,6 +37,7 @@ import { contributionMethodLabel } from "@/types";
 import { PaymentRedirectOverlay } from "@/components/member/payment-redirect-overlay";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
+import { useDisabledFeatures } from "@/components/member/member-layout";
 
 const statusVariant: Record<ContributionStatus, "success" | "warning" | "destructive"> = {
   Successful: "success",
@@ -212,13 +213,16 @@ function CampaignCard({
   membershipPaid: boolean;
   isPensioner: boolean;
   getMemberAmount: (c: Campaign) => number;
-  onPay: (amount: number) => void;
+  onPay: (amount: number, setupRecurringGiving: boolean) => void;
   onCheckStatus: () => void;
   isPaying: boolean;
 }) {
   const c = campaign;
   const isMembership = !!c.isMembershipCampaign;
   const amount = getMemberAmount(c);
+  const [makeMonthly, setMakeMonthly] = useState(false);
+  const disabledFeatures = useDisabledFeatures();
+  const recurringGivingEnabled = !disabledFeatures.has("RecurringGiving");
 
   // Membership dues are a fixed price — nothing to adjust. A fundraiser's
   // "per member" figure is only ever a suggestion (the detail/checkout page
@@ -396,6 +400,26 @@ function CampaignCard({
           )}
         </div>
 
+        {/* Make it monthly — logged-in members only; recurring needs an
+            identity to re-charge later. Mirrors the public campaign share
+            page's identical toggle. */}
+        {!isMembership && !membershipPaid && recurringGivingEnabled && (
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={makeMonthly}
+              onChange={(e) => setMakeMonthly(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input shrink-0"
+            />
+            <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
+              Make this monthly
+              <span className="block text-[11px] mt-0.5 opacity-75">
+                Automatically give {formatCurrency(payAmount)} every month. Cancel anytime from your contributions.
+              </span>
+            </span>
+          </label>
+        )}
+
         {/* Membership paid confirmation */}
         {membershipPaid && (
           <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-success/10 border border-success/20">
@@ -454,11 +478,13 @@ function CampaignCard({
             <Button
               className="flex-1 min-w-[8rem] font-bold text-[13.5px] gap-2"
               style={{ height: 42 }}
-              onClick={() => onPay(payAmount)}
+              onClick={() => onPay(payAmount, makeMonthly)}
               disabled={isPaying}
             >
               {isPaying
                 ? <><Loader2 size={14} className="animate-spin" /> Processing…</>
+                : makeMonthly
+                ? <><CreditCard size={14} /> Set up {formatCurrency(payAmount)}/month</>
                 : <><CreditCard size={14} /> Pay {formatCurrency(payAmount)}</>}
             </Button>
           )}
@@ -553,7 +579,7 @@ export default function MemberContributionsPage() {
     .reduce((sum, c) => sum + c.amount, 0);
 
   const payMut = useMutation({
-    mutationFn: ({ campaignId, amount, isMembership }: { campaignId: string; amount: number; isMembership?: boolean }) => {
+    mutationFn: ({ campaignId, amount, isMembership, setupRecurringGiving }: { campaignId: string; amount: number; isMembership?: boolean; setupRecurringGiving?: boolean }) => {
       // Built client-side (not baked into the backend's shared PaystackConfig
       // fallback) so the Paystack redirect lands back on THIS institution's
       // own subdomain, not the bare platform domain — see activate-membership's
@@ -561,7 +587,7 @@ export default function MemberContributionsPage() {
       const callbackUrl = `${window.location.origin}/contributions/callback`;
       return isMembership
         ? renewMembership(campaignId, 1, "online", callbackUrl)
-        : initiatePaystackPayment({ campaignId, amount, callbackUrl });
+        : initiatePaystackPayment({ campaignId, amount, callbackUrl, setupRecurringGiving });
     },
     onSuccess: (data: { authorizationUrl?: string; reference?: string }) => {
       if (data?.authorizationUrl) {
@@ -635,11 +661,11 @@ export default function MemberContributionsPage() {
                   isPensioner={isPensioner}
                   getMemberAmount={getMemberAmount}
                   isPaying={payingCampaignId === c.id && payMut.isPending}
-                  onPay={(amount) => {
+                  onPay={(amount, setupRecurringGiving) => {
                     if (amount > 0) {
                       setPaying(c.id);
                       setPayingContext({ title: c.title, amount });
-                      payMut.mutate({ campaignId: c.id, amount, isMembership: !!c.isMembershipCampaign });
+                      payMut.mutate({ campaignId: c.id, amount, isMembership: !!c.isMembershipCampaign, setupRecurringGiving });
                     }
                   }}
                   onCheckStatus={() => myPayment?.transactionRef && openStatusModal(myPayment.transactionRef, { title: c.title, amount: myPayment.amount })}
