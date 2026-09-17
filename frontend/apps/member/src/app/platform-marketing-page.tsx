@@ -9,17 +9,19 @@ import {
   Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
   Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
   Wallet, CalendarCheck, CheckCircle2, PartyPopper,
+  Crown, UserCheck, Settings2, Upload, BookOpen, Megaphone, GraduationCap, Users2,
+  Award, Target,
 } from "@alumni/ui";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
-import { Section, scrollToSection, useFadeUp, useCountUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, useScrollActiveStep, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
+import { Section, scrollToSection, useFadeUp, useCountUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 import { FAQS } from "./_marketing/faqs";
 import {
   JobsIllustration, MentorshipIllustration, ScatteredChatIllustration,
   DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
   AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration,
-  ServicesIllustration, FormIllustration, LaunchIllustration, JoinIllustration, ControlIllustration,
+  ServicesIllustration,
   UnknownAlumniIllustration, ManualReconciliationIllustration,
 } from "./_marketing/illustrations";
 
@@ -71,11 +73,33 @@ const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
   },
 ];
 
-const HOW_IT_WORKS: { n: string; icon: LucideIcon; title: string; desc: string; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> }[] = [
-  { n: "01", icon: SlidersHorizontal, title: "Tell us about your institution", desc: "One short form: your institution's name and who we should talk to. Takes under two minutes.", illustration: FormIllustration },
-  { n: "02", icon: Rocket,            title: "We set your portal up",          desc: "Our team configures your branding, your subdomain, and your first admin account.", illustration: LaunchIllustration },
-  { n: "03", icon: Users,             title: "Your alumni join, free",         desc: "Share the link. Every member creates an account and steps into their new home.", illustration: JoinIllustration },
-  { n: "04", icon: ShieldCheck,       title: "You stay in full control",       desc: "Your admin dashboard, your rules: approve members, manage content, run the show.", illustration: ControlIllustration },
+// The pipeline behind "build your alumni network from scratch" — reuses
+// mechanisms that already exist (Batches as year groups, InstitutionStaff
+// scoped to a year group as the ambassador, Directory as the verified
+// record), told as a single story for schools with decades of graduates
+// and zero structure today.
+const NETWORK_PIPELINE: { icon: LucideIcon; label: string }[] = [
+  { icon: Building2,     label: "School" },
+  { icon: GraduationCap, label: "Year Groups" },
+  { icon: Crown,         label: "Ambassadors" },
+  { icon: Users,         label: "Alumni" },
+  { icon: UserCheck,     label: "Verified Profiles" },
+  { icon: Users2,        label: "Community" },
+];
+
+// The concrete, no-friction version of "we'll build it for you" — every
+// step your team actually does for a school that signs up, not just the
+// software's part of it.
+const WHITE_GLOVE_STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
+  { icon: Rocket,          title: "Create the portal",             desc: "Your own branded subdomain, live and ready." },
+  { icon: Award,           title: "Add school branding",           desc: "Colors, logo, and identity, applied throughout." },
+  { icon: Settings2,       title: "Configure the association",     desc: "Membership dues, campaigns, and policies set up for you." },
+  { icon: GraduationCap,   title: "Create year groups",             desc: "Every graduating class, structured and ready to fill." },
+  { icon: UserCheck,       title: "Set up administrators",          desc: "Your executives get accounts and the right access from day one." },
+  { icon: Upload,          title: "Import existing alumni data",    desc: "Spreadsheets, old records, anything you already have, brought in for you." },
+  { icon: BookOpen,        title: "Train the executives",           desc: "A walkthrough for whoever will run the portal day to day." },
+  { icon: Megaphone,       title: "Help launch it to alumni",       desc: "Guidance and materials for announcing it to your network." },
+  { icon: Target,          title: "Help run the first campaign",    desc: "We help you plan and launch your first dues drive or fundraiser." },
 ];
 
 // The three problems every alumni association actually has — sold first,
@@ -243,24 +267,50 @@ function WhatsAppProblemCard({ item, index, delay }: { item: typeof WHATSAPP_PRO
   );
 }
 
-function HowItWorksStep({ step, delay, tone = "primary" }: { step: typeof HOW_IT_WORKS[number]; delay: string; tone?: "primary" | "accent" }) {
+/** School → Year Groups → Ambassadors → Alumni → Verified Profiles →
+ *  Community, told as one connected flow rather than a paragraph — the
+ *  same beat the marketing team uses in the sales deck for this pitch. */
+function PipelineFlow() {
   const { ref, visible } = useFadeUp();
-  const c = tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)";
   return (
-    <div ref={ref}
-      className={cn("relative flex items-center gap-6 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}
-      style={{ transitionDelay: delay }}>
-      <step.illustration tone={tone} className="w-20 h-20 sm:w-24 sm:h-24 shrink-0" />
-      <div className="min-w-0">
-        <p className="font-[family-name:var(--font-display)] leading-none select-none mb-1.5"
-          style={{ fontSize: "1.75rem", fontWeight: 700, color: c, opacity: 0.35 }} aria-hidden="true">
-          {step.n}
-        </p>
-        <div className="flex items-center gap-2 mb-2">
-          <step.icon size={15} style={{ color: c }} />
-          <h3 className="text-[16px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+    <div ref={ref} className={cn("flex flex-wrap items-center justify-center gap-x-1.5 gap-y-4 transition-all duration-700", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
+      {NETWORK_PIPELINE.map((node, i) => (
+        <div key={node.label} className="flex items-center gap-1.5">
+          <div className="flex flex-col items-center gap-2 w-[92px] sm:w-[104px]">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center border shrink-0"
+              style={{
+                background: i === 2 ? "var(--primary)" : "var(--card)",
+                borderColor: i === 2 ? "var(--primary)" : "var(--border)",
+                boxShadow: i === 2 ? "0 12px 24px -10px color-mix(in oklch, var(--primary) 60%, transparent)" : "none",
+              }}>
+              <node.icon size={20} style={{ color: i === 2 ? "white" : "var(--primary)" }} />
+            </div>
+            <p className="text-[11px] sm:text-[11.5px] font-semibold text-center leading-tight" style={{ color: "var(--foreground)" }}>{node.label}</p>
+          </div>
+          {i < NETWORK_PIPELINE.length - 1 && (
+            <ChevronRight size={16} className="shrink-0 -mt-5" style={{ color: "var(--muted-foreground)", opacity: 0.4 }} />
+          )}
         </div>
-        <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
+      ))}
+    </div>
+  );
+}
+
+function WhiteGloveStep({ step, index, delay }: { step: typeof WHITE_GLOVE_STEPS[number]; index: number; delay: string }) {
+  const { ref, visible } = useFadeUp();
+  return (
+    <div ref={ref} style={{ transitionDelay: delay }}
+      className={cn("flex gap-4 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
+      <div className="relative shrink-0">
+        <IconTile icon={step.icon} size="sm" tone={index % 2 === 0 ? "primary" : "accent"} />
+        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+          style={{ background: "var(--foreground)", color: "var(--background)" }}>
+          {index + 1}
+        </span>
+      </div>
+      <div className="min-w-0 pt-0.5">
+        <h4 className="text-[14px] font-semibold leading-snug mb-1" style={{ color: "var(--foreground)" }}>{step.title}</h4>
+        <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{step.desc}</p>
       </div>
     </div>
   );
@@ -427,7 +477,6 @@ export default function PlatformMarketingPage() {
   const heroCta = useMagnetic(0.25);
   const freeCta = useMagnetic(0.25);
   const heroPanelTilt = useTilt<HTMLDivElement>(2.5);
-  const stepScroll = useScrollActiveStep(HOW_IT_WORKS.length);
   const [heroSpotlightVars, setHeroSpotlightVars] = useState<React.CSSProperties>({ background: "var(--background)", "--hx": "50%", "--hy": "0%" } as React.CSSProperties);
 
   useEffect(() => {
@@ -775,55 +824,46 @@ export default function PlatformMarketingPage() {
       ════════════════════════════════════════════════════════════════ */}
       <Section id="how-it-works" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
-          <div className="text-center mb-14">
-            <h2 className="font-[family-name:var(--font-display)] max-w-[30ch]" style={{ color: "var(--foreground)", margin: "0 auto" }}>
-              From a form to a live portal, in a few simple steps.
+
+          {/* ── Build your alumni network from scratch — the pitch for the
+                school with decades of graduates and zero structure today. ── */}
+          <div className="text-center max-w-[62ch] mx-auto mb-12">
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>For schools starting from zero</p>
+            <h2 className="font-[family-name:var(--font-display)] mb-5" style={{ color: "var(--foreground)" }}>
+              Never had an alumni association? We&apos;ll build one for you. Free.
             </h2>
-          </div>
-          {/* Scroll-linked stepper on large screens — a sticky rail tracks
-              which step is centered in view (see useScrollActiveStep) and
-              fills a progress line toward it, instead of every card just
-              fading in independently. Collapses to the plain 4-up grid
-              below lg, where there's no room for a sticky rail anyway. */}
-          <div className="hidden lg:grid max-w-4xl mx-auto grid-cols-[200px_1fr] gap-16">
-            <div className="sticky top-28 self-start">
-              <div className="relative pl-5">
-                <div className="absolute left-0 top-1 bottom-1 w-px" style={{ background: "var(--border)" }} />
-                <div className="absolute left-0 top-1 w-px transition-[height] duration-500 ease-out"
-                  style={{ background: "var(--primary)", height: `${((stepScroll.active + 1) / HOW_IT_WORKS.length) * 100}%` }} />
-                {HOW_IT_WORKS.map((step, i) => (
-                  <div key={step.n} className="relative pb-10 last:pb-0">
-                    <div className="absolute -left-[3.5px] top-1 w-[8px] h-[8px] rounded-full transition-colors duration-300"
-                      style={{ background: i <= stepScroll.active ? "var(--primary)" : "var(--border)" }} />
-                    <p className="text-[10px] font-bold tracking-wide mb-1 transition-colors duration-300"
-                      style={{ color: i === stepScroll.active ? "var(--primary)" : "var(--muted-foreground)", opacity: i === stepScroll.active ? 1 : 0.55 }}>
-                      STEP {step.n}
-                    </p>
-                    <p className="text-[13.5px] font-semibold leading-snug transition-all duration-300"
-                      style={{ color: i === stepScroll.active ? "var(--foreground)" : "var(--muted-foreground)", opacity: i === stepScroll.active ? 1 : 0.55 }}>
-                      {step.title}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-16">
-              {HOW_IT_WORKS.map((step, i) => (
-                <div key={step.n} ref={stepScroll.setRef(i)}>
-                  <HowItWorksStep step={step} delay="0ms" tone={i % 2 === 0 ? "primary" : "accent"} />
-                </div>
-              ))}
-            </div>
+            <p className="font-[family-name:var(--font-display)] italic" style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "var(--muted-foreground)" }}>
+              &ldquo;Your school has thousands of former students. Let&apos;s find them.&rdquo;
+            </p>
           </div>
 
-          {/* Plain 4-up grid below lg — no sticky rail, no scroll tracking */}
-          <div className="grid gap-10 sm:gap-8 sm:grid-cols-2 lg:hidden" style={{ borderColor: "var(--border)" }}>
-            {HOW_IT_WORKS.map((step, i) => (
-              <div key={step.n}>
-                <HowItWorksStep step={step} delay={`${i * 100}ms`} tone={i % 2 === 0 ? "primary" : "accent"} />
-              </div>
+          <div className="mb-6 overflow-x-auto">
+            <PipelineFlow />
+          </div>
+          <p className="text-center max-w-[46ch] mx-auto mb-20 sm:mb-24" style={{ fontSize: "0.925rem", lineHeight: 1.7, color: "var(--muted-foreground)" }}>
+            Each year group gets its own ambassador, responsible for finding and mobilising their own cohort, so the work spreads across your alumni instead of landing on one overworked executive.
+          </p>
+
+          {/* ── The concrete offer — every step your team actually does ── */}
+          <div className="text-center max-w-[56ch] mx-auto mb-12">
+            <h3 className="font-[family-name:var(--font-display)] mb-4" style={{ fontSize: "1.5rem", color: "var(--foreground)" }}>
+              The offer: your alumni network, built for free.
+            </h3>
+            <p style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
+              Not a signup link, a done-for-you setup. Here&apos;s exactly what our team handles.
+            </p>
+          </div>
+
+          <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
+            {WHITE_GLOVE_STEPS.map((step, i) => (
+              <WhiteGloveStep key={step.title} step={step} index={i} delay={`${(i % 3) * 65}ms`} />
             ))}
+          </div>
+
+          <div className="flex justify-center mt-14">
+            <Button size="lg" className="px-8 h-12 text-[14.5px] font-semibold gap-2 rounded-full" onClick={() => scrollToSection("#onboard")}>
+              Get your alumni network built <ArrowRight size={15} />
+            </Button>
           </div>
         </div>
       </Section>
