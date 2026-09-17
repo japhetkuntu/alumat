@@ -7,4 +7,6 @@ public record MemberProfileResponse(
     string? Location, string? LinkedInUrl, string? Bio,
     string? ProfilePictureUrl, string Status, string EmploymentStatus,
     bool IsMembershipActive, DateTime? MembershipExpiry, int MembershipYearsPaid, DateTime? LastMembershipPaidAt,
-    bool ShowOnAlumniMap, double? MapLatitude, double? MapLongitude, DateTime? DateOfBirth);
+    bool ShowOnAlumniMap, double? MapLatitude, double? MapLongitude, DateTime? DateOfBirth,
+    int? YearOfEntry, string? House, string? StudentStatus, string? PrefectStatus,
+    List<string>? ClubsAndSocieties, List<string>? LeadershipRoles, string? Achievements);

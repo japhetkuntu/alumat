@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, Loader2, X } from "@alumni/ui";
+import { Bell, Check, CheckCheck, ChevronRight, Loader2, X } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -69,23 +69,16 @@ function NotificationRow({
   const meta = getTypeMeta(notif.type);
 
   const toggle = () => {
-    if (path) return;
     setExpanded((v) => !v);
     if (!notif.isRead) onMarkRead(notif.id);
   };
 
-  const inner = (
+  return (
     <div
-      role={path ? undefined : "button"}
-      tabIndex={path ? undefined : 0}
-      onClick={() => {
-        toggle();
-        if (path) {
-          if (!notif.isRead) onMarkRead(notif.id);
-          onNavigate();
-        }
-      }}
-      onKeyDown={(e) => { if (!path && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
+      role="button"
+      tabIndex={0}
+      onClick={toggle}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       className={cn(
         "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
         !notif.isRead && "bg-accent/5"
@@ -105,9 +98,20 @@ function NotificationRow({
         <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
-        <p className="text-[10px] text-muted-foreground/60 mt-1">
-          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
-        </p>
+        <div className="flex items-center gap-3 mt-1">
+          <p className="text-[10px] text-muted-foreground/60">
+            {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+          </p>
+          {expanded && path && (
+            <Link
+              href={path}
+              onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+              className="text-[11px] font-semibold text-accent hover:underline inline-flex items-center gap-0.5"
+            >
+              View <ChevronRight size={11} />
+            </Link>
+          )}
+        </div>
       </div>
       {!notif.isRead && (
         <button
@@ -120,9 +124,6 @@ function NotificationRow({
       )}
     </div>
   );
-
-  if (path) return <Link href={path}>{inner}</Link>;
-  return inner;
 }
 
 export function NotificationPanel() {

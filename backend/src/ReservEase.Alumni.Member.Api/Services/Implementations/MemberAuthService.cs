@@ -603,6 +603,14 @@ public class MemberAuthService(
             member.DateOfBirth = request.DateOfBirth ?? member.DateOfBirth;
             member.ShowOnAlumniMap = request.ShowOnAlumniMap ?? member.ShowOnAlumniMap;
 
+            member.YearOfEntry = request.YearOfEntry ?? member.YearOfEntry;
+            member.House = request.House ?? member.House;
+            member.StudentStatus = request.StudentStatus ?? member.StudentStatus;
+            member.PrefectStatus = request.PrefectStatus ?? member.PrefectStatus;
+            member.ClubsAndSocieties = request.ClubsAndSocieties ?? member.ClubsAndSocieties;
+            member.LeadershipRoles = request.LeadershipRoles ?? member.LeadershipRoles;
+            member.Achievements = request.Achievements ?? member.Achievements;
+
             if (!member.ShowOnAlumniMap)
             {
                 // Opted out (or never opted in) — no location data should linger.
@@ -834,5 +842,7 @@ public class MemberAuthService(
         m.Location, m.LinkedInUrl, m.Bio,
         m.ProfilePictureUrl, m.Status, m.EmploymentStatus,
         m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,
-        m.ShowOnAlumniMap, m.MapLatitude, m.MapLongitude, m.DateOfBirth);
+        m.ShowOnAlumniMap, m.MapLatitude, m.MapLongitude, m.DateOfBirth,
+        m.YearOfEntry, m.House, m.StudentStatus, m.PrefectStatus,
+        m.ClubsAndSocieties, m.LeadershipRoles, m.Achievements);
 }

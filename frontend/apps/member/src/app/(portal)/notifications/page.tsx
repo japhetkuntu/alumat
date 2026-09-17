@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Bell, CheckCheck, Loader2, Check } from "@alumni/ui";
+import { Bell, CheckCheck, ChevronRight, Loader2, Check } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
@@ -42,22 +42,21 @@ function NotifRow({
   const time = relativeTime(notif.createdAt);
   const [expanded, setExpanded] = useState(false);
 
-  // A notification with a real destination navigates there on click; one
-  // without a destination expands its full body in place instead of being
-  // permanently clipped to two lines.
+  // Every notification expands its full body in place on click; a real
+  // destination is offered as a separate "View" link once expanded, rather
+  // than navigating away immediately and skipping the full-content read.
   const toggle = () => {
-    if (path) return;
     setExpanded((v) => !v);
     if (!notif.isRead) onMarkRead(notif.id);
   };
 
-  const inner = (
+  return (
     <div
-      role={path ? undefined : "button"}
-      tabIndex={path ? undefined : 0}
+      role="button"
+      tabIndex={0}
       onClick={toggle}
-      onKeyDown={(e) => { if (!path && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
-      className={cn("flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b transition-colors", !path && "cursor-pointer")}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
+      className="flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 border-b transition-colors cursor-pointer"
       style={{
         borderColor: "var(--border)",
         background: notif.isRead ? "var(--background)" : "var(--brand-primary-100, var(--color-background-info))",
@@ -98,26 +97,35 @@ function NotifRow({
           </p>
         )}
 
-        {/* Mark read — always visible, not hover-only */}
-        {!notif.isRead && (
-          <button
-            onClick={e => { e.preventDefault(); e.stopPropagation(); onMarkRead(notif.id); }}
-            disabled={isPending}
-            className="flex items-center gap-1 mt-2 text-[12px] font-semibold transition-opacity hover:opacity-70"
-            style={{ color: "var(--primary)" }}
-          >
-            {isPending
-              ? <Loader2 size={11} className="animate-spin" />
-              : <Check size={11} />}
-            Mark as read
-          </button>
-        )}
+        <div className="flex items-center gap-4 mt-2">
+          {/* Mark read — always visible, not hover-only */}
+          {!notif.isRead && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onMarkRead(notif.id); }}
+              disabled={isPending}
+              className="flex items-center gap-1 text-[12px] font-semibold transition-opacity hover:opacity-70"
+              style={{ color: "var(--primary)" }}
+            >
+              {isPending
+                ? <Loader2 size={11} className="animate-spin" />
+                : <Check size={11} />}
+              Mark as read
+            </button>
+          )}
+          {expanded && path && (
+            <Link
+              href={path}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-0.5 text-[12px] font-semibold hover:underline"
+              style={{ color: "var(--primary)" }}
+            >
+              View <ChevronRight size={12} />
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
-
-  if (path) return <Link href={path}>{inner}</Link>;
-  return inner;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

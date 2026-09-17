@@ -14,6 +14,7 @@ import { searchDirectory } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { ensureAbsoluteUrl } from "@alumni/ui";
 import type { Member } from "@/types";
 import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
 
@@ -165,7 +166,7 @@ export default function MemberDirectoryPage() {
                   )}
                   {m.linkedInUrl && (
                     <a
-                      href={m.linkedInUrl}
+                      href={ensureAbsoluteUrl(m.linkedInUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-auto shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-blue-50"
@@ -300,7 +301,7 @@ export default function MemberDirectoryPage() {
               {/* LinkedIn */}
               {selected.linkedInUrl && (
                 <a
-                  href={selected.linkedInUrl}
+                  href={ensureAbsoluteUrl(selected.linkedInUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block"

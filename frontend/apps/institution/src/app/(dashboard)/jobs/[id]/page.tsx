@@ -19,6 +19,7 @@ import { FormSelect } from "@alumni/ui";
 import { ImageUpload } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
+import { ensureAbsoluteUrl } from "@alumni/ui";
 import { getJob, updateJob, closeJob, deleteJob, type UpdateJobBody } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
@@ -358,7 +359,7 @@ export default function AdminJobDetailPage() {
                 {job.applyUrl && (
                   <div>
                     <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">Application Link</p>
-                    <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={ensureAbsoluteUrl(job.applyUrl)} target="_blank" rel="noopener noreferrer">
                       <Button className="w-full h-14 rounded-2xl font-black text-base shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98]">
                         <Globe size={20} className="mr-3" />
                         View Application

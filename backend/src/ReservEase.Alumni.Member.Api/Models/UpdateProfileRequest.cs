@@ -17,4 +17,13 @@ public class UpdateProfileRequest
     public double? MapLatitude { get; set; }
     public double? MapLongitude { get; set; }
     public IFormFile? ProfilePicture { get; set; }
+
+    // School records
+    public int? YearOfEntry { get; set; }
+    public string? House { get; set; }
+    public string? StudentStatus { get; set; }
+    public string? PrefectStatus { get; set; }
+    public List<string>? ClubsAndSocieties { get; set; }
+    public List<string>? LeadershipRoles { get; set; }
+    public string? Achievements { get; set; }
 }

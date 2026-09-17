@@ -66,5 +66,16 @@ public class Member : BaseEntity, ITenantScoped
     // Referral program
     public string? ReferralCode { get; set; }
     public string? ReferredById { get; set; }
+
+    // School records — all opt-in, member-entered enrichment fields
+    public int? YearOfEntry { get; set; }
+    // Freeform for now, same convention as Program (no Institution.Houses list exists yet)
+    public string? House { get; set; }
+    // Day, Boarding
+    public string? StudentStatus { get; set; }
+    public string? PrefectStatus { get; set; }
+    public List<string>? ClubsAndSocieties { get; set; }
+    public List<string>? LeadershipRoles { get; set; }
+    public string? Achievements { get; set; }
 }
 

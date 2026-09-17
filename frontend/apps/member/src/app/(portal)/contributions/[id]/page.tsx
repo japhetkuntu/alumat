@@ -89,6 +89,7 @@ export default function CampaignDetailPage() {
         qc.invalidateQueries({ queryKey: ["m-contributions-all"] });
         qc.invalidateQueries({ queryKey: ["m-contributions-recent"] });
         qc.invalidateQueries({ queryKey: ["m-campaigns"] });
+        qc.invalidateQueries({ queryKey: ["m-recurring-giving"] });
         qc.invalidateQueries({ queryKey: ["m-membership-status"] });
         qc.invalidateQueries({ queryKey: ["m-membership-current-unpaid"] });
         qc.invalidateQueries({ queryKey: ["m-current-membership-campaign"] });

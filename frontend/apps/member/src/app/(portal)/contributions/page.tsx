@@ -936,6 +936,7 @@ export default function MemberContributionsPage() {
           qc.invalidateQueries({ queryKey: ["m-membership-current-unpaid"] });
           qc.invalidateQueries({ queryKey: ["m-current-membership-campaign"] });
           qc.invalidateQueries({ queryKey: ["m-campaigns"] });
+          qc.invalidateQueries({ queryKey: ["m-recurring-giving"] });
           // The Calendar page reads its own separate campaigns/contributions/
           // membership queries over the same underlying data.
           qc.invalidateQueries({ queryKey: ["cal-campaigns"] });

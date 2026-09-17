@@ -74,6 +74,14 @@ export interface MemberProfileResponse {
   mapLongitude?: number;
   /** Only month/day are ever used (Birthday Spotlight) — ISO date string, e.g. "1998-04-12". */
   dateOfBirth?: string;
+  yearOfEntry?: number;
+  house?: string;
+  /** "Day" or "Boarding" */
+  studentStatus?: string;
+  prefectStatus?: string;
+  clubsAndSocieties?: string[];
+  leadershipRoles?: string[];
+  achievements?: string;
 }
 
 export interface MembershipStatusResponse {
@@ -109,6 +117,14 @@ export interface UpdateProfileBody {
   profilePicture?: File;
   /** ISO date string, e.g. "1998-04-12" — only month/day are ever used. */
   dateOfBirth?: string;
+  yearOfEntry?: number;
+  house?: string;
+  /** "Day" or "Boarding" */
+  studentStatus?: string;
+  prefectStatus?: string;
+  clubsAndSocieties?: string[];
+  leadershipRoles?: string[];
+  achievements?: string;
 }
 
 export async function updateMyProfile(body: UpdateProfileBody) {

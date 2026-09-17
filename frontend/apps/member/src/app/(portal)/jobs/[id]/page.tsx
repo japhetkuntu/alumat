@@ -11,6 +11,7 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
+import { ensureAbsoluteUrl } from "@alumni/ui";
 import { getJobById } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
 import type { Job } from "@/types";
@@ -256,7 +257,7 @@ function ApplyBlock({ job, deadlinePassed }: { job: Job; deadlinePassed: boolean
   if (job.applyUrl) {
     return (
       <div className="space-y-3">
-        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="block">
+        <a href={ensureAbsoluteUrl(job.applyUrl)} target="_blank" rel="noopener noreferrer" className="block">
           <Button className="w-full font-bold text-[15px] gap-2" style={{ height: 48 }}>
             <Globe size={16} />
             Apply now

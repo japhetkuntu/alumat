@@ -14,6 +14,7 @@ import { Badge } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
+import { ensureAbsoluteUrl } from "@alumni/ui";
 import { getJobs, createJob, updateJob, deleteJob, getCommunities } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -333,7 +334,7 @@ export default function AdminJobsPage() {
                     <Pencil size={12} />Edit
                   </Button>
                   {j.applyUrl && (
-                    <a href={j.applyUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                    <a href={ensureAbsoluteUrl(j.applyUrl)} target="_blank" rel="noopener noreferrer" className="flex-1">
                       <Button size="sm" variant="outline" className="w-full h-9 text-[11px] font-bold gap-1">
                         <ExternalLink size={12} />Preview
                       </Button>

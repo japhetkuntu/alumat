@@ -38,6 +38,7 @@ export * from "./components/skeleton";
 export * from "./components/portal-shell-skeleton";
 export * from "./components/stat-card";
 export * from "./components/table";
+export * from "./components/tag-input";
 export * from "./components/textarea";
 export * from "./components/tooltip";
 export * from "./components/user-avatar";

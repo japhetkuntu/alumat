@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award,
-  User, Lock, Bell, Link as LinkIcon, AlertCircle, RefreshCcw,
+  User, Lock, Bell, Link as LinkIcon, AlertCircle, RefreshCcw, GraduationCap,
 } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -13,6 +13,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { PhoneInput } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
+import { TagInput } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Separator } from "@alumni/ui";
@@ -104,6 +105,11 @@ export default function MemberProfilePage() {
   const [profileForm, setProfileForm] = useState({
     program: "", company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "", dateOfBirth: "",
   });
+  const [schoolRecordsForm, setSchoolRecordsForm] = useState({
+    yearOfEntry: "", house: "", studentStatus: "", prefectStatus: "", achievements: "",
+  });
+  const [clubsAndSocieties, setClubsAndSocieties] = useState<string[]>([]);
+  const [leadershipRoles, setLeadershipRoles] = useState<string[]>([]);
   const [showOnAlumniMap, setShowOnAlumniMap] = useState(false);
   const [employmentStatus, setEmploymentStatus] = useState("Employed");
   const [confirmPensioner, setConfirmPensioner]  = useState(false);
@@ -156,6 +162,15 @@ export default function MemberProfilePage() {
       phone:       profile.phone       ?? "",
       dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : "",
     });
+    setSchoolRecordsForm({
+      yearOfEntry:   profile.yearOfEntry != null ? String(profile.yearOfEntry) : "",
+      house:         profile.house         ?? "",
+      studentStatus: profile.studentStatus ?? "",
+      prefectStatus: profile.prefectStatus ?? "",
+      achievements:  profile.achievements  ?? "",
+    });
+    setClubsAndSocieties(profile.clubsAndSocieties ?? []);
+    setLeadershipRoles(profile.leadershipRoles ?? []);
     setEmploymentStatus(profile.employmentStatus ?? "Employed");
     setShowOnAlumniMap(profile.showOnAlumniMap ?? false);
   }
@@ -176,6 +191,23 @@ export default function MemberProfilePage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-profile"] });
       toast.success("Profile updated.");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const updateSchoolRecordsMut = useMutation({
+    mutationFn: () => updateMyProfile({
+      yearOfEntry:    schoolRecordsForm.yearOfEntry ? Number(schoolRecordsForm.yearOfEntry) : undefined,
+      house:          schoolRecordsForm.house         || undefined,
+      studentStatus:  schoolRecordsForm.studentStatus || undefined,
+      prefectStatus:  schoolRecordsForm.prefectStatus || undefined,
+      achievements:   schoolRecordsForm.achievements  || undefined,
+      clubsAndSocieties: clubsAndSocieties.length ? clubsAndSocieties : undefined,
+      leadershipRoles:   leadershipRoles.length   ? leadershipRoles   : undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-profile"] });
+      toast.success("School info saved.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -287,7 +319,7 @@ export default function MemberProfilePage() {
   // try again instead.
   if (isError) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto">
         <EmptyState
           icon={<AlertCircle size={40} />}
           title="Couldn't load your profile"
@@ -305,7 +337,7 @@ export default function MemberProfilePage() {
 
   if (isLoading || !profile) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto space-y-5">
+      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto space-y-5">
         <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
@@ -314,12 +346,13 @@ export default function MemberProfilePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto">
       <PageHeader eyebrow="Account" title="Profile" description="Your profile, visible to fellow alumni, and how the portal works for you." />
 
-      <div className="grid grid-cols-1 gap-5 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-5 lg:gap-6 mt-6 items-start">
 
-        {/* ═══════════════════ PROFILE ═══════════════════ */}
+        {/* ═══════════════════ SIDEBAR ═══════════════════ */}
+        <div className="space-y-5 lg:sticky lg:top-6">
 
         {/* ── Identity ── */}
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
@@ -331,7 +364,7 @@ export default function MemberProfilePage() {
             <CardDescription>How you appear to fellow alumni</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex flex-col items-center text-center gap-4">
               <div className="relative shrink-0">
                 <input
                   ref={avatarInputRef}
@@ -370,14 +403,14 @@ export default function MemberProfilePage() {
                 </Button>
               </div>
 
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 w-full">
                 <p className="text-[17px] font-semibold truncate" style={{ color: "var(--foreground)" }}>
                   {profile.firstName} {profile.lastName}
                 </p>
                 <p className="text-[13.5px] mt-0.5 break-all" style={{ color: "var(--muted-foreground)" }}>
                   {profile.email}
                 </p>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                   <Badge variant="outline" className="text-[11px] font-semibold">
                     Class of {profile.graduationYear}
                   </Badge>
@@ -394,6 +427,10 @@ export default function MemberProfilePage() {
             </div>
           </CardContent>
         </Card>
+        </div>{/* end sidebar (Identity) — Employment status + main column follow below */}
+
+        {/* ── Main column ── */}
+        <div className="space-y-5">
 
         {/* ── Professional info ── */}
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
@@ -519,6 +556,135 @@ export default function MemberProfilePage() {
                 loadingText="Saving…"
               >
                 Save changes
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* ── School records ── */}
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-175">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <GraduationCap size={18} className="text-primary" />
+              School records
+            </CardTitle>
+            <CardDescription>Enrich your profile with your time at school</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateSchoolRecordsMut.mutate(); }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="yearOfEntry" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Year of entry
+                  </Label>
+                  <Input
+                    id="yearOfEntry"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="e.g. 2015"
+                    value={schoolRecordsForm.yearOfEntry}
+                    onChange={e => setSchoolRecordsForm(f => ({ ...f, yearOfEntry: e.target.value }))}
+                    className="h-11 text-[14px]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Year of graduation
+                  </Label>
+                  <Input value={profile.graduationYear} disabled className="h-11 text-[14px]" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="house" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    House
+                  </Label>
+                  <Input
+                    id="house"
+                    placeholder="e.g. Nkrumah House"
+                    value={schoolRecordsForm.house}
+                    onChange={e => setSchoolRecordsForm(f => ({ ...f, house: e.target.value }))}
+                    className="h-11 text-[14px]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Student status
+                  </Label>
+                  <div className="flex rounded-lg border border-border p-0.5 h-11">
+                    {(["Day", "Boarding"] as const).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSchoolRecordsForm(f => ({ ...f, studentStatus: s }))}
+                        className={cn(
+                          "flex-1 text-[13px] font-semibold rounded-md transition-colors",
+                          schoolRecordsForm.studentStatus === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="prefectStatus" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                    Prefect status
+                  </Label>
+                  <Input
+                    id="prefectStatus"
+                    placeholder="e.g. Head Prefect"
+                    value={schoolRecordsForm.prefectStatus}
+                    onChange={e => setSchoolRecordsForm(f => ({ ...f, prefectStatus: e.target.value }))}
+                    className="h-11 text-[14px]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="clubsAndSocieties" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Clubs &amp; societies
+                </Label>
+                <TagInput
+                  id="clubsAndSocieties"
+                  value={clubsAndSocieties}
+                  onChange={setClubsAndSocieties}
+                  placeholder="Type a club and press Enter…"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="leadershipRoles" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Leadership roles
+                </Label>
+                <TagInput
+                  id="leadershipRoles"
+                  value={leadershipRoles}
+                  onChange={setLeadershipRoles}
+                  placeholder="Type a role and press Enter…"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="achievements" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  Achievements
+                </Label>
+                <Textarea
+                  id="achievements"
+                  placeholder="Awards, honors, notable accomplishments…"
+                  rows={3}
+                  value={schoolRecordsForm.achievements}
+                  onChange={e => setSchoolRecordsForm(f => ({ ...f, achievements: e.target.value }))}
+                  className="text-[14px] resize-none"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="font-semibold text-[13.5px] gap-2"
+                style={{ height: 42 }}
+                isLoading={updateSchoolRecordsMut.isPending}
+                loadingText="Saving…"
+              >
+                Save school info
               </Button>
             </form>
           </CardContent>
@@ -777,6 +943,8 @@ export default function MemberProfilePage() {
             </CardContent>
           </Card>
         </div>
+
+        </div>{/* end main column */}
 
       </div>
 

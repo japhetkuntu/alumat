@@ -8,6 +8,7 @@ import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
+import { ensureAbsoluteUrl } from "@alumni/ui";
 import { getBusinessListing } from "@/lib/member-api";
 
 export default function BusinessListingDetailPage() {
@@ -41,8 +42,8 @@ export default function BusinessListingDetailPage() {
   const contactMethods = [
     biz.phoneNumber && { icon: Phone, label: biz.phoneNumber, href: `tel:${biz.phoneNumber}` },
     biz.email && { icon: Mail, label: biz.email, href: `mailto:${biz.email}` },
-    biz.websiteUrl && { icon: Globe, label: biz.websiteUrl.replace(/^https?:\/\//, ""), href: biz.websiteUrl, external: true },
-    biz.externalLinkUrl && { icon: ExternalLink, label: "More info", href: biz.externalLinkUrl, external: true },
+    biz.websiteUrl && { icon: Globe, label: biz.websiteUrl.replace(/^https?:\/\//, ""), href: ensureAbsoluteUrl(biz.websiteUrl), external: true },
+    biz.externalLinkUrl && { icon: ExternalLink, label: "More info", href: ensureAbsoluteUrl(biz.externalLinkUrl), external: true },
   ].filter(Boolean) as { icon: typeof Phone; label: string; href: string; external?: boolean }[];
 
   return (
