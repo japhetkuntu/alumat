@@ -542,6 +542,8 @@ public class SpotlightDto
     public string Status { get; set; } = string.Empty;
     public DateTime? FeaturedMonth { get; set; }
     public DateTime CreatedAt { get; set; }
+    /// <summary>True for the one spotlight an admin explicitly picked to show on the public site — see InstitutionSpotlightService.SetFeaturedAsync.</summary>
+    public bool IsFeatured { get; set; }
     /// <summary>"Manual" (admin/self-submitted, the original flow) or "Birthday" (system-generated — see BirthdaySpotlightDispatchWorkflow (Operations.Worker)).</summary>
     public string Type { get; set; } = "Manual";
     /// <summary>Only populated (and only ever &gt;1) for a "Birthday" spotlight covering several members who share a birthday — Member/MemberId above is just the first of them.</summary>

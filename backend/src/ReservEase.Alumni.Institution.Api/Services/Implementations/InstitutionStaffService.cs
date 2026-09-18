@@ -10,6 +10,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class InstitutionStaffService(
     IAlumniPgRepository<StaffEntity> adminRepo,
+    IInstitutionAuditLogService auditLog,
     ILogger<InstitutionStaffService> logger) : IInstitutionStaffService
 {
     public async Task<IApiResponse<PgPagedResult<InstitutionStaffListItem>>> GetInstitutionStaffAsync(InstitutionStaffFilter filter)
@@ -86,6 +87,7 @@ public class InstitutionStaffService(
             };
 
             await adminRepo.AddAsync(admin);
+            await auditLog.LogAsync(createdBy, "Staff Created", $"{admin.FirstName} {admin.LastName} ({admin.Email}) — {admin.Role}");
 
             logger.LogInformation("Admin {AdminId} created by {CreatorId}", admin.Id, createdBy.Id);
             var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
@@ -112,6 +114,9 @@ public class InstitutionStaffService(
             if (role == StaffRoles.ScopedAdmin && request.YearGroups is { Count: > 1 })
                 return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffListItem>("A scoped admin can be assigned to only one batch.");
 
+            var previousRole = admin.Role;
+            var previousDisabled = admin.IsDisabled;
+
             admin.FirstName = request.FirstName.Trim();
             admin.LastName = request.LastName.Trim();
             admin.Role = role;
@@ -122,6 +127,14 @@ public class InstitutionStaffService(
             admin.UpdatedBy = updatedBy.Id;
 
             await adminRepo.UpdateAsync(admin);
+
+            // Only log the specific things that actually changed, in plain
+            // language — a SuperAdmin reviewing this wants to know "what
+            // changed," not just "someone hit save."
+            if (previousRole != admin.Role)
+                await auditLog.LogAsync(updatedBy, "Staff Role Changed", $"{admin.FirstName} {admin.LastName} ({admin.Email}): {previousRole} → {admin.Role}");
+            if (previousDisabled != admin.IsDisabled)
+                await auditLog.LogAsync(updatedBy, admin.IsDisabled ? "Staff Disabled" : "Staff Re-enabled", $"{admin.FirstName} {admin.LastName} ({admin.Email})");
 
             var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
             return listItem.ToOkApiResponse();

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil, Lock } from "@alumni/ui";import { Pagination } from "@alumni/ui";
+import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil, Lock, Archive, Sparkles } from "@alumni/ui";import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
@@ -13,7 +13,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { Avatar, AvatarImage, AvatarFallback } from "@alumni/ui";
 import { formatDate, getInitials } from "@alumni/ui";
-import { getSpotlights, approveSpotlight, rejectSpotlight, createSpotlight, updateSpotlight, getMembers, uploadImage } from "@/lib/institution-api";
+import { getSpotlights, approveSpotlight, rejectSpotlight, createSpotlight, updateSpotlight, archiveSpotlight, featureSpotlight, unfeatureSpotlight, getMembers, uploadImage } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -82,6 +82,33 @@ export default function AdminSpotlightsPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const archiveMut = useMutation({
+    mutationFn: (id: string) => archiveSpotlight(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-spotlights"] });
+      toast.success("Spotlight archived");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const featureMut = useMutation({
+    mutationFn: (id: string) => featureSpotlight(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-spotlights"] });
+      toast.success("Spotlight featured on your public site");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const unfeatureMut = useMutation({
+    mutationFn: (id: string) => unfeatureSpotlight(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-spotlights"] });
+      toast.success("Spotlight unfeatured");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   const memberSearchQuery = useQuery({
     queryKey: ["admin-member-search", memberSearch],
     queryFn: () => getMembers({ search: memberSearch, pageSize: 8, status: "Active" }),
@@ -131,7 +158,7 @@ export default function AdminSpotlightsPage() {
 
       {/* Status filter tabs */}
       <div className="flex items-center gap-2 flex-wrap">
-        {["", "Pending", "Approved", "Rejected"].map((s) => (
+        {["", "Pending", "Approved", "Rejected", "Archived"].map((s) => (
           <button
             key={s}
             onClick={() => { setStatusFilter(s); setPage(1); }}
@@ -167,6 +194,7 @@ export default function AdminSpotlightsPage() {
               Pending: "from-amber-500 to-orange-500",
               Approved: "from-success to-teal-500",
               Rejected: "from-rose-500 to-red-500",
+              Archived: "from-slate-400 to-slate-500",
             };
             const grad = gradMap[s.status] ?? "from-primary to-primary/70";
             return (
@@ -198,11 +226,18 @@ export default function AdminSpotlightsPage() {
                           {s.memberName ?? "Unknown"} &middot; Class of {s.memberGraduationYear ?? "N/A"} &middot; {formatDate(s.createdAt)}
                         </p>
                       </div>
-                      {s.featuredMonth && (
-                        <Badge variant="secondary" className="shrink-0 text-[10px] font-bold uppercase">
-                          {new Date(s.featuredMonth).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        {s.isFeatured && (
+                          <Badge variant="default" className="text-[10px] font-bold uppercase gap-1">
+                            <Sparkles size={10} />Featured on site
+                          </Badge>
+                        )}
+                        {s.featuredMonth && (
+                          <Badge variant="secondary" className="text-[10px] font-bold uppercase">
+                            {new Date(s.featuredMonth).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 mb-3">{s.story}</p>
@@ -227,12 +262,42 @@ export default function AdminSpotlightsPage() {
                           </Button>
                         </>
                       )}
-                      <Button
-                        size="sm" variant="outline" className="h-8 text-xs font-bold"
-                        onClick={() => { setEditTarget(s); setEditForm({ title: s.title, story: s.story, imageUrl: s.imageUrl ?? "" }); setEditImageFile(null); }}
-                      >
-                        <Pencil size={13} className="mr-1" />Edit
-                      </Button>
+                      {s.status !== "Archived" && (
+                        <Button
+                          size="sm" variant="outline" className="h-8 text-xs font-bold"
+                          onClick={() => { setEditTarget(s); setEditForm({ title: s.title, story: s.story, imageUrl: s.imageUrl ?? "" }); setEditImageFile(null); }}
+                        >
+                          <Pencil size={13} className="mr-1" />Edit
+                        </Button>
+                      )}
+                      {s.status === "Approved" && (
+                        s.isFeatured ? (
+                          <Button
+                            size="sm" variant="outline" className="h-8 text-xs font-bold"
+                            disabled={unfeatureMut.isPending}
+                            onClick={() => unfeatureMut.mutate(s.id)}
+                          >
+                            <Sparkles size={13} className="mr-1" />Unfeature
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm" variant="outline" className="h-8 text-xs font-bold"
+                            disabled={featureMut.isPending}
+                            onClick={() => featureMut.mutate(s.id)}
+                          >
+                            <Sparkles size={13} className="mr-1" />Feature on site
+                          </Button>
+                        )
+                      )}
+                      {s.status !== "Archived" && (
+                        <Button
+                          size="sm" variant="outline" className="h-8 text-xs font-bold text-muted-foreground"
+                          disabled={archiveMut.isPending}
+                          onClick={() => archiveMut.mutate(s.id)}
+                        >
+                          <Archive size={13} className="mr-1" />Archive
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

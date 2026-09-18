@@ -17,6 +17,7 @@ public class AlbumService(
     IAlumniPgRepository<AlbumPhoto> photoRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
+    IInstitutionAuditLogService auditLog,
     ILogger<AlbumService> logger) : IAlbumService
 {
     public async Task<IApiResponse<PgPagedResult<PhotoAlbumDto>>> GetAlbumsAsync(PhotoAlbumFilter filter, AuthData admin)
@@ -206,6 +207,7 @@ public class AlbumService(
                 await photoRepo.RemoveAsync(photo);
 
             await albumRepo.RemoveAsync(album);
+            await auditLog.LogAsync(admin, "Photo Album Deleted", $"{album.Title} ({photos.Count} photos)");
             logger.LogInformation("Photo album {AlbumId} deleted along with {PhotoCount} photos", albumId, photos.Count);
             return new object().ToOkApiResponse("Album deleted");
         }

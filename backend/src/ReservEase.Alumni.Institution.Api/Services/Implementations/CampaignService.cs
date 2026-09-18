@@ -24,6 +24,7 @@ public class CampaignService(
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
+    IInstitutionAuditLogService auditLog,
     ILogger<CampaignService> logger) : ICampaignService
 {
     public async Task<IApiResponse<PgPagedResult<CampaignDto>>> GetCampaignsAsync(CampaignFilter filter, AuthData admin)
@@ -333,6 +334,7 @@ public class CampaignService(
             }
 
             await campaignRepo.RemoveAsync(campaign);
+            await auditLog.LogAsync(admin, "Campaign Deleted", campaign.Title);
 
             logger.LogInformation("Campaign {CampaignId} deleted", campaignId);
             return new object().ToOkApiResponse("Campaign deleted");

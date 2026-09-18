@@ -177,6 +177,16 @@ public class NotificationDispatchActivities(
             return admins.Select(a => a.Id).ToList();
         }, "resolve payment received admin recipients", institutionId);
 
+    [Activity("NotificationDispatch.ResolvePendingApprovalAdminRecipients")]
+    public virtual Task<List<string>> ResolvePendingApprovalAdminRecipientsAsync(string institutionId) =>
+        Wrap(async () =>
+        {
+            var optedOut = await adminPrefRepo.GetAllAsync(p => p.InstitutionId == institutionId && !p.PendingApprovalAlerts, ignoreQueryFilters: true);
+            var optedOutIds = optedOut.Select(p => p.StaffId).ToHashSet();
+            var admins = await adminRepo.GetAllAsync(a => a.InstitutionId == institutionId && !a.IsDisabled && !optedOutIds.Contains(a.Id), ignoreQueryFilters: true);
+            return admins.Select(a => a.Id).ToList();
+        }, "resolve pending approval admin recipients", institutionId);
+
     [Activity("NotificationDispatch.LoadMemberWithPreference")]
     public virtual Task<MemberWithPreference?> LoadMemberWithPreferenceAsync(string memberId) =>
         Wrap(async () =>

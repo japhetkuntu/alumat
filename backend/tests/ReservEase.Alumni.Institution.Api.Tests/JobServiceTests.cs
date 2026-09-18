@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Implementations;
+using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -33,7 +34,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "ScopedAdmin", YearGroups = new List<int> { 2025 } };
 
         // Act
@@ -70,7 +71,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), logger);
         var admin = new AuthData { Id = "superadmin", Role = "SuperAdmin" };
 
         var response = await service.UpdateJobAsync(new UpdateJobRequest
@@ -104,7 +105,7 @@ public class JobServiceTests
 
         mockRepo.Setup(r => r.GetByIdAsync(job.Id, It.IsAny<bool>())).ReturnsAsync(job);
 
-        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), logger);
+        var service = new JobService(mockRepo.Object, mockStorage.Object, Mock.Of<ReservEase.Alumni.Temporal.Sdk.ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), logger);
         var admin = new AuthData { Id = "admin-1", Role = "SuperAdmin" };
 
         var response = await service.UpdateJobAsync(new UpdateJobRequest

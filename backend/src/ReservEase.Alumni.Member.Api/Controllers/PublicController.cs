@@ -30,6 +30,8 @@ public class PublicController(
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<BusinessListing> businessListingRepo,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
+    IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
     IRedisService<PublicContentCacheConfig> publicCache) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
@@ -108,6 +110,26 @@ public class PublicController(
             Message = request.Message,
         };
         await onboardingLeadRepo.AddAsync(lead);
+
+        // Let the platform team know a lead came in — this is the top of the
+        // "we'll build it for you" acquisition funnel, so a lead sitting
+        // unseen until someone happens to check the dashboard is a real cost.
+        var staff = (await platformStaffRepo.GetAllAsync(s => !s.IsDisabled && (s.Role == "SuperAdmin" || s.Role == "Support"))).ToList();
+        if (staff.Count > 0)
+        {
+            var notifications = staff.Select(s => new PlatformNotification
+            {
+                RecipientStaffId = s.Id,
+                Title = "New onboarding lead",
+                Body = $"{lead.InstitutionName} — {lead.ContactName} ({lead.ContactEmail}) wants to get onboarded.",
+                Type = "OnboardingLeadSubmitted",
+                RelatedEntityId = lead.Id,
+                RelatedEntityType = "OnboardingLead",
+                ActionUrl = "/onboarding-leads",
+                CreatedBy = "system",
+            }).ToList();
+            await platformNotificationRepo.AddRangeAsync(notifications);
+        }
 
         var response = new OnboardingLeadResponse(lead.Id, lead.InstitutionName, lead.ContactEmail, lead.Status);
         return Created(string.Empty, new ApiResponse<OnboardingLeadResponse> { Message = "Created", Code = 201, Data = response });
@@ -193,8 +215,13 @@ public class PublicController(
 
         var all = await GetOrCacheAsync(PublicContentCacheKeys.Spotlights(institution.Id), async () =>
         {
+            // An admin-picked IsFeatured spotlight always leads (see
+            // InstitutionSpotlightService.SetFeaturedAsync) — falls back to
+            // the previous implicit "most recently featured" ordering when
+            // nothing has been explicitly picked.
             var items = await spotlightRepo.GetQueryable(s => s.Status == "Approved")
-                .OrderByDescending(s => s.FeaturedMonth)
+                .OrderByDescending(s => s.IsFeatured)
+                .ThenByDescending(s => s.FeaturedMonth)
                 .ThenByDescending(s => s.CreatedAt)
                 .Take(MaxCacheableItems)
                 .ToListAsync();

@@ -80,6 +80,12 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         NotificationKind.MentorshipRequestReceived => ProcessMentorshipRequestReceivedAsync(request),
         NotificationKind.MentorshipRequestDecision => ProcessMentorshipRequestDecisionAsync(request),
         NotificationKind.ForumReply => ProcessForumReplyAsync(request),
+        NotificationKind.MemberStatusChanged => ProcessMemberStatusChangedAsync(request),
+        NotificationKind.NewMemberPendingApproval => ProcessNewMemberPendingApprovalAsync(request),
+        NotificationKind.ReferralRegistered => ProcessReferralRegisteredAsync(request),
+        NotificationKind.EventRsvpConfirmed => ProcessEventRsvpConfirmedAsync(request),
+        NotificationKind.SpotlightDecision => ProcessSpotlightDecisionAsync(request),
+        NotificationKind.BirthdayShoutout => ProcessBirthdayShoutoutAsync(request),
         NotificationKind.Email => ProcessEmailAsync(request),
         _ => LogUnhandledKindAsync(request),
     };
@@ -474,6 +480,161 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    /// <summary>
+    /// Only members whose new status is "Active" (approved, or unbanned) can
+    /// actually log in to see an in-app row — everyone else (rejected/
+    /// blocked/banned) is reached by SMS/WhatsApp only here; the caller
+    /// (MemberManagementService) separately sends an email for every
+    /// transition, since email is the one channel that reaches a member
+    /// regardless of whether they can currently sign in.
+    /// </summary>
+    private async Task ProcessMemberStatusChangedAsync(NotificationRequest request)
+    {
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var (title, body) = request.NewStatus switch
+        {
+            "Active" => ("Welcome — You're Approved!", string.IsNullOrWhiteSpace(request.MemberFirstName)
+                ? "Your membership has been approved. Welcome aboard!"
+                : $"Welcome, {request.MemberFirstName} — your membership has been approved. You now have full access to the portal."),
+            "Suspended" => ("Registration Not Approved", string.IsNullOrWhiteSpace(request.Reason)
+                ? "Your registration was not approved this time. You're welcome to register again."
+                : $"Your registration was not approved. Reason: {request.Reason}. You're welcome to register again."),
+            "Blocked" => ("Registration Blocked", "Your registration was not approved after multiple attempts, and this email address can no longer be used to register."),
+            "Banned" => ("Account Suspended", string.IsNullOrWhiteSpace(request.Reason)
+                ? "Your account has been suspended. Please contact your institution for details."
+                : $"Your account has been suspended. Reason: {request.Reason}."),
+            _ => ("Account Status Updated", "Your account status has been updated."),
+        };
+
+        if (request.NewStatus == "Active")
+        {
+            var notification = new Notification
+            {
+                RecipientId = request.MemberId!,
+                RecipientType = "Member",
+                Title = title,
+                Body = body,
+                Type = "MemberStatusChanged",
+                RelatedEntityId = request.MemberId,
+                RelatedEntityType = "Member",
+                ActionUrl = MemberUrl(institution, "/"),
+                CreatedBy = "system",
+            };
+            await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+        }
+
+        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body);
+    }
+
+    private async Task ProcessNewMemberPendingApprovalAsync(NotificationRequest request)
+    {
+        var adminIds = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.ResolvePendingApprovalAdminRecipientsAsync(request.InstitutionId),
+            NotificationActivityOptions.DatabaseRead);
+        if (adminIds.Count == 0) return;
+
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var actionUrl = AdminUrl(institution, "/members");
+
+        var notifications = adminIds.Select(id => new Notification
+        {
+            RecipientId = id,
+            RecipientType = "Admin",
+            Title = "New Member Awaiting Approval",
+            Body = $"{request.MemberName} ({request.MemberEmail}) registered and is waiting for approval.",
+            Type = "NewMemberPendingApproval",
+            RelatedEntityId = request.MemberId,
+            RelatedEntityType = "Member",
+            ActionUrl = actionUrl,
+            CreatedBy = "system",
+        }).ToList();
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    private async Task ProcessReferralRegisteredAsync(NotificationRequest request)
+    {
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var notification = new Notification
+        {
+            RecipientId = request.ReferrerId!,
+            RecipientType = "Member",
+            Title = "Your Referral Joined!",
+            Body = $"{request.ReferredName} signed up using your referral link.",
+            Type = "ReferralRegistered",
+            RelatedEntityType = "Referral",
+            ActionUrl = MemberUrl(institution, "/referrals"),
+            CreatedBy = "system",
+        };
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    private async Task ProcessEventRsvpConfirmedAsync(NotificationRequest request)
+    {
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var notification = new Notification
+        {
+            RecipientId = request.MemberId!,
+            RecipientType = "Member",
+            Title = "RSVP Confirmed",
+            Body = $"You're confirmed for \"{request.EventTitle}\". See you there!",
+            Type = "EventRsvpConfirmed",
+            RelatedEntityId = request.EventId,
+            RelatedEntityType = "Event",
+            ActionUrl = MemberUrl(institution, $"/events/{request.EventId}"),
+            CreatedBy = "system",
+        };
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    private async Task ProcessSpotlightDecisionAsync(NotificationRequest request)
+    {
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var notification = new Notification
+        {
+            RecipientId = request.MemberId!,
+            RecipientType = "Member",
+            Title = request.Approved == true ? "Your Spotlight Was Approved!" : "Spotlight Not Approved",
+            Body = request.Approved == true
+                ? "Congratulations — your spotlight submission is now live for everyone to see."
+                : string.IsNullOrWhiteSpace(request.Reason)
+                    ? "Your spotlight submission was not approved this time."
+                    : $"Your spotlight submission was not approved. Reason: {request.Reason}.",
+            Type = "SpotlightDecision",
+            RelatedEntityId = request.SpotlightId,
+            RelatedEntityType = "Spotlight",
+            ActionUrl = MemberUrl(institution, "/spotlights"),
+            CreatedBy = "system",
+        };
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    private async Task ProcessBirthdayShoutoutAsync(NotificationRequest request)
+    {
+        var recipients = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.ResolveSpotlightAlertRecipientsAsync(request.InstitutionId),
+            NotificationActivityOptions.DatabaseRead);
+        recipients = recipients.Where(r => r.MemberId != request.MemberId).ToList();
+        if (recipients.Count == 0) return;
+
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var actionUrl = MemberUrl(institution, $"/forum/{request.ThreadId}");
+        var body = $"It's {request.MemberName}'s birthday today! Drop by the forum and wish them well.";
+
+        var notifications = recipients.Select(r => new Notification
+        {
+            RecipientId = r.MemberId,
+            RecipientType = "Member",
+            Title = "Birthday Shoutout",
+            Body = body,
+            Type = "BirthdayShoutout",
+            RelatedEntityId = request.ThreadId,
+            RelatedEntityType = "ForumThread",
+            ActionUrl = actionUrl,
+            CreatedBy = "system",
+        }).ToList();
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
     }
 
     private async Task ProcessEmailAsync(NotificationRequest request)

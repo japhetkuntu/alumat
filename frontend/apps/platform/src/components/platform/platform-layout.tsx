@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Inbox,
+  GraduationCap,
 } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
@@ -27,6 +28,7 @@ import { NotificationPanel } from "./notification-panel";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/institutions", label: "Institutions", icon: Building2 },
+  { href: "/members", label: "Members", icon: GraduationCap },
   { href: "/onboarding-leads", label: "Onboarding Requests", icon: Inbox },
   { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
   { href: "/staff", label: "Platform Staff", icon: Users },
@@ -39,9 +41,11 @@ const navItems = [
 export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, isSuperAdmin } = useAuth();
+  const isSupport = user?.role === "Support";
 
   const visibleNavItems = navItems.filter((item) => {
     if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
+    if (item.href === "/members" && !isSuperAdmin && !isSupport) return false;
     return true;
   });
 

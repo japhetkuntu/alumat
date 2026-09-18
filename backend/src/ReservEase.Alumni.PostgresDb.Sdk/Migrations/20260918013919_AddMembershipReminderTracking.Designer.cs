@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260918013919_AddMembershipReminderTracking")]
+    partial class AddMembershipReminderTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1043,50 +1046,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("InstitutionId");
 
                     b.ToTable("ForumThreads", "alumni");
-                });
-
-            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionAuditLogEntry", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Actor")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ActorId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("InstitutionId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Target")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstitutionId");
-
-                    b.ToTable("InstitutionAuditLogEntries", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff", b =>
@@ -2335,19 +2294,12 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<DateTime?>("FeaturedMonth")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<List<string>>("ForumThreadIds")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
                     b.Property<string>("InstitutionId")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsFeatured")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Member")
                         .HasColumnType("jsonb");

@@ -67,6 +67,40 @@ public class SpotlightsController(IInstitutionSpotlightService spotlightService)
         var result = await spotlightService.RejectSpotlightAsync(spotlightId, body?.Reason, admin);
         return result.ToActionResult();
     }
+
+    [HttpPost("{spotlightId}/archive")]
+    [SwaggerOperation(Summary = "Archive spotlight", Description = "Hide an old/unwanted spotlight from the admin list and the public site, without deleting it")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<SpotlightDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Archive(string spotlightId)
+    {
+        var admin = User.GetAccount();
+        var result = await spotlightService.ArchiveSpotlightAsync(spotlightId, admin);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("{spotlightId}/feature")]
+    [SwaggerOperation(Summary = "Feature spotlight", Description = "Pick this approved spotlight to show on the public landing page, replacing whichever one was featured before")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<SpotlightDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Feature(string spotlightId)
+    {
+        var admin = User.GetAccount();
+        var result = await spotlightService.SetFeaturedAsync(spotlightId, admin);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("{spotlightId}/unfeature")]
+    [SwaggerOperation(Summary = "Unfeature spotlight", Description = "Stop showing this spotlight on the public landing page — falls back to normal ordering")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<SpotlightDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> Unfeature(string spotlightId)
+    {
+        var admin = User.GetAccount();
+        var result = await spotlightService.UnfeatureSpotlightAsync(spotlightId, admin);
+        return result.ToActionResult();
+    }
 }
 
 public record RejectSpotlightBody(string? Reason);

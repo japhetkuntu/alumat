@@ -191,8 +191,13 @@ public class MemberAuthService(
                     referral.ReferredMemberId = member.Id;
                     referral.Status = "Registered";
                     await referralRepo.UpdateAsync(referral);
+                    await temporalProvider.EnqueueNotificationAsync(
+                        NotificationRequest.ReferralRegistered(currentTenant.InstitutionId, referral.ReferrerId, $"{member.FirstName} {member.LastName}"), logger);
                 }
             }
+
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.NewMemberPendingApproval(currentTenant.InstitutionId, member.Id, $"{member.FirstName} {member.LastName}", member.Email), logger);
 
             logger.LogInformation("Member {MemberId} registered via Google", member.Id);
             return new object().ToCreatedApiResponse("Registration submitted. Your account is pending admin approval.");
@@ -258,8 +263,13 @@ public class MemberAuthService(
                     referral.ReferredMemberId = member.Id;
                     referral.Status = "Registered";
                     await referralRepo.UpdateAsync(referral);
+                    await temporalProvider.EnqueueNotificationAsync(
+                        NotificationRequest.ReferralRegistered(currentTenant.InstitutionId, referral.ReferrerId, $"{member.FirstName} {member.LastName}"), logger);
                 }
             }
+
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.NewMemberPendingApproval(currentTenant.InstitutionId, member.Id, $"{member.FirstName} {member.LastName}", member.Email), logger);
 
             // Clean up Redis
             await redis.RemoveAsync($"reg:otp:{email}");

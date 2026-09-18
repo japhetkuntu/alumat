@@ -19,5 +19,11 @@ public enum NotificationKind
     MentorshipRequestReceived,
     MentorshipRequestDecision,
     ForumReply,
+    MemberStatusChanged,
+    NewMemberPendingApproval,
+    ReferralRegistered,
+    EventRsvpConfirmed,
+    SpotlightDecision,
+    BirthdayShoutout,
     Email,
 }

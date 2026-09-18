@@ -30,9 +30,12 @@ public class InstitutionSpotlightService(
     {
         try
         {
+            // Archived spotlights are excluded from the default "All" view — an
+            // admin has to explicitly filter for Archived to see them, mirroring
+            // how a trash/archive folder normally stays out of the way.
             var result = await spotlightRepo.GetPagedAsync(
                 page, pageSize, "CreatedAt", "desc",
-                status is not null ? s => s.Status == status : null);
+                status is not null ? s => s.Status == status : s => s.Status != "Archived");
 
             var dtos = result.Results.Select(s => s.ToDto()).ToList();
 
@@ -146,6 +149,10 @@ public class InstitutionSpotlightService(
             await spotlightRepo.UpdateAsync(spotlight);
             await InvalidatePublicSpotlightsCacheAsync();
 
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.SpotlightDecision(currentTenant.InstitutionId!, spotlight.MemberId, true, null, spotlight.Id), logger);
+            await temporalProvider.EnqueueNotificationAsync(NotificationRequest.SpotlightAlert(currentTenant.InstitutionId!, spotlight.Id), logger);
+
             return spotlight.ToDto().ToOkApiResponse("Spotlight approved.");
         }
         catch (Exception e)
@@ -169,12 +176,106 @@ public class InstitutionSpotlightService(
             await spotlightRepo.UpdateAsync(spotlight);
             await InvalidatePublicSpotlightsCacheAsync();
 
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.SpotlightDecision(currentTenant.InstitutionId!, spotlight.MemberId, false, reason, spotlight.Id), logger);
+
             return spotlight.ToDto().ToOkApiResponse("Spotlight rejected.");
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error rejecting spotlight {SpotlightId}", spotlightId);
             return ApiResponseExtensions.ToServerErrorApiResponse<SpotlightDto>("Failed to reject spotlight");
+        }
+    }
+
+    /// <summary>
+    /// Soft-removes a spotlight from both the admin's default list and the
+    /// public site without deleting it — for old/unwanted spotlights an
+    /// admin doesn't want surfacing anywhere anymore, but may still want to
+    /// keep on record.
+    /// </summary>
+    public async Task<IApiResponse<SpotlightDto>> ArchiveSpotlightAsync(string spotlightId, AuthData admin)
+    {
+        try
+        {
+            var spotlight = await spotlightRepo.GetByIdAsync(spotlightId);
+            if (spotlight is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<SpotlightDto>("Spotlight not found");
+
+            spotlight.Status = "Archived";
+            spotlight.IsFeatured = false;
+            spotlight.UpdatedBy = admin.Id;
+            await spotlightRepo.UpdateAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
+
+            return spotlight.ToDto().ToOkApiResponse("Spotlight archived.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error archiving spotlight {SpotlightId}", spotlightId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<SpotlightDto>("Failed to archive spotlight");
+        }
+    }
+
+    /// <summary>
+    /// Explicitly picks which one approved spotlight is shown on the public
+    /// landing page, rather than leaving it to implicit FeaturedMonth/
+    /// CreatedAt ordering (see PublicController.GetPublicSpotlights). Only
+    /// one spotlight per institution should carry this at a time, so
+    /// featuring one clears it from every other spotlight first.
+    /// </summary>
+    public async Task<IApiResponse<SpotlightDto>> SetFeaturedAsync(string spotlightId, AuthData admin)
+    {
+        try
+        {
+            var spotlight = await spotlightRepo.GetByIdAsync(spotlightId);
+            if (spotlight is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<SpotlightDto>("Spotlight not found");
+            if (spotlight.Status != "Approved")
+                return ApiResponseExtensions.ToBadRequestApiResponse<SpotlightDto>("Only an approved spotlight can be featured");
+
+            var currentlyFeatured = (await spotlightRepo.GetAllAsync(s => s.IsFeatured && s.Id != spotlightId)).ToList();
+            foreach (var other in currentlyFeatured)
+            {
+                other.IsFeatured = false;
+                other.UpdatedBy = admin.Id;
+            }
+            if (currentlyFeatured.Count > 0)
+                await spotlightRepo.UpdateRangeAsync(currentlyFeatured);
+
+            spotlight.IsFeatured = true;
+            spotlight.UpdatedBy = admin.Id;
+            await spotlightRepo.UpdateAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
+
+            return spotlight.ToDto().ToOkApiResponse("Spotlight featured on your public site.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error featuring spotlight {SpotlightId}", spotlightId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<SpotlightDto>("Failed to feature spotlight");
+        }
+    }
+
+    public async Task<IApiResponse<SpotlightDto>> UnfeatureSpotlightAsync(string spotlightId, AuthData admin)
+    {
+        try
+        {
+            var spotlight = await spotlightRepo.GetByIdAsync(spotlightId);
+            if (spotlight is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<SpotlightDto>("Spotlight not found");
+
+            spotlight.IsFeatured = false;
+            spotlight.UpdatedBy = admin.Id;
+            await spotlightRepo.UpdateAsync(spotlight);
+            await InvalidatePublicSpotlightsCacheAsync();
+
+            return spotlight.ToDto().ToOkApiResponse("Spotlight unfeatured.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error unfeaturing spotlight {SpotlightId}", spotlightId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<SpotlightDto>("Failed to unfeature spotlight");
         }
     }
 }

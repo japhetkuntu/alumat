@@ -17,6 +17,7 @@ import {
   Settings,
   Menu,
   ShieldCheck,
+  ClipboardList,
   Star,
   Bell,
   LifeBuoy,
@@ -140,6 +141,9 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       const peopleHeaderIndex = items.findIndex((item) => item.isHeader && item.label === "People");
       const insertAt = peopleHeaderIndex === -1 ? items.length : peopleHeaderIndex + 1;
       items.splice(insertAt, 0, { href: "/staff", label: "Institution Admins", icon: ShieldCheck });
+      // Only meaningful once there's more than one admin to watch — sits
+      // right after the admin list rather than buried under Settings.
+      items.splice(insertAt + 1, 0, { href: "/audit-log", label: "Audit Log", icon: ClipboardList });
     }
 
     // Drop any header whose group ended up with zero visible items (e.g. an

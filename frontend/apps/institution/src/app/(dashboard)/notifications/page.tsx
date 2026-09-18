@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
-  Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight, LifeBuoy,
+  Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight, LifeBuoy, UserCheck,
 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -24,6 +24,7 @@ const TYPE_META: Record<string, { color: string; label: string; icon: React.Elem
   ContributionConfirmed: { color: "bg-blue-500", label: "Confirmed", icon: CreditCard },
   ContributionRejected:  { color: "bg-red-500",  label: "Rejected",  icon: CreditCard },
   SupportTicketResolved: { color: "bg-primary",  label: "Support",   icon: LifeBuoy },
+  NewMemberPendingApproval: { color: "bg-amber-500", label: "New Member", icon: UserCheck },
 };
 
 function NotifIcon({ type }: { type: string }) {

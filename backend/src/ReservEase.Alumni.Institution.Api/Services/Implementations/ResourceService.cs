@@ -17,6 +17,7 @@ public class ResourceService(
     IAlumniPgRepository<Resource> resourceRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
+    IInstitutionAuditLogService auditLog,
     ILogger<ResourceService> logger) : IResourceService
 {
     public async Task<IApiResponse<PgPagedResult<ResourceDto>>> GetResourcesAsync(ResourceFilter filter, AuthData admin)
@@ -193,6 +194,7 @@ public class ResourceService(
             }
 
             await resourceRepo.RemoveAsync(resource);
+            await auditLog.LogAsync(admin, "Resource Deleted", resource.Title);
             logger.LogInformation("Resource {ResourceId} deleted", resourceId);
             return new object().ToOkApiResponse("Resource deleted");
         }

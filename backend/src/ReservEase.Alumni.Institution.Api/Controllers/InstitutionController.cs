@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using ReservEase.Alumni.Institution.Api.Models;
+using ReservEase.Alumni.Institution.Api.Services.Interfaces;
+using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -27,6 +29,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 public class InstitutionController(
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     ICurrentTenantService currentTenant,
+    IInstitutionAuditLogService auditLog,
     IConfiguration config) : DefaultController
 {
     /// <summary>Get the current institution's profile and branding (mostly read-only).</summary>
@@ -259,6 +262,10 @@ public class InstitutionController(
         institution.PayoutStatus = "Pending";
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
+
+        var admin = User.GetAccount();
+        await auditLog.LogAsync(admin, "Payout Settings Submitted",
+            $"{request.SettlementBankName} — account ending {request.SettlementAccountNumber[^Math.Min(4, request.SettlementAccountNumber.Length)..]}");
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Payout setup submitted for platform review", Code = 200, Data = ToDto(institution) });
     }

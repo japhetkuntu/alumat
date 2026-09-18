@@ -25,4 +25,7 @@ public class NotificationPreference : BaseEntity, ITenantScoped
 
     /// <summary>Last time the digest scheduler actually sent this member a digest — drives the "is one due yet" check, not just an audit timestamp.</summary>
     public DateTime? LastDigestSentAt { get; set; }
+
+    /// <summary>Last time the membership-reminder scheduler actually sent this member a dues reminder — drives its own cooldown the same way LastDigestSentAt does, so a member with unpaid dues isn't reminded every single cycle.</summary>
+    public DateTime? LastMembershipReminderSentAt { get; set; }
 }

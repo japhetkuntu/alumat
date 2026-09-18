@@ -636,6 +636,30 @@ export async function getAuditLog(params: { page?: number; pageSize?: number; se
   return res.data.data!;
 }
 
+// ── Cross-institution members ────────────────────────────────────────────────
+
+export interface PlatformMemberItem {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  institutionId: string;
+  institutionName: string;
+  graduationYear: number;
+  status: string;
+  lastLoginAt?: string | null;
+  /** Logged in within the last 7 days. */
+  isActive: boolean;
+  createdAt: string;
+}
+
+export async function getPlatformMembers(params: {
+  page?: number; pageSize?: number; search?: string; institutionId?: string; status?: string; activeOnly?: boolean;
+}) {
+  const res = await platformClient.get<ApiResponse<PagedResult<PlatformMemberItem>>>("/members", { params });
+  return res.data.data!;
+}
+
 // ── In-app Notifications (platform staff) ───────────────────────────────────
 // Currently only raised when an institution opens a support ticket.
 

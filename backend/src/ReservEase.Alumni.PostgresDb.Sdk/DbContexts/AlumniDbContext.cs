@@ -33,6 +33,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<PlatformNotification> PlatformNotifications => Set<PlatformNotification>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
+    public DbSet<InstitutionAuditLogEntry> InstitutionAuditLogEntries => Set<InstitutionAuditLogEntry>();
     public DbSet<InstitutionStaff> InstitutionStaff => Set<InstitutionStaff>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<Department> Departments => Set<Department>();

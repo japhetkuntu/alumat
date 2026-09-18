@@ -43,6 +43,9 @@ public class ScheduledJobsActivities(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<Batch> batchRepo,
     IAlumniPgRepository<Notification> notifRepo,
+    IAlumniPgRepository<ForumCategory> forumCategoryRepo,
+    IAlumniPgRepository<ForumThread> forumThreadRepo,
+    IAlumniPgRepository<ForumPost> forumPostRepo,
     ICurrentTenantService currentTenant,
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
@@ -53,6 +56,7 @@ public class ScheduledJobsActivities(
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     private const int MaxFailedRecurringAttempts = 3;
+    private const int MembershipReminderCooldownDays = 21;
 
     // ── Shared ──────────────────────────────────────────────────────────────
 
@@ -144,6 +148,116 @@ public class ScheduledJobsActivities(
             logger.LogInformation("Digest cycle for institution {InstitutionId}: {Due} due, {Sent} sent (rest had nothing new)", institutionId, due.Count, sentCount);
             return sentCount;
         }, "send due digests for institution", institutionId);
+
+    // ── Membership dues reminders ───────────────────────────────────────────
+
+    [Activity("ScheduledJobs.SendDueMembershipRemindersForInstitution")]
+    public virtual Task<int> SendDueMembershipRemindersForInstitutionAsync(string institutionId) =>
+        Wrap(async () =>
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
+            if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Contributions))
+                return 0;
+
+            var currentYear = DateTime.UtcNow.Year;
+            var membershipCampaigns = (await campaignRepo.GetAllAsync(c =>
+                    c.InstitutionId == institutionId && c.IsMembershipCampaign && c.MembershipYear != null && c.MembershipYear <= currentYear,
+                    ignoreQueryFilters: true))
+                .ToList();
+            if (membershipCampaigns.Count == 0) return 0;
+
+            var activeMembers = (await memberRepo.GetAllAsync(m => m.InstitutionId == institutionId && m.Status == "Active", ignoreQueryFilters: true)).ToList();
+            if (activeMembers.Count == 0) return 0;
+
+            var campaignIds = membershipCampaigns.Select(c => c.Id).ToHashSet();
+            var paidByMember = (await contributionRepo.GetAllAsync(
+                    c => c.InstitutionId == institutionId && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), ignoreQueryFilters: true))
+                .GroupBy(c => c.MemberId)
+                .ToDictionary(g => g.Key, g => g.Select(c => c.CampaignId).ToHashSet());
+
+            var prefsByMember = (await prefRepo.GetAllAsync(p => p.InstitutionId == institutionId, ignoreQueryFilters: true)).ToDictionary(p => p.MemberId);
+
+            var now = DateTime.UtcNow;
+            var portalUrl = GetMemberPortalUrl(institution);
+            var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+            var notifications = new List<Notification>();
+            var updatedPrefs = new List<NotificationPreference>();
+            var newPrefs = new List<NotificationPreference>();
+            var sentCount = 0;
+
+            foreach (var member in activeMembers)
+            {
+                var required = membershipCampaigns.Where(c => c.MembershipYear >= member.GraduationYear).ToList();
+                if (required.Count == 0) continue;
+
+                var paidIds = paidByMember.GetValueOrDefault(member.Id) ?? new HashSet<string>();
+                var unpaid = required.Where(c => !paidIds.Contains(c.Id)).OrderByDescending(c => c.MembershipYear).ToList();
+                if (unpaid.Count == 0) continue;
+
+                var pref = prefsByMember.GetValueOrDefault(member.Id);
+                if (pref?.MembershipReminders == false) continue;
+                if (pref?.LastMembershipReminderSentAt is not null && pref.LastMembershipReminderSentAt > now.AddDays(-MembershipReminderCooldownDays)) continue;
+
+                var latestUnpaid = unpaid[0];
+                var body = unpaid.Count > 1 || latestUnpaid.MembershipYear < currentYear
+                    ? $"You have {unpaid.Count} outstanding membership due(s), including {latestUnpaid.MembershipYear}. Pay now to stay in good standing."
+                    : $"Your {currentYear} membership dues are due. Pay now to stay active.";
+                var actionUrl = string.IsNullOrEmpty(portalUrl) ? string.Empty : $"{portalUrl}/contributions";
+
+                notifications.Add(new Notification
+                {
+                    RecipientId = member.Id,
+                    RecipientType = "Member",
+                    Title = "Membership Dues Reminder",
+                    Body = body,
+                    Type = "MembershipReminder",
+                    ActionUrl = actionUrl,
+                    CreatedBy = "system",
+                });
+
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
+                    new SendEmailRequest
+                    {
+                        To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
+                        TemplateId = "notification",
+                        TemplateVariables = new
+                        {
+                            first_name = member.FirstName,
+                            title = "Membership Dues Reminder",
+                            body,
+                            badge_label = "Dues Reminder",
+                            action_url = actionUrl,
+                            action_label = "Pay now",
+                            brand_name = brandName,
+                            brand_color = institution.PrimaryColorHex,
+                            brand_secondary_color = institution.SecondaryColorHex,
+                            brand_logo = institution.LogoUrl,
+                        },
+                    },
+                    $"membership reminder to {member.Email}"), logger);
+
+                if (pref is not null)
+                {
+                    pref.LastMembershipReminderSentAt = now;
+                    pref.UpdatedBy = "system";
+                    updatedPrefs.Add(pref);
+                }
+                else
+                {
+                    newPrefs.Add(new NotificationPreference { MemberId = member.Id, LastMembershipReminderSentAt = now, CreatedBy = "system" });
+                }
+
+                sentCount++;
+            }
+
+            currentTenant.SetInstitutionId(institutionId);
+            if (notifications.Count > 0) await notifRepo.AddRangeAsync(notifications);
+            if (updatedPrefs.Count > 0) await prefRepo.UpdateRangeAsync(updatedPrefs);
+            if (newPrefs.Count > 0) await prefRepo.AddRangeAsync(newPrefs);
+
+            logger.LogInformation("Membership reminder cycle for institution {InstitutionId}: {Sent} reminders sent", institutionId, sentCount);
+            return sentCount;
+        }, "send due membership reminders for institution", institutionId);
 
     private static bool MatchesYear(List<int>? yearGroups, int memberYear) =>
         yearGroups is null || yearGroups.Count == 0 || yearGroups.Contains(memberYear);
@@ -266,9 +380,11 @@ public class ScheduledJobsActivities(
                 .ToList();
         }, "load today's celebrants", institutionId);
 
+    private const string CelebrationsCategoryName = "Celebrations";
+
     [Activity("ScheduledJobs.CreateBirthdaySpotlight")]
     public virtual Task CreateBirthdaySpotlightAsync(string institutionId, List<BirthdayCelebrant> celebrants, string title, string story, DateTime today) =>
-        Wrap(() =>
+        Wrap(async () =>
         {
             currentTenant.SetInstitutionId(institutionId);
             var snapshots = celebrants.Select(c => new MemberSnapshot
@@ -281,7 +397,7 @@ public class ScheduledJobsActivities(
                 MemberNumber = c.MemberNumber,
             }).ToList();
 
-            return spotlightRepo.AddAsync(new Spotlight
+            var spotlight = new Spotlight
             {
                 InstitutionId = institutionId,
                 MemberId = celebrants[0].Id,
@@ -294,8 +410,71 @@ public class ScheduledJobsActivities(
                 Status = "Approved",
                 FeaturedMonth = today,
                 CreatedBy = "system",
-            });
+            };
+            await spotlightRepo.AddAsync(spotlight);
+
+            // One shoutout thread per celebrant, posted as the celebrant
+            // themselves (reads naturally — "it's my birthday!" — inviting
+            // classmates to reply underneath) so the notification below has
+            // somewhere concrete to send people, instead of just announcing
+            // the birthday with nothing to do about it.
+            var category = await GetOrCreateCelebrationsCategoryAsync(institutionId);
+            var threadIds = new List<string>();
+
+            foreach (var celebrant in celebrants)
+            {
+                var authorSnap = snapshots.First(s => s.Id == celebrant.Id);
+                var thread = new ForumThread
+                {
+                    InstitutionId = institutionId,
+                    CategoryId = category.Id,
+                    Category = new ForumCategorySnapshot { Id = category.Id, Name = category.Name, Description = category.Description, SortOrder = category.SortOrder },
+                    Title = $"🎂 It's my birthday, {celebrant.FirstName}!",
+                    AuthorId = celebrant.Id,
+                    Author = authorSnap,
+                    CreatedBy = "system",
+                };
+                await forumThreadRepo.AddAsync(thread);
+
+                await forumPostRepo.AddAsync(new ForumPost
+                {
+                    InstitutionId = institutionId,
+                    ThreadId = thread.Id,
+                    Thread = new ForumThreadSnapshot { Id = thread.Id, Title = thread.Title },
+                    AuthorId = celebrant.Id,
+                    Author = authorSnap,
+                    Content = $"Today's my birthday! Drop a wish below 🎉",
+                    CreatedBy = "system",
+                });
+
+                threadIds.Add(thread.Id);
+
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.BirthdayShoutout(institutionId, celebrant.Id, celebrant.FirstName, thread.Id), logger);
+            }
+
+            spotlight.ForumThreadIds = threadIds;
+            await spotlightRepo.UpdateAsync(spotlight);
         }, "create birthday spotlight", institutionId);
+
+    /// <summary>Self-healing: most institutions won't have manually created a "Celebrations"
+    /// forum category, so this creates one the first time a birthday shoutout needs it,
+    /// rather than requiring an admin to set that up before the feature works at all.</summary>
+    private async Task<ForumCategory> GetOrCreateCelebrationsCategoryAsync(string institutionId)
+    {
+        var existing = await forumCategoryRepo.GetOneAsync(c => c.InstitutionId == institutionId && c.Name == CelebrationsCategoryName, ignoreQueryFilters: true);
+        if (existing is not null) return existing;
+
+        var category = new ForumCategory
+        {
+            InstitutionId = institutionId,
+            Name = CelebrationsCategoryName,
+            Description = "Birthdays, shoutouts, and good news from the community.",
+            CreatedBy = "system",
+        };
+        await forumCategoryRepo.AddAsync(category);
+        return category;
+    }
 
     // ── Recurring giving ────────────────────────────────────────────────────
 

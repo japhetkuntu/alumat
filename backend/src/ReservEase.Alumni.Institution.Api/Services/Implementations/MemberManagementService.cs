@@ -26,12 +26,52 @@ public class MemberManagementService(
     IConfiguration config,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     ITemporalClientProvider temporalProvider,
+    IInstitutionAuditLogService auditLog,
     ILogger<MemberManagementService> logger) : IMemberManagementService
 {
     private const int MaxRejections = 3;
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
 
     private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// The one channel guaranteed to reach a member regardless of whether
+    /// their new status lets them log in — a rejected/blocked/banned member
+    /// can't see an in-app notification (see ProcessMemberStatusChangedAsync,
+    /// which only writes one for "Active"), so every status transition gets
+    /// an email here in addition to that in-app/SMS fan-out.
+    /// </summary>
+    private async Task SendMemberStatusEmailAsync(Member member, string title, string body, string actionLabel)
+    {
+        if (string.IsNullOrEmpty(currentTenant.InstitutionId)) return;
+        var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        if (institution is null) return;
+
+        var memberBaseDomain = config["MemberPortalBaseDomain"];
+        var memberPortalUrl = string.IsNullOrWhiteSpace(memberBaseDomain) ? string.Empty : $"https://{institution.Slug}.{memberBaseDomain}";
+        var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+
+        await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
+            new SendEmailRequest
+            {
+                To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
+                TemplateId = "notification",
+                TemplateVariables = new
+                {
+                    first_name = member.FirstName,
+                    title,
+                    body,
+                    badge_label = "Account Update",
+                    action_url = memberPortalUrl,
+                    action_label = actionLabel,
+                    brand_name = brandName,
+                    brand_color = institution.PrimaryColorHex,
+                    brand_secondary_color = institution.SecondaryColorHex,
+                    brand_logo = institution.LogoUrl,
+                },
+            },
+            $"member status change email to {member.Email}"), logger);
+    }
 
     /// <summary>
     /// A newly bulk-created member has no usable password yet — mirrors the
@@ -237,6 +277,13 @@ public class MemberManagementService(
             member.UpdatedBy = admin.Id;
             await memberRepo.UpdateAsync(member);
 
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Active", null), logger);
+            await SendMemberStatusEmailAsync(member, "Welcome — You're Approved!",
+                $"Welcome, {member.FirstName} — your membership has been approved. You now have full access to the portal.",
+                "Go to your portal");
+            await auditLog.LogAsync(admin, "Member Approved", $"{member.FirstName} {member.LastName} ({member.Email})");
+
             logger.LogInformation("Member {MemberId} approved with number {MemberNumber} by admin {AdminId}", memberId, member.MemberNumber, admin.Id);
             return new object().ToOkApiResponse("Member approved");
         }
@@ -265,6 +312,19 @@ public class MemberManagementService(
             member.UpdatedAt = DateTime.UtcNow;
             member.UpdatedBy = admin.Id;
             await memberRepo.UpdateAsync(member);
+
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, member.Status, reason), logger);
+            await SendMemberStatusEmailAsync(member,
+                member.Status == "Blocked" ? "Registration Blocked" : "Registration Not Approved",
+                member.Status == "Blocked"
+                    ? "Your registration was not approved after multiple attempts, and this email address can no longer be used to register."
+                    : string.IsNullOrWhiteSpace(reason)
+                        ? "Your registration was not approved this time. You're welcome to register again."
+                        : $"Your registration was not approved. Reason: {reason}. You're welcome to register again.",
+                "Learn more");
+            await auditLog.LogAsync(admin, member.Status == "Blocked" ? "Member Rejected & Blocked" : "Member Rejected",
+                $"{member.FirstName} {member.LastName} ({member.Email}){(string.IsNullOrWhiteSpace(reason) ? "" : $" — {reason}")}");
 
             var msg = member.Status == "Blocked"
                 ? "Member rejected and permanently blocked after reaching maximum rejections"
@@ -298,6 +358,16 @@ public class MemberManagementService(
             member.UpdatedBy = admin.Id;
             await memberRepo.UpdateAsync(member);
 
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Banned", reason), logger);
+            await SendMemberStatusEmailAsync(member, "Account Suspended",
+                string.IsNullOrWhiteSpace(reason)
+                    ? "Your account has been suspended. Please contact your institution for details."
+                    : $"Your account has been suspended. Reason: {reason}.",
+                "Learn more");
+            await auditLog.LogAsync(admin, "Member Banned",
+                $"{member.FirstName} {member.LastName} ({member.Email}){(string.IsNullOrWhiteSpace(reason) ? "" : $" — {reason}")}");
+
             logger.LogInformation("Member {MemberId} banned by admin {AdminId}", memberId, admin.Id);
             return new object().ToOkApiResponse("Member banned");
         }
@@ -326,6 +396,13 @@ public class MemberManagementService(
             member.UpdatedAt = DateTime.UtcNow;
             member.UpdatedBy = admin.Id;
             await memberRepo.UpdateAsync(member);
+
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Active", null), logger);
+            await SendMemberStatusEmailAsync(member, "Account Reinstated",
+                $"Good news, {member.FirstName} — your account has been reinstated. You can log back in now.",
+                "Go to your portal");
+            await auditLog.LogAsync(admin, "Member Unbanned", $"{member.FirstName} {member.LastName} ({member.Email})");
 
             logger.LogInformation("Member {MemberId} unbanned by admin {AdminId}", memberId, admin.Id);
             return new object().ToOkApiResponse("Member unbanned");

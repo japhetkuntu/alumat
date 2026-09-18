@@ -52,6 +52,9 @@ public sealed class NotificationRequest
     public string? ReplierName { get; init; }
     public string? ThreadTitle { get; init; }
     public string? ThreadId { get; init; }
+    public string? ReferrerId { get; init; }
+    public string? ReferredName { get; init; }
+    public string? EventTitle { get; init; }
 
     // Broadcast.
     public List<BroadcastRecipient>? Recipients { get; init; }
@@ -139,6 +142,38 @@ public sealed class NotificationRequest
     {
         Kind = NotificationKind.ForumReply, InstitutionId = institutionId,
         ThreadAuthorId = threadAuthorId, ReplierName = replierName, ThreadTitle = threadTitle, ThreadId = threadId,
+    };
+
+    public static NotificationRequest MemberStatusChanged(
+        string institutionId, string memberId, string memberFirstName, string newStatus, string? reason) => new()
+    {
+        Kind = NotificationKind.MemberStatusChanged, InstitutionId = institutionId,
+        MemberId = memberId, MemberFirstName = memberFirstName, NewStatus = newStatus, Reason = reason,
+    };
+
+    public static NotificationRequest NewMemberPendingApproval(string institutionId, string memberId, string memberName, string memberEmail) => new()
+    {
+        Kind = NotificationKind.NewMemberPendingApproval, InstitutionId = institutionId,
+        MemberId = memberId, MemberName = memberName, MemberEmail = memberEmail,
+    };
+
+    public static NotificationRequest ReferralRegistered(string institutionId, string referrerId, string referredName) => new()
+    { Kind = NotificationKind.ReferralRegistered, InstitutionId = institutionId, ReferrerId = referrerId, ReferredName = referredName };
+
+    public static NotificationRequest EventRsvpConfirmed(string institutionId, string memberId, string eventId, string eventTitle) => new()
+    { Kind = NotificationKind.EventRsvpConfirmed, InstitutionId = institutionId, MemberId = memberId, EventId = eventId, EventTitle = eventTitle };
+
+    public static NotificationRequest SpotlightDecision(string institutionId, string memberId, bool approved, string? reason, string spotlightId) => new()
+    {
+        Kind = NotificationKind.SpotlightDecision, InstitutionId = institutionId,
+        MemberId = memberId, Approved = approved, Reason = reason, SpotlightId = spotlightId,
+    };
+
+    /// <summary>Fanned out to everyone except the celebrant — one call per celebrant when several members share a birthday, each pointing at that member's own shoutout thread.</summary>
+    public static NotificationRequest BirthdayShoutout(string institutionId, string celebrantMemberId, string celebrantName, string threadId) => new()
+    {
+        Kind = NotificationKind.BirthdayShoutout, InstitutionId = institutionId,
+        MemberId = celebrantMemberId, MemberName = celebrantName, ThreadId = threadId,
     };
 
     public static NotificationRequest Email(SendEmailRequest request, string context) => new()

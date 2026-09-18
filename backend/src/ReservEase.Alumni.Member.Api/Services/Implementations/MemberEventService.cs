@@ -3,11 +3,14 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.Temporal.Sdk;
 
 namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 
@@ -17,6 +20,7 @@ public class MemberEventService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Community> communityRepo,
+    ITemporalClientProvider temporalProvider,
     ILogger<MemberEventService> logger) : IMemberEventService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
@@ -149,6 +153,9 @@ public class MemberEventService(
                 ev.RsvpCount = await rsvpRepo.CountAsync(r => r.EventId == request.EventId && r.Status == "Confirmed");
                 await eventRepo.UpdateAsync(ev);
 
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.EventRsvpConfirmed(ev.InstitutionId, member.Id, ev.Id, ev.Title), logger);
+
                 return new object().ToOkApiResponse("RSVP re-confirmed");
             }
 
@@ -165,6 +172,9 @@ public class MemberEventService(
 
             ev.RsvpCount = await rsvpRepo.CountAsync(r => r.EventId == request.EventId && r.Status == "Confirmed");
             await eventRepo.UpdateAsync(ev);
+
+            await temporalProvider.EnqueueNotificationAsync(
+                NotificationRequest.EventRsvpConfirmed(ev.InstitutionId, member.Id, ev.Id, ev.Title), logger);
 
             logger.LogInformation("RSVP confirmed for member {MemberId}, event {EventId}", member.Id, request.EventId);
             return new object().ToCreatedApiResponse("RSVP confirmed");

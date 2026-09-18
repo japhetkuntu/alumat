@@ -26,6 +26,7 @@ public class EventService(
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     IRedisService<PublicContentCacheConfig> publicCache,
+    IInstitutionAuditLogService auditLog,
     ILogger<EventService> logger) : IEventService
 {
     private Task InvalidatePublicEventsCacheAsync()
@@ -274,6 +275,7 @@ public class EventService(
 
             await eventRepo.RemoveAsync(ev);
             await InvalidatePublicEventsCacheAsync();
+            await auditLog.LogAsync(admin, "Event Deleted", ev.Title);
             logger.LogInformation("Event {EventId} deleted", eventId);
             return new object().ToOkApiResponse("Event deleted");
         }

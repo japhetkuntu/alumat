@@ -77,6 +77,7 @@ builder.Services.AddScoped<IMentorshipService, MentorshipService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IInstitutionStaffService, InstitutionStaffService>();
 builder.Services.AddScoped<IInstitutionSpotlightService, InstitutionSpotlightService>();
+builder.Services.AddScoped<IInstitutionAuditLogService, InstitutionAuditLogService>();
 builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IBroadcastService, BroadcastService>();

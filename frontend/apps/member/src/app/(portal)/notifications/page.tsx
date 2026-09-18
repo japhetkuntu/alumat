@@ -134,9 +134,9 @@ function NotifRow({
 const FILTER_TABS = ["All", "Unread", "Jobs", "Events", "Fundraisers", "Contributions"] as const;
 const TAB_TYPES: Record<string, string[]> = {
   Jobs:          ["JobAlert"],
-  Events:        ["EventReminder"],
+  Events:        ["EventReminder", "EventRsvpConfirmed"],
   Fundraisers:   ["CampaignAlert"],
-  Contributions: ["ContributionConfirmed", "ContributionRejected"],
+  Contributions: ["ContributionConfirmed", "ContributionRejected", "MembershipReminder"],
 };
 
 /* ─────────────────────────────────────────────────────────────────────────

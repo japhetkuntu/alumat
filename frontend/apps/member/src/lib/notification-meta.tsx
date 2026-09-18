@@ -1,6 +1,6 @@
 import {
   Bell, Briefcase, Megaphone, Calendar, Star, CreditCard, MessageSquare,
-  Radio, GraduationCap, Package,
+  Radio, GraduationCap, Package, UserCheck, CalendarCheck, Wallet, Users, PartyPopper,
 } from "@alumni/ui";
 
 /**
@@ -29,6 +29,12 @@ export const TYPE_META: Record<string, {
   MentorshipRequestReceived:    { icon: GraduationCap, bg: "rgba(99,102,241,0.12)",  color: "#4f46e5", label: "Mentorship" },
   MentorshipRequestDecision:    { icon: GraduationCap, bg: "rgba(99,102,241,0.12)",  color: "#4f46e5", label: "Mentorship" },
   StoreDeliveryStatusUpdated:   { icon: Package,       bg: "rgba(217,119,6,0.12)",   color: "#b45309", label: "Order"      },
+  MemberStatusChanged:          { icon: UserCheck,     bg: "rgba(16,185,129,0.12)",  color: "#059669", label: "Account"    },
+  ReferralRegistered:           { icon: Users,         bg: "rgba(99,102,241,0.12)",  color: "#4f46e5", label: "Referral"   },
+  EventRsvpConfirmed:           { icon: CalendarCheck, bg: "rgba(245,158,11,0.12)",  color: "#d97706", label: "RSVP"       },
+  MembershipReminder:           { icon: Wallet,        bg: "rgba(220,38,38,0.12)",   color: "#dc2626", label: "Dues"       },
+  SpotlightDecision:            { icon: Star,          bg: "rgba(234,179,8,0.12)",   color: "#ca8a04", label: "Spotlight"  },
+  BirthdayShoutout:             { icon: PartyPopper,   bg: "rgba(236,72,153,0.12)",  color: "#db2777", label: "Birthday"   },
 };
 export const DEFAULT_TYPE_META = { icon: Bell, bg: "var(--brand-primary-100, var(--color-background-info))", color: "var(--primary)", label: "Notification" };
 

@@ -467,6 +467,7 @@ public static class EntityDtoExtensions
         Status = s.Status,
         FeaturedMonth = s.FeaturedMonth,
         CreatedAt = s.CreatedAt,
+        IsFeatured = s.IsFeatured,
         Type = s.Type,
         // The first celebrant is already MemberId/Member above — everyone
         // else in the group (a shared birthday) goes here.

@@ -21,6 +21,7 @@ public class JobService(
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
+    IInstitutionAuditLogService auditLog,
     ILogger<JobService> logger) : IJobService
 {
     public async Task<IApiResponse<PgPagedResult<JobDto>>> GetJobsAsync(JobFilter filter, AuthData admin)
@@ -178,6 +179,7 @@ public class JobService(
             }
 
             await jobRepo.RemoveAsync(job);
+            await auditLog.LogAsync(admin, "Job Deleted", job.Title);
             logger.LogInformation("Job {JobId} deleted", jobId);
             return new object().ToOkApiResponse("Job deleted");
         }

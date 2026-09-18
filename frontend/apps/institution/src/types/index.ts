@@ -504,9 +504,14 @@ export interface Spotlight {
   title: string;
   story: string;
   imageUrl?: string;
-  status: "Pending" | "Approved" | "Rejected";
+  status: "Pending" | "Approved" | "Rejected" | "Archived";
   featuredMonth?: string;
   createdAt: string;
+  /** True for the one spotlight an admin explicitly picked to show on the public site. */
+  isFeatured: boolean;
+  /** "Manual" (admin/self-submitted) or "Birthday" (system-generated). */
+  type: string;
+  coCelebrants: { memberId: string; name: string; profilePictureUrl?: string }[];
 }
 
 // ─── Notifications ───────────────────────────────────────────────────────────

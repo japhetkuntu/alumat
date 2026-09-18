@@ -14,6 +14,7 @@ public class ForumService(
     IAlumniPgRepository<ForumCategory> categoryRepo,
     IAlumniPgRepository<ForumThread> threadRepo,
     IAlumniPgRepository<Member> memberRepo,
+    IInstitutionAuditLogService auditLog,
     ILogger<ForumService> logger) : IForumService
 {
     public async Task<IApiResponse<PgPagedResult<ForumCategoryDto>>> GetCategoriesAsync(BaseFilter filter)
@@ -188,6 +189,7 @@ public class ForumService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Thread not found");
 
             await threadRepo.RemoveAsync(thread);
+            await auditLog.LogAsync(admin, "Forum Thread Deleted", thread.Title);
             logger.LogInformation("Thread {ThreadId} deleted by admin {AdminId}", threadId, admin.Id);
             return new object().ToOkApiResponse("Thread deleted");
         }

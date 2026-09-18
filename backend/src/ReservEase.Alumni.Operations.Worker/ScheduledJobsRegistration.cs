@@ -40,6 +40,12 @@ public static class ScheduledJobsRegistration
                 wf => wf.RunAsync(),
                 new WorkflowOptions { Id = "recurring-giving-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(24));
+
+        await EnsureScheduleAsync(client, logger, "membership-reminder-schedule",
+            ScheduleActionStartWorkflow.Create<MembershipReminderDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "membership-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(24));
     }
 
     private static async Task EnsureScheduleAsync(ITemporalClient client, ILogger logger, string scheduleId, ScheduleAction action, TimeSpan every)

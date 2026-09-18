@@ -22,6 +22,7 @@ public class NewsService(
     IStorageService storageService,
     ICurrentTenantService currentTenant,
     IRedisService<PublicContentCacheConfig> publicCache,
+    IInstitutionAuditLogService auditLog,
     ILogger<NewsService> logger) : INewsService
 {
     /// <summary>A post's audience (community/year-group) can only ever narrow it away from the public, institution-wide landing page — so any create/update/publish/delete is invalidated unconditionally rather than trying to first work out whether this particular post was ever public. Cheap, and never wrong.</summary>
@@ -272,6 +273,7 @@ public class NewsService(
 
             await newsRepo.RemoveAsync(post);
             await InvalidatePublicNewsCacheAsync();
+            await auditLog.LogAsync(admin, "News Post Deleted", post.Title);
             logger.LogInformation("Post {PostId} deleted", postId);
             return new object().ToOkApiResponse("Post deleted");
         }

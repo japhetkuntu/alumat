@@ -1297,6 +1297,36 @@ export async function rejectSpotlight(spotlightId: string, reason?: string): Pro
   return res.data.data!;
 }
 
+export async function archiveSpotlight(spotlightId: string): Promise<Spotlight> {
+  const res = await institutionClient.post<ApiResponse<Spotlight>>(`/spotlights/${spotlightId}/archive`);
+  return res.data.data!;
+}
+
+export async function featureSpotlight(spotlightId: string): Promise<Spotlight> {
+  const res = await institutionClient.post<ApiResponse<Spotlight>>(`/spotlights/${spotlightId}/feature`);
+  return res.data.data!;
+}
+
+export async function unfeatureSpotlight(spotlightId: string): Promise<Spotlight> {
+  const res = await institutionClient.post<ApiResponse<Spotlight>>(`/spotlights/${spotlightId}/unfeature`);
+  return res.data.data!;
+}
+
+// ── Audit log (SuperAdmin only) ───────────────────────────────────────────────
+
+export interface InstitutionAuditLogEntryItem {
+  id: string;
+  actor: string;
+  action: string;
+  target: string;
+  timestamp: string;
+}
+
+export async function getInstitutionAuditLog(params: { page?: number; pageSize?: number; search?: string }) {
+  const res = await institutionClient.get<ApiResponse<PagedResult<InstitutionAuditLogEntryItem>>>("/audit-log", { params });
+  return res.data.data!;
+}
+
 // ── In-app Notifications ────────────────────────────────────────────────────
 
 export async function getNotifications(page = 1, pageSize = 20): Promise<PagedResult<NotificationItem>> {
