@@ -72,6 +72,7 @@ builder.Services
     .AddWorkflow<DigestDispatchWorkflow>()
     .AddWorkflow<BirthdaySpotlightDispatchWorkflow>()
     .AddWorkflow<RecurringGivingWorkflow>()
+    .AddWorkflow<MembershipReminderDispatchWorkflow>()
     .AddScopedActivities<ScheduledJobsActivities>();
 
 // ContributionCallbackActivities/ScheduledJobsActivities enqueue notifications via

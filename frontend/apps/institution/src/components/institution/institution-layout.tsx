@@ -92,6 +92,7 @@ const baseNavItems = [
   { href: "/broadcast", label: "Broadcast", icon: Radio },
   { label: "Institution", isHeader: true },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/audit-log", label: "Audit Log", icon: ClipboardList },
   { href: "/support", label: "Support", icon: LifeBuoy },
 ];
 
@@ -131,7 +132,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       if (item.href === "/mentorship" || item.href === "/albums") {
         if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
-      if ((item.href === "/store" || item.href === "/services") && user?.role !== "SuperAdmin") return false;
+      if ((item.href === "/store" || item.href === "/services" || item.href === "/audit-log") && user?.role !== "SuperAdmin") return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
       if (featureKey && disabledFeatures.has(featureKey)) return false;
       return true;
@@ -141,9 +142,6 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       const peopleHeaderIndex = items.findIndex((item) => item.isHeader && item.label === "People");
       const insertAt = peopleHeaderIndex === -1 ? items.length : peopleHeaderIndex + 1;
       items.splice(insertAt, 0, { href: "/staff", label: "Institution Admins", icon: ShieldCheck });
-      // Only meaningful once there's more than one admin to watch — sits
-      // right after the admin list rather than buried under Settings.
-      items.splice(insertAt + 1, 0, { href: "/audit-log", label: "Audit Log", icon: ClipboardList });
     }
 
     // Drop any header whose group ended up with zero visible items (e.g. an
