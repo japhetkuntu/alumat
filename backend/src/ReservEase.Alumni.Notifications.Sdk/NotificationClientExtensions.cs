@@ -11,7 +11,9 @@ namespace ReservEase.Alumni.Notifications.Sdk;
 /// blocks its caller on Temporal being reachable, matching the actor's original contract:
 /// if Temporal is down, the notification is dropped and logged rather than failing
 /// whatever business operation triggered it (same trade-off the payment-callback webhook
-/// path already makes via ITemporalClientProvider.IsAvailable).
+/// path already makes via ITemporalClientProvider.IsAvailable). Starts a fresh, short-lived
+/// workflow execution per call (see NotificationDispatchWorkflow's own doc comment) rather
+/// than signaling one perpetual shared instance.
 /// </summary>
 public static class NotificationClientExtensions
 {
@@ -26,10 +28,9 @@ public static class NotificationClientExtensions
 
         try
         {
-            await provider.Client!.SignalWithStartAsync<INotificationDispatchWorkflow>(
-                wf => wf.RunAsync(null),
-                wf => wf.EnqueueAsync(request),
-                NotificationWorkflowId.Value,
+            await provider.Client!.StartOrAttachAsync<INotificationDispatchWorkflow>(
+                wf => wf.RunAsync(request),
+                NotificationWorkflowId.New(),
                 NotificationTaskQueues.Dispatch);
         }
         catch (Exception ex)

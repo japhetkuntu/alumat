@@ -4,9 +4,9 @@ namespace ReservEase.Alumni.Notifications.Sdk.Models;
 
 /// <summary>
 /// One flat envelope for every kind of notification the platform sends — the payload
-/// travels over a Temporal signal (see INotificationDispatchWorkflow.EnqueueAsync), so it
-/// carries entity IDs rather than full entities: NotificationDispatchWorkflow reloads
-/// fresh data via its own activities rather than trusting whatever was true at signal time.
+/// travels as this workflow's own start argument (see INotificationDispatchWorkflow.RunAsync),
+/// so it carries entity IDs rather than full entities: NotificationDispatchWorkflow reloads
+/// fresh data via its own activities rather than trusting whatever was true at start time.
 /// Wide by design (one record per Kind would need a discriminated/polymorphic payload,
 /// which Temporal's default JSON conversion doesn't need here) — always build one via the
 /// matching static factory below rather than setting fields by hand, so a caller can't

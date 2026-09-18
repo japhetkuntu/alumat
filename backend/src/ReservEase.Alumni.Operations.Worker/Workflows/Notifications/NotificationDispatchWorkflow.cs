@@ -8,12 +8,16 @@ using Temporalio.Workflows;
 namespace ReservEase.Alumni.Operations.Worker.Workflows.Notifications;
 
 /// <summary>
-/// One perpetual global instance (see NotificationWorkflowId) acting as a durable queue —
-/// the direct replacement for the Akka NotificationDispatcherActor singletons that used to
-/// live in each web API project. Callers never start-and-wait: they signal-with-start
-/// (NotificationClientExtensions.EnqueueNotificationAsync) and move on. ContinueAsNewSuggested
-/// is checked after every processed item (not just when the queue drains) so history stays
-/// bounded even under a sustained burst, carrying forward whatever's still queued.
+/// Durable processing of exactly one notification — a short-lived, request-scoped
+/// workflow execution (a fresh, uniquely-IDed run per call, see
+/// NotificationClientExtensions.EnqueueNotificationAsync), the same shape as every other
+/// workflow in this codebase (ProcessContributionCallbackWorkflow and friends). This
+/// replaces an earlier version that ran as one perpetual global queue instance — that
+/// design meant any change to this class's own branching logic broke Temporal's replay
+/// of whatever execution happened to still be open at deploy time (TMPRL1100
+/// nondeterminism errors). A short-lived execution never stays open long enough for that
+/// to matter, at the cost of no longer guaranteeing strict global ordering across every
+/// notification platform-wide — nothing in this domain relies on that.
 /// </summary>
 [Workflow("NotificationDispatch")]
 public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
@@ -22,46 +26,8 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
     /// PaymentCallbacks.Sdk's retired NotificationDispatcher.</summary>
     private const bool WhatsAppEnabled = false;
 
-    private readonly Queue<NotificationRequest> pending = new();
-
-    [WorkflowSignal("Enqueue")]
-    public Task EnqueueAsync(NotificationRequest request)
-    {
-        pending.Enqueue(request);
-        return Task.CompletedTask;
-    }
-
     [WorkflowRun]
-    public async Task RunAsync(List<NotificationRequest>? carryOver)
-    {
-        foreach (var r in carryOver ?? [])
-            pending.Enqueue(r);
-
-        while (true)
-        {
-            await Workflow.WaitConditionAsync(() => pending.Count > 0);
-            var request = pending.Dequeue();
-
-            try
-            {
-                await ProcessOneAsync(request);
-            }
-            catch (Exception ex)
-            {
-                // Activities already retry via their own ActivityOptions — this is a
-                // last-resort backstop so one malformed/failing item can never stall
-                // every notification queued behind it.
-                Workflow.Logger.LogError(ex, "Unhandled error processing notification {Kind} for institution {InstitutionId}", request.Kind, request.InstitutionId);
-            }
-
-            if (Workflow.ContinueAsNewSuggested)
-            {
-                throw Workflow.CreateContinueAsNewException(
-                    (NotificationDispatchWorkflow wf) => wf.RunAsync(pending.ToList()),
-                    new ContinueAsNewOptions());
-            }
-        }
-    }
+    public Task RunAsync(NotificationRequest request) => ProcessOneAsync(request);
 
     private Task ProcessOneAsync(NotificationRequest request) => request.Kind switch
     {
