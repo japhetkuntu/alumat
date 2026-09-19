@@ -222,17 +222,25 @@ public class NotificationDispatchActivities(
             return notifRepo.AddRangeAsync(notifications);
         }, "create notifications", institutionId);
 
+    /// <summary>
+    /// Returns the gateway's own success flag rather than discarding it — SmsService/
+    /// WhatsAppService/EmailService all swallow their own exceptions and report failure via
+    /// a bool/Success field instead of throwing, so a caller that ignores this return value
+    /// (as these activities previously did by declaring a bare Task) never learns a send
+    /// failed: Temporal sees the activity complete "successfully" regardless, and the
+    /// ExternalGateway RetryPolicy never gets a chance to trigger since nothing ever throws.
+    /// </summary>
     [Activity("NotificationDispatch.SendSms")]
-    public virtual Task SendSmsAsync(string phone, string message) =>
+    public virtual Task<bool> SendSmsAsync(string phone, string message) =>
         Wrap(() => smsService.SendSmsAsync(phone, message), "send SMS", phone);
 
     [Activity("NotificationDispatch.SendWhatsApp")]
-    public virtual Task SendWhatsAppAsync(string phone, string message) =>
+    public virtual Task<bool> SendWhatsAppAsync(string phone, string message) =>
         Wrap(() => whatsAppService.SendMessageAsync(phone, message), "send WhatsApp message", phone);
 
     [Activity("NotificationDispatch.SendEmail")]
-    public virtual Task SendEmailAsync(SendEmailRequest request, string context) =>
-        Wrap(() => emailService.SendEmailAsync(request), "send email", context);
+    public virtual Task<bool> SendEmailAsync(SendEmailRequest request, string context) =>
+        Wrap(async () => (await emailService.SendEmailAsync(request)).Success, "send email", context);
 
     private static async Task<T> Wrap<T>(Func<Task<T>> action, string what, string context)
     {

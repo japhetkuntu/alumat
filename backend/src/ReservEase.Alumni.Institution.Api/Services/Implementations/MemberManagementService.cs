@@ -404,7 +404,7 @@ public class MemberManagementService(
             await memberRepo.UpdateAsync(member);
 
             await temporalProvider.EnqueueNotificationAsync(
-                NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Active", null), logger);
+                NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Reinstated", null), logger);
             await SendMemberStatusEmailAsync(member, "Account Reinstated",
                 $"Good news, {member.FirstName} — your account has been reinstated. You can log back in now.",
                 "Go to your portal");

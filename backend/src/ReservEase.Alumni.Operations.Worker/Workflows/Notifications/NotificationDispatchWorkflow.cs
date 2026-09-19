@@ -63,7 +63,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
     }
 
     /// <summary>Fires SMS/WhatsApp for a recipient who opted in and has a phone on file —
-    /// mirrors both retired dispatchers' SendExternalAlertsAsync.</summary>
+    /// mirrors both retired dispatchers' SendExternalAlertsAsync. Both gateways swallow
+    /// their own exceptions and report failure via their returned bool instead of
+    /// throwing, so it's logged here rather than trusted as silent success.</summary>
     private static async Task SendExternalAlertsAsync(string? phone, bool smsAllowed, bool whatsAppAllowed, bool institutionSmsEnabled, string? institutionName, string message)
     {
         if (string.IsNullOrWhiteSpace(phone)) return;
@@ -71,10 +73,16 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         var prefixedMessage = string.IsNullOrWhiteSpace(institutionName) ? message : $"{institutionName}: {message}";
 
         if (smsAllowed && institutionSmsEnabled)
-            await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendSmsAsync(phone, prefixedMessage), NotificationActivityOptions.ExternalGateway);
+        {
+            var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendSmsAsync(phone, prefixedMessage), NotificationActivityOptions.ExternalGateway);
+            if (!sent) Workflow.Logger.LogWarning("SMS send reported failure for {Phone}", phone);
+        }
 
         if (WhatsAppEnabled && whatsAppAllowed)
-            await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendWhatsAppAsync(phone, message), NotificationActivityOptions.ExternalGateway);
+        {
+            var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendWhatsAppAsync(phone, message), NotificationActivityOptions.ExternalGateway);
+            if (!sent) Workflow.Logger.LogWarning("WhatsApp send reported failure for {Phone}", phone);
+        }
     }
 
     private async Task ProcessJobAlertAsync(NotificationRequest request)
@@ -356,7 +364,10 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
                 // emergency/announcement notice reaches everyone with a phone on file,
                 // unlike transactional notifications which respect NotificationPreference.SmsAlerts.
                 foreach (var r in recipients.Where(r => !string.IsNullOrWhiteSpace(r.Phone)))
-                    await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendSmsAsync(r.Phone!, smsMessage), NotificationActivityOptions.ExternalGateway);
+                {
+                    var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendSmsAsync(r.Phone!, smsMessage), NotificationActivityOptions.ExternalGateway);
+                    if (!sent) Workflow.Logger.LogWarning("Broadcast SMS reported failure for {Phone}", r.Phone);
+                }
             }
         }
     }
@@ -449,12 +460,18 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
     }
 
     /// <summary>
-    /// Only members whose new status is "Active" (approved, or unbanned) can
-    /// actually log in to see an in-app row — everyone else (rejected/
-    /// blocked/banned) is reached by SMS/WhatsApp only here; the caller
-    /// (MemberManagementService) separately sends an email for every
+    /// Only members whose new status is "Active"/"Reinstated" (approved, or
+    /// unbanned) can actually log in to see an in-app row — everyone else
+    /// (rejected/blocked/banned) is reached by SMS/WhatsApp only here; the
+    /// caller (MemberManagementService) separately sends an email for every
     /// transition, since email is the one channel that reaches a member
     /// regardless of whether they can currently sign in.
+    ///
+    /// "Reinstated" is a distinct NewStatus from "Active" purely for this
+    /// switch's benefit — UnbanMemberAsync still persists Member.Status as
+    /// "Active" in the DB, but tells the notification pipeline "Reinstated"
+    /// so an unbanned member doesn't get told "You're Approved!" as if they
+    /// were a brand-new registrant.
     /// </summary>
     private async Task ProcessMemberStatusChangedAsync(NotificationRequest request)
     {
@@ -464,6 +481,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             "Active" => ("Welcome — You're Approved!", string.IsNullOrWhiteSpace(request.MemberFirstName)
                 ? "Your membership has been approved. Welcome aboard!"
                 : $"Welcome, {request.MemberFirstName} — your membership has been approved. You now have full access to the portal."),
+            "Reinstated" => ("Account Reinstated", string.IsNullOrWhiteSpace(request.MemberFirstName)
+                ? "Your account has been reinstated. You can log back in now."
+                : $"Good news, {request.MemberFirstName} — your account has been reinstated. You can log back in now."),
             "Suspended" => ("Registration Not Approved", string.IsNullOrWhiteSpace(request.Reason)
                 ? "Your registration was not approved this time. You're welcome to register again."
                 : $"Your registration was not approved. Reason: {request.Reason}. You're welcome to register again."),
@@ -474,7 +494,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             _ => ("Account Status Updated", "Your account status has been updated."),
         };
 
-        if (request.NewStatus == "Active")
+        if (request.NewStatus is "Active" or "Reinstated")
         {
             var notification = new Notification
             {
@@ -605,9 +625,11 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 
     private async Task ProcessEmailAsync(NotificationRequest request)
     {
-        await Workflow.ExecuteActivityAsync(
-            (NotificationDispatchActivities a) => a.SendEmailAsync(request.EmailRequest!, request.EmailContext ?? "notification-dispatch"),
+        var context = request.EmailContext ?? "notification-dispatch";
+        var sent = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.SendEmailAsync(request.EmailRequest!, context),
             NotificationActivityOptions.ExternalGateway);
+        if (!sent) Workflow.Logger.LogWarning("Email send reported failure ({Context})", context);
     }
 
     private async Task SendMemberExternalAlertsIfEligibleAsync(string memberId, InstitutionContactInfo? institution, string message)
