@@ -71,7 +71,9 @@ function GoogleSignInButton({ portal }: { portal: "member" | "institution" | "pl
   // via their institution's subdomain must still be sent to the base domain
   // for the Google Identity Services SDK to accept the origin.
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
-  const bridgeUrl = baseDomain ? `https://${baseDomain}/google-auth` : undefined;
+  const bridgeUrl = baseDomain
+    ? `${baseDomain.startsWith("localhost") ? "http" : "https"}://${baseDomain}/google-auth`
+    : undefined;
   const [origin, setOrigin] = useState("");
   useEffect(() => { setOrigin(window.location.origin); }, []);
   const { data: theme } = useGoogleBridgeTheme();

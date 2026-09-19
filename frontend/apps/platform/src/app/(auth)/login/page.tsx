@@ -43,7 +43,9 @@ function GoogleSignInButton() {
   // Always the fixed base domain, never this portal's own subdomain — that's
   // the one origin actually registered with Google.
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
-  const bridgeUrl = baseDomain ? `https://${baseDomain}/google-auth` : undefined;
+  const bridgeUrl = baseDomain
+    ? `${baseDomain.startsWith("localhost") ? "http" : "https"}://${baseDomain}/google-auth`
+    : undefined;
   const [origin, setOrigin] = useState("");
   useEffect(() => { setOrigin(window.location.origin); }, []);
   if (!bridgeUrl || !origin) return null;

@@ -27,9 +27,13 @@ import { AuthMobileBrand } from "@/components/member/auth-mobile-brand";
 import { buildGoogleBridgeUrl, useGoogleBridgeTheme } from "@/lib/google-bridge-theme";
 
 // Always the fixed base domain, never this institution's own subdomain —
-// that's the one origin actually registered with Google.
+// that's the one origin actually registered with Google. localhost never
+// serves HTTPS in local dev, so forcing https:// there would 404/fail the
+// TLS handshake outright — only real (non-localhost) domains get it.
 const GOOGLE_BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN;
-const GOOGLE_AUTH_URL = GOOGLE_BASE_DOMAIN ? `https://${GOOGLE_BASE_DOMAIN}/google-auth` : undefined;
+const GOOGLE_AUTH_URL = GOOGLE_BASE_DOMAIN
+  ? `${GOOGLE_BASE_DOMAIN.startsWith("localhost") ? "http" : "https"}://${GOOGLE_BASE_DOMAIN}/google-auth`
+  : undefined;
 
 // Dev-only: lets a local build reach a specific institution without real
 // wildcard-subdomain DNS (see TenantResolutionMiddleware / X-Institution-Slug).
