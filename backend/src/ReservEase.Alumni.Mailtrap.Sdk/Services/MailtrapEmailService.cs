@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -342,14 +343,44 @@ public class MailtrapEmailService(
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Every email now goes through NotificationDispatchWorkflow (see
+    /// NotificationDispatchActivities.SendEmailAsync), which means SendEmailRequest —
+    /// TemplateVariables included — round-trips through Temporal's default System.Text.Json
+    /// payload converter twice (workflow start args, then the activity call). Since
+    /// TemplateVariables is typed `object`, the original anonymous object callers build
+    /// (e.g. `new { first_name, reset_url }`) can never be reconstructed on the other side —
+    /// it arrives here as a boxed JsonElement instead. A plain reflection walk over that
+    /// JsonElement's public properties used to hit its `Item[int]` indexer and throw
+    /// TargetParameterCountException (GetValue with no index args), silently failing every
+    /// templated email. Handle JsonElement explicitly; keep the reflection path as a
+    /// fallback for callers/tests that still pass a live POCO directly.
+    /// </summary>
     private static Dictionary<string, string> ExtractVariables(object templateVariables)
     {
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (templateVariables is null) return dict;
 
+        if (templateVariables is JsonElement { ValueKind: JsonValueKind.Object } element)
+        {
+            foreach (var prop in element.EnumerateObject())
+            {
+                var text = prop.Value.ValueKind switch
+                {
+                    JsonValueKind.String => prop.Value.GetString(),
+                    JsonValueKind.Null or JsonValueKind.Undefined => null,
+                    _ => prop.Value.GetRawText(),
+                };
+                if (text is not null)
+                    dict[prop.Name] = text;
+            }
+            return dict;
+        }
+
         foreach (var prop in templateVariables.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
+            if (prop.GetIndexParameters().Length > 0) continue;
             var value = prop.GetValue(templateVariables);
             if (value is not null)
                 dict[prop.Name] = value.ToString() ?? string.Empty;

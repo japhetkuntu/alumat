@@ -122,24 +122,45 @@ function GoogleAuthBridgeContent() {
     }
 
     setStatus("signing-in");
+    let res: Response;
     try {
-      const res = await fetch(`${returnUrl}/api/v1/auth/google`, {
+      res = await fetch(`${returnUrl}/api/v1/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       });
-      const body = await res.json();
-      if (!res.ok || !body?.data?.user || !body?.data?.tokens) {
-        setStatus("error");
-        setError(body?.message || "Google sign-in failed. Please try again.");
-        return;
-      }
-      const payload = encodeURIComponent(btoa(JSON.stringify({ user: body.data.user, tokens: body.data.tokens })));
-      window.location.href = `${returnUrl}/login#auth=${payload}`;
-    } catch {
+    } catch (err) {
+      // A genuine network-level failure — the request never got a response at
+      // all (DNS, TLS, CORS preflight rejection, connection refused/timeout).
+      console.error("Google sign-in: fetch to", returnUrl, "failed", err);
       setStatus("error");
       setError("Could not reach the server. Please try again.");
+      return;
     }
+
+    // The request DID reach something — but that something might be nginx
+    // returning an HTML error page (502/404) rather than the API, which
+    // res.json() can't parse. Read as text first so a non-JSON response
+    // shows an accurate message instead of being lumped in with the "could
+    // not reach the server" case above, which used to swallow this too.
+    const rawBody = await res.text();
+    let body: { message?: string; data?: { user?: unknown; tokens?: unknown } } | null = null;
+    try {
+      body = rawBody ? JSON.parse(rawBody) : null;
+    } catch (err) {
+      console.error("Google sign-in: non-JSON response from", returnUrl, "status", res.status, "body:", rawBody.slice(0, 500), err);
+      setStatus("error");
+      setError(`Unexpected response from the server (HTTP ${res.status}). Please try again.`);
+      return;
+    }
+
+    if (!res.ok || !body?.data?.user || !body?.data?.tokens) {
+      setStatus("error");
+      setError(body?.message || "Google sign-in failed. Please try again.");
+      return;
+    }
+    const payload = encodeURIComponent(btoa(JSON.stringify({ user: body.data.user, tokens: body.data.tokens })));
+    window.location.href = `${returnUrl}/login#auth=${payload}`;
   }, [returnUrl, mode]);
 
   useEffect(() => {
