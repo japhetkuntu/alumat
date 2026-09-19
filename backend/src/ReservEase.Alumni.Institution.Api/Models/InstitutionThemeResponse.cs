@@ -12,4 +12,7 @@ public record InstitutionThemeResponse(
     string? PortalTitle,
     string? AuthHeadline,
     string? AuthSubtext,
-    List<string> DisabledFeatures);
+    List<string> DisabledFeatures,
+    string OrganizationType,
+    string? CohortLabel,
+    string? CohortLabelPlural);

@@ -24,4 +24,7 @@ public record InstitutionThemeResponse(
     List<LandingPageStory> LandingPageStories,
     NewsBanner? NewsBanner,
     List<string> HeroImageUrls,
-    string? HeroHeadline);
+    string? HeroHeadline,
+    string OrganizationType,
+    string? CohortLabel,
+    string? CohortLabelPlural);

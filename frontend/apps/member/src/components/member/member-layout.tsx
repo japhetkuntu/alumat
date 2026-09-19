@@ -122,6 +122,11 @@ interface NavThemeData {
   iconUrl?: string | null;
   /** Institution-wide SMS switch — a real per-message cost. Defaults to true when absent (older cached responses). */
   smsNotificationsEnabled?: boolean;
+  /** "Alumni" (default) or "Community" — see backend Institution.OrganizationType. Community institutions hide graduation-year/cohort UI throughout. */
+  organizationType?: "Alumni" | "Community";
+  /** Alumni-only relabeling of "Batch" — see backend Institution.CohortLabel. Null/absent falls back to "Batch"/"Batches". */
+  cohortLabel?: string | null;
+  cohortLabelPlural?: string | null;
 }
 
 /** Shared across Sidebar, MobileBottomNav, and the mobile header — react-query dedupes the fetch since they all use the same queryKey. Exported so other screens (e.g. Settings) can show the real institution name instead of a generic placeholder. */
@@ -146,7 +151,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
-  const brandName = navTheme?.displayName || "Alumni Portal";
+  const brandName = navTheme?.displayName || (navTheme?.organizationType === "Community" ? "Member Portal" : "Alumni Portal");
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const visibleGroups = navGroups
     .map((g) => ({
@@ -294,7 +299,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
   const { data: navTheme } = useNavTheme();
-  const brandName = navTheme?.displayName || "Alumni Portal";
+  const brandName = navTheme?.displayName || (navTheme?.organizationType === "Community" ? "Member Portal" : "Alumni Portal");
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
 
   useEffect(() => {

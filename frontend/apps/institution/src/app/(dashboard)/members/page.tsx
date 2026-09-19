@@ -23,6 +23,7 @@ import { TableSkeleton } from "@alumni/ui";
 import type { MemberStatus } from "@/types";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
 const CSV_HEADERS = ["firstName", "lastName", "email", "phone", "studentId", "graduationYear"] as const;
 const CSV_TEMPLATE = [
@@ -31,10 +32,16 @@ const CSV_TEMPLATE = [
   // Shows optional columns (phone, studentId) can be left blank — only firstName/lastName/email/graduationYear are required.
   `Ama,Owusu,ama@example.com,,,2019`,
 ].join("\n");
+// Community institutions have no graduation years — their template omits the column entirely.
+const CSV_TEMPLATE_COMMUNITY = [
+  CSV_HEADERS.filter((h) => h !== "graduationYear").join(","),
+  `Kwame,Mensah,kwame@example.com,+233241234567,ENG/20/0001`,
+  `Ama,Owusu,ama@example.com,,,`,
+].join("\n");
 
-function downloadCsvTemplate() {
+function downloadCsvTemplate(isCommunity: boolean) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([CSV_TEMPLATE], { type: "text/csv" }));
+  a.href = URL.createObjectURL(new Blob([isCommunity ? CSV_TEMPLATE_COMMUNITY : CSV_TEMPLATE], { type: "text/csv" }));
   a.download = "member-upload-template.csv";
   a.click();
 }
@@ -87,7 +94,7 @@ interface CsvParseResult {
   errors: string[];
 }
 
-function parseMembersCsv(text: string): CsvParseResult {
+function parseMembersCsv(text: string, isCommunity: boolean): CsvParseResult {
   const table = parseCsvText(text);
   if (table.length === 0) return { rows: [], errors: ["The file is empty."] };
 
@@ -98,7 +105,10 @@ function parseMembersCsv(text: string): CsvParseResult {
     if (field) columnFor[field] = i;
   });
 
-  const missing = (["firstName", "lastName", "email", "graduationYear"] as const).filter((f) => columnFor[f] === undefined);
+  const requiredColumns = isCommunity
+    ? (["firstName", "lastName", "email"] as const)
+    : (["firstName", "lastName", "email", "graduationYear"] as const);
+  const missing = requiredColumns.filter((f) => columnFor[f] === undefined);
   if (missing.length > 0) {
     return { rows: [], errors: [`Missing required column(s): ${missing.join(", ")}. Download the template to see the expected format.`] };
   }
@@ -114,12 +124,13 @@ function parseMembersCsv(text: string): CsvParseResult {
     const graduationYearRaw = get("graduationYear");
     const graduationYear = Number(graduationYearRaw);
 
-    if (!firstName || !lastName || !email || !graduationYearRaw || !Number.isFinite(graduationYear)) {
+    if (!firstName || !lastName || !email || (!isCommunity && (!graduationYearRaw || !Number.isFinite(graduationYear)))) {
       errors.push(`Row ${r + 1}: missing or invalid required field(s)`);
       continue;
     }
     rows.push({
-      firstName, lastName, email, graduationYear,
+      firstName, lastName, email,
+      graduationYear: graduationYearRaw && Number.isFinite(graduationYear) ? graduationYear : undefined,
       phone: get("phone") || undefined,
       studentId: get("studentId") || undefined,
     });
@@ -167,6 +178,9 @@ export default function AdminMembersPage() {
   });
   const pageSize = 25;
   const qc = useQueryClient();
+
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-members", search, statusFilter, page],
@@ -235,7 +249,7 @@ export default function AdminMembersPage() {
     setCsvFileName(file.name);
     setCsvParsed(null);
     const reader = new FileReader();
-    reader.onload = () => setCsvParsed(parseMembersCsv(String(reader.result ?? "")));
+    reader.onload = () => setCsvParsed(parseMembersCsv(String(reader.result ?? ""), isCommunity));
     reader.onerror = () => setCsvParsed({ rows: [], errors: ["Could not read that file."] });
     reader.readAsText(file);
   }
@@ -359,7 +373,7 @@ export default function AdminMembersPage() {
               <TableRow>
                 <TableHead>Member</TableHead>
                 <TableHead>Number</TableHead>
-                <TableHead>Class year</TableHead>
+                {!isCommunity && <TableHead>Class year</TableHead>}
                 <TableHead>Status</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Joined</TableHead>
@@ -368,9 +382,9 @@ export default function AdminMembersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton rows={8} cols={7} />
+                <TableSkeleton rows={8} cols={isCommunity ? 6 : 7} />
               ) : members.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No members found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isCommunity ? 6 : 7} className="text-center py-8 text-muted-foreground">No members found</TableCell></TableRow>
               ) : members.map((m) => (
                 <TableRow key={m.id} className={densityRowClass}>
                   <TableCell className={densityCellClass}>
@@ -390,7 +404,7 @@ export default function AdminMembersPage() {
                     </div>
                   </TableCell>
                   <TableCell className={`text-sm font-mono text-muted-foreground whitespace-nowrap ${densityCellClass}`}>{m.memberNumber ?? "—"}</TableCell>
-                  <TableCell className={`text-sm whitespace-nowrap ${densityCellClass}`}>{m.graduationYear}</TableCell>
+                  {!isCommunity && <TableCell className={`text-sm whitespace-nowrap ${densityCellClass}`}>{m.graduationYear}</TableCell>}
                   <TableCell className={`whitespace-nowrap ${densityCellClass}`}><Badge variant={statusVariant[m.status]}>{m.status}</Badge></TableCell>
                   <TableCell className={densityCellClass}>
                     <span className={cn("inline-flex items-center gap-1.5 text-[12px]", m.isEmailVerified ? "text-success" : "text-muted-foreground")}>
@@ -458,8 +472,12 @@ export default function AdminMembersPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span>{m.memberNumber ?? "—"}</span>
-                  <span>&middot;</span>
-                  <span>{m.graduationYear ? `Class of ${m.graduationYear}` : "—"}</span>
+                  {!isCommunity && (
+                    <>
+                      <span>&middot;</span>
+                      <span>{m.graduationYear ? `Class of ${m.graduationYear}` : "—"}</span>
+                    </>
+                  )}
                   <span>&middot;</span>
                   <span className={cn("inline-flex items-center gap-1", m.isEmailVerified ? "text-success" : "text-muted-foreground")}>
                     {m.isEmailVerified ? <MailCheck size={12} /> : <MailX size={12} />}
@@ -570,7 +588,7 @@ export default function AdminMembersPage() {
                 <p className="text-[13px] font-semibold">Not sure how to format your file?</p>
                 <p className="text-[11.5px] text-muted-foreground mt-0.5">Start from our template — it opens fine in Excel, Numbers, or Google Sheets. Fill it in and save as CSV.</p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={downloadCsvTemplate} className="shrink-0">
+              <Button type="button" variant="outline" size="sm" onClick={() => downloadCsvTemplate(isCommunity)} className="shrink-0">
                 <Download size={13} />
                 Get template
               </Button>
@@ -584,7 +602,9 @@ export default function AdminMembersPage() {
             >
               <Upload size={20} className="text-muted-foreground" />
               <p className="text-[13px] font-semibold">{csvFileName ?? "Click to choose a CSV file"}</p>
-              <p className="text-[11.5px] text-muted-foreground">Required columns: firstName, lastName, email, graduationYear. Optional: phone, studentId.</p>
+              <p className="text-[11.5px] text-muted-foreground">
+                Required columns: {(isCommunity ? ["firstName", "lastName", "email"] : ["firstName", "lastName", "email", "graduationYear"]).join(", ")}. Optional: phone, studentId.
+              </p>
               <input
                 type="file"
                 accept=".csv,text/csv"
@@ -648,10 +668,12 @@ export default function AdminMembersPage() {
               <Input type="email" value={addMemberForm.email} onChange={(e) => setAddMemberForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Graduation year</Label>
-                <Input type="number" placeholder="2024" value={addMemberForm.graduationYear} onChange={(e) => setAddMemberForm((f) => ({ ...f, graduationYear: e.target.value }))} />
-              </div>
+              {!isCommunity && (
+                <div className="space-y-1.5">
+                  <Label>Graduation year</Label>
+                  <Input type="number" placeholder="2024" value={addMemberForm.graduationYear} onChange={(e) => setAddMemberForm((f) => ({ ...f, graduationYear: e.target.value }))} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Mobile number</Label>
                 <PhoneInput value={addMemberForm.phone} onChange={(val) => setAddMemberForm((f) => ({ ...f, phone: val }))} />
@@ -670,7 +692,7 @@ export default function AdminMembersPage() {
                 !addMemberForm.firstName.trim() ||
                 !addMemberForm.lastName.trim() ||
                 !addMemberForm.email.trim() ||
-                !addMemberForm.graduationYear ||
+                (!isCommunity && !addMemberForm.graduationYear) ||
                 !addMemberForm.phone.trim()
               }
               onClick={() =>
@@ -678,7 +700,7 @@ export default function AdminMembersPage() {
                   firstName: addMemberForm.firstName.trim(),
                   lastName: addMemberForm.lastName.trim(),
                   email: addMemberForm.email.trim(),
-                  graduationYear: Number(addMemberForm.graduationYear),
+                  graduationYear: addMemberForm.graduationYear ? Number(addMemberForm.graduationYear) : undefined,
                   phone: addMemberForm.phone.trim(),
                   studentId: addMemberForm.studentId.trim() || undefined,
                 })

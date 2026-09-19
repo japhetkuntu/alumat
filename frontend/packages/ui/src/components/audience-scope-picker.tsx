@@ -24,6 +24,8 @@ export interface AudienceScopePickerProps {
   supportsCommunity: boolean;
   /** When set, the whole interactive control is replaced by one static message — e.g. for a ScopedAdmin who can't choose an audience. */
   restricted?: { reason: string };
+  /** True for Community-type institutions (no graduation years) — hides "Specific year groups" since there's nothing meaningful to pick. */
+  hideYearGroups?: boolean;
   className?: string;
 }
 
@@ -44,6 +46,7 @@ export function AudienceScopePicker({
   onYearGroupsChange,
   supportsCommunity,
   restricted,
+  hideYearGroups,
   className,
 }: AudienceScopePickerProps) {
   if (restricted) {
@@ -58,7 +61,7 @@ export function AudienceScopePicker({
   const options: { value: AudienceMode; label: string }[] = [
     { value: "everyone", label: "Everyone" },
     ...(supportsCommunity ? [{ value: "community" as const, label: "A specific community" }] : []),
-    { value: "yearGroups", label: "Specific year groups" },
+    ...(hideYearGroups ? [] : [{ value: "yearGroups" as const, label: "Specific year groups" }]),
   ];
 
   return (
@@ -96,7 +99,7 @@ export function AudienceScopePicker({
         />
       )}
 
-      {mode === "yearGroups" && (
+      {mode === "yearGroups" && !hideYearGroups && (
         <YearGroupPicker value={yearGroups} onChange={onYearGroupsChange} />
       )}
     </div>

@@ -51,7 +51,7 @@ const gradYears = Array.from(
 // password to collect (this account only ever signs in with Google), so the
 // password fields are dropped from validation entirely rather than just
 // hidden, which would otherwise still block submission.
-function buildSchema(requireStudentId: boolean, googleMode: boolean) {
+function buildSchema(requireStudentId: boolean, googleMode: boolean, collectGraduationYear: boolean) {
   const base = z.object({
     firstName: z.string().min(2, "First name is required"),
     lastName: z.string().min(2, "Last name is required"),
@@ -60,7 +60,9 @@ function buildSchema(requireStudentId: boolean, googleMode: boolean) {
       .min(9, "Enter a valid mobile number")
       .regex(/^[+0-9\s-]+$/, "Enter a valid mobile number"),
     studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
-    graduationYear: z.coerce.number().min(GRAD_YEAR_START).max(currentYear),
+    graduationYear: collectGraduationYear
+      ? z.coerce.number().min(GRAD_YEAR_START).max(currentYear)
+      : z.coerce.number().optional(),
     departmentId: z.string().optional(),
     program: z.string().optional(),
     password: googleMode ? z.string().optional() : z.string().min(8, "Password must be at least 8 characters"),
@@ -382,6 +384,7 @@ function RegisterForm() {
       const res = await publicMemberClient.get<{ data: {
         requireStudentId: boolean; promptMembershipActivationAtSignup: boolean;
         programOfStudyEnabled: boolean; programsOfStudy: string[];
+        organizationType: "Alumni" | "Community";
       } }>("/public/institution/theme");
       return res.data.data;
     },
@@ -391,13 +394,24 @@ function RegisterForm() {
   const requireStudentId = theme?.requireStudentId ?? true;
   const programOfStudyEnabled = theme?.programOfStudyEnabled ?? false;
   const programsOfStudy = theme?.programsOfStudy ?? [];
+  // Community institutions have no graduation years — skip the "Alumni
+  // information" sub-step entirely (see nextFromStep1/totalSteps below).
+  // Defaults to Alumni behavior while the theme is still loading.
+  const isCommunity = theme?.organizationType === "Community";
   const CUSTOM_PROGRAM_VALUE = "__custom__";
   const [programMode, setProgramMode] = useState<"select" | "custom">("select");
   // Opt-in per institution (default off) — most institutions don't want a
   // payment ask on the registration success screen before a member is even
   // approved. Defaults to false (not shown) until the real value loads.
   const promptMembershipActivation = theme?.promptMembershipActivationAtSignup ?? false;
-  const schema = useMemo(() => buildSchema(requireStudentId, !!googleIdToken), [requireStudentId, googleIdToken]);
+  const schema = useMemo(
+    () => buildSchema(requireStudentId, !!googleIdToken, !isCommunity),
+    [requireStudentId, googleIdToken, isCommunity],
+  );
+  const totalSteps = isCommunity ? 2 : 3;
+  // formSubStep stays 1|2|3 internally (Community orgs just skip 2); this is
+  // the position to actually display, so the progress UI never shows a gap.
+  const visibleSubStep = isCommunity && formSubStep === 3 ? 2 : formSubStep;
 
   const {
     register,
@@ -526,7 +540,11 @@ function RegisterForm() {
   /* ── Sub-step navigation ── */
   async function nextFromStep1() {
     const ok = await trigger(["firstName", "lastName", "email", "phone"]);
-    if (ok) setFormSubStep(2);
+    if (!ok) return;
+    // Community institutions skip the "Alumni information" sub-step entirely
+    // (formSubStep stays 1|2|3 internally; step 2's back button also returns
+    // here — see its onClick below).
+    setFormSubStep(isCommunity ? 3 : 2);
   }
   async function nextFromStep2() {
     const ok = await trigger(["studentId", "graduationYear"]);
@@ -540,7 +558,7 @@ function RegisterForm() {
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      <AuthMobileBrand fallbackTagline="Create your alumni account" />
+      <AuthMobileBrand fallbackTagline={isCommunity ? "Create your account" : "Create your alumni account"} />
 
       {/* Step indicator */}
       <StepIndicator step={step} />
@@ -553,9 +571,7 @@ function RegisterForm() {
           {/* Heading */}
           <div className="mb-6">
             <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
-              {formSubStep === 1 && "Step 1 of 3"}
-              {formSubStep === 2 && "Step 2 of 3"}
-              {formSubStep === 3 && "Step 3 of 3"}
+              Step {visibleSubStep} of {totalSteps}
             </p>
             <h1
               className="font-[family-name:var(--font-display)] mb-1"
@@ -574,13 +590,13 @@ function RegisterForm() {
 
           {/* Sub-step progress — minimal dots */}
           <div className="flex gap-1.5 mb-6">
-            {([1, 2, 3] as const).map((n) => (
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => (
               <div
                 key={n}
                 className={cn(
                   "h-1 rounded-full transition-all duration-300",
-                  n < formSubStep  ? "flex-1 bg-primary" :
-                  n === formSubStep ? "flex-[2] bg-primary/50" :
+                  n < visibleSubStep  ? "flex-1 bg-primary" :
+                  n === visibleSubStep ? "flex-[2] bg-primary/50" :
                                       "flex-1 bg-border",
                 )}
               />
@@ -815,7 +831,7 @@ function RegisterForm() {
                 </div>
                 <div className="flex gap-3 mt-1">
                   <Button type="button" variant="outline" className="flex-1 text-[14px] font-medium" style={{ height: 44 }}
-                    onClick={() => setFormSubStep(2)}>
+                    onClick={() => setFormSubStep(isCommunity ? 1 : 2)}>
                     <ArrowLeft size={14} className="mr-1.5" /> Back
                   </Button>
                   <Button type="submit" className="flex-[2] text-[14px] font-semibold" style={{ height: 44 }}

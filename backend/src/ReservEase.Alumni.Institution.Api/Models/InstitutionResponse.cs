@@ -34,6 +34,9 @@ public record InstitutionResponse(
     NewsBanner? NewsBanner,
     List<string> HeroImageUrls,
     string? HeroHeadline,
+    string OrganizationType,
+    string? CohortLabel,
+    string? CohortLabelPlural,
     string Status,
     // Shareable Member Portal URL for this institution — null if MemberPortalBaseDomain isn't configured.
     string? MemberPortalUrl,
@@ -97,6 +100,16 @@ public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool Re
 /// the list never needs to be exhaustive on day one.
 /// </summary>
 public record UpdateProgramOfStudyRequest(bool ProgramOfStudyEnabled, List<string> ProgramsOfStudy);
+
+/// <summary>
+/// Whether this institution is an alumni association (year-based cohorts,
+/// "Batch"/"Class of X" wording throughout) or a general Community (no
+/// graduation years — members self-organize via Communities instead).
+/// CohortLabel/CohortLabelPlural only apply when OrganizationType is Alumni;
+/// null falls back to "Batch"/"Batches". A structural setting, so gated
+/// SuperAdmin-only like Batch CRUD itself.
+/// </summary>
+public record UpdateOrganizationTypeRequest(string OrganizationType, string? CohortLabel, string? CohortLabelPlural);
 
 /// <summary>
 /// The institution's own social media profile URLs, shown as icon links in

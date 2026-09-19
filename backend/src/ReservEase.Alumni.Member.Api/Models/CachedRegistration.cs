@@ -8,7 +8,7 @@ public class CachedRegistration
     public string PasswordHash { get; set; } = string.Empty;
     public string? Phone { get; set; }
     public string? StudentId { get; set; }
-    public int GraduationYear { get; set; }
+    public int? GraduationYear { get; set; }
     public string? DepartmentId { get; set; }
     public string? Program { get; set; }
     public string Otp { get; set; } = string.Empty;

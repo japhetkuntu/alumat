@@ -2,7 +2,7 @@ namespace ReservEase.Alumni.Member.Api.Models;
 
 public record RegisterRequest(
     string FirstName, string LastName, string Email, string Password,
-    string Phone, string StudentId, int GraduationYear, string? DepartmentId,
+    string Phone, string? StudentId, int? GraduationYear, string? DepartmentId,
     string? ReferralCode = null, string? Program = null);
 
 /// <summary>
@@ -13,5 +13,5 @@ public record RegisterRequest(
 /// still comes from the form, same as normal registration.
 /// </summary>
 public record GoogleRegisterRequest(
-    string IdToken, string Phone, string StudentId, int GraduationYear, string? DepartmentId,
+    string IdToken, string Phone, string? StudentId, int? GraduationYear, string? DepartmentId,
     string? ReferralCode = null, string? Program = null);

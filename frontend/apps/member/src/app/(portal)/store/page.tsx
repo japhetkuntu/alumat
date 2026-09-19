@@ -14,6 +14,7 @@ import { getStoreProducts, checkoutStoreCart } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { useStoreCart, lineUnitPrice } from "@/hooks/use-store-cart";
 import { toast } from "sonner";
+import { useNavTheme } from "@/components/member/member-layout";
 
 function variantLabel(options?: Record<string, string>) {
   if (!options) return null;
@@ -42,6 +43,8 @@ export default function StorePage() {
   const liveProducts = isLoading ? undefined : products;
 
   const { cart, addToCart, updateQuantity, removeFromCart, cartTotal, cartCount } = useStoreCart(liveProducts);
+  const { data: navTheme } = useNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
 
   const checkoutMut = useMutation({
     mutationFn: () => {
@@ -64,8 +67,10 @@ export default function StorePage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <PageHeader
           eyebrow="Store"
-          title="Alumni store"
-          description="Buy branded merchandise and support the association. Delivery details are shown per item."
+          title={isCommunity ? "Store" : "Alumni store"}
+          description={isCommunity
+            ? "Buy branded merchandise and support the community. Delivery details are shown per item."
+            : "Buy branded merchandise and support the association. Delivery details are shown per item."}
         />
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/store/orders">

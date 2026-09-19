@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy,
-  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup,
+  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateOrganizationType,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
@@ -340,6 +340,21 @@ export default function BrandingSettingsPage() {
       updateMemberActivePolicy(institution?.memberActivePolicy ?? "DuesRequired", requireStudentId),
     onSuccess: () => {
       toast.success("Registration policy updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const [cohortLabel, setCohortLabel] = useState<string | null>(null);
+  const [cohortLabelPlural, setCohortLabelPlural] = useState<string | null>(null);
+  if (institution && cohortLabel === null && institution.cohortLabel) setCohortLabel(institution.cohortLabel);
+  if (institution && cohortLabelPlural === null && institution.cohortLabelPlural) setCohortLabelPlural(institution.cohortLabelPlural);
+
+  const organizationTypeMutation = useMutation({
+    mutationFn: ({ type, label, labelPlural }: { type: "Alumni" | "Community"; label?: string | null; labelPlural?: string | null }) =>
+      updateOrganizationType(type, label, labelPlural),
+    onSuccess: () => {
+      toast.success("Organization type updated");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -678,13 +693,13 @@ export default function BrandingSettingsPage() {
               <div className="pt-2 border-t border-border/40">
                 <p className="text-[13px] font-semibold">Member Portal content</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5 mb-3">
-                  Seen only by your alumni, at{" "}
+                  Seen only by your {institution?.organizationType === "Community" ? "members" : "alumni"}, at{" "}
                   <span className="font-mono">{institution?.memberPortalUrl?.replace(/^https?:\/\//, "") ?? "your member portal"}</span>.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Portal title</Label>
-                    <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder="Alumni Portal" />
+                    <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder={institution?.organizationType === "Community" ? "Member Portal" : "Alumni Portal"} />
                     <p className="text-[11.5px] text-muted-foreground">Browser tab title members see across every page of the Member Portal.</p>
                   </div>
                   <div className="space-y-1.5">
@@ -744,6 +759,73 @@ export default function BrandingSettingsPage() {
                   label="Require student ID at registration"
                   description="On the Member Portal's registration form: on, the student/alumni ID field becomes required; off, it stays optional."
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {!isScopedAdmin && (
+            <Card className="border-border/40 lg:col-span-2">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 size={16} className="text-primary" />
+                  <p className="font-semibold text-[15px]">Organization type</p>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-1 mb-3">
+                  Alumni institutions organize by graduation year (Batches, &quot;Class of X&quot;). A Community has no
+                  graduation years — members organize via Communities instead, and that year-based UI is hidden throughout the portal.
+                </p>
+                <div className="flex gap-2 mb-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={(institution?.organizationType ?? "Alumni") === "Alumni" ? "default" : "outline"}
+                    onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel, labelPlural: cohortLabelPlural })}
+                    disabled={organizationTypeMutation.isPending}
+                  >
+                    Alumni
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={institution?.organizationType === "Community" ? "default" : "outline"}
+                    onClick={() => organizationTypeMutation.mutate({ type: "Community" })}
+                    disabled={organizationTypeMutation.isPending}
+                  >
+                    Community
+                  </Button>
+                </div>
+                {(institution?.organizationType ?? "Alumni") === "Alumni" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Cohort label</Label>
+                      <Input
+                        value={cohortLabel ?? ""}
+                        onChange={(e) => setCohortLabel(e.target.value)}
+                        placeholder="Batch"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Cohort label (plural)</Label>
+                      <Input
+                        value={cohortLabelPlural ?? ""}
+                        onChange={(e) => setCohortLabelPlural(e.target.value)}
+                        placeholder="Batches"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel, labelPlural: cohortLabelPlural })}
+                        isLoading={organizationTypeMutation.isPending}
+                      >
+                        Save cohort wording
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

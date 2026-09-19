@@ -43,7 +43,10 @@ public class PublicController : DefaultController
             institution.InstitutionPortalTitle,
             institution.InstitutionAuthHeadline,
             institution.InstitutionAuthSubtext,
-            institution.DisabledFeatures);
+            institution.DisabledFeatures,
+            institution.OrganizationType,
+            institution.CohortLabel,
+            institution.CohortLabelPlural);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }

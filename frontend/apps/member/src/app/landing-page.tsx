@@ -15,6 +15,7 @@ import {
 import { Skeleton } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { ensureAbsoluteUrl } from "@alumni/ui";
 import { publicMemberClient } from "@/lib/api-client";
 import {
   JobsIllustration, MentorshipIllustration, DirectoryIllustration, FundraisingIllustration,
@@ -625,7 +626,8 @@ function EventCardSkeleton() {
 
 /** Business directory listing — logo, name, location, and an excerpt, the way a chamber-of-commerce page shows off its members. */
 function BusinessCard({ item }: { item: PublicBusinessItem }) {
-  const link = item.externalLinkUrl || item.websiteUrl;
+  const rawLink = item.externalLinkUrl || item.websiteUrl;
+  const link = rawLink ? ensureAbsoluteUrl(rawLink) : rawLink;
   return (
     <article className="card overflow-hidden h-full flex flex-col">
       <div className="relative overflow-hidden" style={{ aspectRatio: "16/9", background: "var(--muted)" }}>
@@ -955,11 +957,6 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
         <div className="absolute inset-x-0 bottom-0">
           <div className="section__inner--wide pb-10 sm:pb-14 pt-10">
-            <span className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[11px] font-bold"
-              style={{ background: "rgba(15,23,42,0.5)", color: "white", border: "1px solid rgba(255,255,255,0.18)" }}>
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "var(--brand-accent, var(--primary))" }} />
-              {STATS[0].end.toLocaleString()}{STATS[0].suffix} alumni already home
-            </span>
             <p className="text-[11px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>
               {content?.displayName || "Alumni Association"}
             </p>

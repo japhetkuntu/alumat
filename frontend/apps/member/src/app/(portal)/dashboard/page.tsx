@@ -474,10 +474,10 @@ function SpotlightPulse() {
       ) : (
         <Link href="/spotlights" className="block p-2.5 rounded-xl transition-colors hover:bg-secondary group">
           <div className="flex items-center gap-3">
-            <UserAvatar name={spotlight.memberName ?? "Alumnus"} src={spotlight.imageUrl} size="default" />
+            <UserAvatar name={spotlight.memberName ?? "Member"} src={spotlight.imageUrl} size="default" />
             <div className="min-w-0">
               <p className="text-[13.5px] font-semibold leading-snug group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
-                {spotlight.memberName ?? "Alumnus"}
+                {spotlight.memberName ?? "Member"}
               </p>
               {spotlight.memberGraduationYear && (
                 <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>Class of {spotlight.memberGraduationYear}</p>

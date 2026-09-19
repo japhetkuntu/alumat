@@ -19,6 +19,7 @@ import { getJobs, createJob, updateJob, deleteJob, getCommunities } from "@/lib/
 import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
@@ -65,6 +66,8 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
   const [form, setForm] = useState({ status: "Active", ...init });
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -94,6 +97,7 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
               yearGroups={form.yearGroups}
               onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
               supportsCommunity
+              hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience; this job will use your year group or community automatically." } : undefined}
             />
             <div className="space-y-2"><Label>Deadline (optional)</Label>

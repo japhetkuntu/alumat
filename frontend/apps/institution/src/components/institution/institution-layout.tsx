@@ -96,6 +96,32 @@ const baseNavItems = [
   { href: "/support", label: "Support", icon: LifeBuoy },
 ];
 
+interface InstitutionNavThemeData {
+  disabledFeatures: string[];
+  portalName?: string;
+  portalTitle?: string;
+  logoUrl?: string | null;
+  iconUrl?: string | null;
+  /** "Alumni" (default) or "Community" — see backend Institution.OrganizationType. Community institutions hide graduation-year/cohort UI throughout. */
+  organizationType?: "Alumni" | "Community";
+  /** Alumni-only relabeling of "Batch" — see backend Institution.CohortLabel. Null/absent falls back to "Batch"/"Batches". */
+  cohortLabel?: string | null;
+  cohortLabelPlural?: string | null;
+}
+
+/** Shared across the sidebar and any other screen (Members, Settings, composer pages) that needs this institution's org type/cohort wording — react-query dedupes the fetch since they all use the same queryKey. */
+export function useInstitutionNavTheme() {
+  return useQuery({
+    queryKey: ["institution-nav-theme"],
+    queryFn: async () => {
+      const res = await institutionClient.get<{ data: InstitutionNavThemeData }>("/public/institution/theme");
+      return res.data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+}
+
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -103,16 +129,9 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   // Real per-subdomain tenant resolution against the backend is future work.
   const tenantHost = useHostname();
 
-  const { data: theme } = useQuery({
-    queryKey: ["institution-nav-theme"],
-    queryFn: async () => {
-      const res = await institutionClient.get<{ data: { disabledFeatures: string[]; portalName?: string; portalTitle?: string; logoUrl?: string | null; iconUrl?: string | null } }>("/public/institution/theme");
-      return res.data.data;
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
+  const { data: theme } = useInstitutionNavTheme();
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
+  const isCommunity = theme?.organizationType === "Community";
   const portalBrandName = theme?.portalTitle || theme?.portalName || "Institution Portal";
   const brandMark = theme?.iconUrl || theme?.logoUrl;
 
@@ -133,6 +152,9 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
       if ((item.href === "/store" || item.href === "/services" || item.href === "/audit-log") && user?.role !== "SuperAdmin") return false;
+      // Community institutions have no graduation years — Batches has nothing
+      // to manage for them (they organize via Communities instead).
+      if (item.href === "/batches" && isCommunity) return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
       if (featureKey && disabledFeatures.has(featureKey)) return false;
       return true;
@@ -151,7 +173,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       const next = items[idx + 1];
       return !!next && !next.isHeader;
     });
-  }, [user?.role, disabledFeatures]);
+  }, [user?.role, disabledFeatures, isCommunity]);
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground w-[248px] select-none">

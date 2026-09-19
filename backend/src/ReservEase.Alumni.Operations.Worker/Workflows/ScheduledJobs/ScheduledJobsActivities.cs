@@ -302,7 +302,7 @@ public class ScheduledJobsActivities(
         if (jobs.Count > 0) sections.Add(BuildSection("New jobs", jobs));
         if (ev is not null) sections.Add(BuildSection("Upcoming event", [ev]));
         if (campaign is not null) sections.Add(BuildSection("Campaign closing soon", [campaign]));
-        if (spotlight is not null) sections.Add(BuildSection("Alumni spotlight", [spotlight]));
+        if (spotlight is not null) sections.Add(BuildSection("Member spotlight", [spotlight]));
 
         var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
 

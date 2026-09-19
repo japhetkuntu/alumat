@@ -15,6 +15,7 @@ import { FormSelect } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -61,6 +62,8 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
   const [form, setForm] = useState(init);
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -95,6 +98,7 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             yearGroups={form.yearGroups}
             onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
             supportsCommunity
+            hideYearGroups={isCommunity}
             restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned year group or community." } : undefined}
           />
           <div className="space-y-2"><Label>Content</Label>

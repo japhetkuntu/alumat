@@ -163,6 +163,12 @@ export interface InstitutionProfileResponse {
   settlementBankName?: string | null;
   settlementAccountNumber?: string | null;
   settlementAccountName?: string | null;
+  /** "Alumni" (default) — year-based cohorts via Batches. "Community" — no graduation years; members organize via Communities instead. */
+  organizationType: "Alumni" | "Community";
+  /** Alumni-only relabeling of "Batch" (e.g. "Class", "Cohort"). Null falls back to "Batch". */
+  cohortLabel?: string | null;
+  /** Plural form of cohortLabel (e.g. "Classes"). Null falls back to "Batches". */
+  cohortLabelPlural?: string | null;
 }
 
 export async function getInstitutionProfile(): Promise<InstitutionProfileResponse> {
@@ -226,6 +232,16 @@ export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired
 /** Program/Course of Study collection at registration — off by default. programsOfStudy is this institution's own dropdown list; members can still type a custom value when their program isn't listed. */
 export async function updateProgramOfStudy(programOfStudyEnabled: boolean, programsOfStudy: string[]): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/program-of-study", { programOfStudyEnabled, programsOfStudy });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** Alumni-vs-Community organization type + Alumni-only cohort label wording. A structural setting, SuperAdmin only. */
+export async function updateOrganizationType(organizationType: "Alumni" | "Community", cohortLabel?: string | null, cohortLabelPlural?: string | null): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/organization-type", { organizationType, cohortLabel, cohortLabelPlural });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -449,7 +465,7 @@ export interface ImportMemberItem {
   email: string;
   phone?: string;
   studentId?: string;
-  graduationYear: number;
+  graduationYear?: number;
   departmentId?: string;
   paidMembershipYears?: number[];
 }

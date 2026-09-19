@@ -18,6 +18,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { toast } from "sonner";
 import type { MemberStatus } from "@/types";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
 const statusVariant: Record<MemberStatus, "success" | "warning" | "destructive" | "secondary"> = {
   Active: "success",
@@ -60,6 +61,8 @@ export default function MemberDetailPage() {
     queryFn: getInstitutionProfile,
   });
   const duesRequired = institution?.memberActivePolicy !== "ApprovedOnly";
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-member", id] });
@@ -187,7 +190,7 @@ export default function MemberDetailPage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Personal information</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <InfoRow icon={<GraduationCap size={14} />} label="Graduation Year" value={String(member.graduationYear)} />
+            {!isCommunity && <InfoRow icon={<GraduationCap size={14} />} label="Graduation Year" value={String(member.graduationYear)} />}
             {member.program && <InfoRow icon={<BookOpen size={14} />} label="Program" value={member.program} />}
             <InfoRow icon={<Calendar size={14} />} label="Joined" value={formatDate(member.createdAt)} />
             {member.phone && <InfoRow icon={<Smartphone size={14} />} label="Phone" value={member.phone} />}

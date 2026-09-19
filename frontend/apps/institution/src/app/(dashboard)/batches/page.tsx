@@ -20,6 +20,7 @@ import {
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
 const payoutStatusVariant: Record<Batch["payoutStatus"], "neutral" | "warning" | "success" | "destructive"> = {
   None: "neutral",
@@ -97,19 +98,20 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
 }
 
 function BatchForm({
-  initial, onSave, onCancel, saving,
+  initial, onSave, onCancel, saving, cohortLabel,
 }: {
   initial?: Batch;
   onSave: (data: { name: string; year: number }) => void;
   onCancel: () => void;
   saving: boolean;
+  cohortLabel: string;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [year, setYear] = useState(initial ? String(initial.year) : String(new Date().getFullYear()));
 
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base">{initial ? "Edit batch" : "Add batch"}</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base">{initial ? `Edit ${cohortLabel.toLowerCase()}` : `Add ${cohortLabel.toLowerCase()}`}</CardTitle></CardHeader>
       <CardContent>
         <form
           className="space-y-4"
@@ -121,7 +123,7 @@ function BatchForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Batch of 2020" required />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`${cohortLabel} of 2020`} required />
             </div>
             <div className="space-y-2">
               <Label>Year</Label>
@@ -130,7 +132,7 @@ function BatchForm({
           </div>
           <div className="flex gap-3">
             <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">
-              {initial ? "Save changes" : "Create batch"}
+              {initial ? "Save changes" : `Create ${cohortLabel.toLowerCase()}`}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
@@ -156,6 +158,10 @@ export default function BatchesPage() {
     queryFn: getBatches,
   });
 
+  const { data: navTheme } = useInstitutionNavTheme();
+  const cohortLabel = navTheme?.cohortLabel || "Batch";
+  const cohortLabelPlural = navTheme?.cohortLabelPlural || "Batches";
+
   const createMut = useMutation({
     mutationFn: createBatch,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["batches"] }); setShowCreate(false); toast.success("Batch created"); },
@@ -180,14 +186,14 @@ export default function BatchesPage() {
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Batches</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">{cohortLabelPlural}</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
             The graduating-class year groups your members register into. Set your own list instead of a generic year range.
           </p>
         </div>
         {isSuperAdmin && (
           <Button onClick={() => setShowCreate(true)}>
-            <Plus size={16} />Add batch
+            <Plus size={16} />Add {cohortLabel.toLowerCase()}
           </Button>
         )}
       </header>
@@ -197,6 +203,7 @@ export default function BatchesPage() {
           onSave={(d) => createMut.mutate(d)}
           onCancel={() => setShowCreate(false)}
           saving={createMut.isPending}
+          cohortLabel={cohortLabel}
         />
       )}
 
@@ -206,12 +213,13 @@ export default function BatchesPage() {
           onSave={(d) => updateMut.mutate({ id: editingBatch.id, ...d, isActive: editingBatch.isActive })}
           onCancel={() => setEditingBatch(null)}
           saving={updateMut.isPending}
+          cohortLabel={cohortLabel}
         />
       )}
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
-          <b className="text-[13.5px]">All batches</b>
+          <b className="text-[13.5px]">All {cohortLabelPlural.toLowerCase()}</b>
           <span className="text-[12.5px] text-muted-foreground">{batches.filter((b) => b.isActive).length} active &middot; {batches.length} total</span>
         </div>
         <CardContent className="p-0">
@@ -229,7 +237,7 @@ export default function BatchesPage() {
               {isLoading ? (
                 <TableSkeleton rows={5} cols={5} />
               ) : batches.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No batches yet. Members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No {cohortLabelPlural.toLowerCase()} yet. Members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
               ) : batches.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.name}</TableCell>
@@ -276,7 +284,7 @@ export default function BatchesPage() {
 
       <ConfirmModal
         open={!!deleteTarget}
-        title="Delete this batch?"
+        title={`Delete this ${cohortLabel.toLowerCase()}?`}
         message={`Delete "${deleteTarget?.name ?? ""}"? This won't affect members already registered with this year.`}
         confirmLabel="Delete"
         variant="destructive"

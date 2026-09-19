@@ -25,6 +25,7 @@ import type { Campaign, CampaignStatus } from "@/types";
 import { ImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
 const statusVariant: Record<CampaignStatus, "success" | "info" | "secondary" | "warning"> = {
   Active: "success",
@@ -75,6 +76,8 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
   const f = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
   const manualPaymentsEnabled = useFeatureEnabled("ManualPayments");
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -112,6 +115,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             yearGroups={form.yearGroups}
             onYearGroupsChange={(years) => f("yearGroups", years)}
             supportsCommunity
+            hideYearGroups={isCommunity}
             restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This fundraiser will be restricted to your assigned year group or community." } : undefined}
           />
 

@@ -14,6 +14,7 @@ import { formatCurrency } from "@alumni/ui";
 import { getCampaigns, getReportSummary, exportReportCsv, type MemberReportExportFilters } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
 const MEMBER_STATUS_OPTIONS = [
   { value: "", label: "Any status" },
@@ -32,6 +33,8 @@ export default function AdminReportsPage() {
   const [memberProfession, setMemberProfession] = useState("");
   const [memberLocation, setMemberLocation] = useState("");
   const [exporting, setExporting] = useState<ExportEntity | null>(null);
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
 
   // Only these two feed anything on this page — a prior version also fetched
   // members/contributions/events/jobs (each just for a `pageSize: 1` count)
@@ -176,14 +179,18 @@ export default function AdminReportsPage() {
               <Label className="text-[11px] text-muted-foreground font-normal">Status</Label>
               <FormSelect value={memberStatusFilter} onValueChange={setMemberStatusFilter} options={MEMBER_STATUS_OPTIONS} placeholder="Any status" />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-[11px] text-muted-foreground font-normal">Year from</Label>
-              <Input type="number" value={memberYearFrom} onChange={(e) => setMemberYearFrom(e.target.value)} placeholder="e.g. 1980" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[11px] text-muted-foreground font-normal">Year to</Label>
-              <Input type="number" value={memberYearTo} onChange={(e) => setMemberYearTo(e.target.value)} placeholder="e.g. 1995" />
-            </div>
+            {!isCommunity && (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground font-normal">Year from</Label>
+                  <Input type="number" value={memberYearFrom} onChange={(e) => setMemberYearFrom(e.target.value)} placeholder="e.g. 1980" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground font-normal">Year to</Label>
+                  <Input type="number" value={memberYearTo} onChange={(e) => setMemberYearTo(e.target.value)} placeholder="e.g. 1995" />
+                </div>
+              </>
+            )}
             <div className="space-y-1.5">
               <Label className="text-[11px] text-muted-foreground font-normal">Profession contains</Label>
               <Input value={memberProfession} onChange={(e) => setMemberProfession(e.target.value)} placeholder="e.g. Healthcare" />

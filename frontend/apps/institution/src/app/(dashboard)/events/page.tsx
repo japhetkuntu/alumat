@@ -19,6 +19,7 @@ import { ImageUpload } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -79,6 +80,8 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
   const [form, setForm] = useState(init);
   const f = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -114,6 +117,7 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
               yearGroups={form.yearGroups}
               onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
               supportsCommunity
+              hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This event will be restricted to your assigned year group or community." } : undefined}
             />
             {showStatus && (

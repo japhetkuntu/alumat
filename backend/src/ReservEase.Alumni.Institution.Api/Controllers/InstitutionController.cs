@@ -197,6 +197,30 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Program of study settings updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>Alumni-vs-Community organization type + Alumni-only cohort label wording — see UpdateOrganizationTypeRequest.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/organization-type")]
+    [SwaggerOperation(Summary = "Update organization type and cohort label wording")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateOrganizationType([FromBody] UpdateOrganizationTypeRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        if (request.OrganizationType != OrganizationTypes.Alumni && request.OrganizationType != OrganizationTypes.Community)
+            return BadRequest(new ApiResponse<object> { Message = "Unrecognized organization type", Code = 400 });
+
+        institution.OrganizationType = request.OrganizationType;
+        institution.CohortLabel = request.CohortLabel?.Trim() is { Length: > 0 } label ? label : null;
+        institution.CohortLabelPlural = request.CohortLabelPlural?.Trim() is { Length: > 0 } plural ? plural : null;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Organization type updated", Code = 200, Data = ToDto(institution) });
+    }
+
     /// <summary>Set this institution's social media profile URLs, shown as icon links in the Member Portal's footer — see UpdateSocialLinksRequest.</summary>
     [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("me/social-links")]
@@ -298,6 +322,7 @@ public class InstitutionController(
             i.RequireStudentId, i.ProgramOfStudyEnabled, i.ProgramsOfStudy, i.SocialLinks, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
             i.EmailNotificationsEnabled, i.SmsNotificationsEnabled, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
+            i.OrganizationType, i.CohortLabel, i.CohortLabelPlural,
             i.Status, memberPortalUrl,
             i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName);
     }

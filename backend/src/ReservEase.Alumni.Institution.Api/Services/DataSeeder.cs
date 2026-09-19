@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
@@ -32,14 +33,20 @@ public static class DataSeeder
         var institution = await institutionRepo.GetOneAsync(i => i.Id == DefaultInstitutionId, ignoreQueryFilters: true);
         if (institution is null)
         {
+            var organizationType = seed["OrganizationType"] == OrganizationTypes.Community
+                ? OrganizationTypes.Community
+                : OrganizationTypes.Alumni;
+            var isCommunity = organizationType == OrganizationTypes.Community;
+
             institution = new InstitutionEntity
             {
                 Id = DefaultInstitutionId,
                 Name = seed["Name"] ?? "Demo Institution",
                 Slug = seed["Slug"] ?? "demo",
-                PortalName = seed["PortalName"] ?? "Alumni Portal",
-                Tagline = seed["Tagline"] ?? "Connecting alumni beyond graduation.",
-                ContactName = seed["ContactName"] ?? "Alumni Relations Office",
+                OrganizationType = organizationType,
+                PortalName = seed["PortalName"] ?? (isCommunity ? "Member Portal" : "Alumni Portal"),
+                Tagline = seed["Tagline"] ?? (isCommunity ? "Connecting members beyond the group chat." : "Connecting alumni beyond graduation."),
+                ContactName = seed["ContactName"] ?? (isCommunity ? "Member Relations Office" : "Alumni Relations Office"),
                 ContactEmail = seed["ContactEmail"] ?? "alumni.office@example.com",
                 SupportEmail = seed["SupportEmail"] ?? "support@example.com",
                 PrimaryColorHex = seed["PrimaryColorHex"] ?? "#0e7143",

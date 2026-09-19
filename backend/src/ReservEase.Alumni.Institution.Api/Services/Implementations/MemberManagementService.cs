@@ -7,6 +7,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Notifications.Sdk.Models;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -142,18 +143,23 @@ public class MemberManagementService(
     /// Member numbers are prefixed by the current institution's own slug
     /// (e.g. "GREENFIELD-2026-0001"), not a fixed string — this platform
     /// hosts any number of institutions, so the prefix has to identify
-    /// which one a member number belongs to.
+    /// which one a member number belongs to. Community-type institutions
+    /// have no meaningful graduation year (see registration's int?
+    /// GraduationYear ?? 0 sentinel), so their member numbers drop the year
+    /// segment entirely rather than showing a "-0-" artifact.
     /// </summary>
     private async Task<string> GetMemberNumberPrefixAsync(int? graduationYear)
     {
         string slug = "MEMBER";
+        var isCommunity = false;
         if (!string.IsNullOrEmpty(currentTenant.InstitutionId))
         {
             var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
             if (!string.IsNullOrWhiteSpace(institution?.Slug))
                 slug = institution.Slug.ToUpperInvariant();
+            isCommunity = institution?.OrganizationType == OrganizationTypes.Community;
         }
-        return $"{slug}-{graduationYear}-";
+        return isCommunity ? $"{slug}-" : $"{slug}-{graduationYear}-";
     }
 
     public async Task<IApiResponse<PgPagedResult<MemberListItem>>> GetMembersAsync(MemberListFilter filter, AuthData admin)
@@ -426,15 +432,24 @@ public class MemberManagementService(
             var institution = string.IsNullOrEmpty(currentTenant.InstitutionId)
                 ? null
                 : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var isCommunityOrg = institution?.OrganizationType == OrganizationTypes.Community;
 
             foreach (var item in request.Members)
             {
                 try
                 {
-                    // Not-yet-created — no Id to check community membership against, so this
-                    // is a batch/year-group check only (a ScopedAdmin scoped purely by
-                    // community, with no batch, can't bulk-import new members at all).
-                    if (!admin.CanModifyScopedItem(new List<int> { item.GraduationYear }, createdBy: null))
+                    // Not-yet-created — no Id to check community membership against. For
+                    // Alumni institutions this is a batch/year-group check only (a
+                    // ScopedAdmin scoped purely by community, with no batch, can't
+                    // bulk-import new members at all). For Community institutions there's
+                    // no year group to check at all, so a ScopedAdmin scoped by community
+                    // is authorized instead — consistent with IsMemberInScopeAsync's own
+                    // dual pathway.
+                    var authorized = isCommunityOrg
+                        ? admin.CanModifyScopedItem(itemYearGroups: null, createdBy: null,
+                            itemCommunityId: admin.CommunityIds is { Count: > 0 } ? admin.CommunityIds[0] : null)
+                        : admin.CanModifyScopedItem(new List<int> { item.GraduationYear ?? 0 }, createdBy: null);
+                    if (!authorized)
                     {
                         skipped++;
                         errors.Add($"{item.Email}: outside your assigned scope");
@@ -467,7 +482,7 @@ public class MemberManagementService(
                         Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
                         Phone = item.Phone,
                         StudentId = item.StudentId,
-                        GraduationYear = item.GraduationYear,
+                        GraduationYear = item.GraduationYear ?? 0,
                         DepartmentId = item.DepartmentId ?? string.Empty,
                         Status = "Active",
                         IsEmailVerified = true,

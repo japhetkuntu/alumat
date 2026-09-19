@@ -21,6 +21,14 @@ public class CreateInstitutionRequest
     [RegularExpression("^(ApprovedOnly|DuesRequired)$")]
     public string MemberActivePolicy { get; set; } = "ApprovedOnly";
 
+    /// <summary>
+    /// "Alumni" (default) or "Community" — see Institution.OrganizationType.
+    /// The institution's own SuperAdmin can change this later via Institution.Api's
+    /// me/organization-type endpoint; this just sets the starting value at onboarding.
+    /// </summary>
+    [RegularExpression("^(Alumni|Community)$")]
+    public string OrganizationType { get; set; } = "Alumni";
+
     // Branding (from the onboarding wizard's Branding step)
     public string? PortalName { get; set; }
     public string? SupportEmail { get; set; }
@@ -72,6 +80,7 @@ public record InstitutionDetailResponse(
     bool RequireStudentId, string MemberActivePolicy, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
     List<string> HeroImageUrls, string? HeroHeadline,
+    string OrganizationType, string? CohortLabel, string? CohortLabelPlural,
     string Status, int MemberCount,
     DateTime OnboardedAt, DateTime? TrialEndsAt,
     decimal PlatformFeePercentage, decimal? PlatformFeeFlatThreshold, decimal? PlatformFeeFlatAmount, string? PaystackSubaccountCode,

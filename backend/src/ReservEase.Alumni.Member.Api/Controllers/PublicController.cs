@@ -83,7 +83,10 @@ public class PublicController(
             institution.LandingPageStories,
             institution.NewsBanner,
             institution.HeroImageUrls,
-            institution.HeroHeadline);
+            institution.HeroHeadline,
+            institution.OrganizationType,
+            institution.CohortLabel,
+            institution.CohortLabelPlural);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }
@@ -228,7 +231,7 @@ public class PublicController(
 
             return items.Select(s => new PublicSpotlightItemResponse(
                 s.Id, s.Title, s.Story, s.ImageUrl ?? s.Member?.ProfilePictureUrl,
-                s.Member is { } m ? $"{m.FirstName} {m.LastName}".Trim() : "Alumni",
+                s.Member is { } m ? $"{m.FirstName} {m.LastName}".Trim() : "Member",
                 s.FeaturedMonth)).ToList();
         });
 

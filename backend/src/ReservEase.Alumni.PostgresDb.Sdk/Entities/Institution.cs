@@ -160,6 +160,26 @@ public class Institution : BaseEntity
     public DateTime? TrialEndsAt { get; set; }
     public DateTime OnboardedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// See <see cref="OrganizationTypes"/>. "Alumni" (default) — the platform's
+    /// original shape: year-based cohorts via Batch/GraduationYear/YearGroups.
+    /// "Community" — a non-alumni membership group with no graduation years;
+    /// cohort/year UI is hidden and members instead self-organize via the
+    /// existing Community/CommunityMembership system. Open string, not an
+    /// enum, so a third type needs no schema change.
+    /// </summary>
+    public string OrganizationType { get; set; } = OrganizationTypes.Alumni;
+
+    /// <summary>
+    /// Alumni-type-only relabeling of "Batch" (e.g. "Class", "Cohort", "Set")
+    /// to fit an institution's own culture. Null falls back to "Batch" — every
+    /// existing institution behaves identically to before this field existed.
+    /// </summary>
+    public string? CohortLabel { get; set; }
+
+    /// <summary>Plural form of <see cref="CohortLabel"/> (e.g. "Classes"). Null falls back to "Batches".</summary>
+    public string? CohortLabelPlural { get; set; }
+
     // ── Revenue & payment split ──────────────────────────────────────────
     /// <summary>
     /// The platform's cut of every successful online payment this institution

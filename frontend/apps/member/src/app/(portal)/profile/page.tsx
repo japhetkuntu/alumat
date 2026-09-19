@@ -140,7 +140,8 @@ export default function MemberProfilePage() {
   });
 
   const { data: navTheme } = useNavTheme();
-  const institutionName = navTheme?.displayName || "Alumni Member Portal";
+  const isCommunity = navTheme?.organizationType === "Community";
+  const institutionName = navTheme?.displayName || (isCommunity ? "Member Portal" : "Alumni Member Portal");
   const disabledFeatures = useDisabledFeatures();
   const digestEnabled = !disabledFeatures.has("Digest");
   const smsNotificationsEnabled = navTheme?.smsNotificationsEnabled ?? true;
@@ -347,7 +348,7 @@ export default function MemberProfilePage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto">
-      <PageHeader eyebrow="Account" title="Profile" description="Your profile, visible to fellow alumni, and how the portal works for you." />
+      <PageHeader eyebrow="Account" title="Profile" description={isCommunity ? "Your profile, visible to fellow members, and how the portal works for you." : "Your profile, visible to fellow alumni, and how the portal works for you."} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-5 lg:gap-6 mt-6 items-start">
 
@@ -361,7 +362,7 @@ export default function MemberProfilePage() {
               <User size={18} className="text-primary" />
               Identity
             </CardTitle>
-            <CardDescription>How you appear to fellow alumni</CardDescription>
+            <CardDescription>{isCommunity ? "How you appear to fellow members" : "How you appear to fellow alumni"}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center text-center gap-4">
@@ -411,9 +412,11 @@ export default function MemberProfilePage() {
                   {profile.email}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  <Badge variant="outline" className="text-[11px] font-semibold">
-                    Class of {profile.graduationYear}
-                  </Badge>
+                  {!isCommunity && (
+                    <Badge variant="outline" className="text-[11px] font-semibold">
+                      Class of {profile.graduationYear}
+                    </Badge>
+                  )}
                   <Badge variant={profile.status === "Active" ? "success" : "warning"} className="text-[11px] font-semibold">
                     {profile.status}
                   </Badge>
@@ -561,7 +564,8 @@ export default function MemberProfilePage() {
           </CardContent>
         </Card>
 
-        {/* ── School records ── */}
+        {/* ── School records — Alumni institutions only ── */}
+        {!isCommunity && (
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-175">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -689,6 +693,7 @@ export default function MemberProfilePage() {
             </form>
           </CardContent>
         </Card>
+        )}
 
         {/* ── Employment status ── */}
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
@@ -935,7 +940,7 @@ export default function MemberProfilePage() {
             <CardContent className="p-6 flex items-center justify-between h-full">
               <div>
                 <p className="text-sm font-bold">{institutionName}</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Alumni Member Portal</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">{isCommunity ? "Member Portal" : "Alumni Member Portal"}</p>
               </div>
               <div className="flex items-center gap-2">
                 <LinkIcon size={13} className="text-muted-foreground" />

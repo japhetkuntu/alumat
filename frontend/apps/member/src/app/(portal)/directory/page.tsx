@@ -17,6 +17,7 @@ import { cn } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
 import type { Member } from "@/types";
 import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
+import { useNavTheme } from "@/components/member/member-layout";
 
 const currentYear    = new Date().getFullYear();
 const GRAD_YEAR_START = 1952;
@@ -32,6 +33,8 @@ export default function MemberDirectoryPage() {
   const [selected,   setSelected]   = useState<Member | null>(null);
   const pageSize = 24;
   const vvHeight = useVisualViewportHeight();
+  const { data: navTheme } = useNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey:        ["member-directory", search, yearFilter, page],
@@ -53,7 +56,12 @@ export default function MemberDirectoryPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      <PageHeader title="Alumni directory" description="Find any old student in seconds: search by name, graduation year, or location, from local chapters to the diaspora." />
+      <PageHeader
+        title={isCommunity ? "Directory" : "Alumni directory"}
+        description={isCommunity
+          ? "Find any member in seconds: search by name or location, from local chapters to the diaspora."
+          : "Find any old student in seconds: search by name, graduation year, or location, from local chapters to the diaspora."}
+      />
 
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
@@ -70,16 +78,18 @@ export default function MemberDirectoryPage() {
             className="h-11 pl-9 text-[14px]"
           />
         </div>
-        <FormSelect
-          value={yearFilter || "__all__"}
-          onValueChange={v => { setYearFilter(v === "__all__" ? "" : v); setPage(1); }}
-          placeholder="All years"
-          className="w-full sm:w-48"
-          options={[
-            { value: "__all__", label: "All graduation years" },
-            ...years.map(y => ({ value: String(y), label: `Class of ${y}` })),
-          ]}
-        />
+        {!isCommunity && (
+          <FormSelect
+            value={yearFilter || "__all__"}
+            onValueChange={v => { setYearFilter(v === "__all__" ? "" : v); setPage(1); }}
+            placeholder="All years"
+            className="w-full sm:w-48"
+            options={[
+              { value: "__all__", label: "All graduation years" },
+              ...years.map(y => ({ value: String(y), label: `Class of ${y}` })),
+            ]}
+          />
+        )}
         {hasFilters && (
           <button
             onClick={clearFilters}
@@ -156,9 +166,11 @@ export default function MemberDirectoryPage() {
 
                 {/* Badges */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                  <Badge variant="secondary" className="text-[10.5px] font-semibold">
-                    Class of {m.graduationYear}
-                  </Badge>
+                  {!isCommunity && (
+                    <Badge variant="secondary" className="text-[10.5px] font-semibold">
+                      Class of {m.graduationYear}
+                    </Badge>
+                  )}
                   {m.departmentName && (
                     <Badge variant="outline" className="text-[10.5px] font-semibold truncate max-w-[110px]">
                       {m.departmentName}
@@ -221,7 +233,7 @@ export default function MemberDirectoryPage() {
                   className="text-[11px] font-semibold tracking-[0.1em] uppercase"
                   style={{ color: "var(--muted-foreground)" }}
                 >
-                  Alumni profile
+                  {isCommunity ? "Member profile" : "Alumni profile"}
                 </p>
                 <button
                   onClick={() => setSelected(null)}
@@ -250,9 +262,11 @@ export default function MemberDirectoryPage() {
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    <Badge variant="secondary" className="text-[10.5px] font-semibold">
-                      Class of {selected.graduationYear}
-                    </Badge>
+                    {!isCommunity && (
+                      <Badge variant="secondary" className="text-[10.5px] font-semibold">
+                        Class of {selected.graduationYear}
+                      </Badge>
+                    )}
                     {selected.departmentName && (
                       <Badge variant="outline" className="text-[10.5px] font-semibold">
                         {selected.departmentName}

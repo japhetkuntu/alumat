@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
@@ -12,6 +13,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 
 public static class PostgresExtensionService
 {
+    // Use a stable, application-specific advisory lock ID.
+  
     public static IServiceCollection AddAlumniPostgresSdk(
         this IServiceCollection services, IConfiguration config, string connectionName = "AlumniConnection")
     {
@@ -52,57 +55,203 @@ public static class PostgresExtensionService
     /// every attempt is logged, and exhausting all retries throws instead of letting
     /// startup continue into DataSeeder.
     /// </summary>
-    public static async Task ApplyMigrationsAsync(IServiceProvider serviceProvider)
+
+
+  
+
+    public static async Task ApplyMigrationsAsync(
+        IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(PostgresExtensionService));
+
+        var context =
+            scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
+
+        var logger =
+            scope.ServiceProvider
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(PostgresExtensionService));
 
         const int maxAttempts = 5;
+
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
             {
-                // Postgres has no "default admin database" to connect to and issue CREATE
-                // DATABASE from the way SQL Server has `master` — a session can only be
-                // opened against a database that already exists, so the OpenConnectionAsync
-                // below would fail outright against a not-yet-provisioned database.
-                // IRelationalDatabaseCreator manages its own connection (against Postgres's
-                // own default maintenance database) to check for and create ours first — it
-                // only creates the empty database, never tables, so MigrateAsync below still
-                // owns schema creation and migration-history tracking is unaffected.
-                var databaseCreator = context.GetService<IRelationalDatabaseCreator>();
-                if (!await databaseCreator.ExistsAsync())
-                {
-                    logger.LogInformation("Target database does not exist yet — creating it before migrating.");
-                    await databaseCreator.CreateAsync();
-                }
+                // Make sure AlumniDb exists.
+                await EnsureDatabaseExistsAsync(
+                    context,
+                    logger);
 
-                // The lock is session-level (tied to this connection) and released
-                // automatically when the connection closes, even if the process crashes
-                // mid-migration — no separate unlock bookkeeping needed on the failure path.
+                // Connect to AlumniDb.
                 await context.Database.OpenConnectionAsync();
+
                 try
                 {
-                    await context.Database.ExecuteSqlRawAsync($"SELECT pg_advisory_lock({MigrationLockId})");
+                    // Prevent multiple application instances from
+                    // running migrations at the same time.
+                    await context.Database.ExecuteSqlRawAsync(
+                        $"SELECT pg_advisory_lock({MigrationLockId});");
+
+                    logger.LogInformation(
+                        "Running EF Core database migrations...");
+
                     await context.Database.MigrateAsync();
+
+                    logger.LogInformation(
+                        "EF Core database migrations completed successfully.");
                 }
                 finally
                 {
                     await context.Database.CloseConnectionAsync();
                 }
+
                 return;
             }
             catch (Exception ex) when (attempt < maxAttempts)
             {
-                logger.LogWarning(ex, "Database migration attempt {Attempt}/{MaxAttempts} failed, retrying in 3s", attempt, maxAttempts);
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                logger.LogWarning(
+                    ex,
+                    "Database migration attempt {Attempt}/{MaxAttempts} failed. " +
+                    "Retrying in 3 seconds...",
+                    attempt,
+                    maxAttempts);
+
+                await Task.Delay(
+                    TimeSpan.FromSeconds(3));
             }
             catch (Exception ex)
             {
-                logger.LogCritical(ex, "Database migration failed after {MaxAttempts} attempts — aborting startup rather than seeding an unmigrated schema", maxAttempts);
+                logger.LogCritical(
+                    ex,
+                    "Database migration failed after {MaxAttempts} attempts. " +
+                    "Aborting application startup.",
+                    maxAttempts);
+
                 throw;
             }
         }
+    }
+
+    private static async Task EnsureDatabaseExistsAsync(
+        AlumniDbContext context,
+        ILogger logger)
+    {
+        var connectionString =
+            context.Database.GetConnectionString();
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "PostgreSQL connection string is not configured.");
+        }
+
+        var connectionBuilder =
+            new NpgsqlConnectionStringBuilder(connectionString);
+
+        // This is the database your application wants to use.
+        var targetDatabaseName =
+            connectionBuilder.Database;
+
+        if (string.IsNullOrWhiteSpace(targetDatabaseName))
+        {
+            throw new InvalidOperationException(
+                "Database name is missing from the PostgreSQL connection string.");
+        }
+
+        logger.LogInformation(
+            "Checking whether database {DatabaseName} exists...",
+            targetDatabaseName);
+
+        /*
+         *  Managed PostgreSQL does not necessarily expose
+         * the conventional PostgreSQL "postgres" maintenance database.
+         *
+         * We therefore connect to the existing database provided by
+         * Managed PostgreSQL instead.
+         *
+         * Change this if your Managed PostgreSQL cluster uses a different
+         * existing database.
+         */
+        connectionBuilder.Database = "defaultdb";
+
+        // DigitalOcean Managed PostgreSQL requires SSL.
+        connectionBuilder.SslMode = SslMode.Require;
+
+        await using var connection =
+            new NpgsqlConnection(
+                connectionBuilder.ConnectionString);
+
+        await connection.OpenAsync();
+
+        logger.LogInformation(
+            "Connected to PostgreSQL maintenance database.");
+
+        // ---------------------------------------------------------
+        // Check whether target database already exists
+        // ---------------------------------------------------------
+
+        await using (var checkCommand =
+                     connection.CreateCommand())
+        {
+            checkCommand.CommandText = """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM pg_database
+                    WHERE datname = @databaseName
+                );
+                """;
+
+            checkCommand.Parameters.AddWithValue(
+                "databaseName",
+                targetDatabaseName);
+
+            var result =
+                await checkCommand.ExecuteScalarAsync();
+
+            var exists =
+                result is bool value && value;
+
+            if (exists)
+            {
+                logger.LogInformation(
+                    "Database {DatabaseName} already exists.",
+                    targetDatabaseName);
+
+                return;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Create target database
+        // ---------------------------------------------------------
+
+        logger.LogInformation(
+            "Database {DatabaseName} does not exist. Creating it...",
+            targetDatabaseName);
+
+        /*
+         * PostgreSQL parameters cannot be used for database
+         * identifiers, so the identifier needs to be quoted.
+         *
+         * Escape any existing double quotes to prevent malformed SQL.
+         */
+        var quotedDatabaseName =
+            "\"" +
+            targetDatabaseName.Replace("\"", "\"\"") +
+            "\"";
+
+        await using (var createCommand =
+                     connection.CreateCommand())
+        {
+            createCommand.CommandText =
+                $"CREATE DATABASE {quotedDatabaseName};";
+
+            await createCommand.ExecuteNonQueryAsync();
+        }
+
+        logger.LogInformation(
+            "Database {DatabaseName} created successfully.",
+            targetDatabaseName);
     }
 }

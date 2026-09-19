@@ -81,7 +81,7 @@ public class MailtrapEmailService(
         if (config.TemplateSubjects.TryGetValue(templateId, out var subject))
             return subject;
 
-        var brand = string.IsNullOrWhiteSpace(config.DefaultMessageSource.Name) ? "Alumni Portal" : config.DefaultMessageSource.Name;
+        var brand = string.IsNullOrWhiteSpace(config.DefaultMessageSource.Name) ? "Member Portal" : config.DefaultMessageSource.Name;
 
         return templateId switch
         {
@@ -113,8 +113,8 @@ public class MailtrapEmailService(
     private async Task<string> RenderHtmlAsync(string templateId, Dictionary<string, string> variables)
     {
         if (!variables.ContainsKey("brand_name"))
-            variables["brand_name"] = string.IsNullOrWhiteSpace(config.DefaultMessageSource.Name) ? "Alumni Portal" : config.DefaultMessageSource.Name;
-        variables["brand_initial"] = char.ToUpperInvariant(variables["brand_name"].TrimStart().FirstOrDefault('A')).ToString();
+            variables["brand_name"] = string.IsNullOrWhiteSpace(config.DefaultMessageSource.Name) ? "Member Portal" : config.DefaultMessageSource.Name;
+        variables["brand_initial"] = char.ToUpperInvariant(variables["brand_name"].TrimStart().FirstOrDefault('M')).ToString();
 
         // Templates use plain hex values everywhere (no CSS custom properties —
         // most mail clients, Outlook especially, don't support them), so the
@@ -188,7 +188,7 @@ public class MailtrapEmailService(
     private static string BuildBrandMarkHtml(Dictionary<string, string> variables)
     {
         var logo = variables.GetValueOrDefault("brand_logo");
-        var brandName = Sanitize(variables.GetValueOrDefault("brand_name", "Alumni Portal"));
+        var brandName = Sanitize(variables.GetValueOrDefault("brand_name", "Member Portal"));
 
         // No margin baked in here — every template now places this inline in
         // a flex header row (mark beside the brand name) rather than stacked
@@ -283,7 +283,7 @@ public class MailtrapEmailService(
         sb.AppendLine("</style></head><body>");
         sb.AppendLine("<div class=\"wrapper\"><div class=\"card\">");
 
-        var brand = variables.TryGetValue("brand_name", out var b) ? b : "Alumni Portal";
+        var brand = variables.TryGetValue("brand_name", out var b) ? b : "Member Portal";
         sb.AppendLine("<div class=\"header\">");
         if (variables.TryGetValue("brand_logo", out var logo) && !string.IsNullOrWhiteSpace(logo))
             sb.AppendLine($"<img src=\"{Sanitize(logo)}\" alt=\"{Sanitize(brand)}\" width=\"40\" height=\"40\" style=\"width:40px;height:40px;border-radius:10px;object-fit:cover;margin:0 auto 10px;display:block\" />");

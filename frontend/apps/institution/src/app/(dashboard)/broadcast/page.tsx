@@ -57,6 +57,7 @@ export default function BroadcastPage() {
     staleTime: 60 * 1000,
   });
   const smsNotificationsEnabled = institution?.smsNotificationsEnabled ?? true;
+  const isCommunity = institution?.organizationType === "Community";
 
   const sendMut = useMutation({
     mutationFn: () => {
@@ -164,19 +165,23 @@ export default function BroadcastPage() {
 
           <div className="space-y-2">
             <Label>Audience filter</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={cn("grid grid-cols-1 gap-3", isCommunity ? "sm:grid-cols-1" : "sm:grid-cols-3")}>
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-muted-foreground font-normal">Status</Label>
                 <FormSelect value={status} onValueChange={setStatus} options={STATUS_OPTIONS} placeholder="Any status" />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground font-normal">Graduation year from</Label>
-                <Input type="number" value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} placeholder="e.g. 1980" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground font-normal">Graduation year to</Label>
-                <Input type="number" value={yearTo} onChange={(e) => setYearTo(e.target.value)} placeholder="e.g. 1995" />
-              </div>
+              {!isCommunity && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground font-normal">Graduation year from</Label>
+                    <Input type="number" value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} placeholder="e.g. 1980" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground font-normal">Graduation year to</Label>
+                    <Input type="number" value={yearTo} onChange={(e) => setYearTo(e.target.value)} placeholder="e.g. 1995" />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
