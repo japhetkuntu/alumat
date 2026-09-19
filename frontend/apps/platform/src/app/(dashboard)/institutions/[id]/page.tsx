@@ -24,6 +24,8 @@ import { ColorPicker } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionMemberPolicy,
+  updateInstitutionAutoApproveMembers,
+  updateInstitutionOrganizationType,
   updateInstitutionFeatures, getFeatureCatalog,
   updateInstitutionPayments, getInstitutionRevenue, getInstitutionPayments, type PlatformPayment,
   getPaymentDetail, type PaymentDetail,
@@ -205,6 +207,27 @@ export default function InstitutionDetailPage() {
     mutationFn: (policy: "ApprovedOnly" | "DuesRequired") => updateInstitutionMemberPolicy(id, policy),
     onSuccess: (updated) => {
       toast.success(updated.memberActivePolicy === "DuesRequired" ? "Dues payment now required for active status" : "Dues payment no longer required for active status");
+      invalidate();
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const autoApproveMutation = useMutation({
+    mutationFn: (autoApproveMembers: boolean) => updateInstitutionAutoApproveMembers(id, autoApproveMembers),
+    onSuccess: (updated) => {
+      toast.success(updated.autoApproveMembers ? "New members will now be auto-approved" : "New members will now require admin approval");
+      invalidate();
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const [cohortLabel, setCohortLabel] = useState<string | null>(null);
+  const [cohortLabelPlural, setCohortLabelPlural] = useState<string | null>(null);
+  const organizationTypeMutation = useMutation({
+    mutationFn: ({ type, label, labelPlural }: { type: "Alumni" | "Community"; label?: string | null; labelPlural?: string | null }) =>
+      updateInstitutionOrganizationType(id, type, label, labelPlural),
+    onSuccess: () => {
+      toast.success("Organization type updated");
       invalidate();
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -499,6 +522,85 @@ export default function InstitutionDetailPage() {
                   <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${inst.memberActivePolicy === "DuesRequired" ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </div>
+              <div className="flex items-center justify-between gap-4 pt-4 mt-4 border-t border-border">
+                <div>
+                  <p className="text-[13px] font-semibold">Auto-approve new members</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
+                    Off (default): a self-registered member lands in Pending status until an admin approves them. On: they&apos;re active immediately, no approval step. Normally the institution&apos;s own choice, editable from their own settings too.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={inst.autoApproveMembers}
+                  disabled={autoApproveMutation.isPending}
+                  onClick={() => autoApproveMutation.mutate(!inst.autoApproveMembers)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors disabled:opacity-60 ${inst.autoApproveMembers ? "bg-primary" : "bg-muted"}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${inst.autoApproveMembers ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-2">
+            <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Organization type</p></div>
+            <CardContent className="p-5 space-y-4">
+              <p className="text-[12px] text-muted-foreground">
+                Alumni institutions organize by graduation year (Batches, &quot;Class of X&quot;). A Community has no
+                graduation years — members organize via Communities instead, and that year-based UI is hidden throughout the portal.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={inst.organizationType === "Alumni" ? "default" : "outline"}
+                  disabled={organizationTypeMutation.isPending}
+                  onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel ?? inst.cohortLabel, labelPlural: cohortLabelPlural ?? inst.cohortLabelPlural })}
+                >
+                  Alumni
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={inst.organizationType === "Community" ? "default" : "outline"}
+                  disabled={organizationTypeMutation.isPending}
+                  onClick={() => organizationTypeMutation.mutate({ type: "Community" })}
+                >
+                  Community
+                </Button>
+              </div>
+              {inst.organizationType === "Alumni" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Cohort label</Label>
+                    <Input
+                      value={cohortLabel ?? inst.cohortLabel ?? ""}
+                      onChange={(e) => setCohortLabel(e.target.value)}
+                      placeholder="Batch"
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Cohort label (plural)</Label>
+                    <Input
+                      value={cohortLabelPlural ?? inst.cohortLabelPlural ?? ""}
+                      onChange={(e) => setCohortLabelPlural(e.target.value)}
+                      placeholder="Batches"
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      isLoading={organizationTypeMutation.isPending}
+                      onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel ?? inst.cohortLabel, labelPlural: cohortLabelPlural ?? inst.cohortLabelPlural })}
+                    >
+                      Save cohort wording
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

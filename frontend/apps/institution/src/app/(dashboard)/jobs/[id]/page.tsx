@@ -20,6 +20,7 @@ import { ImageUpload } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { getJob, updateJob, closeJob, deleteJob, type UpdateJobBody } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
@@ -278,12 +279,13 @@ export default function AdminJobDetailPage() {
             {/* Banner */}
             {job.bannerImageUrl ? (
               <div className="rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white dark:border-white/5 ring-1 ring-black/5 ring-offset-4 ring-offset-background aspect-video relative group animate-in fade-in zoom-in-95 duration-700">
-                <img
+                <ZoomableImage
                   src={job.bannerImageUrl}
                   alt={job.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                  wrapperClassName="w-full h-full"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
               </div>
             ) : (
               <div className="rounded-[2rem] bg-gradient-to-br from-primary/10 to-muted/20 aspect-video flex items-center justify-center border-4 border-white dark:border-white/5 ring-1 ring-black/5 animate-in fade-in duration-700">

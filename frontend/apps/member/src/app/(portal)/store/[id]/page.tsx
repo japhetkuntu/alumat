@@ -10,6 +10,7 @@ import { Card, CardContent } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { getStoreProduct } from "@/lib/member-api";
 import { useStoreCart } from "@/hooks/use-store-cart";
 import type { StoreProduct, StoreProductVariant } from "@/types";
@@ -98,7 +99,12 @@ export default function StoreProductDetailPage() {
         <div className="space-y-2">
           <div className="w-full aspect-square rounded-xl overflow-hidden bg-muted/40 flex items-center justify-center">
             {displayImage || images[activeImage] ? (
-              <img src={displayImage ?? images[activeImage]} alt={product.name} className="w-full h-full object-cover" />
+              <ZoomableImage
+                src={displayImage ?? images[activeImage]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                wrapperClassName="w-full h-full"
+              />
             ) : (
               <Package size={48} className="text-muted-foreground" />
             )}

@@ -13,6 +13,8 @@ public interface IInstitutionManagementService
     Task<IApiResponse<InstitutionDetailResponse>> UpdateStatusAsync(string id, UpdateInstitutionStatusRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateNameAsync(string id, UpdateInstitutionNameRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateMemberActivePolicyAsync(string id, UpdateInstitutionMemberPolicyRequest request, string updatedBy, string actorName);
+    Task<IApiResponse<InstitutionDetailResponse>> UpdateAutoApproveMembersAsync(string id, UpdateInstitutionAutoApproveMembersRequest request, string updatedBy, string actorName);
+    Task<IApiResponse<InstitutionDetailResponse>> UpdateOrganizationTypeAsync(string id, UpdateInstitutionOrganizationTypeRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateFeaturesAsync(string id, UpdateInstitutionFeaturesRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName);

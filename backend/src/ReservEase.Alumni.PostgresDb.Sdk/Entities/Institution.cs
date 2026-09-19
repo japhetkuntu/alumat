@@ -111,6 +111,18 @@ public class Institution : BaseEntity
     public string MemberActivePolicy { get; set; } = "ApprovedOnly";
 
     /// <summary>
+    /// Off by default (the existing behavior): a self-registered member lands
+    /// in "Pending" status and an institution admin must approve them (see
+    /// MemberManagementService.ApproveMemberAsync). On: MemberAuthService
+    /// creates the member as "Active" immediately at registration/OTP-verify/
+    /// Google-register time — no approval step, no "pending" admin
+    /// notification. Editable by the institution's own admins (Institution.Api's
+    /// InstitutionController.UpdateAutoApproveMembers) or by platform staff
+    /// (Platform.Api's InstitutionsController).
+    /// </summary>
+    public bool AutoApproveMembers { get; set; } = false;
+
+    /// <summary>
     /// Product features platform staff have turned off for this institution — see
     /// <see cref="InstitutionFeatures"/> for the canonical key list. Empty by
     /// default, meaning every feature is enabled; adding a key here disables it.

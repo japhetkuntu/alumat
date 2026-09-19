@@ -9,6 +9,7 @@ import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { getBusinessListing } from "@/lib/member-api";
 
 export default function BusinessListingDetailPage() {
@@ -64,7 +65,7 @@ export default function BusinessListingDetailPage() {
       <div className="relative animate-in fade-in duration-700">
         <div className="rounded-2xl overflow-hidden h-44 sm:h-56 bg-gradient-to-br from-primary/10 to-muted/20">
           {biz.bannerUrl && (
-            <img src={biz.bannerUrl} alt="" className="w-full h-full object-cover" loading="eager" />
+            <ZoomableImage src={biz.bannerUrl} alt="" className="w-full h-full object-cover" loading="eager" wrapperClassName="w-full h-full" />
           )}
         </div>
         <div className="absolute -bottom-8 left-6 h-20 w-20 rounded-2xl border-4 border-background bg-background shadow-lg overflow-hidden flex items-center justify-center">

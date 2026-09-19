@@ -334,6 +334,43 @@ public class InstitutionManagementService(
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Active-member policy updated");
     }
 
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdateAutoApproveMembersAsync(string id, UpdateInstitutionAutoApproveMembersRequest request, string updatedBy, string actorName)
+    {
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+        institution.AutoApproveMembers = request.AutoApproveMembers;
+        institution.UpdatedAt = DateTime.UtcNow;
+        institution.UpdatedBy = updatedBy;
+        await institutionRepo.UpdateAsync(institution);
+
+        await auditLog.LogAsync(updatedBy, actorName, $"{(request.AutoApproveMembers ? "enabled" : "disabled")} auto-approve for members", institution.Name);
+
+        return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Auto-approve setting updated");
+    }
+
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdateOrganizationTypeAsync(string id, UpdateInstitutionOrganizationTypeRequest request, string updatedBy, string actorName)
+    {
+        var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
+        if (institution is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+        if (request.OrganizationType != OrganizationTypes.Alumni && request.OrganizationType != OrganizationTypes.Community)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("OrganizationType must be either \"Alumni\" or \"Community\"");
+
+        institution.OrganizationType = request.OrganizationType;
+        institution.CohortLabel = request.CohortLabel?.Trim() is { Length: > 0 } label ? label : null;
+        institution.CohortLabelPlural = request.CohortLabelPlural?.Trim() is { Length: > 0 } plural ? plural : null;
+        institution.UpdatedAt = DateTime.UtcNow;
+        institution.UpdatedBy = updatedBy;
+        await institutionRepo.UpdateAsync(institution);
+
+        await auditLog.LogAsync(updatedBy, actorName, $"set organization type to {request.OrganizationType}", institution.Name);
+
+        return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Organization type updated");
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName)
     {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
@@ -922,7 +959,7 @@ public class InstitutionManagementService(
             i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.MemberActivePolicy, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
+            i.RequireStudentId, i.MemberActivePolicy, i.AutoApproveMembers, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
             i.OrganizationType, i.CohortLabel, i.CohortLabelPlural,
             i.Status, memberCount,

@@ -12,6 +12,7 @@ import { Button } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { getJobById } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
 import type { Job } from "@/types";
@@ -101,7 +102,7 @@ export default function MemberJobDetailPage() {
           {/* Banner */}
           <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
             {job.bannerImageUrl ? (
-              <img
+              <ZoomableImage
                 src={job.bannerImageUrl}
                 alt={job.title}
                 className="w-full object-cover"

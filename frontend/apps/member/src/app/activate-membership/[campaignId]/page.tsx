@@ -22,6 +22,7 @@ import { Label } from "@alumni/ui";
 import { getCampaignById, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { formatCurrency, formatDate } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 
 // Hydration-safe read of the browser origin (see useHostname()): server and
 // the first client render both see "", avoiding a mismatch, then React syncs
@@ -138,12 +139,13 @@ function ActivateMembershipContent() {
           <section className="rounded-[22px] bg-primary text-primary-foreground p-7 sm:p-10 flex flex-col">
             {campaign.bannerImageUrl && (
               <div className="relative -mx-7 sm:-mx-10 -mt-7 sm:-mt-10 mb-6 h-36 sm:h-44 overflow-hidden rounded-t-[22px]">
-                <img
+                <ZoomableImage
                   src={campaign.bannerImageUrl}
                   alt={campaign.title}
                   className="w-full h-full object-cover"
+                  wrapperClassName="w-full h-full"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent pointer-events-none" />
               </div>
             )}
             <span className="inline-block self-start px-3 py-1.5 bg-white/15 text-xs font-semibold">

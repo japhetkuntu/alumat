@@ -128,6 +128,24 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Active-member policy updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>Whether self-registered members are approved automatically instead of waiting for an admin — this institution's own operational choice.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/auto-approve-members")]
+    [SwaggerOperation(Summary = "Update whether members are auto-approved at registration")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    public async Task<IActionResult> UpdateAutoApproveMembers([FromBody] UpdateAutoApproveMembersRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        institution.AutoApproveMembers = request.AutoApproveMembers;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Auto-approve setting updated", Code = 200, Data = ToDto(institution) });
+    }
+
     /// <summary>
     /// Toggles the self-service Digest/RecurringGiving features (see
     /// InstitutionFeatures.SelfService — everything else in DisabledFeatures
@@ -319,7 +337,7 @@ public class InstitutionController(
             i.ContactEmail, i.SupportEmail, i.LogoUrl, i.IconUrl, i.PrimaryColorHex, i.SecondaryColorHex,
             i.InstitutionPortalTitle, i.InstitutionAuthHeadline, i.InstitutionAuthSubtext,
             i.MemberPortalTitle, i.MemberAuthHeadline, i.MemberAuthSubtext,
-            i.RequireStudentId, i.ProgramOfStudyEnabled, i.ProgramsOfStudy, i.SocialLinks, i.MemberActivePolicy, i.PromptMembershipActivationAtSignup,
+            i.RequireStudentId, i.ProgramOfStudyEnabled, i.ProgramsOfStudy, i.SocialLinks, i.MemberActivePolicy, i.AutoApproveMembers, i.PromptMembershipActivationAtSignup,
             i.EmailNotificationsEnabled, i.SmsNotificationsEnabled, i.DisabledFeatures, i.LandingPageStories, i.NewsBanner,
             i.HeroImageUrls, i.HeroHeadline,
             i.OrganizationType, i.CohortLabel, i.CohortLabelPlural,

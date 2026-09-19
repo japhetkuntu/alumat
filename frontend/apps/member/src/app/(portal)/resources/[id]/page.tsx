@@ -14,6 +14,7 @@ import { getResource, getResources, trackResourceDownload } from "@/lib/member-a
 import { SourceBadge } from "@/components/member/source-badge";
 import { EmptyState } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { toast } from "sonner";
 
 const categoryColor: Record<string, string> = {
@@ -136,7 +137,7 @@ export default function MemberResourceDetailPage() {
       {/* Hero Banner */}
       {resource.bannerImageUrl ? (
         <div className="rounded-2xl overflow-hidden">
-          <img
+          <ZoomableImage
             src={resource.bannerImageUrl}
             alt={resource.title}
             className="w-full max-h-80 object-cover"

@@ -23,7 +23,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
-  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy,
+  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers,
   updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateOrganizationType,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -340,6 +340,15 @@ export default function BrandingSettingsPage() {
       updateMemberActivePolicy(institution?.memberActivePolicy ?? "DuesRequired", requireStudentId),
     onSuccess: () => {
       toast.success("Registration policy updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const autoApproveMutation = useMutation({
+    mutationFn: (autoApproveMembers: boolean) => updateAutoApproveMembers(autoApproveMembers),
+    onSuccess: (updated) => {
+      toast.success(updated.autoApproveMembers ? "New members will now be auto-approved" : "New members will now require admin approval");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -758,6 +767,12 @@ export default function BrandingSettingsPage() {
                   onChange={(checked) => requireStudentIdMutation.mutate(checked)}
                   label="Require student ID at registration"
                   description="On the Member Portal's registration form: on, the student/alumni ID field becomes required; off, it stays optional."
+                />
+                <Toggle
+                  checked={!!institution?.autoApproveMembers}
+                  onChange={(checked) => autoApproveMutation.mutate(checked)}
+                  label="Auto-approve new members"
+                  description="Off (default): a self-registered member lands in Pending status until an admin approves them. On: they're active immediately, no approval step."
                 />
               </CardContent>
             </Card>

@@ -142,6 +142,8 @@ export interface InstitutionProfileResponse {
   socialLinks: Record<string, string>;
   /** "DuesRequired" (default) — active only once dues are paid. "ApprovedOnly" — any approved member is active regardless of dues. */
   memberActivePolicy: "DuesRequired" | "ApprovedOnly";
+  /** Off by default — a self-registered member lands in "Pending" and an admin must approve them. On: they're created "Active" immediately, no approval step. */
+  autoApproveMembers: boolean;
   /** Platform-controlled feature gates, plus the two self-service ones below (see updateSelfServiceFeatures) — a key's presence here means that feature is OFF. */
   disabledFeatures: string[];
   /** Whether a just-registered member sees an "Activate your membership" payment prompt on the registration success screen. Opt-in, defaults to false. */
@@ -222,6 +224,16 @@ export async function updateInstitutionBranding(branding: {
 /** How "active member" status is determined, and whether a student ID is required at registration — this institution's own operational choices. */
 export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly", requireStudentId: boolean): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy, requireStudentId });
+  const profile = res.data.data;
+  if (!profile) {
+    throw new Error("Institution profile response missing data");
+  }
+  return profile;
+}
+
+/** Whether self-registered members are approved automatically instead of waiting for an admin — this institution's own operational choice. */
+export async function updateAutoApproveMembers(autoApproveMembers: boolean): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/auto-approve-members", { autoApproveMembers });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");

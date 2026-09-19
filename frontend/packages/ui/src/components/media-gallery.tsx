@@ -190,6 +190,74 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ZOOMABLE IMAGE — the single-image case: a banner/cover/logo rendered at a
+   fixed aspect ratio (so it often gets cropped) that just needs a "view full
+   image" escape hatch, without MediaGallery's banner+grid+video layout. Same
+   full-screen lightbox visual language (dark backdrop, Esc/click-outside to
+   close, `object-contain` so nothing gets cropped a second time) as
+   MediaGallery/PhotoAlbumGallery above, just for one image at a time.
+   ───────────────────────────────────────────────────────────────────────── */
+
+interface ZoomableImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  src: string;
+  /** Wraps the <img> — put your aspect-ratio/object-fit/rounding classes here; they only affect the thumbnail, never the full-size lightbox view. */
+  wrapperClassName?: string;
+}
+
+export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...imgProps }: ZoomableImageProps) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = original;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="View full image"
+        className={cn("relative overflow-hidden cursor-zoom-in group", wrapperClassName)}
+        onClick={() => setOpen(true)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(true); } }}
+      >
+        <GalleryImage src={src} alt={alt} className={className} {...imgProps} />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-150 flex items-center justify-center pointer-events-none">
+          <ZoomIn size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-150 drop-shadow-lg" />
+        </div>
+      </div>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full image"
+        >
+          <button
+            className="absolute top-4 right-4 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+          <img src={src} alt={alt} className="max-w-full max-h-[90vh] object-contain animate-scale-in" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    PHOTO ALBUM GALLERY — a sibling of MediaGallery purpose-built for a large,
    server-paginated photo album: a pure photo grid (no banner/YouTube), a
    "Load more" trigger for the next page, and a lightbox that transparently

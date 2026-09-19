@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { formatDate, getInitials, cn } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { getSpotlights, submitSpotlight, getMySpotlights } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
@@ -63,12 +64,13 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
               fully visible with no crop guess involved. */}
           <img src={spotlight.imageUrl} alt="" aria-hidden="true"
             className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50" />
-          <img
+          <ZoomableImage
             src={spotlight.imageUrl}
             alt={spotlight.title}
-            className="absolute inset-0 w-full h-full object-contain"
+            className="w-full h-full object-contain"
+            wrapperClassName="absolute inset-0"
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
           {featured && (
             <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10.5px] font-semibold"
               style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)", color: "white" }}>

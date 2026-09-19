@@ -90,6 +90,8 @@ export interface InstitutionDetail {
   requireStudentId: boolean;
   /** "ApprovedOnly" (default) — any approved member is active regardless of dues. "DuesRequired" — a member must also have paid dues. */
   memberActivePolicy: "ApprovedOnly" | "DuesRequired";
+  /** Off by default — a self-registered member lands in "Pending" and an admin must approve them. On: they're created "Active" immediately, no approval step. */
+  autoApproveMembers: boolean;
   disabledFeatures: string[];
   landingPageStories: LandingPageStory[];
   newsBanner: NewsBanner | null;
@@ -97,6 +99,12 @@ export interface InstitutionDetail {
   heroImageUrls: string[];
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
+  /** "Alumni" (default) — year-based cohorts via Batches. "Community" — no graduation years; members organize via Communities instead. */
+  organizationType: "Alumni" | "Community";
+  /** Alumni-only relabeling of "Batch" (e.g. "Class", "Cohort"). Null falls back to "Batch". */
+  cohortLabel?: string | null;
+  /** Plural form of cohortLabel (e.g. "Classes"). Null falls back to "Batches". */
+  cohortLabelPlural?: string | null;
   status: string;
   memberCount: number;
   onboardedAt: string;
@@ -121,6 +129,8 @@ export interface CreateInstitutionRequest {
   contactName: string;
   contactEmail: string;
   memberActivePolicy?: "ApprovedOnly" | "DuesRequired";
+  /** "Alumni" (default) or "Community" — see Institution.OrganizationType. Can be changed later via updateInstitutionOrganizationType. */
+  organizationType?: "Alumni" | "Community";
   portalName?: string;
   supportEmail?: string;
   primaryColorHex?: string;
@@ -207,6 +217,19 @@ export async function updateInstitutionName(id: string, name: string) {
 
 export async function updateInstitutionMemberPolicy(id: string, memberActivePolicy: "ApprovedOnly" | "DuesRequired") {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/member-policy`, { memberActivePolicy });
+  return res.data.data!;
+}
+
+export async function updateInstitutionAutoApproveMembers(id: string, autoApproveMembers: boolean) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/auto-approve-members`, { autoApproveMembers });
+  return res.data.data!;
+}
+
+/** Alumni-vs-Community organization type + Alumni-only cohort label wording. */
+export async function updateInstitutionOrganizationType(
+  id: string, organizationType: "Alumni" | "Community", cohortLabel?: string | null, cohortLabelPlural?: string | null,
+) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/organization-type`, { organizationType, cohortLabel, cohortLabelPlural });
   return res.data.data!;
 }
 

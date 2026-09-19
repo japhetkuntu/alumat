@@ -26,6 +26,7 @@ public record InstitutionResponse(
     List<string> ProgramsOfStudy,
     Dictionary<string, string> SocialLinks,
     string MemberActivePolicy,
+    bool AutoApproveMembers,
     bool PromptMembershipActivationAtSignup,
     bool EmailNotificationsEnabled,
     bool SmsNotificationsEnabled,
@@ -92,6 +93,14 @@ public class UpdateInstitutionBrandingRequest
 /// platform staff's, so they're edited here rather than via Platform.Api.
 /// </summary>
 public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool RequireStudentId);
+
+/// <summary>
+/// Off by default — a self-registered member lands in "Pending" and an
+/// institution admin must approve them. On: they're created as "Active"
+/// immediately, no approval step. A structural policy change, so gated the
+/// same way MemberActivePolicy itself is (SuperAdmin only).
+/// </summary>
+public record UpdateAutoApproveMembersRequest(bool AutoApproveMembers);
 
 /// <summary>
 /// Program/Course of Study collection at registration — off by default. The

@@ -20,6 +20,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@alumni/ui";
 import { formatDate, formatCurrency } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import {
   getCommunity, joinCommunity, leaveCommunity, getCommunityMembers,
   getCommunityJoinRequests, approveJoinRequest, rejectJoinRequest, removeCommunityMember,
@@ -245,12 +246,13 @@ export default function CommunityDetailPage() {
       >
         {community.coverImageUrl && (
           <>
-            <img
+            <ZoomableImage
               src={community.coverImageUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover"
+              className="w-full h-full object-cover"
+              wrapperClassName="absolute inset-0"
             />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 88%, black) 0%, color-mix(in oklch, var(--primary) 55%, transparent) 100%)" }} />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 88%, black) 0%, color-mix(in oklch, var(--primary) 55%, transparent) 100%)" }} />
           </>
         )}
         <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">

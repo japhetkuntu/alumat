@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { LinkOrUpload } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import type { Spotlight, Member } from "@/types";
 
 export default function AdminSpotlightsPage() {
@@ -247,7 +248,7 @@ export default function AdminSpotlightsPage() {
                         {/* Blurred fill behind an object-contain copy — see the identical
                             pattern (and its rationale) in the Member Portal's spotlights page. */}
                         <img src={s.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50" />
-                        <img src={s.imageUrl} alt={s.title} className="absolute inset-0 w-full h-full object-contain" />
+                        <ZoomableImage src={s.imageUrl} alt={s.title} className="w-full h-full object-contain" wrapperClassName="absolute inset-0" />
                       </div>
                     )}
 

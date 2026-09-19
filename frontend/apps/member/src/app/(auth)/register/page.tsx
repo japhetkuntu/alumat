@@ -323,6 +323,10 @@ function RegisterForm() {
   const [step, setStep] = useState<Step>("form");
   const [formSubStep, setFormSubStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
+  // Set from the register/verify-otp/google-register response — the institution
+  // may have AutoApproveMembers on, in which case there's no actual approval
+  // step left, and the "pending" screen below shouldn't claim there is one.
+  const [approved, setApproved] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
@@ -468,7 +472,7 @@ function RegisterForm() {
     if (!googleIdToken) return;
     setSubmittingGoogle(true);
     try {
-      await memberClient.post("/auth/google-register", {
+      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean } }>("/auth/google-register", {
         idToken: googleIdToken,
         phone: data.phone,
         studentId: data.studentId,
@@ -477,8 +481,9 @@ function RegisterForm() {
         program: data.program,
       });
       setEmail(data.email);
+      setApproved(!!res.data?.data?.approved);
       setStep("pending");
-      toast.success("Registration submitted. Your account is pending admin approval.");
+      toast.success(res.data?.message ?? "Registration submitted. Your account is pending admin approval.");
     } catch (err) {
       const appliedToField = applyServerFieldErrors<FormData>(err, setError);
       if (!appliedToField) toast.error(handleApiError(err));
@@ -516,8 +521,9 @@ function RegisterForm() {
     if (code.length !== 6) { toast.error("Enter the complete 6-digit code"); return; }
     setVerifying(true);
     try {
-      await memberClient.post("/auth/verify-otp", { email, otp: code });
-      toast.success("Email verified! Your account is pending admin approval.");
+      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean } }>("/auth/verify-otp", { email, otp: code });
+      setApproved(!!res.data?.data?.approved);
+      toast.success(res.data?.message ?? "Email verified! Your account is pending admin approval.");
       setStep("pending");
     } catch (err) {
       toast.error(handleApiError(err));
@@ -547,7 +553,13 @@ function RegisterForm() {
     if (!ok) return;
     // Community institutions skip the "Alumni information" sub-step entirely
     // (formSubStep stays 1|2|3 internally; step 2's back button also returns
-    // here — see its onClick below).
+    // here — see its onClick below). Google mode also skips the password
+    // sub-step — for a Community org that means Google signup submits right
+    // from here, since step 2 (where non-Community Google mode submits) is
+    // itself being skipped; without this check it would otherwise land on
+    // step 3's password fields, which Google-authenticated members should
+    // never be asked to set.
+    if (isCommunity && googleIdToken) { await handleSubmit(onSubmitGoogle)(); return; }
     setFormSubStep(isCommunity ? 3 : 2);
   }
   async function nextFromStep2() {
@@ -703,7 +715,7 @@ function RegisterForm() {
                   </p>
                 </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
-                  onClick={nextFromStep1}>
+                  onClick={nextFromStep1} isLoading={isCommunity && !!googleIdToken && submittingGoogle} loadingText="Creating account…">
                   Continue <ChevronRight size={15} className="ml-1" />
                 </Button>
               </div>
@@ -950,10 +962,10 @@ function RegisterForm() {
           <div className="mb-2">
             <h1 className="font-[family-name:var(--font-display)] mb-1"
               style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}>
-              You&apos;re almost in.
+              {approved ? "You're all set." : "You're almost in."}
             </h1>
             <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
-              Email verified. Complete the step below to speed up approval.
+              {approved ? "Your account is ready — you can sign in right away." : "Email verified. Complete the step below to speed up approval."}
             </p>
           </div>
 
@@ -969,12 +981,12 @@ function RegisterForm() {
               </div>
             </div>
             <div className="flex items-center gap-3 p-4">
-              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-warning/10 border border-warning/25">
-                <Clock size={16} className="text-warning" />
+              <div className={cn("shrink-0 w-8 h-8 rounded-full flex items-center justify-center border", approved ? "bg-success/10 border-success/25" : "bg-warning/10 border-warning/25")}>
+                {approved ? <CheckCircle2 size={16} className="text-success" /> : <Clock size={16} className="text-warning" />}
               </div>
               <div>
-                <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>Awaiting admin review</p>
-                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Usually within 24 hours</p>
+                <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>{approved ? "Account active" : "Awaiting admin review"}</p>
+                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>{approved ? "You can sign in now" : "Usually within 24 hours"}</p>
               </div>
             </div>
           </div>

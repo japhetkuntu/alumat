@@ -64,6 +64,7 @@ function NewInstitutionPageContent() {
     adminLastName: "",
     adminEmail: "",
     requireDues: false,
+    organizationType: "Alumni" as "Alumni" | "Community",
     batchStartYear: "",
     batchEndYear: "",
   });
@@ -122,8 +123,9 @@ function NewInstitutionPageContent() {
           adminLastName: form.adminLastName || form.contactName.split(" ").slice(1).join(" ") || "User",
           adminEmail: form.adminEmail || form.contactEmail,
           memberActivePolicy: form.requireDues ? "DuesRequired" : "ApprovedOnly",
-          batchStartYear: form.batchStartYear ? Number(form.batchStartYear) : undefined,
-          batchEndYear: form.batchEndYear ? Number(form.batchEndYear) : undefined,
+          organizationType: form.organizationType,
+          batchStartYear: form.organizationType === "Alumni" && form.batchStartYear ? Number(form.batchStartYear) : undefined,
+          batchEndYear: form.organizationType === "Alumni" && form.batchEndYear ? Number(form.batchEndYear) : undefined,
         });
         toast.success("Institution created", {
           description: `${created.name} has been onboarded. We've emailed ${form.adminEmail || form.contactEmail} a welcome message with their setup link.`,
@@ -211,16 +213,33 @@ function NewInstitutionPageContent() {
                   </div>
                 </div>
                 <div className="space-y-1.5 pt-2">
-                  <Label>Batches (optional)</Label>
+                  <Label>Organization type</Label>
                   <p className="text-[12px] text-muted-foreground -mt-0.5">
-                    Enter a graduation-year range to auto-create one batch per year, named after the year by default, renameable later. Leave blank to add batches manually afterward.
+                    Alumni institutions organize by graduation year (Batches, &quot;Class of X&quot;). A Community has no
+                    graduation years — members organize via Communities instead, and that year-based UI is hidden throughout the portal. Changeable later.
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="Start year, e.g. 1990" className="w-[160px]" />
-                    <span className="text-[13px] text-muted-foreground">to</span>
-                    <Input type="number" value={form.batchEndYear} onChange={(e) => update("batchEndYear", e.target.value)} placeholder="End year, e.g. 2026" className="w-[160px]" />
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={form.organizationType === "Alumni" ? "default" : "outline"} onClick={() => update("organizationType", "Alumni")}>
+                      Alumni
+                    </Button>
+                    <Button type="button" size="sm" variant={form.organizationType === "Community" ? "default" : "outline"} onClick={() => update("organizationType", "Community")}>
+                      Community
+                    </Button>
                   </div>
                 </div>
+                {form.organizationType === "Alumni" && (
+                  <div className="space-y-1.5 pt-2">
+                    <Label>Batches (optional)</Label>
+                    <p className="text-[12px] text-muted-foreground -mt-0.5">
+                      Enter a graduation-year range to auto-create one batch per year, named after the year by default, renameable later. Leave blank to add batches manually afterward.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="Start year, e.g. 1990" className="w-[160px]" />
+                      <span className="text-[13px] text-muted-foreground">to</span>
+                      <Input type="number" value={form.batchEndYear} onChange={(e) => update("batchEndYear", e.target.value)} placeholder="End year, e.g. 2026" className="w-[160px]" />
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-start gap-2.5 pt-2">
                   <input
                     id="require-dues"
@@ -376,7 +395,10 @@ function NewInstitutionPageContent() {
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Institution portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.adminBaseDomain}` : ""}</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Settlement account</span><span className="font-semibold">{form.settlementAccountName || "Not configured"}</span></div>
-                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Batches</span><span className="font-semibold">{form.batchStartYear && form.batchEndYear ? `${form.batchStartYear}–${form.batchEndYear} (${Number(form.batchEndYear) - Number(form.batchStartYear) + 1} batches)` : "None, add manually later"}</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Organization type</span><span className="font-semibold">{form.organizationType}</span></div>
+                  {form.organizationType === "Alumni" && (
+                    <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Batches</span><span className="font-semibold">{form.batchStartYear && form.batchEndYear ? `${form.batchStartYear}–${form.batchEndYear} (${Number(form.batchEndYear) - Number(form.batchStartYear) + 1} batches)` : "None, add manually later"}</span></div>
+                  )}
                   <div className="flex justify-between"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminFirstName || "—"} {form.adminLastName} ({form.adminEmail || form.contactEmail || "—"})</span></div>
                 </div>
               </>

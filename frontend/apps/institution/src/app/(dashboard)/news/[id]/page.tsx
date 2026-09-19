@@ -127,14 +127,19 @@ export default function AdminNewsDetailPage() {
 
       {/* Cover Image */}
       {post.imageUrls && post.imageUrls.length > 0 && (
-        <div className="rounded-2xl overflow-hidden shadow-xl">
+        <button
+          type="button"
+          onClick={() => setLightbox(post.imageUrls![0])}
+          className="group relative block w-full rounded-2xl overflow-hidden shadow-xl cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <img
             src={post.imageUrls[0]}
             alt={post.title}
             className="w-full max-h-96 object-cover"
             loading="lazy"
           />
-        </div>
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+        </button>
       )}
 
       {/* Content */}

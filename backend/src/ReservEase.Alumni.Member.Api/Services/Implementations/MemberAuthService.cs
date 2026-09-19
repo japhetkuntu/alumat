@@ -14,6 +14,7 @@ using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
@@ -72,6 +73,28 @@ public class MemberAuthService(
         var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
         var name = string.IsNullOrWhiteSpace(institution?.PortalName) ? institution?.Name : institution.PortalName;
         return (name, institution?.PrimaryColorHex, institution?.SecondaryColorHex, institution?.LogoUrl);
+    }
+
+    /// <summary>
+    /// Mirrors MemberManagementService.GetMemberNumberPrefixAsync/ApproveMemberAsync's
+    /// sequence logic in Institution.Api — duplicated rather than shared since the two
+    /// APIs don't otherwise reference each other's service layer. Only reachable when
+    /// institution.AutoApproveMembers is on, i.e. a member is created "Active" and needs
+    /// a member number immediately instead of waiting for InstitutionController's own
+    /// approval action to assign one.
+    /// </summary>
+    private async Task<string> GenerateMemberNumberAsync(Institution? institution, int graduationYear)
+    {
+        var slug = string.IsNullOrWhiteSpace(institution?.Slug) ? "MEMBER" : institution.Slug.ToUpperInvariant();
+        var isCommunity = institution?.OrganizationType == OrganizationTypes.Community;
+        var prefix = isCommunity ? $"{slug}-" : $"{slug}-{graduationYear}-";
+
+        var existing = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
+        var maxSeq = existing
+            .Select(m => int.TryParse(m.MemberNumber![prefix.Length..], out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+        return $"{prefix}{(maxSeq + 1):D4}";
     }
 
     public async Task<IApiResponse<object>> RegisterAsync(RegisterRequest request)
@@ -151,6 +174,11 @@ public class MemberAuthService(
             if (existing is not null && existing.Status == "Suspended")
                 await memberRepo.RemoveAsync(existing);
 
+            var institution = string.IsNullOrEmpty(currentTenant.InstitutionId)
+                ? null
+                : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var autoApprove = institution?.AutoApproveMembers == true;
+
             // No OTP staging in Redis — Google already proved this email is
             // real and reachable, so the member row is created immediately
             // instead of waiting on a code the member would type back in.
@@ -166,7 +194,7 @@ public class MemberAuthService(
                 GraduationYear = request.GraduationYear ?? 0,
                 DepartmentId = request.DepartmentId ?? string.Empty,
                 Program = request.Program?.Trim(),
-                Status = "Pending",
+                Status = autoApprove ? "Active" : "Pending",
                 IsEmailVerified = true,
                 CreatedBy = "google",
             };
@@ -181,6 +209,12 @@ public class MemberAuthService(
             }
 
             await memberRepo.AddAsync(member);
+
+            if (autoApprove)
+            {
+                member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
+                await memberRepo.UpdateAsync(member);
+            }
 
             if (!string.IsNullOrWhiteSpace(member.ReferredById))
             {
@@ -197,10 +231,14 @@ public class MemberAuthService(
             }
 
             await temporalProvider.EnqueueNotificationAsync(
-                NotificationRequest.NewMemberPendingApproval(currentTenant.InstitutionId, member.Id, $"{member.FirstName} {member.LastName}", member.Email), logger);
+                autoApprove
+                    ? NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Active", null)
+                    : NotificationRequest.NewMemberPendingApproval(currentTenant.InstitutionId, member.Id, $"{member.FirstName} {member.LastName}", member.Email),
+                logger);
 
-            logger.LogInformation("Member {MemberId} registered via Google", member.Id);
-            return new object().ToCreatedApiResponse("Registration submitted. Your account is pending admin approval.");
+            logger.LogInformation("Member {MemberId} registered via Google ({Status})", member.Id, member.Status);
+            return new RegistrationResultResponse(autoApprove).ToCreatedApiResponse<object>(
+                autoApprove ? "Welcome! Your account is ready — you can sign in now." : "Registration submitted. Your account is pending admin approval.");
         }
         catch (Exception e)
         {
@@ -224,7 +262,15 @@ public class MemberAuthService(
                     Encoding.UTF8.GetBytes(cached.Otp), Encoding.UTF8.GetBytes(request.Otp)))
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid verification code");
 
-            // OTP valid — save member to DB for admin approval (member number assigned by admin later)
+            var institution = string.IsNullOrEmpty(currentTenant.InstitutionId)
+                ? null
+                : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var autoApprove = institution?.AutoApproveMembers == true;
+
+            // OTP valid — save member to DB. Normally for admin approval (member
+            // number assigned by admin later); if this institution has
+            // AutoApproveMembers on, skip straight to "Active" with a member
+            // number assigned right away instead.
             var member = new MemberEntity
             {
                 FirstName = cached.FirstName,
@@ -236,7 +282,7 @@ public class MemberAuthService(
                 GraduationYear = cached.GraduationYear ?? 0,
                 DepartmentId = cached.DepartmentId ?? string.Empty,
                 Program = cached.Program,
-                Status = "Pending",
+                Status = autoApprove ? "Active" : "Pending",
                 IsEmailVerified = true,
                 CreatedBy = "self",
             };
@@ -252,6 +298,12 @@ public class MemberAuthService(
             }
 
             await memberRepo.AddAsync(member);
+
+            if (autoApprove)
+            {
+                member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
+                await memberRepo.UpdateAsync(member);
+            }
 
             // Update referral record status
             if (!string.IsNullOrWhiteSpace(member.ReferredById))
@@ -269,13 +321,17 @@ public class MemberAuthService(
             }
 
             await temporalProvider.EnqueueNotificationAsync(
-                NotificationRequest.NewMemberPendingApproval(currentTenant.InstitutionId, member.Id, $"{member.FirstName} {member.LastName}", member.Email), logger);
+                autoApprove
+                    ? NotificationRequest.MemberStatusChanged(currentTenant.InstitutionId, member.Id, member.FirstName, "Active", null)
+                    : NotificationRequest.NewMemberPendingApproval(currentTenant.InstitutionId, member.Id, $"{member.FirstName} {member.LastName}", member.Email),
+                logger);
 
             // Clean up Redis
             await redis.RemoveAsync($"reg:otp:{email}");
 
-            logger.LogInformation("Member {MemberId} registered successfully after OTP verification", member.Id);
-            return new object().ToCreatedApiResponse("Email verified successfully. Your account is pending admin approval.");
+            logger.LogInformation("Member {MemberId} registered successfully after OTP verification ({Status})", member.Id, member.Status);
+            return new RegistrationResultResponse(autoApprove).ToCreatedApiResponse<object>(
+                autoApprove ? "Email verified! Your account is ready — you can sign in now." : "Email verified successfully. Your account is pending admin approval.");
         }
         catch (Exception e)
         {

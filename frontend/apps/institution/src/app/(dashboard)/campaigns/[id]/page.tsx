@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { CardSkeleton, TableSkeleton } from "@alumni/ui";
 import { YouTubeEmbed, YouTubePreview } from "@alumni/ui";
 import { ImageUpload } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { YearGroupPicker } from "@alumni/ui";
 import type { ContributionStatus } from "@/types";
 
@@ -667,7 +668,7 @@ function CampaignUpdatesSection({ campaignId }: { campaignId: string }) {
         <div className="space-y-3">
           {updates.map((u) => (
             <div key={u.id} className="rounded-xl border border-border overflow-hidden">
-              {u.imageUrl && <img src={u.imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 220 }} />}
+              {u.imageUrl && <ZoomableImage src={u.imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 220 }} />}
               <div className="p-3.5 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[13.5px] whitespace-pre-wrap leading-relaxed">{u.body}</p>

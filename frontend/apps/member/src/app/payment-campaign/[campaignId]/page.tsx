@@ -21,6 +21,7 @@ import { useDisabledFeatures } from "@/components/member/member-layout";
 import { handleApiError } from "@/lib/api-client";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 
 // Hydration-safe read of the current page URL (see useHostname()): server and
 // the first client render both see "", avoiding a mismatch, then React syncs
@@ -267,7 +268,7 @@ export default function PublicCampaignContributionPage() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
               {campaign.bannerImageUrl && (
                 <div className="rounded-2xl overflow-hidden shadow-xl mb-4">
-                  <img src={campaign.bannerImageUrl} alt={campaign.title} className="w-full max-h-48 object-cover" />
+                  <ZoomableImage src={campaign.bannerImageUrl} alt={campaign.title} className="w-full max-h-48 object-cover" />
                 </div>
               )}
               <div className="flex items-center gap-2 mb-2">

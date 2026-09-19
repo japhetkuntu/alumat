@@ -142,6 +142,30 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>Alumni-vs-Community classification + Alumni-only cohort label wording — see UpdateInstitutionOrganizationTypeRequest.</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPatch("{id}/organization-type")]
+    [SwaggerOperation(Summary = "Update the institution's organization type")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdateOrganizationType(string id, [FromBody] UpdateInstitutionOrganizationTypeRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdateOrganizationTypeAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
+    /// <summary>Whether self-registered members are approved automatically instead of waiting for an admin — see UpdateInstitutionAutoApproveMembersRequest.</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPatch("{id}/auto-approve-members")]
+    [SwaggerOperation(Summary = "Update whether members are auto-approved at registration")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdateAutoApproveMembers(string id, [FromBody] UpdateInstitutionAutoApproveMembersRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdateAutoApproveMembersAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/branding")]
     [SwaggerOperation(Summary = "Update institution branding")]

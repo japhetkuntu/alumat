@@ -77,7 +77,7 @@ public record InstitutionDetailResponse(
     string? LogoUrl, string? IconUrl, string PrimaryColorHex, string? SecondaryColorHex,
     string? InstitutionPortalTitle, string? InstitutionAuthHeadline, string? InstitutionAuthSubtext,
     string? MemberPortalTitle, string? MemberAuthHeadline, string? MemberAuthSubtext,
-    bool RequireStudentId, string MemberActivePolicy, List<string> DisabledFeatures,
+    bool RequireStudentId, string MemberActivePolicy, bool AutoApproveMembers, List<string> DisabledFeatures,
     List<LandingPageStory> LandingPageStories, NewsBanner? NewsBanner,
     List<string> HeroImageUrls, string? HeroHeadline,
     string OrganizationType, string? CohortLabel, string? CohortLabelPlural,
@@ -146,6 +146,31 @@ public class UpdateInstitutionMemberPolicyRequest
 {
     [Required, RegularExpression("^(ApprovedOnly|DuesRequired)$")]
     public string MemberActivePolicy { get; set; } = string.Empty;
+}
+
+/// <summary>Whether self-registered members are approved automatically instead of waiting for an admin — platform staff can set this on the institution's behalf, though it's normally the institution's own choice (see Institution.Api's InstitutionController.UpdateAutoApproveMembers).</summary>
+public class UpdateInstitutionAutoApproveMembersRequest
+{
+    public bool AutoApproveMembers { get; set; }
+}
+
+/// <summary>
+/// Alumni-vs-Community organization type + Alumni-only cohort label wording —
+/// this is a platform-staff-controlled classification (which grouping
+/// mechanism this institution uses: year-based Batches vs. self-serve
+/// Communities), set here rather than left to the institution's own admins,
+/// though Institution.Api's own me/organization-type endpoint also exposes
+/// it for self-service. CohortLabel/CohortLabelPlural only apply when
+/// OrganizationType is Alumni; null falls back to "Batch"/"Batches".
+/// </summary>
+public class UpdateInstitutionOrganizationTypeRequest
+{
+    [Required, RegularExpression("^(Alumni|Community)$")]
+    public string OrganizationType { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string? CohortLabel { get; set; }
+    [MaxLength(50)]
+    public string? CohortLabelPlural { get; set; }
 }
 
 public class UpdateInstitutionFeaturesRequest

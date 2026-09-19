@@ -12,6 +12,7 @@ import { formatDate } from "@alumni/ui";
 import { getResource, getResources } from "@/lib/institution-api";
 import { EmptyState } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 
 const categoryColor: Record<string, string> = {
   Career: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
@@ -118,7 +119,7 @@ export default function AdminResourceDetailPage() {
       {/* Banner Image */}
       {resource.bannerImageUrl && (
         <div className="rounded-2xl overflow-hidden shadow-xl">
-          <img
+          <ZoomableImage
             src={resource.bannerImageUrl}
             alt={resource.title}
             className="w-full max-h-80 object-cover"

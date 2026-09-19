@@ -17,6 +17,7 @@ import { Progress } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import {
   getCampaignById, getMyProfile,
@@ -216,7 +217,7 @@ export default function CampaignDetailPage() {
             {campaign.youtubeVideoUrl ? (
               <YouTubeEmbed url={campaign.youtubeVideoUrl} />
             ) : campaign.bannerImageUrl ? (
-              <img
+              <ZoomableImage
                 src={campaign.bannerImageUrl}
                 alt={campaign.title}
                 className="w-full object-cover"
@@ -273,7 +274,7 @@ export default function CampaignDetailPage() {
                   {updates.map((u) => (
                     <div key={u.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
                       {u.imageUrl && (
-                        <img src={u.imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 280 }} />
+                        <ZoomableImage src={u.imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 280 }} />
                       )}
                       <div className="p-4">
                         <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: "0.925rem", color: "var(--foreground)" }}>
