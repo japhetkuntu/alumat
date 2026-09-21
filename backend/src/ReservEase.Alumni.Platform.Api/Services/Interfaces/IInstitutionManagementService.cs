@@ -24,6 +24,9 @@ public interface IInstitutionManagementService
     Task<IApiResponse<PaymentDetailDto>> GetPaymentDetailAsync(string institutionId, string paymentId, string? source);
     Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug);
     BaseDomainsResponse GetBaseDomains();
+
+    Task<IApiResponse<InstitutionDetailResponse>> UpdateInstitutionSlug(string id, UpdateInstitutionSlugRequest request,
+        AuthData admin);
     Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync();
     Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId);
     Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName, string callerPlatformRole);

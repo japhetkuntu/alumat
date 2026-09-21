@@ -142,6 +142,19 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>To update institutions existing slug to something else— see UpdateInstitutionOrganizationTypeRequest.</summary>
+    [Authorize(Roles = "SuperAdmin,Support")]
+    [HttpPatch("{id}/institution-slug")]
+    [SwaggerOperation(Summary = "Update the institution's slug")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdateInstitutionSlug(string id, [FromBody] UpdateInstitutionSlugRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdateInstitutionSlug(id, request,acct);
+        return result.ToActionResult();
+    }
+
+    
     /// <summary>Alumni-vs-Community classification + Alumni-only cohort label wording — see UpdateInstitutionOrganizationTypeRequest.</summary>
     [Authorize(Roles = "SuperAdmin,Support")]
     [HttpPatch("{id}/organization-type")]

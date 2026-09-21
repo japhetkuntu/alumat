@@ -422,6 +422,37 @@ public class InstitutionManagementService(
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Features updated");
     }
 
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdateInstitutionSlug(string id, UpdateInstitutionSlugRequest request, AuthData admin)
+    {
+        try
+        {
+            var slug = request.Slug.Trim().ToLowerInvariant();
+            var institutionRes = await institutionRepo.GetByIdAsync(id);
+            if (institutionRes == null)
+            {
+                return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+            }
+
+            var slugIsAvailable = await institutionRepo.GetOneAsync(i => i.Slug ==slug);
+            if (slugIsAvailable != null)
+            {
+                return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Sorry the slug is already taken by another institution");
+            }
+
+            institutionRes.Slug = slug;
+            institutionRes.UpdatedAt = DateTime.UtcNow;
+            institutionRes.UpdatedBy = admin.Name;
+
+            var updatedRes = await institutionRepo.UpdateAsync(institutionRes);
+            return updatedRes < 1 ? ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to update institution's slug") : (await ToDetailDtoAsync(institutionRes)).ToOkApiResponse("Institution slug updated");
+        }
+        catch (Exception e)
+        {
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to update institution's slug");
+        }
+       
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName)
     {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);

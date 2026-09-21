@@ -107,6 +107,14 @@ public class UpdateInstitutionNameRequest
     public string Name { get; set; } = string.Empty;
 }
 
+public class UpdateInstitutionSlugRequest
+{
+    [MaxLength(63), RegularExpression("^[a-z0-9-]+$", ErrorMessage = "Slug must be lowercase letters, numbers, and hyphens only")]
+    public string Slug { get; set; } = string.Empty;
+    
+
+}
+
 public class UpdateInstitutionBrandingRequest
 {
     [Required, MaxLength(200)]
