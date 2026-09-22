@@ -250,7 +250,7 @@ export default function CampaignDetailPage() {
               className="whitespace-pre-wrap leading-[1.85]"
               style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
             >
-              {campaign.description || `No details have been provided for this ${isMembership ? "membership dues item" : "fundraiser"} yet. Please contact the alumni office for more information.`}
+              {campaign.description || `No details have been provided for this ${isMembership ? "membership dues item" : "fundraiser"} yet. Please contact the community office for more information.`}
             </p>
           </div>
 
@@ -267,7 +267,7 @@ export default function CampaignDetailPage() {
                 <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Loading updates…</p>
               ) : updates.length === 0 ? (
                 <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
-                  No updates yet. The alumni office will post progress here as this fundraiser moves forward.
+                  No updates yet. The community office will post progress here as this fundraiser moves forward.
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -621,7 +621,7 @@ export default function CampaignDetailPage() {
 
                   {!campaign.bankAccount && !campaign.mobileMoneyAccount && (
                     <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
-                      No account details configured yet. Contact the alumni office.
+                      No account details configured yet. Contact the community office.
                     </p>
                   )}
                 </div>

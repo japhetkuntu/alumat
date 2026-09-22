@@ -26,4 +26,11 @@ public class UpdateProfileRequest
     public List<string>? ClubsAndSocieties { get; set; }
     public List<string>? LeadershipRoles { get; set; }
     public string? Achievements { get; set; }
+    public string? ConnectionType { get; set; }
+    public List<string>? Skills { get; set; }
+    public List<string>? Interests { get; set; }
+    public bool? ShowEmailOnDirectory { get; set; }
+    public bool? ShowPhoneOnDirectory { get; set; }
+    public bool? ShowCompanyOnDirectory { get; set; }
+    public bool? ShowBioOnDirectory { get; set; }
 }

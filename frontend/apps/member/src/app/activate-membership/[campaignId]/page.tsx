@@ -120,7 +120,7 @@ function ActivateMembershipContent() {
             <span className="text-xs font-bold text-primary-foreground">UM</span>
           </div>
           <span className="font-[family-name:var(--font-display)] font-semibold text-sm text-foreground">
-            Alumni Portal
+            Member Portal
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ function ActivateMembershipContent() {
             {isExpired && (
               <div className="flex items-center gap-2 px-3 py-2 mt-6 rounded-xl bg-white/10 text-xs font-medium">
                 <AlertCircle size={13} />
-                These dues are closed. Contact the alumni office for assistance.
+                These dues are closed. Contact the community office for assistance.
               </div>
             )}
           </section>
@@ -203,8 +203,8 @@ function ActivateMembershipContent() {
             <ul className="space-y-2.5">
               {[
                 "Your account is automatically activated",
-                "A unique alumni membership number is assigned to you",
-                "You gain full access to the alumni portal",
+                "A unique member ID is assigned to you",
+                "You gain full access to the member portal",
                 "Your membership status is immediately confirmed",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5 text-xs text-muted-foreground">

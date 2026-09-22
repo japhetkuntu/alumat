@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = theme?.portalTitle || theme?.portalName || "Institution Portal";
   return {
     title,
-    description: "Alumni Institution Portal",
+    description: "Institution Portal",
     manifest: "/manifest.json",
     icons: theme?.iconUrl ? { icon: theme.iconUrl } : undefined,
     appleWebApp: {

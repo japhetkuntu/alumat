@@ -70,6 +70,8 @@ public class InstitutionManagementService(
     public async Task<IApiResponse<PgPagedResult<InstitutionListItemResponse>>> GetInstitutionsAsync(
         int page, int pageSize, string? search, string? status)
     {
+        try
+        {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 200) pageSize = 20;
 
@@ -144,19 +146,35 @@ public class InstitutionManagementService(
         };
 
         return result.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetInstitutionsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<InstitutionListItemResponse>>("Failed to getinstitutions");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> GetInstitutionAsync(string id)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetInstitutionAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to getinstitution");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> CreateInstitutionAsync(CreateInstitutionRequest request, string createdBy, string actorName)
     {
+        try
+        {
         var slug = request.Slug.Trim().ToLowerInvariant();
         if (await institutionRepo.GetOneAsync(i => i.Slug == slug) is not null)
             return ApiResponseExtensions.ToConflictApiResponse<InstitutionDetailResponse>("Slug is already taken");
@@ -276,10 +294,18 @@ public class InstitutionManagementService(
             logger.LogError(e, "Failed to onboard institution {Slug}", slug);
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to create institution");
         }
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "CreateInstitutionAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to createinstitution");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateStatusAsync(string id, UpdateInstitutionStatusRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         if (request.Status != "Active" && request.Status != "Suspended")
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Status must be either \"Active\" or \"Suspended\"");
 
@@ -295,10 +321,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"set institution status to {request.Status}", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Status updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateStatusAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatestatus");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateNameAsync(string id, UpdateInstitutionNameRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -312,10 +346,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"renamed institution from \"{previousName}\" to \"{institution.Name}\"", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Institution renamed");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateNameAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatename");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateMemberActivePolicyAsync(string id, UpdateInstitutionMemberPolicyRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -332,10 +374,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"set active-member policy to {request.MemberActivePolicy}", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Active-member policy updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateMemberActivePolicyAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatememberactivepolicy");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateAutoApproveMembersAsync(string id, UpdateInstitutionAutoApproveMembersRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -348,10 +398,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"{(request.AutoApproveMembers ? "enabled" : "disabled")} auto-approve for members", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Auto-approve setting updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateAutoApproveMembersAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updateautoapprovemembers");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateOrganizationTypeAsync(string id, UpdateInstitutionOrganizationTypeRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -369,10 +427,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"set organization type to {request.OrganizationType}", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Organization type updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateOrganizationTypeAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updateorganizationtype");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateBrandingAsync(string id, UpdateInstitutionBrandingRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -399,10 +465,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, "updated institution branding", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Branding updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateBrandingAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatebranding");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateFeaturesAsync(string id, UpdateInstitutionFeaturesRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -420,7 +494,13 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"updated institution features ({summary})", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Features updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateFeaturesAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatefeatures");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateInstitutionSlug(string id, UpdateInstitutionSlugRequest request, AuthData admin)
     {
@@ -433,7 +513,7 @@ public class InstitutionManagementService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
             }
 
-            var slugIsAvailable = await institutionRepo.GetOneAsync(i => i.Slug ==slug);
+            var slugIsAvailable = await institutionRepo.GetOneAsync(i => i.Slug == slug && i.Id != id);
             if (slugIsAvailable != null)
             {
                 return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Sorry the slug is already taken by another institution");
@@ -446,15 +526,84 @@ public class InstitutionManagementService(
             var updatedRes = await institutionRepo.UpdateAsync(institutionRes);
             return updatedRes < 1 ? ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to update institution's slug") : (await ToDetailDtoAsync(institutionRes)).ToOkApiResponse("Institution slug updated");
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to update institution's slug");
         }
-       
+
     }
+
+    public async Task<IApiResponse<object>> DeleteInstitutionAsync(string id, string updatedBy, string actorName)
+    {
+        try
+        {
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
+            if (institution is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Institution not found");
+
+            var memberCount = await db.Members.IgnoreQueryFilters().CountAsync(m => m.InstitutionId == id);
+            if (memberCount > 0)
+                return ApiResponseExtensions.ToConflictApiResponse<object>(
+                    $"This institution cannot be deleted because it has {memberCount:N0} member{(memberCount == 1 ? "" : "s")}.");
+
+            var dependencyCounts = new Dictionary<string, int>();
+            foreach (var entityType in db.Model.GetEntityTypes())
+            {
+                if (entityType.ClrType == typeof(Institution) || entityType.ClrType == typeof(MemberEntity))
+                    continue;
+                var institutionProperty = entityType.FindProperty(nameof(MemberEntity.InstitutionId));
+                if (institutionProperty is null)
+                    continue;
+
+                var countTask = (Task<int>)typeof(InstitutionManagementService)
+                    .GetMethod(nameof(CountTenantRowsAsync), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                    .MakeGenericMethod(entityType.ClrType)
+                    .Invoke(this, [id])!;
+                var count = await countTask;
+                if (count > 0)
+                    dependencyCounts[entityType.ClrType.Name] = count;
+            }
+
+            if (dependencyCounts.Count > 0)
+                return ApiResponseExtensions.ToConflictApiResponse<object>(
+                    $"This institution has related data and cannot be deleted yet: {string.Join(", ", dependencyCounts.Select(d => $"{d.Key} ({d.Value:N0})"))}.");
+
+            await institutionRepo.RemoveAsync(institution);
+            await transaction.CommitAsync();
+            await auditLog.LogAsync(updatedBy, actorName, "deleted institution", institution.Name);
+            return ((object)new { id }).ToOkApiResponse("Institution deleted");
+        }
+        catch (DbUpdateException)
+        {
+            await transaction.RollbackAsync();
+            return ApiResponseExtensions.ToConflictApiResponse<object>(
+                "This institution could not be deleted because related records still exist.");
+        }
+        catch (Exception e)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(e, "Failed to delete institution {InstitutionId}", id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to delete institution");
+        }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "DeleteInstitutionAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to deleteinstitution");
+        }}
+
+    private Task<int> CountTenantRowsAsync<TEntity>(string institutionId) where TEntity : class
+        => db.Set<TEntity>().IgnoreQueryFilters()
+            .CountAsync(entity => EF.Property<string>(entity, nameof(MemberEntity.InstitutionId)) == institutionId);
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -513,10 +662,18 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, $"updated institution payment settings (fee {request.PlatformFeePercentage}%)", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Payment settings updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdatePaymentsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatepayments");
+        }}
 
     public async Task<IApiResponse<InstitutionRevenueResponse>> GetRevenueAsync(string id)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionRevenueResponse>("Institution not found");
@@ -549,7 +706,13 @@ public class InstitutionManagementService(
         var net = institutionSettledContributions.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount);
 
         return new InstitutionRevenueResponse(id, gross, fee, net, institutionSettledContributions.Count + confirmedOrders.Count + confirmedRequests.Count).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetRevenueAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionRevenueResponse>("Failed to getrevenue");
+        }}
 
     /// <summary>
     /// A campaign targeting exactly one batch settles straight into that
@@ -602,6 +765,8 @@ public class InstitutionManagementService(
     /// </summary>
     public async Task<IApiResponse<PgPagedResult<PlatformPaymentDto>>> GetPaymentsAsync(string? id, int page, int pageSize, string? status, string? source)
     {
+        try
+        {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 200) pageSize = 20;
 
@@ -659,7 +824,13 @@ public class InstitutionManagementService(
             Results = pageItems,
         };
         return result.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetPaymentsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<PlatformPaymentDto>>("Failed to getpayments");
+        }}
 
     /// <summary>
     /// Full detail for a single payment — tries Contribution first, then StoreOrder,
@@ -671,6 +842,8 @@ public class InstitutionManagementService(
     /// </summary>
     public async Task<IApiResponse<PaymentDetailDto>> GetPaymentDetailAsync(string institutionId, string paymentId, string? source)
     {
+        try
+        {
         if (string.IsNullOrEmpty(source) || source == "Contribution")
         {
             var contribution = await contributionRepo.GetOneAsync(c => c.Id == paymentId && c.InstitutionId == institutionId, ignoreQueryFilters: true);
@@ -739,10 +912,18 @@ public class InstitutionManagementService(
         }
 
         return ApiResponseExtensions.ToNotFoundApiResponse<PaymentDetailDto>("Payment not found");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetPaymentDetailAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PaymentDetailDto>("Failed to getpaymentdetail");
+        }}
 
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateLandingContentAsync(string id, UpdateInstitutionLandingContentRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
@@ -758,17 +939,31 @@ public class InstitutionManagementService(
         await auditLog.LogAsync(updatedBy, actorName, "updated institution landing page content", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Landing content updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateLandingContentAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatelandingcontent");
+        }}
 
     public BaseDomainsResponse GetBaseDomains() =>
         new(config["PlatformBaseDomain"] ?? string.Empty, config["AdminBaseDomain"] ?? string.Empty);
 
     public async Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug)
     {
+        try
+        {
         var normalized = slug.Trim().ToLowerInvariant();
         var taken = await institutionRepo.GetOneAsync(i => i.Slug == normalized) is not null;
         return new SlugAvailabilityResponse(normalized, !taken).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "CheckSlugAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<SlugAvailabilityResponse>("Failed to checkslug");
+        }}
 
     private const string DashboardSummaryCacheKey = "platform-dashboard-summary";
 
@@ -784,13 +979,21 @@ public class InstitutionManagementService(
     /// </summary>
     public async Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync()
     {
+        try
+        {
         var cached = await cache.GetAsync<PlatformDashboardSummary>(DashboardSummaryCacheKey);
         if (cached is not null) return cached.ToOkApiResponse();
 
         var summary = await ComputeDashboardSummaryAsync();
         await cache.SetAsync(DashboardSummaryCacheKey, summary, TimeSpan.FromSeconds(90));
         return summary.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetDashboardSummaryAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformDashboardSummary>("Failed to getdashboardsummary");
+        }}
 
     private async Task<PlatformDashboardSummary> ComputeDashboardSummaryAsync()
     {
@@ -824,6 +1027,8 @@ public class InstitutionManagementService(
 
     public async Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId)
     {
+        try
+        {
         var staff = await staffRepo.GetQueryable(s => s.InstitutionId == institutionId, ignoreQueryFilters: true)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
@@ -832,7 +1037,13 @@ public class InstitutionManagementService(
             .Select(s => new InstitutionStaffDto(s.Id, s.FirstName, s.LastName, s.Email, s.Role, s.IsDisabled, s.LastLoginAt, s.CreatedAt))
             .ToList()
             .ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetInstitutionStaffAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<InstitutionStaffDto>>("Failed to getinstitutionstaff");
+        }}
 
     /// <summary>
     /// The three institution-staff roles a platform staffer can grant here.
@@ -846,6 +1057,8 @@ public class InstitutionManagementService(
     public async Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(
         string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName, string callerPlatformRole)
     {
+        try
+        {
         if (!IsValidInstitutionRole(request.Role))
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffDto>(
                 "Invalid role. Must be one of: SuperAdmin, Admin, ScopedAdmin.");
@@ -896,11 +1109,19 @@ public class InstitutionManagementService(
 
         return new InstitutionStaffDto(staff.Id, staff.FirstName, staff.LastName, staff.Email, staff.Role, staff.IsDisabled, staff.LastLoginAt, staff.CreatedAt)
             .ToCreatedApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "InviteInstitutionStaffAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionStaffDto>("Failed to inviteinstitutionstaff");
+        }}
 
     public async Task<IApiResponse<InstitutionStaffDto>> SetInstitutionStaffDisabledAsync(
         string institutionId, string staffId, bool isDisabled, string updatedBy, string actorName)
     {
+        try
+        {
         var staff = await staffRepo.GetOneAsync(s => s.Id == staffId && s.InstitutionId == institutionId, ignoreQueryFilters: true);
         if (staff is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionStaffDto>("Admin not found");
@@ -915,7 +1136,13 @@ public class InstitutionManagementService(
 
         return new InstitutionStaffDto(staff.Id, staff.FirstName, staff.LastName, staff.Email, staff.Role, staff.IsDisabled, staff.LastLoginAt, staff.CreatedAt)
             .ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "SetInstitutionStaffDisabledAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionStaffDto>("Failed to setinstitutionstaffdisabled");
+        }}
 
     /// <summary>
     /// Fired once, right after a brand-new institution and its first admin

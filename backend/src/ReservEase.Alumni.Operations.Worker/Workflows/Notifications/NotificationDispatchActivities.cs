@@ -203,23 +203,45 @@ public class NotificationDispatchActivities(
                 Phone = member.Phone,
                 SmsAlerts = pref?.SmsAlerts ?? false,
                 WhatsAppAlerts = pref?.WhatsAppAlerts ?? false,
+                EventReminders = pref?.EventReminders ?? true,
             };
         }, "load member with preference", memberId);
 
     [Activity("NotificationDispatch.CreateNotification")]
     public virtual Task CreateNotificationAsync(string institutionId, Notification notification) =>
-        Wrap(() =>
+        Wrap(async () =>
         {
             currentTenant.SetInstitutionId(institutionId);
-            return notifRepo.AddAsync(notification);
+            var duplicate = await notifRepo.GetOneAsync(n =>
+                n.InstitutionId == institutionId &&
+                n.RecipientId == notification.RecipientId &&
+                n.Type == notification.Type &&
+                n.RelatedEntityId == notification.RelatedEntityId &&
+                n.Body == notification.Body, ignoreQueryFilters: true);
+            if (duplicate is null)
+                await notifRepo.AddAsync(notification);
         }, "create notification", notification.RecipientId);
 
     [Activity("NotificationDispatch.CreateNotifications")]
     public virtual Task CreateNotificationsAsync(string institutionId, List<Notification> notifications) =>
-        Wrap(() =>
+        Wrap(async () =>
         {
             currentTenant.SetInstitutionId(institutionId);
-            return notifRepo.AddRangeAsync(notifications);
+            var newNotifications = new List<Notification>();
+            foreach (var notification in notifications)
+            {
+                var duplicate = await notifRepo.GetOneAsync(n =>
+                    n.InstitutionId == institutionId &&
+                    n.RecipientId == notification.RecipientId &&
+                    n.Type == notification.Type &&
+                    n.RelatedEntityId == notification.RelatedEntityId &&
+                    n.Body == notification.Body, ignoreQueryFilters: true);
+                if (duplicate is null)
+                    newNotifications.Add(notification);
+            }
+
+            if (newNotifications.Count > 0)
+                await notifRepo.AddRangeAsync(newNotifications);
         }, "create notifications", institutionId);
 
     /// <summary>

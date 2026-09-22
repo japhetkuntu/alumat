@@ -13,6 +13,8 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
     public async Task<IApiResponse<ReservEase.Alumni.PostgresDb.Sdk.Models.PgPagedResult<PlatformStaffResponse>>> GetStaffAsync(
         int page, int pageSize, string? search)
     {
+        try
+        {
         var loweredSearch = search?.ToLower();
         var paged = await staffRepo.GetPagedAsync(page, pageSize, sortColumn: "Name", sortDir: "asc",
             filter: string.IsNullOrWhiteSpace(loweredSearch)
@@ -32,10 +34,18 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
         };
 
         return result.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetStaffAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<ReservEase.Alumni.PostgresDb.Sdk.Models.PgPagedResult<PlatformStaffResponse>>("Failed to getstaff");
+        }}
 
     public async Task<IApiResponse<PlatformStaffResponse>> CreateAsync(CreatePlatformStaffRequest request, string createdBy, string actorName)
     {
+        try
+        {
         if (!PlatformStaffRoles.IsValid(request.Role))
             return ApiResponseExtensions.ToBadRequestApiResponse<PlatformStaffResponse>(
                 $"Invalid role. Must be one of: {string.Join(", ", PlatformStaffRoles.All)}.");
@@ -59,10 +69,18 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
         await auditLog.LogAsync(createdBy, actorName, "invited platform staff", staff.Name);
 
         return ToDto(staff).ToCreatedApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "CreateAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformStaffResponse>("Failed to create");
+        }}
 
     public async Task<IApiResponse<PlatformStaffResponse>> UpdateAsync(string id, UpdatePlatformStaffRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var staff = await staffRepo.GetByIdAsync(id);
         if (staff is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<PlatformStaffResponse>("Staff account not found");
@@ -82,7 +100,13 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
         await auditLog.LogAsync(updatedBy, actorName, request.IsDisabled ? "disabled platform staff" : "updated platform staff", staff.Name);
 
         return ToDto(staff).ToOkApiResponse("Staff account updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformStaffResponse>("Failed to update");
+        }}
 
     private static PlatformStaffResponse ToDto(PlatformStaff s) =>
         new(s.Id, s.Name, s.Email, s.Role, s.Team, s.Mfa, s.IsDisabled, s.LastActiveAt);

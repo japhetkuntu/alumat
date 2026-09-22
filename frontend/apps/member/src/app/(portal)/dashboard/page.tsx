@@ -84,7 +84,7 @@ function MembershipCard({
         {/* Left — identity */}
         <div className="space-y-0.5 sm:space-y-1">
           <p className="text-white/60 text-[11px] sm:text-[12px] font-semibold tracking-[0.1em] uppercase">
-            Alumni · Member card
+            Member card
           </p>
           <p className="text-[18px] sm:text-[26px] font-bold leading-tight">
             {profile?.firstName
@@ -592,7 +592,7 @@ export default function MemberDashboardPage() {
         <PageHeader
           eyebrow={new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           title={profile?.firstName ? `Welcome back, ${profile.firstName}.` : "Welcome back."}
-          description="Here's what's happening in your alumni community."
+          description="Here's what's happening in your member community."
         />
       </div>
 

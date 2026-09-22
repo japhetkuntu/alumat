@@ -31,10 +31,10 @@ export const dynamic = "force-dynamic";
 // to generic copy when an institution hasn't set one.
 export async function generateMetadata(): Promise<Metadata> {
   const [theme, origin] = await Promise.all([getInstitutionTheme(), getRequestOrigin()]);
-  const title = theme?.portalTitle || theme?.portalName || "Alumni Portal";
+  const title = theme?.portalTitle || theme?.portalName || "Member Portal";
   const description = theme?.tagline
-    ? `${theme.tagline} — the official ${theme.displayName ?? "alumni"} portal.`
-    : "A searchable directory, events, dues, jobs, and mentorship for every graduate, in one place.";
+    ? `${theme.tagline} — the official ${theme.displayName ?? "community"} portal.`
+    : "A searchable directory, events, dues, jobs, and community updates for members, in one place.";
 
   // Root-level defaults only — every route inherits these unless it sets its
   // own (page.tsx overrides title/description/OG for "/", legal pages set

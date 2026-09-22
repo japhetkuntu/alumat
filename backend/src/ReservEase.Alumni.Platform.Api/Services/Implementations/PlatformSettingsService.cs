@@ -6,7 +6,8 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class PlatformSettingsService(IAlumniPgRepository<PlatformSettings> platformSettingsRepo, IAuditLogService auditLog) : IPlatformSettingsService
+public class PlatformSettingsService(IAlumniPgRepository<PlatformSettings> platformSettingsRepo, IAuditLogService auditLog,
+    ILogger<PlatformSettingsService> logger) : IPlatformSettingsService
 {
     /// <summary>Fetches the one settings row, creating it with all-defaults on first access rather than requiring a seed migration.</summary>
     private async Task<PlatformSettings> GetOrCreateAsync()
@@ -21,12 +22,22 @@ public class PlatformSettingsService(IAlumniPgRepository<PlatformSettings> platf
 
     public async Task<IApiResponse<PlatformSettingsResponse>> GetAsync()
     {
+        try
+        {
         var settings = await GetOrCreateAsync();
         return new PlatformSettingsResponse(settings.BlockOverdueCampaignPayments).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformSettingsResponse>("Failed to get");
+        }}
 
     public async Task<IApiResponse<PlatformSettingsResponse>> UpdateAsync(UpdatePlatformSettingsRequest request, string updatedBy, string actorName)
     {
+        try
+        {
         var settings = await GetOrCreateAsync();
         settings.BlockOverdueCampaignPayments = request.BlockOverdueCampaignPayments;
         settings.UpdatedAt = DateTime.UtcNow;
@@ -37,5 +48,11 @@ public class PlatformSettingsService(IAlumniPgRepository<PlatformSettings> platf
             $"set platform-wide \"block overdue campaign payments\" to {request.BlockOverdueCampaignPayments}", "Platform settings");
 
         return new PlatformSettingsResponse(settings.BlockOverdueCampaignPayments).ToOkApiResponse("Settings updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformSettingsResponse>("Failed to update");
+        }}
 }

@@ -64,7 +64,7 @@ function ActivationCallbackContent() {
             <span className="text-xs font-bold text-primary-foreground">UM</span>
           </div>
           <span className="font-[family-name:var(--font-display)] font-semibold text-sm text-foreground">
-            Alumni Portal
+            Member Portal
           </span>
         </div>
         <a href="mailto:alumni@example.com" className="text-xs font-semibold text-primary hover:underline">
@@ -153,9 +153,9 @@ function ActivationCallbackContent() {
               <p className="text-sm font-semibold text-foreground">What&apos;s next?</p>
               <ul className="space-y-2.5">
                 {[
-                  "Your alumni membership number has been assigned",
+                  "Your membership number has been assigned",
                   "Your account is now fully active",
-                  "Sign in to access the full alumni portal",
+                  "Sign in to access the full member portal",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">
                     <CheckCircle2 size={14} className="text-success flex-shrink-0 mt-0.5" />

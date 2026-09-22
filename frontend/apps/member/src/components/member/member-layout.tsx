@@ -53,7 +53,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/contributions", label: "Give", icon: CreditCard },
       { href: "/store", label: "Store", icon: ShoppingBag },
       { href: "/store/orders", label: "My Orders", icon: Receipt },
-      { href: "/services", label: "Alumni Services", icon: FileText },
+      { href: "/services", label: "Member Services", icon: FileText },
     ],
   },
   {
@@ -62,7 +62,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/jobs", label: "Jobs", icon: Briefcase },
       { href: "/mentorship", label: "Mentorship", icon: GraduationCap },
       { href: "/directory", label: "Directory", icon: Users },
-      { href: "/alumni-map", label: "Alumni Map", icon: Globe },
+      { href: "/alumni-map", label: "Community Map", icon: Globe },
     ],
   },
   {
@@ -151,7 +151,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
-  const brandName = navTheme?.displayName || (navTheme?.organizationType === "Community" ? "Member Portal" : "Alumni Portal");
+  const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const visibleGroups = navGroups
     .map((g) => ({
@@ -299,7 +299,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
   const { data: navTheme } = useNavTheme();
-  const brandName = navTheme?.displayName || (navTheme?.organizationType === "Community" ? "Member Portal" : "Alumni Portal");
+  const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
 
   useEffect(() => {

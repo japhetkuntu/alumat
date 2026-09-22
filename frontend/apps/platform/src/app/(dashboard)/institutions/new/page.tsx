@@ -21,6 +21,10 @@ function slugify(v: string) {
   return v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+function normalizeSlug(v: string) {
+  return v.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+}
+
 export default function NewInstitutionPage() {
   return (
     <Suspense fallback={null}>
@@ -191,7 +195,7 @@ function NewInstitutionPageContent() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Subdomain slug</Label>
-                    <Input value={form.slug} onChange={(e) => update("slug", slugify(e.target.value))} placeholder="greenfield" />
+                    <Input value={form.slug} onChange={(e) => update("slug", normalizeSlug(e.target.value))} placeholder="greenfield" />
                     {form.slug && baseDomains && (
                       <div className="text-[12px] text-muted-foreground space-y-0.5">
                         <p>Member portal: {form.slug}.{baseDomains.memberBaseDomain}</p>
@@ -215,8 +219,8 @@ function NewInstitutionPageContent() {
                 <div className="space-y-1.5 pt-2">
                   <Label>Organization type</Label>
                   <p className="text-[12px] text-muted-foreground -mt-0.5">
-                    Alumni institutions organize by graduation year (Batches, &quot;Class of X&quot;). A Community has no
-                    graduation years — members organize via Communities instead, and that year-based UI is hidden throughout the portal. Changeable later.
+                    Choose Alumni for graduation-year cohorts, or Community for groups, chapters, and other member structures.
+                    This can be changed later.
                   </p>
                   <div className="flex gap-2">
                     <Button type="button" size="sm" variant={form.organizationType === "Alumni" ? "default" : "outline"} onClick={() => update("organizationType", "Alumni")}>

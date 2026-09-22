@@ -169,6 +169,9 @@ public class EventService(
             var ev = await eventRepo.GetByIdAsync(request.EventId);
             if (ev is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
+            var detailsChanged = ev.StartDate != DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc)
+                || ev.EndDate != (request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : null)
+                || ev.Venue != request.Venue || ev.Capacity != request.Capacity;
 
             if (!admin.CanModifyScopedItem(ev.YearGroups, ev.CreatedBy, ev.CommunityId))
             {
@@ -216,6 +219,15 @@ public class EventService(
             ev.UpdatedBy = admin.Id;
             await eventRepo.UpdateAsync(ev);
             await InvalidatePublicEventsCacheAsync();
+            if (detailsChanged || ev.Status == "Cancelled")
+            {
+                var recipients = await rsvpRepo.GetAllAsync(r => r.EventId == ev.Id && r.Status == "Confirmed");
+                foreach (var rsvp in recipients)
+                    await temporalProvider.EnqueueNotificationAsync(
+                        ev.Status == "Cancelled"
+                            ? NotificationRequest.EventCancelled(ev.InstitutionId, rsvp.MemberId, ev.Id, ev.Title)
+                            : NotificationRequest.EventDetailsChanged(ev.InstitutionId, rsvp.MemberId, ev.Id, ev.Title), logger);
+            }
             logger.LogInformation("Event {EventId} updated by admin {AdminId}", ev.Id, admin.Id);
             return ev.ToDto().ToOkApiResponse();
         }
@@ -247,6 +259,10 @@ public class EventService(
             ev.UpdatedBy = admin.Id;
             await eventRepo.UpdateAsync(ev);
             await InvalidatePublicEventsCacheAsync();
+            var recipients = await rsvpRepo.GetAllAsync(r => r.EventId == ev.Id && r.Status == "Confirmed");
+            foreach (var rsvp in recipients)
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.EventCancelled(ev.InstitutionId, rsvp.MemberId, ev.Id, ev.Title), logger);
             logger.LogInformation("Event {EventId} cancelled", eventId);
             return new object().ToOkApiResponse("Event cancelled");
         }
@@ -404,4 +420,3 @@ public class EventService(
         }
     }
 }
-

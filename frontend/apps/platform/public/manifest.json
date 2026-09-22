@@ -1,7 +1,7 @@
 {
   "name": "Platform Portal",
   "short_name": "Platform",
-  "description": "Operator portal for managing institutions on the alumni platform.",
+  "description": "Operator portal for managing institutions and communities.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

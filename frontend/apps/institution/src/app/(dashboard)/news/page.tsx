@@ -99,7 +99,7 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
             supportsCommunity
             hideYearGroups={isCommunity}
-            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned year group or community." } : undefined}
+            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned group, chapter, or community." } : undefined}
           />
           <div className="space-y-2"><Label>Content</Label>
             <RichTextEditor value={form.content} onChange={(html) => f("content", html)} placeholder="Write your post content here..." /></div>
@@ -214,7 +214,7 @@ export default function AdminNewsPage() {
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">News</h1>
-          <p className="text-muted-foreground text-[13px] mt-1.5">Publish updates for the alumni community.</p>
+          <p className="text-muted-foreground text-[13px] mt-1.5">Publish updates for your community.</p>
         </div>
         <Button onClick={() => setShowCreate(!showCreate)}>
           <Plus size={16} />Create article

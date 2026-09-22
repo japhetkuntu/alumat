@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922132823_AddOnboardingLeadQualification")]
+    partial class AddOnboardingLeadQualification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1254,9 +1257,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Company")
                         .HasColumnType("text");
 
-                    b.Property<string>("ConnectionType")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1298,9 +1298,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("InstitutionId")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<List<string>>("Interests")
-                        .HasColumnType("text[]");
 
                     b.Property<bool>("IsEmailVerified")
                         .HasColumnType("boolean");
@@ -1370,23 +1367,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<int>("RejectionCount")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("ShowBioOnDirectory")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("ShowCompanyOnDirectory")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("ShowEmailOnDirectory")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("ShowOnAlumniMap")
                         .HasColumnType("boolean");
-
-                    b.Property<bool>("ShowPhoneOnDirectory")
-                        .HasColumnType("boolean");
-
-                    b.Property<List<string>>("Skills")
-                        .HasColumnType("text[]");
 
                     b.Property<string>("Status")
                         .IsRequired()

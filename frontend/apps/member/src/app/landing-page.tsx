@@ -188,7 +188,7 @@ function HeroCarousel({ images }: { images: string[] }) {
         <img
           key={src + i}
           src={src}
-          alt="Alumni community"
+          alt="Community"
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
           style={{ opacity: i === index ? 1 : 0 }}
         />
@@ -226,33 +226,33 @@ const NAV_LINKS = [
 ];
 
 const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; featureKey: string | undefined; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }>; tone?: "primary" | "accent" }[] = [
-  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by alumni employers before they reach public boards: first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
-  { icon: Users,        label: "Directory",     title: "Find any old student in seconds", desc: "Search by name, graduation year, or location, from local chapters to the diaspora.", featureKey: "Directory", illustration: DirectoryIllustration },
-  { icon: CreditCard,   label: "Contributions", title: "Fund projects & welfare",       desc: "Easy payments for school development fundraisers, year-group dues, and member welfare support.", featureKey: "Contributions", illustration: FundraisingIllustration },
-  { icon: Globe,        label: "Events",        title: "Never miss a Speech Day or AGM", desc: "RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions.", featureKey: "Events", illustration: EventsIllustration },
+  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by community employers before they reach public boards: first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
+  { icon: Users,        label: "Directory",     title: "Find people in your community", desc: "Search by name, group, location, or role, from local chapters to a global network.", featureKey: "Directory", illustration: DirectoryIllustration },
+  { icon: CreditCard,   label: "Contributions", title: "Fund what matters",             desc: "Easy payments for community projects, membership dues, campaigns, and member support.", featureKey: "Contributions", illustration: FundraisingIllustration },
+  { icon: Globe,        label: "Events",        title: "Bring people together",          desc: "RSVP for gatherings, services, chapter meetings, celebrations, and community events.", featureKey: "Events", illustration: EventsIllustration },
   // Explicitly accent (not left to the grid's primary/accent alternation
   // below) — one of the three "big", more-visible cards should always carry
   // the secondary color, or an institution's secondary color ends up
   // confined to small cards where it's easy to miss entirely.
-  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with alumni who've already done what you're trying to do, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration, tone: "accent" },
-  { icon: ShoppingBag,  label: "Store",         title: "Shop alumni merchandise",      desc: "Buy branded gear and support the association, pay online, pick up or receive your order.", featureKey: "Store", illustration: StoreIllustration },
+  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with experienced members who can help you move forward, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration, tone: "accent" },
+  { icon: ShoppingBag,  label: "Store",         title: "Shop community merchandise",    desc: "Buy branded gear, support community initiatives, and manage orders in one place.", featureKey: "Store", illustration: StoreIllustration },
   { icon: FileText,     label: "Services",      title: "Request and pay for services online", desc: "Transcripts, verification letters, certificate reissues, and anything else the institution offers: submit your request, pay online, and track it right from your account.", featureKey: "Services", illustration: ServicesIllustration },
-  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from reunions, Speech Day, and every gathering in between, added by the school, viewed by everyone.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
-  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "A spotlight recognizing old students making waves globally and giving back to the school.", featureKey: "Spotlights", illustration: SpotlightIllustration },
-  { icon: Building2,    label: "Businesses",    title: "Support alumni-owned business", desc: "Browse businesses run by fellow graduates, or list your own and get discovered by the network.", featureKey: "BusinessDirectory", illustration: BusinessIllustration },
+  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from gatherings, celebrations, milestones, and moments shared by your community.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
+  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "Recognize members, leaders, supporters, and changemakers making a difference.", featureKey: "Spotlights", illustration: SpotlightIllustration },
+  { icon: Building2,    label: "Businesses",    title: "Support member businesses",    desc: "Browse businesses run by people in your community, or list your own and get discovered.", featureKey: "BusinessDirectory", illustration: BusinessIllustration },
   { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites: you choose what reaches you.", featureKey: undefined, illustration: NotificationsIllustration },
 ];
 
 const STATS = [
-  { end: 5000, suffix: "+",    label: "Alumni registered",     desc: "Verified graduates"          },
+  { end: 5000, suffix: "+",    label: "Members connected",     desc: "Verified community members" },
   { end: 120,  suffix: "+",    label: "Countries represented", desc: "A truly global network"            },
   // The one stat that gets the secondary color — blended toward white so it
   // stays legible on the dark, solid primary band regardless of how light
   // or dark the institution's own accent happens to be, unlike raw accent
   // text (which is only contrast-checked against a light/white background
   // elsewhere, not this one's colored backdrop).
-  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised for projects & welfare", desc: "Funding school development and member support", highlight: true },
-  { end: 300,  suffix: "+",    label: "Jobs posted",           desc: "Roles shared by alumni employers"  },
+  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised for community goals", desc: "Funding projects, campaigns, and member support", highlight: true },
+  { end: 300,  suffix: "+",    label: "Jobs posted",           desc: "Roles shared by community employers" },
 ];
 
 const USE_CASES = [
@@ -261,26 +261,26 @@ const USE_CASES = [
     eyebrow: "Career",
     image: IMG.storyJobs,
     scenario: "The job that never reached a public board",
-    desc: "Alumni employers post directly to the portal first, before LinkedIn, before agencies. Being in the network means seeing those roles first.",
+    desc: "Community employers post directly to the portal first, before LinkedIn and agencies. Being in the network means seeing those roles first.",
   },
   {
     icon: CreditCard,
     eyebrow: "Giving",
     image: IMG.storyGiving,
     scenario: "The dormitory project that needed 200 people",
-    desc: "From school development projects to member welfare support, year-group fundraisers pool contributions from graduates across the world.",
+    desc: "From community projects to member support, campaigns bring people together to contribute from wherever they are.",
   },
   {
     icon: Heart,
     eyebrow: "Mentorship",
     image: IMG.storyMentor,
     scenario: "The mentor who's already done it",
-    desc: "Every programme, every career path: there's a graduate ahead of you on that road. The mentorship feature is how you find them.",
+    desc: "Whatever path you are taking, there is an experienced member who can help. Mentorship makes that connection easier.",
   },
 ];
 
 const HOW_IT_WORKS = [
-  { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your alumni details. No long forms, no waiting for approval emails." },
+  { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your community details. No long forms, no unnecessary friction." },
   { n: "02", icon: MapPin,  title: "Build out your profile",        desc: "Add your career, company, location. The more context you give, the easier it is for the right people to find you." },
   { n: "03", icon: Zap,    title: "Use it",                         desc: "Browse jobs, back a fundraiser, request a mentor, or just show up in the directory so others can reach you." },
 ];
@@ -731,7 +731,7 @@ function NewsEventsSpotlight() {
             )}
           </div>
 
-          {/* Sidebar — alumni spotlight */}
+          {/* Sidebar — community spotlight */}
           <div className="flex flex-col gap-10">
             {spotlightPending ? (
               <SpotlightCardSkeleton />
@@ -766,7 +766,7 @@ function NewsEventsSpotlight() {
                 </div>
               </Link>
             ) : (
-              <EmptyPanel icon={Trophy} title="No spotlight yet" desc="A featured alumni story will appear here once one's approved." />
+              <EmptyPanel icon={Trophy} title="No spotlight yet" desc="A featured community story will appear here once one is approved." />
             )}
           </div>
 
@@ -805,14 +805,14 @@ function UpcomingEventsSection() {
             {events.map((e) => <EventCard key={e.id} item={e} />)}
           </div>
         ) : (
-          <EmptyPanel icon={Clock} big title="No events scheduled yet" desc="Reunions, chapter meetups, and Speech Day will show up here." />
+          <EmptyPanel icon={Clock} big title="No events scheduled yet" desc="Gatherings, chapter meetups, and community events will show up here." />
         )}
       </div>
     </Section>
   );
 }
 
-/** Alumni-owned businesses, showcased the way a chamber of commerce would — proof of what the network is doing out in the world, not just inside the portal. */
+/** Member-owned businesses, showcased the way a chamber of commerce would — proof of what the community is doing out in the world, not just inside the portal. */
 function BusinessDirectorySection() {
   const { items: businesses, isPending } = usePublicBusinesses();
 
@@ -826,7 +826,7 @@ function BusinessDirectorySection() {
             <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
               Out in the world
             </p>
-            <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Alumni business directory</h2>
+            <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Community business directory</h2>
           </div>
           {businesses.length > 0 && (
             <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
@@ -901,7 +901,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-cover shrink-0" />
-            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Alumni Portal"}</p>
+            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</p>
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
@@ -916,7 +916,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
           <div className="hidden md:flex items-center gap-2">
             <Link href="/login"><Button variant="ghost" size="sm" className="text-[13px] font-medium">Sign in</Button></Link>
-            <Link href="/register"><Button size="sm" className="text-[13px] font-semibold gap-1.5">Join now <ArrowRight size={12} /></Button></Link>
+            <Link href="/register"><Button size="sm" className="text-[13px] font-semibold gap-1.5">Request to join <ArrowRight size={12} /></Button></Link>
           </div>
 
           <button className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border transition-colors hover:bg-secondary"
@@ -939,7 +939,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
             <div className="mt-4 pt-4 flex flex-col gap-2.5" style={{ borderTop: "1px solid var(--border)" }}>
               <Link href="/login" onClick={() => setMenuOpen(false)}><Button variant="outline" className="w-full font-medium">Sign in</Button></Link>
               <Link href="/register" onClick={() => setMenuOpen(false)}>
-                <Button className="w-full font-semibold gap-2">Join now <ArrowRight size={14} /></Button>
+                <Button className="w-full font-semibold gap-2">Request to join <ArrowRight size={14} /></Button>
               </Link>
             </div>
           </div>
@@ -958,24 +958,29 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         <div className="absolute inset-x-0 bottom-0">
           <div className="section__inner--wide pb-10 sm:pb-14 pt-10">
             <p className="text-[11px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>
-              {content?.displayName || "Alumni Association"}
+              {content?.displayName || "Community Portal"}
             </p>
             <h1 className="font-[family-name:var(--font-display)] mb-5 max-w-[24ch]"
               style={{ fontSize: "clamp(2rem,4.4vw,3.4rem)", fontWeight: 700, lineHeight: 1.14, letterSpacing: "-0.02em", color: "white" }}>
-              {content?.heroHeadline || "Every graduate, one network, wherever they are."}
+              {content?.heroHeadline || "Every member, one community, wherever they are."}
             </h1>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/register">
-                <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-[15px] font-semibold gap-2">
-                  Join the network <ArrowRight size={15} />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-[15px] font-medium"
-                  style={{ borderColor: "var(--brand-accent, rgba(255,255,255,0.5))", color: "white", background: "color-mix(in oklch, var(--brand-accent, transparent) 22%, rgba(255,255,255,0.08))" }}>
-                  Already a member
-                </Button>
-              </Link>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/register">
+                  <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-[15px] font-semibold gap-2">
+                    Request to join <ArrowRight size={15} />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-[15px] font-medium"
+                    style={{ borderColor: "var(--brand-accent, rgba(255,255,255,0.5))", color: "white", background: "color-mix(in oklch, var(--brand-accent, transparent) 22%, rgba(255,255,255,0.08))" }}>
+                    Already a member
+                  </Button>
+                </Link>
+              </div>
+              <p className="max-w-[34ch] text-[12px] leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
+                Submit your details and the community team will review your request before you enter the network.
+              </p>
             </div>
           </div>
         </div>
@@ -997,7 +1002,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       <UpcomingEventsSection />
 
       {/* ════════════════════════════════════════════════════════════════
-          BUSINESS DIRECTORY — alumni-owned businesses, showing what the
+          BUSINESS DIRECTORY — member-owned businesses, showing what the
           network is doing out in the world, not just inside the portal.
           Hidden entirely when the institution has no approved listings.
       ════════════════════════════════════════════════════════════════ */}
@@ -1028,7 +1033,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
                   Your journey shaped you. Now shape what comes next.
                 </h2>
                 <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
-                  Join thousands of alumni already using the portal to connect, contribute, and grow with trusted peers.
+                  Join a growing community using the portal to connect, contribute, and grow with trusted peers.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
@@ -1058,10 +1063,10 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0 py-14">
             <div className="lg:w-[280px] lg:pr-10 shrink-0">
               <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, white 55%, transparent)" }}>
-                Alumni impact
+                Community impact
               </p>
               <h2 className="font-[family-name:var(--font-display)]" style={{ color: "white", fontSize: "clamp(1.5rem,2.4vw,2rem)", lineHeight: 1.15 }}>
-                What alumni are already doing here.
+                What members are already doing here.
               </h2>
             </div>
             <div ref={statsRef} className="flex-1 grid grid-cols-2 gap-y-2 sm:gap-y-0 rounded-xl sm:rounded-none divide-x divide-y sm:divide-y-0 md:grid-cols-4" style={{ borderColor: "color-mix(in oklch, white 15%, transparent)" }}>
@@ -1083,7 +1088,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               What&apos;s inside
             </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              One portal for every alumni need.
+              One portal for every community need.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
               From jobs and mentorship to fundraisers, events, and community connections.
@@ -1118,10 +1123,10 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               Why they join
             </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              The three reasons most alumni join.
+              The three reasons most members join.
             </h2>
             <p style={{ color: "var(--muted-foreground)", lineHeight: 1.75 }}>
-              These are the most common ways graduates use the portal to move forward.
+              These are the most common ways members use the portal to move forward.
             </p>
           </div>
 
@@ -1135,7 +1140,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
           <div className="mt-10 flex justify-center">
             <Link href="/register">
-              <Button className="h-11 px-8 font-semibold gap-2">Join the network <ArrowRight size={14} /></Button>
+              <Button className="h-11 px-8 font-semibold gap-2">Request to join <ArrowRight size={14} /></Button>
             </Link>
           </div>
         </div>
@@ -1171,17 +1176,17 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         <div className="section__inner flex flex-col sm:flex-row items-center justify-between gap-5">
           <Link href="/" className="flex items-center gap-3">
             <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-cover shrink-0" />
-            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Alumni Portal"}</span>
+            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</span>
           </Link>
 
           <p className="text-[11.5px] text-center" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
-            © {new Date().getFullYear()} {content?.displayName || "Alumni Portal"}
+            © {new Date().getFullYear()} {content?.displayName || "Member Portal"}
           </p>
 
           <nav className="flex flex-wrap items-center justify-center gap-5" aria-label="Footer links">
             {[
               { label: "Sign in",   href: "/login"    },
-              { label: "Join now",  href: "/register" },
+              { label: "Request to join",  href: "/register" },
               { label: "Terms",     href: "/terms"    },
               { label: "Privacy",   href: "/privacy"  },
             ].map(link => (

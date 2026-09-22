@@ -15,10 +15,13 @@ public class SupportCaseService(
     IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAlumniPgRepository<StaffEntity> staffRepo,
     IAlumniPgRepository<NotificationEntity> notificationRepo,
-    IAuditLogService auditLog) : ISupportCaseService
+    IAuditLogService auditLog,
+    ILogger<SupportCaseService> logger) : ISupportCaseService
 {
     public async Task<IApiResponse<List<SupportCaseResponse>>> GetCasesAsync(string? status)
     {
+        try
+        {
         var query = supportCaseRepo.GetQueryable();
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(c => c.Status == status);
@@ -26,10 +29,18 @@ public class SupportCaseService(
         var cases = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
         var items = await ToDtosAsync(cases);
         return items.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetCasesAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<SupportCaseResponse>>("Failed to getcases");
+        }}
 
     public async Task<IApiResponse<SupportCaseResponse>> CreateAsync(CreateSupportCaseRequest request, string createdBy)
     {
+        try
+        {
         var supportCase = new SupportCase
         {
             InstitutionId = request.InstitutionId,
@@ -44,10 +55,18 @@ public class SupportCaseService(
 
         var dto = (await ToDtosAsync([supportCase])).Single();
         return dto.ToCreatedApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "CreateAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<SupportCaseResponse>("Failed to create");
+        }}
 
     public async Task<IApiResponse<SupportCaseResponse>> UpdateStatusAsync(string id, UpdateSupportCaseStatusRequest request, string actorId, string actorName)
     {
+        try
+        {
         var supportCase = await supportCaseRepo.GetOneAsync(c => c.Id == id);
         if (supportCase is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<SupportCaseResponse>("Support case not found");
@@ -90,10 +109,18 @@ public class SupportCaseService(
 
         var dto = (await ToDtosAsync([supportCase])).Single();
         return dto.ToOkApiResponse("Status updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateStatusAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<SupportCaseResponse>("Failed to updatestatus");
+        }}
 
     public async Task<IApiResponse<SupportCaseResponse>> AddNoteAsync(string id, AddInternalNoteRequest request, string actorId, string actorName)
     {
+        try
+        {
         var supportCase = await supportCaseRepo.GetOneAsync(c => c.Id == id);
         if (supportCase is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<SupportCaseResponse>("Support case not found");
@@ -108,7 +135,13 @@ public class SupportCaseService(
 
         var dto = (await ToDtosAsync([supportCase])).Single();
         return dto.ToOkApiResponse("Note added");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "AddNoteAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<SupportCaseResponse>("Failed to addnote");
+        }}
 
     private async Task<List<SupportCaseResponse>> ToDtosAsync(List<SupportCase> cases)
     {

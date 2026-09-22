@@ -360,7 +360,7 @@ export default function AdminCampaignsPage() {
                     <h3 className="font-semibold text-[14px] leading-snug line-clamp-2">{c.title}</h3>
                     <p className="text-[12.5px] text-muted-foreground mt-1">
                       {c.yearGroups && c.yearGroups.length > 0
-                        ? (c.yearGroups.length === 1 ? `Class of ${c.yearGroups[0]}` : `Classes ${c.yearGroups.slice(0, 2).join(", ")}${c.yearGroups.length > 2 ? "…" : ""}`)
+                        ? (c.yearGroups.length === 1 ? `Cohort ${c.yearGroups[0]}` : `Cohorts ${c.yearGroups.slice(0, 2).join(", ")}${c.yearGroups.length > 2 ? "…" : ""}`)
                         : c.communityId
                           ? (communities.find((cm) => cm.id === c.communityId)?.name ?? "Community")
                           : "All members"}

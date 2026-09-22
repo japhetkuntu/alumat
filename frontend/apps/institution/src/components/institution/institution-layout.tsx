@@ -71,7 +71,7 @@ const baseNavItems = [
   { href: "/membership", label: "Dues", icon: CreditCard },
   { href: "/contributions", label: "Contributions", icon: CreditCard },
   { href: "/store", label: "Store", icon: ShoppingBag },
-  { href: "/services", label: "Alumni Services", icon: FileText },
+  { href: "/services", label: "Member Services", icon: FileText },
   { label: "People", isHeader: true },
   { href: "/members", label: "Members", icon: Users },
   { href: "/batches", label: "Batches", icon: Layers },

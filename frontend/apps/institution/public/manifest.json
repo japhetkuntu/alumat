@@ -1,7 +1,7 @@
 {
   "name": "Institution Portal",
   "short_name": "Institution",
-  "description": "Institution portal for managing your alumni network.",
+  "description": "Institution portal for managing your community.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

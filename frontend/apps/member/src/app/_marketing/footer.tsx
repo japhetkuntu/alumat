@@ -28,7 +28,7 @@ export function MarketingFooter() {
               <span className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>AlumUnion</span>
             </Link>
             <p className="text-[13px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
-              Free alumni portals for schools, universities, and any community that wants to stay connected.
+              A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.
             </p>
             <a href="mailto:hello@alumunion.com"
               className="inline-flex items-center gap-2 text-[12.5px] font-medium transition-colors hover:text-primary"

@@ -4,18 +4,17 @@ import { RedirectIfAuthenticated } from "@/components/institution/redirect-if-au
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const theme = await getInstitutionTheme();
-  // Only a real institution name can be dropped into "Run X's alumni
-  // office..." — the generic fallback ("your institution") reads fine
-  // standalone but odd once interpolated, so branch instead of always
-  // reusing the same template.
+  // Only a real institution name can be dropped into a full sentence like
+  // "Run X's community..." — the generic fallback reads better as plain,
+  // institutional copy, so branch instead of interpolating blindly.
   const institutionName = theme?.displayName;
   const displayName = institutionName || "your institution";
   const headline = theme?.authHeadline || (institutionName
-    ? `Run ${institutionName}'s alumni office with a clear view of what matters.`
-    : "Run your alumni office with a clear view of what matters.");
+    ? `Run ${institutionName}'s community with a clear view of what matters.`
+    : "Run your community with a clear view of what matters.");
   const subtext = theme?.authSubtext || (institutionName
-    ? `Approve members, keep membership current, publish opportunities, and steward every contribution from one trusted ${institutionName} workspace.`
-    : "Approve members, keep membership current, publish opportunities, and steward every contribution from one trusted workspace.");
+    ? `Approve members, keep the community current, publish opportunities, and steward every contribution from one trusted ${institutionName} workspace.`
+    : "Approve members, keep the community current, publish opportunities, and steward every contribution from one trusted workspace.");
   const markImage = theme?.iconUrl || theme?.logoUrl;
 
   return (
@@ -92,7 +91,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           {/* Footer line */}
           <div className="border-t pt-6" style={{ borderColor: "rgba(255,255,255,0.15)" }}>
             <p className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {institutionName ? `${institutionName} alumni workspace` : "Staff workspace"} &middot; Staff access only
+              {institutionName ? `${institutionName} community workspace` : "Community workspace"} &middot; Staff access only
             </p>
           </div>
         </div>

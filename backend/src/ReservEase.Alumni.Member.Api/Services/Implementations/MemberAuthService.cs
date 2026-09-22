@@ -676,6 +676,13 @@ public class MemberAuthService(
             member.ClubsAndSocieties = request.ClubsAndSocieties ?? member.ClubsAndSocieties;
             member.LeadershipRoles = request.LeadershipRoles ?? member.LeadershipRoles;
             member.Achievements = request.Achievements ?? member.Achievements;
+            member.ConnectionType = request.ConnectionType is null ? member.ConnectionType : string.IsNullOrWhiteSpace(request.ConnectionType) ? null : request.ConnectionType.Trim();
+            member.Skills = request.Skills ?? member.Skills;
+            member.Interests = request.Interests ?? member.Interests;
+            member.ShowEmailOnDirectory = request.ShowEmailOnDirectory ?? member.ShowEmailOnDirectory;
+            member.ShowPhoneOnDirectory = request.ShowPhoneOnDirectory ?? member.ShowPhoneOnDirectory;
+            member.ShowCompanyOnDirectory = request.ShowCompanyOnDirectory ?? member.ShowCompanyOnDirectory;
+            member.ShowBioOnDirectory = request.ShowBioOnDirectory ?? member.ShowBioOnDirectory;
 
             if (!member.ShowOnAlumniMap)
             {
@@ -910,5 +917,7 @@ public class MemberAuthService(
         m.IsMembershipActive, m.MembershipExpiry, m.MembershipYearsPaid, m.LastMembershipPaidAt,
         m.ShowOnAlumniMap, m.MapLatitude, m.MapLongitude, m.DateOfBirth,
         m.YearOfEntry, m.House, m.StudentStatus, m.PrefectStatus,
-        m.ClubsAndSocieties, m.LeadershipRoles, m.Achievements);
+        m.ClubsAndSocieties, m.LeadershipRoles, m.Achievements,
+        m.ConnectionType, m.Skills, m.Interests,
+        m.ShowEmailOnDirectory, m.ShowPhoneOnDirectory, m.ShowCompanyOnDirectory, m.ShowBioOnDirectory);
 }

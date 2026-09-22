@@ -291,8 +291,8 @@ export default function AdminEventsPage() {
                     {e.yearGroups && e.yearGroups.length > 0 ? (
                       <Badge variant="secondary" className="text-[9px] font-bold uppercase tracking-widest">
                         {e.yearGroups.length === 1
-                          ? `Class of ${e.yearGroups[0]}`
-                          : `Classes of ${e.yearGroups.slice(0, 2).join(", ")}${e.yearGroups.length > 2 ? "…" : ""}`}
+                          ? `Cohort ${e.yearGroups[0]}`
+                          : `Cohorts ${e.yearGroups.slice(0, 2).join(", ")}${e.yearGroups.length > 2 ? "…" : ""}`}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest">

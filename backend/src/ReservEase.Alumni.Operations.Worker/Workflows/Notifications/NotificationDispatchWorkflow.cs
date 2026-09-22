@@ -53,6 +53,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         NotificationKind.SpotlightDecision => ProcessSpotlightDecisionAsync(request),
         NotificationKind.BirthdayShoutout => ProcessBirthdayShoutoutAsync(request),
         NotificationKind.Email => ProcessEmailAsync(request),
+        NotificationKind.EventCancelled or NotificationKind.EventDetailsChanged or
+        NotificationKind.EventRsvpCancelled
+            => ProcessMemberLifecycleAsync(request),
         _ => LogUnhandledKindAsync(request),
     };
 
@@ -572,6 +575,42 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    private async Task ProcessMemberLifecycleAsync(NotificationRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.MemberId)) return;
+        var member = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(request.MemberId!),
+            NotificationActivityOptions.DatabaseRead);
+        if (member is null) return;
+
+        // Event and campaign lifecycle notifications use the same opt-out switch as
+        // their ordinary alerts. Explicit opt-outs must never be bypassed by a
+        // state-change notification.
+        var eventKinds = request.Kind is NotificationKind.EventCancelled or NotificationKind.EventDetailsChanged
+            or NotificationKind.EventRsvpCancelled;
+        if (eventKinds && !member.EventReminders) return;
+
+        var institution = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId),
+            NotificationActivityOptions.DatabaseRead);
+        var notification = new Notification
+        {
+            RecipientId = request.MemberId,
+            RecipientType = "Member",
+            Title = request.NotificationTitle ?? "Update",
+            Body = request.NotificationMessage ?? string.Empty,
+            Type = request.NotificationType ?? request.Kind.ToString(),
+            RelatedEntityId = request.EventId,
+            RelatedEntityType = request.RelatedEntityType ?? "Event",
+            ActionUrl = MemberUrl(institution, request.RelatedEntityType == "Campaign" ? "/contributions" : $"/events/{request.EventId}"),
+            CreatedBy = "system",
+        };
+        await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification),
+            NotificationActivityOptions.DatabaseWrite);
+        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId, institution, notification.Body);
     }
 
     private async Task ProcessSpotlightDecisionAsync(NotificationRequest request)

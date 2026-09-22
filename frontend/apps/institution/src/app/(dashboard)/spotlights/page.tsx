@@ -149,7 +149,7 @@ export default function AdminSpotlightsPage() {
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Alumni spotlights</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Member spotlights</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Review submitted stories and publish trusted community recognition.</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
@@ -224,7 +224,7 @@ export default function AdminSpotlightsPage() {
                       <div>
                         <h3 className="font-black text-base leading-tight">{s.title}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {s.memberName ?? "Unknown"} &middot; Class of {s.memberGraduationYear ?? "N/A"} &middot; {formatDate(s.createdAt)}
+                          {s.memberName ?? "Unknown"} &middot; Cohort {s.memberGraduationYear ?? "N/A"} &middot; {formatDate(s.createdAt)}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -450,7 +450,7 @@ export default function AdminSpotlightsPage() {
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold truncate">{m.firstName} {m.lastName}</p>
-                          <p className="text-xs text-muted-foreground truncate">{m.email} · Class of {m.graduationYear}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.email} · Cohort {m.graduationYear}</p>
                         </div>
                       </button>
                     ))
@@ -468,7 +468,7 @@ export default function AdminSpotlightsPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">{selectedMember.firstName} {selectedMember.lastName}</p>
-                  <p className="text-xs text-muted-foreground">{selectedMember.email} · Class of {selectedMember.graduationYear}</p>
+                  <p className="text-xs text-muted-foreground">{selectedMember.email} · Cohort {selectedMember.graduationYear}</p>
                 </div>
                 <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={() => setSelectedMember(null)}>Change</Button>
               </div>

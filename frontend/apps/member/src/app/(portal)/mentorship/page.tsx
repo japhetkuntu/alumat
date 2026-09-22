@@ -607,7 +607,7 @@ export default function MemberMentorshipPage() {
                   Register as a mentor
                 </h2>
                 <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
-                  Share your experience with fellow graduates. Your application will be reviewed before going live.
+                  Share your experience with fellow members. Your application will be reviewed before going live.
                 </p>
               </div>
 
@@ -718,14 +718,14 @@ export default function MemberMentorshipPage() {
                   Why alumni mentor
                 </h3>
                 <p className="text-[13px] mt-1 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                  A few hours of your time can change the direction of a fellow graduate&apos;s career.
+                  A few hours of your time can change the direction of a fellow member&apos;s career.
                 </p>
               </div>
               <ul className="space-y-3.5">
                 <li className="flex items-start gap-2.5">
                   <GraduationCap size={16} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
                   <span className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                    Guide recent graduates through career decisions, further study, or industry moves.
+                    Guide newer members through career decisions, further study, or industry moves.
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">

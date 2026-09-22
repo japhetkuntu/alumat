@@ -224,7 +224,7 @@ export default function CommunitiesPage() {
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Communities</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
-            Sub-groups inside your alumni network. Promote an approved member to Leader so they can manage day-to-day requests and moderation themselves.
+            Sub-groups inside your community network. Promote an approved member to Leader so they can manage day-to-day requests and moderation themselves.
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>

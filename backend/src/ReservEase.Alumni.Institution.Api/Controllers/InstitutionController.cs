@@ -30,6 +30,8 @@ public class InstitutionController(
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     ICurrentTenantService currentTenant,
     IInstitutionAuditLogService auditLog,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
+    IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
     IConfiguration config) : DefaultController
 {
     /// <summary>Get the current institution's profile and branding (mostly read-only).</summary>
@@ -308,6 +310,23 @@ public class InstitutionController(
         var admin = User.GetAccount();
         await auditLog.LogAsync(admin, "Payout Settings Submitted",
             $"{request.SettlementBankName} — account ending {request.SettlementAccountNumber[^Math.Min(4, request.SettlementAccountNumber.Length)..]}");
+
+        var platformStaff = await platformStaffRepo.GetAllAsync(
+            s => !s.IsDisabled && (s.Role == "SuperAdmin" || s.Role == "Support"),
+            ignoreQueryFilters: true);
+        var platformNotifications = platformStaff.Select(staff => new PlatformNotification
+        {
+            RecipientStaffId = staff.Id,
+            Title = "Institution payout setup submitted",
+            Body = $"{institution.Name} submitted payout details for review.",
+            Type = "InstitutionPayoutSubmitted",
+            RelatedEntityId = institution.Id,
+            RelatedEntityType = "Institution",
+            ActionUrl = $"/institutions/{institution.Id}",
+            CreatedBy = admin.Id,
+        }).ToList();
+        if (platformNotifications.Count > 0)
+            await platformNotificationRepo.AddRangeAsync(platformNotifications);
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Payout setup submitted for platform review", Code = 200, Data = ToDto(institution) });
     }

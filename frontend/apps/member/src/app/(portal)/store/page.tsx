@@ -67,10 +67,8 @@ export default function StorePage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <PageHeader
           eyebrow="Store"
-          title={isCommunity ? "Store" : "Alumni store"}
-          description={isCommunity
-            ? "Buy branded merchandise and support the community. Delivery details are shown per item."
-            : "Buy branded merchandise and support the association. Delivery details are shown per item."}
+          title="Store"
+          description="Buy branded merchandise and support the community. Delivery details are shown per item."
         />
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/store/orders">
@@ -164,7 +162,7 @@ export default function StorePage() {
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        <EmptyState icon={<ShoppingBag size={40} />} title="No products yet" description="Check back soon. The alumni store is empty for now." />
+        <EmptyState icon={<ShoppingBag size={40} />} title="No products yet" description="Check back soon. The store is empty for now." />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((p) => {

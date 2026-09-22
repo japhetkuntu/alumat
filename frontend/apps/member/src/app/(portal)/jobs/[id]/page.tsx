@@ -167,7 +167,7 @@ export default function MemberJobDetailPage() {
               className="whitespace-pre-wrap leading-[1.85]"
               style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
             >
-              {job.description || "No description has been provided for this listing. Please visit the application link or contact the alumni office for more information."}
+              {job.description || "No description has been provided for this listing. Please visit the application link or contact the community office for more information."}
             </p>
           </div>
 
@@ -283,7 +283,7 @@ function ApplyBlock({ job, deadlinePassed }: { job: Job; deadlinePassed: boolean
         No application link
       </p>
       <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-        Contact the alumni office for more information.
+        Contact the community office for more information.
       </p>
     </div>
   );

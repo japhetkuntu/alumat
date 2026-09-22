@@ -82,6 +82,13 @@ export interface MemberProfileResponse {
   clubsAndSocieties?: string[];
   leadershipRoles?: string[];
   achievements?: string;
+  connectionType?: string;
+  skills?: string[];
+  interests?: string[];
+  showEmailOnDirectory?: boolean;
+  showPhoneOnDirectory?: boolean;
+  showCompanyOnDirectory?: boolean;
+  showBioOnDirectory?: boolean;
 }
 
 export interface MembershipStatusResponse {
@@ -125,6 +132,13 @@ export interface UpdateProfileBody {
   clubsAndSocieties?: string[];
   leadershipRoles?: string[];
   achievements?: string;
+  connectionType?: string;
+  skills?: string[];
+  interests?: string[];
+  showEmailOnDirectory?: boolean;
+  showPhoneOnDirectory?: boolean;
+  showCompanyOnDirectory?: boolean;
+  showBioOnDirectory?: boolean;
 }
 
 export async function updateMyProfile(body: UpdateProfileBody) {

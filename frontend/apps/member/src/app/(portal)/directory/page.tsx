@@ -57,10 +57,10 @@ export default function MemberDirectoryPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
       <PageHeader
-        title={isCommunity ? "Directory" : "Alumni directory"}
+        title={isCommunity ? "Directory" : "Member directory"}
         description={isCommunity
           ? "Find any member in seconds: search by name or location, from local chapters to the diaspora."
-          : "Find any old student in seconds: search by name, graduation year, or location, from local chapters to the diaspora."}
+          : "Find any member in seconds: search by name, graduation year, or location, from local chapters to the diaspora."}
       />
 
       {/* ── Filters ── */}
@@ -116,7 +116,7 @@ export default function MemberDirectoryPage() {
       ) : members.length === 0 ? (
         <EmptyState
           icon={<Search size={40} />}
-          title="No alumni found"
+          title="No members found"
           description={hasFilters ? "Try adjusting your search or year filter." : "The directory is empty."}
         />
       ) : (

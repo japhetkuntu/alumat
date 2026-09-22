@@ -29,7 +29,7 @@ function useAuthTheme() {
 
 export function AuthMobileBrand({ fallbackTagline }: { fallbackTagline: string }) {
   const { data: theme } = useAuthTheme();
-  const displayName = theme?.displayName || "Alumni Portal";
+  const displayName = theme?.displayName || "Member Portal";
   const markImage = theme?.iconUrl || theme?.logoUrl;
 
   return (

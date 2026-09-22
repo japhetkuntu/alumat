@@ -10,19 +10,17 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const theme = await getInstitutionTheme();
-  // Only a real institution name can be dropped into "Welcome to X's alumni
-  // network" — the generic fallback ("your alumni network") already reads as
-  // a full phrase, so reusing the same template with it produces "Welcome to
-  // the your alumni network alumni network." Branch instead of interpolating
-  // blindly so the fallback copy always reads as a real sentence.
+  // Only a real institution name can be dropped into a full sentence like
+  // "Welcome to the X community." — the generic fallback reads better as a
+  // plain community phrase, so branch instead of interpolating blindly.
   const institutionName = theme?.displayName;
-  const displayName = institutionName || "your alumni network";
+  const displayName = institutionName || "your community";
   const headline = theme?.authHeadline || (institutionName
-    ? `Welcome to the ${institutionName} alumni network.`
-    : "Welcome to your alumni network.");
+    ? `Welcome to the ${institutionName} community.`
+    : "Welcome to your community.");
   const subtext = theme?.authSubtext || (institutionName
-    ? `Stay connected with fellow graduates, find opportunities, and support ${institutionName}, all from one place built for you.`
-    : "Stay connected with fellow graduates, find opportunities, and support one another, all from one place built for you.");
+    ? `Stay connected with your community, discover opportunities, and support ${institutionName}, all from one place built for you.`
+    : "Stay connected with your community, discover opportunities, and support one another, all from one place built for you.");
   const markImage = theme?.iconUrl || theme?.logoUrl;
 
   return (
@@ -51,7 +49,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
             <img src={markImage || "/alumunion-mark.svg"} alt={displayName} className="h-9 w-9 rounded-lg object-cover" />
             <span className="text-[15px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
-              {theme?.displayName || "Alumni Portal"}
+              {theme?.displayName || "Member Portal"}
             </span>
           </Link>
 
@@ -76,9 +74,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           {/* Feature list */}
           <ul className="space-y-3">
             {[
-              "Find and reconnect with classmates",
+              "Find and reconnect with your people",
               "Get first access to jobs and mentorship",
-              "Support fundraisers that matter to you",
+              "Support the causes and initiatives that matter to you",
             ].map(item => (
               <li key={item} className="flex items-center gap-3.5">
                 <div
@@ -99,7 +97,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           {/* Footer line */}
           <div className="border-t pt-6" style={{ borderColor: "rgba(255,255,255,0.15)" }}>
             <p className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
-              {institutionName ? `${institutionName} alumni network` : "Built for every alumni network"}
+              {institutionName ? `${institutionName} community` : "Built for every community"}
             </p>
           </div>
         </div>

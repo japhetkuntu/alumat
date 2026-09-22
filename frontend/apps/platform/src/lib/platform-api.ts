@@ -215,6 +215,16 @@ export async function updateInstitutionName(id: string, name: string) {
   return res.data.data!;
 }
 
+export async function updateInstitutionSlug(id: string, slug: string) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/institution-slug`, { slug });
+  return res.data.data!;
+}
+
+export async function deleteInstitution(id: string) {
+  const res = await platformClient.delete<ApiResponse<{ id: string }>>(`/institutions/${id}`);
+  return res.data.data!;
+}
+
 export async function updateInstitutionMemberPolicy(id: string, memberActivePolicy: "ApprovedOnly" | "DuesRequired") {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/member-policy`, { memberActivePolicy });
   return res.data.data!;
@@ -297,6 +307,7 @@ export interface PayoutWindow {
 export interface InstitutionPayoutForecast {
   institutionId: string;
   institutionName: string;
+  organizationType: "Alumni" | "Community";
   payoutsConfigured: boolean;
   lastPayout: PayoutWindow;
   nextPayout: PayoutWindow;
@@ -668,11 +679,19 @@ export interface PlatformMemberItem {
   email: string;
   institutionId: string;
   institutionName: string;
+  organizationType: "Alumni" | "Community";
   graduationYear: number;
   status: string;
   lastLoginAt?: string | null;
   /** Logged in within the last 7 days. */
   isActive: boolean;
+  connectionType?: string | null;
+  skills?: string[] | null;
+  interests?: string[] | null;
+  showEmailOnDirectory: boolean;
+  showPhoneOnDirectory: boolean;
+  showCompanyOnDirectory: boolean;
+  showBioOnDirectory: boolean;
   createdAt: string;
 }
 
@@ -681,6 +700,20 @@ export async function getPlatformMembers(params: {
 }) {
   const res = await platformClient.get<ApiResponse<PagedResult<PlatformMemberItem>>>("/members", { params });
   return res.data.data!;
+}
+
+export interface UpdatePlatformMemberProfileRequest {
+  connectionType?: string;
+  skills?: string[];
+  interests?: string[];
+  showEmailOnDirectory?: boolean;
+  showPhoneOnDirectory?: boolean;
+  showCompanyOnDirectory?: boolean;
+  showBioOnDirectory?: boolean;
+}
+
+export async function updatePlatformMemberProfile(id: string, body: UpdatePlatformMemberProfileRequest) {
+  await platformClient.patch(`/members/${id}/profile`, body);
 }
 
 // ── In-app Notifications (platform staff) ───────────────────────────────────
@@ -727,6 +760,15 @@ export interface OnboardingLead {
   contactPhone?: string;
   country?: string;
   estimatedMemberCount?: string;
+  organizationType?: string;
+  contactRole?: string;
+  primaryGoals: string[];
+  currentMemberManagement?: string;
+  dataImportStatus?: string;
+  preferredContactChannel?: string;
+  preferredContactTime?: string;
+  timeZone?: string;
+  website?: string;
   message?: string;
   status: "New" | "Contacted" | "Approved" | "Rejected";
   assigneeStaffId?: string;

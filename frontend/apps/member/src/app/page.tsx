@@ -30,10 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   const name = theme?.displayName || theme?.portalName;
-  const title = name ? `${name} Alumni Portal | ${SITE_NAME}` : "Alumni Portal";
+  const title = name ? `${name} Member Portal | ${SITE_NAME}` : "Member Portal";
   const description = theme?.tagline
-    ? `${theme.tagline} — the official ${name} alumni network. Directory, events, jobs, dues, and mentorship, all in one place.`
-    : `A searchable directory, events, jobs, dues collection, and mentorship for every graduate — all in one place, powered by ${SITE_NAME}.`;
+    ? `${theme.tagline} — the official ${name} community portal. Directory, events, jobs, dues, and mentorship, all in one place.`
+    : `A searchable directory, events, jobs, dues collection, and community updates for members — all in one place, powered by ${SITE_NAME}.`;
 
   return {
     title: { absolute: title },
@@ -100,7 +100,8 @@ function StructuredData({ isMarketing, theme, origin }: { isMarketing: boolean; 
 // marketing-site visitor.
 export default async function RootPage() {
   const [{ status, theme }, origin] = await Promise.all([getInstitutionThemeStatus(), getRequestOrigin()]);
-  if (status === "not-found") {
+  console.log(`RootPage: status=${status}, theme=${theme?.portalName}, origin=${origin}`);
+  if (status === "not-found" || status === "error") {
     return (
       <>
         <StructuredData isMarketing theme={theme} origin={origin} />

@@ -246,7 +246,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/50 px-4 py-3 mb-4">
           <div>
             <p className="text-[13px] font-semibold">Set up your graduating-class batches</p>
-            <p className="text-[12px] text-muted-foreground">Unlock year-group targeting and better member organization by defining your batches.</p>
+            <p className="text-[12px] text-muted-foreground">Unlock cohort targeting and better member organization by defining your groups.</p>
           </div>
           <Link href="/batches">
             <Button size="sm">Set up batches</Button>
@@ -362,7 +362,7 @@ export default function AdminDashboardPage() {
                     <b className="text-[13px]">{m.firstName} {m.lastName}</b>
                     <br />
                     <small className="text-muted-foreground text-[12px]">
-                      {m.graduationYear ? `Class of ${m.graduationYear}` : "Class year unknown"} &middot; {m.isEmailVerified ? "email verified" : "email unverified"}
+                      {m.graduationYear ? `Cohort ${m.graduationYear}` : "Cohort unknown"} &middot; {m.isEmailVerified ? "email verified" : "email unverified"}
                     </small>
                   </div>
                   <Badge variant="warning">Pending</Badge>
@@ -397,7 +397,7 @@ export default function AdminDashboardPage() {
                       <b className="text-[13px] break-words">{c.title}</b>
                       <br />
                       <small className="text-muted-foreground text-[12px]">
-                        Deadline {formatDate(c.deadline)} &middot; {c.yearGroups?.length ? `Classes ${c.yearGroups.join(", ")}` : "All members"}
+                        Deadline {formatDate(c.deadline)} &middot; {c.yearGroups?.length ? `Cohorts ${c.yearGroups.join(", ")}` : "All members"}
                       </small>
                       <Progress value={pct} className="h-[7px] mt-2" />
                     </div>

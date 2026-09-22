@@ -21,6 +21,8 @@ public class UploadService(
 
     public async Task<IApiResponse<UploadResult>> UploadImageAsync(IFormFile file)
     {
+        try
+        {
         if (file is null || file.Length == 0)
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("No file provided");
 
@@ -35,10 +37,18 @@ public class UploadService(
 
         logger.LogInformation("Image uploaded: {ObjectName}", objectName);
         return new UploadResult(url).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UploadImageAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<UploadResult>("Failed to uploadimage");
+        }}
 
     public async Task<IApiResponse<UploadResult>> UploadFileAsync(IFormFile file)
     {
+        try
+        {
         if (file is null || file.Length == 0)
             return ApiResponseExtensions.ToBadRequestApiResponse<UploadResult>("No file provided");
 
@@ -50,5 +60,11 @@ public class UploadService(
 
         logger.LogInformation("File uploaded: {ObjectName}", objectName);
         return new UploadResult(url).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UploadFileAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<UploadResult>("Failed to uploadfile");
+        }}
 }

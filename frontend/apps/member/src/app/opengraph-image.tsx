@@ -6,7 +6,7 @@ import { SITE_NAME } from "@/lib/seo";
 // every request (via getInstitutionTheme) and can never be static.
 export const dynamic = "force-dynamic";
 
-export const alt = "AlumUnion — free alumni portal software";
+export const alt = "AlumUnion — community platform for institutions";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -17,8 +17,8 @@ export default async function OgImage() {
   const theme = await getInstitutionTheme();
   const name = theme?.displayName || theme?.portalName;
   const primary = theme?.primaryColorHex || "#2563EB";
-  const heading = name ? `${name} Alumni Portal` : "Free Alumni Portal Software";
-  const sub = name ? `Powered by ${SITE_NAME}` : "Directory · Events · Dues · Jobs · Mentorship";
+  const heading = name ? `${name} Community` : "Institution Community Platform";
+  const sub = name ? `Powered by ${SITE_NAME}` : "Directory · Events · Fundraising · Jobs · Membership";
 
   return new ImageResponse(
     (

@@ -130,7 +130,7 @@ function LoginForm() {
     try {
       await login(data);
       toast.success("Welcome back!", {
-        description: "You've successfully signed in to your alumni account.",
+        description: "You've successfully signed in to your community account.",
       });
       // A hard navigation (not router.push) so the root layout's server-side
       // theme fetch re-runs and picks up the workspace cookie set above —
@@ -146,7 +146,7 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
-      <AuthMobileBrand fallbackTagline="Sign in to your alumni network" />
+      <AuthMobileBrand fallbackTagline="Sign in to your community" />
 
       <div className="space-y-8">
         <div className="space-y-2.5">
@@ -154,7 +154,7 @@ function LoginForm() {
           <h1 className="font-[family-name:var(--font-display)] text-[32px] sm:text-[38px] font-semibold text-foreground leading-tight">
             Welcome back
           </h1>
-          <p className="text-sm text-muted-foreground">Sign in to stay connected with your alumni community.</p>
+          <p className="text-sm text-muted-foreground">Sign in to stay connected with your community.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

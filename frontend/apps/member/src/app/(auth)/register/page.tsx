@@ -220,7 +220,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
         </Link>
 
         <p className="text-center text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-          Payment confirms your alumni status and speeds up approval.
+          Payment confirms your membership and speeds up approval.
         </p>
       </div>
     </div>
@@ -252,7 +252,7 @@ function MembershipCampaignSection({ email }: { email: string }) {
         </p>
         <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
           No active membership dues for {currentYear} yet. You can activate your membership from your
-          dashboard once approved, or contact the alumni office directly.
+          dashboard once approved, or contact the community office directly.
         </p>
       </div>
     );
@@ -574,7 +574,7 @@ function RegisterForm() {
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      <AuthMobileBrand fallbackTagline={isCommunity ? "Create your account" : "Create your alumni account"} />
+      <AuthMobileBrand fallbackTagline="Create your account" />
 
       {/* Step indicator */}
       <StepIndicator step={step} />
@@ -998,7 +998,7 @@ function RegisterForm() {
                 Activate your membership
               </p>
               <p className="text-[12.5px] mb-3" style={{ color: "var(--muted-foreground)" }}>
-                Paying the activation fee confirms your alumni status and helps us approve you faster.
+                Paying the activation fee confirms your membership and helps us approve you faster.
               </p>
               <MembershipCampaignSection email={email} />
             </div>

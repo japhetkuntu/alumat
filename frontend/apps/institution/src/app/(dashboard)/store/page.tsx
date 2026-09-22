@@ -141,7 +141,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2"><Label>Product name</Label>
-              <Input placeholder="e.g. Alumni Hoodie" value={form.name} onChange={(e) => f("name", e.target.value)} required /></div>
+              <Input placeholder="e.g. Community hoodie" value={form.name} onChange={(e) => f("name", e.target.value)} required /></div>
             <div className="space-y-2"><Label>Status</Label>
               <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
                 options={[
@@ -166,7 +166,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
               rows={2}
               value={form.deliveryInfo}
               onChange={(e) => f("deliveryInfo", e.target.value)}
-              placeholder={defaultDeliveryInfo || "Pickup at the alumni office, Mon–Fri 9am–5pm."}
+              placeholder={defaultDeliveryInfo || "Pickup at the community office, Mon–Fri 9am–5pm."}
             />
           </div>
           <div className="space-y-2"><Label>Photos</Label>
@@ -426,7 +426,7 @@ export default function AdminStorePage() {
               <div className="space-y-2">
                 <p className="text-[12.5px] font-medium">Default delivery info</p>
                 {editingSettings ? (
-                  <Textarea rows={2} value={defaultDeliveryDraft} onChange={(e) => setDefaultDeliveryDraft(e.target.value)} placeholder="Pickup at the alumni office, Mon–Fri 9am–5pm." />
+                  <Textarea rows={2} value={defaultDeliveryDraft} onChange={(e) => setDefaultDeliveryDraft(e.target.value)} placeholder="Pickup at the community office, Mon–Fri 9am–5pm." />
                 ) : (
                   <p className="text-[12.5px] text-foreground">{settings?.defaultDeliveryInfo || "Not set. New products need their own delivery info."}</p>
                 )}

@@ -3,20 +3,20 @@ import { headers } from "next/headers";
 /** Product-wide constants — the marketing site's own copy, independent of
  *  any institution's branding. */
 export const SITE_NAME = "AlumUnion";
-export const MARKETING_TITLE = "AlumUnion — Free Alumni Portal Software for Schools & Universities";
+export const MARKETING_TITLE = "AlumUnion — Community Platform for Institutions";
 export const MARKETING_DESCRIPTION =
-  "AlumUnion is a free, dedicated alumni platform for schools and universities: a searchable directory, events with RSVPs, dues and fundraising collection, a jobs board, mentorship matching, and more — replacing scattered WhatsApp groups and spreadsheets with one branded portal your institution controls.";
+  "AlumUnion gives institutions a home for their community — from alumni and former students to members, supporters, and stakeholders. Build, organize, and grow a structured community with a directory, events, fundraising, memberships, and more.";
 export const MARKETING_KEYWORDS = [
-  "alumni portal software",
-  "alumni management platform",
-  "alumni directory software",
-  "school alumni website",
-  "university alumni platform",
-  "alumni engagement software",
+  "institution community platform",
+  "community platform for institutions",
   "alumni association software",
-  "free alumni portal",
-  "alumni fundraising platform",
-  "alumni network app",
+  "school alumni community platform",
+  "university community management platform",
+  "member management platform",
+  "institutional community portal",
+  "alumni network software",
+  "association membership platform",
+  "community engagement platform",
 ];
 
 /** Reconstructs the current request's origin from its Host header — this app

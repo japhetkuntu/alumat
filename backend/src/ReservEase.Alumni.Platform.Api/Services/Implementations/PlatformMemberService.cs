@@ -18,6 +18,7 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 public class PlatformMemberService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Institution> institutionRepo,
+    IAuditLogService auditLog,
     ILogger<PlatformMemberService> logger) : IPlatformMemberService
 {
     /// <summary>A member who has signed in within this window counts as "active" on the platform-wide view.</summary>
@@ -46,14 +47,17 @@ public class PlatformMemberService(
                 ignoreQueryFilters: true);
 
             var institutionIds = result.Results.Select(m => m.InstitutionId).Distinct().ToList();
-            var institutionNames = (await institutionRepo.GetAllAsync(i => institutionIds.Contains(i.Id), ignoreQueryFilters: true))
-                .ToDictionary(i => i.Id, i => i.Name);
+            var institutions = await institutionRepo.GetAllAsync(i => institutionIds.Contains(i.Id), ignoreQueryFilters: true);
+            var institutionLookup = institutions.ToDictionary(i => i.Id);
 
             var items = result.Results.Select(m => new PlatformMemberListItem(
                 m.Id, m.FirstName, m.LastName, m.Email,
-                m.InstitutionId, institutionNames.GetValueOrDefault(m.InstitutionId, "Unknown institution"),
+                m.InstitutionId, institutionLookup.GetValueOrDefault(m.InstitutionId)?.Name ?? "Unknown institution",
+                institutionLookup.GetValueOrDefault(m.InstitutionId)?.OrganizationType ?? "Community",
                 m.GraduationYear, m.Status,
-                m.LastLoginAt, m.LastLoginAt != null && m.LastLoginAt >= activeCutoff, m.CreatedAt)).ToList();
+                m.LastLoginAt, m.LastLoginAt != null && m.LastLoginAt >= activeCutoff, m.CreatedAt,
+                m.ConnectionType, m.Skills, m.Interests,
+                m.ShowEmailOnDirectory, m.ShowPhoneOnDirectory, m.ShowCompanyOnDirectory, m.ShowBioOnDirectory)).ToList();
 
             return new PgPagedResult<PlatformMemberListItem>
             {
@@ -72,5 +76,32 @@ public class PlatformMemberService(
             logger.LogError(e, "Error retrieving platform-wide members (institutionId={InstitutionId}, status={Status}, search={Search})", filter.InstitutionId, filter.Status, filter.Search);
             return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<PlatformMemberListItem>>("Failed to retrieve members");
         }
+
     }
+
+    public async Task<IApiResponse<object>> UpdateMemberProfileAsync(string id, UpdatePlatformMemberProfileRequest request, string actorId, string actorName)
+    {
+        try
+        {
+        var member = await memberRepo.GetOneAsync(m => m.Id == id, ignoreQueryFilters: true);
+        if (member is null)
+            return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
+        member.ConnectionType = request.ConnectionType is null ? member.ConnectionType : string.IsNullOrWhiteSpace(request.ConnectionType) ? null : request.ConnectionType.Trim();
+        member.Skills = request.Skills ?? member.Skills;
+        member.Interests = request.Interests ?? member.Interests;
+        member.ShowEmailOnDirectory = request.ShowEmailOnDirectory ?? member.ShowEmailOnDirectory;
+        member.ShowPhoneOnDirectory = request.ShowPhoneOnDirectory ?? member.ShowPhoneOnDirectory;
+        member.ShowCompanyOnDirectory = request.ShowCompanyOnDirectory ?? member.ShowCompanyOnDirectory;
+        member.ShowBioOnDirectory = request.ShowBioOnDirectory ?? member.ShowBioOnDirectory;
+        await memberRepo.UpdateAsync(member);
+        await auditLog.LogAsync(actorId, actorName, "updated member community profile and directory visibility", $"{member.FirstName} {member.LastName} ({member.Email})");
+        return ((object)new { id = member.Id }).ToOkApiResponse("Member profile updated");
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateMemberProfileAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to updatememberprofile");
+        }}
 }

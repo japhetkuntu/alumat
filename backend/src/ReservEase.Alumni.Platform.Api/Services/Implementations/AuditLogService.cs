@@ -8,10 +8,13 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
-public class AuditLogService(IAlumniPgRepository<AuditLogEntry> auditLogRepo) : IAuditLogService
+public class AuditLogService(IAlumniPgRepository<AuditLogEntry> auditLogRepo,
+    ILogger<AuditLogService> logger) : IAuditLogService
 {
     public async Task<IApiResponse<PgPagedResult<AuditLogEntryResponse>>> GetEntriesAsync(int page, int pageSize, string? search)
     {
+        try
+        {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 200) pageSize = 50;
 
@@ -45,7 +48,13 @@ public class AuditLogService(IAlumniPgRepository<AuditLogEntry> auditLogRepo) : 
         };
 
         return result.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetEntriesAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<AuditLogEntryResponse>>("Failed to getentries");
+        }}
 
     public async Task LogAsync(string? actorId, string actorName, string action, string target)
     {

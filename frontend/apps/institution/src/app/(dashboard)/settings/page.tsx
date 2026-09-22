@@ -629,7 +629,7 @@ export default function BrandingSettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Tagline</Label>
-                  <Input value={brandingForm.tagline} onChange={(e) => setBrandingForm((f) => ({ ...f!, tagline: e.target.value }))} placeholder="One network. Every graduate." />
+                  <Input value={brandingForm.tagline} onChange={(e) => setBrandingForm((f) => ({ ...f!, tagline: e.target.value }))} placeholder="One community. One purpose." />
                   <p className="text-[11.5px] text-muted-foreground">Shown under your name on the Member Portal&apos;s landing and sign-in pages.</p>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -693,7 +693,7 @@ export default function BrandingSettingsPage() {
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
-                    <Textarea rows={2} value={brandingForm.institutionAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthSubtext: e.target.value }))} placeholder="Sign in to manage your alumni community." />
+                    <Textarea rows={2} value={brandingForm.institutionAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthSubtext: e.target.value }))} placeholder="Sign in to manage your community." />
                     <p className="text-[11.5px] text-muted-foreground">The supporting line right under that headline, same sign-in page.</p>
                   </div>
                 </div>
@@ -702,13 +702,13 @@ export default function BrandingSettingsPage() {
               <div className="pt-2 border-t border-border/40">
                 <p className="text-[13px] font-semibold">Member Portal content</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5 mb-3">
-                  Seen only by your {institution?.organizationType === "Community" ? "members" : "alumni"}, at{" "}
+                  Seen only by your {institution?.organizationType === "Community" ? "members" : "community members"}, at{" "}
                   <span className="font-mono">{institution?.memberPortalUrl?.replace(/^https?:\/\//, "") ?? "your member portal"}</span>.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Portal title</Label>
-                    <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder={institution?.organizationType === "Community" ? "Member Portal" : "Alumni Portal"} />
+                    <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder="Member Portal" />
                     <p className="text-[11.5px] text-muted-foreground">Browser tab title members see across every page of the Member Portal.</p>
                   </div>
                   <div className="space-y-1.5">
@@ -718,7 +718,7 @@ export default function BrandingSettingsPage() {
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
-                    <Textarea rows={2} value={brandingForm.memberAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthSubtext: e.target.value }))} placeholder="Reconnect with classmates and give back." />
+                    <Textarea rows={2} value={brandingForm.memberAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthSubtext: e.target.value }))} placeholder="Stay connected to your community and make an impact." />
                     <p className="text-[11.5px] text-muted-foreground">The supporting line right under that headline, same pages.</p>
                   </div>
                 </div>
@@ -766,7 +766,7 @@ export default function BrandingSettingsPage() {
                   checked={!!institution?.requireStudentId}
                   onChange={(checked) => requireStudentIdMutation.mutate(checked)}
                   label="Require student ID at registration"
-                  description="On the Member Portal's registration form: on, the student/alumni ID field becomes required; off, it stays optional."
+                  description="On the Member Portal's registration form: on, the institution or membership ID field becomes required; off, it stays optional."
                 />
                 <Toggle
                   checked={!!institution?.autoApproveMembers}
@@ -786,8 +786,8 @@ export default function BrandingSettingsPage() {
                   <p className="font-semibold text-[15px]">Organization type</p>
                 </div>
                 <p className="text-[12.5px] text-muted-foreground -mt-1 mb-3">
-                  Alumni institutions organize by graduation year (Batches, &quot;Class of X&quot;). A Community has no
-                  graduation years — members organize via Communities instead, and that year-based UI is hidden throughout the portal.
+                  Alumni organizations can organize by graduation year or a custom cohort label. Other communities organize through
+                  groups and chapters instead, and school-specific year fields stay hidden when they are not relevant.
                 </p>
                 <div className="flex gap-2 mb-3">
                   <Button
@@ -1085,7 +1085,7 @@ export default function BrandingSettingsPage() {
                     rows={3}
                     value={heroHeadline ?? ""}
                     onChange={(e) => setHeroHeadline(e.target.value)}
-                    placeholder="One network. Every graduate, wherever they are."
+                    placeholder="One community. Every member, in one place."
                   />
                 </div>
               </div>
@@ -1133,7 +1133,7 @@ export default function BrandingSettingsPage() {
               <div className="px-6 pt-5 pb-1 flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-[15px]">Stories</p>
-                  <p className="text-[12.5px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on your landing page. Leave empty for generic default copy.</p>
+                  <p className="text-[12.5px] text-muted-foreground mt-0.5">The &quot;why members join&quot; cards on your landing page. Leave empty for generic default copy.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => { setStories((s) => [...(s ?? []), { ...EMPTY_STORY }]); setStoryFiles((f) => [...f, null]); }}>
                   <Plus size={14} className="mr-1.5" /> Add story
@@ -1219,7 +1219,7 @@ export default function BrandingSettingsPage() {
                 <p className="font-mono text-[13px] font-semibold truncate">
                   {institution?.memberPortalUrl?.replace(/^https?:\/\//, "") ?? "Not configured"}
                 </p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Member portal &middot; share this with your alumni</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Member portal &middot; share this with your community</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {institution?.memberPortalUrl && (

@@ -10,10 +10,13 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 /// <summary>Mirrors Platform.Api's own AuditLogService — same shape, tenant-scoped instead of global. See InstitutionAuditLogEntry for what gets logged and why.</summary>
-public class InstitutionAuditLogService(IAlumniPgRepository<InstitutionAuditLogEntry> auditLogRepo) : IInstitutionAuditLogService
+public class InstitutionAuditLogService(IAlumniPgRepository<InstitutionAuditLogEntry> auditLogRepo,
+    ILogger<InstitutionAuditLogService> logger) : IInstitutionAuditLogService
 {
     public async Task<IApiResponse<PgPagedResult<InstitutionAuditLogEntryResponse>>> GetEntriesAsync(int page, int pageSize, string? search)
     {
+        try
+        {
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 200) pageSize = 50;
 
@@ -47,7 +50,13 @@ public class InstitutionAuditLogService(IAlumniPgRepository<InstitutionAuditLogE
         };
 
         return result.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetEntriesAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<InstitutionAuditLogEntryResponse>>("Failed to getentries");
+        }}
 
     public async Task LogAsync(AuthData actor, string action, string target)
     {

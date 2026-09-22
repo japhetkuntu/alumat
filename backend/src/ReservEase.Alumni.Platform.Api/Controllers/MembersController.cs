@@ -29,4 +29,14 @@ public class MembersController(IPlatformMemberService memberService) : DefaultCo
         var result = await memberService.GetMembersAsync(filter);
         return result.ToActionResult();
     }
+
+    [HttpPatch("{id}/profile")]
+    [SwaggerOperation(Summary = "Update a member's community profile and directory visibility")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateMemberProfile(string id, [FromBody] UpdatePlatformMemberProfileRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await memberService.UpdateMemberProfileAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
 }

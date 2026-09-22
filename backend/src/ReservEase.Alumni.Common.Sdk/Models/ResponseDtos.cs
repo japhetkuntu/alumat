@@ -472,7 +472,7 @@ public class DirectoryMemberDto
     public string Id { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public string? Phone { get; set; }
     public int GraduationYear { get; set; }
     public string DepartmentId { get; set; } = string.Empty;
@@ -484,6 +484,9 @@ public class DirectoryMemberDto
     public string? Bio { get; set; }
     public string? ProfilePictureUrl { get; set; }
     public string? MemberNumber { get; set; }
+    public string? ConnectionType { get; set; }
+    public List<string>? Skills { get; set; }
+    public List<string>? Interests { get; set; }
 }
 
 // ── Alumni Map — deliberately minimal (no email/phone): every member here

@@ -20,6 +20,7 @@ public sealed class MemberWithPreference
     public string? Phone { get; init; }
     public bool SmsAlerts { get; init; }
     public bool WhatsAppAlerts { get; init; }
+    public bool EventReminders { get; init; } = true;
 }
 
 /// <summary>Just enough about the institution to build a portal URL, prefix an SMS with

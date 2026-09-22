@@ -41,7 +41,7 @@ export default function MemberNewsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      <PageHeader title="News & announcements" description="The people, progress, and opportunities shaping our alumni community." />
+      <PageHeader title="News & announcements" description="The people, progress, and opportunities shaping our community." />
 
       {/* ── Category filter ── */}
       <div className="flex flex-wrap gap-2">

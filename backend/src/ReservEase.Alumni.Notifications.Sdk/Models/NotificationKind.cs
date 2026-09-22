@@ -26,4 +26,7 @@ public enum NotificationKind
     SpotlightDecision,
     BirthdayShoutout,
     Email,
+    EventCancelled,
+    EventDetailsChanged,
+    EventRsvpCancelled,
 }

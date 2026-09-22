@@ -13,19 +13,30 @@ public class AnnouncementService(
     IAlumniPgRepository<Announcement> announcementRepo,
     IAlumniPgRepository<StaffEntity> staffRepo,
     IAlumniPgRepository<NotificationEntity> notificationRepo,
-    IAuditLogService auditLog) : IAnnouncementService
+    IAuditLogService auditLog,
+    ILogger<AnnouncementService> logger) : IAnnouncementService
 {
     public async Task<IApiResponse<List<AnnouncementResponse>>> GetAnnouncementsAsync()
     {
+        try
+        {
         var items = await announcementRepo.GetQueryable()
             .OrderByDescending(a => a.SentAt)
             .Select(a => new AnnouncementResponse(a.Id, a.Title, a.Body, a.Audience, a.SentAt, a.SeenByAdmins, a.TotalAdmins))
             .ToListAsync();
         return items.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetAnnouncementsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<AnnouncementResponse>>("Failed to getannouncements");
+        }}
 
     public async Task<IApiResponse<AnnouncementResponse>> SendAsync(SendAnnouncementRequest request, string actorId, string actorName)
     {
+        try
+        {
         // "All institutions" is the only audience the platform UI currently
         // offers (see the announcements page) — every non-disabled admin,
         // across every institution, gets an in-app notification fanned out
@@ -65,5 +76,11 @@ public class AnnouncementService(
 
         return new AnnouncementResponse(announcement.Id, announcement.Title, announcement.Body, announcement.Audience, announcement.SentAt, announcement.SeenByAdmins, announcement.TotalAdmins)
             .ToCreatedApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "SendAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<AnnouncementResponse>("Failed to send");
+        }}
 }

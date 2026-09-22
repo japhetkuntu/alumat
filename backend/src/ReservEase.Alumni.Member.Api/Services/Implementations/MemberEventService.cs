@@ -205,6 +205,8 @@ public class MemberEventService(
             {
                 ev.RsvpCount = await rsvpRepo.CountAsync(r => r.EventId == eventId && r.Status == "Confirmed");
                 await eventRepo.UpdateAsync(ev);
+                await temporalProvider.EnqueueNotificationAsync(
+                    NotificationRequest.EventRsvpCancelled(ev.InstitutionId, member.Id, ev.Id, ev.Title), logger);
             }
 
             logger.LogInformation("RSVP cancelled for member {MemberId}, event {EventId}", member.Id, eventId);

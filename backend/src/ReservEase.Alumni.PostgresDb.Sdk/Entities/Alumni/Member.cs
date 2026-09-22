@@ -77,5 +77,12 @@ public class Member : BaseEntity, ITenantScoped
     public List<string>? ClubsAndSocieties { get; set; }
     public List<string>? LeadershipRoles { get; set; }
     public string? Achievements { get; set; }
-}
 
+    public string? ConnectionType { get; set; }
+    public List<string>? Skills { get; set; }
+    public List<string>? Interests { get; set; }
+    public bool ShowEmailOnDirectory { get; set; } = false;
+    public bool ShowPhoneOnDirectory { get; set; } = false;
+    public bool ShowCompanyOnDirectory { get; set; } = true;
+    public bool ShowBioOnDirectory { get; set; } = true;
+}

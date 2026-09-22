@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, Trash2, Copy, ExternalLink, X, Pencil } from "@alumni/ui";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
@@ -23,7 +23,7 @@ import { BrandPreview } from "@alumni/ui";
 import { ColorPicker } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import {
-  getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionMemberPolicy,
+  getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionSlug, deleteInstitution, updateInstitutionMemberPolicy,
   updateInstitutionAutoApproveMembers,
   updateInstitutionOrganizationType,
   updateInstitutionFeatures, getFeatureCatalog,
@@ -140,6 +140,7 @@ function HeroImagesField({ urls, onChange, institutionSlug }: {
 export default function InstitutionDetailPage() {
   const { isSuperAdmin } = useAuth();
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
 
@@ -199,6 +200,30 @@ export default function InstitutionDetailPage() {
       toast.success("Institution renamed");
       invalidate();
       setRenameOpen(false);
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const [slugOpen, setSlugOpen] = useState(false);
+  const [slugDraft, setSlugDraft] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const slugMutation = useMutation({
+    mutationFn: (slug: string) => updateInstitutionSlug(id, slug),
+    onSuccess: () => {
+      toast.success("Institution URL updated");
+      invalidate();
+      setSlugOpen(false);
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteInstitution(id),
+    onSuccess: () => {
+      toast.success("Institution deleted");
+      queryClient.invalidateQueries({ queryKey: ["institutions"] });
+      router.push("/institutions");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -464,6 +489,14 @@ export default function InstitutionDetailPage() {
                     Suspend — locks out all staff and member logins
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={inst.memberCount > 0 || deleteMutation.isPending}
+                  onClick={() => { setDeleteConfirmation(""); setDeleteOpen(true); }}
+                  className="text-destructive"
+                >
+                  {inst.memberCount > 0 ? "Delete unavailable — institution has members" : "Delete institution"}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -491,6 +524,13 @@ export default function InstitutionDetailPage() {
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Primary contact</span><span className="font-semibold">{inst.contactName}</span></div>
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Contact email</span><span className="font-semibold">{inst.contactEmail}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Onboarded</span><span className="font-semibold">{formatDate(inst.onboardedAt)}</span></div>
+              <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
+                <div>
+                  <span className="text-muted-foreground">Portal slug</span>
+                  <p className="font-mono text-[12px] mt-1">{inst.slug}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setSlugDraft(inst.slug); setSlugOpen(true); }}>Change slug</Button>
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -546,8 +586,8 @@ export default function InstitutionDetailPage() {
             <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Organization type</p></div>
             <CardContent className="p-5 space-y-4">
               <p className="text-[12px] text-muted-foreground">
-                Alumni institutions organize by graduation year (Batches, &quot;Class of X&quot;). A Community has no
-                graduation years — members organize via Communities instead, and that year-based UI is hidden throughout the portal.
+                Choose Alumni for graduation-year cohorts, or Community for groups, chapters, and other member structures.
+                This controls which organization tools appear throughout the portals.
               </p>
               <div className="flex gap-2">
                 <Button
@@ -721,7 +761,7 @@ export default function InstitutionDetailPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Sign-in headline</Label>
-                  <Input value={branding.institutionAuthHeadline} onChange={(e) => setBranding((b) => ({ ...b!, institutionAuthHeadline: e.target.value }))} placeholder="Run the alumni office with a clear view of what matters." />
+                  <Input value={branding.institutionAuthHeadline} onChange={(e) => setBranding((b) => ({ ...b!, institutionAuthHeadline: e.target.value }))} placeholder="Run your community with a clear view of what matters." />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Sign-in subtext</Label>
@@ -733,12 +773,12 @@ export default function InstitutionDetailPage() {
             <Card>
               <div className="px-5 py-4 border-b border-border">
                 <p className="text-[14px] font-semibold">Member Portal content</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Shown to this institution&apos;s alumni, on their sign-in and registration pages.</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Shown to this institution&apos;s members, on their sign-in and registration pages.</p>
               </div>
               <CardContent className="p-5 space-y-4">
                 <div className="space-y-1.5">
                   <Label>Browser tab title</Label>
-                  <Input value={branding.memberPortalTitle} onChange={(e) => setBranding((b) => ({ ...b!, memberPortalTitle: e.target.value }))} placeholder={branding.portalName || "Alumni Portal"} />
+                  <Input value={branding.memberPortalTitle} onChange={(e) => setBranding((b) => ({ ...b!, memberPortalTitle: e.target.value }))} placeholder={branding.portalName || "Member Portal"} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Sign-in quote</Label>
@@ -746,7 +786,7 @@ export default function InstitutionDetailPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Quote attribution</Label>
-                  <Input value={branding.memberAuthSubtext} onChange={(e) => setBranding((b) => ({ ...b!, memberAuthSubtext: e.target.value }))} placeholder="Alumna · Class of 2018" />
+                  <Input value={branding.memberAuthSubtext} onChange={(e) => setBranding((b) => ({ ...b!, memberAuthSubtext: e.target.value }))} placeholder="Member · Cohort 2018" />
                 </div>
                 <div className="flex items-center justify-between border-t border-border pt-4">
                   <div>
@@ -843,7 +883,7 @@ export default function InstitutionDetailPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Headline</Label>
-                  <Textarea rows={3} value={heroHeadline ?? ""} onChange={(e) => setHeroHeadline(e.target.value)} placeholder="One network. Every graduate, wherever they are." />
+                  <Textarea rows={3} value={heroHeadline ?? ""} onChange={(e) => setHeroHeadline(e.target.value)} placeholder="One community. Every member, wherever they are." />
                 </div>
               </div>
             </CardContent>
@@ -889,7 +929,7 @@ export default function InstitutionDetailPage() {
               <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                 <div>
                   <p className="text-[14px] font-semibold">Stories</p>
-                  <p className="text-[12px] text-muted-foreground mt-0.5">The &quot;why alumni join&quot; cards on the landing page. Leave empty to use generic default copy.</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">The &quot;why members join&quot; cards on the landing page. Leave empty to use generic default copy.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setStories((s) => [...(s ?? []), { ...EMPTY_STORY }])}>
                   <Plus size={14} className="mr-1.5" /> Add story
@@ -1209,6 +1249,64 @@ export default function InstitutionDetailPage() {
               disabled={nameMutation.isPending || !nameDraft.trim()}
             >
               {nameMutation.isPending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={slugOpen} onOpenChange={setSlugOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change portal slug</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5 mt-2">
+            <Label htmlFor="institution-slug">Portal slug</Label>
+            <Input
+              id="institution-slug"
+              value={slugDraft}
+              onChange={(e) => setSlugDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+              maxLength={63}
+              placeholder="your-community"
+            />
+            <p className="text-[12px] text-muted-foreground">
+              Lowercase letters, numbers, and hyphens only. This changes both member and institution portal URLs.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSlugOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => slugMutation.mutate(slugDraft.trim())}
+              disabled={slugMutation.isPending || !/^[a-z0-9-]+$/.test(slugDraft.trim())}
+            >
+              {slugMutation.isPending ? "Saving…" : "Save slug"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete institution</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-[13px] text-muted-foreground">
+              This permanently removes <strong>{inst.name}</strong>. Type the institution name to confirm.
+            </p>
+            <Input
+              aria-label="Type institution name to confirm deletion"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder={inst.name}
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending || deleteConfirmation.trim() !== inst.name}
+              onClick={() => deleteMutation.mutate()}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete permanently"}
             </Button>
           </DialogFooter>
         </DialogContent>

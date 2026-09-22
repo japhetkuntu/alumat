@@ -70,8 +70,8 @@ export default function AlumniMapPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <PageHeader
-          title="Alumni Map"
-          description="Where fellow graduates live around the world, shown only for alumni who chose to appear here."
+          title="Community Map"
+          description="Where members live around the world, shown only for members who chose to appear here."
         />
         <div className="relative w-full sm:w-[280px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -85,7 +85,7 @@ export default function AlumniMapPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile icon={Users} value={stats.mapped} label="Mapped alumni" tone="dark" />
+        <StatTile icon={Users} value={stats.mapped} label="Mapped members" tone="dark" />
         <StatTile icon={Globe} value={stats.countryCount} label="Countries" tone="brand" />
         <StatTile icon={MapPin} value={stats.topCountry ?? "—"} label="Top country" tone="default" />
         <StatTile icon={MapPin} value={stats.topCount || 0} label="In top country" tone="default" />
@@ -96,7 +96,7 @@ export default function AlumniMapPage() {
       ) : members.length === 0 ? (
         <EmptyState
           icon={<Globe size={26} />}
-          title="No alumni on the map yet"
+          title="No members on the map yet"
           description="The map fills in as members opt in from their profile settings and share where they're based."
         />
       ) : (

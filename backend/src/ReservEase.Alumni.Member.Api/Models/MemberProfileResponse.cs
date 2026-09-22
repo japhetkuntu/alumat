@@ -9,4 +9,6 @@ public record MemberProfileResponse(
     bool IsMembershipActive, DateTime? MembershipExpiry, int MembershipYearsPaid, DateTime? LastMembershipPaidAt,
     bool ShowOnAlumniMap, double? MapLatitude, double? MapLongitude, DateTime? DateOfBirth,
     int? YearOfEntry, string? House, string? StudentStatus, string? PrefectStatus,
-    List<string>? ClubsAndSocieties, List<string>? LeadershipRoles, string? Achievements);
+    List<string>? ClubsAndSocieties, List<string>? LeadershipRoles, string? Achievements,
+    string? ConnectionType, List<string>? Skills, List<string>? Interests,
+    bool ShowEmailOnDirectory, bool ShowPhoneOnDirectory, bool ShowCompanyOnDirectory, bool ShowBioOnDirectory);

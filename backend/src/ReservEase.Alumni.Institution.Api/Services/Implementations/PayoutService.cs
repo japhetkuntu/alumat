@@ -21,10 +21,13 @@ public class PayoutService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Batch> batchRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
-    ICurrentTenantService currentTenant) : IPayoutService
+    ICurrentTenantService currentTenant,
+    ILogger<PayoutService> logger) : IPayoutService
 {
     public async Task<IApiResponse<PayoutForecastResponse>> GetForecastAsync()
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == currentTenant.InstitutionId);
         var payoutsConfigured = !string.IsNullOrWhiteSpace(institution?.PaystackSubaccountCode);
 
@@ -44,7 +47,13 @@ public class PayoutService(
             nextContribs.Count + nextOrders.Count + nextRequests.Count);
 
         return new PayoutForecastResponse(payoutsConfigured, lastPayout, nextPayout).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetForecastAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PayoutForecastResponse>("Failed to getforecast");
+        }}
 
     private async Task<(List<Contribution> Contributions, List<StoreOrder> Orders, List<ServiceRequest> Requests)> FetchSuccessfulPaystackAsync(DateTime start, DateTime end)
     {

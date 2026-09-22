@@ -6,7 +6,7 @@ import type { IconType as LucideIcon } from "@alumni/ui";
 import {
   Menu, X, ArrowRight, ChevronRight, ChevronDown,
   Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell, FileText,
-  Images, Building2, ShieldCheck, Rocket, SlidersHorizontal,
+  Images, Building2, ShieldCheck, Rocket, Sparkles, Landmark, SlidersHorizontal, Layer,
   Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
   Wallet, CalendarCheck, CheckCircle2, PartyPopper,
   Crown, UserCheck, Settings2, Upload, BookOpen, Megaphone, GraduationCap, Users2,
@@ -44,65 +44,62 @@ type Feature = { icon: LucideIcon; label: string; title: string; desc: string; b
 const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
   {
     label: "Stay connected",
-    blurb: "Everyone finds their way back to each other, and to what's happening now.",
+    blurb: "Your institution's community finds its way back to each other and to what's happening now.",
     items: [
-      { icon: Users,       label: "Directory",     title: "Every member, one searchable list",    desc: "Name, join year, location: members find each other in seconds.", big: true, illustration: DirectoryIllustration },
-      { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",             desc: "Speech days, AGMs, reunions, chapter meetups, all in one shared calendar.", illustration: EventsIllustration },
-      { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff add photos from every event; alumni browse them in a great gallery, forever.", illustration: AlbumsIllustration },
-      { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, fundraisers, events: members choose exactly what reaches them.", illustration: NotificationsIllustration },
+      { icon: Users,       label: "Directory",     title: "Every member, one searchable list",    desc: "Name, class year, location, and contact details: members find each other in seconds.", big: true, illustration: DirectoryIllustration },
+      { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",             desc: "Reunions, dinners, chapter meetups, speech days, and programs, all in one shared calendar.", illustration: EventsIllustration },
+      { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff upload photos from every event; members, supporters, and community leaders revisit the stories in one place.", illustration: AlbumsIllustration },
+      { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, campaigns, events, and updates: members choose exactly what reaches them.", illustration: NotificationsIllustration },
     ],
   },
   {
     label: "Grow together",
-    blurb: "The network alumni actually stay around for: opportunity and each other.",
+    blurb: "A community people want to stay in because opportunity brings them back.",
     items: [
-      { icon: Briefcase,   label: "Careers",    title: "A jobs board just for your alumni",   desc: "Alumni employers post roles straight to your community, before they hit public boards.", big: true, illustration: JobsIllustration },
-      { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Alumni who've walked the path connect with those just starting out.", illustration: MentorshipIllustration },
-      { icon: Building2,   label: "Businesses", title: "An alumni business directory",          desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
-      { icon: Trophy,      label: "Spotlight",  title: "Celebrate your standout alumni",        desc: "Recognize members making waves globally, right on their community's home page.", illustration: SpotlightIllustration },
+      { icon: Briefcase,   label: "Careers",    title: "A jobs board for your community",      desc: "Employers post roles for members and supporters before they ever hit public boards.", big: true, illustration: JobsIllustration },
+      { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Former students and experienced members connect with those just starting out.", illustration: MentorshipIllustration },
+      { icon: Building2,   label: "Businesses", title: "A member business directory",            desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
+      { icon: Trophy,      label: "Spotlight",  title: "Celebrate your standout members",       desc: "Recognize members, leaders, supporters, and changemakers right on your community home page.", illustration: SpotlightIllustration },
     ],
   },
   {
     label: "Raise funds & offer services",
-    blurb: "Money moves online, with a record, instead of screenshots and trust.",
+    blurb: "Money moves online with a record, instead of screenshots and trust.",
     items: [
-      { icon: CreditCard,  label: "Fundraising", title: "Collect dues & fund projects", desc: "Online payments for development projects, year-group dues, and welfare support.", big: true, illustration: FundraisingIllustration },
-      { icon: ShoppingBag, label: "Store",       title: "Sell branded merchandise",     desc: "An online store for association gear, with online payment and order tracking.", illustration: StoreIllustration },
-      { icon: FileText,    label: "Services",    title: "Offer any paid service, your way", desc: "Transcripts, letters, certificate reissues, or anything else your institution wants to offer: configure the request form, members request and pay online, you fulfill it.", illustration: ServicesIllustration },
+      { icon: CreditCard,  label: "Fundraising", title: "Collect dues & fund projects", desc: "Online payments for campaigns, membership dues, renewals, and community support.", big: true, illustration: FundraisingIllustration },
+      { icon: ShoppingBag, label: "Store",       title: "Sell branded merchandise",     desc: "An online store for association gear, with payment and order tracking built in.", illustration: StoreIllustration },
+      { icon: FileText,    label: "Services",    title: "Offer any paid service, your way", desc: "Transcripts, letters, certificate reissues, or other requests: configure forms, collect payment online, and fulfill them from one place.", illustration: ServicesIllustration },
     ],
   },
 ];
 
-// The pipeline behind "build your alumni network from scratch" — reuses
-// mechanisms that already exist (Batches as year groups, InstitutionStaff
-// scoped to a year group as the ambassador, Directory as the verified
-// record), told as a single story for schools with decades of graduates
-// and zero structure today.
+// The pipeline behind building a community from scratch — flexible enough for
+// alumni groups, churches, associations, nonprofits, and other organizations.
 const NETWORK_PIPELINE: { icon: LucideIcon; label: string }[] = [
-  { icon: Building2,     label: "School" },
-  { icon: GraduationCap, label: "Year Groups" },
-  { icon: Crown,         label: "Ambassadors" },
-  { icon: Users,         label: "Alumni" },
-  { icon: UserCheck,     label: "Verified Profiles" },
+  { icon: Building2,     label: "Organization" },
+  { icon: Layer,         label: "Groups & Chapters" },
+  { icon: Crown,         label: "Community Leaders" },
+  { icon: Users,         label: "Members" },
+  { icon: UserCheck,     label: "Trusted Profiles" },
   { icon: Users2,        label: "Community" },
 ];
 
 // The concrete, no-friction version of "we'll build it for you" — every
-// step your team actually does for a school that signs up, not just the
+// step your team actually does for an institution that signs up, not just the
 // software's part of it.
 const WHITE_GLOVE_STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
-  { icon: Rocket,          title: "Create the portal",             desc: "Your own branded subdomain, live and ready." },
-  { icon: Award,           title: "Add school branding",           desc: "Colors, logo, and identity, applied throughout." },
-  { icon: Settings2,       title: "Configure the association",     desc: "Membership dues, campaigns, and policies set up for you." },
-  { icon: GraduationCap,   title: "Create year groups",             desc: "Every graduating class, structured and ready to fill." },
-  { icon: UserCheck,       title: "Set up administrators",          desc: "Your executives get accounts and the right access from day one." },
-  { icon: Upload,          title: "Import existing alumni data",    desc: "Spreadsheets, old records, anything you already have, brought in for you." },
-  { icon: BookOpen,        title: "Train the executives",           desc: "A walkthrough for whoever will run the portal day to day." },
-  { icon: Megaphone,       title: "Help launch it to alumni",       desc: "Guidance and materials for announcing it to your network." },
-  { icon: Target,          title: "Help run the first campaign",    desc: "We help you plan and launch your first dues drive or fundraiser." },
+  { icon: Sparkles,        title: "Create the community portal",        desc: "Your own branded subdomain, live and ready." },
+  { icon: Landmark,        title: "Add institutional branding",        desc: "Colors, logo, and identity, applied throughout." },
+  { icon: SlidersHorizontal, title: "Configure the community",          desc: "Membership dues, campaigns, and policies set up for you." },
+  { icon: Layer,            title: "Organize groups and chapters",      desc: "Your community's groups, chapters, or cohorts, structured and ready to grow." },
+  { icon: UserCheck,        title: "Set up administrators",             desc: "Your executives get accounts and the right access from day one." },
+  { icon: Upload,           title: "Import existing member data",       desc: "Spreadsheets, old records, and contact lists, brought in for you." },
+  { icon: BookOpen,         title: "Train the community team",          desc: "A walkthrough for whoever will run the portal day to day." },
+  { icon: Megaphone,        title: "Help launch to your members",       desc: "Guidance and materials for announcing the community to your network." },
+  { icon: Target,           title: "Help run the first campaign",       desc: "We help you plan and launch your first dues drive or fundraiser." },
 ];
 
-// The three problems every alumni association actually has — sold first,
+// The three problems community organizations commonly face — sold first,
 // before a single feature is named. Each ties to real feature labels used in
 // FEATURE_GROUPS below, so a visitor who reads this section and then scrolls
 // into "Here's how" sees the same names come back, not a new vocabulary.
@@ -114,33 +111,33 @@ type ProblemItem = {
 
 const PROBLEMS: ProblemItem[] = [
   {
-    n: "01", icon: MessageCircleOff, eyebrow: "Problem one", title: "Your alumni are scattered",
-    desc: "A WhatsApp group for one year group. A Facebook group nobody moderates. A spreadsheet that's two executives out of date. Different year groups, different channels, no single place any of it lives, so a little more of the network quietly disappears every year.",
-    fix: "One searchable directory organised by year group automatically, plus notifications that actually reach people instead of dying in a chat.",
+    n: "01", icon: MessageCircleOff, eyebrow: "Problem one", title: "Your community is scattered",
+    desc: "A WhatsApp group for one chapter. A Facebook group nobody moderates. A spreadsheet that is a year out of date. Different groups, channels, and lists, with no single place where your community actually lives.",
+    fix: "One searchable directory organized by group, chapter, and role, plus notifications that reach people instead of disappearing into chat.",
     chips: ["Directory", "Notifications", "Events"],
     illustration: ScatteredChatIllustration,
   },
   {
-    n: "02", icon: SearchX, eyebrow: "Problem two", title: "Nobody knows who your alumni actually are",
-    desc: "Ask “how many alumni do we have, and who are they?” and the honest answer is a guess, a headcount from years ago, or a folder of screenshots. There's no reliable, verified, searchable record of who your alumni actually are.",
-    fix: "A verified member database, searchable by name, year and location, with real profiles, not a spreadsheet someone's cousin made.",
+    n: "02", icon: SearchX, eyebrow: "Problem two", title: "Member records are incomplete",
+    desc: "Ask “how many members do we have, and who are they?” and the honest answer is a guess, an old headcount, or a folder of screenshots. There's no reliable, verified record of your community.",
+    fix: "A verified member database, searchable by name, year and location, with real profiles your institution actually owns.",
     chips: ["Directory", "Businesses"],
     illustration: UnknownAlumniIllustration,
   },
   {
-    n: "03", icon: Wallet, eyebrow: "Problem three", title: "Mobilising alumni for money is painful",
-    desc: "You need GH₵100 from 500 alumni. Someone drafts a broadcast message. People pay however they can and send screenshots as proof. Someone reconciles every one by hand. Two weeks in, someone asks “how much have we raised?” and the honest answer is “let me check.”",
-    fix: "Built-in campaigns and dues with real payment collection, reconciled automatically the moment it clears, with a live total instead of a guess.",
+    n: "03", icon: Wallet, eyebrow: "Problem three", title: "Contributions are still tracked by hand",
+    desc: "You need GH₵100 from 500 members. Someone drafts a broadcast message. People pay however they can and send screenshots as proof. Someone reconciles every one by hand. Two weeks in, someone asks “how much have we raised?” and the honest answer is “let me check.”",
+    fix: "Built-in campaigns and dues with secure online payments, automatic reconciliation, and a live total instead of a guess.",
     chips: ["Fundraising", "Store", "Services"],
     illustration: ManualReconciliationIllustration,
   },
 ];
 
 const WHATSAPP_PROBLEMS = [
-  { icon: UserX,           title: "Caps at 1,024 members", desc: "WhatsApp groups max out at 1,024 people. A Community stretches to 5,000, but that's still a ceiling a growing alumni base will hit." },
+  { icon: UserX,           title: "Caps at 1,024 members", desc: "WhatsApp groups max out at 1,024 people. Even larger community spaces eventually become difficult to organize and grow." },
   { icon: SearchX,         title: "No real search",        desc: "Find last year's fundraiser announcement? Good luck scrolling. WhatsApp only searches text in one chat at a time." },
   { icon: ShieldAlert,     title: "Real fraud risk",        desc: "UK Action Fraud logged 636 reports of WhatsApp group-chat scams in H1 2024 alone, often someone impersonating a member to solicit money." },
-  { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, no engagement analytics, even in WhatsApp Communities." },
+  { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, and no engagement analytics in one place." },
 ];
 
 /** A hero stat tile whose number counts up from 0 the moment it scrolls into
@@ -302,8 +299,8 @@ function WhiteGloveStep({ step, index, delay }: { step: typeof WHITE_GLOVE_STEPS
     <div ref={ref} style={{ transitionDelay: delay }}
       className={cn("flex gap-4 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
       <div className="relative shrink-0">
-        <IconTile icon={step.icon} size="sm" tone={index % 2 === 0 ? "primary" : "accent"} />
-        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+        <IconTile icon={step.icon} size="default" tone={index % 2 === 0 ? "primary" : "accent"} />
+        <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold"
           style={{ background: "var(--foreground)", color: "var(--background)" }}>
           {index + 1}
         </span>
@@ -342,19 +339,36 @@ function FaqItem({ item, open, onToggle }: { item: typeof FAQS[number]; open: bo
    ───────────────────────────────────────────────────────────────────────── */
 interface LeadForm {
   institutionName: string;
+  website: string;
   contactName: string;
+  contactRole: string;
   contactEmail: string;
   contactPhone: string;
   country: string;
   estimatedMemberCount: string;
+  organizationType: string;
+  primaryGoals: string[];
+  currentMemberManagement: string;
+  dataImportStatus: string;
+  preferredContactChannel: string;
+  preferredContactTime: string;
+  timeZone: string;
   message: string;
 }
 
 const MEMBER_COUNT_RANGES = ["0 – 100", "101 – 500", "501 – 999", "1,000+"];
+const ORGANIZATION_TYPES = ["Alumni association", "University or college", "School network", "Professional association", "Nonprofit or NGO", "Faith-based organization", "Membership organization", "Other"];
+const PRIMARY_GOALS = ["Member directory", "Member registration and approvals", "Membership dues", "Contributions and fundraising", "Events and RSVPs", "Communities or chapters", "Mentorship", "Jobs and opportunities", "News and announcements", "Digital resources", "Merchandise/store", "Official document or service requests"];
+const CONTACT_ROLES = ["Executive leadership", "Community or membership office", "IT or digital transformation", "Finance", "Communications or marketing", "Programs or member services", "Other"];
+const MANAGEMENT_OPTIONS = ["Spreadsheet", "WhatsApp groups", "Existing alumni or community software", "CRM", "Student information system", "Website or custom system", "Mostly manual processes", "Other"];
+const CONTACT_CHANNELS = ["Email", "Phone call", "WhatsApp", "Video call"];
+const CONTACT_TIMES = ["Morning", "Afternoon", "Evening", "Flexible"];
 
 const EMPTY_LEAD: LeadForm = {
-  institutionName: "", contactName: "", contactEmail: "", contactPhone: "",
-  country: "Ghana", estimatedMemberCount: "", message: "",
+  institutionName: "", website: "", contactName: "", contactRole: "", contactEmail: "", contactPhone: "",
+  country: "Ghana", estimatedMemberCount: "", organizationType: "", primaryGoals: [],
+  currentMemberManagement: "", dataImportStatus: "", preferredContactChannel: "",
+  preferredContactTime: "", timeZone: "", message: "",
 };
 
 function OnboardingForm() {
@@ -362,10 +376,14 @@ function OnboardingForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [step, setStep] = useState(1);
 
   const set = <K extends keyof LeadForm>(key: K, value: LeadForm[K]) => setForm((f) => ({ ...f, [key]: value }));
+  const toggleGoal = (goal: string) => set("primaryGoals", form.primaryGoals.includes(goal)
+    ? form.primaryGoals.filter((value) => value !== goal)
+    : [...form.primaryGoals, goal]);
 
-  const validate = (): boolean => {
+  const validateBasics = (): boolean => {
     if (!form.institutionName.trim()) { setError("Your institution's name is required."); return false; }
     if (!form.contactName.trim()) { setError("A contact name is required."); return false; }
     if (!form.contactEmail.trim() || !/^\S+@\S+\.\S+$/.test(form.contactEmail.trim())) { setError("A valid contact email is required."); return false; }
@@ -373,18 +391,36 @@ function OnboardingForm() {
     return true;
   };
 
+  const goToNextStep = () => {
+    if (step === 1 && !validateBasics()) return;
+    setError(null);
+    setStep((current) => Math.min(3, current + 1));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validateBasics()) {
+      setStep(1);
+      return;
+    }
     setSubmitting(true);
     try {
       await memberClient.post("/public/onboarding-leads", {
         institutionName: form.institutionName.trim(),
+        website: form.website.trim() || undefined,
         contactName: form.contactName.trim(),
+        contactRole: form.contactRole || undefined,
         contactEmail: form.contactEmail.trim(),
         contactPhone: form.contactPhone.trim() || undefined,
         country: form.country.trim() || undefined,
         estimatedMemberCount: form.estimatedMemberCount.trim() || undefined,
+        organizationType: form.organizationType || undefined,
+        primaryGoals: form.primaryGoals,
+        currentMemberManagement: form.currentMemberManagement || undefined,
+        dataImportStatus: form.dataImportStatus || undefined,
+        preferredContactChannel: form.preferredContactChannel || undefined,
+        preferredContactTime: form.preferredContactTime || undefined,
+        timeZone: form.timeZone.trim() || undefined,
         message: form.message.trim() || undefined,
       });
       setSubmitted(true);
@@ -397,28 +433,59 @@ function OnboardingForm() {
 
   if (submitted) {
     return (
-      <div className="card p-8 sm:p-12 text-center flex flex-col items-center">
-        <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-            <path d="M6 13.5L11 18.5L20 8" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-              pathLength={1} style={{ strokeDasharray: 1, strokeDashoffset: 1, animation: "draw-check 500ms 150ms ease-out forwards" }} />
-          </svg>
+      <div className="card p-8 sm:p-10 text-center flex flex-col items-center">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
+          <PartyPopper size={28} style={{ color: "var(--primary)" }} />
         </div>
-        <h3 className="font-[family-name:var(--font-display)] mb-2.5" style={{ fontSize: "1.35rem", color: "var(--foreground)" }}>Thanks, we&apos;ve got it.</h3>
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: "var(--primary)" }}>You&apos;re on your way</p>
+        <h3 className="font-[family-name:var(--font-display)] mb-2.5" style={{ fontSize: "1.5rem", color: "var(--foreground)" }}>Let&apos;s build something your community will love.</h3>
         <p className="max-w-[42ch]" style={{ color: "var(--muted-foreground)", fontSize: "0.925rem", lineHeight: 1.7 }}>
-          Our team will reach out to <strong style={{ color: "var(--foreground)" }}>{form.contactEmail}</strong> within one business day to get {form.institutionName} set up, free as always.
+          We&apos;ll reach out to <strong style={{ color: "var(--foreground)" }}>{form.contactEmail}</strong> within one business day with a thoughtful next step for {form.institutionName}.
         </p>
-        <style jsx>{`@keyframes draw-check { to { stroke-dashoffset: 0; } }`}</style>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full max-w-[560px] mt-7 text-left">
+          {[
+            ["01", "We review your goals", "So the first conversation starts with what matters to you."],
+            ["02", "We shape your setup", "Your community gets a clear, practical starting point."],
+            ["03", "You get a next step", "No pressure, no handoff maze, no obligation."],
+          ].map(([number, title, description]) => (
+            <div key={number} className="rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--secondary)" }}>
+              <span className="text-[10px] font-bold" style={{ color: "var(--primary)" }}>{number}</span>
+              <p className="text-[12.5px] font-semibold mt-1" style={{ color: "var(--foreground)" }}>{title}</p>
+              <p className="text-[11.5px] leading-relaxed mt-1" style={{ color: "var(--muted-foreground)" }}>{description}</p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-5">
+    <form onSubmit={handleSubmit} className="card overflow-hidden">
+      <div className="px-6 pt-6 sm:px-8 sm:pt-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--primary)" }}>Start your institution journey</p>
+            <h3 className="font-[family-name:var(--font-display)] text-[1.35rem] sm:text-[1.55rem] font-bold mt-1" style={{ color: "var(--foreground)" }}>
+              {step === 1 ? "Let’s start with you" : step === 2 ? "Make it yours" : "How should we connect?"}
+            </h3>
+            <p className="text-[13px] mt-1 max-w-[48ch]" style={{ color: "var(--muted-foreground)" }}>
+              {step === 1 ? "Tell us who you are and which community you represent." : step === 2 ? "Pick what matters most. We’ll tailor the first conversation around it." : "A few final details help us make your welcome personal."}
+            </p>
+          </div>
+          <span className="shrink-0 text-[12px] font-semibold" style={{ color: "var(--muted-foreground)" }}>{step} of 3</span>
+        </div>
+        <div className="flex gap-1.5 mt-5" aria-label={`Step ${step} of 3`}>
+          {[1, 2, 3].map((item) => <span key={item} className="h-1.5 flex-1 rounded-full transition-colors duration-300" style={{ background: item <= step ? "var(--primary)" : "var(--border)" }} />)}
+        </div>
+      </div>
+
+      <div className="p-6 sm:p-8 pt-5 sm:pt-6 space-y-5">
+      {step === 1 && (
+        <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label required>Institution name</Label>
-          <Input value={form.institutionName} onChange={(e) => set("institutionName", e.target.value)} placeholder="e.g. St. Roses Senior High School" />
+          <Input value={form.institutionName} onChange={(e) => set("institutionName", e.target.value)} placeholder="e.g. Grace Community Church" />
         </div>
         <div>
           <Label>Country</Label>
@@ -435,13 +502,75 @@ function OnboardingForm() {
           <Input type="email" value={form.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} placeholder="you@institution.edu" />
         </div>
       </div>
+        </>
+      )}
+      {step === 2 && (
+        <>
+      <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+        <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Help us understand your community</p>
+        <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>These optional details help us prepare a more useful first conversation.</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <Label>Your role (optional)</Label>
+          <Select value={form.contactRole || undefined} onValueChange={(v) => set("contactRole", v)}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="What is your role?" /></SelectTrigger>
+            <SelectContent>{CONTACT_ROLES.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Organization website (optional)</Label>
+          <Input type="url" value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://yourorganization.org" />
+        </div>
+      </div>
+      <div>
+        <Label>What type of community are you building? (optional)</Label>
+        <Select value={form.organizationType || undefined} onValueChange={(v) => set("organizationType", v)}>
+          <SelectTrigger className="w-full"><SelectValue placeholder="Choose the closest fit" /></SelectTrigger>
+          <SelectContent>{ORGANIZATION_TYPES.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <fieldset>
+        <legend className="text-[13px] font-semibold mb-2" style={{ color: "var(--foreground)" }}>What do you want to accomplish? <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span></legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {PRIMARY_GOALS.map((goal) => (
+            <label key={goal} className={cn("flex items-center gap-2.5 rounded-md border px-3 py-2.5 text-[12.5px] cursor-pointer transition-colors", form.primaryGoals.includes(goal) ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50")}>
+              <input type="checkbox" checked={form.primaryGoals.includes(goal)} onChange={() => toggleGoal(goal)} className="accent-primary" />
+              <span>{goal}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="rounded-lg px-4 py-3 text-[12.5px]" style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}>
+        You can choose as many as you like — this helps us show up with relevant ideas, not a generic demo.
+      </div>
+        </>
+      )}
+      {step === 3 && (
+        <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <Label>How do you manage members today? (optional)</Label>
+          <Select value={form.currentMemberManagement || undefined} onValueChange={(v) => set("currentMemberManagement", v)}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="Choose your current process" /></SelectTrigger>
+            <SelectContent>{MANAGEMENT_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Do you need to import existing records? (optional)</Label>
+          <Select value={form.dataImportStatus || undefined} onValueChange={(v) => set("dataImportStatus", v)}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="Choose one" /></SelectTrigger>
+            <SelectContent>{["Yes, organized and ready", "Yes, but it needs cleaning", "No", "Not sure yet"].map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label>Phone (optional)</Label>
           <Input value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} placeholder="+233 ..." />
         </div>
         <div>
-          <Label>Roughly how many alumni? (optional)</Label>
+          <Label>Roughly how many members? (optional)</Label>
           <Select value={form.estimatedMemberCount || undefined} onValueChange={(v) => set("estimatedMemberCount", v)}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a range" />
@@ -454,15 +583,43 @@ function OnboardingForm() {
           </Select>
         </div>
       </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <Label>Preferred follow-up (optional)</Label>
+          <Select value={form.preferredContactChannel || undefined} onValueChange={(v) => set("preferredContactChannel", v)}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="How should we reach you?" /></SelectTrigger>
+            <SelectContent>{CONTACT_CHANNELS.map((channel) => <SelectItem key={channel} value={channel}>{channel}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Best time (optional)</Label>
+          <Select value={form.preferredContactTime || undefined} onValueChange={(v) => set("preferredContactTime", v)}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="When works best?" /></SelectTrigger>
+            <SelectContent>{CONTACT_TIMES.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Time zone (optional)</Label>
+          <Input value={form.timeZone} onChange={(e) => set("timeZone", e.target.value)} placeholder="e.g. GMT" />
+        </div>
+      </div>
       <div>
         <Label>Tell us a bit more (optional)</Label>
-        <Textarea value={form.message} onChange={(e) => set("message", e.target.value)} placeholder="What are you hoping your alumni portal will do for your community?" rows={4} />
+        <Textarea value={form.message} onChange={(e) => set("message", e.target.value)} placeholder="Anything else you want us to know? A launch goal, a challenge, or a big idea." rows={4} />
       </div>
+        </>
+      )}
       <FormError message={error} />
-      <Button type="submit" className="w-full h-12 text-[15px] font-semibold gap-2" isLoading={submitting} loadingText="Sending your request...">
-        Get onboarded, free <ArrowRight size={15} />
-      </Button>
-      <p className="text-center text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>No cost, no obligation. We&apos;ll be in touch shortly.</p>
+      <div className="flex items-center justify-between gap-3 pt-1">
+        {step > 1 ? <Button type="button" variant="outline" onClick={() => { setError(null); setStep((current) => current - 1); }}>Back</Button> : <span />}
+        {step < 3 ? (
+          <Button type="button" className="font-semibold gap-2" onClick={goToNextStep}>Continue <ArrowRight size={15} /></Button>
+        ) : (
+          <Button type="submit" className="font-semibold gap-2" isLoading={submitting} loadingText="Sending your request...">Get started, free <ArrowRight size={15} /></Button>
+        )}
+      </div>
+      <p className="text-center text-[11.5px]" style={{ color: "var(--muted-foreground)" }}><span style={{ color: "var(--primary)" }}>Free forever.</span> No obligation. Usually takes less than 2 minutes.</p>
+      </div>
     </form>
   );
 }
@@ -526,7 +683,7 @@ export default function PlatformMarketingPage() {
 
           <div className="hidden md:flex items-center gap-2">
             <Button size="sm" className="text-[13px] font-semibold gap-1.5 rounded-full px-5" onClick={() => scrollToSection("#onboard")}>
-              Get onboarded, free <ArrowRight size={12} />
+              Request institution onboarding <ArrowRight size={12} />
             </Button>
           </div>
 
@@ -549,7 +706,7 @@ export default function PlatformMarketingPage() {
             ))}
             <div className="mt-4 pt-4 flex flex-col gap-2.5" style={{ borderTop: "1px solid var(--border)" }}>
               <Button className="w-full font-semibold gap-2" onClick={() => { scrollToSection("#onboard"); setMenuOpen(false); }}>
-                Get onboarded, free <ArrowRight size={14} />
+                Request institution onboarding <ArrowRight size={14} />
               </Button>
             </div>
           </div>
@@ -576,26 +733,22 @@ export default function PlatformMarketingPage() {
 
         <div className="section__inner--wide relative pt-16 pb-20 text-center">
 
-          <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[24ch] mx-auto section__inner"
+          <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[22ch] mx-auto section__inner"
             style={{ fontSize: "clamp(2.5rem,5.2vw,4.1rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
-            Give your alumni a home —{" "}
-            <span className="relative whitespace-nowrap" style={{ color: "var(--primary)" }}>
-              at no cost
-              <span className="absolute left-0 right-0 -bottom-1 h-[3px] rounded-full" style={{ background: "var(--brand-primary-light)" }} />
-            </span>{" "}
-            to your institution.
+            Give your community a home — <span style={{ color: "var(--primary)" }}>at no cost </span> <span>to your institution.</span>
           </h1>
           <p className="mb-10 max-w-[52ch] mx-auto"
             style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-            Alumni scattered across WhatsApp groups. No reliable record of who they even are.{" "}
-            Money raised with screenshots and reconciled by hand. AlumUnion fixes all three.
+            AlumUnion helps institutions build, organize, and grow thriving communities — from alumni and former students to members, supporters, and stakeholders.
           </p>
           <div className="flex flex-col items-center gap-4 mb-14">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
             <Button ref={heroCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="px-9 text-[15.5px] font-semibold gap-2 rounded-full shadow-sm"
               style={{ ...heroCta.style, height: 52 }} onMouseMove={heroCta.onMouseMove} onMouseLeave={heroCta.onMouseLeave}
               onClick={() => scrollToSection("#onboard")}>
-              Get your institution onboarded <ArrowRight size={15} />
+              Request institution onboarding <ArrowRight size={15} />
             </Button>
+            </div>
             <button onClick={() => scrollToSection("#how-it-works")}
               className="text-[13.5px] font-semibold underline decoration-transparent hover:decoration-current underline-offset-4 transition-all"
               style={{ color: "var(--muted-foreground)" }}>
@@ -607,11 +760,14 @@ export default function PlatformMarketingPage() {
             {[
               { icon: ShieldCheck, text: "Free, no hidden costs" },
               { icon: Rocket,      text: "Live in days, not months" },
-              { icon: Users,       text: "Built for every alumni community" },
+              { icon: Users,       text: "Built for every institution" },
             ].map((item, i) => (
               <div key={item.text} className="flex items-center gap-2 cursor-default">
                 <item.icon size={15} style={{ color: i % 2 === 0 ? "var(--primary)" : "var(--brand-accent, var(--primary))" }} />
-                <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>{item.text}</p>
+                <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  {i === 0 ? <span style={{ color: "var(--primary)" }}>Free</span> : item.text}
+                  {i === 0 ? ", no hidden costs" : ""}
+                </p>
               </div>
             ))}
           </div>
@@ -667,7 +823,7 @@ export default function PlatformMarketingPage() {
                   <span className="w-2 h-2 rounded-full" style={{ background: "var(--destructive)", opacity: 0.4 }} />
                   <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand-accent, var(--primary))", opacity: 0.4 }} />
                   <span className="w-2 h-2 rounded-full" style={{ background: "var(--primary)", opacity: 0.4 }} />
-                  <span className="ml-2.5 text-[11.5px] font-mono" style={{ color: "var(--muted-foreground)" }}>yourschool.alumunion.com</span>
+                  <span className="ml-2.5 text-[11.5px] font-mono" style={{ color: "var(--muted-foreground)" }}>yourcommunity.alumunion.com</span>
                 </div>
 
                 <div className="p-4 sm:p-6">
@@ -731,10 +887,10 @@ export default function PlatformMarketingPage() {
           <div className="mb-16 sm:mb-20 max-w-[62ch]">
             <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>The reality</p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              Every association we talk to is fighting the same three problems.
+              Every institution we talk to is fighting the same three problems.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Not a lack of features, a lack of one place where alumni, records and money all live together.
+              Not a lack of features, a lack of one place where your community, records, and contributions all live together.
             </p>
           </div>
 
@@ -782,11 +938,11 @@ export default function PlatformMarketingPage() {
           <div className="mb-14 max-w-[56ch]">
             <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>The fix</p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              One digital home. All three problems, solved.
+              One digital home for your institution's community.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Everyone stays connected, your records finally mean something, and money gets collected and reconciled
-              properly, all in the same place, none of it costs your institution anything.
+              Your community stays connected, your records become reliable, and contributions are collected and reconciled
+              properly, all in the same place, without relying on scattered WhatsApp groups.
             </p>
           </div>
 
@@ -811,8 +967,8 @@ export default function PlatformMarketingPage() {
             className="mt-10 w-full card group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 text-left transition-all duration-500 hover:-translate-y-1"
             style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
             <div>
-              <p className="text-[14px] font-semibold text-white mb-1">Ready to bring this to your alumni?</p>
-              <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution, it's free to get started.</p>
+              <p className="text-[14px] font-semibold text-white mb-1">Ready to build your community?</p>
+              <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution — it's <span style={{ color: "white" }}>free</span> to get started.</p>
             </div>
             <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
           </button>
@@ -825,15 +981,15 @@ export default function PlatformMarketingPage() {
       <Section id="how-it-works" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner section">
 
-          {/* ── Build your alumni network from scratch — the pitch for the
-                school with decades of graduates and zero structure today. ── */}
+          {/* ── Build a community from the ground up — for organizations with
+                an idea, a network, or a community ready to grow. ── */}
           <div className="text-center max-w-[62ch] mx-auto mb-12">
-            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>For schools starting from zero</p>
+            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>For organizations starting from anywhere</p>
             <h2 className="font-[family-name:var(--font-display)] mb-5" style={{ color: "var(--foreground)" }}>
-              Never had an alumni association? We&apos;ll build one for you. Free.
+              Don&apos;t have an organized community yet? Start from where you are.
             </h2>
             <p className="font-[family-name:var(--font-display)] italic" style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "var(--muted-foreground)" }}>
-              &ldquo;Your school has thousands of former students. Let&apos;s find them.&rdquo;
+              &ldquo;Bring your people together, organize the groups that matter to you, and gradually grow a trusted community.&rdquo;
             </p>
           </div>
 
@@ -841,13 +997,13 @@ export default function PlatformMarketingPage() {
             <PipelineFlow />
           </div>
           <p className="text-center max-w-[46ch] mx-auto mb-20 sm:mb-24" style={{ fontSize: "0.925rem", lineHeight: 1.7, color: "var(--muted-foreground)" }}>
-            Each year group gets its own ambassador, responsible for finding and mobilising their own cohort, so the work spreads across your alumni instead of landing on one overworked executive.
+            Each group or chapter can have its own leader, responsible for bringing people in and keeping them connected, so the work spreads across your community instead of landing on one overworked administrator.
           </p>
 
           {/* ── The concrete offer — every step your team actually does ── */}
           <div className="text-center max-w-[56ch] mx-auto mb-12">
             <h3 className="font-[family-name:var(--font-display)] mb-4" style={{ fontSize: "1.5rem", color: "var(--foreground)" }}>
-              The offer: your alumni network, built for free.
+              The offer: build your community, from the ground up.
             </h3>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
               Not a signup link, a done-for-you setup. Here&apos;s exactly what our team handles.
@@ -862,7 +1018,7 @@ export default function PlatformMarketingPage() {
 
           <div className="flex justify-center mt-14">
             <Button size="lg" className="px-8 h-12 text-[14.5px] font-semibold gap-2 rounded-full" onClick={() => scrollToSection("#onboard")}>
-              Get your alumni network built <ArrowRight size={15} />
+              Request institution onboarding <ArrowRight size={15} />
             </Button>
           </div>
         </div>
@@ -883,10 +1039,10 @@ export default function PlatformMarketingPage() {
             </p>
             <h2 className="font-[family-name:var(--font-display)] mb-6 max-w-[24ch]"
               style={{ fontSize: "clamp(2rem,4vw,3rem)", lineHeight: 1.12, color: "white", margin: "0 auto 1.5rem" }}>
-              Completely free for your institution. Full stop.
+              Completely <span style={{ color: "rgba(255,255,255,0.9)" }}>free</span> for your institution. Full stop.
             </h2>
             <p className="max-w-[52ch] mb-9" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "rgba(255,255,255,0.82)", margin: "0 auto 2.25rem" }}>
-              No setup fee, no monthly bill, no per-member charge. Your alumni get a modern portal, and your institution
+              No setup fee, no monthly bill, no per-member charge. Your members get a modern portal, and your organization
               never sees an invoice for it.
             </p>
             <Button ref={freeCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2 rounded-full"
@@ -911,19 +1067,22 @@ export default function PlatformMarketingPage() {
               </h2>
               <p className="max-w-[46ch] mb-8" style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
                 Tell us a little about your institution and where to reach you. Our team will follow up to configure
-                your portal, your branding, and your first admin account, free from day one.
+                your portal, your branding, and your first admin account, <span style={{ color: "var(--primary)" }}>free from day one.</span>
               </p>
               <div className="space-y-4">
                 {[
                   { icon: Mail,     text: "We'll reply within one business day" },
                   { icon: ShieldCheck, text: "No cost, no obligation, no catch" },
-                  { icon: MapPin,   text: "Built for any alumni community, anywhere" },
-                ].map((item) => (
+                  { icon: MapPin,   text: "Built for every community, anywhere" },
+                ].map((item, index) => (
                   <div key={item.text} className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
                       <item.icon size={14} style={{ color: "var(--primary)" }} />
                     </div>
-                    <p className="text-[13.5px] font-medium" style={{ color: "var(--foreground)" }}>{item.text}</p>
+                    <p className="text-[13.5px] font-medium" style={{ color: "var(--foreground)" }}>
+                      {index === 1 ? <span style={{ color: "var(--primary)" }}>No cost</span> : item.text}
+                      {index === 1 ? ", no obligation, no catch" : ""}
+                    </p>
                   </div>
                 ))}
               </div>

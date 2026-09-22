@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award,
-  User, Lock, Bell, Link as LinkIcon, AlertCircle, RefreshCcw, GraduationCap,
+  User, Lock, Bell, Link as LinkIcon, AlertCircle, RefreshCcw, UsersRound,
 } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -101,7 +101,8 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
    single "manage my account" task.
    ───────────────────────────────────────────────────────────────────────── */
 export default function MemberProfilePage() {
-  const { logout } = useAuth();
+  const { logout, tokens, isLoading: authLoading } = useAuth();
+  const profileQueriesEnabled = !authLoading && !!tokens?.accessToken;
   const [profileForm, setProfileForm] = useState({
     program: "", company: "", jobTitle: "", location: "", linkedInUrl: "", bio: "", phone: "", dateOfBirth: "",
   });
@@ -110,6 +111,10 @@ export default function MemberProfilePage() {
   });
   const [clubsAndSocieties, setClubsAndSocieties] = useState<string[]>([]);
   const [leadershipRoles, setLeadershipRoles] = useState<string[]>([]);
+  const [connectionType, setConnectionType] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [visibility, setVisibility] = useState({ email: false, phone: false, company: true, bio: true });
   const [showOnAlumniMap, setShowOnAlumniMap] = useState(false);
   const [employmentStatus, setEmploymentStatus] = useState("Employed");
   const [confirmPensioner, setConfirmPensioner]  = useState(false);
@@ -122,26 +127,30 @@ export default function MemberProfilePage() {
   const { data: profile, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["m-profile"],
     queryFn:  getMyProfile,
+    enabled: profileQueriesEnabled,
   });
 
   const { data: badges } = useQuery({
     queryKey: ["m-badges"],
     queryFn:  getMyBadges,
+    enabled: profileQueriesEnabled,
   });
 
   const { data: membershipCampaign } = useQuery({
     queryKey: ["m-current-membership-campaign"],
     queryFn:  getCurrentMembershipCampaign,
+    enabled: profileQueriesEnabled,
   });
 
   const { data: notifPrefs } = useQuery({
     queryKey: ["m-notif-prefs"],
     queryFn:  getNotificationPreferences,
+    enabled: profileQueriesEnabled,
   });
 
   const { data: navTheme } = useNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
-  const institutionName = navTheme?.displayName || (isCommunity ? "Member Portal" : "Alumni Member Portal");
+  const institutionName = navTheme?.displayName || "Member Portal";
   const disabledFeatures = useDisabledFeatures();
   const digestEnabled = !disabledFeatures.has("Digest");
   const smsNotificationsEnabled = navTheme?.smsNotificationsEnabled ?? true;
@@ -172,6 +181,15 @@ export default function MemberProfilePage() {
     });
     setClubsAndSocieties(profile.clubsAndSocieties ?? []);
     setLeadershipRoles(profile.leadershipRoles ?? []);
+    setConnectionType(profile.connectionType ?? "");
+    setSkills(profile.skills ?? []);
+    setInterests(profile.interests ?? []);
+    setVisibility({
+      email: profile.showEmailOnDirectory ?? false,
+      phone: profile.showPhoneOnDirectory ?? false,
+      company: profile.showCompanyOnDirectory ?? true,
+      bio: profile.showBioOnDirectory ?? true,
+    });
     setEmploymentStatus(profile.employmentStatus ?? "Employed");
     setShowOnAlumniMap(profile.showOnAlumniMap ?? false);
   }
@@ -208,7 +226,34 @@ export default function MemberProfilePage() {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-profile"] });
-      toast.success("School info saved.");
+      toast.success("Community details saved.");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const updateCommunityProfileMut = useMutation({
+    mutationFn: () => updateMyProfile({
+      connectionType: connectionType || undefined,
+      skills: skills.length ? skills : undefined,
+      interests: interests.length ? interests : undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-profile"] });
+      toast.success("Community profile updated.");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const updateVisibilityMut = useMutation({
+    mutationFn: () => updateMyProfile({
+      showEmailOnDirectory: visibility.email,
+      showPhoneOnDirectory: visibility.phone,
+      showCompanyOnDirectory: visibility.company,
+      showBioOnDirectory: visibility.bio,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-profile"] });
+      toast.success("Profile visibility updated.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -231,7 +276,7 @@ export default function MemberProfilePage() {
     onSuccess: (value) => {
       setShowOnAlumniMap(value);
       qc.invalidateQueries({ queryKey: ["m-profile"] });
-      toast.success(value ? "You're now visible on the Alumni Map." : "Removed from the Alumni Map.");
+      toast.success(value ? "You're now visible on the Community Map." : "Removed from the Community Map.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -246,7 +291,7 @@ export default function MemberProfilePage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-profile"] });
-      toast.success("Your location on the Alumni Map has been updated.");
+      toast.success("Your location on the Community Map has been updated.");
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -348,7 +393,7 @@ export default function MemberProfilePage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto">
-      <PageHeader eyebrow="Account" title="Profile" description={isCommunity ? "Your profile, visible to fellow members, and how the portal works for you." : "Your profile, visible to fellow alumni, and how the portal works for you."} />
+      <PageHeader eyebrow="Account" title="Profile" description="Your profile, visible to the people in your community, and how the portal works for you." />
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-5 lg:gap-6 mt-6 items-start">
 
@@ -362,7 +407,7 @@ export default function MemberProfilePage() {
               <User size={18} className="text-primary" />
               Identity
             </CardTitle>
-            <CardDescription>{isCommunity ? "How you appear to fellow members" : "How you appear to fellow alumni"}</CardDescription>
+            <CardDescription>How you appear to people in your community</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center text-center gap-4">
@@ -414,7 +459,7 @@ export default function MemberProfilePage() {
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                   {!isCommunity && (
                     <Badge variant="outline" className="text-[11px] font-semibold">
-                      Class of {profile.graduationYear}
+                      Cohort {profile.graduationYear}
                     </Badge>
                   )}
                   <Badge variant={profile.status === "Active" ? "success" : "warning"} className="text-[11px] font-semibold">
@@ -439,7 +484,7 @@ export default function MemberProfilePage() {
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Professional info</CardTitle>
-            <CardDescription>Shown on your profile and the alumni directory</CardDescription>
+            <CardDescription>Shown on your profile and the member directory</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateMut.mutate(); }}>
@@ -493,7 +538,7 @@ export default function MemberProfilePage() {
               <div className="rounded-xl p-3.5 space-y-2.5" style={{ background: "var(--muted)" }}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Alumni Map</p>
+                    <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Show me on the Community Map</p>
                     <p className="text-[12px] text-muted-foreground mt-0.5">
                       Uses your device&apos;s real location (rounded to roughly your city/region, never your exact address) to plot a pin, visible to fellow members. Off by default: your location stays private, and nothing is stored unless you turn this on.
                     </p>
@@ -544,7 +589,7 @@ export default function MemberProfilePage() {
                 </Label>
                 <Textarea
                   id="bio"
-                  placeholder="Tell your fellow alumni about yourself…"
+                  placeholder="Tell your community about yourself…"
                   rows={3}
                   value={profileForm.bio}
                   onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value }))}
@@ -564,22 +609,84 @@ export default function MemberProfilePage() {
           </CardContent>
         </Card>
 
-        {/* ── School records — Alumni institutions only ── */}
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-175">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Community profile</CardTitle>
+            <CardDescription>Help people understand how you contribute and what you care about.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateCommunityProfileMut.mutate(); }}>
+              <div className="space-y-1.5">
+                <Label htmlFor="connectionType" className="text-[13px] font-semibold">How are you connected?</Label>
+                <select
+                  id="connectionType"
+                  value={connectionType}
+                  onChange={e => setConnectionType(e.target.value)}
+                  className="h-11 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground"
+                >
+                  <option value="">Choose one</option>
+                  {["Member", "Volunteer", "Leader", "Staff", "Supporter", "Mentor", "Partner", "Former member", "Other"].map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="skills" className="text-[13px] font-semibold">Skills</Label>
+                <TagInput id="skills" value={skills} onChange={setSkills} placeholder="Add a skill and press Enter…" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="interests" className="text-[13px] font-semibold">Interests and causes</Label>
+                <TagInput id="interests" value={interests} onChange={setInterests} placeholder="Add an interest and press Enter…" />
+              </div>
+              <Button type="submit" className="font-semibold text-[13.5px]" isLoading={updateCommunityProfileMut.isPending} loadingText="Saving…">
+                Save community profile
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Directory visibility</CardTitle>
+            <CardDescription>Choose what other members can see on your profile.</CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y divide-border/40">
+            {[
+              ["email", "Email address", "Let members contact you by email."],
+              ["phone", "Phone number", "Let members contact you by phone."],
+              ["company", "Company and role", "Show your workplace and current role."],
+              ["bio", "Bio", "Show your introduction on your directory profile."],
+            ].map(([key, label, description]) => (
+              <Toggle
+                key={key}
+                checked={visibility[key as keyof typeof visibility]}
+                onChange={(value) => setVisibility(current => ({ ...current, [key]: value }))}
+                label={label}
+                description={description}
+              />
+            ))}
+            <Button type="button" className="mt-4 font-semibold text-[13.5px]" onClick={() => updateVisibilityMut.mutate()} isLoading={updateVisibilityMut.isPending} loadingText="Saving…">
+              Save visibility
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* ── Community records — cohort-based organizations only ── */}
         {!isCommunity && (
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-175">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <GraduationCap size={18} className="text-primary" />
-              School records
+              <UsersRound size={18} className="text-primary" />
+              Community details
             </CardTitle>
-            <CardDescription>Enrich your profile with your time at school</CardDescription>
+            <CardDescription>Add the groups, cohort, and contributions that help people know you</CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateSchoolRecordsMut.mutate(); }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="yearOfEntry" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Year of entry
+                    Year joined
                   </Label>
                   <Input
                     id="yearOfEntry"
@@ -593,49 +700,29 @@ export default function MemberProfilePage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Year of graduation
+                    Cohort year
                   </Label>
                   <Input value={profile.graduationYear} disabled className="h-11 text-[14px]" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="house" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    House
+                    Group or chapter
                   </Label>
                   <Input
                     id="house"
-                    placeholder="e.g. Nkrumah House"
+                    placeholder="e.g. Young Adults, Chapter A"
                     value={schoolRecordsForm.house}
                     onChange={e => setSchoolRecordsForm(f => ({ ...f, house: e.target.value }))}
                     className="h-11 text-[14px]"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Student status
-                  </Label>
-                  <div className="flex rounded-lg border border-border p-0.5 h-11">
-                    {(["Day", "Boarding"] as const).map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSchoolRecordsForm(f => ({ ...f, studentStatus: s }))}
-                        className={cn(
-                          "flex-1 text-[13px] font-semibold rounded-md transition-colors",
-                          schoolRecordsForm.studentStatus === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
                   <Label htmlFor="prefectStatus" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Prefect status
+                    Leadership role
                   </Label>
                   <Input
                     id="prefectStatus"
-                    placeholder="e.g. Head Prefect"
+                    placeholder="e.g. Chapter coordinator"
                     value={schoolRecordsForm.prefectStatus}
                     onChange={e => setSchoolRecordsForm(f => ({ ...f, prefectStatus: e.target.value }))}
                     className="h-11 text-[14px]"
@@ -645,13 +732,13 @@ export default function MemberProfilePage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="clubsAndSocieties" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  Clubs &amp; societies
+                  Groups &amp; interests
                 </Label>
                 <TagInput
                   id="clubsAndSocieties"
                   value={clubsAndSocieties}
                   onChange={setClubsAndSocieties}
-                  placeholder="Type a club and press Enter…"
+                  placeholder="Type a group or interest and press Enter…"
                 />
               </div>
 
@@ -669,7 +756,7 @@ export default function MemberProfilePage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="achievements" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  Achievements
+                  Contributions and achievements
                 </Label>
                 <Textarea
                   id="achievements"
@@ -688,7 +775,7 @@ export default function MemberProfilePage() {
                 isLoading={updateSchoolRecordsMut.isPending}
                 loadingText="Saving…"
               >
-                Save school info
+                Save community details
               </Button>
             </form>
           </CardContent>
@@ -807,7 +894,7 @@ export default function MemberProfilePage() {
               checked={notifPrefs?.eventReminders ?? true}
               onChange={(v) => toggleNotif("eventReminders", v)}
               label="Event Reminders"
-              description="Get notified about upcoming alumni events"
+              description="Get notified about upcoming community events"
             />
             <Toggle
               checked={notifPrefs?.jobAlerts ?? true}
@@ -819,7 +906,7 @@ export default function MemberProfilePage() {
               checked={notifPrefs?.spotlightAlerts ?? true}
               onChange={(v) => toggleNotif("spotlightAlerts", v)}
               label="Spotlight Updates"
-              description="Get notified about new alumni spotlights"
+              description="Get notified about new member spotlights"
             />
             {smsNotificationsEnabled && (
               <Toggle
@@ -940,7 +1027,7 @@ export default function MemberProfilePage() {
             <CardContent className="p-6 flex items-center justify-between h-full">
               <div>
                 <p className="text-sm font-bold">{institutionName}</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">{isCommunity ? "Member Portal" : "Alumni Member Portal"}</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Member Portal</p>
               </div>
               <div className="flex items-center gap-2">
                 <LinkIcon size={13} className="text-muted-foreground" />

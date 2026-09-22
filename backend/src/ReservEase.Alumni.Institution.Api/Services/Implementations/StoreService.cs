@@ -303,12 +303,22 @@ public class StoreService(
 
     public async Task<IApiResponse<StoreSettingsResponse>> GetSettingsAsync()
     {
+        try
+        {
         var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
         return new StoreSettingsResponse(institution?.DefaultStoreDeliveryInfo, institution?.StoreDeliveryStages ?? []).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetSettingsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<StoreSettingsResponse>("Failed to getsettings");
+        }}
 
     public async Task<IApiResponse<StoreSettingsResponse>> UpdateSettingsAsync(UpdateStoreSettingsRequest request, AuthData admin)
     {
+        try
+        {
         var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<StoreSettingsResponse>("Institution not found");
@@ -321,7 +331,13 @@ public class StoreService(
         await institutionRepo.UpdateAsync(institution);
         logger.LogInformation("Store settings updated by admin {AdminId}", admin.Id);
         return new StoreSettingsResponse(institution.DefaultStoreDeliveryInfo, institution.StoreDeliveryStages).ToOkApiResponse("Store settings updated");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateSettingsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<StoreSettingsResponse>("Failed to updatesettings");
+        }}
 
     public async Task<IApiResponse<StoreOrderDto>> UpdateDeliveryStatusAsync(string orderId, string? newStatus, AuthData admin)
     {

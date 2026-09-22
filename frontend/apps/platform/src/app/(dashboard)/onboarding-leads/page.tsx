@@ -156,6 +156,16 @@ export default function OnboardingLeadsPage() {
                   {active.contactPhone && <p><b>Phone:</b> {active.contactPhone}</p>}
                   {active.country && <p><b>Country:</b> {active.country}</p>}
                   {active.estimatedMemberCount && <p><b>Estimated members:</b> {active.estimatedMemberCount}</p>}
+                  {active.organizationType && <p><b>Organization:</b> {active.organizationType}</p>}
+                  {active.contactRole && <p><b>Contact role:</b> {active.contactRole}</p>}
+                  {active.currentMemberManagement && <p><b>Current process:</b> {active.currentMemberManagement}</p>}
+                  {active.dataImportStatus && <p><b>Data import:</b> {active.dataImportStatus}</p>}
+                  {active.preferredContactChannel && <p><b>Preferred contact:</b> {active.preferredContactChannel}</p>}
+                  {(active.preferredContactTime || active.timeZone) && (
+                    <p><b>Contact timing:</b> {[active.preferredContactTime, active.timeZone].filter(Boolean).join(" · ")}</p>
+                  )}
+                  {active.website && <p><b>Website:</b> <a className="text-primary hover:underline" href={active.website} target="_blank" rel="noreferrer">{active.website}</a></p>}
+                  {active.primaryGoals?.length > 0 && <p><b>Goals:</b> {active.primaryGoals.join(", ")}</p>}
                 </div>
 
                 {active.message && (

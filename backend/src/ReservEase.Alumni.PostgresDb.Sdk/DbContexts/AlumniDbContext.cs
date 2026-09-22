@@ -471,6 +471,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.Status);
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.InstitutionId);
         modelBuilder.Entity<OnboardingLead>().HasIndex(l => l.Status);
+        modelBuilder.Entity<OnboardingLead>().Property(l => l.PrimaryGoals).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts))
+            .Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<Announcement>().HasIndex(a => a.SentAt);
         modelBuilder.Entity<AuditLogEntry>().HasIndex(a => a.CreatedAt);
 

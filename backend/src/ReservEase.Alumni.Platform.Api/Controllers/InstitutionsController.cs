@@ -119,7 +119,7 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     }
 
     /// <summary>The institution's actual name (distinct from Branding's PortalName) — see UpdateInstitutionNameRequest.</summary>
-    [Authorize(Roles = "SuperAdmin,Support")]
+    [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("{id}/name")]
     [SwaggerOperation(Summary = "Rename an institution")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
@@ -151,6 +151,17 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     {
         var acct = User.GetAccount();
         var result = await institutionService.UpdateInstitutionSlug(id, request,acct);
+        return result.ToActionResult();
+    }
+
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpDelete("{id}")]
+    [SwaggerOperation(Summary = "Delete an institution with no members")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> DeleteInstitution(string id)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.DeleteInstitutionAsync(id, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
         return result.ToActionResult();
     }
 

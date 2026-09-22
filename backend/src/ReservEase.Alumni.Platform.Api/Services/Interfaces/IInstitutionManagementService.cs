@@ -27,6 +27,7 @@ public interface IInstitutionManagementService
 
     Task<IApiResponse<InstitutionDetailResponse>> UpdateInstitutionSlug(string id, UpdateInstitutionSlugRequest request,
         AuthData admin);
+    Task<IApiResponse<object>> DeleteInstitutionAsync(string id, string updatedBy, string actorName);
     Task<IApiResponse<PlatformDashboardSummary>> GetDashboardSummaryAsync();
     Task<IApiResponse<List<InstitutionStaffDto>>> GetInstitutionStaffAsync(string institutionId);
     Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName, string callerPlatformRole);

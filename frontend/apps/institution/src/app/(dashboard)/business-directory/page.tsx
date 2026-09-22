@@ -298,7 +298,7 @@ export default function AdminBusinessDirectoryPage() {
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Business directory</h1>
-          <p className="text-muted-foreground text-[13px] mt-1.5">Review member submissions and manage alumni-owned businesses.</p>
+          <p className="text-muted-foreground text-[13px] mt-1.5">Review member submissions and manage community-owned businesses.</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus size={16} />Add business

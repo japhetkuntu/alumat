@@ -29,10 +29,13 @@ public class PayoutService(
     IAlumniPgRepository<StoreOrderEntity> storeOrderRepo,
     IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
     IAlumniPgRepository<CampaignEntity> campaignRepo,
-    IAlumniPgRepository<BatchEntity> batchRepo) : IPayoutService
+    IAlumniPgRepository<BatchEntity> batchRepo,
+    ILogger<PayoutService> logger) : IPayoutService
 {
     public async Task<IApiResponse<PlatformPayoutForecastResponse>> GetForecastAsync()
     {
+        try
+        {
         var windows = PayoutWindowCalculator.GetWindows(DateTime.UtcNow);
 
         var institutions = await institutionRepo.GetQueryable(ignoreQueryFilters: true)
@@ -70,7 +73,13 @@ public class PayoutService(
             new PayoutWindowDto(windows.NextPayoutDate, perInstitution.Sum(f => f.NextPayout.Amount), perInstitution.Sum(f => f.NextPayout.TransactionCount)));
 
         return new PlatformPayoutForecastResponse(totals, perInstitution).ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetForecastAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformPayoutForecastResponse>("Failed to getforecast");
+        }}
 
     private async Task<List<ContributionEntity>> FetchContributionsAsync(DateTime start, DateTime end) =>
         (await contributionRepo.GetAllAsync(

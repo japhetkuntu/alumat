@@ -68,7 +68,7 @@ export default function MyStoreOrdersPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
-      <PageHeader eyebrow="Store" title="My orders" description="Everything you've bought from the alumni store, in one place." />
+      <PageHeader eyebrow="Store" title="My orders" description="Everything you've bought from the store, in one place." />
 
       {isLoading ? (
         <>
@@ -83,7 +83,7 @@ export default function MyStoreOrdersPage() {
         <EmptyState
           icon={<ShoppingBag size={32} />}
           title="No orders yet"
-          description="Items you buy from the alumni store will show up here, along with their delivery status."
+          description="Items you buy from the store will show up here, along with their delivery status."
         />
       ) : (
         <>

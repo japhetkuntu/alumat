@@ -475,7 +475,7 @@ export default function AdminMembersPage() {
                   {!isCommunity && (
                     <>
                       <span>&middot;</span>
-                      <span>{m.graduationYear ? `Class of ${m.graduationYear}` : "—"}</span>
+                      <span>{m.graduationYear ? `Cohort ${m.graduationYear}` : "—"}</span>
                     </>
                   )}
                   <span>&middot;</span>

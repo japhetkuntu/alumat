@@ -4,7 +4,9 @@ using ReservEase.Alumni.Paystack.Sdk.Services;
 using ReservEase.Alumni.Platform.Api.Models;
 using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -17,10 +19,13 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 /// </summary>
 public class InstitutionPayoutService(
     IAlumniPgRepository<Institution> institutionRepo, IAuditLogService auditLog, IPaystackService paystackService,
+    IAlumniPgRepository<StaffEntity> staffRepo, IAlumniPgRepository<Notification> notificationRepo,
     ILogger<InstitutionPayoutService> logger) : IInstitutionPayoutService
 {
     public async Task<IApiResponse<List<PendingInstitutionPayoutItem>>> GetPendingAsync()
     {
+        try
+        {
         var pending = await institutionRepo.GetAllAsync(
             i => i.PayoutStatus == "Pending" && i.PendingPayoutChanges != null, ignoreQueryFilters: true);
 
@@ -33,10 +38,18 @@ public class InstitutionPayoutService(
             .ToList();
 
         return items.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetPendingAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<PendingInstitutionPayoutItem>>("Failed to getpending");
+        }}
 
     public async Task<IApiResponse<object>> ApproveAsync(string institutionId, string approvedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Institution not found");
@@ -86,15 +99,24 @@ public class InstitutionPayoutService(
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = approvedBy;
         await institutionRepo.UpdateAsync(institution);
+        await NotifyInstitutionAdminsAsync(institution, "Payout setup approved", "Your payout details were approved and are now active.", approvedBy);
 
         await auditLog.LogAsync(approvedBy, actorName, "approved institution payout setup", institution.Name);
 
         logger.LogInformation("Institution {InstitutionId} payout setup approved by {ApproverId}", institution.Id, approvedBy);
         return new object().ToOkApiResponse("Payout setup approved");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "ApproveAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to approve");
+        }}
 
     public async Task<IApiResponse<object>> RejectAsync(string institutionId, RejectInstitutionPayoutRequest request, string rejectedBy, string actorName)
     {
+        try
+        {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Institution not found");
@@ -107,10 +129,41 @@ public class InstitutionPayoutService(
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = rejectedBy;
         await institutionRepo.UpdateAsync(institution);
+        await NotifyInstitutionAdminsAsync(institution, "Payout setup needs changes", string.IsNullOrWhiteSpace(request.Notes)
+            ? "Your payout details were rejected. Please review and resubmit them."
+            : $"Your payout details were rejected: {request.Notes}", rejectedBy);
 
         await auditLog.LogAsync(rejectedBy, actorName, $"rejected institution payout setup{(string.IsNullOrWhiteSpace(request.Notes) ? "" : $": {request.Notes}")}", institution.Name);
 
         logger.LogInformation("Institution {InstitutionId} payout setup rejected by {RejecterId}", institution.Id, rejectedBy);
         return new object().ToOkApiResponse("Payout setup rejected");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "RejectAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to reject");
+        }}
+
+        private async Task NotifyInstitutionAdminsAsync(Institution institution, string title, string body, string actorId)
+        {
+            var admins = await staffRepo.GetAllAsync(
+                s => s.InstitutionId == institution.Id && !s.IsDisabled,
+                ignoreQueryFilters: true);
+            var notifications = admins.Select(admin => new Notification
+            {
+                InstitutionId = institution.Id,
+                RecipientId = admin.Id,
+                RecipientType = "Admin",
+                Title = title,
+                Body = body,
+                Type = "PayoutSetupDecision",
+                RelatedEntityId = institution.Id,
+                RelatedEntityType = "Institution",
+                ActionUrl = "/settings",
+                CreatedBy = actorId,
+            }).ToList();
+            if (notifications.Count > 0)
+                await notificationRepo.AddRangeAsync(notifications);
+        }
 }

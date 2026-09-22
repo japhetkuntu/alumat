@@ -220,11 +220,11 @@ export default function WhyNotWhatsAppPage() {
         <div className="section__inner--wide relative pt-16 pb-16 text-center">
           <h1 className="font-[family-name:var(--font-display)] mb-6 max-w-[26ch]"
             style={{ fontSize: "clamp(2.2rem,4.6vw,3.5rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)", margin: "0 auto 1.5rem" }}>
-            WhatsApp wasn&apos;t built to run your alumni community.
+            WhatsApp wasn&apos;t built to run your institution&apos;s community.
           </h1>
           <p className="max-w-[54ch] mb-10" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
-            It&apos;s free, familiar, and everyone already has it, that&apos;s exactly why so many institutions start there.
-            But a chat app is not a community platform. Here&apos;s the honest, sourced case for why it shows.
+            It&apos;s free, familiar, and everyone already has it. That&apos;s exactly why so many institutions start there.
+            But a chat app is not a community platform. Here&apos;s the honest, sourced case for why it falls short.
           </p>
 
           <div className="max-w-[720px] mx-auto text-left">
@@ -350,7 +350,7 @@ export default function WhyNotWhatsAppPage() {
           <div className="section__inner--wide relative py-20 sm:py-24 text-center">
             <h2 className="font-[family-name:var(--font-display)] mb-6 max-w-[22ch]"
               style={{ fontSize: "clamp(1.9rem,3.8vw,2.75rem)", lineHeight: 1.15, color: "white", margin: "0 auto 1.5rem" }}>
-              Give your alumni something built for the job, free.
+              Give your community something built for the job, free.
             </h2>
             <Link href="/#onboard">
               <Button size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2"

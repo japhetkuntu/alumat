@@ -9,6 +9,15 @@ public class OnboardingLead : BaseEntity
     public string? ContactPhone { get; set; }
     public string? Country { get; set; }
     public string? EstimatedMemberCount { get; set; }
+    public string? OrganizationType { get; set; }
+    public string? ContactRole { get; set; }
+    public List<string> PrimaryGoals { get; set; } = [];
+    public string? CurrentMemberManagement { get; set; }
+    public string? DataImportStatus { get; set; }
+    public string? PreferredContactChannel { get; set; }
+    public string? PreferredContactTime { get; set; }
+    public string? TimeZone { get; set; }
+    public string? Website { get; set; }
     public string? Message { get; set; }
     public string Status { get; set; } = "New"; // New, Contacted, Approved, Rejected
     public string? AssigneeStaffId { get; set; }

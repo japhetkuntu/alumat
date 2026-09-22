@@ -55,6 +55,10 @@ public sealed class NotificationRequest
     public string? ReferrerId { get; init; }
     public string? ReferredName { get; init; }
     public string? EventTitle { get; init; }
+    public string? NotificationTitle { get; init; }
+    public string? NotificationMessage { get; init; }
+    public string? NotificationType { get; init; }
+    public string? RelatedEntityType { get; init; }
 
     // Broadcast.
     public List<BroadcastRecipient>? Recipients { get; init; }
@@ -168,6 +172,21 @@ public sealed class NotificationRequest
         Kind = NotificationKind.SpotlightDecision, InstitutionId = institutionId,
         MemberId = memberId, Approved = approved, Reason = reason, SpotlightId = spotlightId,
     };
+
+    public static NotificationRequest MemberLifecycle(NotificationKind kind, string institutionId, string memberId,
+        string title, string message, string? entityId = null, string entityType = "Event") => new()
+    {
+        Kind = kind, InstitutionId = institutionId, MemberId = memberId, EventId = entityId,
+        NotificationTitle = title, NotificationMessage = message, NotificationType = kind.ToString(),
+        RelatedEntityType = entityType,
+    };
+
+    public static NotificationRequest EventCancelled(string institutionId, string memberId, string eventId, string title) =>
+        MemberLifecycle(NotificationKind.EventCancelled, institutionId, memberId, "Event cancelled", $"\"{title}\" has been cancelled.", eventId);
+    public static NotificationRequest EventDetailsChanged(string institutionId, string memberId, string eventId, string title) =>
+        MemberLifecycle(NotificationKind.EventDetailsChanged, institutionId, memberId, "Event details changed", $"The date, time, location, or capacity for \"{title}\" changed.", eventId);
+    public static NotificationRequest EventRsvpCancelled(string institutionId, string memberId, string eventId, string title) =>
+        MemberLifecycle(NotificationKind.EventRsvpCancelled, institutionId, memberId, "RSVP cancelled", $"Your RSVP for \"{title}\" was cancelled.", eventId);
 
     /// <summary>Fanned out to everyone except the celebrant — one call per celebrant when several members share a birthday, each pointing at that member's own shoutout thread.</summary>
     public static NotificationRequest BirthdayShoutout(string institutionId, string celebrantMemberId, string celebrantName, string threadId) => new()

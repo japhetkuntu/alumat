@@ -329,7 +329,7 @@ export default function SpotlightsPage() {
       <PageHeader
         eyebrow="Stories that stay with us"
         title="Spotlight"
-        description="Celebrate the wins. A spotlight on old students making waves globally and giving back to the school."
+        description="Celebrate the wins. A spotlight on members making waves globally and giving back to the community."
       >
         <Button
           onClick={() => setShowSubmit(true)}

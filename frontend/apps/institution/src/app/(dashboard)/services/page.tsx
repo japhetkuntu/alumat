@@ -239,9 +239,9 @@ export default function ServicesPage() {
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto">
       <header className="flex items-end justify-between gap-4 mb-6 flex-wrap">
         <div className="space-y-1">
-          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Alumni Services</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Member Services</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
-            Transcripts, attestation letters, certificate reissue — define what alumni can request, price it, and track fulfillment.
+            Transcripts, attestations, certificate reissues, and more — define what members can request, price it, and track fulfillment.
           </p>
         </div>
         {tab === "Service types" && (
@@ -269,7 +269,7 @@ export default function ServicesPage() {
           {typesLoading ? (
             <CardSkeleton />
           ) : !typesResult || typesResult.results.length === 0 ? (
-            <EmptyState icon={<FileText size={28} />} title="No services yet" description="Create your first service — a transcript request, an attestation letter, anything alumni can request and pay for." />
+            <EmptyState icon={<FileText size={28} />} title="No services yet" description="Create your first service — a transcript request, an attestation letter, or any official member request you want to charge for." />
           ) : (
             <Card className="border-border/40">
               <CardContent className="p-0">
@@ -390,7 +390,7 @@ export default function ServicesPage() {
             {/* Fields builder */}
             <div className="space-y-2.5 pt-2 border-t border-border/60">
               <Label>Request form fields</Label>
-              <p className="text-[12px] text-muted-foreground -mt-1">What you need from the alumni to fulfill this request. Use the arrows to set the order they appear in.</p>
+              <p className="text-[12px] text-muted-foreground -mt-1">What you need from the member to fulfill this request. Use the arrows to set the order they appear in.</p>
               {form.fields.map((fl, i) => (
                 <div key={i} className="border border-border/60 p-3 space-y-2.5">
                   <div className="flex gap-2 items-start">

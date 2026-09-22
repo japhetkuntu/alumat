@@ -223,7 +223,7 @@ function GoogleAuthBridgeContent() {
               className="font-[family-name:var(--font-display)] leading-[1.12]"
               style={{ fontSize: "clamp(2.25rem, 3.6vw, 3.1rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}
             >
-              One sign-in for every alumni network.
+              One sign-in for every community.
             </h1>
             <p className="text-[18px] font-medium leading-relaxed max-w-[440px]" style={{ color: "rgba(255,255,255,0.7)" }}>
               Just a moment, you'll be back in your portal, signed in, in a few seconds.

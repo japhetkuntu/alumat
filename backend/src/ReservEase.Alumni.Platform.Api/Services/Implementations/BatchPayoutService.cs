@@ -8,6 +8,8 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using BatchEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch;
 using BatchPendingChanges = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.BatchPayoutPendingChanges;
+using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
+using NotificationEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Notification;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -21,10 +23,13 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 public class BatchPayoutService(
     IAlumniPgRepository<BatchEntity> batchRepo, IAlumniPgRepository<Institution> institutionRepo,
     IAuditLogService auditLog, IPaystackService paystackService,
+    IAlumniPgRepository<StaffEntity> staffRepo, IAlumniPgRepository<NotificationEntity> notificationRepo,
     ILogger<BatchPayoutService> logger) : IBatchPayoutService
 {
     public async Task<IApiResponse<List<PendingBatchPayoutItem>>> GetPendingAsync()
     {
+        try
+        {
         var pending = (await batchRepo.GetAllAsync(
             b => b.PayoutStatus == "Pending" && b.PendingPayoutChanges != null, ignoreQueryFilters: true)).ToList();
 
@@ -46,10 +51,18 @@ public class BatchPayoutService(
             .ToList();
 
         return items.ToOkApiResponse();
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "GetPendingAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<PendingBatchPayoutItem>>("Failed to getpending");
+        }}
 
     public async Task<IApiResponse<object>> ApproveAsync(string batchId, string approvedBy, string actorName)
     {
+        try
+        {
         var batch = await batchRepo.GetOneAsync(b => b.Id == batchId, ignoreQueryFilters: true);
         if (batch is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Batch not found");
@@ -120,15 +133,24 @@ public class BatchPayoutService(
         batch.UpdatedAt = DateTime.UtcNow;
         batch.UpdatedBy = approvedBy;
         await batchRepo.UpdateAsync(batch);
+        await NotifyInstitutionAdminsAsync(batch.InstitutionId, batch.Id, $"Batch payout approved", $"Payout setup for {batch.Name} was approved and is now active.", approvedBy);
 
         await auditLog.LogAsync(approvedBy, actorName, $"approved payout setup for batch \"{batch.Name}\"", institution.Name);
 
         logger.LogInformation("Batch {BatchId} payout setup approved by {ApproverId}", batch.Id, approvedBy);
         return new object().ToOkApiResponse("Payout setup approved");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "ApproveAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to approve");
+        }}
 
     public async Task<IApiResponse<object>> RejectAsync(string batchId, RejectBatchPayoutRequest request, string rejectedBy, string actorName)
     {
+        try
+        {
         var batch = await batchRepo.GetOneAsync(b => b.Id == batchId, ignoreQueryFilters: true);
         if (batch is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Batch not found");
@@ -143,9 +165,37 @@ public class BatchPayoutService(
         await batchRepo.UpdateAsync(batch);
 
         var institution = await institutionRepo.GetOneAsync(i => i.Id == batch.InstitutionId, ignoreQueryFilters: true);
+        await NotifyInstitutionAdminsAsync(batch.InstitutionId, batch.Id, "Batch payout needs changes",
+            string.IsNullOrWhiteSpace(request.Notes) ? $"Payout setup for {batch.Name} was rejected. Please review and resubmit it." : $"Payout setup for {batch.Name} was rejected: {request.Notes}", rejectedBy);
         await auditLog.LogAsync(rejectedBy, actorName, $"rejected payout setup for batch \"{batch.Name}\"{(string.IsNullOrWhiteSpace(request.Notes) ? "" : $": {request.Notes}")}", institution?.Name ?? batch.InstitutionId);
 
         logger.LogInformation("Batch {BatchId} payout setup rejected by {RejecterId}", batch.Id, rejectedBy);
         return new object().ToOkApiResponse("Payout setup rejected");
-    }
+
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "RejectAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to reject");
+        }}
+
+        private async Task NotifyInstitutionAdminsAsync(string institutionId, string batchId, string title, string body, string actorId)
+        {
+            var admins = await staffRepo.GetAllAsync(s => s.InstitutionId == institutionId && !s.IsDisabled, ignoreQueryFilters: true);
+            var notifications = admins.Select(admin => new NotificationEntity
+            {
+                InstitutionId = institutionId,
+                RecipientId = admin.Id,
+                RecipientType = "Admin",
+                Title = title,
+                Body = body,
+                Type = "PayoutSetupDecision",
+                RelatedEntityId = batchId,
+                RelatedEntityType = "Batch",
+                ActionUrl = "/batches",
+                CreatedBy = actorId,
+            }).ToList();
+            if (notifications.Count > 0)
+                await notificationRepo.AddRangeAsync(notifications);
+        }
 }

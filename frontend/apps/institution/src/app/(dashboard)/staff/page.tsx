@@ -100,7 +100,7 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
           {role === "ScopedAdmin" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Batch (one year group)</Label>
+                <Label>Group or cohort</Label>
                 <YearGroupPicker value={yearGroups} onChange={(years) => setYearGroups(toSingleYear(years))} />
               </div>
               <div className="space-y-2">
@@ -171,7 +171,7 @@ function EditAdminForm({
           {role === "ScopedAdmin" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Batch (one year group)</Label>
+                <Label>Group or cohort</Label>
                 <YearGroupPicker value={yearGroups} onChange={(years) => setYearGroups(toSingleYear(years))} />
               </div>
               <div className="space-y-2">
