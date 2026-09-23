@@ -6,10 +6,12 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, Images, ImageOff } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { PhotoAlbumGallery } from "@alumni/ui";
+import { toast } from "sonner";
 import { getAlbum, getAlbumPhotos, type AlbumPhoto } from "@/lib/member-api";
 
 const PAGE_SIZE = 30;
@@ -60,6 +62,7 @@ export default function MemberAlbumDetailPage() {
   const loadMore = useCallback(() => {
     setPagesLoaded((p) => (p < totalPages ? p + 1 : p));
   }, [totalPages]);
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
   if (albumLoading) {
     return (
@@ -84,15 +87,25 @@ export default function MemberAlbumDetailPage() {
   return (
     <div className="p-4 sm:p-8 lg:p-12 max-w-5xl mx-auto space-y-8">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
-        <Link href="/albums">
-          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-semibold group -ml-2">
-            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            Albums
-          </Button>
-        </Link>
-        <ChevronRight size={14} className="text-muted-foreground/50" />
-        <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{album.title}</span>
+      <nav className="flex items-center justify-between gap-3 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-center gap-1.5">
+          <Link href="/albums">
+            <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-semibold group -ml-2">
+              <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+              Albums
+            </Button>
+          </Link>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{album.title}</span>
+        </div>
+        <ShareLinkButton
+          url={shareUrl}
+          title={album.title}
+          variant="outline"
+          size="sm"
+          onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Album link copied")}
+          onError={(message) => toast.error(message)}
+        />
       </nav>
 
       {/* Hero */}

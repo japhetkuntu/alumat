@@ -28,7 +28,12 @@ function clearAuthAndRedirect() {
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("user");
   localStorage.removeItem("tokens");
-  window.location.href = "/login";
+  const currentPath = `${window.location.pathname}${window.location.search}`;
+  const hasTarget = currentPath && !currentPath.startsWith("/login");
+  if (hasTarget) localStorage.setItem("auth_redirect_after_login", currentPath);
+  const redirectTarget = localStorage.getItem("auth_redirect_after_login") || "/";
+  const query = redirectTarget && redirectTarget.startsWith("/") ? `?redirect=${encodeURIComponent(redirectTarget)}` : "";
+  window.location.href = `/login${query}`;
 }
 
 function createClient(baseURL: string): AxiosInstance {

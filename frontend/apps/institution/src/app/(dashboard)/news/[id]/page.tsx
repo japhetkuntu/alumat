@@ -12,9 +12,11 @@ import { ConfirmModal } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getNewsPost, publishNewsPost, updateNewsPost } from "@/lib/institution-api";
+import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
+import { getInstitutionProfile, getNewsPost, publishNewsPost, updateNewsPost } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { toast } from "sonner";
 
 export default function AdminNewsDetailPage() {
@@ -28,6 +30,10 @@ export default function AdminNewsDetailPage() {
     queryKey: ["admin-news-post", id],
     queryFn: () => getNewsPost(id),
   });
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
+  });
 
   const publishMut = useMutation({
     mutationFn: () => publishNewsPost(id),
@@ -39,6 +45,8 @@ export default function AdminNewsDetailPage() {
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
+
+  const shareUrl = buildMemberPortalShareUrl(`/news/${id}`, institution?.memberPortalUrl);
 
   const archiveMut = useMutation({
     mutationFn: () => post ? updateNewsPost(post.id, {
@@ -109,6 +117,24 @@ export default function AdminNewsDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <ShareLinkButton
+            url={shareUrl}
+            title={post.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => {
+              toast.success(result === "shared" ? "Share sheet opened" : "Member portal link copied");
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured — this shared the current admin URL instead, which members can't open. Set it up in institution settings.");
+              }
+            }}
+            onError={(message) => {
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured, so this uses the current origin as a fallback.");
+              }
+              toast.error(message);
+            }}
+          />
           <Link href={`/news/${id}/edit`}>
             <Button variant="outline" size="sm" className="font-bold"><Pencil size={13} />Edit</Button>
           </Link>

@@ -13,11 +13,13 @@ import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
-  getAlbum, getAlbumPhotos, updateAlbum, deleteAlbum, addAlbumPhotos, deleteAlbumPhoto, type AlbumPhoto,
+  getAlbum, getAlbumPhotos, updateAlbum, deleteAlbum, addAlbumPhotos, deleteAlbumPhoto, getInstitutionProfile, type AlbumPhoto,
 } from "@/lib/institution-api";
+import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { EmptyState } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 
 interface UploadingItem {
@@ -47,6 +49,10 @@ export default function AdminAlbumDetailPage() {
     queryKey: ["admin-album-photos", id],
     queryFn: () => getAlbumPhotos(id, 1, 200),
     enabled: !!id,
+  });
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
   });
   const photos = photosPage?.results ?? null;
 
@@ -139,6 +145,7 @@ export default function AdminAlbumDetailPage() {
   }, []);
 
   const knownPhotos = useMemo(() => photos ?? [], [photos]);
+  const shareUrl = buildMemberPortalShareUrl(`/albums/${id}`, institution?.memberPortalUrl);
 
   if (isLoading) {
     return (
@@ -183,6 +190,24 @@ export default function AdminAlbumDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={shareUrl}
+            title={album.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => {
+              toast.success(result === "shared" ? "Share sheet opened" : "Member portal link copied");
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured — this shared the current admin URL instead, which members can't open. Set it up in institution settings.");
+              }
+            }}
+            onError={(message) => {
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured, so this uses the current origin as a fallback.");
+              }
+              toast.error(message);
+            }}
+          />
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil size={13} />Edit
           </Button>

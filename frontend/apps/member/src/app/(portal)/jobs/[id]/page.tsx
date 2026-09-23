@@ -9,6 +9,7 @@ import {
 } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
@@ -16,6 +17,7 @@ import { ZoomableImage } from "@alumni/ui";
 import { getJobById } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
 import type { Job } from "@/types";
+import { toast } from "sonner";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DAYS LEFT — plain-language deadline indicator
@@ -74,12 +76,13 @@ export default function MemberJobDetailPage() {
   );
 
   const deadlinePassed = job.deadline && new Date(job.deadline) < new Date();
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
 
       {/* ── Nav row ── */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
+      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
         <button
           onClick={() => router.push("/jobs")}
           className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
@@ -87,9 +90,19 @@ export default function MemberJobDetailPage() {
         >
           <ArrowLeft size={15} /> Back to jobs
         </button>
-        <Badge variant={typeVariant[job.type] ?? "secondary"} className="text-[11px] font-semibold uppercase tracking-wide">
-          {job.type}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={shareUrl}
+            title={job.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Job link copied")}
+            onError={(message) => toast.error(message)}
+          />
+          <Badge variant={typeVariant[job.type] ?? "secondary"} className="text-[11px] font-semibold uppercase tracking-wide">
+            {job.type}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">

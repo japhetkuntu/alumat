@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { MediaGallery } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
@@ -107,12 +108,13 @@ export default function EventDetailPage() {
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue)}`;
 
   const hasMedia = (event.imageUrls?.length ?? 0) > 0 || (event.youtubeVideoUrls?.length ?? 0) > 0;
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
 
       {/* ── Nav row ── */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
+      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
         <button
           onClick={() => router.push("/events")}
           className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
@@ -120,12 +122,22 @@ export default function EventDetailPage() {
         >
           <ArrowLeft size={15} /> Back to events
         </button>
-        <Badge
-          variant={statusVariant[event.status] ?? "secondary"}
-          className="text-[11px] font-semibold uppercase tracking-wide"
-        >
-          {event.status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={shareUrl}
+            title={event.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Event link copied")}
+            onError={(message) => toast.error(message)}
+          />
+          <Badge
+            variant={statusVariant[event.status] ?? "secondary"}
+            className="text-[11px] font-semibold uppercase tracking-wide"
+          >
+            {event.status}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">

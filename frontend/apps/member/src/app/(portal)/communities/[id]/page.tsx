@@ -10,6 +10,7 @@ import {
 } from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
@@ -95,6 +96,7 @@ export default function CommunityDetailPage() {
 
   const isApproved = community?.myStatus === "Approved";
   const isLeader = community?.myRole === "Leader";
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
   // Small previews only — the full lists live on the global feeds, filtered
   // to this community via `?communityId=`, so nothing here duplicates a page.
@@ -307,7 +309,16 @@ export default function CommunityDetailPage() {
             </div>
           </div>
 
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-2">
+            <ShareLinkButton
+              url={shareUrl}
+              title={community.name}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/40 text-white hover:bg-white/20 hover:text-white"
+              onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Community link copied")}
+              onError={(message) => toast.error(message)}
+            />
             {!community.myStatus && (
               <Button
                 onClick={() => joinMut.mutate()}

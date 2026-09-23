@@ -20,9 +20,11 @@ import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import {
   getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel,
-  getCampaignUpdates, createCampaignUpdate, deleteCampaignUpdate,
+  getCampaignUpdates, createCampaignUpdate, deleteCampaignUpdate, getInstitutionProfile,
 } from "@/lib/institution-api";
+import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { EmptyState } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton, TableSkeleton } from "@alumni/ui";
@@ -62,6 +64,10 @@ export default function CampaignDetailPage() {
   const { data: campaign, isLoading: loadingCampaign } = useQuery({
     queryKey: ["admin-campaign", id],
     queryFn: () => getCampaign(id),
+  });
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
   });
 
   const { data: paystackSummary, isLoading: loadingPaystackSummary } = useQuery({
@@ -140,6 +146,7 @@ export default function CampaignDetailPage() {
   const contributions = contribs?.results ?? [];
   const totalPages = contribs?.totalPages ?? 1;
   const backLink = campaign.isMembershipCampaign ? "/membership" : "/campaigns";
+  const shareUrl = buildMemberPortalShareUrl(campaign.isMembershipCampaign ? `/contributions/${id}` : `/payment-campaign/${id}`, institution?.memberPortalUrl);
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-4">
@@ -160,11 +167,31 @@ export default function CampaignDetailPage() {
             <Badge variant={campaign.status === "Active" ? "success" : "secondary"}>{campaign.status}</Badge>
           </h1>
         </div>
-        {campaign.status === "Active" && (
-          <Button variant="outline" onClick={() => setEditing(!editing)}>
-            <Pencil size={14} />{editing ? "Cancel edit" : "Edit"}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={shareUrl}
+            title={campaign.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => {
+              toast.success(result === "shared" ? "Share sheet opened" : "Member portal link copied");
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured — this shared the current admin URL instead, which members can't open. Set it up in institution settings.");
+              }
+            }}
+            onError={(message) => {
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured, so this uses the current origin as a fallback.");
+              }
+              toast.error(message);
+            }}
+          />
+          {campaign.status === "Active" && (
+            <Button variant="outline" onClick={() => setEditing(!editing)}>
+              <Pencil size={14} />{editing ? "Cancel edit" : "Edit"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {editing && <CampaignEditForm campaign={campaign} isSuperAdmin={isSuperAdmin} saving={updateMut.isPending} onSave={(body) => updateMut.mutate(body)} onCancel={() => setEditing(false)} />}

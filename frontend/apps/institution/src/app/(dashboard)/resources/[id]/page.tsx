@@ -9,10 +9,13 @@ import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getResource, getResources } from "@/lib/institution-api";
+import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
+import { getInstitutionProfile, getResource, getResources } from "@/lib/institution-api";
 import { EmptyState } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { YouTubeEmbed } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
+import { toast } from "sonner";
 
 const categoryColor: Record<string, string> = {
   Career: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
@@ -29,6 +32,10 @@ export default function AdminResourceDetailPage() {
   const { data: resource, isLoading } = useQuery({
     queryKey: ["admin-resource", id],
     queryFn: () => getResource(id),
+  });
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
   });
 
   const { data: relatedData } = useQuery({
@@ -74,6 +81,7 @@ export default function AdminResourceDetailPage() {
   }
 
   const colorCls = categoryColor[resource.category] ?? "bg-muted text-muted-foreground";
+  const shareUrl = buildMemberPortalShareUrl(`/resources/${id}`, institution?.memberPortalUrl);
 
   return (
     <div className="p-4 sm:p-[26px] space-y-8 max-w-4xl mx-auto">
@@ -90,6 +98,24 @@ export default function AdminResourceDetailPage() {
           <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{resource.title}</span>
         </div>
         <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={shareUrl}
+            title={resource.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => {
+              toast.success(result === "shared" ? "Share sheet opened" : "Member portal link copied");
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured — this shared the current admin URL instead, which members can't open. Set it up in institution settings.");
+              }
+            }}
+            onError={(message) => {
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured, so this uses the current origin as a fallback.");
+              }
+              toast.error(message);
+            }}
+          />
           {href && (
             <a href={href} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="font-bold"><ExternalLink size={13} />Open</Button>

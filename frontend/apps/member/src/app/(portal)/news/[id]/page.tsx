@@ -13,6 +13,8 @@ import { formatDate } from "@alumni/ui";
 import { getNewsPost } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
 import { Newspaper } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
+import { toast } from "sonner";
 
 export default function NewsDetailPage() {
   const { id }   = useParams<{ id: string }>();
@@ -52,18 +54,29 @@ export default function NewsDetailPage() {
   );
 
   const hasGallery = (post.imageUrls?.length ?? 0) > 1 || (post.youtubeVideoUrls?.length ?? 0) > 0;
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-20">
 
       {/* ── Nav ── */}
-      <button
-        onClick={() => router.push("/news")}
-        className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-7 transition-colors hover:underline"
-        style={{ color: "var(--muted-foreground)" }}
-      >
-        <ArrowLeft size={15} /> Back to news
-      </button>
+      <div className="flex items-center justify-between gap-3 mb-7">
+        <button
+          onClick={() => router.push("/news")}
+          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          <ArrowLeft size={15} /> Back to news
+        </button>
+        <ShareLinkButton
+          url={shareUrl}
+          title={post.title}
+          variant="outline"
+          size="sm"
+          onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "News link copied")}
+          onError={(message) => toast.error(message)}
+        />
+      </div>
 
       {/* ── Header ── */}
       <div className="space-y-4 mb-7">

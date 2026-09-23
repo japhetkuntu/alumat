@@ -21,9 +21,11 @@ import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
-import { getJob, updateJob, closeJob, deleteJob, type UpdateJobBody } from "@/lib/institution-api";
+import { getInstitutionProfile, getJob, updateJob, closeJob, deleteJob, type UpdateJobBody } from "@/lib/institution-api";
+import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { useState } from "react";
 import type { Job } from "@/types";
 
@@ -81,6 +83,10 @@ export default function AdminJobDetailPage() {
   const { data: job, isLoading } = useQuery({
     queryKey: ["admin-job", id],
     queryFn: () => getJob(id),
+  });
+  const { data: institution } = useQuery({
+    queryKey: ["institution-profile"],
+    queryFn: getInstitutionProfile,
   });
 
   const updateMut = useMutation({
@@ -160,6 +166,7 @@ export default function AdminJobDetailPage() {
   );
 
   const sc = statusConfig[job.status] ?? statusConfig.Active;
+  const shareUrl = buildMemberPortalShareUrl(`/jobs/${id}`, institution?.memberPortalUrl);
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-6 pb-16">
@@ -179,6 +186,24 @@ export default function AdminJobDetailPage() {
           <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{job.title}</span>
         </div>
         <div className="flex items-center gap-2">
+          <ShareLinkButton
+            url={shareUrl}
+            title={job.title}
+            variant="outline"
+            size="sm"
+            onSuccess={(result) => {
+              toast.success(result === "shared" ? "Share sheet opened" : "Member portal link copied");
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured — this shared the current admin URL instead, which members can't open. Set it up in institution settings.");
+              }
+            }}
+            onError={(message) => {
+              if (!institution?.memberPortalUrl) {
+                toast.warning("Member portal URL is not configured, so this uses the current origin as a fallback.");
+              }
+              toast.error(message);
+            }}
+          />
           <Badge variant={sc.variant} className="flex items-center gap-1.5 h-7 px-3 font-black uppercase tracking-widest text-[10px]">
             {sc.icon}
             {sc.label}

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Link2, Download, ExternalLink, Copy, Bookmark, BookmarkCheck, ChevronRight } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -114,11 +115,7 @@ export default function MemberResourceDetailPage() {
     setSavedVersion((value) => value + 1);
   };
 
-  const copyShareLink = async () => {
-    const url = window.location.href;
-    await navigator.clipboard.writeText(url);
-    toast.success("Resource link copied");
-  };
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
   return (
     <div className="p-8 lg:p-12 max-w-4xl mx-auto space-y-8">
@@ -178,9 +175,14 @@ export default function MemberResourceDetailPage() {
       <Card className="">
         <CardContent className="p-6 lg:p-8 space-y-6">
           <div className="flex items-center gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={copyShareLink}>
-              <Copy size={14} />Share
-            </Button>
+            <ShareLinkButton
+              url={shareUrl}
+              title={resource.title}
+              variant="outline"
+              size="sm"
+              onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Resource link copied")}
+              onError={(message) => toast.error(message)}
+            />
             <Button type="button" size="sm" variant="outline" onClick={toggleSave}>
               {saved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
               {saved ? "Saved" : "Save"}

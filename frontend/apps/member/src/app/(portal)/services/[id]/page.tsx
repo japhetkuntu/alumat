@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, CheckCircle2, ShieldCheck, Info } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -93,11 +94,23 @@ export default function ServiceDetailPage() {
     );
   }
 
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto space-y-6">
-      <Link href="/services" className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground w-fit">
-        <ArrowLeft size={14} /> All services
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/services" className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground w-fit">
+          <ArrowLeft size={14} /> All services
+        </Link>
+        <ShareLinkButton
+          url={shareUrl}
+          title={service.name}
+          variant="outline"
+          size="sm"
+          onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Service link copied")}
+          onError={(message) => toast.error(message)}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-10 items-start">
         {/* ── About this service ── */}

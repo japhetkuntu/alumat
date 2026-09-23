@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Building2, ChevronRight, MapPin, Phone, Mail, Globe, ExternalLink } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { getBusinessListing } from "@/lib/member-api";
+import { toast } from "sonner";
 
 export default function BusinessListingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +42,8 @@ export default function BusinessListingDetailPage() {
     );
   }
 
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+
   const contactMethods = [
     biz.phoneNumber && { icon: Phone, label: biz.phoneNumber, href: `tel:${biz.phoneNumber}` },
     biz.email && { icon: Mail, label: biz.email, href: `mailto:${biz.email}` },
@@ -50,15 +54,25 @@ export default function BusinessListingDetailPage() {
   return (
     <div className="p-4 sm:p-8 lg:p-12 max-w-4xl mx-auto space-y-8">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
-        <Link href="/business-directory">
-          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-semibold group -ml-2">
-            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
-            Business Directory
-          </Button>
-        </Link>
-        <ChevronRight size={14} className="text-muted-foreground/50" />
-        <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{biz.businessName}</span>
+      <nav className="flex items-center justify-between gap-3 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-center gap-1.5">
+          <Link href="/business-directory">
+            <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-semibold group -ml-2">
+              <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+              Business Directory
+            </Button>
+          </Link>
+          <ChevronRight size={14} className="text-muted-foreground/50" />
+          <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{biz.businessName}</span>
+        </div>
+        <ShareLinkButton
+          url={shareUrl}
+          title={biz.businessName}
+          variant="outline"
+          size="sm"
+          onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Business link copied")}
+          onError={(message) => toast.error(message)}
+        />
       </nav>
 
       {/* Banner + Logo */}

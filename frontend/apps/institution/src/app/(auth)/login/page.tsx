@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { EyeOff } from "@alumni/ui";
 
@@ -28,6 +28,21 @@ type FormData = z.infer<typeof schema>;
 // Ignored by the backend outside Development, and hidden here in production
 // builds since real customers reach their institution via its actual subdomain.
 const SHOW_WORKSPACE_FIELD = process.env.NODE_ENV === "development";
+
+/**
+ * Guards the post-login `?redirect=` target (and its localStorage mirror,
+ * set by api-client.ts's clearAuthAndRedirect) against open-redirect abuse.
+ * `path.startsWith("/")` alone isn't enough — "//evil.com" also starts with
+ * "/" but browsers treat a leading "//" as protocol-relative, i.e. an
+ * absolute cross-origin URL, so router.push/window.location.assign would
+ * actually navigate off-site. Browsers also normalize a leading backslash
+ * to a forward slash before parsing ("/\evil.com" -> "//evil.com"), a known
+ * bypass for a "//"-only check, so that's rejected too. Only a genuine
+ * same-origin path is safe here.
+ */
+function isSafeRedirectPath(path: string): boolean {
+  return path.startsWith("/") && path[1] !== "/" && path[1] !== "\\";
+}
 
 // Mirrors the slug into a cookie (not just localStorage) so the server-side
 // theme fetch in layout.tsx — which runs before any client JS and has no
@@ -94,7 +109,9 @@ function GoogleSignInButton() {
 
 export default function AdminLoginPage() {
   const { login, setSession } = useAuth();
-  const router    = useRouter();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get("redirect") || localStorage.getItem("auth_redirect_after_login") || "/dashboard";
   const [showPassword, setShowPassword] = useState(false);
   const [workspaceSlug, setWorkspaceSlug] = useState("");
 
@@ -102,7 +119,9 @@ export default function AdminLoginPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setSession(user as any, tokens as any);
     toast.success("Welcome back.", { description: "You're signed in to the Institution Portal." });
-    router.push("/dashboard");
+    const nextPath = isSafeRedirectPath(redirectTarget) ? redirectTarget : "/dashboard";
+    localStorage.removeItem("auth_redirect_after_login");
+    router.push(nextPath);
   });
 
   const {
@@ -126,8 +145,14 @@ export default function AdminLoginPage() {
       // A hard navigation (not router.push) so the root layout's server-side
       // theme fetch re-runs and picks up the workspace cookie set above —
       // client-side route transitions reuse the already-rendered root layout.
-      if (SHOW_WORKSPACE_FIELD) window.location.assign("/dashboard");
-      else router.push("/dashboard");
+      const rawNextPath = (searchParams.get("redirect") || localStorage.getItem("auth_redirect_after_login") || "/dashboard");
+      const nextPath = isSafeRedirectPath(rawNextPath) ? rawNextPath : "/dashboard";
+      if (SHOW_WORKSPACE_FIELD) {
+        window.location.assign(nextPath);
+      } else {
+        router.push(nextPath);
+      }
+      localStorage.removeItem("auth_redirect_after_login");
     } catch (err) {
       toast.error("Sign-in failed", { description: handleApiError(err) });
     }
