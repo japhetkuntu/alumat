@@ -16,6 +16,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
 using ReservEase.Alumni.Temporal.Sdk;
+using ReservEase.Alumni.WebPush.Sdk.Extensions;
 using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 using Temporalio.Client;
 using Temporalio.Extensions.Hosting;
@@ -41,6 +42,7 @@ builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
+builder.Services.AddWebPushService(builder.Configuration);
 
 builder.Services
     .AddTemporalClient(opts =>

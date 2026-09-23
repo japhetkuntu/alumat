@@ -14,6 +14,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Temporal.Sdk;
+using ReservEase.Alumni.WebPush.Sdk.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,8 @@ var tokenConfig = builder.Configuration
     .Get<BearerTokenConfig>()!;
 builder.Services.Configure<BearerTokenConfig>(
     builder.Configuration.GetSection(nameof(BearerTokenConfig)));
+builder.Services.Configure<WebPushConfig>(
+    builder.Configuration.GetSection(nameof(WebPushConfig)));
 
 builder.Services.AddHttpContextAccessor();
 

@@ -63,6 +63,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<AdminNotificationPreference> AdminNotificationPreferences => Set<AdminNotificationPreference>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
     public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
@@ -439,6 +440,12 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Notification>().HasIndex(n => n.RecipientId);
         modelBuilder.Entity<Notification>().HasIndex(n => new { n.RecipientId, n.RecipientType });
         modelBuilder.Entity<Notification>().HasIndex(n => n.IsRead);
+
+        // PushSubscription: one row per browser/device; re-subscribing the same
+        // browser upserts on this key rather than duplicating, and the dispatch
+        // activity's hot path is "fetch this owner's active subscriptions."
+        modelBuilder.Entity<PushSubscription>().HasIndex(p => new { p.OwnerId, p.OwnerType, p.Endpoint }).IsUnique();
+        modelBuilder.Entity<PushSubscription>().HasIndex(p => new { p.OwnerId, p.OwnerType, p.IsActive });
 
         // ── Institution (tenant) ────────────────────────────────────────────
         modelBuilder.Entity<Institution>().HasIndex(i => i.Slug).IsUnique();

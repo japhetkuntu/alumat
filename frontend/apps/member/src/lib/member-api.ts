@@ -719,6 +719,25 @@ export async function markAllNotificationsRead(): Promise<void> {
   await memberClient.put("/notifications/read-all");
 }
 
+// ── Push Subscriptions ──────────────────────────────────────────────────────
+
+export async function getVapidPublicKey(): Promise<string> {
+  const res = await publicMemberClient.get("/pushsubscriptions/vapid-public-key");
+  return res.data.data?.publicKey ?? "";
+}
+
+export async function postPushSubscription(sub: PushSubscriptionJSON): Promise<void> {
+  await memberClient.post("/pushsubscriptions", {
+    endpoint: sub.endpoint,
+    keys: { p256dh: sub.keys?.p256dh, auth: sub.keys?.auth },
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+  });
+}
+
+export async function deletePushSubscription(payload: { endpoint: string }): Promise<void> {
+  await memberClient.delete("/pushsubscriptions", { data: payload });
+}
+
 // ── Store ────────────────────────────────────────────────────────────────────
 
 export interface CartItem {

@@ -30,6 +30,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useNavTheme, useDisabledFeatures } from "@/components/member/member-layout";
 import type { NotificationPreference } from "@/types";
 
@@ -66,7 +67,7 @@ function EmploymentOption({
   );
 }
 
-function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }) {
+function Toggle({ checked, onChange, label, description, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string; disabled?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-4 py-4">
       <div>
@@ -77,9 +78,11 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           checked ? "bg-primary" : "bg-muted"
         )}
       >
@@ -154,6 +157,7 @@ export default function MemberProfilePage() {
   const disabledFeatures = useDisabledFeatures();
   const digestEnabled = !disabledFeatures.has("Digest");
   const smsNotificationsEnabled = navTheme?.smsNotificationsEnabled ?? true;
+  const pushNotifications = usePushNotifications();
 
   // Adjust local form state when the fetched profile changes — done during
   // render (React's documented alternative to an effect for this case)
@@ -914,6 +918,22 @@ export default function MemberProfilePage() {
                 onChange={(v) => toggleNotif("smsAlerts", v)}
                 label="SMS Notifications"
                 description={profileForm.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number above to enable SMS alerts"}
+              />
+            )}
+            {pushNotifications.isSupported && (
+              <Toggle
+                checked={pushNotifications.isSubscribed}
+                disabled={pushNotifications.isBusy || pushNotifications.permission === "denied"}
+                onChange={(v) => {
+                  const action = v ? pushNotifications.subscribe() : pushNotifications.unsubscribe();
+                  action.catch(() => toast.error("Couldn't update push notification settings"));
+                }}
+                label="Push Notifications"
+                description={
+                  pushNotifications.permission === "denied"
+                    ? "Notifications are blocked for this site in your browser settings"
+                    : "Get browser notifications for jobs, events, and updates"
+                }
               />
             )}
             {/* WhatsApp notifications are wired up but hidden from the UI for

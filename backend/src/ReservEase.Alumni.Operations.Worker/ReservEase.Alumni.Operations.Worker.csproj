@@ -32,6 +32,7 @@
     <ProjectReference Include="..\ReservEase.Alumni.Common.Sdk\ReservEase.Alumni.Common.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Mailtrap.Sdk\ReservEase.Alumni.Mailtrap.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Notifications.Sdk\ReservEase.Alumni.Notifications.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.WebPush.Sdk\ReservEase.Alumni.WebPush.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

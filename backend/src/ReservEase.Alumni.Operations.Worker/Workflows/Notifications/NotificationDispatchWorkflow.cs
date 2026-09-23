@@ -26,6 +26,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
     /// PaymentCallbacks.Sdk's retired NotificationDispatcher.</summary>
     private const bool WhatsAppEnabled = false;
 
+    /// <summary>Fast rollback lever for the whole Web Push channel, mirroring WhatsAppEnabled.</summary>
+    private const bool WebPushEnabled = true;
+
     [WorkflowRun]
     public Task RunAsync(NotificationRequest request) => ProcessOneAsync(request);
 
@@ -88,6 +91,20 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         }
     }
 
+    /// <summary>Push has no separate opt-in preference — eligibility is simply "does this
+    /// owner have an active browser subscription," which SendWebPushAsync itself checks by
+    /// looking up PushSubscription rows. Callers only need to gate this the same way they
+    /// already gate the in-app/email version of the same notification kind.</summary>
+    private static async Task SendPushIfEligibleAsync(string ownerId, string ownerType, string title, string body, string? actionUrl)
+    {
+        if (!WebPushEnabled) return;
+
+        var sent = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.SendWebPushAsync(ownerId, ownerType, title, body, actionUrl),
+            NotificationActivityOptions.ExternalGateway);
+        if (!sent) Workflow.Logger.LogWarning("Web push not sent (no active subscriptions or all failed) for {OwnerType} {OwnerId}", ownerType, ownerId);
+    }
+
     private async Task ProcessJobAlertAsync(NotificationRequest request)
     {
         var job = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadJobContentAsync(request.JobId!), NotificationActivityOptions.DatabaseRead);
@@ -114,6 +131,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var r in recipients)
+            await SendPushIfEligibleAsync(r.MemberId, "Member", "New Job Posting", $"{job.Title} at {job.Company} — {job.Location}", actionUrl);
     }
 
     private async Task ProcessCampaignAlertAsync(NotificationRequest request)
@@ -142,6 +162,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var r in recipients)
+            await SendPushIfEligibleAsync(r.MemberId, "Member", "New Campaign Launched", campaign.Title, actionUrl);
     }
 
     private async Task ProcessEventReminderAsync(NotificationRequest request)
@@ -171,6 +194,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var r in recipients)
+            await SendPushIfEligibleAsync(r.MemberId, "Member", "Upcoming Event", $"{ev.Title} — {dateStr} at {ev.Venue}", actionUrl);
     }
 
     private async Task ProcessSpotlightAlertAsync(NotificationRequest request)
@@ -200,6 +226,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var r in recipients)
+            await SendPushIfEligibleAsync(r.MemberId, "Member", "New Alumni Spotlight", $"{memberName} — {spotlight.Title}", actionUrl);
     }
 
     private async Task ProcessPaymentReceivedToAdminsAsync(NotificationRequest request)
@@ -226,6 +255,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var id in adminIds)
+            await SendPushIfEligibleAsync(id, "InstitutionStaff", "Payment Submitted", body, actionUrl);
     }
 
     private async Task ProcessContributionConfirmedAsync(NotificationRequest request)
@@ -249,7 +281,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
 
-        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body);
+        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body, notification.Title, notification.ActionUrl);
     }
 
     private async Task ProcessContributionRejectedAsync(NotificationRequest request)
@@ -276,7 +308,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         // Reconciled behavior: both retired dispatchers now agree contribution-rejected
         // also gets an external alert, matching contribution-confirmed's treatment
         // (only one of the two previously did this).
-        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body);
+        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body, notification.Title, notification.ActionUrl);
     }
 
     private async Task ProcessMentorProfileDecisionAsync(NotificationRequest request)
@@ -402,8 +434,12 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
 
+        var classNoteActionUrl = MemberUrl(institution, "/class-notes");
         foreach (var r in recipients)
+        {
             await SendExternalAlertsAsync(r.Phone, r.SmsAlerts, r.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body);
+            await SendPushIfEligibleAsync(r.MemberId, "Member", "New Class Note", body, classNoteActionUrl);
+        }
     }
 
     private async Task ProcessMentorshipRequestReceivedAsync(NotificationRequest request)
@@ -514,7 +550,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
         }
 
-        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body);
+        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId!, institution, body, title, MemberUrl(institution, "/"));
     }
 
     private async Task ProcessNewMemberPendingApprovalAsync(NotificationRequest request)
@@ -540,6 +576,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var id in adminIds)
+            await SendPushIfEligibleAsync(id, "InstitutionStaff", "New Member Awaiting Approval", $"{request.MemberName} ({request.MemberEmail}) registered and is waiting for approval.", actionUrl);
     }
 
     private async Task ProcessReferralRegisteredAsync(NotificationRequest request)
@@ -610,7 +649,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         await Workflow.ExecuteActivityAsync(
             (NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification),
             NotificationActivityOptions.DatabaseWrite);
-        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId, institution, notification.Body);
+        await SendMemberExternalAlertsIfEligibleAsync(request.MemberId, institution, notification.Body, notification.Title, notification.ActionUrl);
     }
 
     private async Task ProcessSpotlightDecisionAsync(NotificationRequest request)
@@ -671,12 +710,13 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         if (!sent) Workflow.Logger.LogWarning("Email send reported failure ({Context})", context);
     }
 
-    private async Task SendMemberExternalAlertsIfEligibleAsync(string memberId, InstitutionContactInfo? institution, string message)
+    private async Task SendMemberExternalAlertsIfEligibleAsync(string memberId, InstitutionContactInfo? institution, string message, string title = "Update", string? actionUrl = null)
     {
         var member = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(memberId), NotificationActivityOptions.DatabaseRead);
         if (member is null) return;
 
         await SendExternalAlertsAsync(member.Phone, member.SmsAlerts, member.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, message);
+        await SendPushIfEligibleAsync(memberId, "Member", title, message, actionUrl);
     }
 
     private static string MemberUrl(InstitutionContactInfo? institution, string path) =>

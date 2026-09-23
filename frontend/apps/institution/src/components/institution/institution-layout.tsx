@@ -38,6 +38,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
 import { NotificationPanel } from "@/components/institution/notification-panel";
+import { PushNotificationPrompt } from "@/components/institution/push-notification-prompt";
 import { institutionClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 
@@ -329,6 +330,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-y-auto bg-background selection:bg-accent/20 relative pt-14 lg:pt-0">
           <div className="max-w-[1800px] mx-auto min-h-full">
+            <PushNotificationPrompt />
             {children}
           </div>
         </main>

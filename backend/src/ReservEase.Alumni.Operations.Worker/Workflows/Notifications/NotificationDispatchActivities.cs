@@ -8,7 +8,9 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Sms.Sdk.Services;
+using ReservEase.Alumni.WebPush.Sdk.Services;
 using ReservEase.Alumni.Whatsapp.Sdk.Services;
+using PushSubscriptionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.PushSubscription;
 using Temporalio.Activities;
 using Temporalio.Exceptions;
 using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.InstitutionStaff;
@@ -37,10 +39,12 @@ public class NotificationDispatchActivities(
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<ClassNote> classNoteRepo,
+    IAlumniPgRepository<PushSubscriptionEntity> pushSubscriptionRepo,
     ICurrentTenantService currentTenant,
     ISmsService smsService,
     IWhatsAppService whatsAppService,
     IEmailService emailService,
+    IWebPushService webPushService,
     IConfiguration configuration,
     ILogger<NotificationDispatchActivities> logger)
 {
@@ -263,6 +267,43 @@ public class NotificationDispatchActivities(
     [Activity("NotificationDispatch.SendEmail")]
     public virtual Task<bool> SendEmailAsync(SendEmailRequest request, string context) =>
         Wrap(async () => (await emailService.SendEmailAsync(request)).Success, "send email", context);
+
+    /// <summary>Loops over every active subscription for this owner (a member/staff account
+    /// can have several — one per browser/device) rather than the workflow scheduling one
+    /// activity call per device, keeping fan-out and 410/404 cleanup co-located here. Safe
+    /// to retry as a whole: re-sending to an already-sent subscription is harmless, and
+    /// re-marking a gone subscription inactive is idempotent.</summary>
+    [Activity("NotificationDispatch.SendWebPush")]
+    public virtual Task<bool> SendWebPushAsync(string ownerId, string ownerType, string title, string body, string? actionUrl) =>
+        Wrap(async () =>
+        {
+            var subscriptions = (await pushSubscriptionRepo.GetAllAsync(
+                s => s.OwnerId == ownerId && s.OwnerType == ownerType && s.IsActive, ignoreQueryFilters: true)).ToList();
+            if (subscriptions.Count == 0) return false;
+
+            var anySent = false;
+            foreach (var sub in subscriptions)
+            {
+                var dto = new PushSubscriptionDto(sub.Endpoint, sub.P256dhKey, sub.AuthKey);
+                var result = await webPushService.SendAsync(dto, title, body, actionUrl);
+                switch (result)
+                {
+                    case WebPushSendResult.Sent:
+                        sub.LastUsedAt = DateTime.UtcNow;
+                        anySent = true;
+                        break;
+                    case WebPushSendResult.Gone:
+                        sub.IsActive = false;
+                        sub.LastFailedAt = DateTime.UtcNow;
+                        break;
+                    default:
+                        sub.LastFailedAt = DateTime.UtcNow;
+                        break;
+                }
+                await pushSubscriptionRepo.UpdateAsync(sub);
+            }
+            return anySent;
+        }, "send web push", $"{ownerType}:{ownerId}");
 
     private static async Task<T> Wrap<T>(Func<Task<T>> action, string what, string context)
     {

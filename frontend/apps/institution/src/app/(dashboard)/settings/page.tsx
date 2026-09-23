@@ -31,6 +31,7 @@ import {
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useHostname } from "@/hooks/use-hostname";
 import { toast } from "sonner";
 
@@ -73,7 +74,7 @@ function fromNotifPrefs(prefs: NotifPrefs) {
   };
 }
 
-function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }) {
+function Toggle({ checked, onChange, label, description, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string; disabled?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-4 py-4">
       <div>
@@ -84,9 +85,11 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           checked ? "bg-primary" : "bg-muted"
         )}
       >
@@ -508,6 +511,8 @@ export default function BrandingSettingsPage() {
   function saveNotifPrefs(prefs: NotifPrefs) {
     notifMutation.mutate(prefs);
   }
+
+  const pushNotifications = usePushNotifications();
 
   const fullName = profile
     ? `${profile.firstName} ${profile.lastName}`
@@ -1290,6 +1295,22 @@ export default function BrandingSettingsPage() {
                 label="System Alerts"
                 description="Critical platform alerts and errors"
               />
+              {pushNotifications.isSupported && (
+                <Toggle
+                  checked={pushNotifications.isSubscribed}
+                  disabled={pushNotifications.isBusy || pushNotifications.permission === "denied"}
+                  onChange={(v) => {
+                    const action = v ? pushNotifications.subscribe() : pushNotifications.unsubscribe();
+                    action.catch(() => toast.error("Couldn't update push notification settings"));
+                  }}
+                  label="Push Notifications"
+                  description={
+                    pushNotifications.permission === "denied"
+                      ? "Notifications are blocked for this site in your browser settings"
+                      : "Get browser notifications for the alerts above on this device"
+                  }
+                />
+              )}
             </div>
           </CardContent>
         </Card>

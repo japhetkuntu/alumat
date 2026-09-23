@@ -9,6 +9,7 @@ import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { PortalShellSkeleton } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
+import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
 import { memberClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
@@ -385,6 +386,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
+              <PushNotificationPrompt />
               {children}
             </div>
           </div>
