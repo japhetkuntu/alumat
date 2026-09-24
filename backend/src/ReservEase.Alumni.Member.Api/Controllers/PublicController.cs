@@ -32,6 +32,12 @@ public class PublicController(
     IAlumniPgRepository<BusinessListing> businessListingRepo,
     IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
+    IAlumniPgRepository<Job> jobRepo,
+    IAlumniPgRepository<Resource> resourceRepo,
+    IAlumniPgRepository<Community> communityRepo,
+    IAlumniPgRepository<PhotoAlbum> albumRepo,
+    IAlumniPgRepository<ServiceType> serviceTypeRepo,
+    IAlumniPgRepository<Campaign> campaignRepo,
     IRedisService<PublicContentCacheConfig> publicCache) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
@@ -261,4 +267,95 @@ public class PublicController(
 
         return Ok(new ApiResponse<List<PublicBusinessListingItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
     }
+
+    /// <summary>
+    /// Title/description/image for a single entity, used to render real Open Graph tags
+    /// on a shared detail-page link (e.g. the WhatsApp/link-unfurl preview when a member
+    /// shares an event) instead of falling back to the institution's generic branding.
+    /// Deliberately not year/community-restricted like the landing-page lists above: a
+    /// caller here already has a specific id from a link someone shared with them — this
+    /// unfurls that one link, the same way a crawler unfurls any gated document link
+    /// without a session, rather than acting as a discovery/browse surface.
+    /// </summary>
+    [HttpGet("preview/{type}/{id}")]
+    [SwaggerOperation(Summary = "Get title/description/image for a shared link's Open Graph preview")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicPreviewResponse>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetPublicPreview(string type, string id)
+    {
+        var preview = type.ToLowerInvariant() switch
+        {
+            "event" => await BuildEventPreviewAsync(id),
+            "job" => await BuildJobPreviewAsync(id),
+            "news" => await BuildNewsPreviewAsync(id),
+            "resource" => await BuildResourcePreviewAsync(id),
+            "business" => await BuildBusinessPreviewAsync(id),
+            "community" => await BuildCommunityPreviewAsync(id),
+            "album" => await BuildAlbumPreviewAsync(id),
+            "service" => await BuildServicePreviewAsync(id),
+            "campaign" => await BuildCampaignPreviewAsync(id),
+            _ => null,
+        };
+
+        if (preview is null)
+            return NotFound(new ApiResponse<object> { Message = "Not found", Code = 404 });
+
+        return Ok(new ApiResponse<PublicPreviewResponse> { Message = "Success", Code = 200, Data = preview });
+    }
+
+    private async Task<PublicPreviewResponse?> BuildEventPreviewAsync(string id)
+    {
+        var e = await eventRepo.GetOneAsync(x => x.Id == id);
+        return e is null ? null : new PublicPreviewResponse(e.Title, e.Description, e.BannerImageUrl);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildJobPreviewAsync(string id)
+    {
+        var j = await jobRepo.GetOneAsync(x => x.Id == id);
+        return j is null ? null : new PublicPreviewResponse($"{j.Title} at {j.Company}", j.Description, j.BannerImageUrl);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildNewsPreviewAsync(string id)
+    {
+        var n = await newsRepo.GetOneAsync(x => x.Id == id);
+        return n is null ? null : new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault());
+    }
+
+    private async Task<PublicPreviewResponse?> BuildResourcePreviewAsync(string id)
+    {
+        var r = await resourceRepo.GetOneAsync(x => x.Id == id);
+        return r is null ? null : new PublicPreviewResponse(r.Title, r.Description, r.BannerImageUrl);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildBusinessPreviewAsync(string id)
+    {
+        var b = await businessListingRepo.GetOneAsync(x => x.Id == id);
+        return b is null ? null : new PublicPreviewResponse(b.BusinessName, ExcerptFromHtml(b.Description, 160), b.BannerUrl ?? b.LogoUrl);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildCommunityPreviewAsync(string id)
+    {
+        var c = await communityRepo.GetOneAsync(x => x.Id == id);
+        return c is null ? null : new PublicPreviewResponse(c.Name, c.Description, c.CoverImageUrl);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildAlbumPreviewAsync(string id)
+    {
+        var a = await albumRepo.GetOneAsync(x => x.Id == id);
+        return a is null ? null : new PublicPreviewResponse(a.Title, a.Description, a.CoverImageUrl);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildServicePreviewAsync(string id)
+    {
+        var s = await serviceTypeRepo.GetOneAsync(x => x.Id == id);
+        return s is null ? null : new PublicPreviewResponse(s.Name, s.Description, null);
+    }
+
+    private async Task<PublicPreviewResponse?> BuildCampaignPreviewAsync(string id)
+    {
+        var c = await campaignRepo.GetOneAsync(x => x.Id == id);
+        return c is null ? null : new PublicPreviewResponse(c.Title, c.Description, c.BannerImageUrl);
+    }
 }
+
+public record PublicPreviewResponse(string Title, string? Description, string? ImageUrl);

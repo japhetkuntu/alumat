@@ -1,0 +1,271 @@
+"use client";
+
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, FileText, Link2, Download, ExternalLink, Copy, Bookmark, BookmarkCheck, ChevronRight } from "@alumni/ui";
+import { Badge } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { ShareLinkButton } from "@alumni/ui";
+import { Card, CardContent } from "@alumni/ui";
+import { CardSkeleton } from "@alumni/ui";
+import { formatDate } from "@alumni/ui";
+import { getResource, getResources, trackResourceDownload } from "@/lib/member-api";
+import { SourceBadge } from "@/components/member/source-badge";
+import { EmptyState } from "@alumni/ui";
+import { YouTubeEmbed } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
+import { toast } from "sonner";
+
+const categoryColor: Record<string, string> = {
+  Career: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  Professional: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  Scholarship: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  Technical: "bg-success/10 text-success dark:text-success",
+  General: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
+  Other: "bg-muted text-muted-foreground",
+};
+
+export default function MemberResourceDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [, setSavedVersion] = useState(0);
+
+  const { data: resource, isLoading } = useQuery({
+    queryKey: ["m-resource", id],
+    queryFn: () => getResource(id),
+  });
+
+  const { data: relatedData } = useQuery({
+    queryKey: ["m-resource-related", id, resource?.category],
+    queryFn: () => getResources(1, 6, resource?.category),
+    enabled: !!resource?.category,
+  });
+
+  const href = resource?.externalUrl ?? resource?.fileUrl;
+  const isPdf = !!href && /\.pdf(\?|$)/i.test(href);
+  const isImageLink = !!href && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(href);
+  const isYouTube = !!href && /(youtube\.com|youtu\.be)/i.test(href);
+  const related = (relatedData?.results ?? []).filter((r) => r.id !== id).slice(0, 3);
+
+  const queryClient = useQueryClient();
+  const downloadMutation = useMutation({
+    mutationFn: trackResourceDownload,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["m-resource", id] }),
+    // Download-count analytics ping only — the download itself already happened via direct link, so a failure here is silently ignored on purpose.
+    onError: () => {},
+  });
+
+  const handleResourceDownload = async (resourceId: string, href: string) => {
+    try {
+      await downloadMutation.mutateAsync(resourceId);
+    } catch {
+      // tracking errors should not block the link
+    }
+    window.open(href, "_blank", "noopener,noreferrer");
+  };
+
+  const hostName = (() => {
+    if (!resource?.externalUrl) return null;
+    try {
+      return new URL(resource.externalUrl).host;
+    } catch {
+      return null;
+    }
+  })();
+
+  const saved = (() => {
+    const savedIds = new Set<string>(JSON.parse(localStorage.getItem("memberSavedResources") ?? "[]"));
+    return savedIds.has(id);
+  })();
+
+  if (isLoading) {
+    return (
+      <div className="p-8 lg:p-12 space-y-6 max-w-4xl mx-auto">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    );
+  }
+
+  if (!resource) {
+    return (
+      <div className="p-8 lg:p-12 max-w-4xl mx-auto">
+        <Link href="/resources">
+          <Button variant="ghost" size="sm" className="mb-6"><ArrowLeft size={14} />Back to Resources</Button>
+        </Link>
+        <EmptyState icon={<FileText size={48} />} title="Resource not found" description="This resource may have been removed or the link is incorrect." />
+      </div>
+    );
+  }
+
+  const isFile = resource.type === "File";
+  const colorCls = categoryColor[resource.category] ?? "bg-muted text-muted-foreground";
+
+  const toggleSave = () => {
+    const savedIds = new Set<string>(JSON.parse(localStorage.getItem("memberSavedResources") ?? "[]"));
+    if (savedIds.has(id)) {
+      savedIds.delete(id);
+      toast.success("Removed from saved resources");
+    } else {
+      savedIds.add(id);
+      toast.success("Saved to your resources");
+    }
+    localStorage.setItem("memberSavedResources", JSON.stringify(Array.from(savedIds)));
+    setSavedVersion((value) => value + 1);
+  };
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
+
+  return (
+    <div className="p-8 lg:p-12 max-w-4xl mx-auto space-y-8">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-sm animate-in fade-in slide-in-from-top-4 duration-500">
+        <Link href="/resources">
+          <Button variant="ghost" size="sm" className="h-8 px-2 rounded-lg font-semibold group -ml-2">
+            <ArrowLeft size={15} className="mr-1 group-hover:-translate-x-0.5 transition-transform" />
+            Resources
+          </Button>
+        </Link>
+        <ChevronRight size={14} className="text-muted-foreground/50" />
+        <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{resource.title}</span>
+      </nav>
+
+      {/* Hero Banner */}
+      {resource.bannerImageUrl ? (
+        <div className="rounded-2xl overflow-hidden">
+          <ZoomableImage
+            src={resource.bannerImageUrl}
+            alt={resource.title}
+            className="w-full max-h-80 object-cover"
+            loading="eager"
+          />
+        </div>
+      ) : (
+        <div className={`rounded-2xl h-44 flex items-center justify-center ${colorCls} animate-in fade-in duration-700`}>
+          <div className="flex flex-col items-center gap-3">
+            {isFile ? <FileText size={48} className="opacity-60" /> : <Link2 size={48} className="opacity-60" />}
+            <span className="text-[11px] font-semibold uppercase tracking-wide opacity-60">{resource.type}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Title + Meta */}
+      <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wide ${colorCls}`}>
+            {resource.category}
+          </span>
+          <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">{resource.type}</Badge>
+        </div>
+        <h1
+          className="font-[family-name:var(--font-display)] leading-tight"
+          style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)" }}
+        >
+          {resource.title}
+        </h1>
+        <SourceBadge communityId={resource.communityId} communityName={resource.communityName} yearGroups={resource.yearGroups} />
+        <p className="text-muted-foreground text-sm font-medium">
+          Added {formatDate(resource.createdAt)}
+          {resource.downloadCount ? ` · ${resource.downloadCount} downloads` : ""}
+        </p>
+      </div>
+
+      {/* Content Card */}
+      <Card className="">
+        <CardContent className="p-6 lg:p-8 space-y-6">
+          <div className="flex items-center gap-2">
+            <ShareLinkButton
+              url={shareUrl}
+              title={resource.title}
+              variant="outline"
+              size="sm"
+              onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Resource link copied")}
+              onError={(message) => toast.error(message)}
+            />
+            <Button type="button" size="sm" variant="outline" onClick={toggleSave}>
+              {saved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+              {saved ? "Saved" : "Save"}
+            </Button>
+          </div>
+
+          {href && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50">Preview</p>
+              <div className="rounded-xl border border-border/40 overflow-hidden bg-muted/20">
+                {isYouTube ? (
+                  <YouTubeEmbed url={href} />
+                ) : isPdf ? (
+                  <iframe src={href} className="w-full h-[360px]" title="PDF Preview" />
+                ) : isImageLink ? (
+                  <img src={href} alt={resource.title} className="w-full max-h-[420px] object-contain bg-background" loading="lazy" />
+                ) : resource.externalUrl ? (
+                  <div className="p-4 space-y-1">
+                    <p className="text-sm font-semibold line-clamp-1">{resource.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{resource.description ?? "External resource link"}</p>
+                    {hostName && <p className="text-[11px] text-primary font-semibold">{hostName}</p>}
+                  </div>
+                ) : (
+                  <div className="p-4 text-sm text-muted-foreground">Preview unavailable for this resource type.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {resource.description && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-3">About</p>
+              <p className="text-[15px] leading-relaxed text-foreground/90">{resource.description}</p>
+            </div>
+          )}
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/40">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">Downloads</p>
+              <p className="text-2xl font-bold">{resource.downloadCount ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">Published</p>
+              <p className="text-sm font-semibold">{formatDate(resource.createdAt)}</p>
+            </div>
+          </div>
+
+          {/* Primary CTA */}
+          {href ? (
+            <Button
+              className="w-full h-12 text-base font-semibold"
+              onClick={() => handleResourceDownload(resource.id, href)}
+            >
+              {isFile
+                ? <><Download size={16} />Download Resource</>
+                : <><ExternalLink size={16} />Open Resource Link</>}
+            </Button>
+          ) : (
+            <Button className="w-full h-12 font-semibold" disabled>
+              Resource unavailable
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {related.length > 0 && (
+        <Card className="">
+          <CardContent className="p-6 space-y-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50">Related Resources</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {related.map((item) => (
+                <Link key={item.id} href={`/resources/${item.id}`}>
+                  <div className="rounded-xl border border-border/40 p-3 hover:border-primary/30 transition-colors">
+                    <p className="text-sm font-semibold line-clamp-2">{item.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{item.category} · {item.type}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

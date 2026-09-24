@@ -63,7 +63,12 @@ export function ShareLinkButton({
       const shareApiAvailable = typeof navigator !== "undefined" && "share" in navigator;
 
       if (shareApiAvailable) {
-        const shareData = { title: shareTitle, text: shareTitle, url: resolvedUrl };
+        // Deliberately omit `text` — passing both `text` and `url` is what causes
+        // some share targets (notably WhatsApp via Android's Web Share bridge) to
+        // render the link twice: the OS-level share intent appends `url` to
+        // `text` for apps that only accept plain text, so a `text` that doesn't
+        // already embed the link still ends up duplicated in the final message.
+        const shareData = { title: shareTitle, url: resolvedUrl };
         if (navigator.canShare && navigator.canShare(shareData)) {
           setIsSharing(true);
           await navigator.share(shareData);
