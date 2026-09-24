@@ -14,6 +14,16 @@ export interface InstitutionTheme {
   authHeadline: string | null;
   authSubtext: string | null;
   requireStudentId: boolean;
+  /** "Alumni" or "Community" — see InstitutionManagementService. Distinguishes an
+   *  EducationalOrganization (alumni) from a plain Organization (community) in
+   *  the homepage's JSON-LD, since a community group is not an educational one. */
+  organizationType?: string | null;
+  /** Platform keys (facebook, twitter, instagram, linkedin, youtube, tiktok) — see
+   *  landing-page.tsx's SOCIAL_ORDER for the full set and its own footer rendering
+   *  of these. Surfaced here too so the homepage's Organization/EducationalOrganization
+   *  JSON-LD can list them as `sameAs`, which is how entity SEO ties a site to its
+   *  known social profiles for Knowledge Graph disambiguation. */
+  socialLinks?: Record<string, string> | null;
   // Landing-page-only fields — present in the same API response, just unused
   // by the <html>/metadata plumbing this type otherwise serves. Kept here
   // (rather than a second fetch) so the root page can pass this single

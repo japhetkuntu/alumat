@@ -54,10 +54,13 @@ function StructuredData({ isMarketing, theme, origin }: { isMarketing: boolean; 
   if (isMarketing || !theme) {
     graphs.push({
       "@context": "https://schema.org",
-      "@type": "Organization",
+      "@type": "SoftwareApplication",
+      "@id": `${origin}/#organization`,
       name: SITE_NAME,
       url: origin,
       description: MARKETING_DESCRIPTION,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
     });
     graphs.push({
       "@context": "https://schema.org",
@@ -69,13 +72,20 @@ function StructuredData({ isMarketing, theme, origin }: { isMarketing: boolean; 
       })),
     });
   } else {
+    // A Community-type institution (see the platform's configurable
+    // OrganizationType) is not an educational body — EducationalOrganization
+    // would misdescribe it to search engines and any AI system reading this
+    // markup, so only Alumni institutions get the more specific type.
+    const sameAs = theme.socialLinks ? Object.values(theme.socialLinks).filter(Boolean) : undefined;
     graphs.push({
       "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
+      "@type": theme.organizationType === "Community" ? "Organization" : "EducationalOrganization",
+      "@id": `${origin}/#organization`,
       name: theme.displayName || theme.portalName,
       url: origin,
       ...(theme.logoUrl ? { logo: theme.logoUrl } : {}),
       ...(theme.tagline ? { description: theme.tagline } : {}),
+      ...(sameAs && sameAs.length > 0 ? { sameAs } : {}),
     });
   }
 

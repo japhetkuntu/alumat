@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/shared/providers";
+import { GoogleAnalytics } from "@/components/shared/google-analytics";
 import { getInstitutionTheme, themeStyleVars } from "@/lib/theme";
 import { getRequestOrigin, SITE_NAME } from "@/lib/seo";
 
@@ -90,6 +91,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       style={themeStyleVars(theme)}
     >
       <body className="min-h-screen bg-background font-sans antialiased">
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
         <Providers>{children}</Providers>
       </body>
     </html>
