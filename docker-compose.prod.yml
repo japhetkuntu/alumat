@@ -322,6 +322,10 @@ services:
         # the fixed base domain is actually registered with Google.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
         NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-}
+        # GA4 measurement ID — left unset (empty) means GoogleAnalytics never
+        # renders (see layout.tsx), so this is safe to leave blank until a
+        # real GA4 property exists.
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
     image: alumni/frontend-member:prod
     container_name: alumni-frontend-member
     restart: unless-stopped
