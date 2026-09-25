@@ -10,7 +10,7 @@ import {
   Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
   Wallet, CalendarCheck, CheckCircle2, PartyPopper,
   Crown, UserCheck, Settings2, Upload, BookOpen, Megaphone, GraduationCap, Users2,
-  Award, Target,
+  Award, Target, Stamp, Receipt, UsersRound, HandCoins,
 } from "@alumni/ui";
 import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
@@ -23,7 +23,7 @@ import {
   AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration,
   ServicesIllustration,
   UnknownAlumniIllustration, ManualReconciliationIllustration,
-} from "./_marketing/illustrations";
+} from "./_marketing/product-panels";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DATA
@@ -46,7 +46,7 @@ const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
     label: "Stay connected",
     blurb: "Your institution's community finds its way back to each other and to what's happening now.",
     items: [
-      { icon: Users,       label: "Directory",     title: "Every member, one searchable list",    desc: "Name, class year, location, and contact details: members find each other in seconds.", big: true, illustration: DirectoryIllustration },
+      { icon: Users,       label: "Directory",     title: "Every member, one searchable list",    desc: "Name, class year, location, and contact details: members find each other in seconds.", illustration: DirectoryIllustration },
       { icon: Globe,       label: "Events",        title: "RSVPs for every gathering",             desc: "Reunions, dinners, chapter meetups, speech days, and programs, all in one shared calendar.", illustration: EventsIllustration },
       { icon: Images,      label: "Photo Albums",  title: "A living photo archive",                desc: "Staff upload photos from every event; members, supporters, and community leaders revisit the stories in one place.", illustration: AlbumsIllustration },
       { icon: Bell,        label: "Notifications", title: "Reach the right people, automatically", desc: "Jobs, campaigns, events, and updates: members choose exactly what reaches them.", illustration: NotificationsIllustration },
@@ -56,7 +56,7 @@ const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
     label: "Grow together",
     blurb: "A community people want to stay in because opportunity brings them back.",
     items: [
-      { icon: Briefcase,   label: "Careers",    title: "A jobs board for your community",      desc: "Employers post roles for members and supporters before they ever hit public boards.", big: true, illustration: JobsIllustration },
+      { icon: Briefcase,   label: "Careers",    title: "A jobs board for your community",      desc: "Employers post roles for members and supporters before they ever hit public boards.", illustration: JobsIllustration },
       { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Former students and experienced members connect with those just starting out.", illustration: MentorshipIllustration },
       { icon: Building2,   label: "Businesses", title: "A member business directory",            desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
       { icon: Trophy,      label: "Spotlight",  title: "Celebrate your standout members",       desc: "Recognize members, leaders, supporters, and changemakers right on your community home page.", illustration: SpotlightIllustration },
@@ -66,7 +66,7 @@ const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
     label: "Raise funds & offer services",
     blurb: "Money moves online with a record, instead of screenshots and trust.",
     items: [
-      { icon: CreditCard,  label: "Fundraising", title: "Collect dues & fund projects", desc: "Online payments for campaigns, membership dues, renewals, and community support.", big: true, illustration: FundraisingIllustration },
+      { icon: CreditCard,  label: "Fundraising", title: "Collect dues & fund projects", desc: "Online payments for campaigns, membership dues, renewals, and community support.", illustration: FundraisingIllustration },
       { icon: ShoppingBag, label: "Store",       title: "Sell branded merchandise",     desc: "An online store for association gear, with payment and order tracking built in.", illustration: StoreIllustration },
       { icon: FileText,    label: "Services",    title: "Offer any paid service, your way", desc: "Transcripts, letters, certificate reissues, or other requests: configure forms, collect payment online, and fulfill them from one place.", illustration: ServicesIllustration },
     ],
@@ -88,15 +88,15 @@ const NETWORK_PIPELINE: { icon: LucideIcon; label: string }[] = [
 // step your team actually does for an institution that signs up, not just the
 // software's part of it.
 const WHITE_GLOVE_STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
-  { icon: Sparkles,        title: "Create the community portal",        desc: "Your own branded subdomain, live and ready." },
-  { icon: Landmark,        title: "Add institutional branding",        desc: "Colors, logo, and identity, applied throughout." },
-  { icon: SlidersHorizontal, title: "Configure the community",          desc: "Membership dues, campaigns, and policies set up for you." },
-  { icon: Layer,            title: "Organize groups and chapters",      desc: "Your community's groups, chapters, or cohorts, structured and ready to grow." },
-  { icon: UserCheck,        title: "Set up administrators",             desc: "Your executives get accounts and the right access from day one." },
-  { icon: Upload,           title: "Import existing member data",       desc: "Spreadsheets, old records, and contact lists, brought in for you." },
-  { icon: BookOpen,         title: "Train the community team",          desc: "A walkthrough for whoever will run the portal day to day." },
-  { icon: Megaphone,        title: "Help launch to your members",       desc: "Guidance and materials for announcing the community to your network." },
-  { icon: Target,           title: "Help run the first campaign",       desc: "We help you plan and launch your first dues drive or fundraiser." },
+  { icon: Globe,        title: "Create the community portal",   desc: "Your own branded subdomain, live and ready." },
+  { icon: Stamp,        title: "Add institutional branding",    desc: "Colors, logo, and identity, applied throughout." },
+  { icon: Receipt,      title: "Configure the community",       desc: "Membership dues, campaigns, and policies set up for you." },
+  { icon: UsersRound,   title: "Organize groups and chapters",  desc: "Your community's groups, chapters, or cohorts, structured and ready to grow." },
+  { icon: ShieldCheck,  title: "Set up administrators",         desc: "Your executives get accounts and the right access from day one." },
+  { icon: Upload,       title: "Import existing member data",   desc: "Spreadsheets, old records, and contact lists, brought in for you." },
+  { icon: BookOpen,     title: "Train the community team",      desc: "A walkthrough for whoever will run the portal day to day." },
+  { icon: Megaphone,    title: "Help launch to your members",   desc: "Guidance and materials for announcing the community to your network." },
+  { icon: HandCoins,    title: "Help run the first campaign",   desc: "We help you plan and launch your first dues drive or fundraiser." },
 ];
 
 // The three problems community organizations commonly face — sold first,
@@ -135,7 +135,7 @@ const PROBLEMS: ProblemItem[] = [
 
 const WHATSAPP_PROBLEMS = [
   { icon: UserX,           title: "Caps at 1,024 members", desc: "WhatsApp groups max out at 1,024 people. Even larger community spaces eventually become difficult to organize and grow." },
-  { icon: SearchX,         title: "No real search",        desc: "Find last year's fundraiser announcement? Good luck scrolling. WhatsApp only searches text in one chat at a time." },
+  { icon: SearchX,         title: "Search finds words, not people",        desc: "Looking for last year's fundraiser announcement, or a member by chapter or city? WhatsApp can search messages, but there's no directory to filter, so you scroll and ask around." },
   { icon: ShieldAlert,     title: "Real fraud risk",        desc: "UK Action Fraud logged 636 reports of WhatsApp group-chat scams in H1 2024 alone, often someone impersonating a member to solicit money." },
   { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, and no engagement analytics in one place." },
 ];
@@ -158,40 +158,20 @@ function HeroStat({ icon, end, format, label }: { icon: LucideIcon; end: number;
   );
 }
 
-function FeatureCard({ feature, delay, tone = "primary" }: { feature: Feature; delay: string; tone?: "primary" | "accent" }) {
+/** One feature as a full-width row: a coloured stage with the product panel on one side, the words on the other.
+ *  Rows alternate sides down the page, so it reads as a walk through the product instead of a grid of boxes. */
+function FeatureRow({ feature, reverse }: { feature: Feature; reverse: boolean }) {
   const { ref, visible } = useFadeUp();
-  const tilt = useTilt<HTMLDivElement>(2.5);
-  const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
   return (
-    <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn(
-        "card group transition-all duration-500 hover:-translate-y-1 hover:shadow-sm",
-        feature.big && "sm:col-span-2",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
-      )}>
-      {/* Tilt lives on this inner wrapper, not the outer card — the outer
-          div's own transform already carries the scroll-reveal translate-y,
-          and inline style always wins over a Tailwind class for the same
-          property, so combining both on one element would let tilt silently
-          erase the reveal animation's transform. */}
-      <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style}
-        className={cn("card__content", feature.big && "sm:flex sm:items-center sm:gap-6")}>
-        <feature.illustration
-          tone={tone}
-          className={cn(
-            "transition-transform duration-500 group-hover:scale-105 mb-4",
-            feature.big ? "w-24 h-24 sm:w-32 sm:h-32 sm:mb-0" : "w-20 h-20"
-          )}
-        />
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: iconColor }}>{feature.label}</p>
-          <h3 className={cn("font-semibold leading-snug mb-2 group-hover:text-primary transition-colors duration-200", feature.big ? "text-[17px]" : "text-[14px]")} style={{ color: "var(--foreground)" }}>
-            {feature.title}
-          </h3>
-          <p className={cn("leading-relaxed", feature.big ? "text-[13.5px] max-w-[42ch]" : "text-[13px]")} style={{ color: "var(--muted-foreground)" }}>
-            {feature.desc}
-          </p>
-        </div>
+    <div ref={ref}
+      className={cn("grid items-center gap-10 py-8 transition-all duration-700 sm:gap-12 md:py-12 lg:grid-cols-2", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
+      <div className={cn("flex min-w-0 items-center justify-center p-5 sm:p-10", reverse && "lg:order-2")} style={{ background: "var(--primary)" }}>
+        <feature.illustration className="w-full max-w-[420px]" />
+      </div>
+      <div className={cn("min-w-0", reverse && "lg:order-1")}>
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--primary)" }}>{feature.label}</p>
+        <h3 className="mb-3 text-[21px] font-semibold leading-snug sm:text-[24px]" style={{ color: "var(--foreground)" }}>{feature.title}</h3>
+        <p className="text-[14.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{feature.desc}</p>
       </div>
     </div>
   );
@@ -210,8 +190,10 @@ function ProblemRow({ item, reverse }: { item: ProblemItem; reverse: boolean }) 
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
       )}>
       <div className={cn(reverse && "lg:order-2")}>
-        <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className="mx-auto max-w-[280px] lg:max-w-none">
-          <item.illustration className="w-full aspect-square" />
+        <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className="mx-auto max-w-[420px] lg:max-w-none">
+          <div className="p-5 sm:p-8" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+            <item.illustration className="w-full" />
+          </div>
         </div>
       </div>
       <div className={cn(reverse && "lg:order-1")}>
@@ -299,7 +281,7 @@ function WhiteGloveStep({ step, index, delay }: { step: typeof WHITE_GLOVE_STEPS
     <div ref={ref} style={{ transitionDelay: delay }}
       className={cn("flex gap-4 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
       <div className="relative shrink-0">
-        <IconTile icon={step.icon} size="default" tone={index % 2 === 0 ? "primary" : "accent"} />
+        <IconTile icon={step.icon} size="default" tone="primary" />
         <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold"
           style={{ background: "var(--foreground)", color: "var(--background)" }}>
           {index + 1}
@@ -434,7 +416,7 @@ function OnboardingForm() {
   if (submitted) {
     return (
       <div className="card p-8 sm:p-10 text-center flex flex-col items-center">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}>
           <PartyPopper size={28} style={{ color: "var(--primary)" }} />
         </div>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: "var(--primary)" }}>You&apos;re on your way</p>
@@ -567,7 +549,7 @@ function OnboardingForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label>Phone (optional)</Label>
-          <Input value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} placeholder="+233 ..." />
+          <Input type="tel" value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} placeholder="+233 ..." />
         </div>
         <div>
           <Label>Roughly how many members? (optional)</Label>
@@ -613,7 +595,7 @@ function OnboardingForm() {
       <div className="flex items-center justify-between gap-3 pt-1">
         {step > 1 ? <Button type="button" variant="outline" onClick={() => { setError(null); setStep((current) => current - 1); }}>Back</Button> : <span />}
         {step < 3 ? (
-          <Button type="button" className="font-semibold gap-2" onClick={goToNextStep}>Continue <ArrowRight size={15} /></Button>
+          <Button type="button" className="font-semibold gap-2" onClick={goToNextStep}>{step === 1 ? "Next: choose your focus" : "Next: contact details"} <ArrowRight size={15} /></Button>
         ) : (
           <Button type="submit" className="font-semibold gap-2" isLoading={submitting} loadingText="Sending your request...">Get started, free <ArrowRight size={15} /></Button>
         )}
@@ -779,6 +761,7 @@ export default function PlatformMarketingPage() {
           <div className="relative mt-16 sm:mt-20 max-w-[880px] mx-auto" style={{ perspective: "1800px" }}>
             <div className="absolute -inset-x-10 -inset-y-14 pointer-events-none" aria-hidden="true"
               style={{ background: "radial-gradient(60% 65% at 50% 40%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 72%)", filter: "blur(10px)" }} />
+
 
             {/* Floating category chips — orbit the hero visual with their own
                 gentle, staggered bob so the whole hero doesn't sit still,
@@ -954,9 +937,11 @@ export default function PlatformMarketingPage() {
                   <span className="h-px flex-1" style={{ background: "var(--border)" }} aria-hidden="true" />
                   <span className="hidden sm:inline text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{group.blurb}</span>
                 </div>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
+                <div className="border-t" style={{ borderColor: "var(--border)" }}>
                   {group.items.map((feature, i) => (
-                    <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={gi % 2 === 0 ? "primary" : "accent"} />
+                    <div key={feature.title} className={i ? "border-t" : ""} style={{ borderColor: "var(--border)" }}>
+                      <FeatureRow feature={feature} reverse={(FEATURE_GROUPS.slice(0, gi).reduce((n, g) => n + g.items.length, 0) + i) % 2 === 1} />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1006,7 +991,7 @@ export default function PlatformMarketingPage() {
               The offer: build your community, from the ground up.
             </h3>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
-              Not a signup link, a done-for-you setup. Here&apos;s exactly what our team handles.
+              Our team does the setup with you. This is everything it covers, in the order it happens.
             </p>
           </div>
 
@@ -1076,7 +1061,7 @@ export default function PlatformMarketingPage() {
                   { icon: MapPin,   text: "Built for every community, anywhere" },
                 ].map((item, index) => (
                   <div key={item.text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}>
                       <item.icon size={14} style={{ color: "var(--primary)" }} />
                     </div>
                     <p className="text-[13.5px] font-medium" style={{ color: "var(--foreground)" }}>

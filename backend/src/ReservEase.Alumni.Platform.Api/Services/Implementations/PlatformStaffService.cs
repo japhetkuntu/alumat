@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Extensions;
 using ReservEase.Alumni.Platform.Api.Models;
@@ -15,11 +16,10 @@ public class PlatformStaffService(IAlumniPgRepository<PlatformStaff> staffRepo, 
     {
         try
         {
-        var loweredSearch = search?.ToLower();
         var paged = await staffRepo.GetPagedAsync(page, pageSize, sortColumn: "Name", sortDir: "asc",
-            filter: string.IsNullOrWhiteSpace(loweredSearch)
+            filter: string.IsNullOrWhiteSpace(search)
                 ? null
-                : s => s.Name.ToLower().Contains(loweredSearch) || s.Email.ToLower().Contains(loweredSearch));
+                : s => TextSearch.Matches(search, s.Name, s.Email));
 
         var result = new ReservEase.Alumni.PostgresDb.Sdk.Models.PgPagedResult<PlatformStaffResponse>
         {

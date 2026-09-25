@@ -32,6 +32,7 @@ export default function EventDetailPage() {
   const router  = useRouter();
   const qc      = useQueryClient();
   const [rsvpConfirmOpen, setRsvpConfirmOpen] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event", id],
@@ -54,7 +55,7 @@ export default function EventDetailPage() {
       qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
       qc.invalidateQueries({ queryKey: ["cal-events"] });
       setRsvpConfirmOpen(false);
-      toast.success("You're in! We'll see you there.");
+      toast.success("You're in! We'll see you there.", { description: "Find it under \"Going\" in Events and in your calendar." });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -67,6 +68,7 @@ export default function EventDetailPage() {
       qc.invalidateQueries({ queryKey: ["m-events-list"] });
       qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
       qc.invalidateQueries({ queryKey: ["cal-events"] });
+      setCancelConfirmOpen(false);
       toast.success("RSVP cancelled.");
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -198,7 +200,7 @@ export default function EventDetailPage() {
               isFull={isFull}
               mapUrl={mapUrl}
               onRsvp={() => setRsvpConfirmOpen(true)}
-              onCancel={() => cancelMut.mutate()}
+              onCancel={() => setCancelConfirmOpen(true)}
               cancelPending={cancelMut.isPending}
               rsvpPending={rsvpMut.isPending}
             />
@@ -251,7 +253,7 @@ export default function EventDetailPage() {
                 isFull={isFull}
                 mapUrl={mapUrl}
                 onRsvp={() => setRsvpConfirmOpen(true)}
-                onCancel={() => cancelMut.mutate()}
+                onCancel={() => setCancelConfirmOpen(true)}
                 cancelPending={cancelMut.isPending}
                 rsvpPending={rsvpMut.isPending}
               />
@@ -270,6 +272,18 @@ export default function EventDetailPage() {
         isLoading={rsvpMut.isPending}
         onConfirm={() => rsvpMut.mutate()}
         onCancel={() => setRsvpConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        open={cancelConfirmOpen}
+        title="Cancel your RSVP?"
+        message={`You will give up your place at "${event.title}". You can RSVP again later if there is still room.`}
+        confirmLabel="Yes, cancel RSVP"
+        cancelLabel="Keep my spot"
+        emphasis="cancel"
+        isLoading={cancelMut.isPending}
+        onConfirm={() => cancelMut.mutate()}
+        onCancel={() => setCancelConfirmOpen(false)}
       />
     </div>
   );
@@ -375,7 +389,7 @@ function RsvpBlock({
         <div className="flex items-center gap-3 px-4 py-3.5">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+            style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
           >
             <MapPin size={14} style={{ color: "var(--primary)" }} />
           </div>
@@ -401,7 +415,7 @@ function RsvpBlock({
         <div className="flex items-center gap-3 px-4 py-3.5">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+            style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
           >
             <Calendar size={14} style={{ color: "var(--primary)" }} />
           </div>
@@ -417,7 +431,7 @@ function RsvpBlock({
         <div className="flex items-center gap-3 px-4 py-3.5">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+            style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
           >
             <Users size={14} style={{ color: "var(--primary)" }} />
           </div>

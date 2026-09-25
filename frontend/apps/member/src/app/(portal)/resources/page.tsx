@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +16,7 @@ import { formatDate } from "@alumni/ui";
 import { getResources, trackResourceDownload } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
-import { PageHeader } from "@alumni/ui";
+import { PageHeader, ChipRow } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
@@ -116,8 +117,9 @@ export default function MemberResourcesPage() {
           </SearchModal>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-4xl">
-          <FormSelect
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-4xl">
+          <div className="col-span-2 md:col-span-1"><FormSelect
+            className="w-full"
             value={typeFilter || "__all__"}
             onValueChange={(v) => { setTypeFilter(v === "__all__" ? "" : v); setPage(1); }}
             options={[
@@ -129,23 +131,24 @@ export default function MemberResourcesPage() {
               { value: "Image", label: "Image" },
               { value: "File", label: "File" },
             ]}
-          />
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added after</label>
+          /></div>
+          <div className="min-w-0 space-y-1">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Added after</label>
             <Input type="date" value={addedAfter} onChange={(e) => { setAddedAfter(e.target.value); setPage(1); }} />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Added before</label>
+          <div className="min-w-0 space-y-1">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Added before</label>
             <Input type="date" value={addedBefore} onChange={(e) => { setAddedBefore(e.target.value); setPage(1); }} />
           </div>
         </div>
 
-        <div className="flex gap-2 flex-wrap items-center">
+        <ChipRow label="Filter by category" activeKey={categoryFilter}>
           {categories.map((c) => {
             const active = categoryFilter === (c === "All" ? "" : c);
             return (
               <button
                 key={c}
+                aria-pressed={active}
                 onClick={() => setCategoryFilter(c === "All" ? "" : c)}
                 className={`px-3.5 py-1.5 text-[12.5px] font-semibold transition-all duration-200 border ${
                   active
@@ -166,7 +169,7 @@ export default function MemberResourcesPage() {
             </button>
           )}
           <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
-        </div>
+        </ChipRow>
       </div>
 
       {isLoading ? (
@@ -175,9 +178,9 @@ export default function MemberResourcesPage() {
         </div>
       ) : resources.length === 0 ? (
         (search || categoryFilter || typeFilter || addedAfter || addedBefore) ? (
-          <EmptyState icon={<FolderOpen size={48} />} title="No resources found" description="Try adjusting your search or filters." />
+          <EmptyState icon={<FolderOpen size={48} />} title="No resources found" description="Try adjusting your search or filters." action={<Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setCategoryFilter(""); setTypeFilter(""); setAddedAfter(""); setAddedBefore(""); setPage(1); }}>Clear filters</Button>} />
         ) : (
-          <EmptyState icon={<FolderOpen size={48} />} title="No resources yet" description="Check back later for guides, articles, and tools from the alumni team." />
+          <EmptyState icon={<FolderOpen size={48} />} title="A shared library for members" description="Your institution collects guides, templates, articles and useful links here. Open a link or download a file straight from the list. Nothing has been added yet." action={<NotifyMeButton />} />
         )
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

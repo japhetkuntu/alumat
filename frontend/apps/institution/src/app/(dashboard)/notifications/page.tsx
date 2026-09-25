@@ -244,7 +244,7 @@ export default function AdminNotificationsPage() {
               {tab === "Unread" ? "No unread notifications" : "No notifications yet"}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              You&apos;ll be notified when members make payments.
+              Payments, new registrations and requests that need your approval show up here, so you never have to keep checking.
             </p>
           </div>
         ) : (

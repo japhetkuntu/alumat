@@ -1,5 +1,7 @@
 "use client";
 
+import { FormError } from "@alumni/ui";
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -33,7 +35,7 @@ export default function AdminAlbumsPage() {
   const pageSize = 12;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-albums", page],
     queryFn: () => getAlbums(page, pageSize),
     placeholderData: (prev) => prev,
@@ -41,7 +43,9 @@ export default function AdminAlbumsPage() {
 
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
 
+  const [formError, setFormError] = useState<string | null>(null);
   const createMut = useMutation({
+    onMutate: () => setFormError(null),
     mutationFn: () => createAlbum({ title: form.title, description: form.description || undefined, communityId: form.communityId || undefined }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-albums"] });
@@ -49,7 +53,7 @@ export default function AdminAlbumsPage() {
       setForm(emptyForm);
       toast.success("Album created");
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { const message = handleApiError(e); setFormError(message); toast.error(message); },
   });
 
   const deleteMut = useMutation({
@@ -77,15 +81,17 @@ export default function AdminAlbumsPage() {
         </Button>
       </header>
 
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : albums.length === 0 ? (
         <EmptyState
           icon={<Images size={40} />}
-          title="No albums yet"
-          description="Create your first photo album to start sharing memories with alumni."
+          title="Photo albums keep memories alive"
+          description="Create an album for a reunion or event and upload the photos. Members see it in their portal and can look back on the day together."
           action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />New album</Button>}
         />
       ) : (
@@ -167,6 +173,7 @@ export default function AdminAlbumsPage() {
               </div>
             )}
           </div>
+          <FormError message={formError} className="mt-3" />
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); setForm(emptyForm); }}>Cancel</Button>
             <Button disabled={!form.title.trim() || createMut.isPending} onClick={() => createMut.mutate()}>

@@ -1,25 +1,24 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
-import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Label } from "@alumni/ui";
+import { InfoTip } from "@alumni/ui";
 import { UserAvatar, formatDate, formatDateTime } from "@alumni/ui";
-import { getPlatformMembers, updatePlatformMemberProfile, type PlatformMemberItem } from "@/lib/platform-api";
+import { getPlatformMembers } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
-import { handleApiError } from "@/lib/api-client";
 
 const STATUS_OPTIONS = ["All", "Active", "Pending", "Suspended", "Blocked", "Banned"] as const;
 const ACTIVITY_OPTIONS = [
   { value: "all", label: "All members" },
-  { value: "active", label: "Engaged recently (last 7 days)" },
-  { value: "inactive", label: "Needs re-engagement (7+ days, or never)" },
+  { value: "active", label: "Active (last 7 days)" },
+  { value: "inactive", label: "Inactive (7+ days, or never)" },
 ] as const;
 
 export default function PlatformMembersPage() {
@@ -30,31 +29,7 @@ export default function PlatformMembersPage() {
   const [activity, setActivity] = useState<string>("all");
   const [page, setPage] = useState(1);
   const pageSize = 50;
-  const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<PlatformMemberItem | null>(null);
-  const [connectionType, setConnectionType] = useState("");
-  const [skills, setSkills] = useState("");
-  const [interests, setInterests] = useState("");
-  const [visibility, setVisibility] = useState({ email: false, phone: false, company: true, bio: true });
-  const editMutation = useMutation({
-    mutationFn: () => updatePlatformMemberProfile(editing!.id, {
-      connectionType: connectionType || undefined,
-      skills: skills.split(",").map(v => v.trim()).filter(Boolean),
-      interests: interests.split(",").map(v => v.trim()).filter(Boolean),
-      showEmailOnDirectory: visibility.email,
-      showPhoneOnDirectory: visibility.phone,
-      showCompanyOnDirectory: visibility.company,
-      showBioOnDirectory: visibility.bio,
-    }),
-    onSuccess: () => {
-      toast.success("Member profile updated");
-      setEditing(null);
-      queryClient.invalidateQueries({ queryKey: ["platform-members"] });
-    },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["platform-members", { page, pageSize, search, status, activity }],
     queryFn: () => getPlatformMembers({
       page, pageSize,
@@ -79,10 +54,9 @@ export default function PlatformMembersPage() {
   return (
     <div className="p-5 sm:p-7 max-w-[1500px]">
       <div className="mb-6 max-w-2xl">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary mb-2">Member network</p>
-        <h1 className="text-[26px] font-bold tracking-tight">Member directory</h1>
+                <h1 className="text-[26px] font-bold tracking-tight">Member directory</h1>
         <p className="text-muted-foreground text-[13px] mt-1.5">
-          A people-first view of the members who keep every institution connected, from sign-up through ongoing engagement.
+          Every member across all institutions, and whether they have signed in lately.
         </p>
       </div>
 
@@ -105,7 +79,7 @@ export default function PlatformMembersPage() {
             </SelectContent>
           </Select>
           <Select value={activity} onValueChange={(v) => { setActivity(v); setPage(1); }}>
-            <SelectTrigger aria-label="Filter by engagement" className="w-full sm:w-[260px]">
+            <SelectTrigger aria-label="Filter by activity" className="w-full sm:w-[260px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -120,25 +94,27 @@ export default function PlatformMembersPage() {
           )}
         </div>
         <div className="overflow-x-auto">
-        <Table className="min-w-[980px]">
+        <Table stackOnMobile className="min-w-[980px]">
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
               <TableHead>Institution</TableHead>
-              <TableHead>Cohort / year</TableHead>
+              <TableHead>Graduation year</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Last seen</TableHead>
-              <TableHead>Engagement</TableHead>
-              <TableHead />
+              <TableHead>Last sign-in</TableHead>
+              <TableHead>
+                <span className="inline-flex items-center gap-1.5">Activity<InfoTip text="Active means signed in within the last 7 days." /></span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={`loading-${index}`} aria-hidden="true">
-                <TableCell colSpan={7}><div className="h-10 rounded bg-muted animate-pulse" /></TableCell>
+                <TableCell colSpan={6}><div className="h-10 rounded bg-muted animate-pulse" /></TableCell>
               </TableRow>
             ))}
-            {!isLoading && members.length === 0 && <TableEmpty title="No members match these filters" colSpan={7} />}
+            {isError && <tr><td colSpan={6}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
+            {!isLoading && !isError && members.length === 0 && <TableEmpty title="No members match these filters" colSpan={6} />}
             {members.map((m) => (
               <TableRow key={m.id}>
                 <TableCell>
@@ -163,21 +139,7 @@ export default function PlatformMembersPage() {
                   ) : "Not yet"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={m.isActive ? "success" : "neutral"}>{m.isActive ? "Engaged" : "Needs a nudge"}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Button size="sm" variant="outline" onClick={() => {
-                    setEditing(m);
-                    setConnectionType(m.connectionType ?? "");
-                    setSkills((m.skills ?? []).join(", "));
-                    setInterests((m.interests ?? []).join(", "));
-                    setVisibility({
-                      email: m.showEmailOnDirectory,
-                      phone: m.showPhoneOnDirectory,
-                      company: m.showCompanyOnDirectory,
-                      bio: m.showBioOnDirectory,
-                    });
-                  }}>Edit community profile</Button>
+                  <Badge variant={m.isActive ? "success" : "neutral"}>{m.isActive ? "Active" : "Inactive"}</Badge>
                 </TableCell>
               </TableRow>
             ))}
@@ -188,43 +150,6 @@ export default function PlatformMembersPage() {
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       </Card>
-      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit member community profile</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <p className="text-[13px] text-muted-foreground">{editing?.firstName} {editing?.lastName} · {editing?.institutionName}</p>
-            <div className="space-y-1.5">
-              <Label>Connection type</Label>
-              <Input value={connectionType} onChange={e => setConnectionType(e.target.value)} placeholder="Member, volunteer, leader…" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Skills</Label>
-              <Input value={skills} onChange={e => setSkills(e.target.value)} placeholder="Comma-separated skills" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Interests and causes</Label>
-              <Input value={interests} onChange={e => setInterests(e.target.value)} placeholder="Comma-separated interests" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-[13px]">
-              {[
-                ["email", "Show email"],
-                ["phone", "Show phone"],
-                ["company", "Show company and role"],
-                ["bio", "Show bio"],
-              ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2">
-                  <input type="checkbox" checked={visibility[key as keyof typeof visibility]} onChange={e => setVisibility(v => ({ ...v, [key]: e.target.checked }))} />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
-            <Button onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>{editMutation.isPending ? "Saving…" : "Save profile"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

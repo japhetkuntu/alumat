@@ -1,5 +1,6 @@
 "use client";
 
+import { ChipRow } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
@@ -190,7 +191,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
                 onChange={(e) => setNewOptionType(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addOptionType(); } }}
               />
-              <Button type="button" size="sm" variant="outline" onClick={addOptionType}>Add</Button>
+              <Button type="button" size="sm" variant="outline" onClick={addOptionType}>Add option</Button>
             </div>
 
             {form.optionTypes.length > 0 && (
@@ -220,7 +221,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
             {combos.length > 0 && (
               <div className="space-y-2 pt-1">
                 <Label className="text-[12.5px]">Variant combinations ({combos.length})</Label>
-                <Table>
+                <Table stackOnMobile>
                   <TableHeader>
                     <TableRow>
                       {form.optionTypes.map((t) => <TableHead key={t}>{t}</TableHead>)}
@@ -257,7 +258,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
           </div>
 
           <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save</Button>
+            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save product</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -474,7 +475,7 @@ export default function AdminStorePage() {
 
               {editingSettings && (
                 <div className="flex gap-2">
-                  <Button size="sm" isLoading={settingsMut.isPending} loadingText="Saving" onClick={() => settingsMut.mutate()}>Save</Button>
+                  <Button size="sm" isLoading={settingsMut.isPending} loadingText="Saving" onClick={() => settingsMut.mutate()}>Save store settings</Button>
                   <Button size="sm" variant="outline" onClick={() => setEditingSettings(false)}>Cancel</Button>
                 </div>
               )}
@@ -514,27 +515,28 @@ export default function AdminStorePage() {
             />
           )}
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <ChipRow label="Filter" activeKey={String(statusFilter)}>
             {["", "Active", "Draft", "Archived"].map((s) => (
               <button
                 key={s}
+                aria-pressed={statusFilter === s}
                 onClick={() => { setStatusFilter(s); setPage(1); }}
                 className={cn(
                   "px-3 py-1.5 border text-[12.5px] font-semibold transition-colors",
-                  statusFilter === s ? "bg-accent/10 text-accent border-accent/30" : "bg-white text-foreground border-border hover:bg-muted"
+                  statusFilter === s ? "bg-primary/10 text-primary border-primary/30" : "bg-white text-foreground border-border hover:bg-muted"
                 )}
               >
                 {s === "" ? "All" : s}
               </button>
             ))}
-          </div>
+          </ChipRow>
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : products.length === 0 ? (
-            <EmptyState icon={<Package size={40} />} title="No products yet" description="Add your first product for alumni to buy." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Add product</Button>} />
+            <EmptyState icon={<Package size={40} />} title="The store sells to your members" description="Add merchandise or other items with prices and options. Members buy online and you follow each order through to delivery." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Add product</Button>} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {products.map((p) => (
@@ -581,7 +583,7 @@ export default function AdminStorePage() {
               {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : orders.length === 0 ? (
-            <EmptyState icon={<ShoppingBag size={40} />} title="No paid orders yet" description="Successful, fully-paid orders will show up here once members start buying." />
+            <EmptyState icon={<ShoppingBag size={40} />} title="Paid orders appear here" description="Once members start buying, each paid order shows up here so you can follow it through to delivery." />
           ) : (
             <div className="space-y-3">
               {orders.map((o) => (

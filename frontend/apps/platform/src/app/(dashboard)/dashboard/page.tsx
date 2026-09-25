@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EmptyState } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, StatCard } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -29,7 +30,7 @@ export default function PlatformDashboardPage() {
   }));
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-6">
         <div>
           <h1 className="text-[26px] font-bold">Platform overview</h1>
@@ -115,7 +116,14 @@ export default function PlatformDashboardPage() {
           <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all institutions</Link>
         </div>
         <CardContent className="p-0">
-          {recentSignups.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">No institutions yet.</p>}
+          {recentSignups.length === 0 && (
+            <EmptyState
+              className="py-10"
+              title="An institution is one customer"
+              description="A school or community with its own branded member portal, admin team and data. Add the first one to get started."
+              action={<Link href="/institutions/new"><Button size="sm" className="font-semibold">Add your first institution</Button></Link>}
+            />
+          )}
           {recentSignups.map((inst) => (
             <div key={inst.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
               <div className="min-w-0">

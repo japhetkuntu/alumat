@@ -42,9 +42,7 @@ public class NewsService(
             var result = await newsRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 p => (string.IsNullOrEmpty(filter.Status) || p.Status == filter.Status)
-                  && (string.IsNullOrEmpty(search)
-                      || p.Title.ToLower().Contains(search)
-                      || p.Content.ToLower().Contains(search))
+                  && TextSearch.Matches(search, p.Title, p.Content)
                   && (isSuper || p.CreatedBy == admin.Id
                       || (p.YearGroups != null && p.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (p.CommunityId != null && communityIds.Contains(p.CommunityId))));

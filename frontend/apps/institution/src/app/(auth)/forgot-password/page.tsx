@@ -85,7 +85,7 @@ export default function AdminForgotPasswordPage() {
       </form>
 
       <div
-        className="mt-6 p-4 rounded-[8px] text-[13px] leading-relaxed"
+        className="mt-6 p-4 rounded-none text-[13px] leading-relaxed"
         style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
       >
         <b className="text-foreground">Set a new password</b>

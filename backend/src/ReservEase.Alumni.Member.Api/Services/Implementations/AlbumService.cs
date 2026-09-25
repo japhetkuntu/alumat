@@ -50,7 +50,7 @@ public class AlbumService(
             var search = filter.Search?.ToLower();
             var result = await albumRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                a => (string.IsNullOrEmpty(search) || a.Title.ToLower().Contains(search))
+                a => TextSearch.Matches(search, a.Title)
                   && ((a.CommunityId == null && a.YearGroups == null)
                       || (a.CommunityId != null && approvedCommunityIds.Contains(a.CommunityId))
                       || (a.YearGroups != null && graduationYear.HasValue && a.YearGroups.Contains(graduationYear.Value))));

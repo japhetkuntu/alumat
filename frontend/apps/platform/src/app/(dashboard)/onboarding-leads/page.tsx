@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -43,7 +44,7 @@ export default function OnboardingLeadsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
-  const { data: leads = [], isLoading } = useQuery({
+  const { data: leads = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["onboarding-leads", statusFilter],
     queryFn: () => getOnboardingLeads(statusFilter === "all" ? undefined : statusFilter),
   });
@@ -93,7 +94,7 @@ export default function OnboardingLeadsPage() {
   });
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-bold">Onboarding Requests</h1>
@@ -111,14 +112,16 @@ export default function OnboardingLeadsPage() {
         </Select>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <p className="text-[13px] text-muted-foreground">Loading…</p>
       ) : leads.length === 0 ? (
         <Card>
           <EmptyState
             icon={<Inbox size={24} />}
-            title="No onboarding requests"
-            description="Requests submitted by prospective institutions will show up here for review."
+            title="Requests from institutions that want to join"
+            description="When a school or group fills in the request form on your marketing site, it lands here. Review it, contact them and, if it fits, add them as an institution."
           />
         </Card>
       ) : (

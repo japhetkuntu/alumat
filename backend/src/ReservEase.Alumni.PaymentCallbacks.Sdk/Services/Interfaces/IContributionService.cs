@@ -8,6 +8,7 @@ namespace ReservEase.Alumni.PaymentCallbacks.Sdk.Services.Interfaces;
 public interface IContributionService
 {
     Task<IApiResponse<PgPagedResult<ContributionDto>>> GetMyContributionsAsync(string memberId, ContributionFilter filter);
+    Task<IApiResponse<MyContributionSummaryDto>> GetMyContributionSummaryAsync(string memberId);
     Task<IApiResponse<object>> InitiatePaystackPaymentAsync(InitiatePaystackPaymentRequest request, AuthData? member);
     Task<IApiResponse<object>> InitiateMembershipRenewalAsync(InitiateMembershipRenewalRequest request, AuthData member);
     Task<IApiResponse<object>> VerifyPaystackPaymentAsync(string reference, AuthData? member);

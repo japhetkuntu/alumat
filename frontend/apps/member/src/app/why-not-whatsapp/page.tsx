@@ -1,32 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import type { IconType as LucideIcon } from "@alumni/ui";
 import {
-  ArrowLeft, ArrowRight, UserX, SearchX, ShieldAlert,
-  MessageCircleOff, PhoneOff, Check, X as XIcon, ExternalLink, MoveHorizontal,
+  ArrowLeft, ArrowRight, Check, X as XIcon, ExternalLink,
 } from "@alumni/ui";
 import { Button, cn } from "@alumni/ui";
 import { Section, ScrollProgressBar, useScrolled, useTilt, useCountUp, CustomCursor, CustomCursorStyles } from "../_marketing/primitives";
 import { MarketingFooter } from "../_marketing/footer";
+import { CapIllustration, NoDirectoryIllustration, OnePhoneIllustration, NoDataIllustration, FraudIllustration } from "../_marketing/product-panels";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DATA — every claim here is sourced; see the Sources section on this page.
    ───────────────────────────────────────────────────────────────────────── */
-const LIMITS: { icon: LucideIcon; title: string; desc: string; source: string }[] = [
-  { icon: UserX, title: "It caps out", desc: "A WhatsApp group maxes out at 1,024 members. A Community stretches that to 5,000 across up to 50 sub-groups, still a hard ceiling a growing alumni base will eventually hit.", source: "WhatsApp's own published limits" },
-  { icon: SearchX, title: "You can't find anything", desc: "WhatsApp's search only finds text matches inside one chat at a time. There's no member directory, no filtering by class year or location, just scrolling and hoping.", source: "WhatsApp product limitations, widely documented" },
-  { icon: PhoneOff, title: "One phone, one point of failure", desc: "Group control is tied to whoever's personal phone number set it up. If that admin changes numbers, loses their phone, or steps down, there's no institutional account underneath, just a person's device.", source: "How WhatsApp group admin actually works" },
-  { icon: MessageCircleOff, title: "No structure, no data", desc: "No built-in directory, no RSVP tracking, no dues or fundraiser collection, and no engagement analytics. Even in WhatsApp Communities, this stays a chat thread, not a management tool.", source: "WhatsApp Communities' documented feature set" },
-  { icon: ShieldAlert, title: "It's a real fraud target", desc: "The UK's Action Fraud logged 636 reports tied to WhatsApp group-chat scams in the first half of 2024 alone. A common tactic is impersonating a group member (or a charity) to solicit money. That's exactly the shape of a fundraising drive run over a WhatsApp group.", source: "UK Action Fraud, H1 2024" },
+const LIMITS: { title: string; desc: string; source: string; panel: React.ComponentType<{ className?: string }> }[] = [
+  { title: "It caps out", desc: "A WhatsApp group maxes out at 1,024 members. A Community stretches that to 5,000 across up to 50 sub-groups, still a hard ceiling a growing membership will eventually hit.", source: "WhatsApp's own published limits", panel: CapIllustration },
+  { title: "You can find messages, not people", desc: "WhatsApp search finds words in conversations. There's no member directory, so you can't filter by year joined, chapter or location. Finding a person means scrolling and asking around.", source: "WhatsApp Help Center: searching and group info", panel: NoDirectoryIllustration },
+  { title: "One phone, one point of failure", desc: "Group control is tied to whoever's personal phone number set it up. If that admin changes numbers, loses their phone, or steps down, there's no organization account underneath, just a person's device.", source: "WhatsApp Help Center: group admins and phone numbers", panel: OnePhoneIllustration },
+  { title: "No structure, no data", desc: "No built-in directory, no RSVP tracking, no dues or fundraiser collection, and no engagement analytics. Even in WhatsApp Communities, this stays a chat thread, not a management tool.", source: "WhatsApp Communities' documented feature set", panel: NoDataIllustration },
+  { title: "It's a real fraud target", desc: "Group-chat scams follow a pattern: someone impersonates a member or a charity and asks the group for money. In the first half of 2024 the UK's Action Fraud logged 636 reports tied to WhatsApp group chats. Any fundraising drive run in a chat has the same exposure.", source: "UK Action Fraud, H1 2024", panel: FraudIllustration },
 ];
 
 const COMPARISON: { row: string; whatsapp: string; alumunion: string }[] = [
-  { row: "Member capacity",        whatsapp: "Caps at 1,024 (5,000 for a Community)", alumunion: "No cap, built for your whole alumni base" },
-  { row: "Finding people",         whatsapp: "Scroll and guess who's who",             alumunion: "Searchable directory by name, class year, location" },
-  { row: "Search",                 whatsapp: "Text search, one chat at a time",        alumunion: "Search across events, jobs, directory, everything" },
-  { row: "Who's in charge",        whatsapp: "Tied to one admin's personal phone",     alumunion: "Role-based admin accounts your institution controls" },
+  { row: "Member capacity",        whatsapp: "Caps at 1,024 (5,000 for a Community)", alumunion: "No cap, built for your whole membership" },
+  { row: "Finding people",         whatsapp: "Scroll and guess who's who",             alumunion: "Searchable directory by name, chapter, location" },
+  { row: "Search",                 whatsapp: "Searches messages, not members",           alumunion: "Search across members, events, jobs and news" },
+  { row: "Who's in charge",        whatsapp: "Tied to one admin's personal phone",     alumunion: "Role-based admin accounts your organization controls" },
   { row: "Collecting dues/funds",  whatsapp: "Manual, screenshot-and-trust",           alumunion: "Secure online payments with automatic records" },
   { row: "Events",                 whatsapp: "Lost in the scroll, no RSVP tracking",   alumunion: "Built-in events with RSVP tracking" },
   { row: "Jobs & mentorship",      whatsapp: "Buried somewhere in chat history",       alumunion: "Dedicated jobs board & mentorship matching" },
@@ -52,8 +50,8 @@ function SourceCard({ s, index }: { s: typeof SOURCES[number]; index: number }) 
       onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave}
       style={tilt.style}
       className="card group flex items-start gap-4 p-5 transition-shadow duration-300 hover:shadow-sm hover:border-primary/40">
-      <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
-        style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))", color: "var(--primary)" }}>
+      <div className="w-9 h-9 rounded-none flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
+        style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))", color: "var(--primary)" }}>
         {String(index + 1).padStart(2, "0")}
       </div>
       <div className="min-w-0">
@@ -82,107 +80,56 @@ function StatCard({ end, decimals, suffix, desc }: { end: number; decimals: numb
   );
 }
 
-function LimitCard({ item, index }: { item: typeof LIMITS[number]; index: number }) {
+function LimitRow({ item, index }: { item: typeof LIMITS[number]; index: number }) {
+  const reverse = index % 2 === 1;
   return (
-    <div className="pb-8 sm:pb-0">
-      <p className="font-[family-name:var(--font-display)] leading-none select-none mb-2.5"
-        style={{ fontSize: "2.75rem", fontWeight: 700, color: "var(--destructive)", opacity: 0.13 }} aria-hidden="true">
-        {String(index + 1).padStart(2, "0")}
-      </p>
-      <div className="flex items-center gap-2.5 mb-2 -mt-7">
-        <item.icon size={18} style={{ color: "var(--destructive)" }} />
-        <h3 className="text-[15.5px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+    <div className="grid items-center gap-8 py-8 sm:gap-12 md:py-12 lg:grid-cols-2">
+      <div className={cn("min-w-0 p-5 sm:p-8", reverse && "lg:order-2")} style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+        <item.panel className="mx-auto w-full max-w-[420px]" />
       </div>
-      <p className="text-[13.5px] leading-relaxed mb-2.5 max-w-[46ch]" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
-      <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>Source: {item.source}</p>
+      <div className={cn("min-w-0", reverse && "lg:order-1")}>
+        <p className="mb-3 text-[13px] font-bold tabular-nums" style={{ color: "var(--destructive)" }}>{String(index + 1).padStart(2, "0")}</p>
+        <h3 className="mb-3 text-[21px] font-semibold leading-snug sm:text-[24px]" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+        <p className="mb-3 max-w-[52ch] text-[14.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
+        <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>Source: {item.source}</p>
+      </div>
     </div>
   );
 }
 
 const COMPARE_ROWS: { whatsapp: string; alumunion: string }[] = [
-  { whatsapp: "Caps at 1,024 members", alumunion: "No cap, built for the whole alumni base" },
-  { whatsapp: "Scroll and guess who's who", alumunion: "Searchable directory by name, year, location" },
-  { whatsapp: "Tied to one admin's personal phone", alumunion: "Role-based accounts the association owns" },
+  { whatsapp: "Caps at 1,024 members", alumunion: "No cap, built for the whole membership" },
+  { whatsapp: "Scroll and guess who's who", alumunion: "Searchable directory by name, chapter, location" },
+  { whatsapp: "Tied to one admin's personal phone", alumunion: "Role-based accounts the organization owns" },
   { whatsapp: "Manual, screenshot-and-trust dues", alumunion: "Secure online payments, automatic records" },
   { whatsapp: "No RSVP tracking, no analytics", alumunion: "Real RSVPs and engagement reports" },
 ];
 
-/** Drag (or touch-drag) the handle to reveal how much of the picture WhatsApp
- * is actually missing. Purely a "feel it, don't just read it" companion to
- * the fully sourced comparison table further down — every line here is a
- * shorter restatement of a claim that table (and its sources) backs. */
-function DragCompare() {
-  const [pct, setPct] = useState(50);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-
-  const setFromClientX = (clientX: number) => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const p = ((clientX - rect.left) / rect.width) * 100;
-    setPct(Math.min(96, Math.max(4, p)));
-  };
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!dragging.current) return;
-      const x = "touches" in e ? e.touches[0]?.clientX : e.clientX;
-      if (typeof x === "number") setFromClientX(x);
-    };
-    const onUp = () => { dragging.current = false; };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("touchmove", onMove, { passive: true });
-    window.addEventListener("mouseup", onUp);
-    window.addEventListener("touchend", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      window.removeEventListener("touchend", onUp);
-    };
-  }, []);
-
+/** The short version, side by side, before the detail below. Stacks on a phone so nothing is ever cut off. */
+function CompareAtAGlance() {
   return (
-    <div
-      ref={containerRef}
-      className="relative select-none border overflow-hidden touch-none"
-      style={{ borderColor: "var(--border)", height: 360 }}
-      onMouseDown={(e) => { dragging.current = true; setFromClientX(e.clientX); }}
-      onTouchStart={(e) => { dragging.current = true; setFromClientX(e.touches[0].clientX); }}
-    >
-      {/* Base layer — WhatsApp, dulled */}
-      <div className="absolute inset-0 p-6 sm:p-10 flex flex-col justify-center" style={{ background: "#eef0ec" }}>
-        <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: "#6b7280" }}>WhatsApp group</p>
+    <div className="grid gap-4 text-left md:grid-cols-2">
+      <div className="p-6 sm:p-8" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--muted-foreground)" }}>WhatsApp group</p>
         <ul className="space-y-3.5">
           {COMPARE_ROWS.map((r) => (
-            <li key={r.whatsapp} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14.5px]" style={{ color: "#4b5563" }}>
-              <XIcon size={15} className="shrink-0 mt-0.5" style={{ color: "#b91c1c" }} />
+            <li key={r.whatsapp} className="flex items-start gap-2.5 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+              <XIcon size={15} className="mt-0.5 shrink-0" style={{ color: "var(--destructive)" }} />
               {r.whatsapp}
             </li>
           ))}
         </ul>
       </div>
-
-      {/* Reveal layer — AlumUnion, clipped to the handle position */}
-      <div className="absolute inset-0 p-6 sm:p-10 flex flex-col justify-center" style={{ background: "var(--background)", clipPath: `inset(0 ${100 - pct}% 0 0)` }}>
-        <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: "var(--primary)" }}>AlumUnion</p>
+      <div className="p-6 sm:p-8" style={{ background: "var(--card)", border: "1px solid var(--primary)" }}>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--primary)" }}>AlumUnion</p>
         <ul className="space-y-3.5">
           {COMPARE_ROWS.map((r) => (
-            <li key={r.alumunion} className="flex items-start gap-2.5 text-[13.5px] sm:text-[14.5px] font-medium" style={{ color: "var(--foreground)" }}>
-              <Check size={15} className="shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
+            <li key={r.alumunion} className="flex items-start gap-2.5 text-[14px] font-medium" style={{ color: "var(--foreground)" }}>
+              <Check size={15} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
               {r.alumunion}
             </li>
           ))}
         </ul>
-      </div>
-
-      {/* Handle */}
-      <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${pct}%`, width: 2, background: "var(--primary)", transform: "translateX(-1px)" }}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ background: "var(--primary)", boxShadow: "0 6px 18px rgba(0,0,0,0.28)" }}>
-          <MoveHorizontal size={17} color="white" />
-        </div>
       </div>
     </div>
   );
@@ -220,18 +167,25 @@ export default function WhyNotWhatsAppPage() {
         <div className="section__inner--wide relative pt-16 pb-16 text-center">
           <h1 className="font-[family-name:var(--font-display)] mb-6 max-w-[26ch]"
             style={{ fontSize: "clamp(2.2rem,4.6vw,3.5rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)", margin: "0 auto 1.5rem" }}>
-            WhatsApp wasn&apos;t built to run your institution&apos;s community.
+            WhatsApp wasn&apos;t built to run your community.
           </h1>
           <p className="max-w-[54ch] mb-10" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
-            It&apos;s free, familiar, and everyone already has it. That&apos;s exactly why so many institutions start there.
-            But a chat app is not a community platform. Here&apos;s the honest, sourced case for why it falls short.
+            It&apos;s free, familiar, and everyone already has it, which is why so many communities start there.
+            A chat app can&apos;t keep records, collect money safely or hold your members together as you grow. Here&apos;s what that looks like, with sources.
           </p>
 
-          <div className="max-w-[720px] mx-auto text-left">
+          <div className="max-w-[860px] mx-auto text-left">
             <p className="text-center text-[12px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--muted-foreground)" }}>
-              Drag to see the difference
+              The short version
             </p>
-            <DragCompare />
+            <CompareAtAGlance />
+            <div className="mt-8 text-center">
+              <Link href="/#onboard">
+                <Button size="lg" className="h-12 gap-2 px-8 text-[14.5px] font-semibold">
+                  Get your community onboarded <ArrowRight size={15} />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -244,11 +198,11 @@ export default function WhyNotWhatsAppPage() {
               Five ways it actually holds your community back.
             </h2>
             <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Not opinions: every point below is sourced. See the full list under Sources.
+              Each point names its source, and the full list with links is at the bottom of the page.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-10 sm:gap-y-12">
-            {LIMITS.map((item, i) => <LimitCard key={item.title} item={item} index={i} />)}
+          <div className="mx-auto max-w-5xl divide-y" style={{ borderColor: "var(--border)" }}>
+            {LIMITS.map((item, i) => <LimitRow key={item.title} item={item} index={i} />)}
           </div>
         </div>
       </Section>
@@ -262,16 +216,26 @@ export default function WhyNotWhatsAppPage() {
             </h2>
           </div>
 
-          <p className="sm:hidden flex items-center justify-center gap-1.5 mb-4 text-[12px] font-medium" style={{ color: "var(--muted-foreground)" }}>
-            Swipe to see the full comparison <ArrowRight size={12} />
-          </p>
+          <ul className="space-y-3 sm:hidden">
+            {COMPARISON.map((r) => (
+              <li key={r.row} className="border p-4" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
+                <p className="mb-3 text-[13px] font-bold" style={{ color: "var(--foreground)" }}>{r.row}</p>
+                <p className="mb-2 flex items-start gap-2 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+                  <XIcon size={14} className="mt-0.5 shrink-0" style={{ color: "var(--destructive)" }} />{r.whatsapp}
+                </p>
+                <p className="flex items-start gap-2 text-[13px] font-medium" style={{ color: "var(--foreground)" }}>
+                  <Check size={14} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />{r.alumunion}
+                </p>
+              </li>
+            ))}
+          </ul>
 
           {/* .card sets overflow:hidden for its rounded corners/shadow, which clips
               horizontal scroll if applied to the same element — so the scrollable
               region is a separate inner wrapper, not the card itself. */}
-          <div className="card">
+          <div className="card hidden sm:block">
             <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[640px]">
+            <table className="w-full text-left border-collapse min-w-[560px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
                   <th className="p-4 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}></th>
@@ -310,12 +274,12 @@ export default function WhyNotWhatsAppPage() {
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[20ch]" style={{ color: "var(--foreground)" }}>
-                Alumni engagement is a national problem, not just a WhatsApp one.
+                Keeping a community engaged is hard everywhere, not just on WhatsApp.
               </h2>
               <p style={{ color: "var(--muted-foreground)", fontSize: "0.975rem", lineHeight: 1.75 }}>
-                To be clear: this isn&apos;t WhatsApp&apos;s fault. Alumni participation has been declining for decades,
-                across every kind of institution, no matter how they communicate. It&apos;s the industry-wide trend a
-                real platform can help push back against; a chat group alone won&apos;t.
+                To be fair, WhatsApp isn&apos;t the cause. Participation in member organizations has been falling for
+                decades, however they communicate. The best-measured example is alumni associations, so that&apos;s where
+                these figures come from. A real platform can help push back against the trend; a chat group alone won&apos;t.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

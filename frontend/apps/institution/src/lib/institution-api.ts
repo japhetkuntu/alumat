@@ -942,6 +942,15 @@ export async function createForumCategory(name: string, description?: string) {
   return res.data.data!;
 }
 
+export async function updateForumCategory(id: string, name: string, description?: string) {
+  const res = await institutionClient.put<ApiResponse<ForumCategory>>(`/forum/categories/${id}`, { name, description });
+  return res.data.data!;
+}
+
+export async function deleteForumCategory(id: string) {
+  await institutionClient.delete(`/forum/categories/${id}`);
+}
+
 export async function getForumThreads(page = 1, pageSize = 20, categoryId?: string, search?: string, filter?: string) {
   const res = await institutionClient.get<ApiResponse<PagedResult<ForumThread>>>("/forum/threads", {
     params: { page, pageSize, categoryId, search, filter },

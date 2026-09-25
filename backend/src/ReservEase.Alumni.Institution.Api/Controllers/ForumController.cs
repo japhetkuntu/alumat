@@ -45,6 +45,34 @@ public class ForumController(IForumService forumService) : DefaultController
     }
 
     /// <summary>
+    /// Rename or re-describe a forum category.
+    /// </summary>
+    [HttpPut("categories/{categoryId}")]
+    [SwaggerOperation(Summary = "Update forum category")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ForumCategoryDto>))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateCategory(string categoryId, [FromBody] UpdateCategoryRequest request)
+    {
+        var admin = User.GetAccount();
+        var result = await forumService.UpdateCategoryAsync(categoryId, request.Name, request.Description, admin);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Delete a forum category that has no threads.
+    /// </summary>
+    [HttpDelete("categories/{categoryId}")]
+    [SwaggerOperation(Summary = "Delete forum category")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> DeleteCategory(string categoryId)
+    {
+        var admin = User.GetAccount();
+        var result = await forumService.DeleteCategoryAsync(categoryId, admin);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Get a paginated list of forum threads.
     /// </summary>
     [HttpGet("threads")]

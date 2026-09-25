@@ -55,7 +55,7 @@ public class MemberForumService(
         try
         {
             logger.LogInformation("GetForumCategories request");
-            var result = await categoryRepo.GetPagedAsync(1, 100, "Name", "asc");
+            var result = await categoryRepo.GetPagedAsync(1, 100, "SortOrder", "asc");
             var dtoResult = new PgPagedResult<ForumCategoryDto>
             {
                 PageIndex = result.PageIndex,
@@ -97,7 +97,7 @@ public class MemberForumService(
                       ? (t.CommunityId == null || approvedCommunityIds.Contains(t.CommunityId))
                       : t.CommunityId == filter.CommunityId)
                   && (string.IsNullOrEmpty(filter.CategoryId) || t.CategoryId == filter.CategoryId)
-                  && (string.IsNullOrEmpty(search) || t.Title.ToLower().Contains(search))
+                  && TextSearch.Matches(search, t.Title)
                   && (string.IsNullOrEmpty(filter.Filter)
                       || (filter.Filter == "pinned" && t.IsPinned)
                       || (filter.Filter == "recent")

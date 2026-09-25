@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
@@ -25,6 +26,7 @@ public static class DataSeeder
         using var scope = services.CreateScope();
         var institutionRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<InstitutionEntity>>();
         var staffRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<StaffEntity>>();
+        var forumCategoryRepo = scope.ServiceProvider.GetRequiredService<IAlumniPgRepository<ForumCategory>>();
         var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         var seed = config.GetSection("DefaultInstitutionSeed");
@@ -62,6 +64,10 @@ public static class DataSeeder
         // request would be scoped by TenantResolutionMiddleware.
         var currentTenant = scope.ServiceProvider.GetRequiredService<ICurrentTenantService>();
         currentTenant.SetInstitutionId(institution.Id);
+
+        // Starter forum categories, only when the tenant has none — an admin who deleted them on purpose isn't second-guessed on the next boot.
+        if (await forumCategoryRepo.CountAsync() == 0)
+            await forumCategoryRepo.AddRangeAsync(ForumCategoryDefaults.Build(institution.Id, "seeder"));
 
         // Seed default SuperAdmin if none exists
         if (await staffRepo.CountAsync() == 0)

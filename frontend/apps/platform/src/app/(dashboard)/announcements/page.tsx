@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EmptyState } from "@alumni/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
@@ -37,7 +38,7 @@ export default function AnnouncementsPage() {
   }
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <h1 className="text-[24px] font-bold">Announcements</h1>
       <p className="text-muted-foreground text-[13px] mt-1 mb-6">Broadcast a message to some or all institutions.</p>
 
@@ -46,8 +47,8 @@ export default function AnnouncementsPage() {
           <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Compose</p></div>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
-              <Label>Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Scheduled maintenance" />
+              <Label htmlFor="announcement-title">Title</Label>
+              <Input id="announcement-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Scheduled maintenance" />
             </div>
             <div className="space-y-1.5">
               <Label>Message</Label>
@@ -66,7 +67,14 @@ export default function AnnouncementsPage() {
         <Card>
           <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">History</p></div>
           <CardContent className="p-0">
-            {items.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">No announcements sent yet.</p>}
+            {items.length === 0 && (
+              <EmptyState
+                className="py-10"
+                title="Announcements reach every institution admin"
+                description="Use them to share a maintenance window, a new feature or a policy change. Each announcement appears in the admin portal of every institution."
+                action={<Button size="sm" className="font-semibold" onClick={() => document.getElementById("announcement-title")?.focus()}>Write an announcement</Button>}
+              />
+            )}
             {items.map((a) => (
               <div key={a.id} className="px-5 py-4 border-b border-border last:border-0">
                 <p className="font-semibold text-[13.5px]">{a.title}</p>

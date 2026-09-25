@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,7 +23,7 @@ export default function EventRsvpsPage() {
   const [status, setStatus] = useState<"Confirmed" | "Cancelled" | "All">("Confirmed");
   const pageSize = 20;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-event-rsvps", id, page, status],
     queryFn: () => getEventRsvps(id, page, pageSize, status),
     placeholderData: (prev) => prev,
@@ -62,7 +64,7 @@ export default function EventRsvpsPage() {
           <div className="px-4 py-3 border-b border-border/50">
             <h2 className="text-base font-semibold">Registrations ({data?.totalCount ?? 0})</h2>
           </div>
-          <Table className="min-w-[680px] sm:min-w-[760px]">
+          <Table stackOnMobile className="min-w-[680px] sm:min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -72,10 +74,12 @@ export default function EventRsvpsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableSkeleton rows={5} cols={4} />
+              {isError ? (
+                <TableRow><TableCell colSpan={4}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+              ) : isLoading ? (
+                <TableSkeleton rows={4} cols={4} />
               ) : rsvps.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No registrations yet</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title="Registrations appear here" description="Members RSVP from their portal. Once they do, you see who is coming and can plan for numbers." /></TableCell></TableRow>
               ) : rsvps.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium text-sm">

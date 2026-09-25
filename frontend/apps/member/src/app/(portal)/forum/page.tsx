@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChipRow, SegmentedControl } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Plus, MessageSquare, Pin, Lock, Clock, Search } from "@alumni/ui";
@@ -19,7 +20,6 @@ import { toast } from "sonner";
 import { EmptyState } from "@alumni/ui";
 import Link from "next/link";
 import { cn } from "@alumni/ui";
-import { PageHeader } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
@@ -71,7 +71,7 @@ export default function MemberForumPage() {
   });
 
   const createMut = useMutation({
-    mutationFn: () => createThread({ categoryId: form.categoryId, title: form.title, content: form.content }),
+    mutationFn: () => createThread({ categoryId: form.categoryId || categories[0]?.id || "", title: form.title, content: form.content }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-forum-threads"] });
       setShowNewThread(false);
@@ -88,19 +88,24 @@ export default function MemberForumPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      {/* ── Header ── */}
-      <PageHeader
-        title="Forum"
-        description="Ask questions, share knowledge, and keep the conversation moving."
-      >
-        <Button
-          onClick={() => setShowNewThread(v => !v)}
-          className="shrink-0 gap-2 font-semibold text-[13.5px]"
-          style={{ height: 40 }}
-        >
-          <Plus size={14} /> New thread
-        </Button>
-      </PageHeader>
+      {/* ── Header — title and action stay on one row even on a phone ── */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="tracking-tight" style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}>
+            Forum
+          </h1>
+          <Button
+            onClick={() => setShowNewThread(v => !v)}
+            className="shrink-0 gap-2 font-semibold text-[13.5px]"
+            style={{ height: 40 }}
+          >
+            <Plus size={14} /> New thread
+          </Button>
+        </div>
+        <p className="text-[14px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+          Ask questions, share knowledge, and keep the conversation moving.
+        </p>
+      </div>
 
       {/* ── New thread form ── */}
       {showNewThread && (
@@ -117,7 +122,7 @@ export default function MemberForumPage() {
                 <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Category</Label>
                 <FormSelect
                   placeholder="Select a category"
-                  value={form.categoryId}
+                  value={form.categoryId || categories[0]?.id || ""}
                   onValueChange={v => setForm({ ...form, categoryId: v })}
                   options={categories.map(c => ({ value: c.id, label: c.name }))}
                 />
@@ -171,7 +176,7 @@ export default function MemberForumPage() {
       )}
 
       {/* ── Search ── */}
-      <div className="relative max-w-sm">
+      <div className="relative sm:max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
           style={{ color: "var(--muted-foreground)" }} />
         <Input
@@ -182,53 +187,24 @@ export default function MemberForumPage() {
         />
       </div>
 
-      {/* ── Filter + category pills ── */}
+      {/* ── Sort + category filters ── */}
       <div className="space-y-3">
-        {/* Sort filter */}
-        <div className="flex flex-wrap gap-2">
-          {FILTERS.map(f => (
-            <button
-              key={f.value}
-              onClick={() => { setThreadFilter(f.value); setThreadPage(1); }}
-              className={cn(
-                "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-                threadFilter === f.value ? "text-white border-transparent" : "border-border hover:border-accent/40",
-              )}
-              style={threadFilter === f.value
-                ? { background: "var(--accent)", color: "var(--accent-foreground)" }
-                : { background: "var(--background)", color: "var(--muted-foreground)" }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl label="Sort threads" options={FILTERS} value={threadFilter} onChange={v => { setThreadFilter(v); setThreadPage(1); }} />
 
-        {/* Category + source filter */}
-        <div className="flex flex-wrap gap-2">
+        <ChipRow label="Filter by category" activeKey={selectedCategory}>
           {categories.length > 0 && (
             <>
-              <button
-                onClick={() => { setSelectedCategory(""); setThreadPage(1); }}
-                className={cn(
-                  "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-                  selectedCategory === "" ? "text-white border-transparent" : "border-border hover:border-accent/40",
-                )}
-                style={selectedCategory === ""
-                  ? { background: "var(--accent)", color: "var(--accent-foreground)" }
-                  : { background: "var(--background)", color: "var(--muted-foreground)" }}
-              >
-                All categories
-              </button>
-              {categories.map(c => (
+              {[{ id: "", name: "All categories" }, ...categories].map(c => (
                 <button
-                  key={c.id}
+                  key={c.id || "all"}
                   onClick={() => { setSelectedCategory(c.id); setThreadPage(1); }}
+                  aria-pressed={selectedCategory === c.id}
                   className={cn(
-                    "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-                    selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-accent/40",
+                    "px-3.5 py-2 text-[12.5px] font-semibold border transition-colors sm:py-1.5",
+                    selectedCategory === c.id ? "text-white border-transparent" : "border-border hover:border-primary/40",
                   )}
                   style={selectedCategory === c.id
-                    ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+                    ? { background: "var(--primary)", color: "var(--primary-foreground)" }
                     : { background: "var(--background)", color: "var(--muted-foreground)" }}
                 >
                   {c.name}
@@ -237,7 +213,7 @@ export default function MemberForumPage() {
             </>
           )}
           <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setThreadPage(1); }} />
-        </div>
+        </ChipRow>
       </div>
 
       {/* ── Thread list ── */}
@@ -248,8 +224,8 @@ export default function MemberForumPage() {
       ) : threads.length === 0 ? (
         <EmptyState
           icon={<MessageSquare size={40} />}
-          title={search ? "No threads match your search" : "No threads yet"}
-          description={search ? "Try a different search term." : "Be the first to start a discussion."}
+          title={search ? "No threads match your search" : "The forum is where members talk"}
+          description={search ? "Try a different search term." : "Ask for advice, share news or start a conversation with people from your institution. Start the first discussion."}
           action={!search ? (
             <Button onClick={() => setShowNewThread(true)} className="gap-2 font-semibold">
               <Plus size={14} /> New thread

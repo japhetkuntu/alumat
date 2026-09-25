@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Calendar, MapPin, Users, Pencil } from "@alumni/ui";
@@ -145,7 +146,7 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
             </div>
           </div>
           <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save</Button>
+            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save event</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -184,7 +185,7 @@ export default function AdminEventsPage() {
   const pageSize = 12;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-events", page],
     queryFn: () => getEvents(page, pageSize),
     placeholderData: (prev) => prev,
@@ -265,10 +266,12 @@ export default function AdminEventsPage() {
           onSave={(f) => updateMut.mutate({ id: editEvent.id, f })} onCancel={() => setEditEvent(null)} />
       )}
 
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
       ) : events.length === 0 ? (
-        <EmptyState icon={<Calendar size={40} />} title="No events yet" description="Create your first alumni event or reunion." action={<Button size="sm" onClick={() => setShowCreate(true)}><Plus size={14} />Create event</Button>} />
+        <EmptyState icon={<Calendar size={40} />} title="Events give members a reason to show up" description="Post a reunion, dinner or meetup with the date and venue. Members RSVP from their portal and you can see who is coming." action={<Button size="sm" onClick={() => setShowCreate(true)}><Plus size={14} />Create event</Button>} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {events.map((e) => (

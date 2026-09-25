@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Download, Loader2 } from "@alumni/ui";
@@ -37,7 +39,7 @@ export default function AdminContributionsPage() {
   const pageSize = 20;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-contributions", search, statusFilter, page],
     queryFn: () => getContributions({ page, pageSize, status: statusFilter || undefined, search: search || undefined }),
     placeholderData: (prev) => prev,
@@ -241,7 +243,7 @@ export default function AdminContributionsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <Table className="min-w-[820px] md:min-w-[1080px]">
+          <Table stackOnMobile className="min-w-[820px] md:min-w-[1080px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -254,10 +256,12 @@ export default function AdminContributionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableSkeleton rows={8} cols={7} />
+              {isError ? (
+                <TableRow><TableCell colSpan={7}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+              ) : isLoading ? (
+                <TableSkeleton rows={4} cols={7} />
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No contributions found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Every payment from members is listed here" description="Nothing matches yet. Once members pay a fundraiser or their dues, each payment appears here with its status. Try clearing your filters if you expected to see some." /></TableCell></TableRow>
               ) : items.map((c) => (
                 <TableRow key={c.id} className={densityRowClass}>
                   <TableCell className={densityCellClass}>

@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { ChipRow } from "@alumni/ui";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -159,7 +161,7 @@ export default function AdminNewsPage() {
     router.replace(`/news?${searchString}`);
   }, [search, statusFilter, page, router]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-news", search, statusFilter, page],
     queryFn: () => getNewsPosts(page, pageSize, search || undefined, statusFilter || undefined),
     placeholderData: (prev) => prev,
@@ -223,7 +225,7 @@ export default function AdminNewsPage() {
 
       {/* Search + Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 min-w-0 max-w-sm">
+        <div className="w-full sm:flex-1 min-w-0 sm:max-w-sm">
           <SearchModal
             title="Search posts"
             value={search}
@@ -252,10 +254,11 @@ export default function AdminNewsPage() {
             )}
           </SearchModal>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <ChipRow label="Filter" activeKey={String(statusFilter)}>
           {["", "Draft", "Published", "Archived"].map((s) => (
             <button
               key={s}
+              aria-pressed={statusFilter === s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
                 statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
@@ -264,7 +267,7 @@ export default function AdminNewsPage() {
               {s === "" ? "All" : s}
             </button>
           ))}
-        </div>
+        </ChipRow>
       </div>
 
       {showCreate && (
@@ -298,12 +301,14 @@ export default function AdminNewsPage() {
         </div>
       )}
 
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : posts.length === 0 ? (
-        <EmptyState icon={<Pin size={40} />} title="No posts yet" description="Create your first news post or announcement." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Create article</Button>} />
+        <EmptyState icon={<Pin size={40} />} title="News keeps members informed" description="Publish announcements, achievements and updates. Members see them in their portal. Save a draft first if you are not ready to publish." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Create article</Button>} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {posts.map((p, i) => (

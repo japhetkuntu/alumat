@@ -147,7 +147,7 @@ interface FormSelectProps {
 export function FormSelect({ value, onValueChange, placeholder, options, error, disabled, className }: FormSelectProps) {
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger error={error} className={className}>
+      <SelectTrigger error={error} className={cn("w-full sm:w-auto", className)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

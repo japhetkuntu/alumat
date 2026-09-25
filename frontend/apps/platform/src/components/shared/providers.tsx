@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           richColors
           position="top-right"
           toastOptions={{
-            className: "!rounded-[12px] !shadow-[0_8px_32px_rgba(0,0,0,0.12)] !border-border/60 !text-[14px] !z-[9999]",
+            className: "!rounded-none !shadow-[0_8px_32px_rgba(0,0,0,0.12)] !border-border/60 !text-[14px] !z-[9999]",
             duration: 4500,
           }}
         />

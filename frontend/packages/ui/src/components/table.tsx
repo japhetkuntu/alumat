@@ -1,12 +1,60 @@
+"use client";
+
 import * as React from "react";
 import { cn } from "../lib/utils";
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-x-auto overscroll-x-contain [scrollbar-gutter:stable] [scrollbar-width:thin]">
-      <table ref={ref} className={cn("w-full min-w-[720px] border-collapse text-[14px]", className)} {...props} />
-    </div>
-  )
+const STACK_CLASSES = [
+  "max-md:!min-w-0 max-md:block",
+  "[&_thead]:max-md:hidden [&_tbody]:max-md:block",
+  "[&_tr]:max-md:block [&_tr]:max-md:!h-auto [&_tr]:max-md:border [&_tr]:max-md:border-border/60 [&_tr]:max-md:mb-3 [&_tr]:max-md:p-3 [&_tbody_tr:last-child]:max-md:border",
+  "[&_td]:max-md:flex [&_td]:max-md:items-center [&_td]:max-md:justify-between [&_td]:max-md:gap-4 [&_td]:max-md:!px-0 [&_td]:max-md:!py-1.5 [&_td]:max-md:text-right",
+  "[&_td:first-child]:max-md:block [&_td:first-child]:max-md:text-left [&_td:first-child]:before:max-md:hidden",
+  "[&_td]:before:max-md:content-[attr(data-label)] [&_td]:before:max-md:text-left [&_td]:before:max-md:text-[11px] [&_td]:before:max-md:font-bold [&_td]:before:max-md:uppercase [&_td]:before:max-md:tracking-[.08em] [&_td]:before:max-md:text-muted-foreground",
+].join(" ");
+
+/** Copies each column header onto its cells so the stacked phone layout can show "Label  value" rows. */
+function labelCells(table: HTMLTableElement) {
+  const headers = Array.from(table.querySelectorAll("thead th")).map((th) => (th.textContent ?? "").trim());
+  table.querySelectorAll("tbody tr").forEach((tr) => {
+    Array.from(tr.children).forEach((cell, i) => {
+      const label = (cell as HTMLTableCellElement).colSpan > 1 ? "" : headers[i] ?? "";
+      if (cell.getAttribute("data-label") !== label) cell.setAttribute("data-label", label);
+    });
+  });
+}
+
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  /** Below `md`, show each row as a small card of "Label  value" lines instead of a sideways-scrolling table. */
+  stackOnMobile?: boolean;
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, stackOnMobile, ...props }, ref) => {
+    const inner = React.useRef<HTMLTableElement | null>(null);
+
+    React.useEffect(() => {
+      const table = inner.current;
+      if (!stackOnMobile || !table) return;
+      labelCells(table);
+      const observer = new MutationObserver(() => labelCells(table));
+      observer.observe(table, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    }, [stackOnMobile]);
+
+    return (
+      <div className="relative w-full overflow-x-auto overscroll-x-contain [scrollbar-gutter:stable] [scrollbar-width:thin]">
+        <table
+          ref={(node) => {
+            inner.current = node;
+            if (typeof ref === "function") ref(node);
+            else if (ref) ref.current = node;
+          }}
+          className={cn("w-full min-w-[720px] border-collapse text-[14px]", stackOnMobile && STACK_CLASSES, className)}
+          {...props}
+        />
+      </div>
+    );
+  }
 );
 Table.displayName = "Table";
 

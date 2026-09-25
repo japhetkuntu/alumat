@@ -1,5 +1,6 @@
 "use client";
 
+import { FormError } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -114,14 +115,16 @@ export default function ServicesPage() {
     setFormOpen(true);
   }
 
+  const [formError, setFormError] = useState<string | null>(null);
   const saveMutation = useMutation({
+    onMutate: () => setFormError(null),
     mutationFn: (body: ServiceTypeBody) => (editingId ? updateServiceType(editingId, body) : createServiceType(body)),
     onSuccess: () => {
       toast.success(editingId ? "Service updated" : "Service created");
       queryClient.invalidateQueries({ queryKey: ["service-types"] });
       setFormOpen(false);
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { const message = handleApiError(e); setFormError(message); toast.error(message); },
   });
 
   const deleteMutation = useMutation({
@@ -269,11 +272,11 @@ export default function ServicesPage() {
           {typesLoading ? (
             <CardSkeleton />
           ) : !typesResult || typesResult.results.length === 0 ? (
-            <EmptyState icon={<FileText size={28} />} title="No services yet" description="Create your first service — a transcript request, an attestation letter, or any official member request you want to charge for." />
+            <EmptyState icon={<FileText size={28} />} title="Let members request official services online" description="Create a service such as a transcript request or an attestation letter. Members fill in a form, pay any fee, and you move the request through its stages." action={<Button onClick={openCreate}><Plus size={15} className="mr-1.5" /> Create a service</Button>} />
           ) : (
             <Card className="border-border/40">
               <CardContent className="p-0">
-                <Table>
+                <Table stackOnMobile>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -317,11 +320,11 @@ export default function ServicesPage() {
           {requestsLoading ? (
             <CardSkeleton />
           ) : !requestsResult || requestsResult.results.length === 0 ? (
-            <EmptyState icon={<FileText size={28} />} title="No requests yet" description="Member requests for your services will show up here." />
+            <EmptyState icon={<FileText size={28} />} title="Requests appear here" description="After members submit a service, their requests show up here and you update their progress from this page." />
           ) : (
             <Card className="border-border/40">
               <CardContent className="p-0">
-                <Table>
+                <Table stackOnMobile>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Request #</TableHead>
@@ -454,7 +457,7 @@ export default function ServicesPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addStage(); } }}
                   placeholder="e.g. Under Review"
                 />
-                <Button type="button" variant="outline" onClick={addStage} disabled={!newStage.trim()}><Plus size={14} className="mr-1.5" /> Add</Button>
+                <Button type="button" variant="outline" onClick={addStage} disabled={!newStage.trim()}><Plus size={14} className="mr-1.5" /> Add stage</Button>
               </div>
               <ol className="space-y-1.5">
                 {form.stages.map((s, i) => (
@@ -470,6 +473,7 @@ export default function ServicesPage() {
             </div>
           </div>
 
+          <FormError message={formError} className="mt-3" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
             <Button onClick={submitForm} isLoading={saveMutation.isPending}>{editingId ? "Save changes" : "Create service"}</Button>

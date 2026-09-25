@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Camera, Eye, EyeOff, Loader2, Briefcase, Armchair, Award,
@@ -67,17 +68,18 @@ function EmploymentOption({
   );
 }
 
-function Toggle({ checked, onChange, label, description, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string; disabled?: boolean }) {
+function Toggle({ checked, onChange, label, description, disabled, tip }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string; disabled?: boolean; tip?: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-4">
-      <div>
-        <p className="text-sm font-semibold text-foreground">{label}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">{label}{tip && <InfoTip text={tip} className="ml-1.5" />}</p>
         {description && <p className="text-[12px] text-muted-foreground mt-0.5">{description}</p>}
       </div>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
@@ -447,6 +449,7 @@ export default function MemberProfilePage() {
                   variant="secondary"
                   className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full"
                   disabled={avatarUploading}
+                  aria-label="Change profile photo"
                   onClick={() => avatarInputRef.current?.click()}
                 >
                   {avatarUploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
@@ -550,6 +553,7 @@ export default function MemberProfilePage() {
                   <button
                     type="button"
                     role="switch"
+                    aria-label="Show me on the Community Map"
                     aria-checked={showOnAlumniMap}
                     disabled={mapToggleMut.isPending}
                     onClick={() => mapToggleMut.mutate(!showOnAlumniMap)}
@@ -853,14 +857,14 @@ export default function MemberProfilePage() {
           </CardHeader>
           <CardContent className="divide-y divide-border/40">
             {digestEnabled && (
-              <div className="flex items-start justify-between gap-4 py-4">
-                <div>
+              <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground">Digest Email</p>
                   <p className="text-[12px] text-muted-foreground mt-0.5">
                     A roundup of new jobs, upcoming events, and what you&apos;ve missed
                   </p>
                 </div>
-                <div className="flex shrink-0 rounded-lg border border-border p-0.5" role="radiogroup" aria-label="Digest email frequency">
+                <div className="flex w-full shrink-0 rounded-lg border border-border p-0.5 sm:w-auto" role="radiogroup" aria-label="Digest email frequency">
                   {(["Weekly", "Monthly", "None"] as const).map((freq) => {
                     const active = (notifPrefs?.digestFrequency ?? "Weekly") === freq;
                     return (
@@ -871,7 +875,7 @@ export default function MemberProfilePage() {
                         aria-checked={active}
                         onClick={() => setDigestFrequency(freq)}
                         className={cn(
-                          "px-3 py-1.5 text-[12.5px] font-semibold rounded-md transition-colors",
+                          "flex-1 px-3 py-1.5 text-[12.5px] font-semibold rounded-md transition-colors sm:flex-none",
                           active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                         )}
                       >
@@ -886,6 +890,7 @@ export default function MemberProfilePage() {
               checked={notifPrefs?.membershipReminders ?? true}
               onChange={(v) => toggleNotif("membershipReminders", v)}
               label="Membership Reminders"
+              tip="A nudge before your membership dues expire."
               description="Reminders about upcoming membership renewals"
             />
             <Toggle
@@ -917,6 +922,7 @@ export default function MemberProfilePage() {
                 checked={notifPrefs?.smsAlerts ?? false}
                 onChange={(v) => toggleNotif("smsAlerts", v)}
                 label="SMS Notifications"
+              tip="Alerts are texted to the phone number on your profile."
                 description={profileForm.phone ? "Also send important alerts to your phone via SMS" : "Add a phone number above to enable SMS alerts"}
               />
             )}
@@ -929,6 +935,7 @@ export default function MemberProfilePage() {
                   action.catch(() => toast.error("Couldn't update push notification settings"));
                 }}
                 label="Push Notifications"
+              tip="Alerts appear on this device even when the site is closed."
                 description={
                   pushNotifications.permission === "denied"
                     ? "Notifications are blocked for this site in your browser settings"

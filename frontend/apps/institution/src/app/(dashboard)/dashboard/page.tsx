@@ -1,83 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Badge } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { Sparkles, Landmark, X } from "@alumni/ui";
-import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getInstitutionProfile } from "@/lib/institution-api";
+import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
-
-const DEFAULT_PRIMARY_COLOR = "#2563eb";
-const SETUP_NUDGE_DISMISSED_KEY = "institution-setup-nudge-dismissed";
-
-/**
- * A quiet, dismissible nudge for the two setup steps that actually matter —
- * a real brand identity and a working payout — shown only to a SuperAdmin
- * (both are SuperAdmin-only settings) and only while at least one is still
- * outstanding. Dismissal is per-browser (localStorage), not permanent: it
- * comes back on a fresh device/browser, which is deliberate — this is a
- * reminder, not a one-time tour, and a still-incomplete institution is worth
- * re-surfacing to whoever's looking.
- */
-function SetupNudgeBanner() {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(SETUP_NUDGE_DISMISSED_KEY) === "true"; } catch { return false; }
-  });
-  const { data: institution } = useQuery({ queryKey: ["institution-profile"], queryFn: getInstitutionProfile });
-
-  if (dismissed || !institution) return null;
-
-  const brandingIncomplete = !institution.logoUrl && (!institution.primaryColorHex || institution.primaryColorHex.toLowerCase() === DEFAULT_PRIMARY_COLOR);
-  const payoutIncomplete = institution.payoutStatus === "None" || institution.payoutStatus === "Rejected";
-  if (!brandingIncomplete && !payoutIncomplete) return null;
-
-  function dismiss() {
-    setDismissed(true);
-    try { localStorage.setItem(SETUP_NUDGE_DISMISSED_KEY, "true"); } catch { /* ignore */ }
-  }
-
-  return (
-    <div className="relative rounded-lg border border-accent/30 bg-accent/5 px-4 py-3.5 mb-4 pr-10">
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dismiss"
-        className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
-      >
-        <X size={14} />
-      </button>
-      <p className="text-[13px] font-semibold mb-2">Finish setting up your institution</p>
-      <div className="flex flex-wrap gap-2.5">
-        {brandingIncomplete && (
-          <Link href="/settings" className="flex items-center gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:border-accent/50 transition-colors">
-            <Sparkles size={14} className="text-accent shrink-0" />
-            <span className="text-[12.5px]">
-              <span className="font-semibold">Add your logo and colors</span>
-              <span className="text-muted-foreground"> — right now members see the platform default.</span>
-            </span>
-          </Link>
-        )}
-        {payoutIncomplete && (
-          <Link href="/settings" className="flex items-center gap-2 rounded-md border border-border/60 bg-background px-3 py-2 hover:border-accent/50 transition-colors">
-            <Landmark size={14} className="text-accent shrink-0" />
-            <span className="text-[12.5px]">
-              <span className="font-semibold">Set up payouts</span>
-              <span className="text-muted-foreground"> — dues and contributions can&apos;t settle to your account yet.</span>
-            </span>
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -145,6 +80,7 @@ function PayoutPanel() {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const { user, isScopedAdmin } = useAuth();
   const results = useQueries({
     queries: [
@@ -161,7 +97,6 @@ export default function AdminDashboardPage() {
   });
 
   const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches, storeOrders, serviceRequests] = results;
-  const hasNoBatches = !batches.isLoading && (batches.data?.length ?? 0) === 0;
   const isLoading = results.some((r) => r.isLoading);
 
   const totalMembers = membersTotal.data?.totalCount ?? 0;
@@ -235,24 +170,10 @@ export default function AdminDashboardPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">{greeting}</h1>
           <p className="mt-1.5 text-muted-foreground text-[13px]">{todayLabel} &middot; Institution operations overview</p>
         </div>
-        <span className="shrink-0 whitespace-nowrap px-2.5 py-2 rounded-[6px] text-[12px] font-bold" style={{ background: "var(--brand-primary-light)", color: "var(--brand-primary-700, var(--color-text-info))" }}>
+        <span className="shrink-0 whitespace-nowrap px-2.5 py-2 rounded-none text-[12px] font-bold" style={{ background: "var(--brand-primary-light)", color: "var(--brand-primary-700, var(--color-text-info))" }}>
           All institution records
         </span>
       </div>
-
-      {!isScopedAdmin && <SetupNudgeBanner />}
-
-      {hasNoBatches && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/50 px-4 py-3 mb-4">
-          <div>
-            <p className="text-[13px] font-semibold">Set up your graduating-class batches</p>
-            <p className="text-[12px] text-muted-foreground">Unlock cohort targeting and better member organization by defining your groups.</p>
-          </div>
-          <Link href="/batches">
-            <Button size="sm">Set up batches</Button>
-          </Link>
-        </div>
-      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
@@ -266,41 +187,49 @@ export default function AdminDashboardPage() {
         // institution admin cares about most, day to day) with the other three
         // metrics demoted to a supporting row, instead of four equal boxes.
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
-          <StatCard
-            tone="primary"
-            variant="hero"
-            label="Total collected"
-            value={formatCurrency(totalAmountCollected)}
-            sub={<span style={{ color: "var(--success)" }}>{totalContributions} contributions</span>}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link href="/contributions" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <StatCard
               tone="primary"
-              label="Total members"
-              value={totalMembers.toLocaleString()}
-              sub={
-                <span style={{ color: "var(--success)" }}>
-                  +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
-                  <Link href="/members" className="underline">{pendingApprovals} pending</Link>
-                </span>
-              }
+              variant="hero"
+              label="Total collected"
+              value={formatCurrency(totalAmountCollected)}
+              sub={<span style={{ color: "var(--success)" }}>{totalContributions} contributions</span>}
             />
-            <StatCard
-              tone="accent"
-              label="Active fundraisers & dues"
-              value={activeCampaigns.length}
-              sub={
-                <span style={{ color: approachingDeadline > 0 ? "var(--warning)" : undefined }}>
-                  {approachingDeadline} approaching deadline
-                </span>
-              }
-            />
-            <StatCard
-              tone="accent"
-              label="Upcoming events"
-              value={upcomingEvents}
-              sub={`+ ${openJobs} open job postings`}
-            />
+          </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Link href="/members" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <StatCard
+                tone="primary"
+                label="Total members"
+                value={totalMembers.toLocaleString()}
+                sub={
+                  <span style={{ color: "var(--success)" }}>
+                    +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
+                    <span className="underline">{pendingApprovals} pending</span>
+                  </span>
+                }
+              />
+            </Link>
+            <Link href="/campaigns" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <StatCard
+                tone="accent"
+                label="Active fundraisers & dues"
+                value={activeCampaigns.length}
+                sub={
+                  <span style={{ color: approachingDeadline > 0 ? "var(--warning)" : undefined }}>
+                    {approachingDeadline} approaching deadline
+                  </span>
+                }
+              />
+            </Link>
+            <Link href="/events" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <StatCard
+                tone="accent"
+                label="Upcoming events"
+                value={upcomingEvents}
+                sub={`+ ${openJobs} open job postings`}
+              />
+            </Link>
           </div>
         </div>
       )}
@@ -357,7 +286,7 @@ export default function AdminDashboardPage() {
           ) : (
             <>
               {(membersPending.data?.results ?? []).slice(0, 3).map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-2.5 py-3 border-t border-border first:border-0">
+                <Link key={m.id} href={`/members/${m.id}`} className="flex items-center justify-between gap-2.5 py-3 border-t border-border first:border-0 transition-colors hover:bg-muted/40">
                   <div className="min-w-0">
                     <b className="text-[13px]">{m.firstName} {m.lastName}</b>
                     <br />
@@ -366,7 +295,7 @@ export default function AdminDashboardPage() {
                     </small>
                   </div>
                   <Badge variant="warning">Pending</Badge>
-                </div>
+                </Link>
               ))}
               {pendingApprovals === 0 && (
                 <p className="text-[13px] text-muted-foreground text-center py-6">No pending approvals</p>
@@ -392,7 +321,7 @@ export default function AdminDashboardPage() {
                   ? Math.round((c.paidCount / c.totalEligibleMembers) * 100)
                   : c.targetAmount > 0 ? Math.round((c.collectedAmount / c.targetAmount) * 100) : 0;
                 return (
-                  <div key={c.id} className="flex items-start justify-between gap-3 py-3 border-t border-border first:border-0">
+                  <Link key={c.id} href={`/campaigns/${c.id}`} className="flex items-start justify-between gap-3 py-3 border-t border-border first:border-0 transition-colors hover:bg-muted/40">
                     <div className="min-w-0 flex-1">
                       <b className="text-[13px] break-words">{c.title}</b>
                       <br />
@@ -402,7 +331,7 @@ export default function AdminDashboardPage() {
                       <Progress value={pct} className="h-[7px] mt-2" />
                     </div>
                     <b className="text-[13px] shrink-0 tabular-nums">{pct}%</b>
-                  </div>
+                  </Link>
                 );
               })}
             </>
@@ -416,7 +345,7 @@ export default function AdminDashboardPage() {
               {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8" />)}
             </div>
           ) : recentContributions.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-6">No contributions yet</p>
+            <EmptyState className="py-8" title="No contributions yet" description="Payments appear here as soon as members contribute to a fundraiser." action={<Link href="/campaigns"><Button size="sm" className="font-semibold">Create a fundraiser</Button></Link>} />
           ) : (
             <table className="w-full text-[13px] mt-2">
               <thead>
@@ -428,8 +357,10 @@ export default function AdminDashboardPage() {
               </thead>
               <tbody>
                 {recentContributions.map((c) => (
-                  <tr key={c.id}>
-                    <td className="px-[18px] py-2.5 border-t border-border font-medium">{c.memberName ?? "Unknown"}</td>
+                  <tr key={c.id} className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => router.push(c.campaignId ? `/campaigns/${c.campaignId}` : "/contributions")}>
+                    <td className="px-[18px] py-2.5 border-t border-border font-medium">
+                      <Link href={c.campaignId ? `/campaigns/${c.campaignId}` : "/contributions"} onClick={(e) => e.stopPropagation()}>{c.memberName ?? "Unknown"}</Link>
+                    </td>
                     <td className="px-2 py-2.5 border-t border-border tabular-nums">{formatCurrency(c.amount)}</td>
                     <td className="px-[18px] py-2.5 border-t border-border">
                       <Badge variant={c.status === "Successful" ? "success" : c.status === "Rejected" ? "destructive" : "warning"}>{c.status}</Badge>

@@ -136,7 +136,7 @@ function ActivateMembershipContent() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch">
 
           {/* Membership dues panel */}
-          <section className="rounded-[22px] bg-primary text-primary-foreground p-7 sm:p-10 flex flex-col">
+          <section className="rounded-none bg-primary text-primary-foreground p-7 sm:p-10 flex flex-col">
             {campaign.bannerImageUrl && (
               <div className="relative -mx-7 sm:-mx-10 -mt-7 sm:-mt-10 mb-6 h-36 sm:h-44 overflow-hidden rounded-t-[22px]">
                 <ZoomableImage
@@ -192,7 +192,7 @@ function ActivateMembershipContent() {
           </section>
 
           {/* Payment card */}
-          <section className="rounded-[22px] border border-border bg-card p-6 sm:p-7 space-y-5">
+          <section className="rounded-none border border-border bg-card p-6 sm:p-7 space-y-5">
             <div>
               <h2 className="font-[family-name:var(--font-display)] text-xl sm:text-[25px] font-semibold text-foreground">
                 Activate your membership

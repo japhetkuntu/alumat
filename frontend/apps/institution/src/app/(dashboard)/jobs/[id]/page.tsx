@@ -144,7 +144,7 @@ export default function AdminJobDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 lg:p-12 max-w-5xl mx-auto space-y-8 animate-pulse">
+      <div className="p-4 sm:p-8 lg:p-12 max-w-5xl mx-auto space-y-8 animate-pulse">
         <div className="h-8 w-32 bg-muted rounded-lg" />
         <div className="h-56 w-full bg-muted rounded-2xl" />
         <div className="space-y-4">
@@ -157,7 +157,7 @@ export default function AdminJobDetailPage() {
   }
 
   if (!job) return (
-    <div className="p-6 lg:p-12 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-12 max-w-6xl mx-auto">
       <Button variant="ghost" size="sm" className="mb-6 font-bold" onClick={() => router.push("/jobs")}>
         <ArrowLeft size={16} className="mr-2" /> Back to Jobs
       </Button>

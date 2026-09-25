@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { LoadError } from "@alumni/ui";
 import { Trophy, Medal, TrendingUp, Users, CreditCard, Calendar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
@@ -44,7 +45,7 @@ function RankBadge({ index }: { index: number }) {
 export default function LeaderboardPage() {
   const { user } = useAuth();
 
-  const { data: entries, isLoading } = useQuery({
+  const { data: entries, isLoading, isError, refetch } = useQuery({
     queryKey: ["m-leaderboard"],
     queryFn:  getLeaderboard,
   });
@@ -64,11 +65,13 @@ export default function LeaderboardPage() {
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
+      ) : isError || !entries ? (
+        <LoadError onRetry={() => refetch()} />
       ) : !entries?.length ? (
         <EmptyState
           icon={<Trophy size={40} />}
-          title="No leaderboard data yet"
-          description="Rankings will appear as members make contributions and attend events."
+          title="See how your class year is doing"
+          description="Class years are ranked by how many members have joined, how much they have given and how many attend events. Rankings appear once members pay dues, contribute and RSVP."
         />
       ) : (
         <div className="space-y-2.5">

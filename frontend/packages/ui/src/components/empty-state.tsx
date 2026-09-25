@@ -28,7 +28,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
         {title}
       </h3>
       {description && (
-        <p className="mt-2 text-[13.5px] max-w-[340px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+        <p className="mt-2 text-[13.5px] max-w-[420px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
           {description}
         </p>
       )}

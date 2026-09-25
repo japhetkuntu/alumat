@@ -28,7 +28,7 @@ public class BusinessDirectoryService(
             var result = await listingRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 l => l.Status == "Approved" && !l.IsHiddenByMember
-                     && (string.IsNullOrEmpty(search) || l.BusinessName.ToLower().Contains(search)));
+                     && TextSearch.Matches(search, l.BusinessName));
 
             var dtoResult = new PgPagedResult<BusinessListingDto>
             {

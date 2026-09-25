@@ -231,7 +231,7 @@ export default function AdminAlbumDetailPage() {
         <EmptyState
           icon={<ImageOff size={40} />}
           title="No photos added yet"
-          description="Add photos to this album, they'll appear here as soon as they upload."
+          description="Upload photos from the day. Members see them in this album in their portal."
           action={<Button size="sm" onClick={() => fileInputRef.current?.click()}><Plus size={14} />Add photos</Button>}
         />
       ) : (

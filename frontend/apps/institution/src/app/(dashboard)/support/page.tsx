@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -47,7 +48,7 @@ export default function SupportPage() {
   });
 
   return (
-    <div className="p-7 max-w-[1200px]">
+    <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto">
       <div className="mb-6">
         <h1 className="text-[24px] font-bold">Support</h1>
         <p className="text-muted-foreground text-[13px] mt-1">Report an issue or ask the platform team a question. They'll respond here.</p>
@@ -63,7 +64,7 @@ export default function SupportPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Severity</Label>
-              <FormSelect value={severity} onValueChange={setSeverity} options={SEVERITY_OPTIONS} />
+              <FormSelect className="w-full" value={severity} onValueChange={setSeverity} options={SEVERITY_OPTIONS} />
             </div>
             <div className="space-y-1.5">
               <Label>Message</Label>
@@ -84,7 +85,7 @@ export default function SupportPage() {
           <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Your tickets</p></div>
           <CardContent className="p-0">
             {isLoading && <p className="px-5 py-6 text-[13px] text-muted-foreground">Loading…</p>}
-            {!isLoading && tickets.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">No support tickets yet.</p>}
+            {!isLoading && tickets.length === 0 && <EmptyState className="py-8" title="Get help from the platform team" description="If something is not working or you need a hand, send a ticket. Replies and status updates appear here." />}
             {tickets.map((t) => (
               <div key={t.id} className="px-5 py-4 border-b border-border last:border-0">
                 <div className="flex justify-between items-start gap-2">

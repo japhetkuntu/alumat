@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Microsoft.Extensions.Options;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -180,7 +181,7 @@ public class MemberManagementService(
                         .Select(m => m.MemberId).Distinct().ToList();
             }
 
-            var search = filter.Search?.ToLower();
+            var search = filter.Search is null ? null : string.Join(" ", filter.Search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLower();
             var jobTitleContains = filter.JobTitleContains?.ToLower();
             var locationContains = filter.LocationContains?.ToLower();
             var result = await memberRepo.GetPagedAsync(
@@ -193,10 +194,7 @@ public class MemberManagementService(
                   && (!filter.GraduationYearTo.HasValue || f.GraduationYear <= filter.GraduationYearTo.Value)
                   && (string.IsNullOrEmpty(jobTitleContains) || (f.JobTitle != null && f.JobTitle.ToLower().Contains(jobTitleContains)))
                   && (string.IsNullOrEmpty(locationContains) || (f.Location != null && f.Location.ToLower().Contains(locationContains)))
-                  && (string.IsNullOrEmpty(search) ||
-                      f.FirstName.ToLower().Contains(search) ||
-                      f.LastName.ToLower().Contains(search) ||
-                      f.Email.ToLower().Contains(search)));
+                  && TextSearch.Matches(search, f.FirstName, f.LastName, (f.FirstName + " " + f.LastName), (f.LastName + " " + f.FirstName), f.MemberNumber, f.Email));
 
             var items = result.Results.Select(m => new MemberListItem(
                 m.Id, m.FirstName, m.LastName, m.Email, m.Phone,

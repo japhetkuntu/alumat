@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { LoadError } from "@alumni/ui";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Receipt, ArrowRight, GraduationCap, ScrollText, Award, Languages, Stamp } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
@@ -40,7 +42,7 @@ function ServiceCardSkeleton() {
 }
 
 export default function ServicesPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["service-types"],
     queryFn: () => getServiceTypes(1, 50),
   });
@@ -68,8 +70,10 @@ export default function ServicesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 3 }).map((_, i) => <ServiceCardSkeleton key={i} />)}
         </div>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : services.length === 0 ? (
-        <EmptyState icon={<FileText size={28} />} title="No services available yet" description="Your institution hasn't set up any services to request yet." />
+        <EmptyState icon={<FileText size={28} />} title="Request official documents online" description="Your institution can offer services such as transcripts or attestation letters. You fill in a form, pay any fee, and follow the request until it is done. No services are set up yet." action={<NotifyMeButton />} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {services.map((s) => {

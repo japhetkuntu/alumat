@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { SegmentedControl, ConfirmModal } from "@alumni/ui";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Calendar, MapPin, Users, ArrowRight, Clock, CheckCircle2, Loader2 } from "@alumni/ui";
@@ -69,10 +71,13 @@ export default function MemberEventsPage() {
     onError: (e) => { setPendingId(null); toast.error(handleApiError(e)); },
   });
 
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
+
   const cancelMut = useMutation({
     mutationFn: (eventId: string) => cancelRsvp(eventId),
     onSuccess: () => {
       setPendingId(null);
+      setCancelTarget(null);
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
       qc.invalidateQueries({ queryKey: ["m-events-list"] });
       qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
@@ -99,22 +104,9 @@ export default function MemberEventsPage() {
 
       <PageHeader eyebrow="Connect in person" title="Events" description="Never miss a Speech Day or AGM. RSVP for annual dinners, speech and prize-giving days, chapter meetings, and reunions." />
 
-      {/* ── Filter pills ── */}
+      {/* ── Filters ── */}
       <div className="flex flex-wrap items-center gap-2">
-        {EVENT_FILTERS.map(f => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={cn(
-              "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-              filter === f.value
-                ? "bg-primary text-primary-foreground border-transparent"
-                : "border-border text-muted-foreground hover:border-primary/40",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
+        <SegmentedControl label="Filter events" options={EVENT_FILTERS} value={filter} onChange={setFilter} className="w-full sm:w-auto" />
         <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
 
@@ -126,8 +118,9 @@ export default function MemberEventsPage() {
       ) : events.length === 0 ? (
         <EmptyState
           icon={<Calendar size={40} />}
-          title="No events yet"
-          description="Check back soon for the next Speech Day, AGM, or reunion."
+          title="Events bring your community together"
+          description="Reunions, annual dinners, chapter meetings and career evenings are posted here. RSVP with one tap and see who else is going. Nothing is scheduled yet."
+          action={<NotifyMeButton />}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -148,7 +141,7 @@ export default function MemberEventsPage() {
                 style={{ borderColor: "var(--border)", background: "var(--background)" }}
               >
                 {/* Banner */}
-                <Link href={`/events/${e.id}`} className="block relative shrink-0 overflow-hidden" style={{ height: 180 }}>
+                <Link href={`/events/${e.id}`} className="block relative shrink-0 overflow-hidden" style={{ height: e.bannerImageUrl ? 180 : 96 }}>
                   {e.bannerImageUrl ? (
                     <img
                       src={e.bannerImageUrl}
@@ -160,7 +153,7 @@ export default function MemberEventsPage() {
                       className="absolute inset-0 flex items-center justify-center"
                       style={{ background: "var(--secondary)" }}
                     >
-                      <Calendar size={40} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
+                      <Calendar size={28} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
                     </div>
                   )}
                   {/* Scrim */}
@@ -236,8 +229,9 @@ export default function MemberEventsPage() {
                         disabled={isPending || (isFull && !hasRsvp)}
                         onClick={ev => {
                           ev.preventDefault();
+                          if (hasRsvp) { setCancelTarget({ id: e.id, title: e.title }); return; }
                           setPendingId(e.id);
-                          if (hasRsvp) cancelMut.mutate(e.id); else rsvpMut.mutate(e.id);
+                          rsvpMut.mutate(e.id);
                         }}
                       >
                         {isPending ? (
@@ -277,6 +271,18 @@ export default function MemberEventsPage() {
       )}
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+
+      <ConfirmModal
+        open={!!cancelTarget}
+        title="Cancel your RSVP?"
+        message={`You will give up your place at "${cancelTarget?.title ?? ""}". You can RSVP again later if there is still room.`}
+        confirmLabel="Yes, cancel RSVP"
+        cancelLabel="Keep my spot"
+        emphasis="cancel"
+        isLoading={cancelMut.isPending}
+        onConfirm={() => { if (cancelTarget) cancelMut.mutate(cancelTarget.id); }}
+        onCancel={() => setCancelTarget(null)}
+      />
     </div>
   );
 }

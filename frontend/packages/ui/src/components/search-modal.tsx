@@ -43,6 +43,7 @@ export function SearchModal({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onFocus={() => setOpen(true)}
+            aria-label={title}
             placeholder={placeholder}
             className="pl-10"
           />
@@ -62,6 +63,7 @@ export function SearchModal({
                 ref={inputRef}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                aria-label={title}
                 placeholder={placeholder}
                 className="pl-10"
               />

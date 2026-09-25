@@ -204,6 +204,31 @@ public class ContributionService : IContributionService
         }
     }
 
+    public async Task<IApiResponse<MyContributionSummaryDto>> GetMyContributionSummaryAsync(string memberId)
+    {
+        try
+        {
+            // Only the three columns the totals need — the full row carries jsonb snapshots.
+            var rows = await contributionRepo
+                .GetQueryable(c => c.MemberId == memberId && c.Status == "Successful")
+                .Select(c => new { c.Amount, c.CampaignId, c.CreatedAt })
+                .ToListAsync();
+
+            var year = DateTime.UtcNow.Year;
+            var summary = new MyContributionSummaryDto(
+                rows.Sum(r => r.Amount),
+                rows.Where(r => r.CreatedAt.Year == year).Sum(r => r.Amount),
+                rows.Select(r => r.CampaignId).Distinct().ToList());
+
+            return summary.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error summarising contributions for member {MemberId}", memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<MyContributionSummaryDto>("Failed to retrieve contribution summary");
+        }
+    }
+
     public ContributionService(
         IAlumniPgRepository<Contribution> contributionRepo,
         IAlumniPgRepository<Campaign> campaignRepo,

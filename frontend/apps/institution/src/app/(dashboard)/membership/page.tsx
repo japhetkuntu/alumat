@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Calendar, CreditCard, ChevronRight, Pencil } from "@alumni/ui";
@@ -49,7 +50,7 @@ export default function AdminMembershipPage() {
   const [bannerImage, setBannerImage] = useState<File | null>(null);
   const f = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((prev) => ({ ...prev, [k]: v }));
 
-  const { data: campaignsData, isLoading } = useQuery({
+  const { data: campaignsData, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-campaigns", "", 1],
     queryFn: () => getCampaigns(1, 100),
   });
@@ -127,7 +128,7 @@ export default function AdminMembershipPage() {
       </header>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card p-4">
           <span className="text-[12px] text-muted-foreground">Eligible members</span>
           <b className="block text-[24px] mt-1 tabular-nums">{currentYearEligible}</b>
@@ -215,22 +216,22 @@ export default function AdminMembershipPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
-                    <Input placeholder="Account number" value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} />
-                    <Input placeholder="Account name" value={form.bankAccountName} onChange={(e) => f("bankAccountName", e.target.value)} />
-                    <Input placeholder="Bank name" value={form.bankName} onChange={(e) => f("bankName", e.target.value)} />
-                    <Input placeholder="Branch" value={form.bankBranch} onChange={(e) => f("bankBranch", e.target.value)} />
+                    <div className="space-y-1.5"><Label>Account number</Label><Input value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label>Account name</Label><Input value={form.bankAccountName} onChange={(e) => f("bankAccountName", e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label>Bank name</Label><Input value={form.bankName} onChange={(e) => f("bankName", e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label>Branch</Label><Input value={form.bankBranch} onChange={(e) => f("bankBranch", e.target.value)} /></div>
                   </div>
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <h4 className="text-sm font-black uppercase tracking-wider">Mobile Money</h4>
-                    <Input placeholder="Mobile money number" value={form.mobileMoneyNumber} onChange={(e) => f("mobileMoneyNumber", e.target.value)} />
-                    <Input placeholder="Account name" value={form.mobileMoneyName} onChange={(e) => f("mobileMoneyName", e.target.value)} />
-                    <Input placeholder="Provider (MTN, Telecel, AT)" value={form.mobileMoneyProvider} onChange={(e) => f("mobileMoneyProvider", e.target.value)} />
+                    <div className="space-y-1.5"><Label>Mobile money number</Label><Input type="tel" value={form.mobileMoneyNumber} onChange={(e) => f("mobileMoneyNumber", e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label>Account name</Label><Input value={form.mobileMoneyName} onChange={(e) => f("mobileMoneyName", e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={form.mobileMoneyProvider} onChange={(e) => f("mobileMoneyProvider", e.target.value)} /></div>
                   </div>
                 </div>
               )}
 
               <div className="flex gap-3 pt-2">
-                <Button type="submit" size="sm" isLoading={createMut.isPending} loadingText="Creating">Create</Button>
+                <Button type="submit" size="sm" isLoading={createMut.isPending} loadingText="Creating">Create dues period</Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
               </div>
             </form>
@@ -245,7 +246,9 @@ export default function AdminMembershipPage() {
           <Badge variant="success">Required for active status</Badge>
         </div>
 
-        {isLoading ? (
+        {isError || (!isLoading && !campaignsData) ? (
+          <LoadError onRetry={() => refetch()} />
+        ) : isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><CardSkeleton /><CardSkeleton /></div>
         ) : currentYearCampaigns.length === 0 ? (
           <Card className="border-dashed border-2 border-border/60">

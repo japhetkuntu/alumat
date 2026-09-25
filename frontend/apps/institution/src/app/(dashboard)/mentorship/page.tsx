@@ -1,6 +1,8 @@
 "use client";
 
+import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle, UserCheck, Lock, Eye, Linkedin, MessageCircle, Phone } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
@@ -84,11 +86,12 @@ export default function AdminMentorshipPage() {
 
   if (!isSuperAdmin && !isScopedAdmin) {
     return (
-      <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
         <EmptyState
           icon={<Lock size={40} />}
           title="Access denied"
           description="Only Super Admins and Scoped Admins can access mentorship management."
+          action={<Link href="/dashboard"><Button size="sm" className="font-semibold">Go to dashboard</Button></Link>}
         />
       </div>
     );
@@ -113,8 +116,8 @@ export default function AdminMentorshipPage() {
       {view === "mentors" && (
         <div className="space-y-6">
           {/* Search + Filter */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start">
-            <div className="flex-1 min-w-0 max-w-sm">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="w-full sm:flex-1 min-w-0 sm:max-w-sm">
             <SearchModal
               title="Search mentors"
               value={mentorSearch}
@@ -145,10 +148,11 @@ export default function AdminMentorshipPage() {
               )}
             </SearchModal>
           </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <ChipRow label="Filter" activeKey={String(mentorStatusFilter)}>
               {["", "Pending", "Approved", "Rejected"].map((s) => (
                 <button
                   key={s}
+                  aria-pressed={mentorStatusFilter === s}
                   onClick={() => { setMentorStatusFilter(s); setMentorPage(1); }}
                   className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all ${
                     mentorStatusFilter === s ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -157,7 +161,7 @@ export default function AdminMentorshipPage() {
                   {s === "" ? "All" : s}
                 </button>
               ))}
-            </div>
+            </ChipRow>
           </div>
 
           {profilesLoading ? (
@@ -166,9 +170,9 @@ export default function AdminMentorshipPage() {
             </div>
           ) : mentors.length === 0 ? (
             (mentorSearch || mentorStatusFilter) ? (
-              <EmptyState icon={<UserCheck size={40} />} title="No mentor profiles found" description="No mentors match your current search or filter." className="py-8" />
+              <EmptyState icon={<UserCheck size={40} />} title="No mentor profiles found" description="No mentors match your current search or filter." className="py-8" action={<Button variant="outline" size="sm" className="font-semibold" onClick={() => { setMentorSearch(""); setMentorStatusFilter(""); setMentorPage(1); }}>Clear filters</Button>} />
             ) : (
-              <EmptyState icon={<UserCheck size={40} />} title="No mentor profiles yet" description="Alumni who apply to become mentors will appear here." className="py-8" />
+              <EmptyState icon={<UserCheck size={40} />} title="Mentors are members who offer guidance" description="Members apply to become mentors and you approve them here. Approved mentors can then receive requests from other members." className="py-8" />
             )
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -256,7 +260,7 @@ export default function AdminMentorshipPage() {
           {requestsLoading ? (
             <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           ) : requests.length === 0 ? (
-            <EmptyState icon={<UserCheck size={40} />} title="No mentorship requests yet" description="Member mentorship requests will appear here." className="py-8" />
+            <EmptyState icon={<UserCheck size={40} />} title="Mentorship requests appear here" description="When a member asks a mentor for guidance, the request shows up here so you can see how mentorship is used." className="py-8" />
           ) : requests.map((r) => (
             <Card key={r.id} className="stagger-item hover:shadow-md transition-shadow">
               <CardContent className="p-4 flex items-center justify-between gap-4">

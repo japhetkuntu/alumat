@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Button } from "@alumni/ui";
+import Link from "next/link";
+import { LoadError } from "@alumni/ui";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { Globe, Users, MapPin, Search } from "@alumni/ui";
@@ -32,7 +35,7 @@ function StatTile({ icon: Icon, value, label, tone }: { icon: typeof Globe; valu
 export default function AlumniMapPage() {
   const [search, setSearch] = useState("");
 
-  const { data: members = [], isLoading } = useQuery({
+  const { data: members = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["alumni-map"],
     queryFn: getAlumniMap,
   });
@@ -93,11 +96,14 @@ export default function AlumniMapPage() {
 
       {isLoading ? (
         <div className="h-[360px] sm:h-[460px] lg:h-[560px] rounded-2xl bg-muted animate-pulse" />
+      ) : isError ? (
+        <LoadError onRetry={() => refetch()} />
       ) : members.length === 0 ? (
         <EmptyState
           icon={<Globe size={26} />}
-          title="No members on the map yet"
-          description="The map fills in as members opt in from their profile settings and share where they're based."
+          title="See where your community lives"
+          description="The map shows members who choose to appear, placed at city level and never at an exact address. Add your location from your profile to be one of the first pins."
+          action={<Link href="/profile"><Button size="sm" className="font-semibold">Add your location</Button></Link>}
         />
       ) : (
         <div className="h-[360px] sm:h-[460px] lg:h-[560px] rounded-2xl overflow-hidden border shadow-sm" style={{ borderColor: "var(--border)" }}>

@@ -22,13 +22,11 @@ public class DirectoryService(
         try
         {
             logger.LogInformation("SearchMembers request — filter: {Filter}", filter.Serialize());
-            var search = filter.Search?.ToLower();
+            var search = filter.Search is null ? null : string.Join(" ", filter.Search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLower();
             var result = await memberRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "FirstName", filter.SortDir ?? "asc",
                 m => m.Status == "Active"
-                  && (string.IsNullOrEmpty(search)
-                      || m.FirstName.ToLower().Contains(search) || m.LastName.ToLower().Contains(search)
-                      || (m.Company != null && m.Company.ToLower().Contains(search)))
+                  && TextSearch.Matches(search, m.FirstName, m.LastName, (m.FirstName + " " + m.LastName), (m.LastName + " " + m.FirstName), m.Company)
                   && (string.IsNullOrEmpty(filter.DepartmentId) || m.DepartmentId == filter.DepartmentId)
                   && (!filter.GraduationYear.HasValue || m.GraduationYear == filter.GraduationYear.Value));
 

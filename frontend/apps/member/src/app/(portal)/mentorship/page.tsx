@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChipRow } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   UserCheck, Plus, CheckCircle, XCircle, Clock,
@@ -47,12 +48,13 @@ function TabBtn({
   return (
     <button
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "px-4 py-2 text-[13px] font-semibold flex items-center gap-1.5 transition-colors border",
-        active ? "text-white border-transparent" : "border-border hover:border-accent/40",
+        active ? "text-white border-transparent" : "border-border hover:border-primary/40",
       )}
       style={active
-        ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+        ? { background: "var(--primary)", color: "var(--primary-foreground)" }
         : { background: "var(--background)", color: "var(--muted-foreground)" }}
     >
       {children}
@@ -247,7 +249,7 @@ export default function MemberMentorshipPage() {
       />
 
       {/* Tab nav */}
-      <div className="flex flex-wrap gap-2">
+      <ChipRow label="Mentorship sections" activeKey={view}>
         <TabBtn active={view === "find"}     onClick={() => setView("find")}>
           <UserCheck size={13} /> Find a mentor
         </TabBtn>
@@ -263,7 +265,7 @@ export default function MemberMentorshipPage() {
         <TabBtn active={view === "become"} onClick={() => setView("become")}>
           <Plus size={13} /> Become a mentor
         </TabBtn>
-      </div>
+      </ChipRow>
 
       {/* ── My mentor profile banner ── */}
       {myProfile && (
@@ -297,8 +299,9 @@ export default function MemberMentorshipPage() {
           ) : mentors.length === 0 ? (
             <EmptyState
               icon={<UserCheck size={40} />}
-              title="No mentors available right now"
-              description="Check back later as more alumni register as mentors."
+              title="Learn from members who have been there"
+              description="Mentors are members who offer guidance in their field. Once a mentor is approved, you can send a request with a short note about what you need. Have experience to share? Become a mentor."
+              action={<Button size="sm" className="font-semibold" onClick={() => setView("become")}>Become a mentor</Button>}
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -414,8 +417,9 @@ export default function MemberMentorshipPage() {
           {requests.length === 0 ? (
             <EmptyState
               icon={<Clock size={40} />}
-              title="No requests sent yet"
-              description="Browse available mentors and send a request."
+              title="Ask a mentor for guidance"
+              description="Requests you send appear here with their status, so you can follow up. Find a mentor to send your first one."
+              action={<Button size="sm" className="font-semibold" onClick={() => setView("find")}>Find a mentor</Button>}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -444,7 +448,7 @@ export default function MemberMentorshipPage() {
                   {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactWhatsAppNumber || r.contactPhoneNumber) && (
                     <div
                       className="p-3 rounded-xl space-y-2"
-                      style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+                      style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
                     >
                       <p className="text-[12px] font-semibold" style={{ color: "var(--foreground)" }}>
                         Contact your mentor
@@ -499,8 +503,8 @@ export default function MemberMentorshipPage() {
           {incoming.length === 0 ? (
             <EmptyState
               icon={<Inbox size={40} />}
-              title="No incoming requests"
-              description="Mentorship requests from other alumni will appear here."
+              title="Requests from mentees appear here"
+              description="When a member asks you for guidance, you can accept or decline it here."
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -671,24 +675,24 @@ export default function MemberMentorshipPage() {
                   <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     Shared only with a mentee once you accept their request. Fill in whichever you&apos;re comfortable sharing.
                   </p>
-                  <Input
-                    placeholder="LinkedIn profile URL"
+                  <div className="space-y-1.5"><Label>LinkedIn profile URL</Label><Input
+                   
                     value={mentorForm.contactLinkedInUrl}
                     onChange={e => setMentorForm(f => ({ ...f, contactLinkedInUrl: e.target.value }))}
                     className="h-11 text-[14px]"
-                  />
-                  <Input
-                    placeholder="WhatsApp number"
+                  /></div>
+                  <div className="space-y-1.5"><Label>WhatsApp number</Label><Input
+                   
                     value={mentorForm.contactWhatsAppNumber}
                     onChange={e => setMentorForm(f => ({ ...f, contactWhatsAppNumber: e.target.value }))}
                     className="h-11 text-[14px]"
-                  />
-                  <Input
-                    placeholder="Phone number"
+                  /></div>
+                  <div className="space-y-1.5"><Label>Phone number</Label><Input type="tel"
+                   
                     value={mentorForm.contactPhoneNumber}
                     onChange={e => setMentorForm(f => ({ ...f, contactPhoneNumber: e.target.value }))}
                     className="h-11 text-[14px]"
-                  />
+                  /></div>
                 </div>
                 <Button
                   className="font-semibold text-[14px] gap-2"

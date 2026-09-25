@@ -12,16 +12,21 @@ const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 6, ...props }, ref) => (
-  <TooltipPrimitive.Content
-    ref={ref}
-    sideOffset={sideOffset}
-    className={cn(
-      "z-[10010] max-w-[220px] overflow-hidden bg-foreground px-2.5 py-1.5 text-[12px] text-background leading-snug",
-      "animate-in fade-in-0 duration-150",
-      className
-    )}
-    {...props}
-  />
+  // Portaled to <body> so a tooltip never ends up as a <div> inside a <p> or
+  // <label> (invalid HTML, hydration warning) and never gets clipped by an
+  // overflow-hidden ancestor.
+  <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-[10010] max-w-[220px] overflow-hidden bg-foreground px-2.5 py-1.5 text-[12px] text-background leading-snug",
+        "animate-in fade-in-0 duration-150",
+        className
+      )}
+      {...props}
+    />
+  </TooltipPrimitive.Portal>
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Pin, Lock } from "@alumni/ui";
-import { Pagination } from "@alumni/ui";
+import { MessageSquare, Pin, Lock, Pencil, Trash2 } from "@alumni/ui";
+import { Pagination, ChipRow, SegmentedControl } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -13,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getForumCategories, createForumCategory, getForumThreads, pinThread, closeThread, deleteThread } from "@/lib/institution-api";
+import { getForumCategories, createForumCategory, updateForumCategory, deleteForumCategory, getForumThreads, pinThread, closeThread, deleteThread } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
@@ -27,6 +28,10 @@ export default function AdminForumPage() {
   const [catName, setCatName] = useState("");
   const [catDesc, setCatDesc] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatDesc, setEditCatDesc] = useState("");
+  const [deleteCatTarget, setDeleteCatTarget] = useState<{ id: string; name: string } | null>(null);
   const [closeTarget, setCloseTarget] = useState<{ id: string; title: string; isClosed: boolean } | null>(null);
   const [threadPage, setThreadPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -60,6 +65,23 @@ export default function AdminForumPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const updateCatMut = useMutation({
+    mutationFn: () => updateForumCategory(editingCatId!, editCatName, editCatDesc || undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-forum-categories"] });
+      qc.invalidateQueries({ queryKey: ["admin-forum-threads"] });
+      setEditingCatId(null);
+      toast.success("Category updated");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const deleteCatMut = useMutation({
+    mutationFn: (id: string) => deleteForumCategory(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-forum-categories"] }); setDeleteCatTarget(null); toast.success("Category deleted"); },
+    onError: (e) => { setDeleteCatTarget(null); toast.error(handleApiError(e)); },
+  });
+
   const pinMut = useMutation({
     mutationFn: (id: string) => pinThread(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-forum-threads"] }); toast.success("Thread pin toggled"); },
@@ -84,11 +106,12 @@ export default function AdminForumPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
         <EmptyState
           icon={<Lock size={40} />}
           title="Access denied"
           description="Only Super Admins can access forum management."
+          action={<Link href="/dashboard"><Button size="sm" className="font-semibold">Go to dashboard</Button></Link>}
         />
       </div>
     );
@@ -96,23 +119,29 @@ export default function AdminForumPage() {
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
-      <header className="flex items-end justify-between gap-4 flex-wrap">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Forum moderation</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">SuperAdmin-only controls. Decisions are recorded on each discussion.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant={view === "threads" ? "default" : "outline"} onClick={() => setView("threads")}>Threads</Button>
-          <Button variant={view === "categories" ? "default" : "outline"} onClick={() => setView("categories")}>Categories</Button>
-        </div>
+        <SegmentedControl
+          label="Forum view"
+          value={view}
+          onChange={setView}
+          options={[{ value: "threads", label: "Threads" }, { value: "categories", label: "Categories" }] as const}
+          className="w-full sm:w-auto"
+        />
       </header>
 
       {view === "categories" && (
         <div className="space-y-4">
+          <p className="text-[13px] text-muted-foreground max-w-2xl">
+            Categories keep discussions organized. Members pick one when they start a thread. We added a starter set, headed by General, so the forum works from day one. Rename, edit or delete any of them, or add your own.
+          </p>
           <Card>
             <CardHeader><CardTitle className="text-base">Add Category</CardTitle></CardHeader>
             <CardContent>
-              <form className="flex gap-3" onSubmit={(e) => { e.preventDefault(); createCatMut.mutate(); }}>
+              <form className="flex flex-col gap-3 sm:flex-row" onSubmit={(e) => { e.preventDefault(); createCatMut.mutate(); }}>
                 <div className="flex-1 space-y-2">
                   <Label>Category Name</Label>
                   <Input placeholder="e.g. Career & Jobs" value={catName} onChange={(e) => setCatName(e.target.value)} required />
@@ -121,8 +150,8 @@ export default function AdminForumPage() {
                   <Label>Description</Label>
                   <Input placeholder="Short description..." value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
                 </div>
-                <div className="pt-8">
-                  <Button type="submit" size="sm" disabled={createCatMut.isPending}>{createCatMut.isPending ? "Adding..." : "Add"}</Button>
+                <div className="sm:pt-8">
+                  <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={createCatMut.isPending}>{createCatMut.isPending ? "Adding..." : "Add"}</Button>
                 </div>
               </form>
             </CardContent>
@@ -133,16 +162,42 @@ export default function AdminForumPage() {
             <div className="space-y-2">
               {categories.map((c) => (
                 <Card key={c.id}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">{c.name}</p>
-                      {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
-                    </div>
-                    <Badge variant="outline">Sort: {c.sortOrder ?? 0}</Badge>
+                  <CardContent className="p-4">
+                    {editingCatId === c.id ? (
+                      <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(e) => { e.preventDefault(); updateCatMut.mutate(); }}>
+                        <div className="flex-1 space-y-2">
+                          <Label>Category name</Label>
+                          <Input value={editCatName} onChange={(e) => setEditCatName(e.target.value)} required />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Label>Description</Label>
+                          <Input value={editCatDesc} onChange={(e) => setEditCatDesc(e.target.value)} placeholder="Short description..." />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button type="submit" size="sm" disabled={updateCatMut.isPending}>{updateCatMut.isPending ? "Saving..." : "Save category"}</Button>
+                          <Button type="button" size="sm" variant="outline" onClick={() => setEditingCatId(null)}>Cancel</Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="font-semibold">{c.name}</p>
+                          {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <Button size="sm" variant="outline" onClick={() => { setEditingCatId(c.id); setEditCatName(c.name); setEditCatDesc(c.description ?? ""); }}>
+                            <Pencil size={13} className="mr-1.5" />Edit
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setDeleteCatTarget({ id: c.id, name: c.name })}>
+                            <Trash2 size={13} className="mr-1.5" />Delete
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
-              {categories.length === 0 && <p className="text-muted-foreground text-center py-4">No categories yet</p>}
+              {categories.length === 0 && <EmptyState className="py-8" title="Categories organise the forum" description="Add topics such as Careers or Events so members know where to post." />}
             </div>
           )}
         </div>
@@ -151,8 +206,8 @@ export default function AdminForumPage() {
       {view === "threads" && (
         <div className="space-y-5">
           {/* Search + Filter */}
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <div className="flex-1 min-w-0 max-w-sm">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="w-full sm:flex-1 min-w-0 sm:max-w-sm">
             <SearchModal
               title="Search threads"
               value={search}
@@ -193,10 +248,11 @@ export default function AdminForumPage() {
                 ...categories.map((c) => ({ value: c.id, label: c.name })),
               ]}
             />
-            <div className="flex items-center gap-2">
+            <ChipRow label="Sort threads" activeKey={threadFilter} className="sm:ml-auto">
               {(["all", "recent", "popular", "pinned"] as const).map((f) => (
                 <button
                   key={f}
+                  aria-pressed={threadFilter === f}
                   onClick={() => { setThreadFilter(f); setThreadPage(1); }}
                   className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all ${
                     threadFilter === f ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -205,16 +261,16 @@ export default function AdminForumPage() {
                   {f === "all" ? "All" : f === "recent" ? "Recent" : f === "popular" ? "Popular" : "Pinned"}
                 </button>
               ))}
-            </div>
+            </ChipRow>
           </div>
 
           {threadsLoading ? (
             <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           ) : threads.length === 0 ? (
             (search || categoryFilter || threadFilter !== "all") ? (
-              <EmptyState icon={<MessageSquare size={40} />} title="No threads found" description="No threads match your current filters. Try adjusting your search, category, or filter." className="py-8" />
+              <EmptyState icon={<MessageSquare size={40} />} title="No threads found" description="No threads match your current filters. Try adjusting your search, category, or filter." className="py-8" action={<Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setCategoryFilter(""); setThreadFilter("all"); setThreadPage(1); }}>Clear filters</Button>} />
             ) : (
-              <EmptyState icon={<MessageSquare size={40} />} title="No discussion threads yet" description="Threads created by alumni will show up here." className="py-8" />
+              <EmptyState icon={<MessageSquare size={40} />} title="Discussions started by members appear here" description="The forum is where members talk to each other. Threads they start show up here so you can moderate them." className="py-8" />
             )
           ) : threads.map((t, i) => (
             <Card
@@ -222,13 +278,13 @@ export default function AdminForumPage() {
               className="group hover:shadow-md hover:border-primary/20 transition-all duration-200 animate-in fade-in slide-in-from-bottom-4 duration-500"
               style={{ animationDelay: `${i * 40}ms` }}
             >
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
-                  <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 mt-0.5">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="hidden sm:flex h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 mt-0.5">
                     <MessageSquare size={16} className="text-primary/60" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {t.categoryName && (
@@ -248,16 +304,16 @@ export default function AdminForumPage() {
                           )}
                         </div>
                         <p className="font-bold text-[14px] leading-snug group-hover:text-primary transition-colors">{t.title}</p>
-                        <div className="flex items-center gap-4 mt-1.5 text-[11px] text-muted-foreground">
-                          <span>{formatDate(t.createdAt)}</span>
-                          <span className="flex items-center gap-1"><MessageSquare size={10} /> {t.replyCount} replies</span>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-[11px] text-muted-foreground">
+                          <span className="whitespace-nowrap">{formatDate(t.createdAt)}</span>
+                          <span className="flex items-center gap-1 whitespace-nowrap"><MessageSquare size={10} /> {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Button
                           size="sm"
                           variant="outline"
-                          className={`h-8 text-[11px] font-bold px-3 ${t.isPinned ? "text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800" : ""}`}
+                          className={`h-9 sm:h-8 text-[11px] font-bold px-3 ${t.isPinned ? "text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800" : ""}`}
                           disabled={pinMut.isPending}
                           onClick={() => pinMut.mutate(t.id)}
                         >
@@ -266,7 +322,7 @@ export default function AdminForumPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={`h-8 text-[11px] font-bold px-3 ${t.isClosed ? "text-success border-success/30 hover:bg-success/10 dark:border-success/40" : ""}`}
+                          className={`h-9 sm:h-8 text-[11px] font-bold px-3 ${t.isClosed ? "text-success border-success/30 hover:bg-success/10 dark:border-success/40" : ""}`}
                           disabled={closeMut.isPending}
                           onClick={() => setCloseTarget({ id: t.id, title: t.title, isClosed: t.isClosed })}
                         >
@@ -275,7 +331,7 @@ export default function AdminForumPage() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          className="h-9 w-9 sm:h-8 sm:w-8 ml-auto sm:ml-0 text-destructive hover:bg-destructive/10"
                           disabled={deleteMut.isPending}
                           onClick={() => setDeleteTarget(t.id)}
                           aria-label="Delete thread"
@@ -314,6 +370,16 @@ export default function AdminForumPage() {
         isLoading={deleteMut.isPending}
         onConfirm={() => deleteTarget && deleteMut.mutate(deleteTarget)}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmModal
+        open={!!deleteCatTarget}
+        title="Delete Category"
+        message={`Delete the "${deleteCatTarget?.name ?? ""}" category? This only works if it has no threads.`}
+        confirmLabel="Delete category"
+        variant="destructive"
+        isLoading={deleteCatMut.isPending}
+        onConfirm={() => deleteCatTarget && deleteCatMut.mutate(deleteCatTarget.id)}
+        onCancel={() => setDeleteCatTarget(null)}
       />
     </div>
   );

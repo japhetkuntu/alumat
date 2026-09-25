@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Star, GraduationCap, Plus, Loader2, ChevronDown,
@@ -198,7 +199,7 @@ function SubmitDrawer({
   const vvHeight = useVisualViewportHeight();
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed mobile-sheet-overlay z-50 flex items-end sm:items-center justify-center" style={vvHeight ? { height: vvHeight } : undefined}>
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
         onClick={onClose} />
@@ -276,7 +277,8 @@ function SubmitDrawer({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -348,10 +350,10 @@ export default function SpotlightsPage() {
             onClick={() => setTab(t)}
             className={cn(
               "px-4 py-2 text-[13px] font-semibold border transition-colors",
-              tab === t ? "text-white border-transparent" : "border-border hover:border-accent/40",
+              tab === t ? "text-white border-transparent" : "border-border hover:border-primary/40",
             )}
             style={tab === t
-              ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+              ? { background: "var(--primary)", color: "var(--primary-foreground)" }
               : { background: "var(--background)", color: "var(--muted-foreground)" }}
           >
             {t === "featured" ? "Featured stories" : "My submissions"}
@@ -369,8 +371,8 @@ export default function SpotlightsPage() {
           ) : spotlights.length === 0 ? (
             <EmptyState
               icon={<Star size={40} />}
-              title="No honourees yet"
-              description="Be the first to share your story."
+              title="Spotlights celebrate members"
+              description="Featured stories highlight what members have achieved, from careers to community work. Share yours and let the community celebrate with you."
               action={
                 <Button onClick={() => setShowSubmit(true)} className="gap-2 font-semibold">
                   <Plus size={14} /> Share my story
@@ -400,8 +402,8 @@ export default function SpotlightsPage() {
           ) : !mySpotlights?.length ? (
             <EmptyState
               icon={<Star size={40} />}
-              title="No submissions yet"
-              description="Share your achievements and let the community celebrate with you."
+              title="Your submissions appear here"
+              description="Send in your story for review. Once approved it can be featured for the whole community to see, and you can follow its status here."
               action={
                 <Button onClick={() => setShowSubmit(true)} className="gap-2 font-semibold">
                   <Plus size={14} /> Submit my story

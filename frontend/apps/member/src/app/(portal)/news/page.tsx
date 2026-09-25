@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { ChipRow } from "@alumni/ui";
+import { LoadError } from "@alumni/ui";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Newspaper, Calendar, Pin } from "@alumni/ui";
@@ -29,7 +32,7 @@ export default function MemberNewsPage() {
   const [page,     setPage]     = useState(1);
   const pageSize = 20;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey:        ["m-news", category, communityId, page],
     queryFn:         () => getNewsPosts(page, pageSize, category || undefined, undefined, communityId || undefined),
     placeholderData: (prev) => prev,
@@ -44,12 +47,13 @@ export default function MemberNewsPage() {
       <PageHeader title="News & announcements" description="The people, progress, and opportunities shaping our community." />
 
       {/* ── Category filter ── */}
-      <div className="flex flex-wrap gap-2">
+      <ChipRow label="Filter by category" activeKey={category}>
         {CATEGORIES.map(c => {
           const active = category === (c === "All" ? "" : c);
           return (
             <button
               key={c}
+              aria-pressed={active}
               onClick={() => { setCategory(c === "All" ? "" : c); setPage(1); }}
               className={cn(
                 "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
@@ -63,18 +67,21 @@ export default function MemberNewsPage() {
           );
         })}
         <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
-      </div>
+      </ChipRow>
 
       {/* ── Grid ── */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : posts.length === 0 ? (
         <EmptyState
           icon={<Newspaper size={40} />}
-          title="No posts yet"
-          description="News and announcements will appear here when published."
+          title="News from your institution"
+          description="Announcements, achievements and important notices are published here. Nothing has been posted yet."
+          action={<NotifyMeButton />}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

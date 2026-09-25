@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "@alumni/ui";
@@ -212,7 +214,7 @@ export default function AdminsPage() {
   const pageSize = 20;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-admins", search, page],
     queryFn: () => getInstitutionStaff(page, pageSize, search || undefined),
     placeholderData: (prev) => prev,
@@ -246,7 +248,7 @@ export default function AdminsPage() {
 
   if (!user || user.role !== "SuperAdmin") {
     return (
-      <div className="p-8 lg:p-12">
+      <div className="p-4 sm:p-8 lg:p-12">
         <h1 className="text-2xl font-bold">Unauthorized</h1>
         <p className="text-muted-foreground mt-2">Only SuperAdmin users can access admin user management.</p>
       </div>
@@ -268,7 +270,7 @@ export default function AdminsPage() {
         </Button>
       </header>
 
-      <div className="p-3 rounded-[6px] text-[13px]" style={{ background: "var(--brand-primary-light)", color: "var(--brand-primary-700, var(--color-text-info))" }}>
+      <div className="p-3 rounded-none text-[13px]" style={{ background: "var(--brand-primary-light)", color: "var(--brand-primary-700, var(--color-text-info))" }}>
         <b>SuperAdmin-only area.</b> Administrators can view staff access but cannot create, edit, or disable accounts.
       </div>
 
@@ -326,7 +328,7 @@ export default function AdminsPage() {
           <span className="text-[12.5px] text-muted-foreground">{activeCount} active &middot; {disabledCount} disabled</span>
         </div>
         <CardContent className="p-0">
-          <Table className="min-w-[720px]">
+          <Table stackOnMobile className="min-w-[720px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Staff account</TableHead>
@@ -338,10 +340,12 @@ export default function AdminsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableSkeleton rows={6} cols={6} />
+              {isError ? (
+                <TableRow><TableCell colSpan={6}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+              ) : isLoading ? (
+                <TableSkeleton rows={4} cols={6} />
               ) : admins.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No admins found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><EmptyState className="py-8" title="Admins help you run the community" description="Nothing matches. Invite a colleague and choose what they can manage, so the work is shared." /></TableCell></TableRow>
               ) : admins.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell>

@@ -685,13 +685,6 @@ export interface PlatformMemberItem {
   lastLoginAt?: string | null;
   /** Logged in within the last 7 days. */
   isActive: boolean;
-  connectionType?: string | null;
-  skills?: string[] | null;
-  interests?: string[] | null;
-  showEmailOnDirectory: boolean;
-  showPhoneOnDirectory: boolean;
-  showCompanyOnDirectory: boolean;
-  showBioOnDirectory: boolean;
   createdAt: string;
 }
 
@@ -700,20 +693,6 @@ export async function getPlatformMembers(params: {
 }) {
   const res = await platformClient.get<ApiResponse<PagedResult<PlatformMemberItem>>>("/members", { params });
   return res.data.data!;
-}
-
-export interface UpdatePlatformMemberProfileRequest {
-  connectionType?: string;
-  skills?: string[];
-  interests?: string[];
-  showEmailOnDirectory?: boolean;
-  showPhoneOnDirectory?: boolean;
-  showCompanyOnDirectory?: boolean;
-  showBioOnDirectory?: boolean;
-}
-
-export async function updatePlatformMemberProfile(id: string, body: UpdatePlatformMemberProfileRequest) {
-  await platformClient.patch(`/members/${id}/profile`, body);
 }
 
 // ── In-app Notifications (platform staff) ───────────────────────────────────

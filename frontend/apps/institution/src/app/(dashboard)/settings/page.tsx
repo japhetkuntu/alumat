@@ -1,6 +1,8 @@
 "use client";
 
+import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Lock, Bell, Shield, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Globe, Building2, Megaphone, Plus, Trash2, Copy, Landmark,
@@ -74,11 +76,11 @@ function fromNotifPrefs(prefs: NotifPrefs) {
   };
 }
 
-function Toggle({ checked, onChange, label, description, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string; disabled?: boolean }) {
+function Toggle({ checked, onChange, label, description, disabled, tip }: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string; disabled?: boolean; tip?: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-4">
       <div>
-        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="text-sm font-semibold text-foreground">{label}{tip && <InfoTip text={tip} className="ml-1.5" />}</p>
         {description && <p className="text-[12px] text-muted-foreground mt-0.5">{description}</p>}
       </div>
       <button
@@ -127,14 +129,16 @@ function PayoutSetupCard({ institution }: { institution: InstitutionProfileRespo
   });
   const qc = useQueryClient();
 
+  const [formError, setFormError] = useState<string | null>(null);
   const submitMut = useMutation({
+    onMutate: () => setFormError(null),
     mutationFn: () => submitInstitutionPayoutSetup(value),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["institution-profile"] });
       toast.success("Submitted for platform review");
       setOpen(false);
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { const message = handleApiError(e); setFormError(message); toast.error(message); },
   });
 
   const payoutStatus = institution?.payoutStatus ?? "None";
@@ -185,6 +189,7 @@ function PayoutSetupCard({ institution }: { institution: InstitutionProfileRespo
                 resolveAccount={resolveBatchPayoutAccount}
               />
             </div>
+            <FormError message={formError} className="mt-3" />
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button
@@ -530,10 +535,11 @@ export default function BrandingSettingsPage() {
         </div>
       </header>
 
-      <div className="flex gap-6 border-b border-border mb-6 overflow-x-auto">
+      <ChipRow label="Settings sections" activeKey={tab} className="gap-6 border-b border-border mb-6 pb-0 sm:gap-6">
         {TABS.filter((t) => !(isScopedAdmin && t === "Landing content")).map((t) => (
           <button
             key={t}
+            aria-pressed={tab === t}
             onClick={() => setTab(t)}
             className={cn(
               "pb-3 text-[13.5px] font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
@@ -543,7 +549,7 @@ export default function BrandingSettingsPage() {
             {t}
           </button>
         ))}
-      </div>
+      </ChipRow>
 
       {tab === "Institution profile" && (institutionLoading || (!isScopedAdmin && !brandingForm)) ? (
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 items-start">
@@ -577,7 +583,7 @@ export default function BrandingSettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Contact email</Label>
-                  <Input value={institution?.contactEmail ?? ""} disabled />
+                  <Input type="email" value={institution?.contactEmail ?? ""} disabled />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Tagline</Label>
@@ -761,6 +767,7 @@ export default function BrandingSettingsPage() {
                   checked={institution?.memberActivePolicy === "DuesRequired"}
                   onChange={(checked) => policyMutation.mutate(checked ? "DuesRequired" : "ApprovedOnly")}
                   label="Require dues payment for active status"
+                  tip="Members stay Pending until their dues are paid."
                   description={
                     institution?.memberActivePolicy === "ApprovedOnly"
                       ? "Off: any approved member is active regardless of dues paid."
@@ -777,6 +784,7 @@ export default function BrandingSettingsPage() {
                   checked={!!institution?.autoApproveMembers}
                   onChange={(checked) => autoApproveMutation.mutate(checked)}
                   label="Auto-approve new members"
+                  tip="New sign-ups skip the approval queue and become active."
                   description="Off (default): a self-registered member lands in Pending status until an admin approves them. On: they're active immediately, no approval step."
                 />
               </CardContent>
@@ -817,7 +825,7 @@ export default function BrandingSettingsPage() {
                 {(institution?.organizationType ?? "Alumni") === "Alumni" && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label>Cohort label</Label>
+                      <Label className="inline-flex items-center gap-1.5">Cohort label<InfoTip text="What you call a graduating group, such as Class or Set." /></Label>
                       <Input
                         value={cohortLabel ?? ""}
                         onChange={(e) => setCohortLabel(e.target.value)}
@@ -826,7 +834,7 @@ export default function BrandingSettingsPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Cohort label (plural)</Label>
+                      <Label className="inline-flex items-center gap-1.5">Cohort label (plural)<InfoTip text="The plural form, used in headings such as Classes." /></Label>
                       <Input
                         value={cohortLabelPlural ?? ""}
                         onChange={(e) => setCohortLabelPlural(e.target.value)}
@@ -869,7 +877,7 @@ export default function BrandingSettingsPage() {
 
                 <div className="mt-4 space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <Label>Programs</Label>
+                    <Label className="inline-flex items-center gap-1.5">Programs<InfoTip text="The options members choose from when they register." /></Label>
                     {programsDirty && (
                       <Badge variant="outline" className="text-[10.5px] font-medium text-amber-600 border-amber-300 bg-amber-50">
                         Unsaved changes
@@ -890,7 +898,7 @@ export default function BrandingSettingsPage() {
                   </div>
 
                   {(programs ?? []).length === 0 ? (
-                    <p className="text-[12.5px] text-muted-foreground py-2">No programs added yet.</p>
+                    <p className="text-[12.5px] text-muted-foreground py-2">Programs are the courses your members studied. Add them so members can pick theirs when they register.</p>
                   ) : (
                     <ul className="space-y-1.5">
                       {(programs ?? []).map((program, i) => (
@@ -990,18 +998,21 @@ export default function BrandingSettingsPage() {
                   checked={!institution?.disabledFeatures?.includes("Digest")}
                   onChange={(checked) => patchFeatures({ digestEnabled: checked })}
                   label="Re-engagement digest"
+                  tip="A periodic email that brings inactive members back."
                   description="A scheduled roundup — new jobs, an upcoming event, a spotlight, a campaign deadline — emailed straight to members' inboxes."
                 />
                 <Toggle
                   checked={!institution?.disabledFeatures?.includes("RecurringGiving")}
                   onChange={(checked) => patchFeatures({ recurringGivingEnabled: checked })}
                   label="Recurring giving"
+                  tip="Members can choose to be charged automatically each month."
                   description="Adds a 'give monthly' option on the payment screen in the Member Portal, charged automatically each month."
                 />
                 <Toggle
                   checked={!!institution?.promptMembershipActivationAtSignup}
                   onChange={(checked) => patchFeatures({ promptMembershipActivationAtSignup: checked })}
                   label="Prompt membership activation at signup"
+                  tip="Ask new members to pay dues on the signup success screen."
                   description="Show new members a payment ask (or a 'nothing due yet' notice) right on the registration success screen, before they're even approved. Off by default."
                 />
                 <Toggle
@@ -1034,6 +1045,7 @@ export default function BrandingSettingsPage() {
                   checked={institution?.smsNotificationsEnabled ?? true}
                   onChange={(checked) => patchFeatures({ smsNotificationsEnabled: checked })}
                   label="SMS notifications"
+                  tip="Texts are billed per message. Members still opt in themselves."
                   description="Per-member text alerts and admin broadcasts sent by SMS. Billed per message. Members can still opt into SMS individually, this is the institution-wide switch on top."
                 />
               </CardContent>
@@ -1331,6 +1343,7 @@ export default function BrandingSettingsPage() {
                     <Input
                       id="currentPw"
                       type={showPw ? "text" : "password"}
+                      autoComplete="current-password"
                       placeholder="••••••••"
                       value={pwForm.currentPassword}
                       onChange={(e) => setPwForm((f) => ({ ...f, currentPassword: e.target.value }))}

@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Crown, Users } from "@alumni/ui";
@@ -86,7 +88,7 @@ function CommunityForm({
 
 function MembersPanel({ community, onClose }: { community: CommunityListItem; onClose: () => void }) {
   const qc = useQueryClient();
-  const { data: members = [], isLoading } = useQuery({
+  const { data: members = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["community-members", community.id],
     queryFn: () => getCommunityMembers(community.id),
   });
@@ -124,7 +126,7 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
         </p>
       </div>
       <CardContent className="p-0">
-        <Table className="min-w-[600px]">
+        <Table stackOnMobile className="min-w-[600px]">
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
@@ -134,10 +136,12 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isError ? (
+              <TableRow><TableCell colSpan={4}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+            ) : isLoading ? (
               <TableSkeleton rows={4} cols={4} />
             ) : members.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No requests or members yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}><EmptyState className="py-8" title="No one has joined yet" description="When members ask to join this community, their requests show up here for you to approve." /></TableCell></TableRow>
             ) : members.map((m: CommunityMemberItem) => (
               <TableRow key={m.membershipId}>
                 <TableCell>
@@ -199,7 +203,7 @@ export default function CommunitiesPage() {
   const [deactivateTarget, setDeactivateTarget] = useState<CommunityListItem | null>(null);
   const qc = useQueryClient();
 
-  const { data: communities = [], isLoading } = useQuery({
+  const { data: communities = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["communities"],
     queryFn: getCommunities,
   });
@@ -253,7 +257,7 @@ export default function CommunitiesPage() {
           <span className="text-[12.5px] text-muted-foreground">{communities.length} total</span>
         </div>
         <CardContent className="p-0">
-          <Table className="min-w-[760px]">
+          <Table stackOnMobile className="min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -266,10 +270,12 @@ export default function CommunitiesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isError ? (
+                <TableRow><TableCell colSpan={7}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+              ) : isLoading ? (
                 <TableSkeleton rows={4} cols={7} />
               ) : communities.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground flex items-center justify-center gap-2"><Users size={16} /> No communities yet</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Communities group members who share something" description="Create a community for a year group, a programme or a chapter. Members can ask to join, and you approve them here." /></TableCell></TableRow>
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>

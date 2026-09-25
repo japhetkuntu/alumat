@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { InfoTip } from "@alumni/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -158,7 +159,7 @@ function NewInstitutionPageContent() {
   }
 
   return (
-    <div className="p-7 max-w-[1100px]">
+    <div className="p-4 sm:p-7 max-w-[1100px]">
       <p className="text-[12px] text-primary font-semibold mb-2">&larr; Institutions</p>
       <div className="flex items-end justify-between mb-5">
         <div>
@@ -194,7 +195,7 @@ function NewInstitutionPageContent() {
                     <Input value={form.name} onChange={(e) => { update("name", e.target.value); update("slug", slugify(e.target.value)); }} placeholder="Greenfield University" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Subdomain slug</Label>
+                    <Label className="inline-flex items-center gap-1.5">Subdomain slug<InfoTip text="Members reach the portal at slug.yourdomain. Hard to change later." /></Label>
                     <Input value={form.slug} onChange={(e) => update("slug", normalizeSlug(e.target.value))} placeholder="greenfield" />
                     {form.slug && baseDomains && (
                       <div className="text-[12px] text-muted-foreground space-y-0.5">
@@ -213,11 +214,11 @@ function NewInstitutionPageContent() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Primary contact email</Label>
-                    <Input value={form.contactEmail} onChange={(e) => update("contactEmail", e.target.value)} placeholder="naomi.boateng@greenfield.edu.gh" />
+                    <Input type="email" value={form.contactEmail} onChange={(e) => update("contactEmail", e.target.value)} placeholder="naomi.boateng@greenfield.edu.gh" />
                   </div>
                 </div>
                 <div className="space-y-1.5 pt-2">
-                  <Label>Organization type</Label>
+                  <Label className="inline-flex items-center gap-1.5">Organization type<InfoTip text="Alumni uses graduation-year batches. Community groups members without years." /></Label>
                   <p className="text-[12px] text-muted-foreground -mt-0.5">
                     Choose Alumni for graduation-year cohorts, or Community for groups, chapters, and other member structures.
                     This can be changed later.
@@ -238,9 +239,9 @@ function NewInstitutionPageContent() {
                       Enter a graduation-year range to auto-create one batch per year, named after the year by default, renameable later. Leave blank to add batches manually afterward.
                     </p>
                     <div className="flex items-center gap-2">
-                      <Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="Start year, e.g. 1990" className="w-[160px]" />
+                      <div className="space-y-1.5"><Label>Start year</Label><Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="e.g. 1990" className="w-[160px]" /></div>
                       <span className="text-[13px] text-muted-foreground">to</span>
-                      <Input type="number" value={form.batchEndYear} onChange={(e) => update("batchEndYear", e.target.value)} placeholder="End year, e.g. 2026" className="w-[160px]" />
+                      <div className="space-y-1.5"><Label>End year</Label><Input type="number" value={form.batchEndYear} onChange={(e) => update("batchEndYear", e.target.value)} placeholder="e.g. 2026" className="w-[160px]" /></div>
                     </div>
                   </div>
                 )}
@@ -274,7 +275,7 @@ function NewInstitutionPageContent() {
                     </div>
                     <div className="space-y-1.5">
                       <Label>Support contact</Label>
-                      <Input value={form.supportEmail} onChange={(e) => update("supportEmail", e.target.value)} placeholder="support@greenfield.edu.gh" />
+                      <Input type="email" value={form.supportEmail} onChange={(e) => update("supportEmail", e.target.value)} placeholder="support@greenfield.edu.gh" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -308,7 +309,7 @@ function NewInstitutionPageContent() {
                 </p>
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label>Platform fee</Label>
+                    <Label className="inline-flex items-center gap-1.5">Platform fee<InfoTip text="The percentage of each payment kept by the platform." /></Label>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
@@ -323,7 +324,7 @@ function NewInstitutionPageContent() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Flat fee above a threshold (optional)</Label>
+                    <Label className="inline-flex items-center gap-1.5">Flat fee above a threshold (optional)<InfoTip text="A fixed fee that replaces the percentage on larger payments." /></Label>
                     <p className="text-[12px] text-muted-foreground">
                       Above the threshold, this flat fee replaces the percentage entirely. Set both, or leave both blank for pure percentage pricing.
                     </p>
@@ -380,7 +381,7 @@ function NewInstitutionPageContent() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Email</Label>
-                    <Input value={form.adminEmail} onChange={(e) => update("adminEmail", e.target.value)} placeholder={form.contactEmail || "amelia.owusu@greenfield.edu.gh"} />
+                    <Input type="email" value={form.adminEmail} onChange={(e) => update("adminEmail", e.target.value)} placeholder={form.contactEmail || "amelia.owusu@greenfield.edu.gh"} />
                   </div>
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
                     No password to set here. As soon as this institution is created, we&apos;ll email this person a welcome message with a link to set their own password, plus the institution portal and member portal links.

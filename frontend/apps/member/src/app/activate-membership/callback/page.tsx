@@ -73,7 +73,7 @@ function ActivationCallbackContent() {
       </header>
 
       <main className="max-w-[620px] mx-auto px-4 sm:px-5 py-10 sm:py-16">
-        <div className="rounded-[22px] border border-border bg-card p-7 sm:p-10 text-center flex flex-col items-center gap-6">
+        <div className="rounded-none border border-border bg-card p-7 sm:p-10 text-center flex flex-col items-center gap-6">
           {/* Status icon */}
           {uiStatus === "loading" && (
             <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">

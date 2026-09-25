@@ -68,15 +68,27 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         return Task.CompletedTask;
     }
 
+    /// <summary>One character outside the basic SMS alphabet (an em dash, a curly quote) makes the phone
+    /// network switch the whole message to a 70-character-per-part encoding, so a 150-character alert is
+    /// billed and delivered as three messages. Swap the usual offenders for plain equivalents.</summary>
+    private static string ToSmsSafe(string message) => message
+        .Replace("\u2014", "-").Replace("\u2013", "-")
+        .Replace("\u2018", "'").Replace("\u2019", "'")
+        .Replace("\u201C", "\"").Replace("\u201D", "\"")
+        .Replace("\u2026", "...").Replace("\u20B5", "GHS ");
+
     /// <summary>Fires SMS/WhatsApp for a recipient who opted in and has a phone on file —
     /// mirrors both retired dispatchers' SendExternalAlertsAsync. Both gateways swallow
     /// their own exceptions and report failure via their returned bool instead of
     /// throwing, so it's logged here rather than trusted as silent success.</summary>
-    private static async Task SendExternalAlertsAsync(string? phone, bool smsAllowed, bool whatsAppAllowed, bool institutionSmsEnabled, string? institutionName, string message)
+    private static async Task SendExternalAlertsAsync(string? phone, bool smsAllowed, bool whatsAppAllowed, bool institutionSmsEnabled, string? institutionName, string message, string? link = null)
     {
         if (string.IsNullOrWhiteSpace(phone)) return;
 
-        var prefixedMessage = string.IsNullOrWhiteSpace(institutionName) ? message : $"{institutionName}: {message}";
+        // A text with no way to open the thing it talks about sends people hunting. The link goes on the end so the
+        // message reads first. WhatsApp is left as is.
+        var smsText = !string.IsNullOrWhiteSpace(link) && Workflow.Patched("sms-action-link") ? $"{message} {link}" : message;
+        var prefixedMessage = ToSmsSafe(string.IsNullOrWhiteSpace(institutionName) ? smsText : $"{institutionName}: {smsText}");
 
         if (smsAllowed && institutionSmsEnabled)
         {
@@ -394,7 +406,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
             if (institution?.SmsNotificationsEnabled != false)
             {
-                var smsMessage = string.IsNullOrWhiteSpace(institution?.Name) ? request.Message! : $"{institution.Name}: {request.Message}";
+                var smsMessage = ToSmsSafe(string.IsNullOrWhiteSpace(institution?.Name) ? request.Message! : $"{institution.Name}: {request.Message}");
                 // Broadcasts override each member's individual SMS opt-in by design — an
                 // emergency/announcement notice reaches everyone with a phone on file,
                 // unlike transactional notifications which respect NotificationPreference.SmsAlerts.
@@ -437,7 +449,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         var classNoteActionUrl = MemberUrl(institution, "/class-notes");
         foreach (var r in recipients)
         {
-            await SendExternalAlertsAsync(r.Phone, r.SmsAlerts, r.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body);
+            await SendExternalAlertsAsync(r.Phone, r.SmsAlerts, r.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body, classNoteActionUrl);
             await SendPushIfEligibleAsync(r.MemberId, "Member", "New Class Note", body, classNoteActionUrl);
         }
     }
@@ -649,6 +661,10 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         await Workflow.ExecuteActivityAsync(
             (NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification),
             NotificationActivityOptions.DatabaseWrite);
+        // A member who cancels their own RSVP just did it themselves. They get the in-app record, but no
+        // SMS, WhatsApp, push or email telling them what they already know. The patch marker keeps
+        // workflows already running when this shipped replaying the old way.
+        if (Workflow.Patched("rsvp-cancel-no-external-alerts") && request.Kind == NotificationKind.EventRsvpCancelled) return;
         await SendMemberExternalAlertsIfEligibleAsync(request.MemberId, institution, notification.Body, notification.Title, notification.ActionUrl);
     }
 
@@ -715,7 +731,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         var member = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(memberId), NotificationActivityOptions.DatabaseRead);
         if (member is null) return;
 
-        await SendExternalAlertsAsync(member.Phone, member.SmsAlerts, member.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, message);
+        await SendExternalAlertsAsync(member.Phone, member.SmsAlerts, member.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, message, actionUrl);
         await SendPushIfEligibleAsync(memberId, "Member", title, message, actionUrl);
     }
 

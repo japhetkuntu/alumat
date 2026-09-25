@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ShoppingBag, ShoppingCart, Plus, Minus, X, Package, Receipt } from "@alumni/ui";
@@ -162,7 +163,7 @@ export default function StorePage() {
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        <EmptyState icon={<ShoppingBag size={40} />} title="No products yet" description="Check back soon. The store is empty for now." />
+        <EmptyState icon={<ShoppingBag size={40} />} title="The community store" description="Your institution sells merchandise and other items here, and the money supports the community. No products have been added yet." action={<NotifyMeButton />} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {products.map((p) => {

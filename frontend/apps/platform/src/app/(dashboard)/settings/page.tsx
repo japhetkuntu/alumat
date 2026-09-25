@@ -78,7 +78,7 @@ export default function PlatformSettingsPage() {
   }
 
   return (
-    <div className="p-7 max-w-[1100px]">
+    <div className="p-4 sm:p-7 max-w-[1100px]">
       <h1 className="text-[24px] font-bold">Settings</h1>
       <p className="text-muted-foreground text-[13px] mt-1 mb-6">Global platform configuration.</p>
 
@@ -92,7 +92,7 @@ export default function PlatformSettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Email</Label>
-              <Input value={user?.email ?? ""} disabled />
+              <Input type="email" value={user?.email ?? ""} disabled />
             </div>
             <div className="space-y-1.5">
               <Label>Role</Label>

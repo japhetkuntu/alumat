@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Download, Link2, FileText, Pencil, Eye } from "@alumni/ui";
@@ -107,7 +108,7 @@ function ResourceForm({ init, onSave, onCancel, saving, formTitle, isSuperAdmin 
           <div className="space-y-2"><Label>Banner Image (optional)</Label>
             <ImageUpload file={form.bannerImage} existingUrl={form.existingBannerUrl} onChange={(file) => setForm(prev => ({ ...prev, bannerImage: file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingBannerUrl: "" }))} label="Upload banner image" /></div>
           <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save</Button>
+            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save resource</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -132,7 +133,7 @@ export default function AdminResourcesPage() {
   const pageSize = 20;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-resources", page, search, categoryFilter, typeFilter, addedAfter, addedBefore],
     queryFn: () => getResources(
       page,
@@ -264,10 +265,12 @@ export default function AdminResourcesPage() {
         />
       )}
 
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}</div>
       ) : resources.length === 0 ? (
-        <EmptyState icon={<FileText size={40} />} title="No resources yet" description="Share files, guides, and useful links with alumni." action={<Button size="sm" onClick={() => setShowCreate(true)}><Plus size={14} />Add resource</Button>} />
+        <EmptyState icon={<FileText size={40} />} title="A library members can use" description="Add files, guides and useful links. Members can search and download them from their portal." action={<Button size="sm" onClick={() => setShowCreate(true)}><Plus size={14} />Add resource</Button>} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {resources.map((r) => (

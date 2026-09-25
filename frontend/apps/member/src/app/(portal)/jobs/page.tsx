@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { ChipRow } from "@alumni/ui";
+import { LoadError } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Clock, Briefcase, ArrowRight, X, Search } from "@alumni/ui";
@@ -28,7 +32,7 @@ export default function MemberJobsPage() {
   const [page,           setPage]            = useState(1);
   const pageSize = 18;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey:        ["m-jobs", typeFilter, search, locationFilter, communityId, page],
     queryFn:         () => getJobs(page, pageSize, typeFilter || undefined, search || undefined, locationFilter || undefined, undefined, undefined, communityId || undefined),
     placeholderData: (prev) => prev,
@@ -72,10 +76,11 @@ export default function MemberJobsPage() {
         </div>
 
         {/* Type pills + clear */}
-        <div className="flex flex-wrap items-center gap-2">
+        <ChipRow label="Filter by job type" activeKey={typeFilter}>
           {JOB_TYPES.map(t => (
             <button
               key={t}
+              aria-pressed={typeFilter === t}
               onClick={() => { setTypeFilter(t); setPage(1); }}
               className={cn(
                 "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
@@ -100,7 +105,7 @@ export default function MemberJobsPage() {
               <X size={12} /> Clear filters
             </button>
           )}
-        </div>
+        </ChipRow>
       </div>
 
       {/* ── Grid ── */}
@@ -108,11 +113,14 @@ export default function MemberJobsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : jobs.length === 0 ? (
         <EmptyState
           icon={<Briefcase size={40} />}
-          title="No jobs found"
-          description={hasFilters ? "Try adjusting your filters." : "Check back later for new opportunities."}
+          title={hasFilters ? "No jobs found" : "A job board from your own network"}
+          description={hasFilters ? "Try adjusting your filters." : "Members and your institution post roles and referrals here, so leads come from people you trust. Nothing is open right now."}
+          action={hasFilters ? <Button variant="outline" size="sm" className="font-semibold" onClick={clearFilters}>Clear filters</Button> : <NotifyMeButton />}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -133,7 +141,7 @@ export default function MemberJobsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200"
-                      style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+                      style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
                     >
                       <Briefcase size={17} style={{ color: "var(--primary)" }} />
                     </div>

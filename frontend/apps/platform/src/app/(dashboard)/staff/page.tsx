@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 export default function PlatformStaffPage() {
   const { isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["platform-staff"],
     queryFn: () => getPlatformStaff({ pageSize: 100 }),
   });
@@ -68,7 +69,7 @@ export default function PlatformStaffPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-8 lg:p-12">
+      <div className="p-4 sm:p-8 lg:p-12">
         <h1 className="text-2xl font-bold">Unauthorized</h1>
         <p className="text-muted-foreground mt-2">Only SuperAdmin users can access platform staff management.</p>
       </div>
@@ -76,7 +77,7 @@ export default function PlatformStaffPage() {
   }
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-bold">Platform staff</h1>
@@ -92,7 +93,7 @@ export default function PlatformStaffPage() {
             {activeCount} active &middot; {disabledCount} disabled
           </p>
         </div>
-        <Table>
+        <Table stackOnMobile>
           <TableHeader>
             <TableRow>
               <TableHead>Staff member</TableHead>
@@ -105,7 +106,8 @@ export default function PlatformStaffPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!isLoading && staff.length === 0 && <TableEmpty title="No platform staff yet" colSpan={7} />}
+            {isError && <tr><td colSpan={7}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
+            {!isLoading && !isError && staff.length === 0 && <TableEmpty title="No platform staff yet" colSpan={7} />}
             {staff.map((s) => (
               <TableRow key={s.id}>
                 <TableCell>

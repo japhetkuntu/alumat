@@ -72,10 +72,7 @@ public class MemberJobService(
                   && (string.IsNullOrEmpty(location) || j.Location.ToLower().Contains(location))
                   && (!filter.PostedAfter.HasValue || j.CreatedAt >= filter.PostedAfter.Value)
                   && (!filter.PostedBefore.HasValue || j.CreatedAt <= filter.PostedBefore.Value)
-                  && (string.IsNullOrEmpty(search)
-                      || j.Title.ToLower().Contains(search)
-                      || j.Company.ToLower().Contains(search)
-                      || j.Location.ToLower().Contains(search)));
+                  && TextSearch.Matches(search, j.Title, j.Company, j.Location));
             var dtoResult = new PgPagedResult<JobDto>
             {
                 PageIndex = result.PageIndex,

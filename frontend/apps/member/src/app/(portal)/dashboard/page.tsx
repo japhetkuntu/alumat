@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { LoadError } from "@alumni/ui";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CreditCard, Calendar, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
-  Briefcase, Star, UsersRound, UserCircle, MapPin, X,
+  Briefcase, Star, UsersRound,
 } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -20,6 +21,7 @@ import { cn } from "@alumni/ui";
 import {
   getMyCampaigns,
   getMyContributions,
+  getMyContributionSummary,
   getEvents,
   getMyRsvps,
   getMyMembershipStatus,
@@ -200,9 +202,9 @@ function MembershipCardSkeleton() {
     <div className="relative overflow-hidden rounded-2xl p-4 sm:p-8 border border-border bg-card">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
         <div className="space-y-2 sm:space-y-2.5">
-          <div className="skeleton h-3 w-32 rounded-[6px]" />
-          <div className="skeleton h-6 w-40 rounded-[6px]" />
-          <div className="skeleton h-3.5 w-28 rounded-[6px]" />
+          <div className="skeleton h-3 w-32 rounded-none" />
+          <div className="skeleton h-6 w-40 rounded-none" />
+          <div className="skeleton h-3.5 w-28 rounded-none" />
         </div>
         <div className="skeleton h-7 w-24 shrink-0" />
       </div>
@@ -213,7 +215,6 @@ function MembershipCardSkeleton() {
 /* ─────────────────────────────────────────────────────────────────────────
    ARREARS BANNER
    ───────────────────────────────────────────────────────────────────────── */
-const PROFILE_NUDGE_DISMISSED_KEY = "member-profile-nudge-dismissed";
 
 /**
  * A quiet nudge toward the two things that make a profile actually useful to
@@ -222,55 +223,6 @@ const PROFILE_NUDGE_DISMISSED_KEY = "member-profile-nudge-dismissed";
  * naturally stops appearing on its own once both are filled in, so it never
  * has to be dismissed at all if the member just does it.
  */
-function ProfileCompletionBanner({ profile }: { profile: MemberProfileResponse | undefined }) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(PROFILE_NUDGE_DISMISSED_KEY) === "true"; } catch { return false; }
-  });
-
-  if (dismissed || !profile) return null;
-
-  const missingBasics = !profile.bio && !profile.profilePictureUrl;
-  const missingLocation = !profile.location && !profile.showOnAlumniMap;
-  if (!missingBasics && !missingLocation) return null;
-
-  function dismiss() {
-    setDismissed(true);
-    try { localStorage.setItem(PROFILE_NUDGE_DISMISSED_KEY, "true"); } catch { /* ignore */ }
-  }
-
-  return (
-    <div className="relative rounded-2xl p-5 sm:p-6 bg-accent/5 border border-accent/25 animate-in fade-in slide-in-from-bottom-3 duration-500">
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dismiss"
-        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-      >
-        <X size={14} />
-      </button>
-      <p className="font-bold text-[15px] text-foreground pr-6">Help classmates recognize you</p>
-      <p className="text-[13.5px] mt-1 mb-4 leading-relaxed text-muted-foreground max-w-lg">
-        A couple of quick additions make your profile — and the alumni network — a lot more useful.
-      </p>
-      <div className="flex flex-wrap gap-2.5">
-        {missingBasics && (
-          <Link href="/profile" className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:border-accent/50 transition-colors">
-            <UserCircle size={15} className="text-accent shrink-0" />
-            <span className="text-[12.5px] font-semibold">Add a photo &amp; bio</span>
-          </Link>
-        )}
-        {missingLocation && (
-          <Link href="/profile" className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:border-accent/50 transition-colors">
-            <MapPin size={15} className="text-accent shrink-0" />
-            <span className="text-[12.5px] font-semibold">Add your location</span>
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function ArrearsBanner({
   membershipStatus,
 }: {
@@ -326,14 +278,18 @@ function DashStat({
   value,
   sub,
   tone,
+  href,
 }: {
   label: string;
   value: string | number;
   sub: string;
   tone?: "primary" | "accent";
+  href: string;
 }) {
   return (
-    <StatCard label={label} value={value} sub={sub} tone={tone} />
+    <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <StatCard label={label} value={value} sub={sub} tone={tone} />
+    </Link>
   );
 }
 
@@ -415,17 +371,24 @@ function PulseCard({
   );
 }
 
-function PulseEmpty({ label }: { label: string }) {
+function PulseEmpty({ label, action }: { label: string; action?: { label: string; href: string } }) {
   return (
-    <p className="text-[13px] py-6 text-center" style={{ color: "var(--muted-foreground)" }}>
-      {label}
-    </p>
+    <div className="py-6 text-center">
+      <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+        {label}
+      </p>
+      {action && (
+        <Link href={action.href} className="mt-2 inline-block text-[12.5px] font-semibold text-primary hover:underline">
+          {action.label}
+        </Link>
+      )}
+    </div>
   );
 }
 
 
 function JobsPulse() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["m-dash-jobs"],
     queryFn: () => getJobs(1, 3),
   });
@@ -435,8 +398,10 @@ function JobsPulse() {
     <PulseCard icon={Briefcase} title="New jobs" href="/jobs">
       {isLoading ? (
         <div className="space-y-3 py-1">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-10 rounded-lg animate-pulse bg-secondary" />)}</div>
+      ) : isError ? (
+        <PulseEmpty label="Couldn't load jobs. Try again later." />
       ) : jobs.length === 0 ? (
-        <PulseEmpty label="No open roles right now, check back soon." />
+        <PulseEmpty label="Job openings shared by members and your institution appear here." />
       ) : (
         jobs.map((j) => (
           <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-secondary group">
@@ -459,7 +424,7 @@ function JobsPulse() {
 }
 
 function SpotlightPulse() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["m-dash-spotlight"],
     queryFn: () => getSpotlights(1, 1),
   });
@@ -469,8 +434,10 @@ function SpotlightPulse() {
     <PulseCard icon={Star} title="Spotlight" href="/spotlights" tone="accent">
       {isLoading ? (
         <div className="h-24 rounded-lg animate-pulse bg-secondary" />
+      ) : isError ? (
+        <PulseEmpty label="Couldn't load spotlights. Try again later." />
       ) : !spotlight ? (
-        <PulseEmpty label="No spotlights yet." />
+        <PulseEmpty label="No spotlights yet." action={{ label: "Share your story", href: "/spotlights" }} />
       ) : (
         <Link href="/spotlights" className="block p-2.5 rounded-xl transition-colors hover:bg-secondary group">
           <div className="flex items-center gap-3">
@@ -500,13 +467,14 @@ export default function MemberDashboardPage() {
   const results = useQueries({
     queries: [
       { queryKey: ["m-campaigns"],             queryFn: () => getMyCampaigns(1, 50)                    },
-      { queryKey: ["m-contributions-recent"],  queryFn: () => getMyContributions({ pageSize: 500 })    },
+      { queryKey: ["m-contributions-recent"],  queryFn: () => getMyContributions({ pageSize: 5 })      },
+      { queryKey: ["m-contribution-summary"],  queryFn: getMyContributionSummary                        },
       { queryKey: ["m-events", "upcoming"],    queryFn: () => getEvents(1, 50, "Upcoming")             },
       { queryKey: ["m-rsvps"],                 queryFn: () => getMyRsvps()                             },
     ],
   });
 
-  const [campaigns, contributions, events, rsvps] = results;
+  const [campaigns, contributions, contributionSummary, events, rsvps] = results;
   const isLoading = results.some((r) => r.isLoading);
 
   const membershipStatus = useQuery({
@@ -562,8 +530,7 @@ export default function MemberDashboardPage() {
   const currentYear = new Date().getFullYear();
   const activeCampaigns = (campaigns.data?.results ?? []).filter((c) => c.status === "Active");
   const contributionsList = contributions.data?.results ?? [];
-  const confirmedContributions = contributionsList.filter((c) => c.status === "Successful");
-  const paidMembershipCampaignIds = new Set(confirmedContributions.map((c) => c.campaignId));
+  const paidMembershipCampaignIds = new Set(contributionSummary.data?.paidCampaignIds ?? []);
 
   const unpaidCurrentMembershipCampaigns = unpaidMembershipCampaignsQuery.data ?? [];
   const membershipCampaign = unpaidCurrentMembershipCampaigns[0] ?? null;
@@ -573,10 +540,8 @@ export default function MemberDashboardPage() {
     (c) => c.membershipYear && c.membershipYear > currentYear && !paidMembershipCampaignIds.has(c.id),
   );
 
-  const totalPaid = confirmedContributions.reduce((sum, c) => sum + c.amount, 0);
-  const totalPaidThisYear = confirmedContributions
-    .filter((c) => new Date(c.createdAt).getFullYear() === currentYear)
-    .reduce((sum, c) => sum + c.amount, 0);
+  const totalPaid = contributionSummary.data?.totalPaid ?? 0;
+  const totalPaidThisYear = contributionSummary.data?.totalPaidThisYear ?? 0;
 
   const upcomingEvents = events.data?.results ?? [];
   const upcomingEventsCount = events.data?.totalCount ?? 0;
@@ -595,6 +560,15 @@ export default function MemberDashboardPage() {
           description="Here's what's happening in your member community."
         />
       </div>
+
+      {results.some((r) => r.isError) && (
+        <LoadError
+          className="py-6"
+          title="Some of your dashboard couldn't load"
+          description="The figures below may be incomplete. Try again."
+          onRetry={() => results.forEach((r) => { if (r.isError) void r.refetch(); })}
+        />
+      )}
 
       {/* ── Membership card ── */}
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-75">
@@ -617,33 +591,36 @@ export default function MemberDashboardPage() {
       )}
 
       {/* ── Profile completion nudge ── */}
-      <ProfileCompletionBanner profile={profile} />
 
       {/* ── Stat tiles ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100">
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
           : (
             <>
               <DashStat
-                label="Active fundraisers &amp; dues"
+                href="/contributions"
+                label="Open fundraisers"
                 value={activeCampaigns.length}
-                sub="Open for contributions"
+                sub="Including dues"
                 tone="primary"
               />
               <DashStat
+                href="/contributions"
                 label="Total contributed"
                 value={formatCurrency(totalPaid)}
                 sub="All-time confirmed"
                 tone="accent"
               />
               <DashStat
+                href="/contributions"
                 label="This year"
                 value={formatCurrency(totalPaidThisYear)}
                 sub={`Contributed in ${currentYear}`}
                 tone="primary"
               />
               <DashStat
+                href="/events"
                 label="Upcoming events"
                 value={upcomingEventsCount}
                 sub="Events you can join"
@@ -861,8 +838,9 @@ export default function MemberDashboardPage() {
           </CardHeader>
           <CardContent className="pt-4 space-y-1">
             {upcomingEvents.slice(0, 3).map((e) => (
-              <div
+              <Link
                 key={e.id}
+                href={`/events/${e.id}`}
                 className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-secondary group"
               >
                 <div
@@ -872,17 +850,17 @@ export default function MemberDashboardPage() {
                   <Calendar size={17} style={{ color: "var(--muted-foreground)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold leading-snug truncate" style={{ color: "var(--foreground)" }}>
+                  <p className="text-[14px] font-semibold leading-snug line-clamp-3" style={{ color: "var(--foreground)" }}>
                     {e.title}
                   </p>
-                  <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
+                  <p className="text-[12.5px] mt-0.5 line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
                     {formatDate(e.startDate)}{e.venue ? ` · ${e.venue}` : ""}
                   </p>
                 </div>
                 {myRsvpIds.has(e.id)
                   ? <Badge variant="success" className="text-[11px] font-bold shrink-0">Going</Badge>
                   : <Badge variant="outline" className="text-[11px] font-bold shrink-0">Open</Badge>}
-              </div>
+              </Link>
             ))}
             {upcomingEvents.length === 0 && !isLoading && (
               <div className="py-10 text-center space-y-2">
@@ -917,13 +895,14 @@ export default function MemberDashboardPage() {
           </CardHeader>
           <CardContent className="pt-4 space-y-1">
             {contributionsList.slice(0, 5).map((c) => (
-              <div
+              <Link
                 key={c.id}
+                href={c.campaignId ? `/contributions/${c.campaignId}` : "/contributions"}
                 className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-secondary group"
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
-                  style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+                  style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
                 >
                   <CreditCard size={17} style={{ color: "var(--primary)" }} />
                 </div>
@@ -946,7 +925,7 @@ export default function MemberDashboardPage() {
                     {c.status}
                   </Badge>
                 </div>
-              </div>
+              </Link>
             ))}
             {contributionsList.length === 0 && !isLoading && (
               <div className="py-10 text-center space-y-2">

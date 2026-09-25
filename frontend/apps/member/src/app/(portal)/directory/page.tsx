@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
+import { LoadError } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Linkedin, X, Building2, MapPin, User } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
@@ -27,7 +30,8 @@ const years = Array.from(
 );
 
 export default function MemberDirectoryPage() {
-  const [search,     setSearch]     = useState("");
+  const searchParams = useSearchParams();
+  const [search,     setSearch]     = useState(() => searchParams.get("search") ?? "");
   const [yearFilter, setYearFilter] = useState("");
   const [page,       setPage]       = useState(1);
   const [selected,   setSelected]   = useState<Member | null>(null);
@@ -36,7 +40,7 @@ export default function MemberDirectoryPage() {
   const { data: navTheme } = useNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey:        ["member-directory", search, yearFilter, page],
     queryFn:         () => searchDirectory({
       search:         search || undefined,
@@ -113,11 +117,14 @@ export default function MemberDirectoryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : members.length === 0 ? (
         <EmptyState
           icon={<Search size={40} />}
-          title="No members found"
-          description={hasFilters ? "Try adjusting your search or year filter." : "The directory is empty."}
+          title={hasFilters ? "No members found" : "Find and reconnect with your people"}
+          description={hasFilters ? "Try adjusting your search or year filter." : "The directory lists members you can search by name, class year, company or location. It fills in as members join and complete their profiles."}
+          action={hasFilters ? <Button variant="outline" size="sm" className="font-semibold" onClick={clearFilters}>Clear filters</Button> : undefined}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -199,7 +206,7 @@ export default function MemberDirectoryPage() {
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* ── Profile drawer ── */}
-      {selected && (
+      {selected && typeof document !== "undefined" && createPortal(
         <div
           className="fixed mobile-sheet-overlay z-[60] flex items-end sm:items-center justify-center sm:justify-end"
           style={vvHeight ? { height: vvHeight } : undefined}
@@ -334,7 +341,7 @@ export default function MemberDirectoryPage() {
             </div>
           </div>
         </div>
-      )}
+        , document.body)}
     </div>
   );
 }

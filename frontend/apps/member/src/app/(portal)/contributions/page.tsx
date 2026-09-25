@@ -93,12 +93,12 @@ function PaymentStatusModal({
       const res = await getPaystackPaymentStatus(reference);
       const n = res.status?.toLowerCase() ?? "unknown";
       if (n === "confirmed" || n === "success" || n === "successful") {
-        setStatus("success"); setMessage(res.message ?? "Payment confirmed."); onConfirmed(); return;
+        setStatus("success"); setMessage(res.message ?? "Thank you. Your payment is recorded and shows in your payment history below."); onConfirmed(); return;
       }
       if (n === "pending" || n === "unknown") {
-        setStatus("pending"); setMessage(res.message ?? "Still waiting for confirmation. Check again shortly."); return;
+        setStatus("pending"); setMessage(res.message ?? "Still waiting for confirmation. Please do not pay again. If money left your account, it will show here shortly."); return;
       }
-      setStatus("error"); setMessage(res.message ?? `Payment status: ${res.status}`);
+      setStatus("error"); setMessage(res.message ?? "We could not confirm this payment. If you were not charged, you can try again. If you were, it will show in your payment history once confirmed.");
     } catch (err) {
       setStatus("error"); setMessage(handleApiError(err));
     }
@@ -187,7 +187,7 @@ function PaymentStatusModal({
             variant={resolved ? "default" : "ghost"}
             className="flex-1 font-semibold"
           >
-            {status === "success" ? "Done" : status === "error" ? "Close" : "I'll check later"}
+            {status === "success" ? "Done" : status === "error" ? "Try again" : "I'll check later"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -322,7 +322,7 @@ function CampaignCard({
 
         {/* Amount + deadline row */}
         <div className="rounded-xl overflow-hidden" style={{ background: "var(--secondary)" }}>
-          <div className="flex items-center justify-between py-3 px-4">
+          <div className="flex items-start justify-between gap-3 py-3 px-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
                 {isMembership ? "Your amount" : "Suggested"}
@@ -335,27 +335,27 @@ function CampaignCard({
                   </span>
                 )}
               </p>
-              {!isMembership && !membershipPaid && (
-                <button
-                  type="button"
-                  onClick={() => setAdjusting((v) => !v)}
-                  className="flex items-center gap-1 mt-1 text-[11.5px] font-semibold"
-                  style={{ color: "var(--primary)" }}
-                >
-                  <TrendingUp size={11} />
-                  {isBumped ? "Change amount" : "Give more than the suggested amount"}
-                </button>
-              )}
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
                 Due
               </p>
-              <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
+              <p className="text-[14px] font-semibold whitespace-nowrap" style={{ color: "var(--foreground)" }}>
                 {formatDate(c.deadline)}
               </p>
             </div>
           </div>
+          {!isMembership && !membershipPaid && (
+            <button
+              type="button"
+              onClick={() => setAdjusting((v) => !v)}
+              className="flex items-center gap-1 px-4 pb-3 text-[12px] font-semibold"
+              style={{ color: "var(--primary)" }}
+            >
+              <TrendingUp size={11} />
+              {isBumped ? "Change amount" : "Give more than the suggested amount"}
+            </button>
+          )}
 
           {/* Quick amount picker — one extra tap to give more, never in the way of the default one-tap pay flow below. */}
           {adjusting && !isMembership && !membershipPaid && (
@@ -476,7 +476,7 @@ function CampaignCard({
 
           {!membershipPaid && (
             <Button
-              className="flex-1 min-w-[8rem] font-bold text-[13.5px] gap-2"
+              className={`min-w-[8rem] whitespace-nowrap px-3 font-bold text-[13.5px] gap-2 ${makeMonthly ? "basis-full sm:basis-0 sm:flex-1" : "flex-1"}`}
               style={{ height: 42 }}
               onClick={() => onPay(payAmount, makeMonthly)}
               disabled={isPaying}
@@ -883,7 +883,7 @@ export default function MemberContributionsPage() {
             >
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+                style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
               >
                 <CreditCard size={16} style={{ color: "var(--primary)" }} />
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoadError } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Building2, MapPin, Search, Store, Settings2 } from "@alumni/ui";
@@ -19,7 +20,7 @@ export default function BusinessDirectoryPage() {
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["m-business-listings", search, page],
     queryFn: () => getBusinessListings(page, pageSize, search || undefined),
     placeholderData: (prev) => prev,
@@ -67,11 +68,13 @@ export default function BusinessDirectoryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : listings.length === 0 ? (
         search ? (
-          <EmptyState icon={<Building2 size={48} />} title="No businesses found" description="Try a different search term." />
+          <EmptyState icon={<Building2 size={48} />} title="No businesses found" description="Try a different search term." action={<Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setSearchInput(""); }}>Clear search</Button>} />
         ) : (
-          <EmptyState icon={<Building2 size={48} />} title="No businesses listed yet" description="Be the first alumnus to list your business here." />
+          <EmptyState icon={<Building2 size={48} />} title="Support businesses run by members" description="Members list what they sell or offer, so others can buy from them, hire them or send customers their way. Add yours and let the community find you." action={<Link href="/business-directory/mine"><Button size="sm" className="font-semibold gap-1.5"><Store size={14} />List your business</Button></Link>} />
         )
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">

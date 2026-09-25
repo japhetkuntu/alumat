@@ -28,6 +28,16 @@ public class ContributionsController(IContributionService contributionService) :
         return result.ToActionResult();
     }
 
+    [HttpGet("summary")]
+    [SwaggerOperation(Summary = "My contribution totals", Description = "Lifetime and current-year totals of the member's confirmed payments, without listing them")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MyContributionSummaryDto>))]
+    public async Task<IActionResult> GetMyContributionSummary()
+    {
+        var member = User.GetAccount();
+        var result = await contributionService.GetMyContributionSummaryAsync(member.Id);
+        return result.ToActionResult();
+    }
+
     [HttpGet("membership/status")]
     [SwaggerOperation(Summary = "Membership status", Description = "Get current member's active membership status and expiry")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MembershipStatusResponse>))]

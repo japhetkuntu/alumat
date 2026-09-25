@@ -41,6 +41,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           if (typeof ref === "function") ref(el);
           else if (ref) ref.current = el;
         }}
+        aria-invalid={error || undefined}
         rows={props.rows ?? 3}
         onChange={(e) => {
           onChange?.(e);

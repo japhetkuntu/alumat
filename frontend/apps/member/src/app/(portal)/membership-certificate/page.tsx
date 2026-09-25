@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useMemo, Fragment } from "react";
+import { LoadError } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Download, Award, CheckCircle2 } from "@alumni/ui";
 import Image from "next/image";
@@ -33,7 +34,7 @@ export default function MembershipCertificatePage() {
   const [downloading, setDownloading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
-  const { data: profile, isLoading: loadingProfile } = useQuery({
+  const { data: profile, isLoading: loadingProfile, isError: profileError, refetch: refetchProfile } = useQuery({
     queryKey: ["m-profile"],
     queryFn:  getMyProfile,
   });
@@ -57,12 +58,12 @@ export default function MembershipCertificatePage() {
     retry:    false,
   });
 
-  const { data: campaignsData, isLoading: loadingCampaigns } = useQuery({
+  const { data: campaignsData, isLoading: loadingCampaigns, isError: campaignsError, refetch: refetchCampaigns } = useQuery({
     queryKey: ["m-campaigns"],
     queryFn:  () => getMyCampaigns(1, 100),
   });
 
-  const { data: contributionsData, isLoading: loadingContribs } = useQuery({
+  const { data: contributionsData, isLoading: loadingContribs, isError: contribsError, refetch: refetchContribs } = useQuery({
     queryKey: ["m-contributions-all"],
     queryFn:  () => getMyContributions({ pageSize: 500 }),
   });
@@ -136,6 +137,21 @@ export default function MembershipCertificatePage() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
         <CardSkeleton />
         <CardSkeleton />
+      </div>
+    );
+  }
+
+  /* ── Couldn't load — never present a failed request as "no certificates" ── */
+  if (profileError || campaignsError || contribsError) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+        <LoadError
+          onRetry={() => {
+            if (profileError) void refetchProfile();
+            if (campaignsError) void refetchCampaigns();
+            if (contribsError) void refetchContribs();
+          }}
+        />
       </div>
     );
   }
@@ -217,7 +233,7 @@ export default function MembershipCertificatePage() {
                 p.campaign.membershipYear === activeYear ? "text-white border-transparent" : "border-border hover:border-accent/40",
               )}
               style={p.campaign.membershipYear === activeYear
-                ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+                ? { background: "var(--primary)", color: "var(--primary-foreground)" }
                 : { background: "var(--background)", color: "var(--muted-foreground)" }}
             >
               {p.campaign.membershipYear}

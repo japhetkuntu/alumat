@@ -9,7 +9,9 @@ import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { PortalShellSkeleton } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
+import { GlobalSearch } from "@/components/member/global-search";
 import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
+import { MemberSetupChecklist } from "@/components/member/setup-checklist";
 import { memberClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
@@ -207,7 +209,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                     href={item.href}
                     onClick={onClose}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 group relative",
+                      "flex items-center gap-2.5 px-3 py-2 rounded-none text-[13px] font-medium transition-all duration-200 group relative",
                       active
                         ? "bg-accent/10 text-accent font-semibold"
                         : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
@@ -299,9 +301,23 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
+  const disabledForSearch = useDisabledFeatures();
+  const searchPages = useMemo(
+    () => navGroups.flatMap((g) => g.items).filter((i) => {
+      const key = NAV_FEATURE_KEYS[i.href];
+      return !key || !disabledForSearch.has(key);
+    }).map((i) => ({ href: i.href, label: i.label })),
+    [disabledForSearch],
+  );
   const { data: navTheme } = useNavTheme();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
+
+  // Client pages can't export metadata, so the browser tab and history show the page name here.
+  useEffect(() => {
+    if (!pageTitle) return;
+    document.title = `${pageTitle} · ${brandName}`;
+  }, [pageTitle, brandName]);
 
   useEffect(() => {
     if (!isLoading && !isMember && pathname !== "/login") {
@@ -338,7 +354,10 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           style={GPU_LAYER_STYLE}
         >
           <p className="font-[family-name:var(--font-display)] text-[14.5px] font-semibold tracking-tight truncate">{pageTitle}</p>
-          <NotificationPanel />
+          <div className="flex items-center gap-1">
+            <GlobalSearch pages={searchPages} hotkey />
+            <NotificationPanel />
+          </div>
         </div>
 
         {/* Mobile header — `fixed`, not `sticky`: this div's actual ancestor is
@@ -379,6 +398,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
             <span className="font-bold text-[14.5px] leading-tight tracking-tight truncate max-w-[140px]">{brandName}</span>
           </div>
           <div className="flex items-center gap-1">
+            <GlobalSearch pages={searchPages} />
             <NotificationPanel />
           </div>
         </div>
@@ -395,6 +415,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />
       </div>
+      <MemberSetupChecklist />
     </div>
   );
 }

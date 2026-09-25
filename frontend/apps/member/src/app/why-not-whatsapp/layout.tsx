@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { getRequestOrigin, SITE_NAME } from "@/lib/seo";
 
-const TITLE = "Why Not WhatsApp for Your Alumni Group? | " + SITE_NAME;
+const TITLE = "Why Not Run Your Community on WhatsApp? | " + SITE_NAME;
 const DESCRIPTION =
-  "WhatsApp groups cap at 1,024 members, have no real search, no directory, and are a documented fraud target. See the sourced comparison and what a real alumni portal gives you instead.";
+  "WhatsApp groups cap at 1,024 members, have no real search, no directory, and are a documented fraud target. See the sourced comparison and what a real community portal gives you instead.";
 
 // Client component (page.tsx) can't export its own metadata, so this
 // sibling server-component layout carries it instead — same pattern as the

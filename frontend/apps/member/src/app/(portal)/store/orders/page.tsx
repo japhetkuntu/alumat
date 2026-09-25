@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
+import { LoadError } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingBag, CheckCircle2, Circle, Package } from "@alumni/ui";
 import { Card, CardContent, StatCard } from "@alumni/ui";
@@ -53,7 +56,7 @@ function OrderSkeleton() {
 }
 
 export default function MyStoreOrdersPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["my-store-orders"],
     queryFn: () => getMyStoreOrders(1, 50),
   });
@@ -79,11 +82,14 @@ export default function MyStoreOrdersPage() {
             {Array.from({ length: 4 }).map((_, i) => <OrderSkeleton key={i} />)}
           </div>
         </>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : orders.length === 0 ? (
         <EmptyState
           icon={<ShoppingBag size={32} />}
-          title="No orders yet"
-          description="Items you buy from the store will show up here, along with their delivery status."
+          title="Follow your orders here"
+          description="Items you buy from the store appear here, with updates from payment through to delivery."
+          action={<Link href="/store"><Button size="sm" className="font-semibold">Browse the store</Button></Link>}
         />
       ) : (
         <>

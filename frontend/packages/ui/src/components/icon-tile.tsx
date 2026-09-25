@@ -10,10 +10,13 @@ import { cn } from "../lib/utils";
  * inside it — so this is one of the few places that intentionally breaks
  * from --card-radius: 0 with a small radius of its own, plus a soft inset
  * highlight for a touch of depth instead of a dead-flat tint.
+ *
+ * Look: a white tile with a hairline border and a solid brand-colour glyph. The one element that matters most in
+ * a view can be `filled`: solid brand colour, white glyph, and a soft shadow underneath.
  */
 export interface IconTileProps {
   icon: React.ElementType;
-  size?: "sm" | "default" | "lg";
+  size?: "sm" | "default" | "lg" | "xl";
   tone?: "primary" | "accent" | "muted" | "destructive" | "success" | "warning";
   /** Solid gradient fill (for the one hero element per view) vs a tinted outline (everything else). */
   filled?: boolean;
@@ -21,9 +24,10 @@ export interface IconTileProps {
 }
 
 const SIZES = {
-  sm: { box: "w-8 h-8", icon: 15, radius: "rounded-[9px]" },
-  default: { box: "w-9 h-9 sm:w-10 sm:h-10", icon: 17, radius: "rounded-[10px]" },
-  lg: { box: "w-11 h-11 sm:w-12 sm:h-12", icon: 19, radius: "rounded-[12px]" },
+  sm: { box: "w-8 h-8", icon: 15, radius: "rounded-none" },
+  default: { box: "w-9 h-9 sm:w-10 sm:h-10", icon: 17, radius: "rounded-none" },
+  lg: { box: "w-11 h-11 sm:w-12 sm:h-12", icon: 19, radius: "rounded-none" },
+  xl: { box: "w-16 h-16 sm:w-[72px] sm:h-[72px]", icon: 28, radius: "rounded-none" },
 } as const;
 
 const TONES: Record<NonNullable<IconTileProps["tone"]>, { bg: string; border: string; fg: string; fill: string }> = {
@@ -32,8 +36,10 @@ const TONES: Record<NonNullable<IconTileProps["tone"]>, { bg: string; border: st
   // brand-independent "informational" semantic tokens (see theme.ts), never
   // tenant-colored, so using them for a "primary" icon tile would render a
   // fixed blue for every institution regardless of its actual brand color.
-  primary: { bg: "var(--brand-primary-100, var(--color-background-info))", border: "var(--brand-primary-300, var(--color-border-info))", fg: "var(--primary)", fill: "var(--primary)" },
-  accent: { bg: "var(--brand-accent-100, var(--brand-accent-light, var(--color-background-info)))", border: "var(--brand-accent-300, var(--brand-accent, var(--color-border-info)))", fg: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))", fill: "var(--brand-accent, var(--primary))" },
+  // Primary and accent are deliberately identical: one icon colour across the product (the brand primary, on a
+  // white tile with a hairline border), never alternating between two brand colours.
+  primary: { bg: "var(--card)", border: "var(--border-emphasis, var(--border))", fg: "var(--primary)", fill: "var(--primary)" },
+  accent: { bg: "var(--card)", border: "var(--border-emphasis, var(--border))", fg: "var(--primary)", fill: "var(--primary)" },
   muted: { bg: "var(--muted)", border: "var(--border)", fg: "var(--muted-foreground)", fill: "var(--muted-foreground)" },
   destructive: { bg: "color-mix(in oklch, var(--destructive) 10%, var(--card))", border: "color-mix(in oklch, var(--destructive) 28%, transparent)", fg: "var(--destructive)", fill: "var(--destructive)" },
   success: { bg: "color-mix(in oklch, var(--success) 12%, var(--card))", border: "color-mix(in oklch, var(--success) 28%, transparent)", fg: "var(--success)", fill: "var(--success)" },
@@ -50,13 +56,12 @@ export function IconTile({ icon: Icon, size = "default", tone = "primary", fille
       style={
         filled
           ? {
-              background: `linear-gradient(155deg, color-mix(in oklch, ${t.fill} 82%, white), ${t.fill})`,
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22), 0 1px 3px rgba(0,0,0,0.08)",
+              background: t.fill,
+              boxShadow: `0 10px 22px -10px color-mix(in oklch, ${t.fill} 55%, transparent)`,
             }
           : {
               background: t.bg,
               border: `1px solid ${t.border}`,
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
             }
       }
     >

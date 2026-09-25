@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LoadError } from "@alumni/ui";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { format, isBefore, isToday, startOfDay } from "date-fns";
@@ -10,7 +11,7 @@ import { Badge } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn, formatCurrency } from "@alumni/ui";
 import {
-  getEvents, getMyRsvps, getMyCampaigns, getMyContributions, getMyMembershipStatus,
+  getEvents, getMyRsvps, getMyCampaigns, getMyContributionSummary, getMyMembershipStatus,
 } from "@/lib/member-api";
 import { ActivityCalendarGrid, type CalendarItem } from "@/components/member/activity-calendar-grid";
 
@@ -18,16 +19,18 @@ function useCalendarItems() {
   const eventsQ = useQuery({ queryKey: ["cal-events"], queryFn: () => getEvents(1, 250, "All") });
   const rsvpsQ = useQuery({ queryKey: ["cal-rsvps"], queryFn: () => getMyRsvps("Confirmed") });
   const campaignsQ = useQuery({ queryKey: ["cal-campaigns"], queryFn: () => getMyCampaigns(1, 250) });
-  const contributionsQ = useQuery({ queryKey: ["cal-contributions"], queryFn: () => getMyContributions({ pageSize: 200 }) });
+  const contributionsQ = useQuery({ queryKey: ["m-contribution-summary"], queryFn: getMyContributionSummary });
   const membershipQ = useQuery({ queryKey: ["cal-membership"], queryFn: getMyMembershipStatus });
+
+  const queries = [eventsQ, rsvpsQ, campaignsQ, contributionsQ, membershipQ];
+  const isError = queries.some((q) => q.isError);
+  const refetch = () => queries.forEach((q) => { if (q.isError) void q.refetch(); });
 
   const isLoading = eventsQ.isLoading || rsvpsQ.isLoading || campaignsQ.isLoading || contributionsQ.isLoading || membershipQ.isLoading;
 
   const items = useMemo<CalendarItem[]>(() => {
     const rsvpEventIds = new Set((rsvpsQ.data ?? []).map((r) => r.eventId));
-    const paidCampaignIds = new Set(
-      (contributionsQ.data?.results ?? []).filter((c) => c.status === "Successful").map((c) => c.campaignId)
-    );
+    const paidCampaignIds = new Set(contributionsQ.data?.paidCampaignIds ?? []);
 
     const events: CalendarItem[] = (eventsQ.data?.results ?? [])
       .filter((e) => e.status !== "Cancelled")
@@ -59,7 +62,7 @@ function useCalendarItems() {
     return [...events, ...campaigns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [eventsQ.data, rsvpsQ.data, campaignsQ.data, contributionsQ.data]);
 
-  return { items, isLoading, membershipStatus: membershipQ.data };
+  return { items, isLoading, isError, refetch, membershipStatus: membershipQ.data };
 }
 
 function ItemRow({ item }: { item: CalendarItem }) {
@@ -110,7 +113,7 @@ function ItemRow({ item }: { item: CalendarItem }) {
 export default function CalendarPage() {
   const [tab, setTab] = useState<"mine" | "all">("mine");
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
-  const { items, isLoading, membershipStatus } = useCalendarItems();
+  const { items, isLoading, isError, refetch, membershipStatus } = useCalendarItems();
 
   const visible = tab === "mine" ? items.filter((i) => i.mine) : items;
 
@@ -174,11 +177,13 @@ export default function CalendarPage() {
             <div key={i} className="min-h-[52px] sm:min-h-[68px] lg:min-h-[92px] rounded-lg bg-muted animate-pulse" />
           ))}
         </div>
+      ) : isError ? (
+        <LoadError onRetry={refetch} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CalendarDays size={26} />}
-          title="No activity yet"
-          description="New events, fundraisers, and dues will appear here as they're published."
+          title="Everything coming up, in one place"
+          description="Events, fundraiser deadlines and dues dates from your institution appear on this calendar, so you can see what is coming and what needs your action. Nothing is scheduled yet."
         />
       ) : tab === "all" ? (
         // "All activities" is a flat chronological list, not the calendar

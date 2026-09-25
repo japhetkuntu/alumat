@@ -6,11 +6,24 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   success?: boolean;
 }
 
+// Sign-in forms set autoComplete themselves. Any other password field is a new or confirm-password box,
+// except one named "current"/"old", so password managers offer to save rather than fill.
+function defaultAutoComplete(type: string | undefined, key: string | undefined) {
+  if (type === "email") return "email";
+  if (type === "tel") return "tel";
+  if (type === "password") return /current|old/i.test(key ?? "") ? "current-password" : "new-password";
+  return undefined;
+}
+
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, error, success, ...props }, ref) => {
+    // Number fields get the phone's number pad: decimal for money-like steps, plain digits otherwise.
+    const inputMode = props.inputMode ?? (type === "number" ? (props.step && String(props.step) !== "1" ? "decimal" : "numeric") : undefined);
     return (
       <input
         type={type}
+        inputMode={inputMode}
+        autoComplete={props.autoComplete ?? defaultAutoComplete(type, props.id ?? props.name)}
         className={cn(
           // 16px below md: iOS Safari auto-zooms the whole page on focus for
           // any input with a computed font-size under 16px, forcing the user
@@ -25,6 +38,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
+        aria-invalid={error || undefined}
         {...props}
       />
     );

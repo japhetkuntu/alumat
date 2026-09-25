@@ -1,5 +1,8 @@
 "use client";
 
+import { EmptyState } from "@alumni/ui";
+import { FormError } from "@alumni/ui";
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "@alumni/ui";
@@ -39,7 +42,9 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
   });
   const qc = useQueryClient();
 
+  const [formError, setFormError] = useState<string | null>(null);
   const submitMut = useMutation({
+    onMutate: () => setFormError(null),
     mutationFn: () => submitBatchPayoutSetup(batch.id, {
       useInstitutionAccount: !useOwn,
       settlementBankCode: useOwn ? value.settlementBankCode : undefined,
@@ -52,7 +57,7 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
       toast.success("Submitted for platform review");
       onClose();
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => { const message = handleApiError(e); setFormError(message); toast.error(message); },
   });
 
   return (
@@ -82,6 +87,7 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
             />
           )}
         </div>
+        <FormError message={formError} className="mt-3" />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
@@ -153,7 +159,7 @@ export default function BatchesPage() {
 
   const canSetUpPayout = (b: Batch) => isSuperAdmin || (user?.role === "ScopedAdmin" && user.yearGroups?.includes(b.year));
 
-  const { data: batches = [], isLoading } = useQuery({
+  const { data: batches = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["batches"],
     queryFn: getBatches,
   });
@@ -223,7 +229,7 @@ export default function BatchesPage() {
           <span className="text-[12.5px] text-muted-foreground">{batches.filter((b) => b.isActive).length} active &middot; {batches.length} total</span>
         </div>
         <CardContent className="p-0">
-          <Table className="min-w-[560px]">
+          <Table stackOnMobile className="min-w-[560px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -234,10 +240,12 @@ export default function BatchesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableSkeleton rows={5} cols={5} />
+              {isError ? (
+                <TableRow><TableCell colSpan={5}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+              ) : isLoading ? (
+                <TableSkeleton rows={4} cols={5} />
               ) : batches.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No {cohortLabelPlural.toLowerCase()} yet. Members see the platform&apos;s default year range until you add one.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title={`${cohortLabelPlural} group your members by year`} description="Add the graduating years your institution uses so members pick their own when they register. Until you add some, members see the platform's default year range." /></TableCell></TableRow>
               ) : batches.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.name}</TableCell>

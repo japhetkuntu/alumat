@@ -18,3 +18,6 @@ public record MembershipStatusResponse(
         : this(isMembershipActive, membershipExpiry, membershipYearsPaid, lastMembershipPaidAt,
                isMembershipActive, false, 0, [], activePolicy) { }
 }
+
+/// <summary>Lifetime and current-year totals of a member's confirmed payments, plus the campaigns they've paid — computed in the database so the home screen never has to download every contribution just to add them up.</summary>
+public record MyContributionSummaryDto(decimal TotalPaid, decimal TotalPaidThisYear, List<string> PaidCampaignIds);

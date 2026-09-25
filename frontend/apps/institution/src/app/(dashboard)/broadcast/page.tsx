@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, Send, MessageSquare, Bell, Lock } from "@alumni/ui";
 import { toast } from "sonner";
@@ -81,11 +82,12 @@ export default function BroadcastPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
         <EmptyState
           icon={<Lock size={40} />}
           title="Access denied"
           description="Only Super Admins can send broadcasts."
+          action={<Link href="/dashboard"><Button size="sm" className="font-semibold">Go to dashboard</Button></Link>}
         />
       </div>
     );

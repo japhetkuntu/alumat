@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { getInitials } from "@alumni/ui";
 import { NotificationPanel } from "./notification-panel";
+import { PlatformSetupChecklist } from "./setup-checklist";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -117,6 +118,12 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
 
+  // Client pages can't export metadata, so the browser tab and history show the page name here.
+  useEffect(() => {
+    const base = document.title.split(" · ").pop() || "Alumni Portal";
+    document.title = `${pageTitle} · ${base}`;
+  }, [pageTitle]);
+
   useEffect(() => {
     if (!isLoading && !isPlatformStaff && pathname !== "/login") {
       router.replace("/login");
@@ -167,6 +174,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      <PlatformSetupChecklist />
     </div>
   );
 }

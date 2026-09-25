@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useRouter } from "next/navigation";
 import { Users, Clock, Crown } from "@alumni/ui";
 import { toast } from "sonner";
@@ -56,7 +57,7 @@ export default function CommunitiesPage() {
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : communities.length === 0 ? (
-        <EmptyState icon={<Users size={40} />} title="No communities yet" description="Your institution hasn't created any communities yet." />
+        <EmptyState icon={<Users size={40} />} title="Communities are smaller groups inside your institution" description="A community can be a chapter, a club or a professional group, each with its own news, events and discussions. Your institution has not created any yet. When it does, you can ask to join from this page." action={<NotifyMeButton />} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {communities.map((c) => (

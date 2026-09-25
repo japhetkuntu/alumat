@@ -81,7 +81,7 @@ public class ServiceService(
             var result = await serviceTypeRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 s => (string.IsNullOrEmpty(filter.Status) || s.Status == filter.Status)
-                  && (string.IsNullOrEmpty(search) || s.Name.ToLower().Contains(search)));
+                  && TextSearch.Matches(search, s.Name));
 
             var dtoResult = new PgPagedResult<ServiceTypeDto>
             {

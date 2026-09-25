@@ -66,9 +66,7 @@ public class MemberNewsService(
                       : p.CommunityId == filter.CommunityId)
                   && (p.YearGroups == null || p.YearGroups.Count == 0 || (memberYear.HasValue && p.YearGroups.Contains(memberYear.Value)))
                   && (string.IsNullOrEmpty(filter.Category) || p.Category == filter.Category)
-                  && (string.IsNullOrEmpty(search)
-                      || p.Title.ToLower().Contains(search)
-                      || p.Content.ToLower().Contains(search)));
+                  && TextSearch.Matches(search, p.Title, p.Content));
 
                         await PopulateMissingAuthorsAsync(result.Results);
 

@@ -32,7 +32,7 @@ export function PaymentRedirectOverlay({
       aria-live="polite"
     >
       <div
-        className="w-full max-w-[340px] rounded-[20px] border p-7 text-center shadow-[0_8px_32px_rgba(0,0,0,0.2)] animate-in zoom-in-95 duration-250"
+        className="w-full max-w-[340px] rounded-none border p-7 text-center shadow-[0_8px_32px_rgba(0,0,0,0.2)] animate-in zoom-in-95 duration-250"
         style={{ background: "var(--background)", borderColor: "var(--border)" }}
       >
         <div className="relative w-16 h-16 mx-auto mb-5">

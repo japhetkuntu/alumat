@@ -507,7 +507,7 @@ export default function CommunityDetailPage() {
           </DialogHeader>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto -mx-1 px-1">
             {members.length === 0 ? (
-              <EmptyState icon={<Users size={32} />} title="No members yet" />
+              <EmptyState icon={<Users size={32} />} title="No members yet" description="People appear here after they join and are approved." />
             ) : members.map((m) => (
               <div key={m.memberId} className="flex items-center justify-between gap-3 card px-3 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
@@ -537,7 +537,7 @@ export default function CommunityDetailPage() {
             </DialogHeader>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto -mx-1 px-1">
               {joinRequests.length === 0 ? (
-                <EmptyState icon={<Users size={32} />} title="No pending requests" />
+                <EmptyState icon={<Users size={32} />} title="No pending requests" description="Requests to join appear here for you to approve or decline." />
               ) : joinRequests.map((r) => (
                 <div key={r.membershipId} className="flex items-center justify-between gap-3 card px-3 py-2.5">
                   <div className="flex items-center gap-3 min-w-0">

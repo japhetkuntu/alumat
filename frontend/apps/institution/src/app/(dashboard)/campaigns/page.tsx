@@ -1,6 +1,9 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Eye, Pencil, Archive, ArchiveRestore } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
@@ -93,11 +96,11 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Target amount (GHS)</Label>
+              <Label className="inline-flex items-center gap-1.5">Target amount (GHS)<InfoTip text="The total you aim to raise. Progress is measured against it." /></Label>
               <Input type="number" placeholder="100000" value={form.targetAmount} onChange={(e) => f("targetAmount", e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label>Minimum Contribution (GHS)</Label>
+              <Label className="inline-flex items-center gap-1.5">Minimum Contribution (GHS)<InfoTip text="The smallest amount a member can give." /></Label>
               <Input type="number" placeholder="200" value={form.minContribution} onChange={(e) => f("minContribution", e.target.value)} required />
             </div>
             <div className="space-y-2">
@@ -139,7 +142,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
 
           {manualPaymentsEnabled && (
             <div className="space-y-2">
-              <Label>Allow Manual Payments</Label>
+              <Label className="inline-flex items-center gap-1.5">Allow Manual Payments<InfoTip text="Let members pay by bank or mobile money outside the card checkout." /></Label>
               <div className="flex items-center gap-2">
                 <input id="manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
                 <label htmlFor="manual-pay" className="text-sm">Allow bank/mobile money transfers</label>
@@ -151,22 +154,22 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="p-4 border border-border rounded-lg space-y-2">
                 <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
-                <Input placeholder="Account number" value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} />
-                <Input placeholder="Account name" value={form.bankAccountName} onChange={(e) => f("bankAccountName", e.target.value)} />
-                <Input placeholder="Bank name" value={form.bankName} onChange={(e) => f("bankName", e.target.value)} />
-                <Input placeholder="Branch" value={form.bankBranch} onChange={(e) => f("bankBranch", e.target.value)} />
+                <div className="space-y-1.5"><Label>Account number</Label><Input value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Account name</Label><Input value={form.bankAccountName} onChange={(e) => f("bankAccountName", e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Bank name</Label><Input value={form.bankName} onChange={(e) => f("bankName", e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Branch</Label><Input value={form.bankBranch} onChange={(e) => f("bankBranch", e.target.value)} /></div>
               </div>
               <div className="p-4 border border-border rounded-lg space-y-2">
                 <h4 className="text-sm font-black uppercase tracking-wider">Mobile Money</h4>
-                <Input placeholder="Mobile money number" value={form.mobileMoneyNumber} onChange={(e) => f("mobileMoneyNumber", e.target.value)} />
-                <Input placeholder="Account name" value={form.mobileMoneyName} onChange={(e) => f("mobileMoneyName", e.target.value)} />
-                <Input placeholder="Provider (MTN, Telecel, AT)" value={form.mobileMoneyProvider} onChange={(e) => f("mobileMoneyProvider", e.target.value)} />
+                <div className="space-y-1.5"><Label>Mobile money number</Label><Input type="tel" value={form.mobileMoneyNumber} onChange={(e) => f("mobileMoneyNumber", e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Account name</Label><Input value={form.mobileMoneyName} onChange={(e) => f("mobileMoneyName", e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={form.mobileMoneyProvider} onChange={(e) => f("mobileMoneyProvider", e.target.value)} /></div>
               </div>
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save</Button>
+            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save fundraiser</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -189,7 +192,7 @@ export default function AdminCampaignsPage() {
   const pageSize = 20;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-campaigns", statusFilter, page],
     queryFn: () => getCampaigns(page, pageSize, statusFilter || undefined),
     placeholderData: (prev) => prev,
@@ -320,10 +323,11 @@ export default function AdminCampaignsPage() {
       )}
 
       {/* Status Filter — flat pill row matching the design */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <ChipRow label="Filter" activeKey={String(statusFilter)}>
         {["", "Active", "Draft", "Closed", "Completed", "Archived"].map((s) => (
           <button
             key={s}
+            aria-pressed={statusFilter === s}
             onClick={() => { setStatusFilter(s); setPage(1); }}
             className={cn(
               "px-3 py-1.5 border text-[12.5px] font-semibold transition-colors",
@@ -333,14 +337,16 @@ export default function AdminCampaignsPage() {
             {s === "" ? "All" : s}
           </button>
         ))}
-      </div>
+      </ChipRow>
 
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : campaigns.length === 0 ? (
-        <EmptyState icon={<Plus size={40} />} title="No fundraisers yet" description="Create a fundraiser to start collecting funds." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Create fundraiser</Button>} />
+        <EmptyState icon={<Plus size={40} />} title="Fundraisers collect money from members" description="A fundraiser has a target, a deadline and an amount per member. Members pay online and you follow progress here. Membership dues are set up the same way." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Create fundraiser</Button>} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {campaigns.map((c) => {

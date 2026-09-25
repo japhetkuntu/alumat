@@ -42,10 +42,7 @@ public class JobService(
                   && (string.IsNullOrEmpty(location) || j.Location.ToLower().Contains(location))
                   && (!filter.PostedAfter.HasValue || j.CreatedAt >= filter.PostedAfter.Value)
                   && (!filter.PostedBefore.HasValue || j.CreatedAt <= filter.PostedBefore.Value)
-                  && (string.IsNullOrEmpty(search)
-                      || j.Title.ToLower().Contains(search)
-                      || j.Company.ToLower().Contains(search)
-                      || j.Location.ToLower().Contains(search))
+                  && TextSearch.Matches(search, j.Title, j.Company, j.Location)
                   && (isSuper || j.CreatedBy == admin.Id
                       || (j.YearGroups != null && j.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (j.CommunityId != null && communityIds.Contains(j.CommunityId))));

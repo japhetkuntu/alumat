@@ -1,9 +1,12 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle, Download, ShieldBan, ShieldCheck, MailCheck, MailX, Eye, Upload, Loader2 } from "@alumni/ui";
-import { Pagination } from "@alumni/ui";
+import { Pagination, ChipRow } from "@alumni/ui";
+import { EmptyState } from "@alumni/ui";
+import { Users } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -182,7 +185,7 @@ export default function AdminMembersPage() {
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-members", search, statusFilter, page],
     queryFn: () => getMembers({ search: search || undefined, status: statusFilter || undefined, page, pageSize }),
     placeholderData: (prev) => prev,
@@ -334,19 +337,21 @@ export default function AdminMembersPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mt-5 mb-3">
+      <div className="flex flex-col gap-2 mt-5 mb-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search name, email, member number"
           className="w-full sm:w-[260px] h-9"
         />
+        <ChipRow label="Filter by status" activeKey={String(statusFilter)}>
         {STATUS_FILTERS.map((f, i) => {
           const count = countQueries[i]?.data?.totalCount;
           const active = statusFilter === f.value;
           return (
             <button
               key={f.label}
+              aria-pressed={active}
               onClick={() => { setStatusFilter(f.value); setPage(1); }}
               className={cn(
                 "px-3 py-2 border text-[12.5px] font-semibold transition-colors",
@@ -357,6 +362,7 @@ export default function AdminMembersPage() {
             </button>
           );
         })}
+        </ChipRow>
       </div>
 
       <Card className="overflow-hidden">
@@ -381,10 +387,26 @@ export default function AdminMembersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isError ? (
+                <TableRow><TableCell colSpan={isCommunity ? 6 : 7}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+              ) : isLoading ? (
                 <TableSkeleton rows={8} cols={isCommunity ? 6 : 7} />
               ) : members.length === 0 ? (
-                <TableRow><TableCell colSpan={isCommunity ? 6 : 7} className="text-center py-8 text-muted-foreground">No members found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={isCommunity ? 6 : 7}>
+  <EmptyState
+    icon={<Users size={40} />}
+    title={search || statusFilter ? "No members match" : "Add your first members"}
+    description={search || statusFilter ? "Nothing matches your search or status filter." : "Import a list from a spreadsheet or add people one by one. Members can also register themselves."}
+    action={search || statusFilter ? (
+      <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setStatusFilter(""); setPage(1); }}>Clear search and filters</Button>
+    ) : (
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button size="sm" className="font-semibold" onClick={() => setShowImport(true)}><Upload size={14} className="mr-1.5" />Import from a file</Button>
+        <Button variant="outline" size="sm" className="font-semibold" onClick={() => setShowAddMember(true)}>Add one member</Button>
+      </div>
+    )}
+  />
+</TableCell></TableRow>
               ) : members.map((m) => (
                 <TableRow key={m.id} className={densityRowClass}>
                   <TableCell className={densityCellClass}>
@@ -454,12 +476,28 @@ export default function AdminMembersPage() {
 
           {/* Mobile: stacked cards instead of a cramped table */}
           <div className="md:hidden divide-y divide-border">
-            {isLoading ? (
+            {isError ? (
+              <LoadError className="py-8" onRetry={() => refetch()} />
+            ) : isLoading ? (
               <div className="p-4 space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 rounded-md bg-muted animate-pulse" />)}
               </div>
             ) : members.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">No members found</p>
+              (
+  <EmptyState
+    icon={<Users size={40} />}
+    title={search || statusFilter ? "No members match" : "Add your first members"}
+    description={search || statusFilter ? "Nothing matches your search or status filter." : "Import a list from a spreadsheet or add people one by one. Members can also register themselves."}
+    action={search || statusFilter ? (
+      <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setStatusFilter(""); setPage(1); }}>Clear search and filters</Button>
+    ) : (
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button size="sm" className="font-semibold" onClick={() => setShowImport(true)}><Upload size={14} className="mr-1.5" />Import from a file</Button>
+        <Button variant="outline" size="sm" className="font-semibold" onClick={() => setShowAddMember(true)}>Add one member</Button>
+      </div>
+    )}
+  />
+)
             ) : members.map((m) => (
               <div key={m.id} className="p-4 space-y-2.5">
                 <div className="flex items-center gap-3">
@@ -470,20 +508,17 @@ export default function AdminMembersPage() {
                   </div>
                   <Badge variant={statusVariant[m.status]}>{m.status}</Badge>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <span>{m.memberNumber ?? "—"}</span>
                   {!isCommunity && (
                     <>
-                      <span>&middot;</span>
-                      <span>{m.graduationYear ? `Cohort ${m.graduationYear}` : "—"}</span>
+                          <span>{m.graduationYear ? `Cohort ${m.graduationYear}` : "—"}</span>
                     </>
                   )}
-                  <span>&middot;</span>
                   <span className={cn("inline-flex items-center gap-1", m.isEmailVerified ? "text-success" : "text-muted-foreground")}>
                     {m.isEmailVerified ? <MailCheck size={12} /> : <MailX size={12} />}
                     {m.isEmailVerified ? "Verified" : "Unverified"}
                   </span>
-                  <span>&middot;</span>
                   <span>Joined {formatDate(m.createdAt)}</span>
                 </div>
                 <div className="flex items-center justify-end gap-1.5 pt-1">

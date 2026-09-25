@@ -235,6 +235,14 @@ export async function getMyContributions(params?: { page?: number; pageSize?: nu
   return res.data.data!;
 }
 
+export interface MyContributionSummary { totalPaid: number; totalPaidThisYear: number; paidCampaignIds: string[]; }
+
+/** Server-side totals of confirmed payments — the home screen uses this instead of downloading every contribution to add them up. */
+export async function getMyContributionSummary(): Promise<MyContributionSummary> {
+  const res = await memberClient.get("/contributions/summary");
+  return res.data.data!;
+}
+
 export interface InitiatePaystackBody { campaignId: string; amount: number; callbackUrl?: string; showOnWallOfSupport?: boolean; setupRecurringGiving?: boolean; }
 export interface InitiatePaystackGuestBody { campaignId: string; amount: number; email: string; callbackUrl?: string; sharedByMemberId?: string; showOnWallOfSupport?: boolean; }
 

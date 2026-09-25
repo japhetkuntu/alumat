@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LoadError } from "@alumni/ui";
+import { Button } from "@alumni/ui";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Download, ChevronDown, CheckCircle2, Circle, XCircle, Clock } from "@alumni/ui";
 import { Card, CardContent, StatCard, StatCardSkeleton } from "@alumni/ui";
@@ -39,7 +42,7 @@ function RequestSkeleton() {
 }
 
 export default function MyServiceRequestsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["my-service-requests"],
     queryFn: () => getMyServiceRequests(1, 50),
   });
@@ -91,8 +94,10 @@ export default function MyServiceRequestsPage() {
             {Array.from({ length: 3 }).map((_, i) => <RequestSkeleton key={i} />)}
           </div>
         </>
+      ) : isError || !data ? (
+        <LoadError onRetry={() => refetch()} />
       ) : requests.length === 0 ? (
-        <EmptyState icon={<FileText size={28} />} title="No requests yet" description="Requests you make will show up here with their progress." />
+        <EmptyState icon={<FileText size={28} />} title="Track your requests here" description="When you request a service, each step shows up here from submitted to complete. You have not made a request yet." action={<Link href="/services"><Button size="sm" className="font-semibold">Browse services</Button></Link>} />
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

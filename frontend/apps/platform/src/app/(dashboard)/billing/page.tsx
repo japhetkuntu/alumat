@@ -112,7 +112,7 @@ export default function BillingPage() {
   const totalPayments = statusPieData.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <h1 className="text-[24px] font-bold">Payments &amp; Revenue</h1>
       <p className="text-muted-foreground text-[13px] mt-1 mb-6">Platform-wide revenue operations across every institution.</p>
 
@@ -151,7 +151,7 @@ export default function BillingPage() {
             </div>
             <Card>
               <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Per institution</p></div>
-              <Table>
+              <Table stackOnMobile>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Institution</TableHead>
@@ -182,7 +182,7 @@ export default function BillingPage() {
       <div className="mb-5">
         <p className="text-[14px] font-semibold mb-3">Batch payout approvals</p>
         <Card>
-          <Table>
+          <Table stackOnMobile>
             <TableHeader>
               <TableRow>
                 <TableHead>Institution</TableHead>
@@ -226,7 +226,7 @@ export default function BillingPage() {
       <div className="mb-5">
         <p className="text-[14px] font-semibold mb-3">Institution payout approvals</p>
         <Card>
-          <Table>
+          <Table stackOnMobile>
             <TableHeader>
               <TableRow>
                 <TableHead>Institution</TableHead>
@@ -307,7 +307,7 @@ export default function BillingPage() {
 
       <Card>
         <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">All institutions</p></div>
-        <Table>
+        <Table stackOnMobile>
           <TableHeader>
             <TableRow>
               <TableHead>Institution</TableHead>

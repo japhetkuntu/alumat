@@ -1,10 +1,11 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Card } from "@alumni/ui";
+import { Card, ChipRow } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -31,7 +32,7 @@ export default function InstitutionsPage() {
   const [status, setStatus] = useState<InstitutionStatus | "All">("All");
   const [exporting, setExporting] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["institutions", search, status],
     queryFn: () =>
       getInstitutions({
@@ -79,7 +80,7 @@ export default function InstitutionsPage() {
   }
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-1">
         <div>
           <h1 className="text-[24px] font-bold">Institutions</h1>
@@ -103,10 +104,11 @@ export default function InstitutionsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="sm:w-[320px]"
           />
-          <div className="flex gap-2 flex-wrap">
+          <ChipRow label="Filter by status" activeKey={status}>
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.value}
+                aria-pressed={status === f.value}
                 onClick={() => setStatus(f.value)}
                 className={`text-[12.5px] font-medium px-3 py-1.5 border transition-colors ${
                   status === f.value
@@ -117,7 +119,7 @@ export default function InstitutionsPage() {
                 {f.label}
               </button>
             ))}
-          </div>
+          </ChipRow>
         </div>
       </Card>
 
@@ -127,7 +129,7 @@ export default function InstitutionsPage() {
             All institutions <span className="text-muted-foreground font-normal">{results.length} results</span>
           </p>
         </div>
-        <Table>
+        <Table stackOnMobile>
           <TableHeader>
             <TableRow>
               <TableHead>Institution</TableHead>
@@ -139,7 +141,8 @@ export default function InstitutionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!isLoading && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={6} />}
+            {isError && <tr><td colSpan={6}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
+            {!isLoading && !isError && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={6} />}
             {results.map((inst) => (
               <TableRow key={inst.id}>
                 <TableCell>

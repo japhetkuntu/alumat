@@ -37,8 +37,10 @@ import { PortalShellSkeleton } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
+import { GlobalSearch } from "@/components/institution/global-search";
 import { NotificationPanel } from "@/components/institution/notification-panel";
 import { PushNotificationPrompt } from "@/components/institution/push-notification-prompt";
+import { InstitutionSetupChecklist } from "@/components/institution/setup-checklist";
 import { institutionClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 
@@ -123,20 +125,14 @@ export function useInstitutionNavTheme() {
   });
 }
 
-export function AdminSidebar({ onClose }: { onClose?: () => void }) {
-  const pathname = usePathname();
+/** The menu this staff member can actually see: role limits, disabled features and community-only rules already applied. */
+function useNavItems() {
   const { user } = useAuth();
-  // Cosmetic/structural only: reads the actual hostname this session is on.
-  // Real per-subdomain tenant resolution against the backend is future work.
-  const tenantHost = useHostname();
-
   const { data: theme } = useInstitutionNavTheme();
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
   const isCommunity = theme?.organizationType === "Community";
-  const portalBrandName = theme?.portalTitle || theme?.portalName || "Institution Portal";
-  const brandMark = theme?.iconUrl || theme?.logoUrl;
 
-  const navItems = useMemo(() => {
+  return useMemo(() => {
     const items = baseNavItems.filter((item) => {
       // Forum, Business Directory, Broadcast, and Spotlights stay
       // SuperAdmin-only (matches ForumController/BusinessDirectoryController/
@@ -175,6 +171,22 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
       return !!next && !next.isHeader;
     });
   }, [user?.role, disabledFeatures, isCommunity]);
+}
+
+export function AdminSidebar({ onClose }: { onClose?: () => void }) {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  // Cosmetic/structural only: reads the actual hostname this session is on.
+  // Real per-subdomain tenant resolution against the backend is future work.
+  const tenantHost = useHostname();
+
+  const { data: theme } = useInstitutionNavTheme();
+  const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
+  const isCommunity = theme?.organizationType === "Community";
+  const portalBrandName = theme?.portalTitle || theme?.portalName || "Institution Portal";
+  const brandMark = theme?.iconUrl || theme?.logoUrl;
+
+  const navItems = useNavItems();
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground w-[248px] select-none">
@@ -253,7 +265,10 @@ function useCurrentPageTitle() {
   const pathname = usePathname();
   return useMemo(() => {
     const match = baseNavItems.find((item) => !item.isHeader && item.href && (pathname === item.href || pathname.startsWith(item.href + "/")));
-    return match?.label ?? "Dashboard";
+    if (match) return match.label;
+    // Staff is added to the menu only for SuperAdmins, so it is not in the base list.
+    if (pathname === "/staff" || pathname.startsWith("/staff/")) return "Institution Admins";
+    return "Dashboard";
   }, [pathname]);
 }
 
@@ -263,6 +278,17 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
+  const navForSearch = useNavItems();
+  const searchPages = useMemo(
+    () => navForSearch.filter((i) => !i.isHeader && i.href).map((i) => ({ href: i.href as string, label: i.label })),
+    [navForSearch],
+  );
+
+  // Client pages can't export metadata, so the browser tab and history show the page name here.
+  useEffect(() => {
+    const base = document.title.split(" · ").pop() || "Alumni Portal";
+    document.title = `${pageTitle} · ${base}`;
+  }, [pageTitle]);
 
   useEffect(() => {
     if (!isLoading && !isAdmin && pathname !== "/login") {
@@ -294,6 +320,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
         <div className="hidden lg:flex items-center justify-between px-6 h-14 border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-40">
           <p className="text-[14px] font-semibold text-foreground tracking-tight truncate">{pageTitle}</p>
           <div className="flex items-center gap-4 shrink-0">
+            <GlobalSearch pages={searchPages} hotkey />
             <NotificationPanel />
             <span className="text-[13px] font-semibold">
               {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
@@ -321,6 +348,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
             <span className="font-bold text-[15px] tracking-tight truncate">{pageTitle}</span>
           </div>
           <div className="flex items-center gap-2">
+            <GlobalSearch pages={searchPages} />
             <NotificationPanel />
             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
               <span className="text-[10px] font-bold text-accent">AD</span>
@@ -335,6 +363,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      <InstitutionSetupChecklist />
     </div>
   );
 }

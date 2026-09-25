@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
@@ -21,8 +22,8 @@ public class AuditLogService(IAlumniPgRepository<AuditLogEntry> auditLogRepo,
         var query = auditLogRepo.GetQueryable();
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var s = search.Trim().ToLower();
-            query = query.Where(a => a.Actor.ToLower().Contains(s) || a.Action.ToLower().Contains(s) || a.Target.ToLower().Contains(s));
+            var s = search;
+            query = query.WhereMatches(a => TextSearch.Matches(s, a.Actor, a.Action, a.Target));
         }
 
         var totalCount = await query.CountAsync();

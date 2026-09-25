@@ -161,7 +161,7 @@ export default function MyBusinessListingPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 lg:p-12 space-y-6 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-8 lg:p-12 space-y-6 max-w-3xl mx-auto">
         <CardSkeleton />
       </div>
     );
@@ -372,10 +372,10 @@ function BusinessFormFields({
       <div className="space-y-1.5">
         <Label>Contact (at least one required)</Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="Phone number" />
-          <Input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="Email address" type="email" />
-          <Input value={form.websiteUrl} onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))} placeholder="Website URL" />
-          <Input value={form.externalLinkUrl} onChange={(e) => setForm((f) => ({ ...f, externalLinkUrl: e.target.value }))} placeholder="Other link (optional)" />
+          <Input type="tel" value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="Phone number" />
+          <div className="space-y-1.5"><Label>Email address</Label><Input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} type="email" /></div>
+          <div className="space-y-1.5"><Label>Website URL</Label><Input value={form.websiteUrl} onChange={(e) => setForm((f) => ({ ...f, websiteUrl: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>Other link (optional)</Label><Input value={form.externalLinkUrl} onChange={(e) => setForm((f) => ({ ...f, externalLinkUrl: e.target.value }))} /></div>
         </div>
       </div>
 

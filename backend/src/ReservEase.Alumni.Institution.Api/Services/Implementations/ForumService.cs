@@ -22,7 +22,7 @@ public class ForumService(
         try
         {
             logger.LogInformation("GetCategories request — filter: {Filter}", filter.Serialize());
-            var result = await categoryRepo.GetPagedAsync(filter.Page, filter.PageSize, filter.SortColumn ?? "Name", filter.SortDir ?? "asc");
+            var result = await categoryRepo.GetPagedAsync(filter.Page, filter.PageSize, filter.SortColumn ?? "SortOrder", filter.SortDir ?? "asc");
             var dtoResult = new PgPagedResult<ForumCategoryDto>
             {
                 PageIndex = result.PageIndex,
@@ -52,11 +52,17 @@ public class ForumService(
 
             logger.LogInformation("CreateCategory request — name: {Name} by admin {AdminId}", name, admin.Id);
 
+            name = name.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+                return ApiResponseExtensions.ToBadRequestApiResponse<ForumCategoryDto>("Category name is required");
+
             var existing = await categoryRepo.GetOneAsync(c => c.Name == name);
             if (existing is not null)
                 return ApiResponseExtensions.ToConflictApiResponse<ForumCategoryDto>("Category already exists");
 
-            var category = new ForumCategory { Name = name, Description = description, CreatedBy = admin.Id };
+            // New categories go to the end of the list, after the starter set.
+            var nextOrder = (await categoryRepo.GetAllAsync()).Select(c => c.SortOrder).DefaultIfEmpty(0).Max() + 1;
+            var category = new ForumCategory { Name = name, Description = description, SortOrder = nextOrder, CreatedBy = admin.Id };
             await categoryRepo.AddAsync(category);
             logger.LogInformation("ForumCategory {CategoryId} created by admin {AdminId}", category.Id, admin.Id);
             return category.ToDto().ToCreatedApiResponse("Category created");
@@ -65,6 +71,76 @@ public class ForumService(
         {
             logger.LogError(e, "Error creating forum category '{Name}' by admin {AdminId}", name, admin.Id);
             return ApiResponseExtensions.ToServerErrorApiResponse<ForumCategoryDto>("Failed to create category");
+        }
+    }
+
+    public async Task<IApiResponse<ForumCategoryDto>> UpdateCategoryAsync(string categoryId, string name, string? description, AuthData admin)
+    {
+        try
+        {
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<ForumCategoryDto>("Scoped admins cannot manage forums");
+
+            name = name.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+                return ApiResponseExtensions.ToBadRequestApiResponse<ForumCategoryDto>("Category name is required");
+
+            var category = await categoryRepo.GetByIdAsync(categoryId);
+            if (category is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<ForumCategoryDto>("Category not found");
+
+            var clash = await categoryRepo.GetOneAsync(c => c.Name == name && c.Id != categoryId);
+            if (clash is not null)
+                return ApiResponseExtensions.ToConflictApiResponse<ForumCategoryDto>("Another category already has that name");
+
+            category.Name = name;
+            category.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+            category.UpdatedBy = admin.Id;
+            await categoryRepo.UpdateAsync(category);
+
+            // Threads carry a copy of their category's name/description for display — keep those in step.
+            var threads = (await threadRepo.GetAllAsync(t => t.CategoryId == categoryId)).ToList();
+            if (threads.Count > 0)
+            {
+                foreach (var thread in threads)
+                    thread.Category = new ForumCategorySnapshot { Id = category.Id, Name = category.Name, Description = category.Description, SortOrder = category.SortOrder };
+                await threadRepo.UpdateRangeAsync(threads);
+            }
+
+            await auditLog.LogAsync(admin, "Forum Category Updated", category.Name);
+            return category.ToDto().ToOkApiResponse("Category updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating forum category {CategoryId} by admin {AdminId}", categoryId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<ForumCategoryDto>("Failed to update category");
+        }
+    }
+
+    public async Task<IApiResponse<object>> DeleteCategoryAsync(string categoryId, AuthData admin)
+    {
+        try
+        {
+            if (admin.Role == StaffRoles.ScopedAdmin)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("Scoped admins cannot manage forums");
+
+            var category = await categoryRepo.GetByIdAsync(categoryId);
+            if (category is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Category not found");
+
+            var threadCount = await threadRepo.CountAsync(t => t.CategoryId == categoryId);
+            if (threadCount > 0)
+                return ApiResponseExtensions.ToConflictApiResponse<object>(
+                    $"This category has {threadCount:N0} thread{(threadCount == 1 ? "" : "s")}. Delete them first, or rename the category instead.");
+
+            await categoryRepo.RemoveAsync(category);
+            await auditLog.LogAsync(admin, "Forum Category Deleted", category.Name);
+            return new object().ToOkApiResponse("Category deleted");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error deleting forum category {CategoryId} by admin {AdminId}", categoryId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to delete category");
         }
     }
 
@@ -77,7 +153,7 @@ public class ForumService(
             var result = await threadRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 t => (string.IsNullOrEmpty(filter.CategoryId) || t.CategoryId == filter.CategoryId)
-                  && (string.IsNullOrEmpty(search) || t.Title.ToLower().Contains(search))
+                  && TextSearch.Matches(search, t.Title)
                   && (string.IsNullOrEmpty(filter.Filter)
                       || (filter.Filter == "pinned" && t.IsPinned)
                       || (filter.Filter == "closed" && t.IsClosed)

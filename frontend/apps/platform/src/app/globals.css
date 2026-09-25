@@ -76,6 +76,10 @@
   --radius-md: 0px;
   --radius-lg: 0px;
   --radius-xl: 0px;
+  /* Tailwind's default 2xl/3xl/4xl steps are 1-1.5rem — left alone they made every rounded-2xl/3xl card round while the rest of the UI is square. */
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
 
   /* Sophisticated Shadow Scale (Figma natural depth) */
   --shadow-xs: none;
@@ -684,4 +688,11 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled) {
   max-height: calc(100vh - 80px);
   max-height: calc(100dvh - 80px);
   overflow-y: auto;
+}
+
+/* Touch screens: keep small buttons (the compact h-8 / h-9 sizes) at least 40px tall so they are easy to tap. */
+@media (pointer: coarse) {
+  button:not([role="tab"]):not([role="switch"]):not([role="checkbox"]):not([role="combobox"]) {
+    min-height: 40px;
+  }
 }

@@ -616,10 +616,7 @@ public class ContributionService(
                 c => (isSuper || c.CreatedBy == admin.Id || adminCampaignIds.Contains(c.CampaignId))
                   && (string.IsNullOrEmpty(filter.CampaignId) || c.CampaignId == filter.CampaignId)
                   && (string.IsNullOrEmpty(filter.Status) || c.Status == filter.Status)
-                  && (search == null
-                      || (c.TransactionRef != null && c.TransactionRef.ToLower().Contains(search))
-                      || (c.MemberId != null && c.MemberId.ToLower().Contains(search))
-                      || (c.Notes != null && c.Notes.ToLower().Contains(search))));
+                  && TextSearch.Matches(search, c.TransactionRef, c.MemberId, c.Notes));
 
             // Backfill missing snapshots for contributions stored before jsonb columns were added.
             var needsBackfill = result.Results.Where(c => c.Member is null || c.Campaign is null).ToList();

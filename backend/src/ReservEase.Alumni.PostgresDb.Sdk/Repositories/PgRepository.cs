@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 
 namespace ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -24,7 +25,7 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
     public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? predicate = null, bool ignoreQueryFilters = false)
     {
         var query = Query(ignoreQueryFilters);
-        if (predicate is not null) query = query.Where(predicate);
+        if (predicate is not null) query = query.Where(TextSearch.Rewrite(predicate));
         return await query.ToListAsync();
     }
 
@@ -41,7 +42,7 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
 
     public async Task<T?> GetOneAsync(Expression<Func<T, bool>> predicate, bool ignoreQueryFilters = false)
     {
-        return await Query(ignoreQueryFilters).FirstOrDefaultAsync(predicate);
+        return await Query(ignoreQueryFilters).FirstOrDefaultAsync(TextSearch.Rewrite(predicate));
     }
 
     public async Task<int> AddAsync(T entity)
@@ -77,20 +78,20 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
     public IQueryable<T> GetQueryable(Expression<Func<T, bool>>? predicate = null, bool ignoreQueryFilters = false)
     {
         var query = Query(ignoreQueryFilters);
-        if (predicate is not null) query = query.Where(predicate);
+        if (predicate is not null) query = query.Where(TextSearch.Rewrite(predicate));
         return query;
     }
 
     public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, bool ignoreQueryFilters = false)
     {
         var query = Query(ignoreQueryFilters);
-        if (predicate is not null) query = query.Where(predicate);
+        if (predicate is not null) query = query.Where(TextSearch.Rewrite(predicate));
         return await query.CountAsync();
     }
 
     public async Task<int> ExecuteUpdateAsync(Expression<Func<T, bool>> predicate, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> setPropertyCalls, bool ignoreQueryFilters = false)
     {
-        return await Query(ignoreQueryFilters).Where(predicate).ExecuteUpdateAsync(setPropertyCalls);
+        return await Query(ignoreQueryFilters).Where(TextSearch.Rewrite(predicate)).ExecuteUpdateAsync(setPropertyCalls);
     }
 
     public async Task<PgPagedResult<T>> GetPagedAsync(
@@ -110,7 +111,7 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
         sortDir = sortDir?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true ? "asc" : "desc";
 
         var query = Query(ignoreQueryFilters);
-        if (filter is not null) query = query.Where(filter);
+        if (filter is not null) query = query.Where(TextSearch.Rewrite(filter));
 
         var totalCount = await query.CountAsync();
 

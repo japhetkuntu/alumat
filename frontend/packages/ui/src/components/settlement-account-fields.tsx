@@ -132,7 +132,7 @@ export function SettlementAccountFields({
 
       <div className="space-y-1.5">
         <Label>Account holder name</Label>
-        <div className="flex items-center gap-2 h-11 px-3 rounded-[10px] border border-input bg-muted/40 text-[14px]">
+        <div className="flex items-center gap-2 h-11 px-3 rounded-none border border-input bg-muted/40 text-[14px]">
           {resolveState === "loading" && (
             <span className="flex items-center gap-2 text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Verifying with {channel === "ghipss" ? "bank" : "provider"}…</span>
           )}

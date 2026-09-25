@@ -211,11 +211,11 @@ export default function CampaignDetailPage() {
           {pct > 0 && (
             <p className="text-xs text-muted-foreground tabular-nums">{pct}% of target reached</p>
           )}
-          <div className="rounded-[6px] p-3 text-[12.5px]" style={{ background: "var(--brand-accent-light)", color: "var(--brand-accent-dark)", border: "1px solid #FED7AA" }}>
+          <div className="rounded-none p-3 text-[12.5px]" style={{ background: "var(--brand-accent-light)", color: "var(--brand-accent-dark)", border: "1px solid #FED7AA" }}>
             Members may contribute any positive amount (including less than the suggested base amount). They can also contribute additional payments over time to reach their target.
           </div>
 
-          <div className="mt-1 rounded-[6px] border border-border p-4">
+          <div className="mt-1 rounded-none border border-border p-4">
             <h3 className="text-[13.5px] font-semibold">Online payment overview</h3>
             <p className="text-xs text-muted-foreground mt-1">Online payments are processed securely; your institution receives the full amount members pay.</p>
             {loadingPaystackSummary ? (
@@ -334,7 +334,7 @@ export default function CampaignDetailPage() {
           <div className="px-4 py-3 border-b border-border/50">
             <h2 className="text-base font-semibold">Contributions ({contribs?.totalCount ?? 0})</h2>
           </div>
-          <Table className="min-w-[760px] sm:min-w-[920px]">
+          <Table stackOnMobile className="min-w-[760px] sm:min-w-[920px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -348,7 +348,7 @@ export default function CampaignDetailPage() {
               {loadingContribs ? (
                 <TableSkeleton rows={5} cols={6} />
               ) : contributions.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No contributions yet</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><EmptyState className="py-8" title="Payments for this fundraiser appear here" description="When a member pays, you see who gave, how much and when. Share the fundraiser link to get things moving." /></TableCell></TableRow>
               ) : contributions.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="text-sm">
@@ -612,22 +612,22 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="p-4 border border-border rounded-lg space-y-2">
                 <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
-                <Input placeholder="Account number" value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} />
-                <Input placeholder="Account name" value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} />
-                <Input placeholder="Bank name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
-                <Input placeholder="Branch" value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} />
+                <div className="space-y-1.5"><Label>Account number</Label><Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Account name</Label><Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Bank name</Label><Input value={bankName} onChange={(e) => setBankName(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Branch</Label><Input value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} /></div>
               </div>
               <div className="p-4 border border-border rounded-lg space-y-2">
                 <h4 className="text-sm font-black uppercase tracking-wider">Mobile Money</h4>
-                <Input placeholder="Mobile money number" value={mobileMoneyNumber} onChange={(e) => setMobileMoneyNumber(e.target.value)} />
-                <Input placeholder="Account name" value={mobileMoneyName} onChange={(e) => setMobileMoneyName(e.target.value)} />
-                <Input placeholder="Provider (MTN, Telecel, AT)" value={mobileMoneyProvider} onChange={(e) => setMobileMoneyProvider(e.target.value)} />
+                <div className="space-y-1.5"><Label>Mobile money number</Label><Input type="tel" value={mobileMoneyNumber} onChange={(e) => setMobileMoneyNumber(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Account name</Label><Input value={mobileMoneyName} onChange={(e) => setMobileMoneyName(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={mobileMoneyProvider} onChange={(e) => setMobileMoneyProvider(e.target.value)} /></div>
               </div>
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save Changes</Button>
+            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save fundraiser changes</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -690,7 +690,7 @@ function CampaignUpdatesSection({ campaignId }: { campaignId: string }) {
       {isLoading ? (
         <p className="text-[13px] text-muted-foreground">Loading updates…</p>
       ) : updates.length === 0 ? (
-        <p className="text-[13px] text-muted-foreground">No updates posted yet.</p>
+        <EmptyState className="py-8" title="Updates keep supporters engaged" description="Post a short note on progress or how the money is being used. Members who gave will see it." />
       ) : (
         <div className="space-y-3">
           {updates.map((u) => (

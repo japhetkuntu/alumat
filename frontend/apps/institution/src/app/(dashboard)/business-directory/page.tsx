@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { ChipRow } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -149,7 +151,7 @@ function ListingForm({ title, init, onSave, onCancel, saving }: {
           </div>
           <div className="space-y-2">
             <Label>Phone</Label>
-            <Input value={form.phoneNumber} onChange={(e) => f("phoneNumber", e.target.value)} placeholder="+233..." />
+            <Input type="tel" value={form.phoneNumber} onChange={(e) => f("phoneNumber", e.target.value)} placeholder="+233..." />
           </div>
           <div className="space-y-2">
             <Label>Email</Label>
@@ -191,7 +193,7 @@ function ListingForm({ title, init, onSave, onCancel, saving }: {
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button type="submit" disabled={!valid || saving} isLoading={saving} loadingText="Saving">Save</Button>
+          <Button type="submit" disabled={!valid || saving} isLoading={saving} loadingText="Saving">Save listing</Button>
         </DialogFooter>
       </form>
     </DialogContent>
@@ -211,7 +213,7 @@ export default function AdminBusinessDirectoryPage() {
   const pageSize = 20;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-business-directory", statusFilter, page],
     queryFn: () => getBusinessListings(statusFilter || undefined, page, pageSize),
     placeholderData: (prev) => prev,
@@ -305,30 +307,34 @@ export default function AdminBusinessDirectoryPage() {
         </Button>
       </header>
 
-      <div className="flex items-center gap-2 flex-wrap">
+      <ChipRow label="Filter" activeKey={String(statusFilter)}>
         {["", "Pending", "Approved", "Rejected", "Blacklisted"].map((s) => (
           <button
             key={s}
+            aria-pressed={statusFilter === s}
             onClick={() => { setStatusFilter(s); setPage(1); }}
             className={cn(
               "px-3 py-1.5 border text-[12.5px] font-semibold transition-colors",
-              statusFilter === s ? "bg-accent/10 text-accent border-accent/30" : "bg-white text-foreground border-border hover:bg-muted"
+              statusFilter === s ? "bg-primary/10 text-primary border-primary/30" : "bg-white text-foreground border-border hover:bg-muted"
             )}
           >
             {s === "" ? "All" : s}
           </button>
         ))}
-      </div>
+      </ChipRow>
 
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : listings.length === 0 ? (
         <EmptyState
           icon={<Store size={40} />}
-          title="No listings found"
-          description={statusFilter ? `No ${statusFilter.toLowerCase()} listings yet.` : "No business listings yet."}
+          title={statusFilter ? "No listings found" : "Members promote their businesses here"}
+          description={statusFilter ? `No ${statusFilter.toLowerCase()} listings yet.` : "Members list their businesses from their portal. New listings wait here for your approval before other members can see them."}
+          action={statusFilter ? <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setStatusFilter(""); setPage(1); }}>Show all listings</Button> : undefined}
         />
       ) : (
         <div className="space-y-3">

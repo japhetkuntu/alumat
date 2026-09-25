@@ -41,6 +41,7 @@ import {
   faExpand,
   faArrowUpRightFromSquare,
   faCircleInfo,
+  faCircleQuestion,
   faGlobe,
   faGraduationCap,
   faHandHoldingDollar,
@@ -116,16 +117,12 @@ import {
   faScroll,
   faLanguage,
   faStamp,
-} from "@fortawesome/free-solid-svg-icons";
-
-import {
   faBell,
   faBookmark,
   faCalendar,
   faCalendarCheck,
   faCalendarDays,
   faCircleCheck,
-  faCircle,
   faClock,
   faCopy,
   faEye,
@@ -141,6 +138,10 @@ import {
   faCircleUser,
   faCircleXmark,
   faEnvelope,
+} from "@fortawesome/free-solid-svg-icons";
+
+import {
+  faCircle,
 } from "@fortawesome/free-regular-svg-icons";
 
 import {
@@ -270,6 +271,7 @@ export const ImageOff = makeIcon(faImage);
 export const Images = makeIcon(faImages);
 export const Inbox = makeIcon(faInbox);
 export const Info = makeIcon(faCircleInfo);
+export const HelpCircle = makeIcon(faCircleQuestion);
 export const Italic = makeIcon(faItalic);
 export const Landmark = makeIcon(faLandmark);
 export const Layer = makeIcon(faLayerGroup);

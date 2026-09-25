@@ -65,7 +65,7 @@ export default function ThreadDetailPage() {
   /* ── Loading ── */
   if (threadLoading || postsLoading) {
     return (
-      <div className="p-6 lg:p-10 max-w-[1400px] mx-auto space-y-6 animate-pulse">
+      <div className="p-4 sm:p-6 lg:p-10 max-w-[1400px] mx-auto space-y-6 animate-pulse">
         <div className="h-6 w-24 rounded-lg" style={{ background: "var(--secondary)" }} />
         <CardSkeleton />
         <CardSkeleton />
@@ -74,7 +74,7 @@ export default function ThreadDetailPage() {
   }
 
   if (!thread) return (
-    <div className="p-6 lg:p-10 max-w-[1400px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-10 max-w-[1400px] mx-auto">
       <button
         onClick={() => router.push("/forum")}
         className="flex items-center gap-1.5 text-[13.5px] font-semibold mb-6 transition-colors hover:underline"
@@ -149,7 +149,8 @@ export default function ThreadDetailPage() {
         <EmptyState
           icon={<MessageSquare size={40} />}
           title="No replies yet"
-          description="Be the first to reply to this thread."
+          description="A reply can be advice, an answer or a personal story. Be the first to respond."
+          action={<Button variant="outline" size="sm" className="font-semibold" onClick={() => document.getElementById("forum-reply")?.focus()}>Write a reply</Button>}
         />
       ) : (
         <div className="space-y-3">
@@ -216,6 +217,7 @@ export default function ThreadDetailPage() {
             Post a reply
           </p>
           <Textarea
+            id="forum-reply"
             value={reply}
             onChange={e => setReply(e.target.value)}
             placeholder="Share your thoughts…"

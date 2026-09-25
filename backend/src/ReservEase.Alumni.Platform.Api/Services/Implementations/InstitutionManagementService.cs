@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
@@ -44,6 +45,7 @@ public class InstitutionManagementService(
     IAlumniPgRepository<PaymentTransactionEntity> paymentTransactionRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Batch> batchRepo,
+    IAlumniPgRepository<ForumCategory> forumCategoryRepo,
     IAuditLogService auditLog, IPaystackService paystackService,
     IConfiguration config, ITemporalClientProvider temporalProvider, IOptions<MailtrapConfig> mailtrapConfigOptions,
     IRedisService<PlatformRedisConfig> cache, ILogger<InstitutionManagementService> logger)
@@ -79,8 +81,8 @@ public class InstitutionManagementService(
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var s = search.Trim().ToLower();
-            query = query.Where(i => i.Name.ToLower().Contains(s) || i.Slug.ToLower().Contains(s) || i.ContactEmail.ToLower().Contains(s));
+            var s = search;
+            query = query.WhereMatches(i => TextSearch.Matches(s, i.Name, i.Slug, i.ContactEmail));
         }
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -278,6 +280,8 @@ public class InstitutionManagementService(
                     .ToList();
                 await batchRepo.AddRangeAsync(batches);
             }
+
+            await forumCategoryRepo.AddRangeAsync(ForumCategoryDefaults.Build(institution.Id, createdBy));
 
             await transaction.CommitAsync();
 

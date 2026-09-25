@@ -1,6 +1,9 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil, Lock, Archive, Sparkles } from "@alumni/ui";import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -45,7 +48,7 @@ export default function AdminSpotlightsPage() {
   const pageSize = 10;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-spotlights", statusFilter, page],
     queryFn: () => getSpotlights(page, pageSize, statusFilter || undefined),
     placeholderData: (prev) => prev,
@@ -135,11 +138,12 @@ export default function AdminSpotlightsPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-8 lg:p-12 space-y-6 max-w-7xl mx-auto">
         <EmptyState
           icon={<Lock size={40} />}
           title="Access denied"
           description="Only Super Admins can manage spotlights."
+          action={<Link href="/dashboard"><Button size="sm" className="font-semibold">Go to dashboard</Button></Link>}
         />
       </div>
     );
@@ -158,10 +162,11 @@ export default function AdminSpotlightsPage() {
       </header>
 
       {/* Status filter tabs */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <ChipRow label="Filter" activeKey={String(statusFilter)}>
         {["", "Pending", "Approved", "Rejected", "Archived"].map((s) => (
           <button
             key={s}
+            aria-pressed={statusFilter === s}
             onClick={() => { setStatusFilter(s); setPage(1); }}
             className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
               statusFilter === s
@@ -172,10 +177,12 @@ export default function AdminSpotlightsPage() {
             {s === "" ? "All" : s}
           </button>
         ))}
-      </div>
+      </ChipRow>
 
       {/* Spotlights list */}
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <CardSkeleton key={i} />
@@ -184,8 +191,9 @@ export default function AdminSpotlightsPage() {
       ) : spotlights.length === 0 ? (
         <EmptyState
           icon={<Star size={48} />}
-          title="No spotlights found"
-          description={statusFilter ? `No ${statusFilter.toLowerCase()} spotlights yet.` : "No spotlight submissions yet."}
+          title={statusFilter ? "No spotlights found" : "Spotlights celebrate member stories"}
+          description={statusFilter ? `No ${statusFilter.toLowerCase()} spotlights yet.` : "Members share achievements from their portal. You review each story and choose which ones to feature."}
+          action={statusFilter ? <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setStatusFilter(""); setPage(1); }}>Show all spotlights</Button> : undefined}
         />
       ) : (
         <div className="grid gap-5">

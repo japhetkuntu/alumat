@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChipRow } from "@alumni/ui";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Bell, CheckCheck, ChevronRight, Loader2, Check } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -221,17 +222,18 @@ export default function NotificationsPage() {
       </PageHeader>
 
       {/* ── Filter tabs ── */}
-      <div className="flex flex-wrap gap-2">
+      <ChipRow label="Filter notifications" activeKey={tab}>
         {FILTER_TABS.map(t => (
           <button
             key={t}
+            aria-pressed={tab === t}
             onClick={() => setTab(t)}
             className={cn(
               "px-3.5 py-1.5 text-[12.5px] font-semibold border transition-colors",
-              tab === t ? "text-white border-transparent" : "border-border hover:border-accent/40",
+              tab === t ? "text-white border-transparent" : "border-border hover:border-primary/40",
             )}
             style={tab === t
-              ? { background: "var(--accent)", color: "var(--accent-foreground)" }
+              ? { background: "var(--primary)", color: "var(--primary-foreground)" }
               : { background: "var(--background)", color: "var(--muted-foreground)" }}
           >
             {t}
@@ -248,7 +250,7 @@ export default function NotificationsPage() {
             )}
           </button>
         ))}
-      </div>
+      </ChipRow>
 
       {/* ── Notification list ── */}
       <div className="card overflow-hidden">
@@ -274,13 +276,17 @@ export default function NotificationsPage() {
             </div>
             <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
               {tab === "All"
-                ? "No notifications yet"
+                ? "Updates from your community land here"
                 : tab === "Unread"
-                  ? "No unread notifications"
-                  : `No ${tab.toLowerCase()} notifications`}
+                  ? "You're all caught up"
+                  : `No ${tab.toLowerCase()} notifications yet`}
             </p>
-            <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-              {tab === "Unread" ? "You're all caught up." : "Check back later."}
+            <p className="max-w-[340px] text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+              {tab === "Unread"
+                ? "Anything new will show up here until you open it."
+                : tab === "All"
+                  ? "New jobs, events, fundraisers and payment receipts appear here, so you don't have to keep checking each page. Turn on push notifications in your profile to hear about them straight away."
+                  : "When something in this category happens, it will appear here."}
             </p>
           </div>
         ) : (

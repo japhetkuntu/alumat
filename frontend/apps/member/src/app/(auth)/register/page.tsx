@@ -57,8 +57,8 @@ const gradYears = Array.from(
 // hidden, which would otherwise still block submission.
 function buildSchema(requireStudentId: boolean, googleMode: boolean, collectGraduationYear: boolean) {
   const base = z.object({
-    firstName: z.string().min(2, "First name is required"),
-    lastName: z.string().min(2, "Last name is required"),
+    firstName: z.string().min(2, "Required"),
+    lastName: z.string().min(2, "Required"),
     email: z.string().email("Enter a valid email"),
     phone: z.string()
       .min(9, "Enter a valid mobile number")
@@ -267,7 +267,7 @@ function MembershipCampaignSection({ email }: { email: string }) {
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="text-[12px] font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+    <p role="alert" className="text-[12px] font-medium text-destructive animate-in fade-in slide-in-from-top-1">
       {message}
     </p>
   );
@@ -716,7 +716,7 @@ function RegisterForm() {
                 </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
                   onClick={nextFromStep1} isLoading={isCommunity && !!googleIdToken && submittingGoogle} loadingText="Creating account…">
-                  Continue <ChevronRight size={15} className="ml-1" />
+                  {isCommunity ? (googleIdToken ? "Create account" : "Next: create password") : "Next: alumni details"} <ChevronRight size={15} className="ml-1" />
                 </Button>
               </div>
             )}
@@ -810,7 +810,7 @@ function RegisterForm() {
                   </Button>
                   <Button type="button" className="flex-[2] text-[14px] font-semibold" style={{ height: 44 }}
                     onClick={nextFromStep2} isLoading={submittingGoogle} loadingText="Creating account…">
-                    {googleIdToken ? "Create account" : "Continue"} <ChevronRight size={15} className="ml-1" />
+                    {googleIdToken ? "Create account" : "Next: create password"} <ChevronRight size={15} className="ml-1" />
                   </Button>
                 </div>
               </div>

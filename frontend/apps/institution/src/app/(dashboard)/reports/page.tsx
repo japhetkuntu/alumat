@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { EmptyState } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Users, Calendar, Activity, Layers, DollarSign, Loader2 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -130,7 +132,7 @@ export default function AdminReportsPage() {
           {campaignsQuery.isLoading ? (
             <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           ) : campaigns.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No fundraisers or dues yet</p>
+            <EmptyState className="py-8" title="Reports show how your money is doing" description="Once a fundraiser or dues period is collecting payments, this page shows totals, progress and trends." action={<Link href="/campaigns"><Button size="sm" className="font-semibold">Create a fundraiser</Button></Link>} />
           ) : (
             campaigns.map((c) => {
               const isMembership = !!c.isMembershipCampaign;
@@ -139,9 +141,9 @@ export default function AdminReportsPage() {
                 : c.targetAmount > 0 ? Math.round((c.collectedAmount / c.targetAmount) * 100) : 0;
               return (
                 <div key={c.id} className="space-y-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 text-sm min-w-0">
+                  <div className="flex flex-col gap-0.5 text-sm min-w-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                     <span className="font-medium min-w-0 flex-1 break-words leading-snug">{c.title}</span>
-                    <span className="text-muted-foreground shrink-0 whitespace-nowrap text-right">{isMembership ? `${c.paidCount}/${c.totalEligibleMembers ?? '?'} paid (${pct}%)` : `${formatCurrency(c.collectedAmount)} / ${formatCurrency(c.targetAmount)} (${pct}%)`}</span>
+                    <span className="text-muted-foreground sm:shrink-0 sm:whitespace-nowrap sm:text-right">{isMembership ? `${c.paidCount}/${c.totalEligibleMembers ?? '?'} paid (${pct}%)` : `${formatCurrency(c.collectedAmount)} / ${formatCurrency(c.targetAmount)} (${pct}%)`}</span>
                   </div>
                   <Progress value={pct} className="h-2" />
                   <p className="text-xs text-muted-foreground">{c.paidCount} members paid · Status: {c.status}</p>

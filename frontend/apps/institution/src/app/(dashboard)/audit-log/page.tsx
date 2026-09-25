@@ -22,7 +22,7 @@ export default function InstitutionAuditLogPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="p-8 lg:p-12">
+      <div className="p-4 sm:p-8 lg:p-12">
         <h1 className="text-2xl font-bold">Unauthorized</h1>
         <p className="text-muted-foreground mt-2">Only SuperAdmin users can access the audit log.</p>
       </div>
@@ -30,7 +30,7 @@ export default function InstitutionAuditLogPage() {
   }
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <h1 className="text-[24px] font-bold">Audit Log</h1>
       <p className="text-muted-foreground text-[13px] mt-1 mb-6">
         Every sensitive action taken by your institution&apos;s admins — member approvals/rejections/bans, staff changes, payout submissions, and content deletions.
@@ -40,7 +40,7 @@ export default function InstitutionAuditLogPage() {
         <div className="px-5 py-4 border-b border-border">
           <Input placeholder="Search by actor, action, or target" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-[380px]" />
         </div>
-        <Table>
+        <Table stackOnMobile>
           <TableHeader>
             <TableRow>
               <TableHead>Actor</TableHead>

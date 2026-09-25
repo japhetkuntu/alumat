@@ -437,7 +437,7 @@ export default function CampaignDetailPage() {
               {hasPaid && !isMembership && (
                 <div
                   className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
-                  style={{ background: "var(--brand-primary-100, var(--color-background-info))", border: "1px solid var(--brand-primary-300, var(--color-border-info))" }}
+                  style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
                 >
                   <CheckCircle2 size={14} style={{ color: "var(--primary)" }} className="shrink-0" />
                   <p className="text-[13px] font-semibold" style={{ color: "var(--brand-primary-700, var(--color-text-info))" }}>

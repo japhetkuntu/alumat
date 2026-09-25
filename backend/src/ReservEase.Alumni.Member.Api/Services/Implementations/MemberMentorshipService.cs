@@ -32,13 +32,7 @@ public class MemberMentorshipService(
             var result = await profileRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 p => p.Status == "Approved" && p.CurrentMenteeCount < p.MaxMentees
-                  && (search == null
-                      || p.Area.ToLower().Contains(search.ToLower())
-                      || (p.Bio != null && p.Bio.ToLower().Contains(search.ToLower()))
-                      || (p.Member != null && (
-                            p.Member.FirstName.ToLower().Contains(search.ToLower())
-                            || p.Member.LastName.ToLower().Contains(search.ToLower())
-                        ))));
+                  && TextSearch.Matches(search, p.Area, p.Bio, p.Member.FirstName, p.Member.LastName, (p.Member.FirstName + " " + p.Member.LastName), (p.Member.LastName + " " + p.Member.FirstName)));
 
             var dtoResult = new PgPagedResult<MentorProfileDto>
             {

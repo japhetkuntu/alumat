@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { EmptyState } from "@alumni/ui";
 import Link from "next/link";
 import { Plus, Trash2, Copy, ExternalLink, X, Pencil } from "@alumni/ui";
 import { notFound, useParams, useRouter } from "next/navigation";
@@ -393,7 +394,7 @@ export default function InstitutionDetailPage() {
 
   if (isError) notFound();
   if (isLoading || !inst) {
-    return <div className="p-7 text-[13px] text-muted-foreground">Loading institution…</div>;
+    return <div className="p-4 sm:p-7 text-[13px] text-muted-foreground">Loading institution…</div>;
   }
 
   if (branding === null) {
@@ -448,7 +449,7 @@ export default function InstitutionDetailPage() {
   const badge = statusBadge[inst.status] ?? statusBadge.Active;
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <p className="text-[12px] text-muted-foreground mb-3">
         <Link href="/institutions" className="hover:underline">Institutions</Link> / {inst.name}
       </p>
@@ -1009,7 +1010,12 @@ export default function InstitutionDetailPage() {
             {staffLoading ? (
               <p className="px-5 py-6 text-[13px] text-muted-foreground">Loading…</p>
             ) : staff.length === 0 ? (
-              <p className="px-5 py-6 text-[13px] text-muted-foreground">No admins yet, invite one to get started.</p>
+              <EmptyState
+                className="py-10"
+                title="No admins yet"
+                description="This institution can't sign in until it has at least one admin."
+                action={<Button size="sm" className="font-semibold" onClick={() => setInviteOpen(true)}>Invite an admin</Button>}
+              />
             ) : (
               staff.map((s) => (
                 <div key={s.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-b-0">

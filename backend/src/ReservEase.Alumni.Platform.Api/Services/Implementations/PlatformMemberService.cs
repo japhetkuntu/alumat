@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Platform.Api.Models;
@@ -18,7 +19,6 @@ namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 public class PlatformMemberService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Institution> institutionRepo,
-    IAuditLogService auditLog,
     ILogger<PlatformMemberService> logger) : IPlatformMemberService
 {
     /// <summary>A member who has signed in within this window counts as "active" on the platform-wide view.</summary>
@@ -30,7 +30,7 @@ public class PlatformMemberService(
         {
             var page = filter.Page < 1 ? 1 : filter.Page;
             var pageSize = filter.PageSize is < 1 or > 200 ? 50 : filter.PageSize;
-            var search = filter.Search?.Trim().ToLower();
+            var search = filter.Search is null ? null : string.Join(" ", filter.Search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLower();
             var activeCutoff = DateTime.UtcNow.AddDays(-ActiveWindowDays);
 
             var result = await memberRepo.GetPagedAsync(
@@ -40,10 +40,7 @@ public class PlatformMemberService(
                   && (!filter.ActiveOnly.HasValue || (filter.ActiveOnly.Value
                         ? (m.LastLoginAt != null && m.LastLoginAt >= activeCutoff)
                         : (m.LastLoginAt == null || m.LastLoginAt < activeCutoff)))
-                  && (string.IsNullOrEmpty(search) ||
-                      m.FirstName.ToLower().Contains(search) ||
-                      m.LastName.ToLower().Contains(search) ||
-                      m.Email.ToLower().Contains(search)),
+                  && TextSearch.Matches(search, m.FirstName, m.LastName, (m.FirstName + " " + m.LastName), (m.LastName + " " + m.FirstName), m.Email),
                 ignoreQueryFilters: true);
 
             var institutionIds = result.Results.Select(m => m.InstitutionId).Distinct().ToList();
@@ -55,9 +52,7 @@ public class PlatformMemberService(
                 m.InstitutionId, institutionLookup.GetValueOrDefault(m.InstitutionId)?.Name ?? "Unknown institution",
                 institutionLookup.GetValueOrDefault(m.InstitutionId)?.OrganizationType ?? "Community",
                 m.GraduationYear, m.Status,
-                m.LastLoginAt, m.LastLoginAt != null && m.LastLoginAt >= activeCutoff, m.CreatedAt,
-                m.ConnectionType, m.Skills, m.Interests,
-                m.ShowEmailOnDirectory, m.ShowPhoneOnDirectory, m.ShowCompanyOnDirectory, m.ShowBioOnDirectory)).ToList();
+                m.LastLoginAt, m.LastLoginAt != null && m.LastLoginAt >= activeCutoff, m.CreatedAt)).ToList();
 
             return new PgPagedResult<PlatformMemberListItem>
             {
@@ -78,30 +73,4 @@ public class PlatformMemberService(
         }
 
     }
-
-    public async Task<IApiResponse<object>> UpdateMemberProfileAsync(string id, UpdatePlatformMemberProfileRequest request, string actorId, string actorName)
-    {
-        try
-        {
-        var member = await memberRepo.GetOneAsync(m => m.Id == id, ignoreQueryFilters: true);
-        if (member is null)
-            return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
-
-        member.ConnectionType = request.ConnectionType is null ? member.ConnectionType : string.IsNullOrWhiteSpace(request.ConnectionType) ? null : request.ConnectionType.Trim();
-        member.Skills = request.Skills ?? member.Skills;
-        member.Interests = request.Interests ?? member.Interests;
-        member.ShowEmailOnDirectory = request.ShowEmailOnDirectory ?? member.ShowEmailOnDirectory;
-        member.ShowPhoneOnDirectory = request.ShowPhoneOnDirectory ?? member.ShowPhoneOnDirectory;
-        member.ShowCompanyOnDirectory = request.ShowCompanyOnDirectory ?? member.ShowCompanyOnDirectory;
-        member.ShowBioOnDirectory = request.ShowBioOnDirectory ?? member.ShowBioOnDirectory;
-        await memberRepo.UpdateAsync(member);
-        await auditLog.LogAsync(actorId, actorName, "updated member community profile and directory visibility", $"{member.FirstName} {member.LastName} ({member.Email})");
-        return ((object)new { id = member.Id }).ToOkApiResponse("Member profile updated");
-
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "UpdateMemberProfileAsync failed");
-            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to updatememberprofile");
-        }}
 }

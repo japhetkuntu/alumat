@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EmptyState } from "@alumni/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
@@ -65,7 +66,7 @@ export default function SupportPage() {
   });
 
   return (
-    <div className="p-7 max-w-[1500px]">
+    <div className="p-4 sm:p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-6">
         <div>
           <h1 className="text-[24px] font-bold">Support</h1>
@@ -78,7 +79,14 @@ export default function SupportPage() {
         <Card>
           <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Open cases</p></div>
           <CardContent className="p-0">
-            {supportCases.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">No support cases yet.</p>}
+            {supportCases.length === 0 && (
+              <EmptyState
+                className="py-10"
+                title="Support cases track institution problems"
+                description="Log a case when an institution reports an issue. Each case keeps its status until it is resolved, so nothing gets lost."
+                action={<Button size="sm" className="font-semibold" onClick={() => setCreateOpen(true)}>Log a support case</Button>}
+              />
+            )}
             {supportCases.map((c) => (
               <button
                 key={c.id}

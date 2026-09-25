@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadError } from "@alumni/ui";
+import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Briefcase, MapPin, Clock, ExternalLink, Pencil, Archive } from "@alumni/ui";
@@ -115,7 +117,7 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
           <div className="space-y-2"><Label>Job Description</Label>
             <Textarea placeholder="Describe the role..." rows={4} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
           <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save</Button>
+            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save job</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -141,7 +143,7 @@ export default function AdminJobsPage() {
   const pageSize = 20;
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-jobs", search, statusFilter, typeFilter, locationFilter, postedAfter, postedBefore, page],
     queryFn: () => getJobs(
       page,
@@ -224,8 +226,8 @@ export default function AdminJobsPage() {
 
       {/* Filters */}
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="flex-1 min-w-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="col-span-2 lg:col-span-1 min-w-0">
             <SearchModal
               title="Search jobs"
               value={search}
@@ -254,15 +256,16 @@ export default function AdminJobsPage() {
               )}
             </SearchModal>
           </div>
-          <Input placeholder="Filter by location" className="h-11" value={locationFilter} onChange={(e) => { setLocationFilter(e.target.value); setPage(1); }} />
-          <Input type="date" className="h-11" value={postedAfter} onChange={(e) => { setPostedAfter(e.target.value); setPage(1); }} />
-          <Input type="date" className="h-11" value={postedBefore} onChange={(e) => { setPostedBefore(e.target.value); setPage(1); }} />
+          <Input placeholder="Filter by location" className="h-11 col-span-2 lg:col-span-1" value={locationFilter} onChange={(e) => { setLocationFilter(e.target.value); setPage(1); }} />
+          <Input type="date" aria-label="Posted after" title="Posted after" className="h-11" value={postedAfter} onChange={(e) => { setPostedAfter(e.target.value); setPage(1); }} />
+          <Input type="date" aria-label="Posted before" title="Posted before" className="h-11" value={postedBefore} onChange={(e) => { setPostedBefore(e.target.value); setPage(1); }} />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <ChipRow label="Filter" activeKey={String(statusFilter)}>
           {/* Status pills */}
           {["", "Active", "Draft", "Closed"].map((s) => (
             <button
               key={s}
+              aria-pressed={statusFilter === s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
                 statusFilter === s ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
@@ -276,6 +279,7 @@ export default function AdminJobsPage() {
           {["", "Full-time", "Part-time", "Contract", "Internship"].map((t) => (
             <button
               key={t}
+              aria-pressed={typeFilter === t}
               onClick={() => { setTypeFilter(t); setPage(1); }}
               className={`px-3 py-1.5 border text-[12.5px] font-semibold transition-colors ${
                 typeFilter === t ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
@@ -284,16 +288,18 @@ export default function AdminJobsPage() {
               {t === "" ? "All Types" : t}
             </button>
           ))}
-        </div>
+        </ChipRow>
       </div>
 
       {/* Job Cards Grid */}
-      {isLoading ? (
+      {isError || (!isLoading && !data) ? (
+        <LoadError onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : jobs.length === 0 ? (
-        <EmptyState icon={<Briefcase size={40} />} title="No jobs found" description="Post your first job listing to help alumni find opportunities." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Post Job</Button>} />
+        <EmptyState icon={<Briefcase size={40} />} title="Job listings help members find work" description="Post an opening with the role, the company and how to apply. Members see it on their job board and get notified." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Post Job</Button>} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {jobs.map((j, i) => (

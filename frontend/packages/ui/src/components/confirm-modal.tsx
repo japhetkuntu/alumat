@@ -11,6 +11,8 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "destructive" | "default";
+  /** Which button is the main one. Use "cancel" when backing out is the safe choice, e.g. giving up a place. */
+  emphasis?: "confirm" | "cancel";
   isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -19,7 +21,7 @@ interface ConfirmModalProps {
 
 export function ConfirmModal({
   open, title, message, confirmLabel = "Confirm", cancelLabel = "Cancel",
-  variant = "destructive", isLoading = false, onConfirm, onCancel, children,
+  variant = "destructive", emphasis = "confirm", isLoading = false, onConfirm, onCancel, children,
 }: ConfirmModalProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
@@ -39,8 +41,8 @@ export function ConfirmModal({
         </DialogHeader>
         {children && <div className="py-1">{children}</div>}
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel} disabled={isLoading}>{cancelLabel}</Button>
-          <Button variant={variant} onClick={onConfirm} isLoading={isLoading} loadingText={confirmLabel}>
+          <Button variant={emphasis === "cancel" ? "default" : "outline"} onClick={onCancel} disabled={isLoading}>{cancelLabel}</Button>
+          <Button variant={emphasis === "cancel" ? "outline" : variant} className={emphasis === "cancel" && variant === "destructive" ? "text-destructive" : undefined} onClick={onConfirm} isLoading={isLoading} loadingText={confirmLabel}>
             {confirmLabel}
           </Button>
         </DialogFooter>

@@ -197,7 +197,7 @@ public class MailtrapEmailService(
         if (!string.IsNullOrWhiteSpace(logo))
         {
             return $"<img src=\"{Sanitize(logo)}\" alt=\"{brandName}\" width=\"40\" height=\"40\" " +
-                   "style=\"width:40px;height:40px;border-radius:11px;object-fit:cover;display:block\" />";
+                   "style=\"width:40px;height:40px;border-radius:0;object-fit:cover;display:block\" />";
         }
 
         var brandColor = variables.GetValueOrDefault("brand_color", "#0e7143");
@@ -208,7 +208,7 @@ public class MailtrapEmailService(
         // near-invisible white-on-pale-mark initial.
         var textOnMark = variables.GetValueOrDefault("brand_text_on_color", EmailColorPalette.TextOn(brandColor));
         var initial = variables.GetValueOrDefault("brand_initial", "A");
-        return "<div style=\"width:40px;height:40px;border-radius:11px;" +
+        return "<div style=\"width:40px;height:40px;border-radius:0;" +
                $"background:linear-gradient(135deg,{brandColor},{brandColorDark});color:{textOnMark};" +
                "font-size:16px;font-weight:800;text-align:center;line-height:40px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">" +
                $"{initial}</div>";
@@ -268,26 +268,26 @@ public class MailtrapEmailService(
         sb.AppendLine("<style>");
         sb.AppendLine("body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4f4f7;color:#333}");
         sb.AppendLine(".wrapper{max-width:600px;margin:0 auto;padding:24px}");
-        sb.AppendLine(".card{background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.08)}");
+        sb.AppendLine(".card{background:#fff;border-radius:0;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.08)}");
         sb.AppendLine(".header{text-align:center;padding-bottom:24px;border-bottom:1px solid #eee;margin-bottom:24px}");
         sb.AppendLine($".header h1{{margin:0;font-size:22px;color:{brandColorText}}}");
-        sb.AppendLine($".header .badge{{display:inline-block;background:{brandColor};color:{brandTextOnColor};font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:1px;margin-bottom:8px}}");
+        sb.AppendLine($".header .badge{{display:inline-block;background:{brandColor};color:{brandTextOnColor};font-size:11px;font-weight:700;padding:4px 10px;border-radius:0;letter-spacing:1px;margin-bottom:8px}}");
         sb.AppendLine(".content{font-size:15px;line-height:1.6}");
-        sb.AppendLine($".var-block{{background:{brandColorLight};border:1px solid {brandColorSoft};border-radius:8px;padding:16px 20px;margin:16px 0;font-size:14px}}");
+        sb.AppendLine($".var-block{{background:{brandColorLight};border:1px solid {brandColorSoft};border-radius:0;padding:16px 20px;margin:16px 0;font-size:14px}}");
         sb.AppendLine($".var-row td{{padding:6px 0;border-bottom:1px solid {brandColorSoft}}}");
         sb.AppendLine(".var-row:last-child td{border-bottom:none}");
         sb.AppendLine($".var-label{{font-weight:600;color:{brandColorTextOnLight};text-transform:capitalize}}");
         sb.AppendLine(".var-value{color:#333;text-align:right}");
         sb.AppendLine($".otp{{text-align:center;font-size:32px;font-weight:800;letter-spacing:8px;color:{brandColorTextOnLight};padding:16px 0}}");
         sb.AppendLine(".footer{text-align:center;font-size:12px;color:#999;padding-top:20px;margin-top:24px;border-top:1px solid #eee}");
-        sb.AppendLine($".btn{{display:inline-block;background:{brandColor};color:{brandTextOnColor}!important;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;margin:12px 0}}");
+        sb.AppendLine($".btn{{display:inline-block;background:{brandColor};color:{brandTextOnColor}!important;text-decoration:none;padding:12px 28px;border-radius:0;font-weight:600;font-size:14px;margin:12px 0}}");
         sb.AppendLine("</style></head><body>");
         sb.AppendLine("<div class=\"wrapper\"><div class=\"card\">");
 
         var brand = variables.TryGetValue("brand_name", out var b) ? b : "Member Portal";
         sb.AppendLine("<div class=\"header\">");
         if (variables.TryGetValue("brand_logo", out var logo) && !string.IsNullOrWhiteSpace(logo))
-            sb.AppendLine($"<img src=\"{Sanitize(logo)}\" alt=\"{Sanitize(brand)}\" width=\"40\" height=\"40\" style=\"width:40px;height:40px;border-radius:10px;object-fit:cover;margin:0 auto 10px;display:block\" />");
+            sb.AppendLine($"<img src=\"{Sanitize(logo)}\" alt=\"{Sanitize(brand)}\" width=\"40\" height=\"40\" style=\"width:40px;height:40px;border-radius:0;object-fit:cover;margin:0 auto 10px;display:block\" />");
         sb.AppendLine($"<div class=\"badge\">{Sanitize(brand.ToUpperInvariant())}</div>");
         sb.AppendLine($"<h1>{FormatTemplateId(templateId)}</h1>");
         sb.AppendLine("</div>");
@@ -313,11 +313,11 @@ public class MailtrapEmailService(
         else if (variables.TryGetValue("reset_url", out var resetUrl))
             sb.AppendLine($"<p><a class=\"btn\" href=\"{Sanitize(resetUrl)}\">Reset Password</a></p>");
         else if (variables.TryGetValue("action_url", out var actionUrl))
-            sb.AppendLine($"<p><a class=\"btn\" href=\"{Sanitize(actionUrl)}\">Go to Portal</a></p>");
+            sb.AppendLine($"<p><a class=\"btn\" href=\"{Sanitize(actionUrl)}\">{Sanitize(variables.TryGetValue("action_label", out var actionLabel) && !string.IsNullOrWhiteSpace(actionLabel) ? actionLabel : "Go to Portal")}</a></p>");
 
         var rendered = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "first_name", "name", "otp_code", "register_url", "verify_url", "reset_url", "action_url",
+                "first_name", "name", "otp_code", "register_url", "verify_url", "reset_url", "action_url", "action_label",
                 "brand_name", "brand_initial", "brand_logo", "brand_mark_html", "brand_color", "brand_color_dark", "brand_color_light", "brand_color_soft", "brand_text_on_color",
             };
 

@@ -35,9 +35,7 @@ public class ResourceService(
                   && (string.IsNullOrEmpty(filter.Type) || r.Type == filter.Type)
                   && (!filter.AddedAfter.HasValue || r.CreatedAt >= filter.AddedAfter.Value)
                   && (!filter.AddedBefore.HasValue || r.CreatedAt <= filter.AddedBefore.Value)
-                  && (string.IsNullOrEmpty(search)
-                      || r.Title.ToLower().Contains(search)
-                      || (r.Description != null && r.Description.ToLower().Contains(search)))
+                  && TextSearch.Matches(search, r.Title, r.Description)
                   && (isSuper
                       || (r.YearGroups != null && r.YearGroups.Any(__y => yearGroups.Contains(__y)))
                       || (r.CommunityId != null && communityIds.Contains(r.CommunityId))));
