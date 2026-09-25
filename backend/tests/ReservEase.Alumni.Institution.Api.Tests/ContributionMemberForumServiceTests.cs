@@ -83,7 +83,7 @@ public class ContributionMemberForumServiceTests
         var mockCampaignRepo2 = new Mock<IAlumniPgRepository<Campaign>>();
         mockCampaignRepo2.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<Campaign, bool>>>(), It.IsAny<bool>())).ReturnsAsync(new List<Campaign>());
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo2.Object, Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo2.Object, Mock.Of<IAlumniPgRepository<DbMember>>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<AdminContributionService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin" };
 
         var response = await service.GetContributionsAsync(new ContributionInstitutionStaffFilter { Page = 1, PageSize = 10 }, admin);
@@ -111,7 +111,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<AdminContributionService>());
 
         var campaign = new Campaign { Id = "camp1", Title = "Test Campaign", CollectedAmount = 0m, PaidCount = 0 };
         mockCampaignRepo.Setup(r => r.GetByIdAsync("camp1", It.IsAny<bool>())).ReturnsAsync(campaign);
@@ -171,7 +171,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>())).ReturnsAsync(existingMember);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(existingMember);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<AdminContributionService>());
 
         var result = await service.RecordManualContributionAsync(new RecordManualContributionRequest(
             "camp1",
@@ -217,7 +217,7 @@ public class ContributionMemberForumServiceTests
         mockMemberRepo.Setup(r => r.GetOneAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
         mockMemberRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync((DbMember?)null);
 
-        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), new NullLogger<AdminContributionService>());
+        var service = new AdminContributionService(mockContributionRepo.Object, mockCampaignRepo.Object, mockMemberRepo.Object, Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ICurrentTenantService>(), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<AdminContributionService>());
 
         var result = await service.RecordManualContributionAsync(new RecordManualContributionRequest(
             "camp1",

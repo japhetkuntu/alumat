@@ -145,13 +145,28 @@ public class MemberAuthServiceTests
             .ReturnsAsync(new GoogleIdentity("taken@test.com", "Ama", "Owusu", null));
         var sut = BuildSut(memberRepo, googleTokenVerifier);
 
-        var response = await sut.GoogleRegisterAsync(new GoogleRegisterRequest("good-token", "0244000000", "STU1", 2021, null));
+        var response = await sut.GoogleRegisterAsync(new GoogleRegisterRequest("good-token", "0244000000", "STU1", 2021, null, AcceptedTerms: true));
 
         Assert.Equal(409, response.Code);
         memberRepo.Verify(r => r.AddAsync(It.IsAny<MemberEntity>()), Times.Never);
     }
 
     [Fact]
+    public async Task GoogleRegisterAsync_Rejects_WhenTermsNotAccepted()
+    {
+        var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
+        var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
+        googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
+            .ReturnsAsync(new GoogleIdentity("new@test.com", "Ama", "Mensah", null));
+        var sut = BuildSut(memberRepo, googleTokenVerifier);
+
+        var response = await sut.GoogleRegisterAsync(new GoogleRegisterRequest("good-token", "0244000000", "STU1", 2021, null));
+
+        Assert.Equal(400, response.Code);
+        memberRepo.Verify(r => r.AddAsync(It.IsAny<MemberEntity>()), Times.Never);
+    }
+
+        [Fact]
     public async Task GoogleRegisterAsync_CreatesPendingMember_WhenNoExistingAccount()
     {
         var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
@@ -165,7 +180,7 @@ public class MemberAuthServiceTests
             .ReturnsAsync(new GoogleIdentity("new@test.com", "Ama", "Owusu", null));
         var sut = BuildSut(memberRepo, googleTokenVerifier);
 
-        var response = await sut.GoogleRegisterAsync(new GoogleRegisterRequest("good-token", "0244000000", "STU1", 2021, null));
+        var response = await sut.GoogleRegisterAsync(new GoogleRegisterRequest("good-token", "0244000000", "STU1", 2021, null, AcceptedTerms: true));
 
         Assert.Equal(201, response.Code);
         Assert.NotNull(created);

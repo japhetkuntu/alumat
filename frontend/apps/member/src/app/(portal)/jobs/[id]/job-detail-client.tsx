@@ -1,5 +1,6 @@
 "use client";
 
+import { ReportButton } from "@/components/member/report-button";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
@@ -160,6 +161,7 @@ export default function MemberJobDetailPage() {
                   {text}
                 </div>
               ))}
+              <ReportButton entityType="Job" entityId={job.id} entityTitle={job.title} />
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { DeleteAccountLink } from "@/components/member/delete-account";
 import { useState, useRef } from "react";
 import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1066,6 +1067,8 @@ export default function MemberProfilePage() {
         </div>{/* end main column */}
 
       </div>
+
+      <DeleteAccountLink institutionName={institutionName} />
 
       {/* ── Confirm pensioner modal ── */}
       <ConfirmModal

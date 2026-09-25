@@ -71,6 +71,8 @@ function buildSchema(requireStudentId: boolean, googleMode: boolean, collectGrad
     program: z.string().optional(),
     password: googleMode ? z.string().optional() : z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().optional(),
+    // Must be ticked: the person is 18 or older and accepts the Terms and Privacy Policy. Recorded on the server.
+    acceptedTerms: z.boolean().refine((v) => v === true, { message: "Please confirm to continue" }),
   });
   return googleMode ? base : base.refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",
@@ -431,6 +433,7 @@ function RegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { acceptedTerms: false },
   });
 
   // Relay from the Google sign-in bridge (see /google-auth) — a raw,
@@ -479,6 +482,7 @@ function RegisterForm() {
         graduationYear: data.graduationYear,
         departmentId: data.departmentId,
         program: data.program,
+        acceptedTerms: data.acceptedTerms,
       });
       setEmail(data.email);
       setApproved(!!res.data?.data?.approved);
@@ -549,7 +553,7 @@ function RegisterForm() {
 
   /* ── Sub-step navigation ── */
   async function nextFromStep1() {
-    const ok = await trigger(["firstName", "lastName", "email", "phone"]);
+    const ok = await trigger(["firstName", "lastName", "email", "phone", "acceptedTerms"]);
     if (!ok) return;
     // Community institutions skip the "Alumni information" sub-step entirely
     // (formSubStep stays 1|2|3 internally; step 2's back button also returns
@@ -714,6 +718,18 @@ function RegisterForm() {
                     Used to reach you by SMS & WhatsApp for important updates.
                   </p>
                 </div>
+                <div className="space-y-1.5">
+                  <label className="flex cursor-pointer items-start gap-2.5 text-[12.5px] leading-snug" style={{ color: "var(--foreground)" }}>
+                    <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-primary" {...register("acceptedTerms")} />
+                    <span>
+                      I am 18 or older, and I agree to the{" "}
+                      <Link href="/terms" target="_blank" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>Terms</Link>{" "}
+                      and{" "}
+                      <Link href="/privacy" target="_blank" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>Privacy Policy</Link>.
+                    </span>
+                  </label>
+                  <FieldError message={errors.acceptedTerms?.message} />
+                </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
                   onClick={nextFromStep1} isLoading={isCommunity && !!googleIdToken && submittingGoogle} loadingText="Creating account…">
                   {isCommunity ? (googleIdToken ? "Create account" : "Next: create password") : "Next: alumni details"} <ChevronRight size={15} className="ml-1" />
@@ -855,12 +871,6 @@ function RegisterForm() {
                     Create account
                   </Button>
                 </div>
-                <p className="text-[12px] text-center" style={{ color: "var(--muted-foreground)" }}>
-                  By creating an account, you agree to our{" "}
-                  <Link href="/terms" target="_blank" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>Terms</Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" target="_blank" className="font-semibold hover:underline" style={{ color: "var(--primary)" }}>Privacy Policy</Link>.
-                </p>
               </div>
             )}
 

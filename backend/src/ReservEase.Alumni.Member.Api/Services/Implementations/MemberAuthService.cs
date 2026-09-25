@@ -103,6 +103,9 @@ public class MemberAuthService(
         {
             logger.LogInformation("Register request for email: {Email}", request.Email);
 
+            if (!request.AcceptedTerms)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Please accept the Terms and Privacy Policy and confirm you are 18 or older to register.");
+
             var email = request.Email.ToLower().Trim();
             var existing = await memberRepo.GetOneAsync(m => m.Email == email);
 
@@ -130,6 +133,7 @@ public class MemberAuthService(
                 DepartmentId = request.DepartmentId,
                 Program = request.Program?.Trim(),
                 Otp = otp,
+                TermsAcceptedAt = DateTime.UtcNow,
                 ResendCount = 0,
                 ReferralCode = request.ReferralCode?.Trim(),
             };
@@ -159,6 +163,9 @@ public class MemberAuthService(
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<object>("Google sign-in failed. Please try again.");
 
             logger.LogInformation("Google registration attempt for email: {Email}", identity.Email);
+
+            if (!request.AcceptedTerms)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Please accept the Terms and Privacy Policy and confirm you are 18 or older to register.");
 
             // Same re-registration allowance as the password flow — a Suspended
             // (rejected) member can try again; anything else with this email is
@@ -196,6 +203,7 @@ public class MemberAuthService(
                 Program = request.Program?.Trim(),
                 Status = autoApprove ? "Active" : "Pending",
                 IsEmailVerified = true,
+                TermsAcceptedAt = DateTime.UtcNow,
                 CreatedBy = "google",
             };
 
@@ -284,6 +292,7 @@ public class MemberAuthService(
                 Program = cached.Program,
                 Status = autoApprove ? "Active" : "Pending",
                 IsEmailVerified = true,
+                TermsAcceptedAt = cached.TermsAcceptedAt,
                 CreatedBy = "self",
             };
 

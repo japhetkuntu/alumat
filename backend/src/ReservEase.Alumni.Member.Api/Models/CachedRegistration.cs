@@ -2,6 +2,7 @@ namespace ReservEase.Alumni.Member.Api.Models;
 
 public class CachedRegistration
 {
+    public DateTime? TermsAcceptedAt { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

@@ -1655,3 +1655,38 @@ export async function getPayoutForecast(): Promise<PayoutForecast> {
   const res = await institutionClient.get<ApiResponse<PayoutForecast>>("/payouts/forecast");
   return res.data.data!;
 }
+
+
+// ─── Content reports ─────────────────────────────────────────────────────────
+
+export interface ContentReport {
+  id: string;
+  entityType: "ForumThread" | "MentorProfile" | "Job" | "BusinessListing" | "Spotlight";
+  entityId: string;
+  entityTitle: string;
+  reason: string;
+  details?: string | null;
+  reporterName: string;
+  status: "Open" | "ActionTaken" | "Dismissed";
+  createdAt: string;
+  reviewedByName?: string | null;
+  reviewedAt?: string | null;
+  resolutionNote?: string | null;
+}
+
+export async function getContentReports(page = 1, pageSize = 20, status?: string) {
+  const res = await institutionClient.get<ApiResponse<PagedResult<ContentReport>>>("/contentreports", {
+    params: { page, pageSize, status: status || undefined },
+  });
+  return res.data.data!;
+}
+
+export async function getOpenContentReportCount() {
+  const res = await institutionClient.get<ApiResponse<number>>("/contentreports/open-count");
+  return res.data.data ?? 0;
+}
+
+export async function reviewContentReport(id: string, body: { status: ContentReport["status"]; note?: string }) {
+  const res = await institutionClient.patch<ApiResponse<ContentReport>>(`/contentreports/${id}`, body);
+  return res.data.data!;
+}

@@ -222,6 +222,7 @@ public class CampaignService(
             if (request.IsMembershipCampaign && !request.MembershipYear.HasValue)
                 return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Membership campaigns must set a valid membership year.");
 
+            var before = (campaign.Title, campaign.TargetAmount, campaign.AmountPerMember, campaign.PensionerAmountPerMember, campaign.Deadline, Status: campaign.Status.ToString());
             var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
             var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
             ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
@@ -303,6 +304,17 @@ public class CampaignService(
             campaign.UpdatedAt = DateTime.UtcNow;
             campaign.UpdatedBy = admin.Id;
             await campaignRepo.UpdateAsync(campaign);
+
+            // Anything that changes what members are asked to pay, or when, leaves a trail: who, what it was, what it became.
+            var changes = new List<string>();
+            if (before.TargetAmount != campaign.TargetAmount) changes.Add($"target {before.TargetAmount:N2} to {campaign.TargetAmount:N2}");
+            if (before.AmountPerMember != campaign.AmountPerMember) changes.Add($"amount per member {before.AmountPerMember:N2} to {campaign.AmountPerMember:N2}");
+            if (before.PensionerAmountPerMember != campaign.PensionerAmountPerMember) changes.Add($"pensioner amount {before.PensionerAmountPerMember:N2} to {campaign.PensionerAmountPerMember:N2}");
+            if (before.Deadline.Date != campaign.Deadline.Date) changes.Add($"deadline {before.Deadline:yyyy-MM-dd} to {campaign.Deadline:yyyy-MM-dd}");
+            if (before.Status != campaign.Status.ToString()) changes.Add($"status {before.Status} to {campaign.Status}");
+            if (before.Title != campaign.Title) changes.Add($"title \"{before.Title}\" to \"{campaign.Title}\"");
+            if (changes.Count > 0)
+                await auditLog.LogAsync(admin, "Campaign Updated", $"{campaign.Title}: {string.Join("; ", changes)}");
 
             logger.LogInformation("Campaign {CampaignId} updated by admin {AdminId}", campaign.Id, admin.Id);
             return campaign.ToDto().ToOkApiResponse();
@@ -510,6 +522,8 @@ public class CampaignService(
 
             await campaignRepo.UpdateAsync(campaign);
 
+            await auditLog.LogAsync(admin, "Campaign Marked as Disbursed", $"{campaign.Title}: online payments of {campaign.CollectedAmount:N2} marked as paid out");
+
             logger.LogInformation("Marked campaign {CampaignId} as Paystack disbursed by admin {AdminId}", campaignId, admin.Id);
             return new object().ToOkApiResponse("Campaign paystack contributions marked as disbursed");
         }
@@ -592,6 +606,7 @@ public class ContributionService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
+    IInstitutionAuditLogService auditLog,
     ILogger<ContributionService> logger) : IContributionService
 {
     public async Task<IApiResponse<PgPagedResult<ContributionDto>>> GetContributionsAsync(ContributionInstitutionStaffFilter filter, AuthData admin)
@@ -774,6 +789,9 @@ public class ContributionService(
                     currentTenant.InstitutionId!, memberSnapshot.Id, memberSnapshot.Email ?? string.Empty, memberSnapshot.FirstName, contribution.Amount, campaign.Title, contribution.Id), logger);
             }
 
+            await auditLog.LogAsync(admin, "Manual Payment Recorded",
+                $"{memberSnapshot.FirstName} {memberSnapshot.LastName}: {contribution.Amount:N2} for {campaign.Title} via {contribution.PaymentMethod} ({(request.Confirmed ? "confirmed" : "pending")}), ref {contribution.TransactionRef ?? "none"}");
+
             logger.LogInformation("Contribution {ContributionId} recorded by admin {AdminId} (confirmed={Confirmed})", contribution.Id, admin.Id, request.Confirmed);
             return contribution.ToDto().ToCreatedApiResponse("Contribution recorded");
         }
@@ -816,6 +834,9 @@ public class ContributionService(
                 await campaignRepo.UpdateAsync(campaign);
             }
 
+            await auditLog.LogAsync(admin, "Payment Confirmed",
+                $"{contribution.Member?.FirstName} {contribution.Member?.LastName}: {contribution.Amount:N2} for {contribution.Campaign?.Title ?? "campaign"}, ref {contribution.TransactionRef ?? "none"}");
+
             logger.LogInformation("Contribution {ContributionId} confirmed by admin {AdminId}", contributionId, admin.Id);
 
             // Notify the member
@@ -855,6 +876,9 @@ public class ContributionService(
             contribution.UpdatedAt = DateTime.UtcNow;
             contribution.UpdatedBy = admin.Id;
             await contributionRepo.UpdateAsync(contribution);
+
+            await auditLog.LogAsync(admin, "Payment Rejected",
+                $"{contribution.Member?.FirstName} {contribution.Member?.LastName}: {contribution.Amount:N2} for {contribution.Campaign?.Title ?? "campaign"}{(string.IsNullOrEmpty(reason) ? string.Empty : $" (reason: {reason})")}");
 
             logger.LogInformation("Contribution {ContributionId} rejected by admin {AdminId}", contributionId, admin.Id);
 

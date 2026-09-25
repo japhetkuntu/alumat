@@ -17,6 +17,7 @@ import {
   Settings,
   Menu,
   ShieldCheck,
+  ShieldAlert,
   ClipboardList,
   Star,
   Bell,
@@ -89,6 +90,7 @@ const baseNavItems = [
   { href: "/spotlights", label: "Spotlights", icon: Star },
   { href: "/albums", label: "Photo Albums", icon: Images },
   { href: "/business-directory", label: "Business Directory", icon: Store },
+  { href: "/flagged-content", label: "Flagged Content", icon: ShieldAlert },
   { label: "Insights", isHeader: true },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/notifications", label: "Notifications", icon: Bell },
@@ -142,7 +144,7 @@ function useNavItems() {
       // place). Mentorship and Albums are partially available to a
       // ScopedAdmin too (scoped to their own batch/community) — see
       // MentorshipController/AlbumsController.
-      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights") {
+      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content") {
         if (user?.role !== "SuperAdmin") return false;
       }
       if (item.href === "/mentorship" || item.href === "/albums") {

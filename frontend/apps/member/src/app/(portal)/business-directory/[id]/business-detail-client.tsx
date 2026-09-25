@@ -1,5 +1,6 @@
 "use client";
 
+import { ReportButton } from "@/components/member/report-button";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -103,6 +104,7 @@ export default function BusinessListingDetailPage() {
           <MapPin size={14} />
           {biz.location}
         </p>
+        <ReportButton entityType="BusinessListing" entityId={biz.id} entityTitle={biz.businessName} />
       </div>
 
       <Card>

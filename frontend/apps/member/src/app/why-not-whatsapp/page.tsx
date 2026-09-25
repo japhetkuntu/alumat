@@ -25,11 +25,11 @@ const COMPARISON: { row: string; whatsapp: string; alumunion: string }[] = [
   { row: "Finding people",         whatsapp: "Scroll and guess who's who",             alumunion: "Searchable directory by name, chapter, location" },
   { row: "Search",                 whatsapp: "Searches messages, not members",           alumunion: "Search across members, events, jobs and news" },
   { row: "Who's in charge",        whatsapp: "Tied to one admin's personal phone",     alumunion: "Role-based admin accounts your organization controls" },
-  { row: "Collecting dues/funds",  whatsapp: "Manual, screenshot-and-trust",           alumunion: "Secure online payments with automatic records" },
+  { row: "Collecting dues/funds",  whatsapp: "Manual, screenshot-and-trust",           alumunion: "Online payments through a licensed provider, with a record of each" },
   { row: "Events",                 whatsapp: "Lost in the scroll, no RSVP tracking",   alumunion: "Built-in events with RSVP tracking" },
   { row: "Jobs & mentorship",      whatsapp: "Buried somewhere in chat history",       alumunion: "Dedicated jobs board & mentorship matching" },
-  { row: "Photos & memories",      whatsapp: "Lost when storage clears or phones change", alumunion: "Permanent photo albums, organized by event" },
-  { row: "Engagement insight",     whatsapp: "No idea who's actually engaged",         alumunion: "Real engagement data for your admin team" },
+  { row: "Photos & memories",      whatsapp: "Lost when storage clears or phones change", alumunion: "Photo albums organized by event, kept by your organization" },
+  { row: "Engagement insight",     whatsapp: "No idea who's actually engaged",         alumunion: "Engagement figures for your admin team, from what members do in the portal" },
   { row: "Cost",                   whatsapp: "\"Free,\" but nobody's really running it", alumunion: "Free, and actually built for the job" },
 ];
 
@@ -101,7 +101,7 @@ const COMPARE_ROWS: { whatsapp: string; alumunion: string }[] = [
   { whatsapp: "Caps at 1,024 members", alumunion: "No cap, built for the whole membership" },
   { whatsapp: "Scroll and guess who's who", alumunion: "Searchable directory by name, chapter, location" },
   { whatsapp: "Tied to one admin's personal phone", alumunion: "Role-based accounts the organization owns" },
-  { whatsapp: "Manual, screenshot-and-trust dues", alumunion: "Secure online payments, automatic records" },
+  { whatsapp: "Manual, screenshot-and-trust dues", alumunion: "Online payments through a licensed provider, each recorded" },
   { whatsapp: "No RSVP tracking, no analytics", alumunion: "Real RSVPs and engagement reports" },
 ];
 

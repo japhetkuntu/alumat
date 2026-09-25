@@ -84,6 +84,12 @@ export default function TermsPage() {
           staff can remove User Content or suspend accounts that breach these Terms or the Institution&apos;s own
           community guidelines.
         </p>
+        <p>
+          Members can report content or another Member using the Report link on forum threads, mentor profiles, job
+          posts, business listings, and spotlights. Reports go to the Institution&apos;s administrators, who decide
+          what action to take. Mentors and other Members are not vetted or endorsed by the Platform. You are
+          responsible for your own decisions when you contact or meet another Member.
+        </p>
       </Section>
 
       <Section heading="6. Payments">
@@ -128,7 +134,9 @@ export default function TermsPage() {
           community guidelines, or because someone is confirmed not to be an alumnus). We can suspend or
           terminate access to the Platform for an Institution or a Member who breaches these Terms, engages in
           fraud, or creates security or legal risk for the Platform or other users. You may stop using the
-          Platform, or ask an Institution to delete your Member account, at any time.
+          Platform, or ask an Institution to delete your Member account, at any time. You can also close your own
+          account from the bottom of your profile page. That closes it with that Institution only, removes your
+          personal data, and keeps payment records without your name or contact details.
         </p>
       </Section>
 

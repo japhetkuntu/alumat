@@ -120,14 +120,14 @@ const PROBLEMS: ProblemItem[] = [
   {
     n: "02", icon: SearchX, eyebrow: "Problem two", title: "Member records are incomplete",
     desc: "Ask “how many members do we have, and who are they?” and the honest answer is a guess, an old headcount, or a folder of screenshots. There's no reliable, verified record of your community.",
-    fix: "A verified member database, searchable by name, year and location, with real profiles your institution actually owns.",
+    fix: "A member database your institution approves and owns, searchable by name, year and location.",
     chips: ["Directory", "Businesses"],
     illustration: UnknownAlumniIllustration,
   },
   {
     n: "03", icon: Wallet, eyebrow: "Problem three", title: "Contributions are still tracked by hand",
     desc: "You need GH₵100 from 500 members. Someone drafts a broadcast message. People pay however they can and send screenshots as proof. Someone reconciles every one by hand. Two weeks in, someone asks “how much have we raised?” and the honest answer is “let me check.”",
-    fix: "Built-in campaigns and dues with secure online payments, automatic reconciliation, and a live total instead of a guess.",
+    fix: "Built-in campaigns and dues with online payments through a licensed provider, a record of every payment, and a running total from the payments recorded.",
     chips: ["Fundraising", "Store", "Services"],
     illustration: ManualReconciliationIllustration,
   },

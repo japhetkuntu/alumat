@@ -1,5 +1,6 @@
 "use client";
 
+import { ReportButton } from "@/components/member/report-button";
 import { useState } from "react";
 import { ChipRow } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -93,6 +94,9 @@ function RequestForm({
           Send a mentorship request
         </p>
       </div>
+      <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+        Mentors are members. AlumUnion doesn&apos;t vet them. Use the same care you would with anyone you meet online, and use Report if something is wrong.
+      </p>
       <div className="space-y-1.5">
         <Label htmlFor="req-area" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
           Area of interest
@@ -361,6 +365,12 @@ export default function MemberMentorshipPage() {
                       <p className="text-[13px] leading-relaxed line-clamp-3" style={{ color: "var(--muted-foreground)" }}>
                         {m.bio}
                       </p>
+                    )}
+
+                    {!isSelf && (
+                      <div className="-mb-2 flex justify-end">
+                        <ReportButton entityType="MentorProfile" entityId={m.id} entityTitle={`Mentor: ${mentorName}`} />
+                      </div>
                     )}
 
                     <Button

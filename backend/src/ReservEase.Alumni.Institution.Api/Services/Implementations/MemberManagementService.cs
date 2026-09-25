@@ -188,7 +188,7 @@ public class MemberManagementService(
                 filter.Page, filter.PageSize,
                 sortColumn: filter.SortColumn ?? "CreatedAt", sortDir: filter.SortDir ?? "desc",
                 f => (isSuper || yearGroups.Contains(f.GraduationYear) || communityMemberIds!.Contains(f.Id))
-                  && (string.IsNullOrEmpty(filter.Status) || f.Status == filter.Status)
+                  && (string.IsNullOrEmpty(filter.Status) ? f.Status != "Deleted" : f.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.DepartmentId) || f.DepartmentId == filter.DepartmentId)
                   && (!filter.GraduationYearFrom.HasValue || f.GraduationYear >= filter.GraduationYearFrom.Value)
                   && (!filter.GraduationYearTo.HasValue || f.GraduationYear <= filter.GraduationYearTo.Value)

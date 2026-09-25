@@ -968,3 +968,19 @@ export async function unhideMyBusinessListing(id: string): Promise<BusinessListi
 export async function deleteMyBusinessListing(id: string): Promise<void> {
   await memberClient.delete(`/business-directory/${id}`);
 }
+
+
+// ── Reporting ────────────────────────────────────────────────────────────────
+
+export type ReportableType = "ForumThread" | "MentorProfile" | "Job" | "BusinessListing" | "Spotlight";
+export const REPORT_REASONS = ["Scam or fraud", "Harassment or abuse", "False or misleading", "Inappropriate content", "Other"] as const;
+
+export async function reportContent(body: { entityType: ReportableType; entityId: string; entityTitle?: string; reason: string; details?: string }) {
+  const res = await memberClient.post("/reports", body);
+  return res.data;
+}
+
+export async function deleteMyAccount(confirmation: string) {
+  const res = await memberClient.post("/auth/me/delete", { confirmation });
+  return res.data;
+}

@@ -78,6 +78,9 @@ public class Member : BaseEntity, ITenantScoped
     public List<string>? LeadershipRoles { get; set; }
     public string? Achievements { get; set; }
 
+    /// <summary>When the member accepted the Terms of Service and Privacy Policy and confirmed they are 18 or older.</summary>
+    public DateTime? TermsAcceptedAt { get; set; }
+
     public string? ConnectionType { get; set; }
     public List<string>? Skills { get; set; }
     public List<string>? Interests { get; set; }

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReportButton } from "@/components/member/report-button";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -141,6 +142,7 @@ export default function ThreadDetailPage() {
             <MessageSquare size={13} style={{ color: "var(--primary)" }} />
             {thread.replyCount ?? 0} {(thread.replyCount ?? 0) === 1 ? "reply" : "replies"}
           </span>
+          <ReportButton entityType="ForumThread" entityId={thread.id} entityTitle={thread.title} />
         </div>
       </div>
 

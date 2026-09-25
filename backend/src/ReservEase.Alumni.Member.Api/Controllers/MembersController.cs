@@ -10,7 +10,7 @@ using ReservEase.Alumni.Member.Api.Services.Interfaces;
 namespace ReservEase.Alumni.Member.Api.Controllers;
 
 [Route("api/v{version:apiVersion}/auth")]
-public class MembersController(IMemberAuthService authService) : DefaultController
+public class MembersController(IMemberAuthService authService, IMemberAccountDeletionService accountDeletionService) : DefaultController
 {
     [HttpPost("register")]
     [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
@@ -149,6 +149,17 @@ public class MembersController(IMemberAuthService authService) : DefaultControll
     }
 
     [Authorize]
+    [HttpPost("me/delete")]
+    [SwaggerOperation(Summary = "Delete my account", Description = "Removes the member's personal data from this institution and closes the account. Payment records are kept without the member's name or contact details. Requires typing DELETE.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> DeleteMyAccount([FromBody] DeleteAccountRequest request)
+    {
+        var member = User.GetAccount();
+        var result = await accountDeletionService.DeleteMyAccountAsync(member, request.Confirmation);
+        return result.ToActionResult();
+    }
+
+    [Authorize]
     [HttpPut("changepassword")]
     [SwaggerOperation(Summary = "Change password", Description = "Change the current member's password")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
@@ -171,3 +182,5 @@ public class MembersController(IMemberAuthService authService) : DefaultControll
         return result.ToActionResult();
     }
 }
+
+public record DeleteAccountRequest(string Confirmation);

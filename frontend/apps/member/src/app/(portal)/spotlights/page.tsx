@@ -1,5 +1,6 @@
 "use client";
 
+import { ReportButton } from "@/components/member/report-button";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -175,9 +176,12 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
           </button>
         )}
 
-        <p className="text-[11.5px] mt-3" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
-          {formatDate(spotlight.createdAt)}
-        </p>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
+            {formatDate(spotlight.createdAt)}
+          </p>
+          <ReportButton entityType="Spotlight" entityId={spotlight.id} entityTitle={spotlight.title} />
+        </div>
       </div>
     </div>
   );
