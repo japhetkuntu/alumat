@@ -1690,3 +1690,26 @@ export async function reviewContentReport(id: string, body: { status: ContentRep
   const res = await institutionClient.patch<ApiResponse<ContentReport>>(`/contentreports/${id}`, body);
   return res.data.data!;
 }
+
+
+// ─── Institution Agreement ───────────────────────────────────────────────────
+
+export interface AgreementStatus {
+  currentVersion: string;
+  accepted: boolean;
+  acceptedVersion?: string | null;
+  acceptedAt?: string | null;
+  acceptedByName?: string | null;
+  acceptedByTitle?: string | null;
+  requiresAcceptance: boolean;
+}
+
+export async function getAgreementStatus() {
+  const res = await institutionClient.get<ApiResponse<AgreementStatus>>("/agreement");
+  return res.data.data!;
+}
+
+export async function acceptAgreement(body: { version: string; title: string }) {
+  const res = await institutionClient.post<ApiResponse<AgreementStatus>>("/agreement/accept", body);
+  return res.data.data!;
+}

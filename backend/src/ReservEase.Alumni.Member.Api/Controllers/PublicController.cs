@@ -108,8 +108,20 @@ public class PublicController(
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<OnboardingLeadResponse>))]
     public async Task<IActionResult> CreateOnboardingLead([FromBody] CreateOnboardingLeadRequest request)
     {
+        if (!request.AgreementAccepted || request.AgreementVersion != InstitutionAgreement.CurrentVersion)
+            return ApiResponseExtensions.ToBadRequestApiResponse<OnboardingLeadResponse>("Please read and accept the Institution Agreement to continue.").ToActionResult();
+
+        // Behind the reverse proxy the real address is the first entry of X-Forwarded-For.
+        var forwarded = Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
+        var ip = string.IsNullOrEmpty(forwarded) ? HttpContext.Connection.RemoteIpAddress?.ToString() : forwarded;
+
         var lead = new OnboardingLead
         {
+            AgreementVersion = request.AgreementVersion,
+            AgreementAcceptedAt = DateTime.UtcNow,
+            AgreementAcceptedByName = request.ContactName,
+            AgreementAcceptedByTitle = request.ContactRole,
+            AgreementAcceptedIp = ip,
             InstitutionName = request.InstitutionName,
             ContactName = request.ContactName,
             ContactEmail = request.ContactEmail,
@@ -117,6 +129,15 @@ public class PublicController(
             Country = request.Country,
             EstimatedMemberCount = request.EstimatedMemberCount,
             Message = request.Message,
+            OrganizationType = request.OrganizationType,
+            ContactRole = request.ContactRole,
+            Website = request.Website,
+            PrimaryGoals = request.PrimaryGoals ?? [],
+            CurrentMemberManagement = request.CurrentMemberManagement,
+            DataImportStatus = request.DataImportStatus,
+            PreferredContactChannel = request.PreferredContactChannel,
+            PreferredContactTime = request.PreferredContactTime,
+            TimeZone = request.TimeZone,
         };
         await onboardingLeadRepo.AddAsync(lead);
 

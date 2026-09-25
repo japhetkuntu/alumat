@@ -17,6 +17,7 @@ import { memberClient, handleApiError } from "@/lib/api-client";
 import { Section, scrollToSection, useFadeUp, useCountUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
 import { FAQS } from "./_marketing/faqs";
+import { INSTITUTION_AGREEMENT_VERSION } from "@alumni/ui";
 import {
   JobsIllustration, MentorshipIllustration, ScatteredChatIllustration,
   DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
@@ -336,6 +337,7 @@ interface LeadForm {
   preferredContactTime: string;
   timeZone: string;
   message: string;
+  agreementAccepted: boolean;
 }
 
 const MEMBER_COUNT_RANGES = ["0 – 100", "101 – 500", "501 – 999", "1,000+"];
@@ -350,7 +352,7 @@ const EMPTY_LEAD: LeadForm = {
   institutionName: "", website: "", contactName: "", contactRole: "", contactEmail: "", contactPhone: "",
   country: "Ghana", estimatedMemberCount: "", organizationType: "", primaryGoals: [],
   currentMemberManagement: "", dataImportStatus: "", preferredContactChannel: "",
-  preferredContactTime: "", timeZone: "", message: "",
+  preferredContactTime: "", timeZone: "", message: "", agreementAccepted: false,
 };
 
 function OnboardingForm() {
@@ -385,9 +387,13 @@ function OnboardingForm() {
       setStep(1);
       return;
     }
+    if (!form.contactRole) { setError("Please choose your role at the institution. It is recorded with your acceptance of the agreement."); setStep(2); return; }
+    if (!form.agreementAccepted) { setError("Please accept the Institution Agreement to send your request."); return; }
     setSubmitting(true);
     try {
       await memberClient.post("/public/onboarding-leads", {
+        agreementAccepted: true,
+        agreementVersion: INSTITUTION_AGREEMENT_VERSION,
         institutionName: form.institutionName.trim(),
         website: form.website.trim() || undefined,
         contactName: form.contactName.trim(),
@@ -590,6 +596,18 @@ function OnboardingForm() {
         <Textarea value={form.message} onChange={(e) => set("message", e.target.value)} placeholder="Anything else you want us to know? A launch goal, a challenge, or a big idea." rows={4} />
       </div>
         </>
+      )}
+      {step === 3 && (
+        <label className="flex cursor-pointer items-start gap-3 border p-4 text-[13px] leading-relaxed" style={{ borderColor: form.agreementAccepted ? "var(--primary)" : "var(--border)", background: "var(--card)" }}>
+          <input type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-primary" checked={form.agreementAccepted} onChange={(e) => set("agreementAccepted", e.target.checked)} />
+          <span style={{ color: "var(--foreground)" }}>
+            I confirm I am authorised to act for {form.institutionName.trim() || "this institution"}, and I accept the{" "}
+            <Link href="/institution-agreement" target="_blank" className="font-semibold underline" style={{ color: "var(--primary)" }}>Institution Agreement</Link>.
+            <span className="mt-1 block text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              This covers how members&apos; personal data is handled, who is responsible for what, and that the platform is free for your institution. We record who accepted, when, and the version.
+            </span>
+          </span>
+        </label>
       )}
       <FormError message={error} />
       <div className="flex items-center justify-between gap-3 pt-1">

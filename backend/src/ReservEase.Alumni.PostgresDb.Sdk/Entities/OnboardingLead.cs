@@ -4,6 +4,13 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Entities;
 public class OnboardingLead : BaseEntity
 {
     public string InstitutionName { get; set; } = string.Empty;
+
+    // Electronic acceptance of the Institution Agreement, recorded when the request was submitted.
+    public string? AgreementVersion { get; set; }
+    public DateTime? AgreementAcceptedAt { get; set; }
+    public string? AgreementAcceptedByName { get; set; }
+    public string? AgreementAcceptedByTitle { get; set; }
+    public string? AgreementAcceptedIp { get; set; }
     public string ContactName { get; set; } = string.Empty;
     public string ContactEmail { get; set; } = string.Empty;
     public string? ContactPhone { get; set; }

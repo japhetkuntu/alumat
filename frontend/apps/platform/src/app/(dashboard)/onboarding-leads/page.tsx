@@ -171,6 +171,12 @@ export default function OnboardingLeadsPage() {
                   {active.primaryGoals?.length > 0 && <p><b>Goals:</b> {active.primaryGoals.join(", ")}</p>}
                 </div>
 
+                <p>
+                  <b>Institution Agreement:</b>{" "}
+                  {active.agreementAcceptedAt
+                    ? `accepted ${new Date(active.agreementAcceptedAt).toLocaleString()} by ${active.agreementAcceptedByName ?? "the contact"}${active.agreementAcceptedByTitle ? ` (${active.agreementAcceptedByTitle})` : ""}, version ${active.agreementVersion}${active.agreementAcceptedIp ? `, from ${active.agreementAcceptedIp}` : ""}`
+                    : "not recorded (request made before the agreement was introduced)"}
+                </p>
                 {active.message && (
                   <div className="border-t border-border mt-3 pt-3 text-[13.5px] leading-relaxed">
                     <b>Message</b><br />{active.message}

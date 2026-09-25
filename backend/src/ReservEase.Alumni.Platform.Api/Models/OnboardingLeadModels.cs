@@ -41,4 +41,6 @@ public record OnboardingLeadResponse(
     string? PreferredContactChannel, string? PreferredContactTime, string? TimeZone, string? Website,
     string? Message, string Status,
     string? AssigneeStaffId, string? AssigneeName, string? InternalNote, string? ApprovedInstitutionId,
-    double AgeHours);
+    double AgeHours,
+    string? AgreementVersion = null, DateTime? AgreementAcceptedAt = null, string? AgreementAcceptedByName = null,
+    string? AgreementAcceptedByTitle = null, string? AgreementAcceptedIp = null);

@@ -22,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${origin}/why-not-whatsapp`, changeFrequency: "monthly", priority: 0.8 },
       { url: `${origin}/privacy`, changeFrequency: "yearly", priority: 0.3 },
       { url: `${origin}/terms`, changeFrequency: "yearly", priority: 0.3 },
+      { url: `${origin}/institution-agreement`, changeFrequency: "yearly", priority: 0.3 },
     ];
   }
 

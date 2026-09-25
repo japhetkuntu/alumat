@@ -79,6 +79,7 @@ export function MarketingFooter() {
           <div className="flex items-center gap-5">
             <Link href="/terms" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
             <Link href="/privacy" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
+            <Link href="/institution-agreement" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
           </div>
         </div>
       </div>

@@ -65,6 +65,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<ContentReport> ContentReports => Set<ContentReport>();
+    public DbSet<InstitutionAgreementAcceptance> InstitutionAgreementAcceptances => Set<InstitutionAgreementAcceptance>();
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
     public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
@@ -447,6 +448,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // activity's hot path is "fetch this owner's active subscriptions."
         modelBuilder.Entity<PushSubscription>().HasIndex(p => new { p.OwnerId, p.OwnerType, p.Endpoint }).IsUnique();
         modelBuilder.Entity<PushSubscription>().HasIndex(p => new { p.OwnerId, p.OwnerType, p.IsActive });
+
+        modelBuilder.Entity<InstitutionAgreementAcceptance>().HasIndex(a => new { a.InstitutionId, a.Version });
 
         // ContentReport: admins list open reports newest first; a member reporting the same thing twice is de-duplicated by lookup.
         modelBuilder.Entity<ContentReport>().HasIndex(r => new { r.Status, r.CreatedAt });

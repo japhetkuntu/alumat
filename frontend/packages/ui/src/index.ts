@@ -49,3 +49,4 @@ export * from "./components/tooltip";
 export * from "./components/user-avatar";
 export * from "./components/year-group-picker";
 export * from "./components/youtube-embed";
+export { InstitutionAgreementBody, INSTITUTION_AGREEMENT_VERSION, INSTITUTION_AGREEMENT_DATE } from "./components/institution-agreement";

@@ -755,6 +755,11 @@ export interface OnboardingLead {
   internalNote?: string;
   approvedInstitutionId?: string;
   ageHours: number;
+  agreementVersion?: string;
+  agreementAcceptedAt?: string;
+  agreementAcceptedByName?: string;
+  agreementAcceptedByTitle?: string;
+  agreementAcceptedIp?: string;
 }
 
 export async function getOnboardingLeads(status?: string) {

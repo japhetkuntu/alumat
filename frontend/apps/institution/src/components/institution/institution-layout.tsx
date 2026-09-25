@@ -39,6 +39,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
 import { GlobalSearch } from "@/components/institution/global-search";
+import { AgreementGate } from "@/components/institution/agreement-gate";
 import { NotificationPanel } from "@/components/institution/notification-panel";
 import { PushNotificationPrompt } from "@/components/institution/push-notification-prompt";
 import { InstitutionSetupChecklist } from "@/components/institution/setup-checklist";
@@ -366,6 +367,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <InstitutionSetupChecklist />
+      <AgreementGate />
     </div>
   );
 }

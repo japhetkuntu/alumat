@@ -151,6 +151,7 @@ public class OnboardingLeadService(
             l.PreferredContactTime, l.TimeZone, l.Website, l.Message, l.Status,
             l.AssigneeStaffId, l.AssigneeStaffId != null && assigneeNames.TryGetValue(l.AssigneeStaffId, out var aName) ? aName : null,
             l.InternalNote, l.ApprovedInstitutionId,
-            Math.Round((now - l.CreatedAt).TotalHours, 1))).ToList();
+            Math.Round((now - l.CreatedAt).TotalHours, 1),
+            l.AgreementVersion, l.AgreementAcceptedAt, l.AgreementAcceptedByName, l.AgreementAcceptedByTitle, l.AgreementAcceptedIp)).ToList();
     }
 }
