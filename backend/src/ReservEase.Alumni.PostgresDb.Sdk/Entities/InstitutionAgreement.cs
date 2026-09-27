@@ -6,5 +6,5 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Entities;
 /// </summary>
 public static class InstitutionAgreement
 {
-    public const string CurrentVersion = "2026-09-25";
+    public const string CurrentVersion = "2026-09-27";
 }

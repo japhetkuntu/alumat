@@ -30,6 +30,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
     public DbSet<SupportCase> SupportCases => Set<SupportCase>();
     public DbSet<OnboardingLead> OnboardingLeads => Set<OnboardingLead>();
+    public DbSet<InstitutionActivitySnapshot> InstitutionActivitySnapshots => Set<InstitutionActivitySnapshot>();
+    public DbSet<StaffActivityWeek> StaffActivityWeeks => Set<StaffActivityWeek>();
     public DbSet<PlatformNotification> PlatformNotifications => Set<PlatformNotification>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
@@ -474,6 +476,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<LandingPageStory>>(jsonOpts)).Metadata.SetValueComparer(landingStoryListComparer);
         modelBuilder.Entity<Institution>().Property(i => i.NewsBanner).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<NewsBanner>(jsonOpts));
+
+        // Compared by serialized value — the list is always replaced wholesale on update,
+        // and ActivationMilestone has no value equality of its own.
+        var milestoneListComparer = new ValueComparer<List<ActivationMilestone>>(
+            (l1, l2) => System.Text.Json.JsonSerializer.Serialize(l1, jsonOpts) == System.Text.Json.JsonSerializer.Serialize(l2, jsonOpts),
+            l => System.Text.Json.JsonSerializer.Serialize(l, jsonOpts).GetHashCode(),
+            l => System.Text.Json.JsonSerializer.Deserialize<List<ActivationMilestone>>(System.Text.Json.JsonSerializer.Serialize(l, jsonOpts), jsonOpts)!);
+        modelBuilder.Entity<PlatformSettings>().Property(p => p.ActivationMilestones).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<ActivationMilestone>>(jsonOpts)).Metadata.SetValueComparer(milestoneListComparer);
         modelBuilder.Entity<Institution>().Property(i => i.HeroImageUrls).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<Institution>().Property(i => i.PendingPayoutChanges).HasColumnType("jsonb")
@@ -486,10 +497,17 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.Status);
         modelBuilder.Entity<SupportCase>().HasIndex(c => c.InstitutionId);
         modelBuilder.Entity<OnboardingLead>().HasIndex(l => l.Status);
+        modelBuilder.Entity<InstitutionActivitySnapshot>().HasIndex(a => new { a.InstitutionId, a.WeekStart }).IsUnique();
+        modelBuilder.Entity<StaffActivityWeek>().HasIndex(a => new { a.InstitutionId, a.StaffId, a.WeekStart }).IsUnique();
+        modelBuilder.Entity<StaffActivityWeek>().HasIndex(a => new { a.InstitutionId, a.WeekStart });
+        modelBuilder.Entity<OnboardingLead>().HasIndex(l => l.NextFollowUpAt);
         modelBuilder.Entity<OnboardingLead>().Property(l => l.PrimaryGoals).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts))
             .Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<Announcement>().HasIndex(a => a.SentAt);
+        modelBuilder.Entity<Announcement>().Property(a => a.Channels).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts))
+            .Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<AuditLogEntry>().HasIndex(a => a.CreatedAt);
 
         // ── Multi-tenancy: scope every ITenantScoped entity to the current

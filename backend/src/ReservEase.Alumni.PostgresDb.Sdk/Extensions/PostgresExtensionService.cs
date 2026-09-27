@@ -24,6 +24,8 @@ public static class PostgresExtensionService
 
         services.AddScoped(typeof(IAlumniPgRepository<>), typeof(AlumniPgRepository<>));
         services.AddScoped<ICurrentTenantService, CurrentTenantService>();
+        services.AddScoped<InstitutionActivationService>();
+        services.AddScoped<IStaffActivityRecorder, StaffActivityRecorder>();
 
         return services;
     }

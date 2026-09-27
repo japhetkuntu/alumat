@@ -138,6 +138,7 @@ export interface InstitutionStaffUser {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   role: UserRole;
   yearGroups?: number[];
   communityIds?: string[];
@@ -149,6 +150,7 @@ export interface CreateInstitutionStaffRequest {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   password: string;
   role: UserRole;
   yearGroups?: number[];
@@ -158,6 +160,7 @@ export interface CreateInstitutionStaffRequest {
 export interface UpdateInstitutionStaffRequest {
   firstName: string;
   lastName: string;
+  phone?: string;
   role: UserRole;
   yearGroups?: number[];
   communityIds?: string[];

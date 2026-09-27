@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/shared/providers";
 
 // IBM Plex Sans is the platform's single, permanent typeface — every portal,
-// every tenant. See apps/member/src/app/layout.tsx for the full rationale.
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
+// every tenant. Loaded from local files (next/font/local), not
+// next/font/google, so the build never depends on reaching Google's font CDN
+// (that fetch failed outright on the production host). See
+// apps/member/src/app/layout.tsx for the full rationale.
+const ibmPlexSans = localFont({
+  src: [
+    { path: "../fonts/ibm-plex-sans-300.woff2", weight: "300", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-400.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-500.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-600.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans",
-  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 

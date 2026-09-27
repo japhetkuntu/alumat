@@ -31,4 +31,13 @@ public class AnnouncementsController(IAnnouncementService announcementService) :
         var result = await announcementService.SendAsync(request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
         return result.ToActionResult();
     }
+
+    [HttpGet("staff-directory")]
+    [SwaggerOperation(Summary = "Search institution admins", Description = "For picking specific recipients — searches by name or email across every institution, or within one when institutionId is given.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<StaffDirectoryEntry>>))]
+    public async Task<IActionResult> SearchStaff([FromQuery] string? search, [FromQuery] string? institutionId)
+    {
+        var result = await announcementService.SearchStaffAsync(search, institutionId);
+        return result.ToActionResult();
+    }
 }

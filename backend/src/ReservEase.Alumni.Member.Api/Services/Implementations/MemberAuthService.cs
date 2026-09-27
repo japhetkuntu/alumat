@@ -622,6 +622,12 @@ public class MemberAuthService(
             if (member is null)
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Invalid or expired refresh token");
 
+            // A refresh is a returning session — stamp it so members who stay signed in
+            // still count toward the platform's weekly activity tracking. Throttled hourly.
+            var now = DateTime.UtcNow;
+            if (member.LastLoginAt is null || member.LastLoginAt < now.AddHours(-1))
+                await memberRepo.ExecuteUpdateAsync(m => m.Id == member.Id, s => s.SetProperty(m => m.LastLoginAt, now));
+
             var claimData = BuildClaimData(member);
             var accessToken = GenerateJwtToken(claimData);
             var newRefresh = GenerateRefreshToken();

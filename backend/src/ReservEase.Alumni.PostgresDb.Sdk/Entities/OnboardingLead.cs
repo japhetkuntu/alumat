@@ -26,7 +26,20 @@ public class OnboardingLead : BaseEntity
     public string? TimeZone { get; set; }
     public string? Website { get; set; }
     public string? Message { get; set; }
-    public string Status { get; set; } = "New"; // New, Contacted, Approved, Rejected
+    public string Status { get; set; } = "New"; // see OnboardingLeadStatuses
+    /// <summary>Where the lead came from — "Website" for the public request form, otherwise whatever platform staff chose when logging it (e.g. "Warm intro", "Outreach", "Referral").</summary>
+    public string? Source { get; set; }
+    // When each funnel stage was first reached — set once, never cleared, so the
+    // platform's onboarding funnel can count "reached this stage in week N" even
+    // after a lead moves on or is rejected. Skipping a stage backfills it.
+    public DateTime? ContactedAt { get; set; }
+    public DateTime? DemoBookedAt { get; set; }
+    public DateTime? TrialStartedAt { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    /// <summary>When the assignee should next get back to this lead. The Operations Worker reminds them once it's due.</summary>
+    public DateTime? NextFollowUpAt { get; set; }
+    /// <summary>When the worker last reminded the assignee — a reminder is due again only once NextFollowUpAt moves past it.</summary>
+    public DateTime? FollowUpReminderSentAt { get; set; }
     public string? AssigneeStaffId { get; set; }
     public string? InternalNote { get; set; }
     public string? ApprovedInstitutionId { get; set; }

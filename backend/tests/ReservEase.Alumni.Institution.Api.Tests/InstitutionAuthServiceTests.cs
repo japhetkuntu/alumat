@@ -56,7 +56,7 @@ public class InstitutionAuthServiceTests
 
         var sut = new InstitutionAuthService(
             mockRepo.Object, mockInstitutionRepo.Object, mockCurrentTenant.Object, mockHttpContextAccessor.Object,
-            mockRedis.Object, options, mockMailtrapOptions, mockTemporalProvider, mockGoogleTokenVerifier.Object, logger);
+            mockRedis.Object, options, mockMailtrapOptions, mockTemporalProvider, mockGoogleTokenVerifier.Object, Mock.Of<IStaffActivityRecorder>(), logger);
 
         // Act
         var response = await sut.LoginAsync(new LoginRequest("disabled@test.com", "password"));
@@ -84,7 +84,7 @@ public class InstitutionAuthServiceTests
         return new InstitutionAuthService(
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
             redis.Object, options, mailtrapOptions, temporalProvider, googleTokenVerifier.Object,
-            new NullLogger<InstitutionAuthService>());
+            Mock.Of<IStaffActivityRecorder>(), new NullLogger<InstitutionAuthService>());
     }
 
     [Fact]

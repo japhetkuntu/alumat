@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
-  Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight, LifeBuoy, UserCheck,
+  Bell, CheckCheck, Loader2, CreditCard, Check, ChevronRight, LifeBuoy, UserCheck, ClipboardList,
 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -25,10 +25,11 @@ const TYPE_META: Record<string, { color: string; label: string; icon: React.Elem
   ContributionRejected:  { color: "bg-red-500",  label: "Rejected",  icon: CreditCard },
   SupportTicketResolved: { color: "bg-primary",  label: "Support",   icon: LifeBuoy },
   NewMemberPendingApproval: { color: "bg-amber-500", label: "New Member", icon: UserCheck },
+  SetupNudge:            { color: "bg-primary",  label: "Setup",     icon: ClipboardList },
 };
 
 function NotifIcon({ type }: { type: string }) {
-  const meta = TYPE_META[type] ?? { color: "bg-primary", label: "Notification", icon: CreditCard };
+  const meta = TYPE_META[type] ?? { color: "bg-primary", label: "Notification", icon: Bell };
   const Icon = meta.icon;
   return (
     <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0", meta.color)}>

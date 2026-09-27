@@ -719,6 +719,12 @@ export async function getUnreadNotificationCount(): Promise<number> {
   return res.data.data ?? 0;
 }
 
+/** Unread counts bucketed by nav section, for jobs/events/forum badges in the bottom nav and sidebar. */
+export async function getUnreadNotificationsByCategory(): Promise<{ jobs: number; events: number; forum: number }> {
+  const res = await memberClient.get("/notifications/unread-by-category");
+  return res.data.data ?? { jobs: 0, events: 0, forum: 0 };
+}
+
 export async function markNotificationRead(id: string): Promise<void> {
   await memberClient.put(`/notifications/${id}/read`);
 }

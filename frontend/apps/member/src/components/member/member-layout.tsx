@@ -11,8 +11,10 @@ import { PortalShellSkeleton } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { GlobalSearch } from "@/components/member/global-search";
 import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
+import { InstallPromptBanner, useInstallPrompt } from "@/components/member/install-prompt";
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
 import { memberClient } from "@/lib/api-client";
+import { getUnreadNotificationsByCategory } from "@/lib/member-api";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   LayoutDashboard,
@@ -150,10 +152,48 @@ export function useDisabledFeatures(): Set<string> {
   return useMemo(() => new Set(data?.disabledFeatures ?? []), [data]);
 }
 
+/** Shared across Sidebar and MobileBottomNav for the jobs/events/forum unread badges — 30s poll matches the notification-bell badge's cadence. */
+function useUnreadByCategory() {
+  const { isMember } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["notifications-unread-by-category"],
+    queryFn: getUnreadNotificationsByCategory,
+    enabled: isMember,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+  return data ?? { jobs: 0, events: 0, forum: 0 };
+}
+
+const NAV_BADGE_CATEGORY: Record<string, keyof ReturnType<typeof useUnreadByCategory>> = {
+  "/jobs": "jobs",
+  "/events": "events",
+  "/forum": "forum",
+};
+
+/** At most one top-of-page nudge at a time — the home-screen install prompt takes priority over the push-notification ask, since installing subsumes it on platforms where push requires the installed app. */
+function PortalNudge() {
+  const { visible: installVisible } = useInstallPrompt();
+  return installVisible ? <InstallPromptBanner /> : <PushNotificationPrompt />;
+}
+
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-white"
+      style={{ background: "var(--accent)" }}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
+  const unreadByCategory = useUnreadByCategory();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const visibleGroups = navGroups
@@ -223,6 +263,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                       active ? "text-accent" : "group-hover:text-accent"
                     )} />
                     {item.label}
+                    {NAV_BADGE_CATEGORY[item.href] && (
+                      <NavBadge count={unreadByCategory[NAV_BADGE_CATEGORY[item.href]]} />
+                    )}
                   </Link>
                 );
               })}
@@ -237,6 +280,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 function MobileBottomNav() {
   const pathname = usePathname();
   const disabledFeatures = useDisabledFeatures();
+  const unreadByCategory = useUnreadByCategory();
 
   const bottomNavItems = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -263,6 +307,8 @@ function MobileBottomNav() {
       <nav className="flex items-stretch justify-around h-[58px] max-w-[560px] mx-auto">
         {bottomNavItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const badgeCategory = NAV_BADGE_CATEGORY[item.href];
+          const hasUnread = badgeCategory ? unreadByCategory[badgeCategory] > 0 : false;
           return (
             <Link
               key={item.href}
@@ -270,7 +316,15 @@ function MobileBottomNav() {
               className="flex-1 flex flex-col items-center justify-center gap-0.5 relative"
               style={{ color: active ? "var(--accent)" : "var(--muted-foreground)" }}
             >
-              <item.icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+              <div className="relative">
+                <item.icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+                {hasUnread && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 h-[7px] w-[7px] rounded-full border border-background"
+                    style={{ background: "var(--accent)" }}
+                  />
+                )}
+              </div>
               <span className={cn("text-[10.5px] leading-none", active ? "font-bold" : "font-medium")}>
                 {item.label}
               </span>
@@ -406,7 +460,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
-              <PushNotificationPrompt />
+              <PortalNudge />
               {children}
             </div>
           </div>

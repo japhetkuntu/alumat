@@ -39,6 +39,9 @@ function NewInstitutionPageContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const fromLead = searchParams.get("fromLead") ?? undefined;
+  // "Start trial" on an onboarding lead: the institution starts on a trial and the lead moves to Trial, not Approved.
+  const isTrial = !!fromLead && searchParams.get("trial") === "1";
+  const [trialDays, setTrialDays] = useState("30");
   const { data: baseDomains } = useQuery({ queryKey: ["base-domains"], queryFn: getBaseDomains, staleTime: Infinity });
   const { data: lead } = useQuery({
     queryKey: ["onboarding-lead", fromLead],
@@ -131,6 +134,7 @@ function NewInstitutionPageContent() {
           organizationType: form.organizationType,
           batchStartYear: form.organizationType === "Alumni" && form.batchStartYear ? Number(form.batchStartYear) : undefined,
           batchEndYear: form.organizationType === "Alumni" && form.batchEndYear ? Number(form.batchEndYear) : undefined,
+          trialDays: isTrial && Number(trialDays) > 0 ? Number(trialDays) : undefined,
         });
         toast.success("Institution created", {
           description: `${created.name} has been onboarded. We've emailed ${form.adminEmail || form.contactEmail} a welcome message with their setup link.`,
@@ -143,7 +147,7 @@ function NewInstitutionPageContent() {
         if (fromLead) {
           // Fire-and-forget — linking the lead to the new institution is secondary
           // and must not block navigation to the newly created institution.
-          updateOnboardingLeadStatus(fromLead, { status: "Approved", approvedInstitutionId: created.id }).catch((err) => {
+          updateOnboardingLeadStatus(fromLead, { status: isTrial ? "Trial" : "Approved", approvedInstitutionId: created.id }).catch((err) => {
             toast.error("Institution created, but the onboarding request could not be updated", { description: handleApiError(err) });
           });
         }
@@ -163,8 +167,12 @@ function NewInstitutionPageContent() {
       <p className="text-[12px] text-primary font-semibold mb-2">&larr; Institutions</p>
       <div className="flex items-end justify-between mb-5">
         <div>
-          <h1 className="text-[24px] font-bold">Add institution</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">Create a tenant and establish its first Institution Portal administrator.</p>
+          <h1 className="text-[24px] font-bold">{isTrial ? "Start a trial" : "Add institution"}</h1>
+          <p className="text-muted-foreground text-[13px] mt-1">
+            {isTrial
+              ? "Set up the institution on a trial. Converting the onboarding request to full later ends the trial."
+              : "Create a tenant and establish its first Institution Portal administrator."}
+          </p>
         </div>
         <Button variant="outline" onClick={() => router.push("/institutions")}>Cancel</Button>
       </div>
@@ -190,6 +198,12 @@ function NewInstitutionPageContent() {
                 <h2 className="text-[16px] font-semibold mb-1">Institution details</h2>
                 <p className="text-[13px] text-muted-foreground mb-4">Start with the record and the person accountable for the tenant relationship.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {isTrial && (
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <Label htmlFor="trial-days">Trial length (days)</Label>
+                      <Input id="trial-days" type="number" min={1} max={180} value={trialDays} onChange={(e) => setTrialDays(e.target.value)} className="sm:w-[160px]" />
+                    </div>
+                  )}
                   <div className="sm:col-span-2 space-y-1.5">
                     <Label>Institution name</Label>
                     <Input value={form.name} onChange={(e) => { update("name", e.target.value); update("slug", slugify(e.target.value)); }} placeholder="Greenfield University" />

@@ -171,6 +171,28 @@ public class Institution : BaseEntity
     public string Status { get; set; } = "Active";
     public DateTime? TrialEndsAt { get; set; }
     public DateTime OnboardedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// First time every activation criterion (see InstitutionActivationCalculator)
+    /// was met at once — stamped by the Operations Worker, never cleared, so a
+    /// later dip doesn't un-count an institution that genuinely got going.
+    /// Null means not yet activated.
+    /// </summary>
+    public DateTime? ActivatedAt { get; set; }
+    /// <summary>Cooldown marker for the worker's "your next setup step" email to institution admins.</summary>
+    public DateTime? LastActivationNudgeSentAt { get; set; }
+    /// <summary>
+    /// Per-institution override of the activation member threshold
+    /// (InstitutionActivationService.MinMembers). Small associations and year
+    /// groups never reach 100 members; platform staff set a realistic number
+    /// here. Null uses the platform default.
+    /// </summary>
+    public int? ActivationMinMembers { get; set; }
+    /// <summary>
+    /// Whether the worker sends this institution's admins "your next setup step"
+    /// reminders. Separate from EmailNotificationsEnabled, which also governs
+    /// member digests — an institution can mute one without the other.
+    /// </summary>
+    public bool SetupNudgesEnabled { get; set; } = true;
 
     /// <summary>
     /// See <see cref="OrganizationTypes"/>. "Alumni" (default) — the platform's

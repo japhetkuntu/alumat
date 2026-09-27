@@ -1,8 +1,8 @@
 import * as React from "react";
 
 /** Bump when the wording changes. Must match `InstitutionAgreement.CurrentVersion` on the server. */
-export const INSTITUTION_AGREEMENT_VERSION = "2026-09-25";
-export const INSTITUTION_AGREEMENT_DATE = "25 September 2026";
+export const INSTITUTION_AGREEMENT_VERSION = "2026-09-27";
+export const INSTITUTION_AGREEMENT_DATE = "27 September 2026";
 
 const heading = "mt-6 mb-2 text-[14.5px] font-semibold";
 const para = "mb-3 text-[13.5px] leading-relaxed";
@@ -59,9 +59,13 @@ export function InstitutionAgreementBody() {
         </p>
         <p>
           We keep the data secure with reasonable technical and organisational measures. We use service providers to run the platform,
-          such as hosting, email, SMS and payment providers, and require them to protect the data. If we become aware of a breach
-          affecting your members&apos; data, we will tell you without undue delay so you can meet your own duties. When this agreement
-          ends, we will return or delete the data on request, except records we must keep by law, such as payment records.
+          such as hosting, email, SMS and payment providers, and require them to protect the data. If we become aware of a security
+          incident affecting your members&apos; data, we will tell you as soon as practicable and in any case within 72 hours of
+          confirming it, with what we know at the time and what we are doing about it, so you can meet your own duties. As the
+          controller, deciding whether the incident must be reported to the Data Protection Commission or to affected members under
+          the Data Protection Act, 2012 (Act 843) is your responsibility; we will give you the information you reasonably need to make
+          that call and to notify them if required. When this agreement ends, we will return or delete the data on request, except
+          records we must keep by law, such as payment records.
         </p>
       </Clause>
 
@@ -80,12 +84,20 @@ export function InstitutionAgreementBody() {
           do not infringe anyone else&apos;s rights. You allow us to display them in your portal and on your behalf in emails and messages the
           platform sends. We will not use your name or logo in our own marketing without your permission, which you can give electronically.
         </p>
+        <p>
+          If you believe your name, logo or crest is being used elsewhere on the platform without your authorisation — for example by
+          another member, business listing or institution — you or your members can report it (see clause 7), and we will act on it,
+          which may include removing the content or suspending the account responsible.
+        </p>
       </Clause>
 
       <Clause n={6} title="Money and payments">
         <p>
-          Online payments are handled by a licensed payment provider. AlumUnion does not hold or move your funds. You are responsible for
-          the purpose of each fundraiser and dues collection, for spending the money as you tell your members, and for your own accounts.
+          Online payments are handled by a licensed payment provider (currently Paystack), which is separately licensed and regulated
+          by the Bank of Ghana. AlumUnion is not a bank, a payment service provider, or a dedicated electronic money issuer, and we do
+          not ourselves process, hold or move payment funds at any point — that happens exclusively between your members, the payment
+          provider, and your institution&apos;s payout destination. You are responsible for the purpose of each fundraiser and dues
+          collection, for spending the money as you tell your members, and for your own accounts.
         </p>
         <p>
           The platform shows totals and records based on payments received through the provider and on entries your administrators make,

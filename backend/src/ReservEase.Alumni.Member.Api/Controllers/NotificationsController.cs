@@ -25,6 +25,16 @@ public class NotificationsController(
     /// feels laggy on the same device that just did it.
     /// </summary>
     private static string UnreadCountCacheKey(string memberId) => $"notif-unread-count:{memberId}";
+    private static string UnreadByCategoryCacheKey(string memberId) => $"notif-unread-category:{memberId}";
+
+    /// <summary>Maps a notification Type to the nav section its badge belongs on (see Notification.cs for the full Type list).</summary>
+    private static readonly Dictionary<string, string> TypeToCategory = new()
+    {
+        ["JobAlert"] = "jobs",
+        ["EventReminder"] = "events",
+        ["ForumReply"] = "forum",
+    };
+
     [HttpGet]
     [SwaggerOperation(Summary = "Get notifications", Description = "Get paginated in-app notifications for the current member")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PgPagedResult<NotificationDto>>))]
@@ -64,6 +74,27 @@ public class NotificationsController(
         return fresh.ToOkApiResponse().ToActionResult();
     }
 
+    [HttpGet("unread-by-category")]
+    [SwaggerOperation(Summary = "Unread count by category", Description = "Unread notification counts bucketed by nav section (jobs/events/forum), for bottom-nav badges")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<Dictionary<string, int>>))]
+    public async Task<IActionResult> GetUnreadByCategory()
+    {
+        var member = User.GetAccount();
+        var cacheKey = UnreadByCategoryCacheKey(member.Id);
+        var cached = await cache.GetAsync<Dictionary<string, int>>(cacheKey);
+        if (cached is not null) return cached.ToOkApiResponse().ToActionResult();
+
+        var unread = await notifRepo.GetAllAsync(n => n.RecipientId == member.Id && n.RecipientType == "Member" && !n.IsRead);
+        var result = new Dictionary<string, int> { ["jobs"] = 0, ["events"] = 0, ["forum"] = 0 };
+        foreach (var n in unread)
+        {
+            if (TypeToCategory.TryGetValue(n.Type, out var category))
+                result[category]++;
+        }
+        await cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(20));
+        return result.ToOkApiResponse().ToActionResult();
+    }
+
     [HttpPut("{id}/read")]
     [SwaggerOperation(Summary = "Mark as read", Description = "Mark a specific notification as read")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
@@ -81,6 +112,7 @@ public class NotificationsController(
             notif.ReadAt = DateTime.UtcNow;
             await notifRepo.UpdateAsync(notif);
             await cache.RemoveAsync(UnreadCountCacheKey(member.Id));
+            await cache.RemoveAsync(UnreadByCategoryCacheKey(member.Id));
         }
         return new object().ToOkApiResponse().ToActionResult();
     }
@@ -104,6 +136,7 @@ public class NotificationsController(
             }
             await notifRepo.UpdateRangeAsync(unread);
             await cache.RemoveAsync(UnreadCountCacheKey(member.Id));
+            await cache.RemoveAsync(UnreadByCategoryCacheKey(member.Id));
         }
         return new object().ToOkApiResponse("All notifications marked as read").ToActionResult();
     }

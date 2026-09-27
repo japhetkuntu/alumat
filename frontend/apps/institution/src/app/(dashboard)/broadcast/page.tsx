@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, Send, MessageSquare, Bell, Lock } from "@alumni/ui";
 import { toast } from "sonner";
@@ -28,9 +29,10 @@ const STATUS_OPTIONS = [
 export default function BroadcastPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
+  const searchParams = useSearchParams();
 
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
+  const [title, setTitle] = useState(() => searchParams.get("title") ?? "");
+  const [message, setMessage] = useState(() => searchParams.get("message") ?? "");
   const [inApp, setInApp] = useState(true);
   const [sms, setSms] = useState(true);
   const [status, setStatus] = useState("");

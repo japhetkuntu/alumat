@@ -74,3 +74,24 @@ public sealed class PaystackGatewayFeeConfig
     public long? GatewayFeeCapSubunit { get; init; }
     public required long GatewayFeeSafetyBufferSubunit { get; init; }
 }
+
+/// <summary>One institution's activation outcome, passed from InstitutionActivationActivities.EvaluateAll to the nudge and digest steps.</summary>
+public sealed class ActivationRunItem
+{
+    public required string InstitutionId { get; init; }
+    public required string Name { get; init; }
+    public required int DaysLive { get; init; }
+    public required int MetCount { get; init; }
+    public required int TotalCriteria { get; init; }
+    public required bool IsActivated { get; init; }
+    public required bool IsStalled { get; init; }
+    public string? NextStepKey { get; init; }
+    public string? NextStepLabel { get; init; }
+    public string? NextStep { get; init; }
+    /// <summary>Payout details are waiting on platform review, so the ball is in the platform's court, not the institution's.</summary>
+    public bool PayoutPending { get; init; }
+    public bool IsOverdue { get; init; }
+    public DateTime? LastNudgeSentAt { get; init; }
+    public bool SetupNudgesEnabled { get; init; } = true;
+    public DateTime? TrialEndsAt { get; init; }
+}

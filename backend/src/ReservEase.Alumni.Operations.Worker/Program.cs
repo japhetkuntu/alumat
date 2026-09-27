@@ -75,7 +75,10 @@ builder.Services
     .AddWorkflow<BirthdaySpotlightDispatchWorkflow>()
     .AddWorkflow<RecurringGivingWorkflow>()
     .AddWorkflow<MembershipReminderDispatchWorkflow>()
-    .AddScopedActivities<ScheduledJobsActivities>();
+    .AddWorkflow<EventReminderDispatchWorkflow>()
+    .AddWorkflow<InstitutionActivationDispatchWorkflow>()
+    .AddScopedActivities<ScheduledJobsActivities>()
+    .AddScopedActivities<InstitutionActivationActivities>();
 
 // ContributionCallbackActivities/ScheduledJobsActivities enqueue notifications via
 // ITemporalClientProvider.EnqueueNotificationAsync — reuse the lazy ITemporalClient

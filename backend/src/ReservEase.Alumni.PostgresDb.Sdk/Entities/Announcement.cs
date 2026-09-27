@@ -11,4 +11,10 @@ public class Announcement : BaseEntity
     public int TotalAdmins { get; set; }
     /// <summary>No read-receipt tracking exists yet; always 0 until that's built.</summary>
     public int SeenByAdmins { get; set; }
+    /// <summary>Any of "InApp", "Email", "Sms".</summary>
+    public List<string> Channels { get; set; } = ["InApp"];
+    public int EmailSent { get; set; }
+    public int SmsSent { get; set; }
+    /// <summary>Recipients that should have gotten an SMS but have no phone number on file.</summary>
+    public int SmsSkippedNoPhone { get; set; }
 }

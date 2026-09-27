@@ -37,6 +37,7 @@ public class ScheduledJobsActivities(
     IAlumniPgRepository<NotificationPreference> prefRepo,
     IAlumniPgRepository<Job> jobRepo,
     IAlumniPgRepository<AlumniEvent> eventRepo,
+    IAlumniPgRepository<EventRsvp> eventRsvpRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<RecurringContribution> recurringRepo,
@@ -258,6 +259,102 @@ public class ScheduledJobsActivities(
             logger.LogInformation("Membership reminder cycle for institution {InstitutionId}: {Sent} reminders sent", institutionId, sentCount);
             return sentCount;
         }, "send due membership reminders for institution", institutionId);
+
+    // ── Day-before event reminders ──────────────────────────────────────────
+
+    [Activity("ScheduledJobs.SendDueEventRemindersForInstitution")]
+    public virtual Task<int> SendDueEventRemindersForInstitutionAsync(string institutionId) =>
+        Wrap(async () =>
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
+            if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Events))
+                return 0;
+
+            var now = DateTime.UtcNow;
+            // A ~24h window, wide enough that a schedule firing every few hours can't miss an event, guarded from
+            // double-sending by DayBeforeReminderSentAt rather than by narrowing the window to an exact instant.
+            var dueEvents = (await eventRepo.GetAllAsync(e =>
+                    e.InstitutionId == institutionId && e.CommunityId == null && e.DayBeforeReminderSentAt == null
+                    && (e.Status == "Upcoming" || e.Status == "Ongoing")
+                    && e.StartDate >= now.AddHours(12) && e.StartDate <= now.AddHours(36),
+                    ignoreQueryFilters: true))
+                .ToList();
+            if (dueEvents.Count == 0) return 0;
+
+            var prefsByMember = (await prefRepo.GetAllAsync(p => p.InstitutionId == institutionId, ignoreQueryFilters: true)).ToDictionary(p => p.MemberId);
+            var portalUrl = GetMemberPortalUrl(institution);
+            var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+            var notifications = new List<Notification>();
+            var sentCount = 0;
+
+            foreach (var ev in dueEvents)
+            {
+                var rsvps = (await eventRsvpRepo.GetAllAsync(r => r.EventId == ev.Id && r.Status == "Confirmed", ignoreQueryFilters: true)).ToList();
+                if (rsvps.Count == 0) { ev.DayBeforeReminderSentAt = now; continue; }
+
+                var members = (await memberRepo.GetAllAsync(m => rsvps.Select(r => r.MemberId).Contains(m.Id), ignoreQueryFilters: true))
+                    .ToDictionary(m => m.Id);
+                var actionUrl = string.IsNullOrEmpty(portalUrl) ? string.Empty : $"{portalUrl}/events/{ev.Id}";
+
+                foreach (var rsvp in rsvps)
+                {
+                    if (!members.TryGetValue(rsvp.MemberId, out var member)) continue;
+                    var pref = prefsByMember.GetValueOrDefault(member.Id);
+                    if (pref?.EventReminders == false) continue;
+
+                    var othersGoing = rsvps.Count - 1;
+                    var body = othersGoing > 0
+                        ? $"Tomorrow at {ev.Venue}: {ev.Title}. {othersGoing} other member{(othersGoing == 1 ? "" : "s")} {(othersGoing == 1 ? "is" : "are")} going."
+                        : $"Tomorrow at {ev.Venue}: {ev.Title}.";
+
+                    notifications.Add(new Notification
+                    {
+                        RecipientId = member.Id,
+                        RecipientType = "Member",
+                        Title = "Event tomorrow",
+                        Body = body,
+                        Type = "EventReminder",
+                        RelatedEntityId = ev.Id,
+                        RelatedEntityType = "Event",
+                        ActionUrl = actionUrl,
+                        CreatedBy = "system",
+                    });
+
+                    if (string.IsNullOrWhiteSpace(member.Email)) continue;
+                    await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
+                        new SendEmailRequest
+                        {
+                            To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
+                            TemplateId = "notification",
+                            TemplateVariables = new
+                            {
+                                first_name = member.FirstName,
+                                title = "Event tomorrow",
+                                body,
+                                badge_label = "Event Reminder",
+                                action_url = actionUrl,
+                                action_label = "See who's going",
+                                brand_name = brandName,
+                                brand_color = institution.PrimaryColorHex,
+                                brand_secondary_color = institution.SecondaryColorHex,
+                                brand_logo = institution.LogoUrl,
+                            },
+                        },
+                        $"event reminder to {member.Email}"), logger);
+
+                    sentCount++;
+                }
+
+                ev.DayBeforeReminderSentAt = now;
+            }
+
+            currentTenant.SetInstitutionId(institutionId);
+            if (notifications.Count > 0) await notifRepo.AddRangeAsync(notifications);
+            await eventRepo.UpdateRangeAsync(dueEvents);
+
+            logger.LogInformation("Event reminder cycle for institution {InstitutionId}: {Sent} reminders sent across {Events} events", institutionId, sentCount, dueEvents.Count);
+            return sentCount;
+        }, "send due event reminders for institution", institutionId);
 
     private static bool MatchesYear(List<int>? yearGroups, int memberYear) =>
         yearGroups is null || yearGroups.Count == 0 || yearGroups.Contains(memberYear);

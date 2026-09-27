@@ -69,6 +69,8 @@ export default function TermsPage() {
         <p>You agree not to use the Platform to:</p>
         <ul className="list-disc pl-5 space-y-1.5">
           <li>Impersonate another person, or misrepresent your affiliation with an Institution;</li>
+          <li>Use an Institution&apos;s or another party&apos;s name, logo, crest, or colours without authorisation, including in a
+            profile, business listing, or forum post;</li>
           <li>Post content that is unlawful, harassing, defamatory, or that infringes someone else&apos;s rights;</li>
           <li>Attempt to access another Member&apos;s account, or data you are not authorised to see;</li>
           <li>Scrape, harvest, or export Member contact details for purposes outside the Platform, including
@@ -95,8 +97,10 @@ export default function TermsPage() {
       <Section heading="6. Payments">
         <p>
           Online payments (membership dues, fundraiser contributions) are processed by a licensed
-          payment service provider. We do not receive or store your full card or mobile money PIN details;
-          our payment processor handles that directly. A processing fee, disclosed at checkout, may apply on top of the
+          payment service provider (currently Paystack), which is separately licensed and regulated by the Bank
+          of Ghana. The Platform itself is not a bank, a payment service provider, or a dedicated electronic
+          money issuer, and does not process, hold, or move payment funds at any point. We do not receive or
+          store your full card or mobile money PIN details; our payment processor handles that directly. A processing fee, disclosed at checkout, may apply on top of the
           amount you choose to pay. Amounts already paid are generally non-refundable except where required by
           law or at an Institution&apos;s discretion; refund requests should go to the Institution that ran the
           fundraiser or dues cycle, since they hold the funds and the record of what was collected.

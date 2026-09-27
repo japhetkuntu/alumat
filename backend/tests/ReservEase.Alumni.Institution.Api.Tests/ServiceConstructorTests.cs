@@ -62,7 +62,7 @@ public class ServiceConstructorTests
 
         var _ = new InstitutionAuthService(
             adminRepo.Object, institutionRepo.Object, currentTenant.Object, httpContextAccessor.Object,
-            redisService.Object, tokenOptions, mailtrapOptions, temporalProvider, googleTokenVerifier.Object, new NullLogger<InstitutionAuthService>());
+            redisService.Object, tokenOptions, mailtrapOptions, temporalProvider, googleTokenVerifier.Object, Mock.Of<IStaffActivityRecorder>(), new NullLogger<InstitutionAuthService>());
         var __ = new InstitutionStaffService(adminRepo.Object, auditLog.Object, new NullLogger<InstitutionStaffService>());
         var ___ = new CampaignService(campaignRepo.Object, contributionRepo.Object, memberRepo.Object, campaignUpdateRepo.Object, storageService.Object, temporalProvider, currentTenant.Object, auditLog.Object, new NullLogger<CampaignService>());
         var ____ = new EventService(eventRepo.Object, eventRsvpRepo.Object, memberRepo.Object, storageService.Object, temporalProvider, currentTenant.Object, publicCache.Object, auditLog.Object, new NullLogger<EventService>());

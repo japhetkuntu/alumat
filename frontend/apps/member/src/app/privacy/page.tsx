@@ -145,8 +145,14 @@ export default function PrivacyPage() {
           We use industry-standard measures to protect personal data, including encrypted connections (HTTPS),
           hashed passwords (we never store your password in readable form), role-based access so staff only see
           what their role requires, and tenant isolation so one Institution cannot access another&apos;s data. No
-          system is completely immune to risk, and we will notify affected Institutions and, where required by
-          law, the Data Protection Commission, in the event of a data breach likely to affect your rights.
+          system is completely immune to risk.
+        </p>
+        <p>
+          If a security incident affecting your personal data occurs, we notify the affected Institution as soon
+          as practicable and in any case within 72 hours of confirming it. Your Institution, as the controller of
+          your data, decides whether it must also be reported to the Data Protection Commission and to you
+          directly under the Data Protection Act, 2012 (Act 843), and we support them in doing so. Where the law
+          requires it, we may also notify the Data Protection Commission or affected members ourselves.
         </p>
       </Section>
 

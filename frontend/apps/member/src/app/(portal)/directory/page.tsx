@@ -32,7 +32,7 @@ const years = Array.from(
 export default function MemberDirectoryPage() {
   const searchParams = useSearchParams();
   const [search,     setSearch]     = useState(() => searchParams.get("search") ?? "");
-  const [yearFilter, setYearFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState(() => searchParams.get("year") ?? "");
   const [page,       setPage]       = useState(1);
   const [selected,   setSelected]   = useState<Member | null>(null);
   const pageSize = 24;

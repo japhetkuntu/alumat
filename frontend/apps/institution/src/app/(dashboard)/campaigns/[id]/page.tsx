@@ -147,6 +147,14 @@ export default function CampaignDetailPage() {
   const totalPages = contribs?.totalPages ?? 1;
   const backLink = campaign.isMembershipCampaign ? "/membership" : "/campaigns";
   const shareUrl = buildMemberPortalShareUrl(campaign.isMembershipCampaign ? `/contributions/${id}` : `/payment-campaign/${id}`, institution?.memberPortalUrl);
+  const daysUntilDeadline = Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  // A quiet nudge, not an alert: only for an active, not-yet-met goal within reach of its deadline.
+  const showDeadlineReminder = campaign.status === "Active" && pct < 100 && daysUntilDeadline >= 0 && daysUntilDeadline <= 14;
+  const reminderBroadcastHref = `/broadcast?title=${encodeURIComponent(campaign.title)}&message=${encodeURIComponent(
+    campaign.isMembershipCampaign
+      ? `Reminder: "${campaign.title}" dues are due by ${formatDate(campaign.deadline)}. Please make your payment if you haven't already.`
+      : `Reminder: "${campaign.title}" closes on ${formatDate(campaign.deadline)}. We're at ${pct}% of the target — every contribution helps.`,
+  )}`;
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-4">
@@ -210,6 +218,17 @@ export default function CampaignDetailPage() {
           </div>
           {pct > 0 && (
             <p className="text-xs text-muted-foreground tabular-nums">{pct}% of target reached</p>
+          )}
+          {isSuperAdmin && showDeadlineReminder && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-border p-3">
+              <p className="flex items-center gap-2 text-[12.5px] text-foreground">
+                <Megaphone size={15} className="shrink-0 text-primary" />
+                {daysUntilDeadline === 0 ? "Deadline is today" : `${daysUntilDeadline} day${daysUntilDeadline === 1 ? "" : "s"} left`} — {campaign.paidCount > 0 ? "some members still haven't paid." : "no one has paid yet."}
+              </p>
+              <Link href={reminderBroadcastHref}>
+                <Button size="sm" variant="outline" className="font-semibold">Send a reminder</Button>
+              </Link>
+            </div>
           )}
           <div className="rounded-none p-3 text-[12.5px]" style={{ background: "var(--brand-accent-light)", color: "var(--brand-accent-dark)", border: "1px solid #FED7AA" }}>
             Members may contribute any positive amount (including less than the suggested base amount). They can also contribute additional payments over time to reach their target.

@@ -173,6 +173,28 @@ export interface InstitutionProfileResponse {
   cohortLabelPlural?: string | null;
 }
 
+export interface InstitutionActivationCriterion {
+  key: "branding" | "payouts" | "members" | "payments" | "staff";
+  label: string;
+  met: boolean;
+  detail: string;
+}
+
+/** This institution's progress against the platform's activation criteria (same rules the platform tracks). */
+export interface InstitutionActivation {
+  criteria: InstitutionActivationCriterion[];
+  nextStepKey?: string | null;
+  nextStep?: string | null;
+  activatedAt?: string | null;
+  daysLive: number;
+  minMembers: number;
+}
+
+export async function getInstitutionActivation(): Promise<InstitutionActivation> {
+  const res = await institutionClient.get<ApiResponse<InstitutionActivation>>("/institution/me/activation");
+  return res.data.data!;
+}
+
 export async function getInstitutionProfile(): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.get<ApiResponse<InstitutionProfileResponse>>("/institution/me");
   const profile = res.data.data;

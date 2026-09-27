@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/shared/providers";
 import { GoogleAnalytics } from "@/components/shared/google-analytics";
@@ -11,10 +11,22 @@ import { getRequestOrigin, SITE_NAME } from "@/lib/seo";
 // block) --font-display, so the existing font-[family-name:var(--font-display)]
 // call sites across the app keep working unchanged, just rendering in a
 // heavier weight of this same family instead of a separate serif.
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
+//
+// Loaded from local files (next/font/local), not next/font/google: the
+// google variant fetches the font from Google's CDN at build time, which
+// failed outright on the production host (network-restricted droplet) with
+// a build-breaking error. The files here are vendored once from
+// @fontsource/ibm-plex-sans, so the build never depends on that network
+// call again — same weights, same "swap" behavior, same --font-sans variable.
+const ibmPlexSans = localFont({
+  src: [
+    { path: "../fonts/ibm-plex-sans-300.woff2", weight: "300", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-400.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-500.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-600.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/ibm-plex-sans-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans",
-  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -47,7 +59,15 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: title, template: `%s · ${title}` },
     description,
     manifest: "/manifest.json",
-    icons: theme?.iconUrl ? { icon: theme.iconUrl } : undefined,
+    icons: theme?.iconUrl
+      ? { icon: theme.iconUrl, apple: theme.iconUrl }
+      : {
+          icon: [
+            { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+            { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+          ],
+          apple: "/apple-touch-icon.png",
+        },
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",

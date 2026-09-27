@@ -46,6 +46,22 @@ public static class ScheduledJobsRegistration
                 wf => wf.RunAsync(),
                 new WorkflowOptions { Id = "membership-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(24));
+
+        // Every 6h so the ~12-36h lookahead window in SendDueEventRemindersForInstitutionAsync
+        // reliably catches a "tomorrow" reminder regardless of when an event was created.
+        await EnsureScheduleAsync(client, logger, "event-reminder-schedule",
+            ScheduleActionStartWorkflow.Create<EventReminderDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "event-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(6));
+
+        // Daily: weekly activity snapshots, activation stamping, admin nudges (7-day
+        // cooldown) and — on Mondays — the platform staff digest.
+        await EnsureScheduleAsync(client, logger, "institution-activation-schedule",
+            ScheduleActionStartWorkflow.Create<InstitutionActivationDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "institution-activation-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(24));
     }
 
     private static async Task EnsureScheduleAsync(ITemporalClient client, ILogger logger, string scheduleId, ScheduleAction action, TimeSpan every)

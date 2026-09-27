@@ -213,7 +213,7 @@ public class InstitutionManagementService(
                 MemberActivePolicy = request.MemberActivePolicy,
                 OrganizationType = request.OrganizationType,
                 Status = "Active",
-                TrialEndsAt = DateTime.UtcNow.AddDays(14),
+                TrialEndsAt = DateTime.UtcNow.AddDays(request.TrialDays ?? 14),
                 OnboardedAt = DateTime.UtcNow,
                 PlatformFeePercentage = request.PlatformFeePercentage,
                 PlatformFeeFlatThreshold = request.PlatformFeeFlatThreshold,

@@ -57,6 +57,7 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<typeof roles[number]>("SuperAdmin");
   const [yearGroups, setYearGroups] = useState<number[]>([]);
@@ -72,7 +73,7 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
     <Card>
       <CardHeader><CardTitle className="text-base">Add institution admin</CardTitle></CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, password, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, phone: phone.trim() || undefined, password, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>First name</Label>
@@ -89,6 +90,11 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
             <div className="space-y-2">
               <Label>Password</Label>
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233 24 000 0000" />
+              <p className="text-xs text-muted-foreground">Needed only if platform staff should be able to reach this admin by SMS.</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -134,6 +140,7 @@ function EditAdminForm({
 }) {
   const [firstName, setFirstName] = useState(admin.firstName);
   const [lastName, setLastName] = useState(admin.lastName);
+  const [phone, setPhone] = useState(admin.phone ?? "");
   const [role, setRole] = useState<typeof roles[number]>(admin.role as typeof roles[number]);
   const [yearGroups, setYearGroups] = useState<number[]>(admin.yearGroups ?? []);
   const [communityIds, setCommunityIds] = useState<string[]>(admin.communityIds ?? []);
@@ -153,7 +160,7 @@ function EditAdminForm({
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            onSave({ firstName, lastName, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined, isDisabled });
+            onSave({ firstName, lastName, phone: phone.trim() || undefined, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined, isDisabled });
           }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -164,6 +171,11 @@ function EditAdminForm({
             <div className="space-y-2">
               <Label>Last name</Label>
               <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233 24 000 0000" />
+              <p className="text-xs text-muted-foreground">Needed only if platform staff should be able to reach this admin by SMS.</p>
             </div>
           </div>
           <div className="space-y-2">

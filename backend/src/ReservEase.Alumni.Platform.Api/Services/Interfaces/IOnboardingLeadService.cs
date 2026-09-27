@@ -8,6 +8,10 @@ public interface IOnboardingLeadService
     Task<IApiResponse<List<OnboardingLeadResponse>>> GetLeadsAsync(string? status);
     Task<IApiResponse<OnboardingLeadResponse>> GetLeadByIdAsync(string id);
     Task<IApiResponse<OnboardingLeadResponse>> CreateAsync(CreateOnboardingLeadRequest request);
+    Task<IApiResponse<OnboardingLeadResponse>> CreateByStaffAsync(CreateStaffOnboardingLeadRequest request, string actorId, string actorName);
     Task<IApiResponse<OnboardingLeadResponse>> UpdateStatusAsync(string id, UpdateOnboardingLeadStatusRequest request, string actorId, string actorName);
+    Task<IApiResponse<OnboardingLeadResponse>> UpdateAsync(string id, UpdateOnboardingLeadRequest request, string actorId, string actorName);
+    Task<IApiResponse<ImportOnboardingLeadsResponse>> ImportAsync(ImportOnboardingLeadsRequest request, string actorId, string actorName);
+    Task<IApiResponse<List<LeadAssigneeResponse>>> GetAssigneesAsync();
     Task<IApiResponse<OnboardingLeadResponse>> AddNoteAsync(string id, AddInternalNoteRequest request, string actorId, string actorName);
 }

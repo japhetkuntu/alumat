@@ -38,6 +38,7 @@ import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@alumni/ui";
 import { getBanks, resolveAccount } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
+import { InstitutionActivationCard } from "@/components/platform/institution-activation-card";
 
 const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments"] as const;
 
@@ -520,6 +521,7 @@ export default function InstitutionDetailPage() {
 
       {tab === "Overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+          <InstitutionActivationCard institutionId={id} />
           <Card>
             <CardContent className="p-5 space-y-3 text-[13.5px]">
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Primary contact</span><span className="font-semibold">{inst.contactName}</span></div>

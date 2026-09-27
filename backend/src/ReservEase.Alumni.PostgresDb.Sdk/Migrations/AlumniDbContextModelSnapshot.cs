@@ -135,6 +135,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("DayBeforeReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -1267,6 +1270,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PasswordResetToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
                         .HasColumnType("text");
 
                     b.Property<string>("Role")
@@ -2840,6 +2846,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Channels")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2847,11 +2857,20 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("EmailSent")
+                        .HasColumnType("integer");
+
                     b.Property<int>("SeenByAdmins")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SmsSent")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SmsSkippedNoPhone")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -2918,6 +2937,12 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ActivationMinMembers")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("AutoApproveMembers")
                         .HasColumnType("boolean");
 
@@ -2977,6 +3002,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("LandingPageStories")
                         .IsRequired()
                         .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("LastActivationNudgeSentAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LogoUrl")
                         .HasColumnType("text");
@@ -3063,6 +3091,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("SettlementBankName")
                         .HasColumnType("text");
 
+                    b.Property<bool>("SetupNudgesEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3110,6 +3141,57 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.ToTable("Institutions", "alumni");
                 });
 
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.InstitutionActivitySnapshot", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ActiveStaffCount")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("AmountCollectedThisWeek")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("MemberCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MembersActiveThisWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MembersEverLoggedIn")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SuccessfulPaymentsThisWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("WeekStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId", "WeekStart")
+                        .IsUnique();
+
+                    b.ToTable("InstitutionActivitySnapshots", "alumni");
+                });
+
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.OnboardingLead", b =>
                 {
                     b.Property<string>("Id")
@@ -3129,6 +3211,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("AgreementVersion")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ApprovedInstitutionId")
                         .HasColumnType("text");
@@ -3150,6 +3235,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("ContactRole")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("ContactedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Country")
                         .HasColumnType("text");
 
@@ -3166,8 +3254,14 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("DataImportStatus")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("DemoBookedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("EstimatedMemberCount")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("FollowUpReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("InstitutionName")
                         .IsRequired()
@@ -3178,6 +3272,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("Message")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("NextFollowUpAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("OrganizationType")
                         .HasColumnType("text");
@@ -3192,12 +3289,18 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<string>("Source")
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("TimeZone")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("TrialStartedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3209,6 +3312,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("NextFollowUpAt");
 
                     b.HasIndex("Status");
 
@@ -3273,6 +3378,16 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<string>("ActivationMilestones")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int?>("ActivationTargetCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ActivationTargetDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("BlockOverdueCampaignPayments")
                         .HasColumnType("boolean");
@@ -3353,6 +3468,45 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsUnique();
 
                     b.ToTable("PlatformStaff", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.StaffActivityWeek", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StaffId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("WeekStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId", "WeekStart");
+
+                    b.HasIndex("InstitutionId", "StaffId", "WeekStart")
+                        .IsUnique();
+
+                    b.ToTable("StaffActivityWeeks", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.SupportCase", b =>

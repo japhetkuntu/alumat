@@ -18,4 +18,22 @@ public class PlatformSettings : BaseEntity
     /// is a behavior change affecting every institution at once.
     /// </summary>
     public bool BlockOverdueCampaignPayments { get; set; }
+
+    /// <summary>
+    /// The onboarding goal the platform's Activation page tracks progress
+    /// against — e.g. 20 activated institutions by a date. Null count hides
+    /// the goal line entirely.
+    /// </summary>
+    public int? ActivationTargetCount { get; set; }
+    public DateTime? ActivationTargetDate { get; set; }
+    /// <summary>Interim checkpoints on the way to the target, e.g. "5 live by 16 Oct". Empty means none.</summary>
+    public List<ActivationMilestone> ActivationMilestones { get; set; } = [];
+}
+
+/// <summary>One interim onboarding checkpoint. Either count may be omitted.</summary>
+public class ActivationMilestone
+{
+    public DateTime Date { get; set; }
+    public int? LiveTarget { get; set; }
+    public int? ActivatedTarget { get; set; }
 }

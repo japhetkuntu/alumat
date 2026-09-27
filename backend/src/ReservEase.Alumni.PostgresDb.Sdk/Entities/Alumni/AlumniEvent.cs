@@ -24,4 +24,7 @@ public class AlumniEvent : BaseEntity, ITenantScoped
     public string? BannerImageUrl { get; set; }
     public List<string>? ImageUrls { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
+
+    /// <summary>Set once the day-before RSVP reminder has gone out (see ScheduledJobsActivities.SendDueEventRemindersForInstitutionAsync), so a schedule that fires more than once a day never double-sends it.</summary>
+    public DateTime? DayBeforeReminderSentAt { get; set; }
 }

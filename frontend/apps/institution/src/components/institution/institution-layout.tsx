@@ -42,6 +42,7 @@ import { GlobalSearch } from "@/components/institution/global-search";
 import { AgreementGate } from "@/components/institution/agreement-gate";
 import { NotificationPanel } from "@/components/institution/notification-panel";
 import { PushNotificationPrompt } from "@/components/institution/push-notification-prompt";
+import { InstallPromptBanner, useInstallPrompt } from "@/components/institution/install-prompt";
 import { InstitutionSetupChecklist } from "@/components/institution/setup-checklist";
 import { institutionClient } from "@/lib/api-client";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -264,6 +265,12 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
+/** At most one top-of-page nudge at a time — the home-screen install prompt takes priority over the push-notification ask, since installing subsumes it on platforms where push requires the installed app. */
+function PortalNudge() {
+  const { visible: installVisible } = useInstallPrompt();
+  return installVisible ? <InstallPromptBanner /> : <PushNotificationPrompt />;
+}
+
 function useCurrentPageTitle() {
   const pathname = usePathname();
   return useMemo(() => {
@@ -361,7 +368,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-y-auto bg-background selection:bg-accent/20 relative pt-14 lg:pt-0">
           <div className="max-w-[1800px] mx-auto min-h-full">
-            <PushNotificationPrompt />
+            <PortalNudge />
             {children}
           </div>
         </main>

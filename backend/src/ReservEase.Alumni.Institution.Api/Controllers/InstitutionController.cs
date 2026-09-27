@@ -32,8 +32,28 @@ public class InstitutionController(
     IInstitutionAuditLogService auditLog,
     IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
+    InstitutionActivationService activation,
     IConfiguration config) : DefaultController
 {
+    /// <summary>
+    /// This institution's progress against the platform's activation criteria — the
+    /// same evaluation the platform's Activation page and setup reminders use, so the
+    /// institution's own checklist never disagrees with them.
+    /// </summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpGet("me/activation")]
+    [SwaggerOperation(Summary = "Get this institution's activation progress")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionActivation>))]
+    public async Task<IActionResult> GetActivation()
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        var result = await activation.EvaluateOneAsync(institution, DateTime.UtcNow);
+        return Ok(new ApiResponse<InstitutionActivation> { Message = "Success", Code = 200, Data = result });
+    }
+
     /// <summary>Get the current institution's profile and branding (mostly read-only).</summary>
     [HttpGet("me")]
     [SwaggerOperation(Summary = "Get current institution")]

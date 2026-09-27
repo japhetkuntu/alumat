@@ -4,20 +4,47 @@
     {
       "name": "institution-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev:institution"],
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev:institution"
+      ],
       "port": 4100
     },
     {
       "name": "platform-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev:platform"],
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev:platform"
+      ],
       "port": 3300
     },
     {
       "name": "member-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "frontend", "run", "dev:member"],
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev:member"
+      ],
       "port": 3200
+    },
+    {
+      "name": "platform-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "backend/src/ReservEase.Alumni.Platform.Api",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5300
     }
   ]
 }

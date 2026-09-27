@@ -31,6 +31,7 @@ public class InstitutionStaffService(
                 a.FirstName,
                 a.LastName,
                 a.Email,
+                a.Phone,
                 a.Role,
                 a.YearGroups,
                 a.CommunityIds,
@@ -76,6 +77,7 @@ public class InstitutionStaffService(
                 FirstName = request.FirstName.Trim(),
                 LastName = request.LastName.Trim(),
                 Email = email,
+                Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim(),
                 Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Role = role,
                 YearGroups = role == StaffRoles.ScopedAdmin ? request.YearGroups : null,
@@ -88,7 +90,7 @@ public class InstitutionStaffService(
             await auditLog.LogAsync(createdBy, "Staff Created", $"{admin.FirstName} {admin.LastName} ({admin.Email}) — {admin.Role}");
 
             logger.LogInformation("Admin {AdminId} created by {CreatorId}", admin.Id, createdBy.Id);
-            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
+            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Phone, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
             return listItem.ToCreatedApiResponse("Admin created");
         }
         catch (Exception e)
@@ -117,6 +119,7 @@ public class InstitutionStaffService(
 
             admin.FirstName = request.FirstName.Trim();
             admin.LastName = request.LastName.Trim();
+            admin.Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
             admin.Role = role;
             admin.YearGroups = admin.Role == StaffRoles.ScopedAdmin ? request.YearGroups : null;
             admin.CommunityIds = admin.Role == StaffRoles.ScopedAdmin ? request.CommunityIds : null;
@@ -134,7 +137,7 @@ public class InstitutionStaffService(
             if (previousDisabled != admin.IsDisabled)
                 await auditLog.LogAsync(updatedBy, admin.IsDisabled ? "Staff Disabled" : "Staff Re-enabled", $"{admin.FirstName} {admin.LastName} ({admin.Email})");
 
-            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
+            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Phone, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
             return listItem.ToOkApiResponse();
         }
         catch (Exception e)

@@ -34,6 +34,7 @@ public class InstitutionAuthService(
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     ITemporalClientProvider temporalProvider,
     IGoogleTokenVerifier googleTokenVerifier,
+    IStaffActivityRecorder staffActivity,
     ILogger<InstitutionAuthService> logger) : IInstitutionAuthService
 {
     private const string PictureClaimType = "picture";
@@ -146,6 +147,7 @@ public class InstitutionAuthService(
 
             admin.LastLoginAt = DateTime.UtcNow;
             await adminRepo.UpdateAsync(admin);
+            await staffActivity.RecordAsync(admin.InstitutionId, admin.Id, admin.LastLoginAt.Value);
 
             var claimData = BuildClaimData(admin);
             var accessToken = GenerateJwtToken(claimData);
@@ -193,6 +195,7 @@ public class InstitutionAuthService(
 
             admin.LastLoginAt = DateTime.UtcNow;
             await adminRepo.UpdateAsync(admin);
+            await staffActivity.RecordAsync(admin.InstitutionId, admin.Id, admin.LastLoginAt.Value);
 
             var claimData = BuildClaimData(admin);
             var accessToken = GenerateJwtToken(claimData);
@@ -232,6 +235,14 @@ public class InstitutionAuthService(
             var admin = await adminRepo.GetByIdAsync(adminId);
             if (admin is null)
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<InstitutionTokenResponse>("Invalid or expired refresh token");
+
+            // A refresh is a returning session — without this, staff who stay signed in
+            // look inactive to the platform's weekly activation tracking. Throttled to
+            // hourly so an idle open tab doesn't write on every access-token refresh.
+            var now = DateTime.UtcNow;
+            if (admin.LastLoginAt is null || admin.LastLoginAt < now.AddHours(-1))
+                await adminRepo.ExecuteUpdateAsync(a => a.Id == admin.Id, s => s.SetProperty(a => a.LastLoginAt, now));
+            await staffActivity.RecordAsync(admin.InstitutionId, admin.Id, now);
 
             var claimData = BuildClaimData(admin);
             var accessToken = GenerateJwtToken(claimData);

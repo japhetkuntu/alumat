@@ -8,7 +8,8 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { TrendChart } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
-import { getDashboardSummary, getInstitutions } from "@/lib/platform-api";
+import { getActivationScorecard, getDashboardSummary, getInstitutions } from "@/lib/platform-api";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PlatformDashboardPage() {
   const { data: summary } = useQuery({
@@ -20,6 +21,16 @@ export default function PlatformDashboardPage() {
     queryFn: () => getInstitutions({ page: 1, pageSize: 50 }),
   });
   const institutions = institutionsPage?.results ?? [];
+  const { user } = useAuth();
+  const { data: scorecard } = useQuery({
+    queryKey: ["activation-scorecard"],
+    queryFn: getActivationScorecard,
+    enabled: !!user && user.role !== "Billing",
+  });
+  // Overdue (past the 30-day window) before merely stalled (live over 14 days).
+  const stalled = (scorecard?.items ?? [])
+    .filter((i) => !i.isActivated && (i.isStalled || i.isOverdue))
+    .sort((a, b) => Number(b.isOverdue) - Number(a.isOverdue) || b.daysLive - a.daysLive);
 
   const attentionList = institutions.filter((i) => i.status === "Suspended");
   const recentSignups = [...institutions].sort((a, b) => +new Date(b.onboardedAt) - +new Date(a.onboardedAt)).slice(0, 3);
@@ -61,12 +72,23 @@ export default function PlatformDashboardPage() {
             value={(summary?.totalMembers ?? 0).toLocaleString()}
             sub={<span style={{ color: "var(--success)" }}>Across every institution</span>}
           />
-          <StatCard
-            tone="accent"
-            label="New institutions"
-            value={summary?.newInstitutionsThisMonth ?? "—"}
-            sub="This month"
-          />
+          {scorecard ? (
+            <Link href="/activation" className="block">
+              <StatCard
+                tone="accent"
+                label="Activated"
+                value={scorecard.targetCount ? `${scorecard.activatedCount} / ${scorecard.targetCount}` : scorecard.activatedCount}
+                sub={`${scorecard.liveCount} live · ${summary?.newInstitutionsThisMonth ?? 0} new this month`}
+              />
+            </Link>
+          ) : (
+            <StatCard
+              tone="accent"
+              label="New institutions"
+              value={summary?.newInstitutionsThisMonth ?? "—"}
+              sub="This month"
+            />
+          )}
         </div>
       </div>
 
@@ -90,13 +112,24 @@ export default function PlatformDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card style={{ borderColor: attentionList.length > 0 ? "var(--border-emphasis)" : undefined }}>
+        <Card style={{ borderColor: attentionList.length + stalled.length > 0 ? "var(--border-emphasis)" : undefined }}>
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <p className="text-[14px] font-semibold">Needs attention</p>
             <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all</Link>
           </div>
           <CardContent className="p-0">
-            {attentionList.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">Nothing needs attention right now.</p>}
+            {attentionList.length === 0 && stalled.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">Nothing needs attention right now.</p>}
+            {stalled.slice(0, 5).map((item) => (
+              <Link key={item.institutionId} href="/activation" className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0 hover:bg-muted/40">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold truncate">{item.name}</p>
+                  <p className="text-[12px] text-muted-foreground truncate">
+                    Live {item.daysLive} days · {item.metCount}/5 activation steps · stuck on {item.criteria.find((c) => !c.met)?.label.toLowerCase()}
+                  </p>
+                </div>
+                <Badge variant={item.isOverdue ? "destructive" : "warning"}>{item.isOverdue ? "Overdue" : "Stalled"}</Badge>
+              </Link>
+            ))}
             {attentionList.map((inst) => (
               <div key={inst.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
                 <div className="min-w-0">

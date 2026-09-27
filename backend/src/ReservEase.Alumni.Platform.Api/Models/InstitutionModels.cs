@@ -29,6 +29,10 @@ public class CreateInstitutionRequest
     [RegularExpression("^(Alumni|Community)$")]
     public string OrganizationType { get; set; } = "Alumni";
 
+    /// <summary>Trial length in days (Institution.TrialEndsAt); 14 when omitted. Converting a Trial onboarding lead to Approved clears the trial end date.</summary>
+    [Range(1, 180)]
+    public int? TrialDays { get; set; }
+
     // Branding (from the onboarding wizard's Branding step)
     public string? PortalName { get; set; }
     public string? SupportEmail { get; set; }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
@@ -7,12 +8,25 @@ import { useAuth } from "@/hooks/use-auth";
 import { useDisabledFeatures } from "@/components/member/member-layout";
 import { getCommunities, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
 
-/** First steps for a new member, each derived from real data so it ticks itself off. A step is left out entirely when it can't be completed here (no dues campaign, no communities yet, Events turned off). */
+function directoryVisitedKey(userId: string) {
+  return `member-visited-directory:${userId}`;
+}
+
+/** First steps for a new member, each derived from real data so it ticks itself off. A step is left out entirely when it can't be completed here (no dues campaign, no communities yet, Events turned off). The one exception is "browse the directory" — there's no server-side signal for having looked, so a local visited flag stands in for it. */
 export function MemberSetupChecklist() {
   const { user } = useAuth();
   const router = useRouter();
   const disabledFeatures = useDisabledFeatures();
   const eventsEnabled = !disabledFeatures.has("Events");
+  const directoryEnabled = !disabledFeatures.has("Directory");
+  const [directoryVisited, setDirectoryVisited] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      setDirectoryVisited(localStorage.getItem(directoryVisitedKey(user.id)) === "1");
+    } catch { /* ignore */ }
+  }, [user?.id]);
 
   const profile = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile });
   const dues = useQuery({ queryKey: ["m-current-membership-campaign"], queryFn: getCurrentMembershipCampaign, staleTime: 5 * 60 * 1000 });
@@ -50,6 +64,26 @@ export function MemberSetupChecklist() {
           done: !!profile.data?.showOnAlumniMap || !!profile.data?.location,
           actionLabel: "Add your location",
           onAction: () => router.push("/profile"),
+        }]
+      : []),
+    ...(directoryEnabled
+      ? [{
+          id: "directory",
+          title: "Find someone from your year",
+          description: profile.data?.graduationYear
+            ? `See who else graduated in ${profile.data.graduationYear} and is on AlumUnion.`
+            : "Browse the directory to see who else is already here.",
+          done: directoryVisited,
+          actionLabel: "Browse the directory",
+          onAction: () => {
+            if (user?.id) {
+              try { localStorage.setItem(directoryVisitedKey(user.id), "1"); } catch { /* ignore */ }
+            }
+            setDirectoryVisited(true);
+            router.push(
+              profile.data?.graduationYear ? `/directory?year=${profile.data.graduationYear}` : "/directory",
+            );
+          },
         }]
       : []),
     ...((allCommunities.data?.length ?? 0) > 0

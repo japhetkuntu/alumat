@@ -179,32 +179,37 @@ button, [role="button"], a {
   min-width: 44px;
 }
 
-h1, h2, h3, h4 {
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin: 0;
-}
+/* @layer base so Tailwind utilities (text-[13px], text-muted-foreground, …) can
+   override these element defaults — unlayered CSS beats any layered CSS
+   regardless of specificity, which made every sized <p>/<h1> render at 1rem/clamp. */
+@layer base {
+  h1, h2, h3, h4 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin: 0;
+  }
 
-h1 {
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
-}
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+  }
 
-h2 {
-  font-size: clamp(1.25rem, 3vw, 2rem);
-}
+  h2 {
+    font-size: clamp(1.25rem, 3vw, 2rem);
+  }
 
-h3 {
-  font-size: clamp(1.125rem, 2.5vw, 1.75rem);
-}
+  h3 {
+    font-size: clamp(1.125rem, 2.5vw, 1.75rem);
+  }
 
-h4 {
-  font-size: clamp(1rem, 2vw, 1.4rem);
-}
+  h4 {
+    font-size: clamp(1rem, 2vw, 1.4rem);
+  }
 
-p, li, dd {
-  font-size: 1rem;
-  line-height: 1.65;
+  p, li, dd {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
 }
 
 *,
@@ -251,9 +256,11 @@ table {
   min-width: 0;
 }
 
-small, .text-small {
-  font-size: 0.8125rem;
-  line-height: 1.7;
+@layer base {
+  small, .text-small {
+    font-size: 0.8125rem;
+    line-height: 1.7;
+  }
 }
 
 /* Section spacing */
@@ -734,17 +741,19 @@ body {
   letter-spacing: -0.011em;
 }
 
-/* Notion-style header hierarchy */
-h1, h2, h3, h4, .text-display {
-  letter-spacing: -0.022em;
-  font-weight: 600;
-  color: var(--foreground);
-  line-height: 1.2;
-}
+@layer base {
+  /* Notion-style header hierarchy */
+  h1, h2, h3, h4, .text-display {
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    color: var(--foreground);
+    line-height: 1.2;
+  }
 
-h1 { font-size: 2.25rem; margin-bottom: 1.5rem; }
-h2 { font-size: 1.5rem; margin-bottom: 1rem; }
-h3 { font-size: 1.25rem; margin-bottom: 0.75rem; }
+  h1 { font-size: 2.25rem; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+  h3 { font-size: 1.25rem; margin-bottom: 0.75rem; }
+}
 
 /* ─── Precise Interactions (Linear Feedback) ───────────────────────── */
 

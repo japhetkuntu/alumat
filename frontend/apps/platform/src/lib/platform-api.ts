@@ -131,6 +131,8 @@ export interface CreateInstitutionRequest {
   memberActivePolicy?: "ApprovedOnly" | "DuesRequired";
   /** "Alumni" (default) or "Community" — see Institution.OrganizationType. Can be changed later via updateInstitutionOrganizationType. */
   organizationType?: "Alumni" | "Community";
+  /** Trial length in days; the server defaults to 14. */
+  trialDays?: number;
   portalName?: string;
   supportEmail?: string;
   primaryColorHex?: string;
@@ -635,6 +637,8 @@ export async function addSupportCaseNote(id: string, note: string) {
 
 // ─── Announcements ───────────────────────────────────────────────────────
 
+export type NotificationChannel = "InApp" | "Email" | "Sms";
+
 export interface AnnouncementItem {
   id: string;
   title: string;
@@ -643,6 +647,21 @@ export interface AnnouncementItem {
   sentAt: string;
   seenByAdmins: number;
   totalAdmins: number;
+  channels: NotificationChannel[];
+  emailSent: number;
+  smsSent: number;
+  smsSkippedNoPhone: number;
+}
+
+export interface StaffDirectoryEntry {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  hasPhone: boolean;
+  institutionId: string;
+  institutionName: string;
 }
 
 export async function getAnnouncements() {
@@ -650,7 +669,20 @@ export async function getAnnouncements() {
   return res.data.data!;
 }
 
-export async function sendAnnouncement(req: { title: string; body: string; audience?: string }) {
+export async function searchStaffDirectory(search?: string, institutionId?: string) {
+  const res = await platformClient.get<ApiResponse<StaffDirectoryEntry[]>>("/announcements/staff-directory", {
+    params: { search: search || undefined, institutionId: institutionId || undefined },
+  });
+  return res.data.data ?? [];
+}
+
+export async function sendAnnouncement(req: {
+  title: string;
+  body: string;
+  channels: NotificationChannel[];
+  recipientStaffIds?: string[];
+  institutionId?: string;
+}) {
   const res = await platformClient.post<ApiResponse<AnnouncementItem>>("/announcements", req);
   return res.data.data!;
 }
@@ -749,7 +781,7 @@ export interface OnboardingLead {
   timeZone?: string;
   website?: string;
   message?: string;
-  status: "New" | "Contacted" | "Approved" | "Rejected";
+  status: OnboardingLeadStatus;
   assigneeStaffId?: string;
   assigneeName?: string;
   internalNote?: string;
@@ -760,6 +792,74 @@ export interface OnboardingLead {
   agreementAcceptedByName?: string;
   agreementAcceptedByTitle?: string;
   agreementAcceptedIp?: string;
+  source?: string;
+  createdAt?: string;
+  contactedAt?: string;
+  demoBookedAt?: string;
+  trialStartedAt?: string;
+  approvedAt?: string;
+  nextFollowUpAt?: string | null;
+  institutionTrialEndsAt?: string | null;
+}
+
+export type OnboardingLeadStatus = "New" | "Contacted" | "DemoBooked" | "Trial" | "Approved" | "Rejected";
+
+export interface CreateStaffOnboardingLeadRequest {
+  institutionName: string;
+  contactName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactRole?: string;
+  organizationType?: string;
+  estimatedMemberCount?: string;
+  source: string;
+  status?: OnboardingLeadStatus;
+  note?: string;
+  nextFollowUpAt?: string | null;
+}
+
+export interface UpdateOnboardingLeadRequest {
+  institutionName: string;
+  contactName: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  contactRole?: string | null;
+  organizationType?: string | null;
+  estimatedMemberCount?: string | null;
+  source?: string | null;
+  assigneeStaffId?: string | null;
+  nextFollowUpAt?: string | null;
+}
+
+export interface ImportOnboardingLeadsResult {
+  created: number;
+  skipped: { row: number; institutionName: string; reason: string }[];
+}
+
+export interface LeadAssignee {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export async function updateOnboardingLead(id: string, req: UpdateOnboardingLeadRequest) {
+  const res = await platformClient.put<ApiResponse<OnboardingLead>>(`/onboardingleads/${id}`, req);
+  return res.data.data!;
+}
+
+export async function importOnboardingLeads(rows: CreateStaffOnboardingLeadRequest[]) {
+  const res = await platformClient.post<ApiResponse<ImportOnboardingLeadsResult>>("/onboardingleads/import", { rows });
+  return res.data.data!;
+}
+
+export async function getLeadAssignees() {
+  const res = await platformClient.get<ApiResponse<LeadAssignee[]>>("/onboardingleads/assignees");
+  return res.data.data!;
+}
+
+export async function createOnboardingLead(req: CreateStaffOnboardingLeadRequest) {
+  const res = await platformClient.post<ApiResponse<OnboardingLead>>("/onboardingleads", req);
+  return res.data.data!;
 }
 
 export async function getOnboardingLeads(status?: string) {
@@ -779,6 +879,109 @@ export async function updateOnboardingLeadStatus(id: string, req: { status: stri
 
 export async function addOnboardingLeadNote(id: string, note: string) {
   const res = await platformClient.post<ApiResponse<OnboardingLead>>(`/onboardingleads/${id}/notes`, { note });
+  return res.data.data!;
+}
+
+// ─── Activation ──────────────────────────────────────────────────────────
+
+export interface ActivationCriterion {
+  key: "branding" | "payouts" | "members" | "payments" | "staff";
+  label: string;
+  met: boolean;
+  detail: string;
+}
+
+export interface ActivationScorecardItem {
+  institutionId: string;
+  name: string;
+  slug: string;
+  onboardedAt: string;
+  activatedAt?: string | null;
+  daysLive: number;
+  criteria: ActivationCriterion[];
+  metCount: number;
+  nextStep?: string | null;
+  isStalled: boolean;
+  isActivated: boolean;
+  isOverdue: boolean;
+  minMembers: number;
+  trialEndsAt?: string | null;
+  setupNudgesEnabled: boolean;
+}
+
+export interface ActivationMilestone {
+  date: string;
+  liveTarget?: number | null;
+  activatedTarget?: number | null;
+}
+
+export interface MilestoneProgress extends ActivationMilestone {
+  liveActual: number;
+  activatedActual: number;
+  status: "met" | "missed" | "open";
+}
+
+export interface ActivationScorecard {
+  liveCount: number;
+  activatedCount: number;
+  stalledCount: number;
+  overdueCount: number;
+  targetCount?: number | null;
+  targetDate?: string | null;
+  milestones: MilestoneProgress[];
+  items: ActivationScorecardItem[];
+}
+
+export interface FunnelStage {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface FunnelWeek {
+  weekStart: string;
+  leads: number;
+  contacted: number;
+  demoBooked: number;
+  trial: number;
+  live: number;
+  activated: number;
+}
+
+export interface ActivationFunnel {
+  stages: FunnelStage[];
+  weeks: FunnelWeek[];
+}
+
+export async function getActivationScorecard() {
+  const res = await platformClient.get<ApiResponse<ActivationScorecard>>("/activation/scorecard");
+  return res.data.data!;
+}
+
+export async function getActivationFunnel(weeks = 9) {
+  const res = await platformClient.get<ApiResponse<ActivationFunnel>>("/activation/funnel", { params: { weeks } });
+  return res.data.data!;
+}
+
+export async function updateActivationTarget(req: {
+  targetCount: number | null;
+  targetDate: string | null;
+  milestones: ActivationMilestone[];
+}) {
+  const res = await platformClient.put<ApiResponse<ActivationScorecard>>("/activation/target", req);
+  return res.data.data!;
+}
+
+export async function getInstitutionActivation(institutionId: string) {
+  const res = await platformClient.get<ApiResponse<ActivationScorecardItem>>(`/activation/institutions/${institutionId}`);
+  return res.data.data!;
+}
+
+export async function updateInstitutionActivationSettings(
+  institutionId: string,
+  req: { activationMinMembers: number | null; setupNudgesEnabled: boolean },
+) {
+  const res = await platformClient.put<ApiResponse<ActivationScorecardItem>>(`/activation/institutions/${institutionId}/settings`, req);
   return res.data.data!;
 }
 
