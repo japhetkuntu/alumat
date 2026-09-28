@@ -13,6 +13,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { getBusinessListings, getMyBusinessListing } from "@/lib/member-api";
+import { FitImage } from "@alumni/ui";
 
 export default function BusinessDirectoryPage() {
   const [search, setSearch] = useState("");
@@ -83,14 +84,14 @@ export default function BusinessDirectoryPage() {
               <Card className="group flex flex-col overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 h-full">
                 <div className="relative h-32 overflow-hidden flex-shrink-0 bg-muted/30">
                   {biz.bannerUrl ? (
-                    <img src={biz.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+                    <FitImage src={biz.bannerUrl} alt="" className="w-full h-full" imgClassName="transition-transform duration-700 group-hover:scale-110" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary/10 to-muted/20" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
                   <div className="absolute -bottom-6 left-4 h-14 w-14 rounded-xl border-2 border-background bg-background shadow-md overflow-hidden flex items-center justify-center">
                     {biz.logoUrl ? (
-                      <img src={biz.logoUrl} alt={biz.businessName} className="w-full h-full object-cover" loading="lazy" />
+                      <FitImage src={biz.logoUrl} alt={biz.businessName} className="w-full h-full" />
                     ) : (
                       <Building2 size={22} className="text-primary/50" />
                     )}

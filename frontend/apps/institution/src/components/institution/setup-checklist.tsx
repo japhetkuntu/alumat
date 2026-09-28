@@ -48,10 +48,18 @@ export function InstitutionSetupChecklist() {
     {
       id: "branding",
       title: "Brand your portal",
-      description: `Add your logo, a hero photo and at least one story under Landing content.${branding ? ` ${branding.detail}.` : ""}`,
+      description: `Add your logo, your colours and at least one story under Landing content.${branding ? ` ${branding.detail}.` : ""}`,
       done: hasActivation ? !!branding?.met : !!institution.logoUrl,
       actionLabel: "Open settings",
       onAction: () => router.push("/settings"),
+    },
+    {
+      id: "hero",
+      title: "Add a photo of your community",
+      description: "A real photo of a gathering or your campus is the first thing visitors see. Without one, your page is a plain colour.",
+      done: (institution.heroImageUrls?.length ?? 0) > 0,
+      actionLabel: "Add a hero photo",
+      onAction: () => router.push("/settings?tab=landing"),
     },
     {
       id: "payouts",

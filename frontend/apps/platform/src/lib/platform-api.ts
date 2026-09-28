@@ -448,6 +448,20 @@ export async function getAllPayments(page = 1, pageSize = 20, status?: string, s
   return res.data.data!;
 }
 
+export interface PlatformRevenueMonth { year: number; month: number; contributions: number; store: number; services: number }
+export interface PlatformRevenueTrend {
+  /** The latest calendar months, oldest first, current month last. Empty months are included as zeros. */
+  months: PlatformRevenueMonth[];
+  /** How many payments (all time, every institution) sit in each status. */
+  statusCounts: Record<string, number>;
+}
+
+/** Paid revenue by month and source across every institution, totalled on the server so it is exact at any volume. */
+export async function getRevenueTrend(months = 6): Promise<PlatformRevenueTrend> {
+  const res = await platformClient.get<ApiResponse<PlatformRevenueTrend>>("/dashboard/revenue-trend", { params: { months } });
+  return res.data.data!;
+}
+
 // ─── Institution admins ─────────────────────────────────────────────────────
 
 export interface InstitutionStaffMember {
@@ -986,3 +1000,152 @@ export async function updateInstitutionActivationSettings(
 }
 
 export type { AuthTokens };
+
+// ─── Activation work: targets and tasks ───────────────────────────────────────
+// A target is a time-boxed goal with one owner; tasks sit under it, each with one assignee. Progress is measured
+// from real platform data. Super Admins create targets and assign work; everyone can work their own tasks.
+
+export type TargetMetric = "LiveInstitutions" | "ActivatedInstitutions" | "TotalMembers" | "OnboardingLeads" | "PaymentVolume" | "Custom";
+export type TargetStatus = "Active" | "Achieved" | "Missed" | "Cancelled";
+export type TargetHealth = "Achieved" | "OnTrack" | "Behind" | "Missed" | "Cancelled";
+export type WorkTaskStatus = "Todo" | "InProgress" | "Blocked" | "Done";
+export type WorkTaskPriority = "Low" | "Normal" | "High";
+
+export interface TargetProgress {
+  current: number;
+  baseline: number;
+  goal: number;
+  /** Where the target should be by today to finish on time. */
+  expected: number;
+  percent: number;
+  health: TargetHealth;
+}
+
+export interface WorkTarget {
+  id: string;
+  title: string;
+  description?: string | null;
+  metric: TargetMetric;
+  metricLabel: string;
+  /** Counts what happened since the start, rather than reading a current level. */
+  isFlow: boolean;
+  goalValue: number;
+  baselineValue: number;
+  startDate: string;
+  dueDate: string;
+  ownerId: string;
+  ownerName: string;
+  status: TargetStatus;
+  manualValue?: number | null;
+  closedAt?: string | null;
+  progress: TargetProgress;
+  openTasks: number;
+  doneTasks: number;
+  overdueTasks: number;
+  createdAt: string;
+}
+
+export interface WorkTask {
+  id: string;
+  targetId: string;
+  targetTitle: string;
+  title: string;
+  description?: string | null;
+  assigneeId: string;
+  assigneeName: string;
+  dueDate?: string | null;
+  priority: WorkTaskPriority;
+  status: WorkTaskStatus;
+  blockedReason?: string | null;
+  institutionId?: string | null;
+  institutionName?: string | null;
+  leadId?: string | null;
+  leadName?: string | null;
+  createdById: string;
+  createdByName: string;
+  completedAt?: string | null;
+  isOverdue: boolean;
+  createdAt: string;
+  canEdit: boolean;
+  canUpdateStatus: boolean;
+}
+
+export interface WorkTaskNote { id: string; authorId: string; authorName: string; text: string; createdAt: string }
+
+export const TARGET_METRICS: { value: TargetMetric; label: string; hint: string }[] = [
+  { value: "LiveInstitutions", label: "Live institutions", hint: "Institutions that are live right now." },
+  { value: "ActivatedInstitutions", label: "Activated institutions", hint: "Live institutions that have reached activation." },
+  { value: "TotalMembers", label: "Active members", hint: "Active members across every institution right now." },
+  { value: "OnboardingLeads", label: "Onboarding requests", hint: "Requests received from the start date onwards." },
+  { value: "PaymentVolume", label: "Payments collected (GHS)", hint: "Successful payments collected from the start date onwards." },
+  { value: "Custom", label: "Custom (updated by hand)", hint: "For a goal the platform can't measure. Someone updates the figure." },
+];
+
+export async function getWorkTargets(status?: TargetStatus) {
+  const res = await platformClient.get<ApiResponse<WorkTarget[]>>("/work/targets", { params: { status } });
+  return res.data.data!;
+}
+
+export async function getWorkTarget(id: string) {
+  const res = await platformClient.get<ApiResponse<{ target: WorkTarget; tasks: WorkTask[] }>>(`/work/targets/${id}`);
+  return res.data.data!;
+}
+
+export async function createWorkTarget(req: { title: string; description?: string; metric: TargetMetric; goalValue: number; dueDate: string; ownerId: string; manualValue?: number }) {
+  const res = await platformClient.post<ApiResponse<WorkTarget>>("/work/targets", req);
+  return res.data.data!;
+}
+
+export async function updateWorkTarget(id: string, req: { title: string; description?: string; goalValue: number; dueDate: string; ownerId: string; manualValue?: number }) {
+  const res = await platformClient.put<ApiResponse<WorkTarget>>(`/work/targets/${id}`, req);
+  return res.data.data!;
+}
+
+export async function cancelWorkTarget(id: string) {
+  const res = await platformClient.post<ApiResponse<WorkTarget>>(`/work/targets/${id}/cancel`);
+  return res.data.data!;
+}
+
+export async function getWorkTasks(params: { mine?: boolean; targetId?: string; status?: WorkTaskStatus; assigneeId?: string; institutionId?: string; leadId?: string } = {}) {
+  const res = await platformClient.get<ApiResponse<WorkTask[]>>("/work/tasks", { params });
+  return res.data.data!;
+}
+
+export async function getWorkTask(id: string) {
+  const res = await platformClient.get<ApiResponse<{ task: WorkTask; notes: WorkTaskNote[] }>>(`/work/tasks/${id}`);
+  return res.data.data!;
+}
+
+export interface WorkTaskInput {
+  title: string;
+  description?: string;
+  assigneeId?: string;
+  dueDate?: string | null;
+  priority?: WorkTaskPriority;
+  institutionId?: string | null;
+  leadId?: string | null;
+}
+
+export async function createWorkTask(req: WorkTaskInput & { targetId: string }) {
+  const res = await platformClient.post<ApiResponse<WorkTask>>("/work/tasks", req);
+  return res.data.data!;
+}
+
+export async function updateWorkTask(id: string, req: WorkTaskInput) {
+  const res = await platformClient.put<ApiResponse<WorkTask>>(`/work/tasks/${id}`, req);
+  return res.data.data!;
+}
+
+export async function updateWorkTaskStatus(id: string, req: { status: WorkTaskStatus; blockedReason?: string }) {
+  const res = await platformClient.patch<ApiResponse<WorkTask>>(`/work/tasks/${id}/status`, req);
+  return res.data.data!;
+}
+
+export async function deleteWorkTask(id: string) {
+  await platformClient.delete(`/work/tasks/${id}`);
+}
+
+export async function addWorkTaskNote(id: string, text: string) {
+  const res = await platformClient.post<ApiResponse<WorkTaskNote>>(`/work/tasks/${id}/notes`, { text });
+  return res.data.data!;
+}

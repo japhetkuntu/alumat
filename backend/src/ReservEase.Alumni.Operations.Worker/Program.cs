@@ -76,6 +76,8 @@ builder.Services
     .AddWorkflow<RecurringGivingWorkflow>()
     .AddWorkflow<MembershipReminderDispatchWorkflow>()
     .AddWorkflow<EventReminderDispatchWorkflow>()
+    .AddWorkflow<PledgeReminderDispatchWorkflow>()
+    .AddWorkflow<WorkReminderDispatchWorkflow>()
     .AddWorkflow<InstitutionActivationDispatchWorkflow>()
     .AddScopedActivities<ScheduledJobsActivities>()
     .AddScopedActivities<InstitutionActivationActivities>();

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
 import { ChartContainer } from "./chart-container";
 import { ChartTooltip } from "./chart-tooltip";
@@ -12,8 +12,12 @@ export interface TrendChartProps<T extends Record<string, unknown>> {
   data: T[];
   xKey: keyof T & string;
   series: ChartSeries<T>[];
-  /** "line" for a pure trend, "area" when the series' combined magnitude (e.g. stacked revenue sources) matters as much as the trend. */
-  variant?: "line" | "area";
+  /**
+   * "line" for a pure trend, "area" for a single series whose magnitude matters. "bar" (use with `stacked`) for a
+   * total split by source month by month: a stacked *area* draws every series' line along the running total, so
+   * when the top series is zero its line sits exactly on top of the real one and hides it. Bars draw nothing for a zero.
+   */
+  variant?: "line" | "area" | "bar";
   stacked?: boolean;
   height?: number;
   loading?: boolean;
@@ -42,7 +46,7 @@ export function TrendChart<T extends Record<string, unknown>>({
 }: TrendChartProps<T>) {
   const isEmpty = !loading && (data.length === 0 || series.every((s) => data.every((d) => !d[s.key])));
 
-  const Chart = variant === "area" ? AreaChart : LineChart;
+  const Chart = variant === "area" ? AreaChart : variant === "bar" ? BarChart : LineChart;
 
   // A fixed axis width clips longer labels (e.g. a full currency string like
   // "GH₵100,000.00") — measured from the actual longest formatted tick
@@ -87,11 +91,21 @@ export function TrendChart<T extends Record<string, unknown>>({
           tickFormatter={valueFormatter ? (v) => valueFormatter(Number(v)) : undefined}
         />
         <Tooltip
-          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
-          content={<ChartTooltip formatValue={valueFormatter} />}
+          cursor={variant === "bar" ? { fill: "var(--muted)", opacity: 0.5 } : { stroke: "var(--border)", strokeWidth: 1 }}
+          content={<ChartTooltip formatValue={valueFormatter} showTotal={stacked} />}
         />
         {series.map((s) =>
-          variant === "area" ? (
+          variant === "bar" ? (
+            <Bar
+              key={s.key}
+              dataKey={s.key}
+              name={s.label}
+              stackId={stacked ? "trend" : undefined}
+              fill={s.color}
+              maxBarSize={48}
+              isAnimationActive={false}
+            />
+          ) : variant === "area" ? (
             <Area
               key={s.key}
               type="monotone"

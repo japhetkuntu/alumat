@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { TargetsTab } from "@/components/platform/work/targets-tab";
+import { MyTasksTab } from "@/components/platform/work/my-tasks-tab";
+import { TaskDialog, type TaskPrefill } from "@/components/platform/work/task-dialog";
 import {
   Badge,
   Button,
   Card,
   CardContent,
   ChipRow,
+  SegmentedControl,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -102,7 +107,8 @@ function MilestoneRow({ m }: { m: MilestoneProgress }) {
   );
 }
 
-export default function ActivationPage() {
+function ScorecardTab() {
+  const [taskFor, setTaskFor] = useState<TaskPrefill | null>(null);
   const { isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>("all");
@@ -316,6 +322,15 @@ export default function ActivationPage() {
                       {item.nextStep && (
                         <p className="text-[12.5px] leading-snug mt-2">
                           <span className="font-semibold">Next: </span>{item.nextStep}
+                          {!item.isActivated && (
+                            <button
+                              type="button"
+                              onClick={() => setTaskFor({ title: `${item.name}: ${item.nextStep}`, institutionId: item.institutionId })}
+                              className="ml-2 text-[12px] font-semibold text-primary underline underline-offset-2 hover:no-underline"
+                            >
+                              Create task
+                            </button>
+                          )}
                         </p>
                       )}
                     </div>
@@ -451,6 +466,45 @@ export default function ActivationPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {taskFor && <TaskDialog prefill={taskFor} onClose={() => setTaskFor(null)} onSaved={() => { setTaskFor(null); toast.success("Task created. Find it under Targets or My tasks."); }} />}
     </div>
+  );
+}
+
+const TABS = [
+  { value: "scorecard", label: "Scorecard" },
+  { value: "targets", label: "Targets" },
+  { value: "tasks", label: "My tasks" },
+] as const;
+type Tab = (typeof TABS)[number]["value"];
+
+function ActivationTabs() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const raw = params.get("tab");
+  const tab: Tab = TABS.some((t) => t.value === raw) ? (raw as Tab) : "scorecard";
+
+  return (
+    <div>
+      <div className="px-4 sm:px-7 pt-4 sm:pt-7">
+        <SegmentedControl
+          label="Activation sections"
+          options={TABS.map((t) => ({ value: t.value, label: t.label }))}
+          value={tab}
+          onChange={(v) => router.replace(v === "scorecard" ? "/activation" : `/activation?tab=${v}`)}
+        />
+      </div>
+      {tab === "scorecard" && <ScorecardTab />}
+      {tab === "targets" && <TargetsTab />}
+      {tab === "tasks" && <MyTasksTab />}
+    </div>
+  );
+}
+
+export default function ActivationPage() {
+  return (
+    <Suspense fallback={null}>
+      <ActivationTabs />
+    </Suspense>
   );
 }

@@ -767,6 +767,51 @@ public class InstitutionManagementService(
     /// see the full picture when helping troubleshoot, not just the
     /// confirmed-and-settled revenue figure GetRevenueAsync reports.
     /// </summary>
+    public async Task<IApiResponse<PlatformRevenueTrendDto>> GetRevenueTrendAsync(int months = 6)
+    {
+        try
+        {
+            months = Math.Clamp(months, 1, 12);
+            var today = DateTime.UtcNow;
+            var first = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-(months - 1));
+
+            // A payment belongs to the month it was confirmed in (falling back to when it was created).
+            var contributionRows = await contributionRepo.GetQueryable(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= first, ignoreQueryFilters: true)
+                .GroupBy(c => new { (c.ConfirmedAt ?? c.CreatedAt).Year, (c.ConfirmedAt ?? c.CreatedAt).Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(c => c.Amount) }).ToListAsync();
+            var storeRows = await storeOrderRepo.GetQueryable(o => o.Status == "Successful" && (o.ConfirmedAt ?? o.CreatedAt) >= first, ignoreQueryFilters: true)
+                .GroupBy(o => new { (o.ConfirmedAt ?? o.CreatedAt).Year, (o.ConfirmedAt ?? o.CreatedAt).Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(o => o.TotalAmount) }).ToListAsync();
+            var serviceRows = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && (r.ConfirmedAt ?? r.CreatedAt) >= first, ignoreQueryFilters: true)
+                .GroupBy(r => new { (r.ConfirmedAt ?? r.CreatedAt).Year, (r.ConfirmedAt ?? r.CreatedAt).Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(r => r.Amount) }).ToListAsync();
+
+            var monthsList = Enumerable.Range(0, months).Select(i =>
+            {
+                var m = first.AddMonths(i);
+                return new PlatformRevenueMonthDto(
+                    m.Year, m.Month,
+                    contributionRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
+                    storeRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
+                    serviceRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total));
+            }).ToList();
+
+            // How many payments sit in each status (all time), for the "Payment status mix" donut.
+            var statusCounts = new Dictionary<string, int>();
+            void Add(IEnumerable<(string Status, int Count)> rows) { foreach (var (st, n) in rows) statusCounts[st] = statusCounts.GetValueOrDefault(st) + n; }
+            Add((await contributionRepo.GetQueryable(null, ignoreQueryFilters: true).GroupBy(c => c.Status).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).Select(x => (x.Key, x.N)));
+            Add((await storeOrderRepo.GetQueryable(null, ignoreQueryFilters: true).GroupBy(o => o.Status).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).Select(x => (x.Key, x.N)));
+            Add((await serviceRequestRepo.GetQueryable(null, ignoreQueryFilters: true).GroupBy(r => r.PaymentStatus).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).Select(x => (x.Key, x.N)));
+
+            return new PlatformRevenueTrendDto(monthsList, statusCounts).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to get platform revenue trend");
+            return ApiResponseExtensions.ToServerErrorApiResponse<PlatformRevenueTrendDto>("Failed to retrieve revenue trend");
+        }
+    }
+
     public async Task<IApiResponse<PgPagedResult<PlatformPaymentDto>>> GetPaymentsAsync(string? id, int page, int pageSize, string? status, string? source)
     {
         try

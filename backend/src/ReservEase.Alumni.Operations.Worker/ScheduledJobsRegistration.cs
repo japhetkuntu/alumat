@@ -55,6 +55,18 @@ public static class ScheduledJobsRegistration
                 new WorkflowOptions { Id = "event-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(6));
 
+        await EnsureScheduleAsync(client, logger, "pledge-reminder-schedule",
+            ScheduleActionStartWorkflow.Create<PledgeReminderDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "pledge-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(6));
+
+        await EnsureScheduleAsync(client, logger, "work-reminder-schedule",
+            ScheduleActionStartWorkflow.Create<WorkReminderDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "work-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(6));
+
         // Daily: weekly activity snapshots, activation stamping, admin nudges (7-day
         // cooldown) and — on Mondays — the platform staff digest.
         await EnsureScheduleAsync(client, logger, "institution-activation-schedule",

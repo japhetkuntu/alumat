@@ -11,7 +11,7 @@ import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { Landmark, Clock3 } from "@alumni/ui";
 import {
-  getInstitutions, getAllPayments, getPayoutForecast,
+  getInstitutions, getRevenueTrend, getPayoutForecast,
   getPendingBatchPayouts, approveBatchPayout, rejectBatchPayout,
   getPendingInstitutionPayouts, approveInstitutionPayout, rejectInstitutionPayout,
 } from "@/lib/platform-api";
@@ -31,11 +31,12 @@ export default function BillingPage() {
   });
   const institutions = data?.results ?? [];
 
-  const { data: paymentsData, isLoading: paymentsLoading } = useQuery({
-    queryKey: ["platform-all-payments-analytics"],
-    queryFn: () => getAllPayments(1, 1000),
+  // Totalled on the server: the latest six months by source, plus payment counts by status.
+  const { data: revenueTrend, isLoading: paymentsLoading } = useQuery({
+    queryKey: ["platform-revenue-trend"],
+    queryFn: () => getRevenueTrend(6),
+    staleTime: 60 * 1000,
   });
-  const payments = paymentsData?.results ?? [];
 
   const { data: payoutForecast, isLoading: payoutsLoading } = useQuery({
     queryKey: ["platform-payout-forecast"],
@@ -84,26 +85,15 @@ export default function BillingPage() {
   const suspendedCount = institutions.filter((i) => i.status === "Suspended").length;
   const totalRevenue = institutions.reduce((s, i) => s + i.revenue, 0);
 
-  // Last 6 months, Successful payments only, split by source.
-  const now = new Date();
+  // Last 6 calendar months, successful payments only, split by source. Older history is in the payments list.
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const trendMonths = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0, Services: 0 };
-  });
-  payments.filter((p) => p.status === "Successful").forEach((p) => {
-    const d = new Date(p.confirmedAt ?? p.createdAt);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    const slot = trendMonths.find((m) => m.key === key);
-    if (!slot) return;
-    if (p.source === "Contribution") slot.Contributions += p.amount;
-    else if (p.source === "StoreOrder") slot.Store += p.amount;
-    else slot.Services += p.amount;
-  });
-  const statusCounts = payments.reduce<Record<string, number>>((acc, p) => {
-    acc[p.status] = (acc[p.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const trendMonths = (revenueTrend?.months ?? []).map((m) => ({
+    month: monthNames[m.month - 1],
+    Contributions: m.contributions,
+    Store: m.store,
+    Services: m.services,
+  }));
+  const statusCounts = revenueTrend?.statusCounts ?? {};
   const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({
     label: status,
     value: count,
@@ -276,7 +266,7 @@ export default function BillingPage() {
                 { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
                 { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
               ]}
-              variant="area"
+              variant="bar"
               stacked
               height={220}
               loading={paymentsLoading}

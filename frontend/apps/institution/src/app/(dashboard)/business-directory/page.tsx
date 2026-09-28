@@ -29,6 +29,7 @@ import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
+import { MemberShareButton } from "@/components/institution/member-share-button";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive" | "neutral"> = {
   Approved: "success",
@@ -389,6 +390,9 @@ export default function AdminBusinessDirectoryPage() {
                       <Button size="sm" variant="ghost" className="h-8 text-[11px] font-bold text-destructive hover:bg-destructive/10" onClick={() => blacklistMut.mutate(l.id)} isLoading={blacklistMut.isPending && blacklistMut.variables === l.id}>
                         <Ban size={12} className="mr-1" />Blacklist
                       </Button>
+                    )}
+                    {l.status === "Approved" && (
+                      <MemberShareButton memberPath={`/business-directory/${l.id}`} title={l.businessName} className="h-8 text-[11px] font-bold" />
                     )}
                     <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setEditTarget(l)} title="Edit">
                       <Pencil size={13} />

@@ -32,4 +32,15 @@ public class DashboardController(IInstitutionManagementService institutionServic
         var result = await institutionService.GetPaymentsAsync(null, page, pageSize, status, source);
         return result.ToActionResult();
     }
+
+    /// <summary>The latest N months (default 6) of successful payments by source, plus payment counts by status, for the Payments &amp; Revenue charts. Exact at any volume; full history is in the payments list.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing,Support")]
+    [HttpGet("revenue-trend")]
+    [SwaggerOperation(Summary = "Paid revenue by month and source, across every institution")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformRevenueTrendDto>))]
+    public async Task<IActionResult> GetRevenueTrend([FromQuery] int months = 6)
+    {
+        var result = await institutionService.GetRevenueTrendAsync(months);
+        return result.ToActionResult();
+    }
 }

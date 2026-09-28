@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import type { ServiceType, ServiceRequest, ServiceFieldType } from "@/types";
+import { MemberShareButton } from "@/components/institution/member-share-button";
 
 const TABS = ["Service types", "Requests"] as const;
 type Tab = (typeof TABS)[number];
@@ -299,6 +300,7 @@ export default function ServicesPage() {
                         <TableCell className="text-[12.5px] text-muted-foreground">{s.stages.join(" → ")}</TableCell>
                         <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
                         <TableCell className="text-right">
+                          {s.status === "Active" && <MemberShareButton memberPath={`/services/${s.id}`} title={s.name} variant="ghost" />}
                           <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil size={14} /></Button>
                           <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(s)}><Trash2 size={14} className="text-destructive" /></Button>
                         </TableCell>

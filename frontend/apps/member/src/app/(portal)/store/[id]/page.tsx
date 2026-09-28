@@ -14,6 +14,7 @@ import { ZoomableImage } from "@alumni/ui";
 import { getStoreProduct } from "@/lib/member-api";
 import { useStoreCart } from "@/hooks/use-store-cart";
 import type { StoreProduct, StoreProductVariant } from "@/types";
+import { FitImage } from "@alumni/ui";
 
 /** Given the currently selected options, does at least one in-stock variant match `candidate` for `optionType`? */
 function optionValueIsAvailable(
@@ -118,7 +119,7 @@ export default function StoreProductDetailPage() {
                   className="w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0"
                   style={{ borderColor: i === activeImage ? "var(--primary)" : "transparent" }}
                 >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <FitImage src={url} alt="" className="w-full h-full" />
                 </button>
               ))}
             </div>

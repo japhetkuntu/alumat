@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import type { AlumniEvent, EventStatus } from "@/types";
+import { MemberShareButton } from "@/components/institution/member-share-button";
 
 function isPastEvent(e: { startDate: string; endDate?: string | null }): boolean {
   return new Date(e.endDate ?? e.startDate).getTime() < Date.now();
@@ -326,6 +327,9 @@ export default function AdminEventsPage() {
                   <Link href={`/events/${e.id}/rsvps`}>
                     <Button size="sm" variant="outline"><Users size={12} />View RSVPs</Button>
                   </Link>
+                  {e.status !== "Cancelled" && (
+                    <MemberShareButton memberPath={`/events/${e.id}`} title={e.title} />
+                  )}
                   {e.status !== "Cancelled" && e.status !== "Completed" && (
                     <Button size="sm" variant="outline" onClick={() => setEditEvent(e)}><Pencil size={12} />Edit</Button>
                   )}

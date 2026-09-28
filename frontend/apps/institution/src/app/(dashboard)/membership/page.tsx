@@ -21,6 +21,7 @@ import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { CardSkeleton } from "@alumni/ui";
 import { ImageUpload } from "@alumni/ui";
 import type { Campaign } from "@/types";
+import { MemberShareButton } from "@/components/institution/member-share-button";
 
 export default function AdminMembershipPage() {
   const { user } = useAuth();
@@ -422,6 +423,7 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
               <Pencil size={13} />Manage
             </Button>
           </Link>
+          {c.status === "Active" && <MemberShareButton memberPath={`/contributions/${c.id}`} title={c.title} className="font-bold" />}
         </div>
       </CardContent>
     </Card>

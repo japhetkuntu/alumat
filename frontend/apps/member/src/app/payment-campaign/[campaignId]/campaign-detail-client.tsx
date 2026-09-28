@@ -17,6 +17,7 @@ import {
 } from "@alumni/ui";
 import { getCampaignById, getPaystackPaymentStatus, initiatePaystackPayment, initiatePaystackPaymentGuest } from "@/lib/member-api";
 import { useAuth } from "@/hooks/use-auth";
+import { PledgeCard } from "@/components/member/pledge-card";
 import { useDisabledFeatures } from "@/components/member/member-layout";
 import { handleApiError } from "@/lib/api-client";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
@@ -470,6 +471,10 @@ export default function PublicCampaignContributionPage() {
                         </>
                       )}
                     </Button>
+
+                    {isMember && !isMembershipFixed && (
+                      <PledgeCard campaignId={campaign.id} campaignTitle={campaign.title} closesOn={campaign.deadline} />
+                    )}
 
                     {/* Sign-in nudge */}
                     <p className="text-center text-[12px] text-muted-foreground">

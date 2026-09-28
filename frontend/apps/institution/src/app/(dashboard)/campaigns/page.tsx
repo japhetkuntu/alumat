@@ -29,6 +29,7 @@ import { ImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
+import { MemberShareButton } from "@/components/institution/member-share-button";
 
 const statusVariant: Record<CampaignStatus, "success" | "info" | "secondary" | "warning"> = {
   Active: "success",
@@ -391,6 +392,9 @@ export default function AdminCampaignsPage() {
                         <Eye size={13} />View details
                       </Button>
                     </Link>
+                    {c.status === "Active" && (
+                      <MemberShareButton memberPath={c.isMembershipCampaign ? `/contributions/${c.id}` : `/payment-campaign/${c.id}`} title={c.title} />
+                    )}
                     {c.status === "Active" && (
                       <Button size="sm" variant="outline" onClick={() => setEditCampaign(c)}>
                         <Pencil size={13} />Edit

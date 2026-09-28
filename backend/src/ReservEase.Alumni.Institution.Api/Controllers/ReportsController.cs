@@ -30,6 +30,16 @@ public class ReportsController(
         return result.ToActionResult();
     }
 
+    [HttpGet("revenue-trend")]
+    [SwaggerOperation(Summary = "Paid revenue by month and source", Description = "The latest N calendar months (default 6) of successful payments, for the dashboard chart. Full history is on the Reports page.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<RevenueTrendDto>))]
+    public async Task<IActionResult> GetRevenueTrend([FromQuery] int months = 6)
+    {
+        var admin = User.GetAccount();
+        var result = await reportService.GetRevenueTrendAsync(admin, months);
+        return result.ToActionResult();
+    }
+
     [HttpGet("export/{entity}")]
     [SwaggerOperation(Summary = "Export entity data to CSV")]
     public async Task<IActionResult> ExportEntityCsv(

@@ -2,6 +2,7 @@
 
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -211,7 +212,8 @@ const TABS = ["Institution profile", "Landing content", "Domain", "Notifications
 
 export default function BrandingSettingsPage() {
   const { user, logout, isScopedAdmin } = useAuth();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Institution profile");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<(typeof TABS)[number]>(() => (searchParams.get("tab") === "landing" ? "Landing content" : "Institution profile"));
   const queryClient = useQueryClient();
 
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
@@ -1083,7 +1085,11 @@ export default function BrandingSettingsPage() {
                 <Globe size={16} className="text-primary" />
                 <p className="font-semibold text-[15px]">Hero photo</p>
               </div>
-              <p className="text-[12.5px] text-muted-foreground -mt-2">The photo(s) and headline at the top of your Member Portal landing page. Add more than one to show a carousel. Leave empty for the generic default.</p>
+              <p className="text-[12.5px] text-muted-foreground -mt-2">The photo(s) and headline at the top of your Member Portal landing page. Add more than one to show a carousel. Without a photo, the page uses your brand colour.</p>
+              <div className="border-l-2 border-primary/40 pl-3 text-[12.5px] leading-relaxed text-muted-foreground">
+                <p className="font-semibold text-foreground">What makes a good hero photo</p>
+                <p>A real photo of your own community: a reunion, a graduation, an event, your campus or a meeting. Wide (landscape), at least 1600 pixels across, with the people or subject away from the bottom third, where the headline sits. Avoid stock photos and heavily filtered images. Visitors decide in a second whether this looks like a living community.</p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Photos</Label>

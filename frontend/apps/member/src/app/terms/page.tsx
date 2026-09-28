@@ -106,6 +106,12 @@ export default function TermsPage() {
           fundraiser or dues cycle, since they hold the funds and the record of what was collected.
         </p>
         <p>
+          For fundraisers you can also make a pledge: a note of what you plan to give and when. A pledge is a statement
+          of intention, not a payment or a debt, and it is not binding. No money moves until you choose to pay. Only the
+          Institution&apos;s administrators can see your pledge, and we send a small number of reminders around your chosen date.
+          You can cancel a pledge at any time from the fundraiser page.
+        </p>
+        <p>
           Institutions set their own fundraiser amounts, deadlines, and (for membership) yearly dues. We are not a
           party to the underlying reason a payment is being collected; that relationship is between you and the
           Institution.

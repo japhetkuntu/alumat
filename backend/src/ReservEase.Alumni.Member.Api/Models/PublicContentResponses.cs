@@ -7,3 +7,6 @@ public record PublicEventItemResponse(string Id, string Title, DateTime StartDat
 
 public record PublicSpotlightItemResponse(string Id, string Title, string Story, string? ImageUrl, string MemberName, DateTime? FeaturedMonth);
 public record PublicBusinessListingItemResponse(string Id, string BusinessName, string Description, string? LogoUrl, string? BannerUrl, string Location, string? WebsiteUrl, string? ExternalLinkUrl);
+
+/// <summary>Aggregate, non-personal counts for the public landing page. A null figure means that feature is off for this institution.</summary>
+public record PublicPulseResponse(int Members, int JoinedLast30Days, int? EventsNext30Days, DateTime? NextEventDate, int? OpenJobs, int? Businesses);

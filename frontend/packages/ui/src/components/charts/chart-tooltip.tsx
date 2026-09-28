@@ -13,6 +13,8 @@ interface ChartTooltipProps {
   }>;
   formatValue?: (value: number) => string;
   labelFormatter?: (label: string | number) => string;
+  /** Adds a total row, for stacked charts where the parts add up to something worth reading. */
+  showTotal?: boolean;
 }
 
 /**
@@ -21,7 +23,7 @@ interface ChartTooltipProps {
  * `active`/`payload`/`label` regardless of chart type, so one component
  * covers line/area/bar/donut.
  */
-export function ChartTooltip({ active, label, payload, formatValue, labelFormatter }: ChartTooltipProps) {
+export function ChartTooltip({ active, label, payload, formatValue, labelFormatter, showTotal }: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
   const format = formatValue ?? ((v: number) => v.toLocaleString());
@@ -46,6 +48,14 @@ export function ChartTooltip({ active, label, payload, formatValue, labelFormatt
           </div>
         ))}
       </div>
+      {showTotal && payload.length > 1 && (
+        <div className="mt-1.5 flex items-center justify-between gap-4 border-t border-border pt-1.5 text-[12.5px]">
+          <span className="text-foreground/80">Total</span>
+          <span className="font-semibold tabular-nums text-foreground">
+            {format(payload.reduce((sum, e) => sum + (typeof e.value === "number" ? e.value : 0), 0))}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -67,6 +67,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<ContentReport> ContentReports => Set<ContentReport>();
+    public DbSet<Pledge> Pledges => Set<Pledge>();
+    public DbSet<ActivationTarget> ActivationTargets => Set<ActivationTarget>();
+    public DbSet<ActivationTask> ActivationTasks => Set<ActivationTask>();
+    public DbSet<ActivationTaskNote> ActivationTaskNotes => Set<ActivationTaskNote>();
     public DbSet<InstitutionAgreementAcceptance> InstitutionAgreementAcceptances => Set<InstitutionAgreementAcceptance>();
     public DbSet<StoreProduct> StoreProducts => Set<StoreProduct>();
     public DbSet<StoreOrder> StoreOrders => Set<StoreOrder>();
@@ -456,6 +460,24 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // ContentReport: admins list open reports newest first; a member reporting the same thing twice is de-duplicated by lookup.
         modelBuilder.Entity<ContentReport>().HasIndex(r => new { r.Status, r.CreatedAt });
         modelBuilder.Entity<ContentReport>().HasIndex(r => new { r.ReporterMemberId, r.EntityType, r.EntityId });
+
+        // Pledge: admins list a campaign's pledges, a member lists their own, and the reminder job scans open ones by due date.
+        modelBuilder.Entity<Pledge>().Property(p => p.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<Pledge>().HasIndex(p => new { p.CampaignId, p.Status });
+        modelBuilder.Entity<Pledge>().HasIndex(p => new { p.MemberId, p.CampaignId });
+        modelBuilder.Entity<Pledge>().HasIndex(p => new { p.Status, p.DueDate });
+
+        // Activation work: targets are listed by status, tasks by target / assignee, and the reminder job scans open tasks by due date.
+        modelBuilder.Entity<ActivationTarget>().Property(t => t.GoalValue).HasPrecision(18, 2);
+        modelBuilder.Entity<ActivationTarget>().Property(t => t.BaselineValue).HasPrecision(18, 2);
+        modelBuilder.Entity<ActivationTarget>().Property(t => t.ManualValue).HasPrecision(18, 2);
+        modelBuilder.Entity<ActivationTarget>().Property(t => t.FinalValue).HasPrecision(18, 2);
+        modelBuilder.Entity<ActivationTarget>().HasIndex(t => new { t.Status, t.DueDate });
+        modelBuilder.Entity<ActivationTarget>().HasIndex(t => t.OwnerId);
+        modelBuilder.Entity<ActivationTask>().HasIndex(t => new { t.TargetId, t.Status });
+        modelBuilder.Entity<ActivationTask>().HasIndex(t => new { t.AssigneeId, t.Status });
+        modelBuilder.Entity<ActivationTask>().HasIndex(t => new { t.Status, t.DueDate });
+        modelBuilder.Entity<ActivationTaskNote>().HasIndex(n => new { n.TaskId, n.CreatedAt });
 
         // ── Institution (tenant) ────────────────────────────────────────────
         modelBuilder.Entity<Institution>().HasIndex(i => i.Slug).IsUnique();

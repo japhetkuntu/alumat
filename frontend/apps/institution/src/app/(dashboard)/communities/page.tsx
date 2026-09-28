@@ -22,6 +22,7 @@ import {
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { LinkOrUpload } from "@alumni/ui";
+import { MemberShareButton } from "@/components/institution/member-share-button";
 
 function CommunityForm({
   initial, onSave, onCancel, saving,
@@ -300,6 +301,7 @@ export default function CommunitiesPage() {
                   <TableCell>{formatDate(c.createdAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 justify-end">
+                      {c.isActive && <MemberShareButton memberPath={`/communities/${c.id}`} title={c.name} />}
                       <Button size="sm" variant="outline" onClick={() => setViewingMembers(c)}>Members</Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing(c)}>Edit</Button>
                       <Button

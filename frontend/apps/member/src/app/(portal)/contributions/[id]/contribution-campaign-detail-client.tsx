@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { PledgeCard } from "@/components/member/pledge-card";
 import {
   CreditCard, Loader2, ArrowLeft, Calendar, Target,
   Users, CheckCircle2, Award, Copy, Check,
@@ -552,6 +553,10 @@ export default function CampaignDetailPage() {
                     </>
                   )}
                 </Button>
+              )}
+
+              {!isMembership && isActive && (
+                <PledgeCard campaignId={id} campaignTitle={campaign.title} closesOn={campaign.deadline} />
               )}
 
               {!isActive && (

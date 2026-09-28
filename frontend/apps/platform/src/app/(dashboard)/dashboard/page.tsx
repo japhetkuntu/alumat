@@ -10,6 +10,7 @@ import { TrendChart } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { getActivationScorecard, getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
+import { MyTasksCard } from "@/components/platform/work/my-tasks-card";
 
 export default function PlatformDashboardPage() {
   const { data: summary } = useQuery({
@@ -91,6 +92,8 @@ export default function PlatformDashboardPage() {
           )}
         </div>
       </div>
+
+      <MyTasksCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
         <Card>

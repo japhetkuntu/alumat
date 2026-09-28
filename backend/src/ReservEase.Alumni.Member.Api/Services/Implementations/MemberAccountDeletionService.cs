@@ -20,6 +20,7 @@ public class MemberAccountDeletionService(
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<MemberBadge> badgeRepo,
     IAlumniPgRepository<RecurringContribution> recurringRepo,
+    IAlumniPgRepository<Pledge> pledgeRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<PaymentTransaction> transactionRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
@@ -50,6 +51,7 @@ public class MemberAccountDeletionService(
             foreach (var b in await badgeRepo.GetAllAsync(b => b.MemberId == id)) await badgeRepo.RemoveAsync(b);
             foreach (var m in await communityMembershipRepo.GetAllAsync(m => m.MemberId == id)) await communityMembershipRepo.RemoveAsync(m);
             foreach (var r in await rsvpRepo.GetAllAsync(r => r.MemberId == id)) await rsvpRepo.RemoveAsync(r);
+            foreach (var p in await pledgeRepo.GetAllAsync(p => p.MemberId == id)) await pledgeRepo.RemoveAsync(p);
             foreach (var l in await listingRepo.GetAllAsync(l => l.MemberId == id)) await listingRepo.RemoveAsync(l);
             foreach (var s in await spotlightRepo.GetAllAsync(s => s.MemberId == id)) await spotlightRepo.RemoveAsync(s);
 

@@ -21,6 +21,8 @@ public interface IInstitutionManagementService
     Task<IApiResponse<InstitutionDetailResponse>> UpdatePaymentsAsync(string id, UpdateInstitutionPaymentsRequest request, string updatedBy, string actorName);
     Task<IApiResponse<InstitutionRevenueResponse>> GetRevenueAsync(string id);
     Task<IApiResponse<PgPagedResult<PlatformPaymentDto>>> GetPaymentsAsync(string? id, int page, int pageSize, string? status, string? source);
+    /// <summary>The latest N calendar months of successful payments by source, worked out in the database so it is exact at any volume.</summary>
+    Task<IApiResponse<PlatformRevenueTrendDto>> GetRevenueTrendAsync(int months = 6);
     Task<IApiResponse<PaymentDetailDto>> GetPaymentDetailAsync(string institutionId, string paymentId, string? source);
     Task<IApiResponse<SlugAvailabilityResponse>> CheckSlugAsync(string slug);
     BaseDomainsResponse GetBaseDomains();

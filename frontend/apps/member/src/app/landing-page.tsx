@@ -15,13 +15,8 @@ import {
 import { Skeleton } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { ensureAbsoluteUrl } from "@alumni/ui";
+import { ensureAbsoluteUrl, FitImage } from "@alumni/ui";
 import { publicMemberClient } from "@/lib/api-client";
-import {
-  JobsIllustration, MentorshipIllustration, DirectoryIllustration, FundraisingIllustration,
-  EventsIllustration, StoreIllustration, AlbumsIllustration, SpotlightIllustration,
-  BusinessIllustration, NotificationsIllustration, ServicesIllustration,
-} from "./_marketing/illustrations";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DYNAMIC CONTENT — Stories and the news banner are editable by both the
@@ -33,11 +28,6 @@ const STORY_ICONS: Record<string, LucideIcon> = {
   Briefcase, Users, CreditCard, BookOpen, Globe, Heart, Trophy, Bell,
   GraduationCap, Shield, MapPin, Zap, Star, Award,
 };
-const STORY_FALLBACK_IMAGES = [
-  "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=600&q=80",
-  "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=600&q=80",
-  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80",
-];
 
 interface DynamicLandingStory {
   icon: string;
@@ -74,6 +64,8 @@ interface LandingContent {
   heroImageUrls?: string[] | null;
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
+  /** The institution's own one-line description; used as the hero headline when no explicit headline is set. */
+  tagline?: string | null;
   disabledFeatures?: string[] | null;
   socialLinks?: Record<string, string> | null;
 }
@@ -150,6 +142,21 @@ function usePublicBusinesses() {
   return { items: data ?? [], isPending };
 }
 
+interface PublicPulse { members: number; joinedLast30Days: number; eventsNext30Days: number | null; nextEventDate: string | null; openJobs: number | null; businesses: number | null; }
+function usePublicPulse() {
+  const { data } = useQuery({
+    queryKey: ["public-pulse"],
+    queryFn: async () => (await publicMemberClient.get<{ data: PublicPulse }>("/public/pulse")).data.data,
+    staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
+  });
+  return data;
+}
+
+function daysUntil(iso: string) {
+  const ms = new Date(iso).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+}
+
 function formatNewsDate(iso?: string | null) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
@@ -163,14 +170,8 @@ function formatEventDate(iso: string) {
    UNSPLASH IMAGE URLS
    All free-to-use under the Unsplash License — no attribution required.
    ───────────────────────────────────────────────────────────────────────── */
-const IMG = {
-  // Hero right-side panel background — students in lecture hall
-  heroPanel: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80",    // students studying together
-  // Use-case/stories section — 3 contextual images
-  storyJobs:    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=600&q=80",  // people in office meeting
-  storyGiving:  "https://images.unsplash.com/photo-1559027615-cd4628902d4a?auto=format&fit=crop&w=600&q=80",    // hands giving / community
-  storyMentor:  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80", // mentor and mentee at table
-};
+// No stock photography on purpose: a photo of strangers makes every community's page look the same. Photos here come
+// from the institution itself (hero images, story images); without them the page uses the institution's own brand colour.
 
 /** Auto-advancing hero photo carousel — falls back to a single static image when there's nothing (or only one photo) to rotate through. */
 function HeroCarousel({ images }: { images: string[] }) {
@@ -185,11 +186,11 @@ function HeroCarousel({ images }: { images: string[] }) {
   return (
     <>
       {images.map((src, i) => (
-        <img
+        <FitImage
           key={src + i}
           src={src}
           alt="Community"
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+          className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: i === index ? 1 : 0 }}
         />
       ))}
@@ -225,55 +226,55 @@ const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
 ];
 
-const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; featureKey: string | undefined; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }>; tone?: "primary" | "accent" }[] = [
-  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by community employers before they reach public boards: first look, before LinkedIn.", big: true, featureKey: "Jobs", illustration: JobsIllustration },
-  { icon: Users,        label: "Directory",     title: "Find people in your community", desc: "Search by name, group, location, or role, from local chapters to a global network.", featureKey: "Directory", illustration: DirectoryIllustration },
-  { icon: CreditCard,   label: "Contributions", title: "Fund what matters",             desc: "Easy payments for community projects, membership dues, campaigns, and member support.", featureKey: "Contributions", illustration: FundraisingIllustration },
-  { icon: Globe,        label: "Events",        title: "Bring people together",          desc: "RSVP for gatherings, services, chapter meetings, celebrations, and community events.", featureKey: "Events", illustration: EventsIllustration },
+const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; featureKey: string | undefined }[] = [
+  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by community employers before they reach public boards: first look, before LinkedIn.", featureKey: "Jobs" },
+  { icon: Users,        label: "Directory",     title: "Find people in your community", desc: "Search by name, group, location, or role, from local chapters to a global network.", featureKey: "Directory" },
+  { icon: CreditCard,   label: "Contributions", title: "Fund what matters",             desc: "Easy payments for community projects, membership dues, campaigns, and member support.", featureKey: "Contributions" },
+  { icon: Globe,        label: "Events",        title: "Bring people together",          desc: "RSVP for gatherings, services, chapter meetings, celebrations, and community events.", featureKey: "Events" },
   // Explicitly accent (not left to the grid's primary/accent alternation
   // below) — one of the three "big", more-visible cards should always carry
   // the secondary color, or an institution's secondary color ends up
   // confined to small cards where it's easy to miss entirely.
-  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with experienced members who can help you move forward, one conversation at a time.", big: true, featureKey: "Mentorship", illustration: MentorshipIllustration, tone: "accent" },
-  { icon: ShoppingBag,  label: "Store",         title: "Shop community merchandise",    desc: "Buy branded gear, support community initiatives, and manage orders in one place.", featureKey: "Store", illustration: StoreIllustration },
-  { icon: FileText,     label: "Services",      title: "Request and pay for services online", desc: "Transcripts, verification letters, certificate reissues, and anything else the institution offers: submit your request, pay online, and track it right from your account.", featureKey: "Services", illustration: ServicesIllustration },
-  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from gatherings, celebrations, milestones, and moments shared by your community.", big: true, featureKey: "PhotoAlbums", illustration: AlbumsIllustration },
-  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "Recognize members, leaders, supporters, and changemakers making a difference.", featureKey: "Spotlights", illustration: SpotlightIllustration },
-  { icon: Building2,    label: "Businesses",    title: "Support member businesses",    desc: "Browse businesses run by people in your community, or list your own and get discovered.", featureKey: "BusinessDirectory", illustration: BusinessIllustration },
-  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites: you choose what reaches you.", featureKey: undefined, illustration: NotificationsIllustration },
+  { icon: Heart,        label: "Mentorship",    title: "Give back. Get ahead.",         desc: "Connect with experienced members who can help you move forward, one conversation at a time.", featureKey: "Mentorship" },
+  { icon: ShoppingBag,  label: "Store",         title: "Shop community merchandise",    desc: "Buy branded gear, support community initiatives, and manage orders in one place.", featureKey: "Store" },
+  { icon: FileText,     label: "Services",      title: "Request and pay for services online", desc: "Transcripts, verification letters, certificate reissues, and anything else the institution offers: submit your request, pay online, and track it right from your account.", featureKey: "Services" },
+  { icon: Images,       label: "Photo Albums",  title: "Relive it, one album at a time", desc: "Browse photos from gatherings, celebrations, milestones, and moments shared by your community.", featureKey: "PhotoAlbums" },
+  { icon: Trophy,       label: "Spotlight",     title: "Celebrate the wins",           desc: "Recognize members, leaders, supporters, and changemakers making a difference.", featureKey: "Spotlights" },
+  { icon: Building2,    label: "Businesses",    title: "Support member businesses",    desc: "Browse businesses run by people in your community, or list your own and get discovered.", featureKey: "BusinessDirectory" },
+  { icon: Bell,         label: "Notifications", title: "Hear about what you care about", desc: "Jobs, fundraisers, event invites: you choose what reaches you.", featureKey: undefined },
 ];
 
-const STATS = [
-  { end: 5000, suffix: "+",    label: "Members connected",     desc: "Verified community members" },
-  { end: 120,  suffix: "+",    label: "Countries represented", desc: "A truly global network"            },
-  // The one stat that gets the secondary color — blended toward white so it
-  // stays legible on the dark, solid primary band regardless of how light
-  // or dark the institution's own accent happens to be, unlike raw accent
-  // text (which is only contrast-checked against a light/white background
-  // elsewhere, not this one's colored backdrop).
-  { end: 2,    prefix: "GHS ", suffix: "M+", label: "Raised for community goals", desc: "Funding projects, campaigns, and member support", highlight: true },
-  { end: 300,  suffix: "+",    label: "Jobs posted",           desc: "Roles shared by community employers" },
-];
+type StatItem = { end: number; suffix?: string; label: string; highlight?: boolean };
+
+/** Real figures only, straight from this community's own data. A figure too small to be worth showing is left out, so a new community never looks sparse or padded. */
+function buildStats(p?: PublicPulse): StatItem[] {
+  if (!p) return [];
+  const all: (StatItem | null)[] = [
+    p.members >= 10 ? { end: p.members, label: "Members" } : null,
+    p.joinedLast30Days >= 3 ? { end: p.joinedLast30Days, label: "Joined in the last 30 days", highlight: true } : null,
+    p.eventsNext30Days != null && p.eventsNext30Days >= 1 ? { end: p.eventsNext30Days, label: p.eventsNext30Days === 1 ? "Event in the next 30 days" : "Events in the next 30 days" } : null,
+    p.openJobs != null && p.openJobs >= 1 ? { end: p.openJobs, label: p.openJobs === 1 ? "Open job" : "Open jobs" } : null,
+    p.businesses != null && p.businesses >= 1 ? { end: p.businesses, label: p.businesses === 1 ? "Member business" : "Member businesses" } : null,
+  ];
+  return all.filter((x): x is StatItem => x !== null).slice(0, 4);
+}
 
 const USE_CASES = [
   {
     icon: Briefcase,
     eyebrow: "Career",
-    image: IMG.storyJobs,
     scenario: "The job that never reached a public board",
     desc: "Community employers post directly to the portal first, before LinkedIn and agencies. Being in the network means seeing those roles first.",
   },
   {
     icon: CreditCard,
     eyebrow: "Giving",
-    image: IMG.storyGiving,
     scenario: "The dormitory project that needed 200 people",
     desc: "From community projects to member support, campaigns bring people together to contribute from wherever they are.",
   },
   {
     icon: Heart,
     eyebrow: "Mentorship",
-    image: IMG.storyMentor,
     scenario: "The mentor who's already done it",
     desc: "Whatever path you are taking, there is an experienced member who can help. Mentorship makes that connection easier.",
   },
@@ -344,7 +345,7 @@ function Section({ id, children, className, style }: {
 /* ─────────────────────────────────────────────────────────────────────────
    STAT ROW — for the dark full-bleed stats band (no card chrome)
    ───────────────────────────────────────────────────────────────────────── */
-function StatRow({ stat, active, index }: { stat: typeof STATS[number]; active: boolean; index: number }) {
+function StatRow({ stat, active, index }: { stat: StatItem; active: boolean; index: number }) {
   const count = useCounter(stat.end, active);
   // Counting up is driven entirely by the parent band's own single
   // IntersectionObserver (`active`, tied to `statsRef`) — each row used to run
@@ -363,48 +364,9 @@ function StatRow({ stat, active, index }: { stat: typeof STATS[number]; active: 
           fontSize: "clamp(1.6rem,3vw,2.1rem)", fontWeight: 700, letterSpacing: "-0.02em",
           color: stat.highlight ? "color-mix(in oklch, var(--brand-accent, white) 65%, white)" : "white",
         }}>
-        {stat.prefix}{count.toLocaleString()}{stat.suffix}
+        {count.toLocaleString()}{stat.suffix}
       </p>
       <p className="text-[12px] sm:text-[12.5px] font-medium leading-snug max-w-[16ch]" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   FEATURE CARD
-   ───────────────────────────────────────────────────────────────────────── */
-function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEATURES[number]; delay: string; tone?: "primary" | "accent" }) {
-  const { ref, visible } = useFadeUp();
-  const big = "big" in feature && feature.big;
-  // Alternates primary/accent across the grid — the same flat, solid-fill
-  // pattern as the dashboard stat cards, so a real secondary color shows up
-  // as a genuinely distinct tone, never blended into a background.
-  const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--primary)";
-  return (
-    <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn(
-        "card group transition-all duration-500 hover:-translate-y-1 hover:shadow-sm",
-        big && "sm:col-span-2",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
-      )}>
-      <div className={cn("card__content", big && "sm:flex sm:items-center sm:gap-6")}>
-        <feature.illustration
-          tone={tone}
-          className={cn("transition-transform duration-500 group-hover:scale-105 mb-4", big ? "w-24 h-24 sm:w-32 sm:h-32 sm:mb-0" : "w-20 h-20")}
-        />
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-1.5" style={{ color: iconColor }}>
-            {feature.label}
-          </p>
-          <h3 className={cn("font-semibold leading-snug mb-2 group-hover:text-primary transition-colors duration-200", big ? "text-[17px]" : "text-[14px]")}
-            style={{ color: "var(--foreground)" }}>
-            {feature.title}
-          </h3>
-          <p className={cn("leading-relaxed", big ? "text-[13.5px] max-w-[42ch]" : "text-[13px]")} style={{ color: "var(--muted-foreground)" }}>
-            {feature.desc}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -415,32 +377,42 @@ function FeatureCard({ feature, delay, tone = "primary" }: { feature: typeof FEA
 interface UseCaseItem {
   icon: LucideIcon;
   eyebrow: string;
-  image: string;
+  image?: string;
   scenario: string;
   desc: string;
 }
 
-function UseCaseCard({ item, delay }: { item: UseCaseItem; delay: string }) {
+function UseCaseCard({ item, flip, index }: { item: UseCaseItem; flip?: boolean; index: number }) {
   const { ref, visible } = useFadeUp();
-  return (
-    <div ref={ref} style={{ transitionDelay: `${delay}ms` }}
-      className={cn("card group overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-md", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
-      {/* Photo */}
-      <div className="relative overflow-hidden" style={{ height: 160 }}>
-        <img src={item.image} alt={item.eyebrow}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)" }} />
-        <div className="absolute bottom-3 left-4">
-          <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-white/80">{item.eyebrow}</span>
+  if (!item.image) {
+    // Text-only stories zig-zag: every other row sits on the right, with its number and text right-aligned, so the
+    // column doesn't read as one long left-hand list.
+    return (
+      <div ref={ref}
+        className={cn("py-8 border-t transition-all duration-700", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}
+        style={{ borderColor: "var(--border)" }}>
+        <div className={cn("flex gap-6 sm:gap-10 items-baseline max-w-[720px]", flip ? "ml-auto flex-row-reverse text-right" : "mr-auto")}>
+          <p className="font-[family-name:var(--font-display)] shrink-0 w-14 sm:w-20 leading-none tabular-nums select-none" aria-hidden="true"
+            style={{ fontSize: "clamp(2.2rem,4vw,3.2rem)", fontWeight: 700, color: "var(--primary)", opacity: 0.35 }}>
+            {String(index + 1).padStart(2, "0")}
+          </p>
+          <div className={cn("min-w-0", flip && "flex flex-col items-end")}>
+            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>{item.eyebrow}</p>
+            <h3 className="font-[family-name:var(--font-display)] leading-snug mb-2" style={{ fontSize: "clamp(1.25rem,2.1vw,1.65rem)", color: "var(--foreground)" }}>{item.scenario}</h3>
+            <p className="max-w-[60ch]" style={{ fontSize: "0.95rem", color: "var(--muted-foreground)", lineHeight: 1.8 }}>{item.desc}</p>
+          </div>
         </div>
       </div>
-      {/* Body */}
-      <div className="card__content">
-        <h3 className="font-[family-name:var(--font-display)] leading-snug mb-3"
-          style={{ fontSize: "1rem", color: "var(--foreground)" }}>
-          {item.scenario}
-        </h3>
-        <p style={{ fontSize: "0.84rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{item.desc}</p>
+    );
+  }
+  return (
+    <div ref={ref}
+      className={cn("grid gap-6 sm:gap-12 items-center sm:grid-cols-2 transition-all duration-700", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
+      <FitImage src={item.image} alt={item.eyebrow} className={cn("rounded-lg", flip && "sm:order-2")} style={{ aspectRatio: "4/3", background: "var(--muted)" }} />
+      <div>
+        <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>{item.eyebrow}</p>
+        <h3 className="font-[family-name:var(--font-display)] leading-snug mb-3" style={{ fontSize: "clamp(1.3rem,2.2vw,1.75rem)", color: "var(--foreground)" }}>{item.scenario}</h3>
+        <p className="max-w-[46ch]" style={{ fontSize: "0.95rem", color: "var(--muted-foreground)", lineHeight: 1.8 }}>{item.desc}</p>
       </div>
     </div>
   );
@@ -518,75 +490,70 @@ function NewsCard({ item, big }: { item: PublicNewsItem; big?: boolean }) {
   return (
     <Link href={`/news/${item.id}`} className="group block">
       <article>
-        <div className="relative overflow-hidden rounded-lg mb-3.5" style={{ aspectRatio: big ? "16/9" : "4/3" }}>
-          {item.imageUrl ? (
-            <img src={item.imageUrl} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
-              <Newspaper size={big ? 30 : 20} style={{ color: "var(--primary)", opacity: 0.4 }} />
-            </div>
-          )}
-        </div>
+        {item.imageUrl && (
+          <FitImage src={item.imageUrl} alt="" className="rounded-lg mb-3.5" imgClassName="transition-transform duration-500 group-hover:scale-105"
+            style={{ aspectRatio: big ? "16/9" : "4/3", background: "var(--muted)" }} />
+        )}
         <p className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
-        <h3 className={cn("font-semibold leading-snug mb-2 transition-colors group-hover:text-primary", big ? "text-[19px]" : "text-[14.5px]")}
+        <h3 className={cn("font-semibold leading-snug mb-2 transition-colors group-hover:text-primary", big ? "text-[22px]" : "text-[14.5px]")}
           style={{ color: "var(--foreground)" }}>
           {item.title}
         </h3>
         {big && (
-          <p className="text-[13.5px] leading-relaxed mb-2.5 max-w-[58ch]" style={{ color: "var(--muted-foreground)" }}>{item.excerpt}</p>
+          <p className="text-[14px] leading-relaxed mb-2.5 max-w-[58ch]" style={{ color: "var(--muted-foreground)" }}>{item.excerpt}</p>
         )}
-        <div className="flex items-center gap-3">
-          <p className="text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>{formatNewsDate(item.publishedAt)}</p>
-          <span className="flex items-center gap-1 text-[11.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
-            Sign in to read <ArrowRight size={10} />
-          </span>
-        </div>
+        <p className="text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>{formatNewsDate(item.publishedAt)}</p>
       </article>
     </Link>
   );
 }
 
-/** Full card treatment (same visual weight as NewsCard) — a real event date deserves more than a line in a sidebar. */
-function EventCard({ item }: { item: PublicEventItem }) {
-  const d = formatEventDate(item.startDate);
+/** The rest of the news, as plain text rows under the lead story: a list reads faster than a second and third card. */
+function NewsRow({ item }: { item: PublicNewsItem }) {
   return (
-    <Link href={`/events/${item.id}`} className="group block">
-      <article className="card overflow-hidden h-full flex flex-col">
-        <div className="relative overflow-hidden" style={{ aspectRatio: "16/10" }}>
-          {item.bannerImageUrl ? (
-            <img src={item.bannerImageUrl} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
-              <Clock size={26} style={{ color: "var(--primary)", opacity: 0.4 }} />
-            </div>
-          )}
-          <div className="absolute top-3 left-3 rounded-lg overflow-hidden text-center shadow-sm" style={{ border: "1px solid rgba(255,255,255,0.4)" }}>
-            <div className="text-[9.5px] font-bold uppercase px-3 py-0.5" style={{ background: "var(--primary)", color: "white" }}>{d.month}</div>
-            <div className="text-[17px] font-bold px-3 py-1 font-[family-name:var(--font-display)]" style={{ background: "var(--background)", color: "var(--foreground)" }}>{d.day}</div>
-          </div>
-        </div>
-        <div className="card__content flex-1 flex flex-col">
-          <h4 className="text-[14.5px] font-semibold leading-snug mb-2 transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h4>
-          <div className="flex items-center gap-3 flex-wrap mb-2.5">
-            <span className="flex items-center gap-1 text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
-              <Clock size={11} /> {d.time}
-            </span>
-            <span className="flex items-center gap-1 text-[11.5px] truncate" style={{ color: "var(--muted-foreground)" }}>
-              <MapPin size={11} /> {item.venue}
-            </span>
-          </div>
-          <span className="mt-auto flex items-center gap-1 text-[11.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
-            Sign in to RSVP <ArrowRight size={10} />
-          </span>
-        </div>
-      </article>
+    <Link href={`/news/${item.id}`} className="group flex items-baseline justify-between gap-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
+        <h3 className="text-[15px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+      </div>
+      <p className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)" }}>{formatNewsDate(item.publishedAt)}</p>
     </Link>
   );
 }
 
 /** Fills the same visual slot the real thing would occupy — so a brand-new institution with nothing published yet still reads as a finished, intentional page instead of a gap where content should be. */
+/** An agenda row: the date is the anchor, the rest reads left to right. Deliberately not a card. */
+function AgendaRow({ item }: { item: PublicEventItem }) {
+  const d = formatEventDate(item.startDate);
+  return (
+    <Link href={`/events/${item.id}`} className="group flex items-center gap-5 sm:gap-8 py-5 border-t" style={{ borderColor: "var(--border)" }}>
+      <div className="w-14 shrink-0 text-center">
+        <p className="text-[11px] font-bold tracking-[0.1em]" style={{ color: "var(--primary)" }}>{d.month}</p>
+        <p className="font-[family-name:var(--font-display)] text-[30px] font-bold leading-none tabular-nums" style={{ color: "var(--foreground)" }}>{d.day}</p>
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-[16px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+        <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+          <span className="flex items-center gap-1"><Clock size={12} /> {d.time}</span>
+          <span className="flex items-center gap-1 min-w-0"><MapPin size={12} /> <span className="truncate">{item.venue}</span></span>
+        </p>
+      </div>
+      <span className="hidden sm:flex shrink-0 items-center gap-1 text-[12.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+        Sign in to RSVP <ArrowRight size={12} />
+      </span>
+    </Link>
+  );
+}
+
+function AgendaSkeleton() {
+  return (
+    <div className="flex items-center gap-8 py-5 border-t" style={{ borderColor: "var(--border)" }}>
+      <Skeleton className="h-12 w-14" />
+      <div className="flex-1 space-y-2"><Skeleton className="h-4 w-2/3" variant="text" /><Skeleton className="h-3 w-1/3" variant="text" /></div>
+    </div>
+  );
+}
+
 function EmptyPanel({ icon: Icon, title, desc, big }: { icon: LucideIcon; title: string; desc: string; big?: boolean }) {
   return (
     <div className={cn("rounded-xl flex flex-col items-center justify-center text-center gap-2.5 px-6", big ? "py-16" : "py-10")}
@@ -611,53 +578,30 @@ function NewsCardSkeleton({ big }: { big?: boolean }) {
   );
 }
 
-function EventCardSkeleton() {
-  return (
-    <div className="card overflow-hidden">
-      <Skeleton className="w-full" style={{ aspectRatio: "16/10" }} />
-      <div className="card__content space-y-2">
-        <Skeleton className="h-4 w-4/5" variant="text" />
-        <Skeleton className="h-2.5 w-2/3" variant="text" />
-        <Skeleton className="h-2.5 w-20" variant="text" />
-      </div>
-    </div>
-  );
-}
-
 /** Business directory listing — logo, name, location, and an excerpt, the way a chamber-of-commerce page shows off its members. */
 function BusinessCard({ item }: { item: PublicBusinessItem }) {
   const rawLink = item.externalLinkUrl || item.websiteUrl;
   const link = rawLink ? ensureAbsoluteUrl(rawLink) : rawLink;
   return (
-    <article className="card overflow-hidden h-full flex flex-col">
-      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9", background: "var(--muted)" }}>
-        {item.bannerUrl ? (
-          <img src={item.bannerUrl} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
-            <Building2 size={26} style={{ color: "var(--primary)", opacity: 0.4 }} />
-          </div>
-        )}
-        {item.logoUrl && (
-          <img src={item.logoUrl} alt="" className="absolute bottom-3 left-3 w-11 h-11 rounded-lg object-cover shadow-sm"
-            style={{ border: "2px solid var(--background)", background: "var(--background)" }} />
-        )}
-      </div>
-      <div className="card__content flex-1 flex flex-col">
-        <h4 className="text-[14.5px] font-semibold leading-snug mb-1" style={{ color: "var(--foreground)" }}>{item.businessName}</h4>
-        <span className="flex items-center gap-1 text-[11.5px] mb-2.5" style={{ color: "var(--muted-foreground)" }}>
-          <MapPin size={11} /> {item.location}
-        </span>
-        <p className="text-[12.5px] leading-relaxed line-clamp-2 mb-3" style={{ color: "var(--muted-foreground)" }}>{item.description}</p>
+    <article className="flex gap-4 py-5 border-t" style={{ borderColor: "var(--border)" }}>
+      {item.logoUrl ? (
+        <FitImage src={item.logoUrl} alt="" className="w-14 h-14 rounded-lg shrink-0" style={{ background: "var(--muted)" }} />
+      ) : (
+        <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "color-mix(in oklch, var(--primary) 10%, var(--muted))" }}>
+          <Building2 size={20} style={{ color: "var(--primary)", opacity: 0.5 }} />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <h4 className="text-[15px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.businessName}</h4>
+        <p className="flex items-center gap-1 text-[12px] mb-1.5" style={{ color: "var(--muted-foreground)" }}><MapPin size={11} /> {item.location}</p>
+        <p className="text-[13px] leading-relaxed line-clamp-2 mb-2" style={{ color: "var(--muted-foreground)" }}>{item.description}</p>
         {link ? (
-          <a href={link} target="_blank" rel="noopener noreferrer"
-            className="mt-auto flex items-center gap-1 text-[11.5px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
-            Visit business <ArrowRight size={10} />
+          <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+            Visit business <ArrowRight size={11} />
           </a>
         ) : (
-          <Link href="/login" className="mt-auto flex items-center gap-1 text-[11.5px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
-            Sign in for contact info <ArrowRight size={10} />
+          <Link href="/login" className="inline-flex items-center gap-1 text-[12px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+            Sign in for contact info <ArrowRight size={11} />
           </Link>
         )}
       </div>
@@ -667,14 +611,9 @@ function BusinessCard({ item }: { item: PublicBusinessItem }) {
 
 function BusinessCardSkeleton() {
   return (
-    <div className="card overflow-hidden">
-      <Skeleton className="w-full" style={{ aspectRatio: "16/9" }} />
-      <div className="card__content space-y-2">
-        <Skeleton className="h-4 w-3/4" variant="text" />
-        <Skeleton className="h-2.5 w-1/2" variant="text" />
-        <Skeleton className="h-2.5 w-full" variant="text" />
-        <Skeleton className="h-2.5 w-20" variant="text" />
-      </div>
+    <div className="flex gap-4 py-5 border-t" style={{ borderColor: "var(--border)" }}>
+      <Skeleton className="w-14 h-14 shrink-0" />
+      <div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/2" variant="text" /><Skeleton className="h-3 w-full" variant="text" /></div>
     </div>
   );
 }
@@ -693,6 +632,30 @@ function SpotlightCardSkeleton() {
   );
 }
 
+/** One quiet line under the hero. Each fact appears only when it is true and worth saying. */
+function LiveStrip({ nextEvent, joined, openJobs }: { nextEvent?: PublicEventItem; joined: number; openJobs: number }) {
+  const facts: React.ReactNode[] = [];
+  if (nextEvent) {
+    const d = daysUntil(nextEvent.startDate);
+    facts.push(
+      <span key="event">
+        <span className="font-semibold" style={{ color: "var(--foreground)" }}>{d === 0 ? "Today" : d === 1 ? "Tomorrow" : `In ${d} days`}</span>
+        {" · "}{nextEvent.title}
+      </span>,
+    );
+  }
+  if (joined >= 3) facts.push(<span key="joined"><span className="font-semibold" style={{ color: "var(--foreground)" }}>{joined}</span> new members in the last 30 days</span>);
+  if (openJobs >= 1) facts.push(<span key="jobs"><span className="font-semibold" style={{ color: "var(--foreground)" }}>{openJobs}</span> open {openJobs === 1 ? "job" : "jobs"}</span>);
+  if (facts.length === 0) return null;
+  return (
+    <div className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+      <div className="section__inner--wide flex flex-wrap items-center gap-x-6 gap-y-1 py-3 text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+        {facts}
+      </div>
+    </div>
+  );
+}
+
 function NewsEventsSpotlight() {
   const { items: news, isPending: newsPending } = usePublicNews();
   const { item: spotlight, isPending: spotlightPending } = usePublicSpotlight();
@@ -703,7 +666,7 @@ function NewsEventsSpotlight() {
         <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
           From the community
         </p>
-        <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr]">
+        <div className={cn("grid gap-12", (spotlightPending || spotlight) && "lg:grid-cols-[1.6fr_1fr]")}>
 
           {/* News feed */}
           <div>
@@ -722,9 +685,13 @@ function NewsEventsSpotlight() {
                 <NewsCardSkeleton />
               </div>
             ) : news.length > 0 ? (
-              <div className="grid gap-x-8 gap-y-9 sm:grid-cols-2">
-                <div className="sm:col-span-2"><NewsCard item={news[0]} big /></div>
-                {news.slice(1).map((n) => <NewsCard key={n.id} item={n} />)}
+              <div>
+                <NewsCard item={news[0]} big />
+                {news.length > 1 && (
+                  <div className="mt-8">
+                    {news.slice(1).map((n) => <NewsRow key={n.id} item={n} />)}
+                  </div>
+                )}
               </div>
             ) : (
               <EmptyPanel icon={Newspaper} big title="News is on its way" desc="Updates from the association will be featured here as soon as they're posted." />
@@ -739,12 +706,7 @@ function NewsEventsSpotlight() {
               <Link href="/spotlights" className="card overflow-hidden group block">
                 <div className="relative w-full" style={{ aspectRatio: "16/10", background: "var(--muted)" }}>
                   {spotlight.imageUrl ? (
-                    <>
-                      {/* Blurred fill behind an object-contain copy — see the identical
-                          pattern (and its rationale) in apps/member's spotlights page. */}
-                      <img src={spotlight.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50" />
-                      <img src={spotlight.imageUrl} alt={spotlight.memberName} className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
-                    </>
+                    <FitImage src={spotlight.imageUrl} alt={spotlight.memberName} className="absolute inset-0" imgClassName="transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center"
                       style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, var(--muted)) 0%, color-mix(in oklch, var(--brand-accent, var(--primary)) 10%, var(--muted)) 100%)" }}>
@@ -765,9 +727,7 @@ function NewsEventsSpotlight() {
                   </span>
                 </div>
               </Link>
-            ) : (
-              <EmptyPanel icon={Trophy} title="No spotlight yet" desc="A featured community story will appear here once one is approved." />
-            )}
+            ) : null}
           </div>
 
         </div>
@@ -797,12 +757,10 @@ function UpcomingEventsSection() {
           )}
         </div>
         {isPending ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => <EventCardSkeleton key={i} />)}
-          </div>
+          <div className="max-w-4xl">{[0, 1, 2].map((i) => <AgendaSkeleton key={i} />)}</div>
         ) : events.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((e) => <EventCard key={e.id} item={e} />)}
+          <div className="max-w-4xl border-b" style={{ borderColor: "var(--border)" }}>
+            {events.map((e) => <AgendaRow key={e.id} item={e} />)}
           </div>
         ) : (
           <EmptyPanel icon={Clock} big title="No events scheduled yet" desc="Gatherings, chapter meetups, and community events will show up here." />
@@ -835,12 +793,10 @@ function BusinessDirectorySection() {
           )}
         </div>
         {isPending ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => <BusinessCardSkeleton key={i} />)}
-          </div>
+          <div className="grid gap-x-12 md:grid-cols-2">{[0, 1, 2, 3].map((i) => <BusinessCardSkeleton key={i} />)}</div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {businesses.map((b) => <BusinessCard key={b.id} item={b} />)}
+          <div className="grid gap-x-12 md:grid-cols-2 border-b" style={{ borderColor: "var(--border)" }}>
+            {businesses.slice(0, 6).map((b) => <BusinessCard key={b.id} item={b} />)}
           </div>
         )}
       </div>
@@ -856,13 +812,17 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsActive, setStatsActive] = useState(false);
   const content = useLandingContent(initialContent);
+  const pulse = usePublicPulse();
+  const stats = useMemo(() => buildStats(pulse), [pulse]);
+  const { items: nextEvents } = usePublicEvents();
+  const nextEvent = nextEvents[0];
 
-  const stories = useMemo(() => {
+  const stories: UseCaseItem[] = useMemo(() => {
     if (!content?.landingPageStories?.length) return USE_CASES;
-    return content.landingPageStories.map((s, i) => ({
+    return content.landingPageStories.map((s) => ({
       icon: STORY_ICONS[s.icon] ?? Star,
       eyebrow: s.eyebrow,
-      image: s.imageUrl || STORY_FALLBACK_IMAGES[i % STORY_FALLBACK_IMAGES.length],
+      image: s.imageUrl || undefined,
       scenario: s.scenario,
       desc: s.description,
     }));
@@ -900,7 +860,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         <div className="section__inner flex items-center justify-between h-16 gap-4">
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-cover shrink-0" />
+            <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-contain shrink-0" />
             <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</p>
           </Link>
 
@@ -951,40 +911,40 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           overlay, the way an institution's own website leads with a campus
           photo rather than a product screenshot.
       ════════════════════════════════════════════════════════════════ */}
-      <div className="relative w-full overflow-hidden h-[62vh] min-h-[420px] max-h-[640px]">
-        <HeroCarousel images={content?.heroImageUrls?.length ? content.heroImageUrls : [IMG.heroPanel]} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 46%, rgba(0,0,0,0.15) 100%)" }} />
+      <div className="relative w-full overflow-hidden h-[78vh] min-h-[480px] max-h-[780px]">
+        {content?.heroImageUrls?.length ? (
+          <>
+            <HeroCarousel images={content.heroImageUrls} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.42) 50%, rgba(0,0,0,0.3) 100%)" }} />
+          </>
+        ) : (
+          <div className="absolute inset-0" style={{ background: "var(--brand-primary-dark, var(--primary))" }} />
+        )}
 
-        <div className="absolute inset-x-0 bottom-0">
-          <div className="section__inner--wide pb-10 sm:pb-14 pt-10">
-            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase mb-3" style={{ color: "rgba(255,255,255,0.7)" }}>
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          <div className="text-center max-w-[900px]">
+            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.75)" }}>
               {content?.displayName || "Community Portal"}
             </p>
-            <h1 className="font-[family-name:var(--font-display)] mb-5 max-w-[24ch]"
-              style={{ fontSize: "clamp(2rem,4.4vw,3.4rem)", fontWeight: 700, lineHeight: 1.14, letterSpacing: "-0.02em", color: "white" }}>
-              {content?.heroHeadline || "Every member, one community, wherever they are."}
+            <h1 className="font-[family-name:var(--font-display)] mb-8"
+              style={{ fontSize: "clamp(2.2rem,5.6vw,4.4rem)", fontWeight: 700, lineHeight: 1.08, letterSpacing: "-0.025em", color: "white" }}>
+              {content?.heroHeadline || content?.tagline || "Every member, one community, wherever they are."}
             </h1>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/register">
-                  <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-[15px] font-semibold gap-2">
-                    Request to join <ArrowRight size={15} />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-[15px] font-medium"
-                    style={{ borderColor: "var(--brand-accent, rgba(255,255,255,0.5))", color: "white", background: "color-mix(in oklch, var(--brand-accent, transparent) 22%, rgba(255,255,255,0.08))" }}>
-                    Already a member
-                  </Button>
-                </Link>
-              </div>
-              <p className="max-w-[34ch] text-[12px] leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
-                Submit your details and the community team will review your request before you enter the network.
-              </p>
-            </div>
+            <Link href="/register">
+              <Button size="lg" className="h-12 px-9 text-[14px] font-semibold gap-2 tracking-wide" style={{ background: "white", color: "var(--primary)" }}>
+                Request to join <ArrowRight size={15} />
+              </Button>
+            </Link>
+            <p className="mt-5 text-[13px]" style={{ color: "rgba(255,255,255,0.8)" }}>
+              Already a member?{" "}
+              <Link href="/login" className="font-semibold underline underline-offset-4 hover:opacity-90">Sign in</Link>
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Live strip: a few plain, true facts about what is happening right now. Renders nothing when there is nothing true to say. */}
+      <LiveStrip nextEvent={nextEvent} joined={pulse?.joinedLast30Days ?? 0} openJobs={pulse?.openJobs ?? 0} />
 
       {/* ════════════════════════════════════════════════════════════════
           NEWS · SPOTLIGHT — this institution's own real content, in an
@@ -1008,75 +968,31 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       ════════════════════════════════════════════════════════════════ */}
       <BusinessDirectorySection />
 
-      {/* ════════════════════════════════════════════════════════════════
-          CTA — moved right after the real content (not buried after every
-          other section) so a visitor who's just seen what's happening here
-          gets a clear, immediate "here's how to join in" moment, the way an
-          actual association site puts its direct actions up front rather
-          than at the very bottom of the page.
-      ════════════════════════════════════════════════════════════════ */}
-      <Section style={{ background: "var(--primary)" }}>
-        <div className="relative overflow-hidden">
-          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)" }} />
-          <div className="absolute -bottom-32 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
-
-          <div className="section__inner--wide relative py-20 sm:py-24">
-            <div className="grid gap-10 lg:grid-cols-[1.2fr_auto] items-end">
-              <div>
-                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
-                  Take the next step
-                </p>
-                <h2 className="font-[family-name:var(--font-display)] mb-5 max-w-[16ch]"
-                  style={{ fontSize: "clamp(2rem,4.2vw,3.4rem)", lineHeight: 1.06, color: "white" }}>
-                  Your journey shaped you. Now shape what comes next.
-                </h2>
-                <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
-                  Join a growing community using the portal to connect, contribute, and grow with trusted peers.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
-                <Link href="/register">
-                  <Button size="lg" className="w-full h-12 px-10 text-[15px] font-semibold gap-2"
-                    style={{ background: "white", color: "var(--primary)" }}>
-                    Create my account <ChevronRight size={16} />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[15px] font-medium"
-                    style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
-                    Sign in instead
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Section>
 
       {/* ════════════════════════════════════════════════════════════════
           STATS — full-bleed banded row, not a card grid
       ════════════════════════════════════════════════════════════════ */}
+      {stats.length >= 2 && (
       <div className="border-b" style={{ background: "var(--brand-primary-dark, var(--primary))", borderColor: "var(--border)" }}>
         <div className="section__inner--wide">
           <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0 py-14">
             <div className="lg:w-[280px] lg:pr-10 shrink-0">
               <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, white 55%, transparent)" }}>
-                Community impact
+                Right now
               </p>
               <h2 className="font-[family-name:var(--font-display)]" style={{ color: "white", fontSize: "clamp(1.5rem,2.4vw,2rem)", lineHeight: 1.15 }}>
-                What members are already doing here.
+                The community in numbers.
               </h2>
             </div>
             <div ref={statsRef} className="flex-1 grid grid-cols-2 gap-y-2 sm:gap-y-0 rounded-xl sm:rounded-none divide-x divide-y sm:divide-y-0 md:grid-cols-4" style={{ borderColor: "color-mix(in oklch, white 15%, transparent)" }}>
-              {STATS.map((stat, i) => (
+              {stats.map((stat, i) => (
                 <StatRow key={stat.label} stat={stat} active={statsActive} index={i} />
               ))}
             </div>
           </div>
         </div>
       </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════════════
           FEATURES
@@ -1094,21 +1010,16 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               From jobs and mentorship to fundraisers, events, and community connections.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[var(--space-gap)]">
+          <div className="grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES
               .filter((feature) => !feature.featureKey || !content?.disabledFeatures?.includes(feature.featureKey))
-              .map((feature, i) => (
-                <FeatureCard key={feature.title} feature={feature} delay={`${(i % 4) * 65}ms`} tone={feature.tone ?? (i % 2 === 0 ? "primary" : "accent")} />
+              .map((feature) => (
+                <div key={feature.title} className="py-6 border-t" style={{ borderColor: "var(--border)" }}>
+                  <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>{feature.label}</p>
+                  <h3 className="text-[16px] font-semibold leading-snug mb-1.5" style={{ color: "var(--foreground)" }}>{feature.title}</h3>
+                  <p className="text-[13.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{feature.desc}</p>
+                </div>
               ))}
-            {/* Filler tile — closes out the bento row instead of leaving a gap */}
-            <Link href="/register" className="sm:col-span-2 card group flex items-center justify-between gap-4 p-6 transition-all duration-500 hover:-translate-y-1"
-              style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
-              <div>
-                <p className="text-[14px] font-semibold text-white mb-1">That&apos;s everything, see it live</p>
-                <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Create a free account and explore the full portal.</p>
-              </div>
-              <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
-            </Link>
           </div>
         </div>
       </Section>
@@ -1130,11 +1041,9 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
             </p>
           </div>
 
-          <div className="grid gap-[var(--space-gap)] sm:grid-cols-3">
+          <div className={stories.every((x) => !x.image) ? "border-b" : "space-y-14 sm:space-y-20"} style={{ borderColor: "var(--border)" }}>
             {stories.map((item, i) => (
-              <div key={item.scenario} className={i === 1 ? "sm:mt-8" : undefined}>
-                <UseCaseCard item={item} delay={`${i * 70}ms`} />
-              </div>
+              <UseCaseCard key={item.scenario} item={item} flip={i % 2 === 1} index={i} />
             ))}
           </div>
 
@@ -1169,13 +1078,54 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         </div>
       </Section>
 
+      {/* Closing call to action — one, at the end, once the page has said what this community is. */}
+      <Section style={{ background: "var(--primary)" }}>
+        <div className="relative overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)" }} />
+          <div className="absolute -bottom-32 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
+
+          <div className="section__inner--wide relative py-20 sm:py-24">
+            <div className="grid gap-10 lg:grid-cols-[1.2fr_auto] items-end">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+                  Ready when you are
+                </p>
+                <h2 className="font-[family-name:var(--font-display)] mb-5 max-w-[16ch]"
+                  style={{ fontSize: "clamp(2rem,4.2vw,3.4rem)", lineHeight: 1.06, color: "white" }}>
+                  Your journey shaped you. Now shape what comes next.
+                </h2>
+                <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
+                  Join a growing community using the portal to connect, contribute, and grow with trusted peers.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
+                <Link href="/register">
+                  <Button size="lg" className="w-full h-12 px-10 text-[15px] font-semibold gap-2"
+                    style={{ background: "white", color: "var(--primary)" }}>
+                    Create my account <ChevronRight size={16} />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[15px] font-medium"
+                    style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
+                    Sign in instead
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
       {/* ════════════════════════════════════════════════════════════════
           FOOTER
       ════════════════════════════════════════════════════════════════ */}
       <footer className="border-t py-9" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner flex flex-col sm:flex-row items-center justify-between gap-5">
           <Link href="/" className="flex items-center gap-3">
-            <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-cover shrink-0" />
+            <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-contain shrink-0" />
             <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</span>
           </Link>
 

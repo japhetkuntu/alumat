@@ -11,7 +11,7 @@ import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton } from "@alumni/ui";
 import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast } from "@/lib/institution-api";
+import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getRevenueTrend } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -93,10 +93,11 @@ export default function AdminDashboardPage() {
       { queryKey: ["dash-batches"], queryFn: getBatches },
       { queryKey: ["dash-store-orders"], queryFn: () => getStoreOrders(1, 500) },
       { queryKey: ["dash-service-requests"], queryFn: () => getServiceRequests(1, 500) },
+      { queryKey: ["dash-revenue-trend"], queryFn: () => getRevenueTrend(6) },
     ],
   });
 
-  const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches, storeOrders, serviceRequests] = results;
+  const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches, storeOrders, serviceRequests, revenueTrend] = results;
   const isLoading = results.some((r) => r.isLoading);
 
   const totalMembers = membersTotal.data?.totalCount ?? 0;
@@ -121,37 +122,16 @@ export default function AdminDashboardPage() {
     + allStoreOrders.filter((o) => o.status === "Successful").reduce((sum, o) => sum + o.totalAmount, 0)
     + allServiceRequests.filter((r) => r.paymentStatus === "Successful").reduce((sum, r) => sum + r.amount, 0);
 
+  // The chart shows the latest six calendar months, totalled by the server (so it stays exact at any volume).
+  // Older history is on the Reports page.
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const trendMonths = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-    return { month: monthNames[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, Contributions: 0, Store: 0, Services: 0 };
-  });
-  allContributions.filter((c) => c.status === "Successful").forEach((c) => {
-    const d = new Date(c.confirmedAt ?? c.createdAt);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    const slot = trendMonths.find((m) => m.key === key);
-    if (slot) slot.Contributions += c.amount;
-  });
-  allStoreOrders.forEach((o) => {
-    const d = new Date(o.confirmedAt ?? o.createdAt);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    const slot = trendMonths.find((m) => m.key === key);
-    if (slot) slot.Store += o.totalAmount;
-  });
-  allServiceRequests.filter((r) => r.paymentStatus === "Successful").forEach((r) => {
-    const d = new Date(r.confirmedAt ?? r.createdAt);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    const slot = trendMonths.find((m) => m.key === key);
-    if (slot) slot.Services += r.amount;
-  });
-  const statusCounts = [
-    ...allContributions.map((c) => c.status),
-    ...allStoreOrders.map((o) => o.status),
-    ...allServiceRequests.map((r) => r.paymentStatus),
-  ].reduce<Record<string, number>>((acc, status) => {
-    acc[status] = (acc[status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const trendMonths = (revenueTrend.data?.months ?? []).map((m) => ({
+    month: monthNames[m.month - 1],
+    Contributions: m.contributions,
+    Store: m.store,
+    Services: m.services,
+  }));
+  const statusCounts = revenueTrend.data?.statusCounts ?? {};
   const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({
     label: status,
     value: count,
@@ -238,8 +218,11 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
         <section className="card p-[18px]">
-          <h2 className="text-[15px] font-semibold m-0 mb-3.5">
-            Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, Contributions + Store + Services</span>
+          <h2 className="text-[15px] font-semibold m-0 mb-3.5 flex items-baseline justify-between gap-3">
+            <span>
+              Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, Contributions + Store + Services</span>
+            </span>
+            <Link href="/reports" className="shrink-0 text-[12px] font-normal text-muted-foreground hover:text-accent">Full report &rarr;</Link>
           </h2>
           <TrendChart
             data={trendMonths}
@@ -249,7 +232,7 @@ export default function AdminDashboardPage() {
               { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
               { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
             ]}
-            variant="area"
+            variant="bar"
             stacked
             height={150}
             loading={isLoading}

@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ConfirmModal } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
+import { PledgesPanel } from "@/components/institution/pledges-panel";
 import {
   getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel,
   getCampaignUpdates, createCampaignUpdate, deleteCampaignUpdate, getInstitutionProfile,
@@ -334,6 +335,9 @@ export default function CampaignDetailPage() {
           />
         </div>
       )}
+
+      {/* Pledges — promises to give, shown apart from real money. Renders nothing until someone has pledged. */}
+      {!campaign.isMembershipCampaign && <PledgesPanel campaignId={id} canManage />}
 
       {/* Updates — close the loop on what the money did, postable any time */}
       {!campaign.isMembershipCampaign && (

@@ -295,3 +295,9 @@ public class InviteInstitutionStaffRequest
     [Required]
     public string Role { get; set; } = "Admin";
 }
+
+/// <summary>One calendar month of paid revenue across every institution, split by source. Successful payments only.</summary>
+public record PlatformRevenueMonthDto(int Year, int Month, decimal Contributions, decimal Store, decimal Services);
+
+/// <summary>The latest N months of paid revenue, plus how many payments (all time) sit in each status, for the Payments &amp; Revenue charts.</summary>
+public record PlatformRevenueTrendDto(List<PlatformRevenueMonthDto> Months, Dictionary<string, int> StatusCounts);

@@ -16,6 +16,7 @@ import { handleApiError } from "@/lib/api-client";
 import { useStoreCart, lineUnitPrice } from "@/hooks/use-store-cart";
 import { toast } from "sonner";
 import { useNavTheme } from "@/components/member/member-layout";
+import { FitImage } from "@alumni/ui";
 
 function variantLabel(options?: Record<string, string>) {
   if (!options) return null;
@@ -113,7 +114,7 @@ export default function StorePage() {
                     <div key={lineKey} className="flex items-center gap-3">
                       <Link href={`/store/${l.productId}`} className="w-12 h-12 rounded-lg bg-muted/50 shrink-0 overflow-hidden flex items-center justify-center">
                         {thumb ? (
-                          <img src={thumb} alt={l.product.name} className="w-full h-full object-cover" />
+                          <FitImage src={thumb} alt={l.product.name} className="w-full h-full" />
                         ) : (
                           <Package size={18} className="text-muted-foreground" />
                         )}
@@ -180,7 +181,7 @@ export default function StorePage() {
               <Card key={p.id} className="flex flex-col overflow-hidden">
                 <Link href={`/store/${p.id}`} className="block">
                   {p.imageUrls?.[0] ? (
-                    <img src={p.imageUrls[0]} alt={p.name} className="w-full h-36 object-cover" />
+                    <FitImage src={p.imageUrls[0]} alt={p.name} className="w-full h-36" />
                   ) : (
                     <div className="w-full h-36 bg-muted/40 flex items-center justify-center">
                       <Package size={26} className="text-muted-foreground" />

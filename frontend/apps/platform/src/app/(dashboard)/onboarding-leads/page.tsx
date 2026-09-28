@@ -17,6 +17,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Inbox, formatDate } from "@alumni/ui";
 import Link from "next/link";
 import { LeadEditDialog, LEAD_SOURCE_OPTIONS } from "@/components/platform/lead-edit-dialog";
+import { TaskDialog } from "@/components/platform/work/task-dialog";
 import { LeadImportDialog } from "@/components/platform/lead-import-dialog";
 import { followUpState } from "@/lib/leads";
 import { trialLabel } from "@/lib/activation";
@@ -98,6 +99,7 @@ function statusBadgeVariant(status: string) {
 }
 
 export default function OnboardingLeadsPage() {
+  const [taskOpen, setTaskOpen] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
@@ -313,6 +315,7 @@ export default function OnboardingLeadsPage() {
                 <div className="flex flex-wrap gap-2 mt-5">
                   <Button variant="outline" onClick={() => setEditOpen(true)}>Edit</Button>
                   <Button variant="outline" onClick={() => setNoteOpen(true)}>Add internal note</Button>
+                  <Button variant="outline" onClick={() => setTaskOpen(true)}>Create task</Button>
                   {(NEXT_STAGES[active.status] ?? []).map((stage) => (
                     <Button
                       key={stage}
@@ -448,6 +451,13 @@ export default function OnboardingLeadsPage() {
       </Dialog>
 
       <LeadEditDialog lead={active} open={editOpen} onOpenChange={setEditOpen} />
+      {taskOpen && active && (
+        <TaskDialog
+          prefill={{ title: `Follow up with ${active.institutionName}`, leadId: active.id, leadName: active.institutionName }}
+          onClose={() => setTaskOpen(false)}
+          onSaved={() => { setTaskOpen(false); toast.success("Task created. Find it under Activation → My tasks."); }}
+        />
+      )}
       <LeadImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <ConfirmModal

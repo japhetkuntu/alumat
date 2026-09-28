@@ -13,6 +13,7 @@ import { Skeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { getMyStoreOrders } from "@/lib/member-api";
+import { FitImage } from "@alumni/ui";
 
 const statusVariant: Record<string, "success" | "warning" | "destructive"> = {
   Successful: "success",
@@ -126,7 +127,7 @@ export default function MyStoreOrdersPage() {
                           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-muted/60 border border-border/40">
                             {item.productImageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={item.productImageUrl} alt={item.productName} className="h-full w-full object-cover" loading="lazy" />
+                              <FitImage src={item.productImageUrl} alt={item.productName} className="h-full w-full" />
                             ) : (
                               <Package size={18} className="text-muted-foreground/50" />
                             )}

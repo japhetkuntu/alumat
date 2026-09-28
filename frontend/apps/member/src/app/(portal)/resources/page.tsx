@@ -19,6 +19,7 @@ import { EmptyState } from "@alumni/ui";
 import { PageHeader, ChipRow } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
+import { FitImage } from "@alumni/ui";
 
 const categories = ["All", "Career", "Professional", "Scholarship", "Technical", "General", "Other"];
 
@@ -197,7 +198,7 @@ export default function MemberResourcesPage() {
                 {/* Visual top section */}
                 <div className="relative h-40 overflow-hidden flex-shrink-0">
                   {r.bannerImageUrl ? (
-                    <img src={r.bannerImageUrl} alt={r.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" loading="lazy" />
+                    <FitImage src={r.bannerImageUrl} alt={r.title} className="w-full h-full" imgClassName="transition-transform duration-1000 group-hover:scale-110" />
                   ) : (
                     <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-muted/50 to-muted/20`}>
                       <div className="w-16 h-16 rounded-2xl bg-background/60 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg">

@@ -990,3 +990,35 @@ export async function deleteMyAccount(confirmation: string) {
   const res = await memberClient.post("/auth/me/delete", { confirmation });
   return res.data;
 }
+
+// ── Pledges ─────────────────────────────────────────────────────────────────
+// A pledge is a non-binding intention to give to a fundraiser by a date. It moves no money, and a member only
+// ever sees their own pledges here — never anyone else's, and never a pledged total.
+
+export type PledgeState = "Pledged" | "PartPaid" | "Fulfilled" | "Overdue" | "Cancelled" | "WrittenOff";
+
+export interface MemberPledge {
+  id: string;
+  campaignId: string;
+  campaignTitle: string;
+  amount: number;
+  paid: number;
+  outstanding: number;
+  dueDate: string;
+  state: PledgeState;
+  createdAt: string;
+}
+
+export async function getMyPledges(): Promise<MemberPledge[]> {
+  const res = await memberClient.get("/pledges");
+  return res.data.data ?? [];
+}
+
+export async function createPledge(data: { campaignId: string; amount: number; dueDate: string }): Promise<MemberPledge> {
+  const res = await memberClient.post("/pledges", data);
+  return res.data.data!;
+}
+
+export async function cancelPledge(id: string): Promise<void> {
+  await memberClient.delete(`/pledges/${id}`);
+}

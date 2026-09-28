@@ -59,6 +59,79 @@ public class ReportService(
     private string ReportSummaryCacheKey(AuthData admin, bool isSuper) =>
         $"report-summary:{currentTenant.InstitutionId}:{(isSuper ? "super" : admin.Id)}";
 
+    public async Task<IApiResponse<RevenueTrendDto>> GetRevenueTrendAsync(AuthData admin, int months = 6)
+    {
+        try
+        {
+            months = Math.Clamp(months, 1, 12);
+            var isSuper = admin.Role != StaffRoles.ScopedAdmin;
+            var cacheKey = $"revenue-trend:{currentTenant.InstitutionId}:{(isSuper ? "super" : admin.Id)}:{months}";
+            var cached = await cache.GetAsync<RevenueTrendDto>(cacheKey);
+            if (cached is not null) return cached.ToOkApiResponse();
+
+            var today = DateTime.UtcNow;
+            var first = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-(months - 1));
+
+            var yearGroups = admin.YearGroups ?? new List<int>();
+            var communityIds = admin.CommunityIds ?? new List<string>();
+            var campaignIdQuery = isSuper
+                ? null
+                : campaignRepo.GetQueryable(c =>
+                    c.CreatedBy == admin.Id
+                    || (c.YearGroups != null && c.YearGroups.Any(__y => yearGroups.Contains(__y)))
+                    || (c.CommunityId != null && communityIds.Contains(c.CommunityId))).Select(c => c.Id);
+
+            // A payment belongs to the month it was confirmed in (falling back to when it was created).
+            var contributionRows = await (isSuper ? contributionRepo.GetQueryable(null) : contributionRepo.GetQueryable(c => campaignIdQuery!.Contains(c.CampaignId)))
+                .Where(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= first)
+                .GroupBy(c => new { (c.ConfirmedAt ?? c.CreatedAt).Year, (c.ConfirmedAt ?? c.CreatedAt).Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(c => c.Amount) })
+                .ToListAsync();
+
+            // Store and Services aren't campaign/community-scoped, so, as in the summary, only a SuperAdmin sees them.
+            var storeRows = isSuper
+                ? await storeOrderRepo.GetQueryable(o => o.Status == "Successful" && (o.ConfirmedAt ?? o.CreatedAt) >= first)
+                    .GroupBy(o => new { (o.ConfirmedAt ?? o.CreatedAt).Year, (o.ConfirmedAt ?? o.CreatedAt).Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(o => o.TotalAmount) })
+                    .ToListAsync()
+                : [];
+            var serviceRows = isSuper
+                ? await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && (r.ConfirmedAt ?? r.CreatedAt) >= first)
+                    .GroupBy(r => new { (r.ConfirmedAt ?? r.CreatedAt).Year, (r.ConfirmedAt ?? r.CreatedAt).Month })
+                    .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(r => r.Amount) })
+                    .ToListAsync()
+                : [];
+
+            var statusCounts = new Dictionary<string, int>();
+            void AddCounts(IEnumerable<(string Status, int Count)> rows) { foreach (var (st, n) in rows) statusCounts[st] = statusCounts.GetValueOrDefault(st) + n; }
+            AddCounts((await (isSuper ? contributionRepo.GetQueryable(null) : contributionRepo.GetQueryable(c => campaignIdQuery!.Contains(c.CampaignId)))
+                .GroupBy(c => c.Status).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).Select(x => (x.Key, x.N)));
+            if (isSuper)
+            {
+                AddCounts((await storeOrderRepo.GetQueryable(null).GroupBy(o => o.Status).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).Select(x => (x.Key, x.N)));
+                AddCounts((await serviceRequestRepo.GetQueryable(null).GroupBy(r => r.PaymentStatus).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).Select(x => (x.Key, x.N)));
+            }
+
+            var result = new RevenueTrendDto(Enumerable.Range(0, months).Select(i =>
+            {
+                var m = first.AddMonths(i);
+                return new RevenueTrendMonthDto(
+                    m.Year, m.Month,
+                    contributionRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
+                    storeRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total),
+                    serviceRows.Where(r => r.Year == m.Year && r.Month == m.Month).Sum(r => r.Total));
+            }).ToList(), statusCounts);
+
+            await cache.SetAsync(cacheKey, result, TimeSpan.FromSeconds(60));
+            return result.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Failed to get revenue trend");
+            return ApiResponseExtensions.ToServerErrorApiResponse<RevenueTrendDto>("Failed to retrieve revenue trend");
+        }
+    }
+
     public async Task<IApiResponse<ReportSummaryDto>> GetReportSummaryAsync(AuthData admin)
     {
         try

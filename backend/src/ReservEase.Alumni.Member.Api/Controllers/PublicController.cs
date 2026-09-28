@@ -33,6 +33,7 @@ public class PublicController(
     IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
     IAlumniPgRepository<Job> jobRepo,
+    IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Member> memberRepo,
     IAlumniPgRepository<Resource> resourceRepo,
     IAlumniPgRepository<Community> communityRepo,
     IAlumniPgRepository<PhotoAlbum> albumRepo,
@@ -220,7 +221,7 @@ public class PublicController(
             var items = await eventRepo.GetQueryable(e =>
                     e.Status == "Upcoming" && e.CommunityId == null && (e.YearGroups == null || e.YearGroups.Count == 0)
                     && e.StartDate >= DateTime.UtcNow)
-                .OrderByDescending(e => e.StartDate)
+                .OrderBy(e => e.StartDate)
                 .Take(MaxCacheableItems)
                 .ToListAsync();
 
@@ -232,6 +233,51 @@ public class PublicController(
         var upcoming = all.Where(e => e.StartDate >= DateTime.UtcNow).Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList();
 
         return Ok(new ApiResponse<List<PublicEventItemResponse>> { Message = "Success", Code = 200, Data = upcoming });
+    }
+
+    /// <summary>
+    /// A few real, aggregate numbers about this community for the public landing page. Counts only, never names, and
+    /// a figure is left out (null) when its feature is switched off. Cached briefly since every visit asks for it.
+    /// </summary>
+    [HttpGet("pulse")]
+    [SwaggerOperation(Summary = "Aggregate community counts for the public landing page")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicPulseResponse>))]
+    public async Task<IActionResult> GetPublicPulse()
+    {
+        if (HttpContext.Items["Institution"] is not Institution institution)
+            return Ok(new ApiResponse<PublicPulseResponse> { Message = "Success", Code = 200, Data = new PublicPulseResponse(0, 0, null, null, null, null) });
+
+        var key = $"public-pulse:{institution.Id}";
+        var cached = await publicCache.GetAsync<PublicPulseResponse>(key);
+        if (cached is not null)
+            return Ok(new ApiResponse<PublicPulseResponse> { Message = "Success", Code = 200, Data = cached });
+
+        var now = DateTime.UtcNow;
+        var members = await memberRepo.CountAsync(m => m.Status == "Active");
+        var joinedRecently = await memberRepo.CountAsync(m => m.Status == "Active" && m.CreatedAt >= now.AddDays(-30));
+
+        int? eventsSoon = null;
+        DateTime? nextEvent = null;
+        if (!institution.DisabledFeatures.Contains(InstitutionFeatures.Events))
+        {
+            var upcoming = await eventRepo.GetQueryable(e => e.Status == "Upcoming" && e.CommunityId == null
+                    && (e.YearGroups == null || e.YearGroups.Count == 0) && e.StartDate >= now)
+                .OrderBy(e => e.StartDate).Select(e => e.StartDate).Take(50).ToListAsync();
+            eventsSoon = upcoming.Count(d => d <= now.AddDays(30));
+            nextEvent = upcoming.Count > 0 ? upcoming[0] : null;
+        }
+
+        int? openJobs = institution.DisabledFeatures.Contains(InstitutionFeatures.Jobs)
+            ? null
+            : await jobRepo.CountAsync(j => j.Status == "Active" && j.CommunityId == null);
+
+        int? businesses = institution.DisabledFeatures.Contains(InstitutionFeatures.BusinessDirectory)
+            ? null
+            : await businessListingRepo.CountAsync(b => b.Status == "Approved" && !b.IsHiddenByMember);
+
+        var pulse = new PublicPulseResponse(members, joinedRecently, eventsSoon, nextEvent, openJobs, businesses);
+        await publicCache.SetAsync(key, pulse, TimeSpan.FromMinutes(10));
+        return Ok(new ApiResponse<PublicPulseResponse> { Message = "Success", Code = 200, Data = pulse });
     }
 
     /// <summary>Most recently featured alumni spotlight(s), for the public landing page.</summary>

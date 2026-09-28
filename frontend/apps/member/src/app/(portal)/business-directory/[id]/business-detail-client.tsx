@@ -14,6 +14,7 @@ import { ensureAbsoluteUrl } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { getBusinessListing } from "@/lib/member-api";
 import { toast } from "sonner";
+import { FitImage } from "@alumni/ui";
 
 export default function BusinessListingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -85,7 +86,7 @@ export default function BusinessListingDetailPage() {
         </div>
         <div className="absolute -bottom-8 left-6 h-20 w-20 rounded-2xl border-4 border-background bg-background shadow-lg overflow-hidden flex items-center justify-center">
           {biz.logoUrl ? (
-            <img src={biz.logoUrl} alt={biz.businessName} className="w-full h-full object-cover" loading="lazy" />
+            <FitImage src={biz.logoUrl} alt={biz.businessName} className="w-full h-full" />
           ) : (
             <Building2 size={28} className="text-primary/50" />
           )}

@@ -24,6 +24,7 @@ import {
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
+import { FitImage } from "@alumni/ui";
 
 const STATUS_META: Record<BusinessListingStatus, { label: string; variant: "success" | "warning" | "destructive" | "neutral"; icon: typeof CheckCircle2; explanation: string }> = {
   Approved: { label: "Approved", variant: "success", icon: CheckCircle2, explanation: "Your listing is live and visible in the public directory." },
@@ -261,7 +262,7 @@ export default function MyBusinessListingPage() {
         <CardContent className="p-6 space-y-4">
           <div className="flex items-start gap-4">
             <div className="h-16 w-16 rounded-xl border border-border/40 bg-muted/30 overflow-hidden flex items-center justify-center shrink-0">
-              {listing.logoUrl ? <img src={listing.logoUrl} alt={listing.businessName} className="w-full h-full object-cover" /> : <Building2 size={22} className="text-primary/40" />}
+              {listing.logoUrl ? <FitImage src={listing.logoUrl} alt={listing.businessName} className="w-full h-full" /> : <Building2 size={22} className="text-primary/40" />}
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="text-[15px] font-semibold truncate">{listing.businessName}</h3>

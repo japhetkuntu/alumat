@@ -701,6 +701,20 @@ export async function getReportSummary() {
   return res.data.data!;
 }
 
+export interface RevenueTrendMonth { year: number; month: number; contributions: number; store: number; services: number }
+export interface RevenueTrend {
+  /** The latest calendar months, oldest first, current month last. Empty months are included as zeros. */
+  months: RevenueTrendMonth[];
+  /** How many payments (all time, within this admin's scope) sit in each status. */
+  statusCounts: Record<string, number>;
+}
+
+/** Paid revenue by month and source, worked out on the server so it is exact however many payments exist. Full history lives on the Reports page. */
+export async function getRevenueTrend(months = 6): Promise<RevenueTrend> {
+  const res = await institutionClient.get<ApiResponse<RevenueTrend>>('/reports/revenue-trend', { params: { months } });
+  return res.data.data!;
+}
+
 export interface MemberReportExportFilters {
   status?: string;
   graduationYearFrom?: number;
@@ -1734,4 +1748,44 @@ export async function getAgreementStatus() {
 export async function acceptAgreement(body: { version: string; title: string }) {
   const res = await institutionClient.post<ApiResponse<AgreementStatus>>("/agreement/accept", body);
   return res.data.data!;
+}
+
+// ── Pledges ─────────────────────────────────────────────────────────────────
+// Pledges are non-binding promises to give. Only administrators ever see them; members never see anyone else's.
+// "collected" is real money; "pledgedTotal" and "outstandingTotal" are promises, and are kept apart on purpose.
+
+export type PledgeState = "Pledged" | "PartPaid" | "Fulfilled" | "Overdue" | "Cancelled" | "WrittenOff";
+
+export interface AdminPledge {
+  id: string;
+  memberId: string;
+  memberName: string;
+  amount: number;
+  paid: number;
+  outstanding: number;
+  dueDate: string;
+  state: PledgeState;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface CampaignPledges {
+  collected: number;
+  pledgedTotal: number;
+  outstandingTotal: number;
+  overdueCount: number;
+  pledges: AdminPledge[];
+}
+
+export async function getCampaignPledges(campaignId: string): Promise<CampaignPledges> {
+  const res = await institutionClient.get(`/pledges/campaign/${campaignId}`);
+  return res.data.data!;
+}
+
+export async function remindPledge(id: string): Promise<void> {
+  await institutionClient.post(`/pledges/${id}/remind`);
+}
+
+export async function updatePledge(id: string, body: { dueDate?: string; amount?: number; status?: "Open" | "Cancelled" | "WrittenOff"; note?: string }): Promise<void> {
+  await institutionClient.patch(`/pledges/${id}`, body);
 }

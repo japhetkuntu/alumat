@@ -38,6 +38,10 @@ public class ScheduledJobsActivities(
     IAlumniPgRepository<Job> jobRepo,
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<EventRsvp> eventRsvpRepo,
+    IAlumniPgRepository<Pledge> pledgeRepo,
+    IAlumniPgRepository<ActivationTask> activationTaskRepo,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
+    IAlumniPgRepository<PlatformNotification> platformNotificationRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Spotlight> spotlightRepo,
     IAlumniPgRepository<RecurringContribution> recurringRepo,
@@ -259,6 +263,203 @@ public class ScheduledJobsActivities(
             logger.LogInformation("Membership reminder cycle for institution {InstitutionId}: {Sent} reminders sent", institutionId, sentCount);
             return sentCount;
         }, "send due membership reminders for institution", institutionId);
+
+    // ── Platform task reminders ─────────────────────────────────────────────
+
+    private const int TaskWeeklyReminderDays = 7;
+
+    /// <summary>
+    /// Alerts for tasks the platform team owes: one when a task is due today or tomorrow, one when it goes overdue, then
+    /// one a week for as long as it stays overdue. Each goes out as an in-app notice and an email to the assignee. A
+    /// changed due date or a new assignee clears the markers (see ActivationWorkService), so the cycle starts again.
+    /// </summary>
+    [Activity("ScheduledJobs.SendDueWorkReminders")]
+    public virtual Task<int> SendDueWorkRemindersAsync() =>
+        Wrap(async () =>
+        {
+            var open = (await activationTaskRepo.GetAllAsync(t => t.Status != TaskStatuses.Done && t.DueDate != null)).ToList();
+            if (open.Count == 0) return 0;
+
+            var now = DateTime.UtcNow;
+            var today = now.Date;
+            var assigneeIds = open.Select(t => t.AssigneeId).Distinct().ToList();
+            var staff = (await platformStaffRepo.GetAllAsync(s => assigneeIds.Contains(s.Id) && !s.IsDisabled)).ToDictionary(s => s.Id);
+
+            var notifications = new List<PlatformNotification>();
+            var changed = new List<ActivationTask>();
+            var sent = 0;
+
+            foreach (var task in open)
+            {
+                if (!staff.TryGetValue(task.AssigneeId, out var person)) continue;
+                var dueDay = task.DueDate!.Value.Date;
+
+                string title, body;
+                if (today > dueDay)
+                {
+                    if (task.OverdueNotifiedAt is null)
+                    {
+                        task.OverdueNotifiedAt = now;
+                        task.LastReminderAt = now;
+                        title = "Task overdue";
+                        body = $"\"{task.Title}\" was due {dueDay:d MMMM} and isn't done yet.";
+                    }
+                    else if (now - (task.LastReminderAt ?? task.OverdueNotifiedAt.Value) >= TimeSpan.FromDays(TaskWeeklyReminderDays))
+                    {
+                        task.LastReminderAt = now;
+                        title = "Task still overdue";
+                        body = $"\"{task.Title}\" is {(today - dueDay).Days} days overdue. Update its status, or ask for a new date.";
+                    }
+                    else continue;
+                }
+                else if (dueDay <= today.AddDays(1) && task.DueSoonNotifiedAt is null)
+                {
+                    task.DueSoonNotifiedAt = now;
+                    title = dueDay == today ? "Task due today" : "Task due tomorrow";
+                    body = $"\"{task.Title}\" is due {dueDay:d MMMM}.";
+                }
+                else continue;
+
+                changed.Add(task);
+                notifications.Add(new PlatformNotification
+                {
+                    RecipientStaffId = person.Id, Title = title, Body = body, Type = "TaskReminder",
+                    RelatedEntityId = task.Id, RelatedEntityType = "Task", ActionUrl = "/activation?tab=tasks", CreatedBy = "system",
+                });
+
+                if (string.IsNullOrWhiteSpace(person.Email)) continue;
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
+                    new SendEmailRequest
+                    {
+                        To = [new EmailContact { Email = person.Email, Name = person.Name }],
+                        TemplateId = "notification",
+                        TemplateVariables = new
+                        {
+                            first_name = person.Name.Split(' ')[0], title, body,
+                            badge_label = "Platform task", pref_label = "you are on the AlumUnion platform team",
+                        },
+                    },
+                    $"task reminder to {person.Email}"), logger);
+                sent++;
+            }
+
+            if (notifications.Count > 0) await platformNotificationRepo.AddRangeAsync(notifications);
+            if (changed.Count > 0) await activationTaskRepo.UpdateRangeAsync(changed);
+            logger.LogInformation("Work reminder cycle: {Sent} reminders sent for {Tasks} tasks", sent, changed.Count);
+            return sent;
+        }, "send due work reminders", "all");
+
+    // ── Pledge reminders ────────────────────────────────────────────────────
+
+    private const int PledgeUpcomingDaysBefore = 3;
+    private const int PledgeOverdueDaysAfter = 7;
+
+    /// <summary>
+    /// At most three gentle nudges per pledge (3 days before, on the day, 7 days after), then nothing: what happens to a
+    /// pledge nobody has paid is the admin's call, never an ever-growing pile of automated messages. Also closes out open
+    /// pledges whose fundraiser has ended, since they can no longer be paid.
+    /// </summary>
+    [Activity("ScheduledJobs.SendDuePledgeRemindersForInstitution")]
+    public virtual Task<int> SendDuePledgeRemindersForInstitutionAsync(string institutionId) =>
+        Wrap(async () =>
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
+            if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Contributions))
+                return 0;
+
+            var open = (await pledgeRepo.GetAllAsync(p => p.InstitutionId == institutionId && p.Status == PledgeStatuses.Open, ignoreQueryFilters: true)).ToList();
+            if (open.Count == 0) return 0;
+
+            var now = DateTime.UtcNow;
+            var campaignIds = open.Select(p => p.CampaignId).Distinct().ToList();
+            var memberIds = open.Select(p => p.MemberId).Distinct().ToList();
+            var campaigns = (await campaignRepo.GetAllAsync(c => c.InstitutionId == institutionId && campaignIds.Contains(c.Id), ignoreQueryFilters: true)).ToDictionary(c => c.Id);
+            var members = (await memberRepo.GetAllAsync(m => m.InstitutionId == institutionId && memberIds.Contains(m.Id), ignoreQueryFilters: true)).ToDictionary(m => m.Id);
+            var contributions = (await contributionRepo.GetAllAsync(
+                c => c.InstitutionId == institutionId && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), ignoreQueryFilters: true)).ToList();
+            var prefsByMember = (await prefRepo.GetAllAsync(p => p.InstitutionId == institutionId, ignoreQueryFilters: true)).ToDictionary(p => p.MemberId);
+
+            var portalUrl = GetMemberPortalUrl(institution);
+            var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
+            var notifications = new List<Notification>();
+            var changed = new List<Pledge>();
+            var sent = 0;
+
+            foreach (var pledge in open)
+            {
+                members.TryGetValue(pledge.MemberId, out var member);
+                campaigns.TryGetValue(pledge.CampaignId, out var campaign);
+
+                // The fundraiser ended: the pledge can't be paid any more, so close it and say so kindly.
+                if (campaign is null || campaign.Status != CampaignStatus.Active)
+                {
+                    pledge.Status = PledgeStatuses.Cancelled;
+                    pledge.StatusNote = "The fundraiser has ended";
+                    pledge.UpdatedAt = now;
+                    pledge.UpdatedBy = "system";
+                    changed.Add(pledge);
+                    if (member is not null && campaign is not null)
+                        notifications.Add(new Notification
+                        {
+                            RecipientId = member.Id, RecipientType = "Member", Title = "Fundraiser has ended",
+                            Body = $"\"{campaign.Title}\" has ended, so your pledge has been closed. Thank you for planning to give.",
+                            Type = "PledgeReminder", RelatedEntityId = campaign.Id, RelatedEntityType = "Campaign", CreatedBy = "system",
+                        });
+                    continue;
+                }
+
+                if (member is null || pledge.CreatedAt > now.AddHours(-12)) continue; // never nudge someone right after they pledged
+
+                var progress = PledgeProgress.Compute(pledge, contributions.Where(c => c.MemberId == pledge.MemberId && c.CampaignId == pledge.CampaignId), now);
+                if (progress.State == PledgeStates.Fulfilled) continue;
+
+                string? stage = null;
+                if (now >= pledge.DueDate.AddDays(PledgeOverdueDaysAfter) && pledge.OverdueReminderSentAt is null) stage = PledgeReminderMessages.Overdue;
+                else if (now >= pledge.DueDate && now < pledge.DueDate.AddDays(PledgeOverdueDaysAfter) && pledge.DueReminderSentAt is null) stage = PledgeReminderMessages.Due;
+                else if (now >= pledge.DueDate.AddDays(-PledgeUpcomingDaysBefore) && now < pledge.DueDate && pledge.UpcomingReminderSentAt is null) stage = PledgeReminderMessages.Upcoming;
+                if (stage is null) continue;
+
+                // If the job was down and several stages came due together, send only the latest and mark the earlier ones done.
+                pledge.UpcomingReminderSentAt ??= now;
+                if (stage != PledgeReminderMessages.Upcoming) pledge.DueReminderSentAt ??= now;
+                if (stage == PledgeReminderMessages.Overdue) pledge.OverdueReminderSentAt ??= now;
+                changed.Add(pledge);
+
+                var (title, body, actionLabel) = PledgeReminderMessages.Build(stage, campaign.Title, progress.Outstanding, pledge.DueDate);
+                var actionUrl = string.IsNullOrEmpty(portalUrl) ? string.Empty : $"{portalUrl}/payment-campaign/{campaign.Id}";
+
+                notifications.Add(new Notification
+                {
+                    RecipientId = member.Id, RecipientType = "Member", Title = title, Body = body, Type = "PledgeReminder",
+                    RelatedEntityId = campaign.Id, RelatedEntityType = "Campaign", ActionUrl = actionUrl, CreatedBy = "system",
+                });
+
+                // Email follows the member's fundraiser-alert preference; the in-app notice always lands.
+                if (string.IsNullOrWhiteSpace(member.Email) || prefsByMember.GetValueOrDefault(member.Id)?.CampaignAlerts == false) continue;
+                await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
+                    new SendEmailRequest
+                    {
+                        To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
+                        TemplateId = "notification",
+                        TemplateVariables = new
+                        {
+                            first_name = member.FirstName, title, body, badge_label = "Pledge Reminder",
+                            action_url = actionUrl, action_label = actionLabel,
+                            brand_name = brandName, brand_color = institution.PrimaryColorHex,
+                            brand_secondary_color = institution.SecondaryColorHex, brand_logo = institution.LogoUrl,
+                        },
+                    },
+                    $"pledge reminder to {member.Email}"), logger);
+                sent++;
+            }
+
+            currentTenant.SetInstitutionId(institutionId);
+            if (notifications.Count > 0) await notifRepo.AddRangeAsync(notifications);
+            if (changed.Count > 0) await pledgeRepo.UpdateRangeAsync(changed);
+
+            logger.LogInformation("Pledge reminder cycle for institution {InstitutionId}: {Sent} emailed, {Changed} pledges updated", institutionId, sent, changed.Count);
+            return sent;
+        }, "send due pledge reminders for institution", institutionId);
 
     // ── Day-before event reminders ──────────────────────────────────────────
 
