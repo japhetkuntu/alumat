@@ -357,7 +357,12 @@ function StatRow({ stat, active, index }: { stat: StatItem; active: boolean; ind
     <div
       className={cn(
         "px-4 py-5 sm:px-8 sm:py-1 flex flex-col items-center text-center sm:items-start sm:text-left",
+        // Grid is 2 columns until md, then 4 — so with 3+ stats, index 2 lands
+        // back in the first (left-aligned) column once it wraps to row two below
+        // md, same as index 0 does, but is column 3 (not column 1) from md up,
+        // where its normal left padding needs to come back for the divider gap.
         index === 0 && "sm:pl-0",
+        index === 2 && "sm:pl-0 md:pl-8",
       )}>
       <p className="font-[family-name:var(--font-display)] leading-none tabular-nums break-words mb-2"
         style={{
@@ -857,7 +862,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       ════════════════════════════════════════════════════════════════ */}
       <header className="sticky top-0 z-50 border-b backdrop-blur-xl"
         style={{ background: "color-mix(in oklch, var(--background) 86%, transparent)", borderColor: "var(--border)" }}>
-        <div className="section__inner flex items-center justify-between h-16 gap-4">
+        <div className="section__inner--wide flex items-center justify-between h-16 gap-4">
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-contain shrink-0" />
@@ -998,7 +1003,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           FEATURES
       ════════════════════════════════════════════════════════════════ */}
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
+        <div className="section__inner--wide section">
           <div className="mb-12 max-w-[56ch]">
             <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
               What&apos;s inside
@@ -1028,7 +1033,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           STORIES — photo cards
       ════════════════════════════════════════════════════════════════ */}
       <Section id="stories" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
+        <div className="section__inner--wide section">
           <div className="mb-12 max-w-[50ch]">
             <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
               Why they join
@@ -1059,7 +1064,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           HOW IT WORKS
       ════════════════════════════════════════════════════════════════ */}
       <Section id="how-it-works" style={{ background: "var(--secondary)" }}>
-        <div className="section__inner section">
+        <div className="section__inner--wide section">
           <div className="text-center mb-12">
             <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
               Getting started
@@ -1123,7 +1128,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           FOOTER
       ════════════════════════════════════════════════════════════════ */}
       <footer className="border-t py-9" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-        <div className="section__inner flex flex-col sm:flex-row items-center justify-between gap-5">
+        <div className="section__inner--wide flex flex-col sm:flex-row items-center justify-between gap-5">
           <Link href="/" className="flex items-center gap-3">
             <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-contain shrink-0" />
             <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</span>

@@ -15,6 +15,7 @@ using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
@@ -59,6 +60,45 @@ public class MemberAuthService(
     {
         var request = httpContextAccessor.HttpContext?.Request;
         return request is null ? "https://example.com" : $"{request.Scheme}://{request.Host}";
+    }
+
+    /// <summary>
+    /// Records a new member as a tracked referral of whoever's code they registered with.
+    /// A Referral row only otherwise exists when the referrer went through the explicit
+    /// "invite this email address" flow (ReferralService.InviteAsync) — but a referral code
+    /// is also just shareable as a link/QR code on its own (the natural, low-friction way
+    /// people actually forward it, e.g. in a WhatsApp group), which never creates one. Without
+    /// this, that far more common path registered ReferredById on the new member correctly but
+    /// left the referrer's own stats (ReferralService.GetMyReferralInfoAsync/GetMyReferralsAsync,
+    /// both of which only ever read from the Referral table) permanently blind to it — the
+    /// referral "worked" in the data model but never showed up anywhere the referrer could see,
+    /// which is indistinguishable from broken. So: update the existing row if the referrer
+    /// happened to have explicitly invited this exact email, otherwise create one now.
+    /// </summary>
+    private async Task LinkReferralAsync(MemberEntity member, string email)
+    {
+        if (string.IsNullOrWhiteSpace(member.ReferredById)) return;
+
+        var referral = await referralRepo.GetOneAsync(r => r.ReferrerId == member.ReferredById && r.ReferredEmail == email);
+        var isNew = referral is null;
+        if (referral is null)
+        {
+            var referrer = await memberRepo.GetByIdAsync(member.ReferredById);
+            if (referrer is null) return; // ReferredById pointed at a member that's since been deleted — nothing to attribute this to.
+            referral = new Referral
+            {
+                ReferrerId = referrer.Id,
+                Referrer = new MemberSnapshot { Id = referrer.Id, FirstName = referrer.FirstName, LastName = referrer.LastName, Email = referrer.Email, ProfilePictureUrl = referrer.ProfilePictureUrl },
+                ReferredEmail = email,
+                CreatedBy = "system",
+            };
+        }
+
+        referral.ReferredMemberId = member.Id;
+        referral.Status = "Registered";
+        await (isNew ? referralRepo.AddAsync(referral) : referralRepo.UpdateAsync(referral));
+        await temporalProvider.EnqueueNotificationAsync(
+            NotificationRequest.ReferralRegistered(currentTenant.InstitutionId, referral.ReferrerId, $"{member.FirstName} {member.LastName}"), logger);
     }
 
     /// <summary>
@@ -224,19 +264,7 @@ public class MemberAuthService(
                 await memberRepo.UpdateAsync(member);
             }
 
-            if (!string.IsNullOrWhiteSpace(member.ReferredById))
-            {
-                var referral = await referralRepo.GetOneAsync(r =>
-                    r.ReferrerId == member.ReferredById && r.ReferredEmail == identity.Email);
-                if (referral is not null)
-                {
-                    referral.ReferredMemberId = member.Id;
-                    referral.Status = "Registered";
-                    await referralRepo.UpdateAsync(referral);
-                    await temporalProvider.EnqueueNotificationAsync(
-                        NotificationRequest.ReferralRegistered(currentTenant.InstitutionId, referral.ReferrerId, $"{member.FirstName} {member.LastName}"), logger);
-                }
-            }
+            await LinkReferralAsync(member, identity.Email);
 
             await temporalProvider.EnqueueNotificationAsync(
                 autoApprove
@@ -314,20 +342,7 @@ public class MemberAuthService(
                 await memberRepo.UpdateAsync(member);
             }
 
-            // Update referral record status
-            if (!string.IsNullOrWhiteSpace(member.ReferredById))
-            {
-                var referral = await referralRepo.GetOneAsync(r =>
-                    r.ReferrerId == member.ReferredById && r.ReferredEmail == cached.Email);
-                if (referral is not null)
-                {
-                    referral.ReferredMemberId = member.Id;
-                    referral.Status = "Registered";
-                    await referralRepo.UpdateAsync(referral);
-                    await temporalProvider.EnqueueNotificationAsync(
-                        NotificationRequest.ReferralRegistered(currentTenant.InstitutionId, referral.ReferrerId, $"{member.FirstName} {member.LastName}"), logger);
-                }
-            }
+            await LinkReferralAsync(member, cached.Email);
 
             await temporalProvider.EnqueueNotificationAsync(
                 autoApprove

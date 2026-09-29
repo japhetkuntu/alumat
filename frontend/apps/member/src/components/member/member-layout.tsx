@@ -39,6 +39,7 @@ import {
   Images,
   Building2,
   FileText,
+  Share2,
 } from "@alumni/ui";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -85,6 +86,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
   {
     section: "Recognition",
     items: [
+      { href: "/referrals", label: "Refer & Earn", icon: Share2 },
       { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
       { href: "/spotlights", label: "Spotlight", icon: Star },
     ],
@@ -115,6 +117,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/mentorship": "Mentorship",
   "/resources": "Resources",
   "/leaderboard": "Leaderboard",
+  "/referrals": "Referrals",
   "/spotlights": "Spotlights",
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",

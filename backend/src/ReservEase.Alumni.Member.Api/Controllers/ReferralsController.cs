@@ -43,6 +43,15 @@ public class ReferralsController(IReferralService referralService) : DefaultCont
         var result = await referralService.GetMyReferralsAsync(member.Id);
         return result.ToActionResult();
     }
+
+    [HttpGet("leaderboard")]
+    [SwaggerOperation(Summary = "Referral leaderboard", Description = "Top referrers institution-wide, ranked by points (10 per registered referral, +15 once they become a paying member).")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<ReferralLeaderboardEntryDto>>))]
+    public async Task<IActionResult> GetLeaderboard()
+    {
+        var result = await referralService.GetLeaderboardAsync();
+        return result.ToActionResult();
+    }
 }
 
 public record InviteRequest(string Email);

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Eye, EyeOff, ArrowLeft, CheckCircle2, Clock,
@@ -319,6 +319,14 @@ function PasswordInput({
    ───────────────────────────────────────────────────────────────────────── */
 function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Captured once on mount rather than read fresh from searchParams at submit time — a member
+  // who spends a few minutes on the multi-step form before submitting shouldn't lose the
+  // referral credit if, for whatever reason, the param ever stopped reading (e.g. a client-side
+  // navigation elsewhere and back). This is also what the register?ref= link the invite kit and
+  // referral emails generate actually gets used for — previously this page never read the
+  // param at all, so no referral tracking or gamification ever recorded a single link-based signup.
+  const [referralCode] = useState(() => searchParams.get("ref")?.trim() || "");
   const { data: googleBridgeTheme } = useGoogleBridgeTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -401,6 +409,24 @@ function RegisterForm() {
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
+  // The "no-login preview" moment for a shared referral link — who sent it and something real
+  // and specific about the community (their batch, a live fundraiser), shown above the form
+  // instead of a cold signup screen. Silently absent (not an error state) for a plain, code-less
+  // visit, an unknown/expired code, or while the query is loading.
+  const { data: referralPreview } = useQuery({
+    queryKey: ["referral-preview", referralCode],
+    queryFn: async () => {
+      const res = await publicMemberClient.get<{ data: {
+        referrerFirstName: string; referrerGraduationYear: number | null;
+        sameBatchActiveMembers: number; totalActiveMembers: number;
+        openFundraiserTitle: string | null; openFundraiserCollected: number | null; openFundraiserTarget: number | null;
+      } | null }>("/public/referral-preview", { params: { code: referralCode } });
+      return res.data.data;
+    },
+    enabled: !!referralCode,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
   const requireStudentId = theme?.requireStudentId ?? true;
   const programOfStudyEnabled = theme?.programOfStudyEnabled ?? false;
   const programsOfStudy = theme?.programsOfStudy ?? [];
@@ -460,7 +486,7 @@ function RegisterForm() {
 
   async function onSubmit(data: FormData) {
     try {
-      await memberClient.post("/auth/register", data);
+      await memberClient.post("/auth/register", referralCode ? { ...data, referralCode } : data);
       setEmail(data.email);
       setStep("otp");
       setResendsLeft(3);
@@ -483,6 +509,7 @@ function RegisterForm() {
         departmentId: data.departmentId,
         program: data.program,
         acceptedTerms: data.acceptedTerms,
+        ...(referralCode ? { referralCode } : {}),
       });
       setEmail(data.email);
       setApproved(!!res.data?.data?.approved);
@@ -588,6 +615,34 @@ function RegisterForm() {
       ══════════════════════════════════════════════ */}
       {step === "form" && (
         <>
+          {/* Referral preview — the whole reason a shared link is worth opening before signing up */}
+          {formSubStep === 1 && referralPreview && (
+            <div
+              className="mb-5 p-4 rounded-lg border flex items-start gap-3"
+              style={{ background: "var(--brand-primary-50, var(--secondary))", borderColor: "var(--brand-primary-200, var(--border))" }}
+            >
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-bold text-[13px]"
+                style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
+              >
+                {referralPreview.referrerFirstName.charAt(0).toUpperCase()}
+              </div>
+              <div className="text-[13px] leading-relaxed" style={{ color: "var(--foreground)" }}>
+                <p className="font-semibold mb-0.5">{referralPreview.referrerFirstName} invited you</p>
+                <p style={{ color: "var(--muted-foreground)" }}>
+                  {referralPreview.referrerGraduationYear
+                    ? `${referralPreview.sameBatchActiveMembers} classmate${referralPreview.sameBatchActiveMembers === 1 ? "" : "s"} from ${referralPreview.referrerGraduationYear} `
+                    : `${referralPreview.totalActiveMembers} member${referralPreview.totalActiveMembers === 1 ? "" : "s"} `}
+                  already here.
+                  {referralPreview.openFundraiserTitle && referralPreview.openFundraiserTarget && (
+                    <> There&apos;s an active fundraiser, &ldquo;{referralPreview.openFundraiserTitle}&rdquo;, at{" "}
+                      {Math.round(((referralPreview.openFundraiserCollected ?? 0) / referralPreview.openFundraiserTarget) * 100)}% of its goal.</>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Heading */}
           <div className="mb-6">
             <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>

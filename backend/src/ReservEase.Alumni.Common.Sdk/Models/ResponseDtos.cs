@@ -574,6 +574,42 @@ public class ReferralDto
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>Points: 10 for a referral who registers, another 15 (25 total) once they become a
+/// paying member — rewards a referral that actually sticks, not just a sign-up. See
+/// ReferralService for where these are computed (from Referral.Status, not stored).</summary>
+public static class ReferralPoints
+{
+    public const int Registered = 10;
+    public const int MembershipBonus = 15;
+}
+
+public class ReferralInfoDto
+{
+    public string ReferralCode { get; set; } = string.Empty;
+    public int TotalReferrals { get; set; }
+    public int PendingReferrals { get; set; }
+    public int RegisteredReferrals { get; set; }
+    public int MembershipPaidReferrals { get; set; }
+    public int Points { get; set; }
+    /// <summary>Null when this member has never made the leaderboard (0 points) — the
+    /// frontend shows "not ranked yet" rather than a misleading rank number.</summary>
+    public int? Rank { get; set; }
+    public bool HasReferrerBadge { get; set; }
+}
+
+public class ReferralLeaderboardEntryDto
+{
+    public int Rank { get; set; }
+    public string MemberId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? ProfilePictureUrl { get; set; }
+    public int Points { get; set; }
+    /// <summary>Referrals that actually registered (or went on to pay membership) — a pending
+    /// invite that was never accepted doesn't count toward this leaderboard.</summary>
+    public int TotalReferrals { get; set; }
+    public int MembershipPaidReferrals { get; set; }
+}
+
 // ── Class Notes ─────────────────────────────────────────────────────────────
 
 public class ClassNoteDto

@@ -10,3 +10,20 @@ public record PublicBusinessListingItemResponse(string Id, string BusinessName, 
 
 /// <summary>Aggregate, non-personal counts for the public landing page. A null figure means that feature is off for this institution.</summary>
 public record PublicPulseResponse(int Members, int JoinedLast30Days, int? EventsNext30Days, DateTime? NextEventDate, int? OpenJobs, int? Businesses);
+
+/// <summary>
+/// What a shared referral link opens to, before the visitor has signed up for anything — the
+/// "no-login preview moment": something real and specific about THIS invite (who sent it, how
+/// many of their own batch are already here, what's live right now) rather than a cold signup
+/// form or a locked-out landing page. Null fields mean that data point doesn't apply (e.g. no
+/// fundraiser currently open) rather than the feature being off — unlike PublicPulseResponse,
+/// there's no per-institution feature flag here to distinguish "off" from "empty."
+/// </summary>
+public record ReferralPreviewResponse(
+    string ReferrerFirstName,
+    int? ReferrerGraduationYear,
+    int SameBatchActiveMembers,
+    int TotalActiveMembers,
+    string? OpenFundraiserTitle,
+    decimal? OpenFundraiserCollected,
+    decimal? OpenFundraiserTarget);

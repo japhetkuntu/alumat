@@ -24,6 +24,7 @@ public class MemberManagementService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<Referral> referralRepo,
     ICurrentTenantService currentTenant,
     IConfiguration config,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
@@ -35,6 +36,18 @@ public class MemberManagementService(
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
 
     private static string GenerateUrlToken(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
+
+    /// <summary>See ContributionCallbackActivities.MarkReferralMembershipPaidAsync (the same
+    /// promotion, for the two admin-driven "mark membership paid" paths here rather than the
+    /// online-payment callback workflow) — promotes this member's own referral row from
+    /// "Registered" to "MembershipPaid" if one exists. A no-op otherwise.</summary>
+    private async Task MarkReferralMembershipPaidIfAnyAsync(string memberId)
+    {
+        var referral = await referralRepo.GetOneAsync(r => r.ReferredMemberId == memberId && r.Status == "Registered", ignoreQueryFilters: true);
+        if (referral is null) return;
+        referral.Status = "MembershipPaid";
+        await referralRepo.UpdateAsync(referral);
+    }
 
     /// <summary>
     /// The one channel guaranteed to reach a member regardless of whether
@@ -529,6 +542,7 @@ public class MemberManagementService(
                         member.LastMembershipPaidAt = DateTime.UtcNow;
                         member.MembershipYearsPaid = item.PaidMembershipYears.Count;
                         await memberRepo.UpdateAsync(member);
+                        await MarkReferralMembershipPaidIfAnyAsync(member.Id);
                     }
 
                     imported++;
@@ -621,6 +635,7 @@ public class MemberManagementService(
             member.UpdatedAt = DateTime.UtcNow;
             member.UpdatedBy = admin.Id;
             await memberRepo.UpdateAsync(member);
+            if (allPaid) await MarkReferralMembershipPaidIfAnyAsync(member.Id);
 
             logger.LogInformation("Membership activated for {MemberId}: {Count} years by admin {AdminId}", memberId, activatedCount, admin.Id);
             return new object().ToOkApiResponse($"Membership activated for {activatedCount} year(s)");

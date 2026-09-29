@@ -533,7 +533,21 @@ export interface ReferralInfo {
   totalReferrals: number;
   registeredReferrals: number;
   pendingReferrals: number;
+  membershipPaidReferrals: number;
+  points: number;
+  /** Null if this member has never earned a point yet — "not ranked" rather than a rank number. */
+  rank: number | null;
   hasReferrerBadge: boolean;
+}
+
+export interface ReferralLeaderboardEntry {
+  rank: number;
+  memberId: string;
+  name: string;
+  profilePictureUrl?: string | null;
+  points: number;
+  totalReferrals: number;
+  membershipPaidReferrals: number;
 }
 
 export interface ClassNote {

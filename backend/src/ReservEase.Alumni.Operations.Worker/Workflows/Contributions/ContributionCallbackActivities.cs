@@ -30,6 +30,7 @@ public class ContributionCallbackActivities(
     IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo,
     IAlumniPgRepository<RecurringContribution> recurringRepo,
     IAlumniPgRepository<Institution> institutionRepo,
+    IAlumniPgRepository<Referral> referralRepo,
     IPaystackService paystackService,
     IRedisService<MemberRedisConfig> redis,
     ITemporalClientProvider temporalProvider,
@@ -46,6 +47,22 @@ public class ContributionCallbackActivities(
     [Activity("ContributionCallback.LoadMember")]
     public virtual Task<MemberEntity?> LoadMemberAsync(string memberId) =>
         Wrap(() => memberRepo.GetOneAsync(m => m.Id == memberId, ignoreQueryFilters: true), "load member", memberId);
+
+    /// <summary>
+    /// Promotes this member's own referral row (if any) from "Registered" to "MembershipPaid" —
+    /// the signal that a referral wasn't just a registration but an actually-paying member,
+    /// which is what the referral points/leaderboard rewards more heavily. A no-op if this
+    /// member was never referred, or their referral already reached this status.
+    /// </summary>
+    [Activity("ContributionCallback.MarkReferralMembershipPaid")]
+    public virtual Task MarkReferralMembershipPaidAsync(string memberId) =>
+        Wrap(async () =>
+        {
+            var referral = await referralRepo.GetOneAsync(r => r.ReferredMemberId == memberId && r.Status == "Registered", ignoreQueryFilters: true);
+            if (referral is null) return;
+            referral.Status = "MembershipPaid";
+            await referralRepo.UpdateAsync(referral);
+        }, "mark referral membership paid", memberId);
 
     [Activity("ContributionCallback.CreateTransaction")]
     public virtual Task<PaymentTransaction> CreateTransactionAsync(PaymentTransaction transaction) =>

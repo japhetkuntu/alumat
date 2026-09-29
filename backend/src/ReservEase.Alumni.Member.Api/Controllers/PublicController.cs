@@ -280,6 +280,40 @@ public class PublicController(
         return Ok(new ApiResponse<PublicPulseResponse> { Message = "Success", Code = 200, Data = pulse });
     }
 
+    /// <summary>
+    /// What the register page shows above its form when opened via a referral link/QR code —
+    /// the referrer's first name, how many of their own graduation year are already active
+    /// members, and an open fundraiser's live progress if one exists. This is the "no-login
+    /// preview" a shared invite link opens to, rather than a cold signup form: something real
+    /// and specific about this particular invite, visible before anyone commits to signing up.
+    /// Not cached — one lightweight lookup per unique code, not per visit like /pulse.
+    /// </summary>
+    [HttpGet("referral-preview")]
+    [SwaggerOperation(Summary = "Preview shown when opening a referral link, before signing up")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ReferralPreviewResponse?>))]
+    public async Task<IActionResult> GetReferralPreview([FromQuery] string code)
+    {
+        if (string.IsNullOrWhiteSpace(code) || HttpContext.Items["Institution"] is not Institution)
+            return Ok(new ApiResponse<ReferralPreviewResponse?> { Message = "Success", Code = 200, Data = null });
+
+        var referrer = await memberRepo.GetOneAsync(m => m.ReferralCode == code && m.Status == "Active");
+        if (referrer is null)
+            return Ok(new ApiResponse<ReferralPreviewResponse?> { Message = "Success", Code = 200, Data = null });
+
+        var sameBatch = await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear == referrer.GraduationYear);
+        var totalMembers = await memberRepo.CountAsync(m => m.Status == "Active");
+
+        // The fundraiser closing soonest, if any — the most urgent one to show, not just any open one.
+        var fundraiser = await campaignRepo.GetQueryable(c => !c.IsMembershipCampaign && c.Status == CampaignStatus.Active && c.Deadline >= DateTime.UtcNow)
+            .OrderBy(c => c.Deadline).FirstOrDefaultAsync();
+
+        var preview = new ReferralPreviewResponse(
+            referrer.FirstName, referrer.GraduationYear == 0 ? null : referrer.GraduationYear,
+            sameBatch, totalMembers,
+            fundraiser?.Title, fundraiser?.CollectedAmount, fundraiser?.TargetAmount);
+        return Ok(new ApiResponse<ReferralPreviewResponse> { Message = "Success", Code = 200, Data = preview });
+    }
+
     /// <summary>Most recently featured alumni spotlight(s), for the public landing page.</summary>
     [HttpGet("spotlights")]
     [SwaggerOperation(Summary = "Get the latest approved alumni spotlight(s) for the public landing page")]

@@ -327,6 +327,11 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
         memberToUpdate.MembershipYearsPaid = reeval.RequiredCampaignIds.Count(id => reeval.PaidCampaignIds.Contains(id));
         memberToUpdate.LastMembershipPaidAt = now;
 
+        // If this member was themselves a referral, this is the "quality" signal referral
+        // points/leaderboard weight more heavily than a bare registration — see
+        // MarkReferralMembershipPaidAsync. A no-op for a non-referred member or one already past this stage.
+        await Workflow.ExecuteActivityAsync((ContributionCallbackActivities a) => a.MarkReferralMembershipPaidAsync(memberId), PaymentActivityOptions.DatabaseWrite);
+
         // Auto-approve pending members who confirmed their membership payment
         if (memberToUpdate.Status == "Pending")
         {

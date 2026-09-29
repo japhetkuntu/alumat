@@ -48,13 +48,23 @@ public class ReferralService(
         return request is null ? "https://example.com" : $"{request.Scheme}://{request.Host}";
     }
 
-    public async Task<IApiResponse<object>> GetMyReferralInfoAsync(AuthData member)
+    /// <summary>Points earned from one referral row, by its current status — see ReferralPoints.
+    /// A "MembershipPaid" referral is worth the registration points plus the bonus, not the
+    /// bonus alone, since it passed through "Registered" on the way there.</summary>
+    private static int PointsFor(string status) => status switch
+    {
+        "Registered" => ReferralPoints.Registered,
+        "MembershipPaid" => ReferralPoints.Registered + ReferralPoints.MembershipBonus,
+        _ => 0,
+    };
+
+    public async Task<IApiResponse<ReferralInfoDto>> GetMyReferralInfoAsync(AuthData member)
     {
         try
         {
             var memberEntity = await memberRepo.GetByIdAsync(member.Id);
             if (memberEntity is null)
-                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+                return ApiResponseExtensions.ToNotFoundApiResponse<ReferralInfoDto>("Member not found");
 
             // Generate referral code if not set
             if (string.IsNullOrEmpty(memberEntity.ReferralCode))
@@ -65,15 +75,30 @@ public class ReferralService(
 
             var referrals = await referralRepo.GetAllAsync(r => r.ReferrerId == member.Id);
             var referralList = referrals.ToList();
+            var points = referralList.Sum(r => PointsFor(r.Status));
 
             var hasBadge = await badgeRepo.GetOneAsync(b => b.MemberId == member.Id && b.BadgeType == "Referrer");
 
-            var info = (object)new
+            // Rank among every referrer institution-wide with at least one point — a plain
+            // count query per referrer would be one query per member; instead pull just the
+            // (ReferrerId, Status) pairs once and aggregate in memory, same pattern GetLeaderboardAsync uses.
+            var allReferrals = await referralRepo.GetAllAsync();
+            var pointsByReferrer = allReferrals.GroupBy(r => r.ReferrerId).ToDictionary(g => g.Key, g => g.Sum(r => PointsFor(r.Status)));
+            int? rank = null;
+            if (points > 0)
+            {
+                rank = pointsByReferrer.Values.Count(p => p > points) + 1;
+            }
+
+            var info = new ReferralInfoDto
             {
                 ReferralCode = memberEntity.ReferralCode,
                 TotalReferrals = referralList.Count,
                 RegisteredReferrals = referralList.Count(r => r.Status is "Registered" or "MembershipPaid"),
                 PendingReferrals = referralList.Count(r => r.Status == "Pending"),
+                MembershipPaidReferrals = referralList.Count(r => r.Status == "MembershipPaid"),
+                Points = points,
+                Rank = rank,
                 HasReferrerBadge = hasBadge is not null,
             };
 
@@ -82,7 +107,59 @@ public class ReferralService(
         catch (Exception e)
         {
             logger.LogError(e, "Error retrieving referral info for member {MemberId}", member.Id);
-            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to retrieve referral info");
+            return ApiResponseExtensions.ToServerErrorApiResponse<ReferralInfoDto>("Failed to retrieve referral info");
+        }
+    }
+
+    public async Task<IApiResponse<List<ReferralLeaderboardEntryDto>>> GetLeaderboardAsync()
+    {
+        try
+        {
+            const int top = 20;
+            var allReferrals = (await referralRepo.GetAllAsync()).ToList();
+            var byReferrer = allReferrals
+                .GroupBy(r => r.ReferrerId)
+                .Select(g => new
+                {
+                    ReferrerId = g.Key,
+                    Points = g.Sum(r => PointsFor(r.Status)),
+                    TotalReferrals = g.Count(r => r.Status is "Registered" or "MembershipPaid"),
+                    MembershipPaidReferrals = g.Count(r => r.Status == "MembershipPaid"),
+                })
+                .Where(x => x.Points > 0)
+                .OrderByDescending(x => x.Points)
+                .ThenByDescending(x => x.MembershipPaidReferrals)
+                .Take(top)
+                .ToList();
+
+            var referrerIds = byReferrer.Select(x => x.ReferrerId).ToList();
+            var referrers = referrerIds.Count > 0
+                ? (await memberRepo.GetAllAsync(m => referrerIds.Contains(m.Id))).ToDictionary(m => m.Id)
+                : new Dictionary<string, MemberEntity>();
+
+            var leaderboard = byReferrer
+                .Select((x, i) =>
+                {
+                    var m = referrers.GetValueOrDefault(x.ReferrerId);
+                    return new ReferralLeaderboardEntryDto
+                    {
+                        Rank = i + 1,
+                        MemberId = x.ReferrerId,
+                        Name = m is null ? "Former member" : $"{m.FirstName} {m.LastName}",
+                        ProfilePictureUrl = m?.ProfilePictureUrl,
+                        Points = x.Points,
+                        TotalReferrals = x.TotalReferrals,
+                        MembershipPaidReferrals = x.MembershipPaidReferrals,
+                    };
+                })
+                .ToList();
+
+            return leaderboard.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error generating referral leaderboard");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<ReferralLeaderboardEntryDto>>("Failed to generate leaderboard");
         }
     }
 

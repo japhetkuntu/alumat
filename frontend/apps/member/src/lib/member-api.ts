@@ -1,5 +1,5 @@
 import { memberClient, publicMemberClient } from "@/lib/api-client";
-import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder, ServiceType, ServiceRequest } from "@/types";
+import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ReferralLeaderboardEntry, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder, ServiceType, ServiceRequest } from "@/types";
 
 function toFormData(data: object): FormData {
   const fd = new FormData();
@@ -671,6 +671,11 @@ export async function sendReferralInvite(email: string): Promise<void> {
 
 export async function getMyReferrals(): Promise<Referral[]> {
   const res = await memberClient.get("/referrals/list");
+  return res.data.data!;
+}
+
+export async function getReferralLeaderboard(): Promise<ReferralLeaderboardEntry[]> {
+  const res = await memberClient.get("/referrals/leaderboard");
   return res.data.data!;
 }
 

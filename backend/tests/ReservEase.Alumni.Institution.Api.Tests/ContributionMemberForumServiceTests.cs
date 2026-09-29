@@ -270,7 +270,7 @@ public class ContributionMemberForumServiceTests
         var mockInstitutionRepoForMembers = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var mockMembershipRepoForMembers = new Mock<IAlumniPgRepository<CommunityMembership>>();
         var mockCurrentTenantForMembers = new Mock<ICurrentTenantService>();
-        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, mockCurrentTenantForMembers.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<MemberManagementService>());
+        var service = new MemberManagementService(mockMemberRepo.Object, mockCampaignRepo.Object, mockContributionRepo.Object, mockInstitutionRepoForMembers.Object, mockMembershipRepoForMembers.Object, new Mock<IAlumniPgRepository<Referral>>().Object, mockCurrentTenantForMembers.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<MemberManagementService>());
         var admin = new AuthData { Id = "admin1", Role = "ScopedAdmin", YearGroups = new List<int> { 2026 } };
 
         var listResponse = await service.GetMembersAsync(new MemberListFilter { Page = 1, PageSize = 10 }, admin);

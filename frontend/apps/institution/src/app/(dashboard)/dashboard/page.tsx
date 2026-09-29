@@ -13,6 +13,7 @@ import { TrendChart, DonutChart } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getRevenueTrend } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
+import { InviteKitCard } from "@/components/institution/invite-kit-card";
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -212,6 +213,10 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
         </div>
+      )}
+
+      {!isLoading && (
+        <InviteKitCard totalMembers={totalMembers} upcomingEvents={upcomingEvents} activeCampaignCount={activeCampaigns.length} />
       )}
 
       {user?.role === "SuperAdmin" && <PayoutPanel />}
