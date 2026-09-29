@@ -121,6 +121,7 @@ echo "== 8/11: app directories =="
 for d in institution-api member-api platform-api operations-worker frontend-institution frontend-member frontend-platform; do
   mkdir -p "/var/www/alumunion/${d}/logs"
 done
+mkdir -p /var/www/alumunion/maintenance
 chown -R www-data:www-data /var/www/alumunion
 mkdir -p /etc/alumunion
 chmod 700 /etc/alumunion
@@ -141,6 +142,11 @@ sed \
   -e "s/__PLATFORM_SUBDOMAIN__/${PLATFORM_SUBDOMAIN}/g" \
   "$SRC_DIR/deploy/nginx.conf" > /etc/nginx/sites-available/alumunion
 ln -sf /etc/nginx/sites-available/alumunion /etc/nginx/sites-enabled/alumunion
+
+install -m 644 "$SRC_DIR/deploy/maintenance/index.html" /var/www/alumunion/maintenance/index.html
+chmod +x "$SRC_DIR/deploy/toggle-maintenance.sh"
+chown -R www-data:www-data /var/www/alumunion/maintenance
+
 nginx -t
 
 for f in institution-api member-api platform-api operations-worker; do
