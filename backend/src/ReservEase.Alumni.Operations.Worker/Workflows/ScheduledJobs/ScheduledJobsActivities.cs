@@ -284,6 +284,8 @@ public class ScheduledJobsActivities(
             var today = now.Date;
             var assigneeIds = open.Select(t => t.AssigneeId).Distinct().ToList();
             var staff = (await platformStaffRepo.GetAllAsync(s => assigneeIds.Contains(s.Id) && !s.IsDisabled)).ToDictionary(s => s.Id);
+            var portalUrl = configuration["PlatformPortalUrl"]?.TrimEnd('/');
+            var actionUrl = string.IsNullOrWhiteSpace(portalUrl) ? string.Empty : $"{portalUrl}/activation?tab=tasks";
 
             var notifications = new List<PlatformNotification>();
             var changed = new List<ActivationTask>();
@@ -337,6 +339,7 @@ public class ScheduledJobsActivities(
                         {
                             first_name = person.Name.Split(' ')[0], title, body,
                             badge_label = "Platform task", pref_label = "you are on the AlumUnion platform team",
+                            action_url = actionUrl, action_label = "Open the task",
                         },
                     },
                     $"task reminder to {person.Email}"), logger);

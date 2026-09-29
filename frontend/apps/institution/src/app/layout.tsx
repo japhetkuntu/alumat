@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description: "Institution Portal",
-    manifest: "/manifest.json",
+    manifest: "/manifest.webmanifest",
     icons: theme?.iconUrl
       ? { icon: theme.iconUrl, apple: theme.iconUrl }
       : {

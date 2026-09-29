@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, Send, MessageSquare, Bell, Lock } from "@alumni/ui";
+import { Loader2, Send, MessageSquare, Bell, Lock, Mail, ImageUpload } from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
@@ -15,7 +15,7 @@ import { FormSelect } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { getBroadcastRecipientCount, sendBroadcast, getInstitutionProfile, type BroadcastFilter } from "@/lib/institution-api";
+import { getBroadcastRecipientCount, sendBroadcast, getInstitutionProfile, type BroadcastFilter, type EngagementSegment } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -24,6 +24,13 @@ const STATUS_OPTIONS = [
   { value: "Active", label: "Active" },
   { value: "Pending", label: "Pending" },
   { value: "Suspended", label: "Suspended" },
+];
+
+const ENGAGEMENT_OPTIONS: { value: EngagementSegment; label: string; hint: string }[] = [
+  { value: "", label: "No engagement filter", hint: "Everyone matching the filters above." },
+  { value: "Dormant", label: "Haven't logged in for 60+ days", hint: "Never logged in, or their last login was over 60 days ago — a re-engagement nudge." },
+  { value: "NoContributionsEver", label: "Never made a contribution", hint: "No successful payment on record, ever — dues, fundraisers or otherwise." },
+  { value: "NoContributionToActiveFundraiser", label: "Haven't given to the open fundraiser(s)", hint: "There's a live fundraiser and this member hasn't contributed to it yet. Empty if nothing is open right now." },
 ];
 
 export default function BroadcastPage() {
@@ -35,15 +42,19 @@ export default function BroadcastPage() {
   const [message, setMessage] = useState(() => searchParams.get("message") ?? "");
   const [inApp, setInApp] = useState(true);
   const [sms, setSms] = useState(true);
+  const [email, setEmail] = useState(false);
   const [status, setStatus] = useState("");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
+  const [engagementSegment, setEngagementSegment] = useState<EngagementSegment>("");
+  const [image, setImage] = useState<File | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const filter: BroadcastFilter = {
     status: status || undefined,
     graduationYearFrom: yearFrom ? Number(yearFrom) : undefined,
     graduationYearTo: yearTo ? Number(yearTo) : undefined,
+    engagementSegment: engagementSegment || undefined,
   };
 
   const { data: recipientCount, isFetching: countLoading } = useQuery({
@@ -60,17 +71,19 @@ export default function BroadcastPage() {
     staleTime: 60 * 1000,
   });
   const smsNotificationsEnabled = institution?.smsNotificationsEnabled ?? true;
+  const emailNotificationsEnabled = institution?.emailNotificationsEnabled ?? true;
   const isCommunity = institution?.organizationType === "Community";
 
   const sendMut = useMutation({
     mutationFn: () => {
-      const channels = [inApp && "InApp", sms && smsNotificationsEnabled && "Sms"].filter(Boolean) as string[];
-      return sendBroadcast({ title: title.trim() || undefined, message: message.trim(), channels, filter });
+      const channels = [inApp && "InApp", sms && smsNotificationsEnabled && "Sms", email && emailNotificationsEnabled && "Email"].filter(Boolean) as string[];
+      return sendBroadcast({ title: title.trim() || undefined, message: message.trim(), channels, image: image ?? undefined, ...filter });
     },
     onSuccess: (result) => {
       setShowConfirm(false);
       setTitle("");
       setMessage("");
+      setImage(null);
       toast.success(`Broadcast sent to ${result.recipientCount.toLocaleString()} member${result.recipientCount === 1 ? "" : "s"}`);
     },
     onError: (e) => {
@@ -79,7 +92,7 @@ export default function BroadcastPage() {
     },
   });
 
-  const channelsSelected = inApp || (sms && smsNotificationsEnabled);
+  const channelsSelected = inApp || (sms && smsNotificationsEnabled) || (email && emailNotificationsEnabled);
   const canSend = message.trim().length > 0 && channelsSelected;
 
   if (!isSuperAdmin) {
@@ -100,7 +113,7 @@ export default function BroadcastPage() {
       <div>
         <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Broadcast</h1>
         <p className="text-muted-foreground text-[13px] mt-1.5">
-          Send an urgent announcement (e.g. a funeral notice or school emergency) to a filtered group of members via SMS and/or in-app notification.
+          Send an urgent announcement, or a targeted re-engagement nudge to members who've gone quiet, via SMS, email and/or in-app notification.
         </p>
       </div>
 
@@ -150,6 +163,19 @@ export default function BroadcastPage() {
               </button>
               <button
                 type="button"
+                disabled={!emailNotificationsEnabled}
+                title={emailNotificationsEnabled ? undefined : "Email notifications are off for this institution — turn them on in Settings to use this channel"}
+                onClick={() => setEmail((v) => !v)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold transition-colors",
+                  !emailNotificationsEnabled ? "opacity-50 cursor-not-allowed bg-white text-muted-foreground border-border"
+                    : email ? "bg-primary/10 text-primary border-blue-300" : "bg-white text-foreground border-border hover:bg-muted"
+                )}
+              >
+                <Mail size={14} />Email
+              </button>
+              <button
+                type="button"
                 disabled
                 title="Coming soon"
                 className="flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold opacity-50 cursor-not-allowed bg-white text-muted-foreground border-border"
@@ -164,6 +190,14 @@ export default function BroadcastPage() {
             )}
             <p className="text-[11px] text-muted-foreground">
               SMS is sent to every matching member with a phone number on file, regardless of their individual SMS notification preference. This is intentional for urgent, time-sensitive announcements.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Image (optional)</Label>
+            <ImageUpload file={image} onChange={setImage} label="Upload an image for this broadcast" />
+            <p className="text-[11px] text-muted-foreground">
+              Shown in the in-app notification panel, and as a banner in the email if Email is selected.
             </p>
           </div>
 
@@ -189,6 +223,33 @@ export default function BroadcastPage() {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label>Engagement segment</Label>
+            <div className="space-y-1.5">
+              {ENGAGEMENT_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className={cn(
+                    "flex items-start gap-2.5 px-3 py-2.5 border cursor-pointer transition-colors",
+                    engagementSegment === opt.value ? "bg-primary/10 border-blue-300" : "border-border hover:bg-muted"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="engagement-segment"
+                    className="mt-0.5"
+                    checked={engagementSegment === opt.value}
+                    onChange={() => setEngagementSegment(opt.value)}
+                  />
+                  <span>
+                    <span className="block text-[13px] font-semibold">{opt.label}</span>
+                    <span className="block text-[11.5px] text-muted-foreground mt-0.5">{opt.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between pt-2 border-t border-border">
             <p className="text-[13px] text-muted-foreground">
               {countLoading ? (
@@ -209,7 +270,7 @@ export default function BroadcastPage() {
       <ConfirmModal
         open={showConfirm}
         title="Send Broadcast"
-        message={`This will send "${message.trim().slice(0, 80)}${message.trim().length > 80 ? "…" : ""}" to ${(recipientCount ?? 0).toLocaleString()} member(s) via ${[inApp && "in-app", sms && smsNotificationsEnabled && "SMS"].filter(Boolean).join(" and ")}. This cannot be undone. Continue?`}
+        message={`This will send "${message.trim().slice(0, 80)}${message.trim().length > 80 ? "…" : ""}" to ${(recipientCount ?? 0).toLocaleString()} member(s) via ${[inApp && "in-app", sms && smsNotificationsEnabled && "SMS", email && emailNotificationsEnabled && "email"].filter(Boolean).join(" and ")}. This cannot be undone. Continue?`}
         confirmLabel="Send Broadcast"
         variant="destructive"
         isLoading={sendMut.isPending}

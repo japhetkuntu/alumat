@@ -28,13 +28,13 @@ public class BroadcastController(IBroadcastService broadcastService) : DefaultCo
     }
 
     /// <summary>
-    /// Send a broadcast (SMS and/or in-app) to all members matching the filter.
+    /// Send a broadcast (SMS, email and/or in-app) to all members matching the filter.
     /// </summary>
     [HttpPost]
     [SwaggerOperation(Summary = "Send broadcast", Description = "Fan out a message to all members matching the filter via the selected channels.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<BroadcastResult>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
-    public async Task<IActionResult> SendBroadcast([FromBody] SendBroadcastRequest request)
+    public async Task<IActionResult> SendBroadcast([FromForm] SendBroadcastRequest request)
     {
         var admin = User.GetAccount();
         var result = await broadcastService.SendBroadcastAsync(request, admin);

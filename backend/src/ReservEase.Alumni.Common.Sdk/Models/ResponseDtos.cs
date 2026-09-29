@@ -633,5 +633,6 @@ public class NotificationDto
     public string? RelatedEntityId { get; set; }
     public string? RelatedEntityType { get; set; }
     public string? ActionUrl { get; set; }
+    public string? ImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
 }

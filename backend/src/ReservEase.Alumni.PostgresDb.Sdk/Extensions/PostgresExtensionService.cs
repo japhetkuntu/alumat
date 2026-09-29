@@ -66,13 +66,46 @@ public static class PostgresExtensionService
     {
         using var scope = serviceProvider.CreateScope();
 
-        var context =
-            scope.ServiceProvider.GetRequiredService<AlumniDbContext>();
-
         var logger =
             scope.ServiceProvider
                 .GetRequiredService<ILoggerFactory>()
                 .CreateLogger(typeof(PostgresExtensionService));
+
+        // Migrations (and the pre-flight "does the database exist yet?" check below) must run over a
+        // DIRECT connection to Postgres, never through a connection pool (e.g. a DigitalOcean managed
+        // Connection Pool / PgBouncer):
+        //  - The existence check connects to the cluster's maintenance database ("defaultdb" — see
+        //    EnsureDatabaseExistsAsync). A pool only knows the pool(s) you explicitly created, so asking
+        //    it for "defaultdb" fails with "no such database", even though defaultdb genuinely exists.
+        //  - The advisory lock used to serialize migrations across services spans several separate
+        //    statements on one physical backend connection. Under transaction-mode pooling, the pool is
+        //    free to hand those statements to different backend connections, silently breaking the lock.
+        // ConnectionStrings:AlumniConnection may legitimately point at a pool for everyday app traffic,
+        // so migrations get their own connection string, falling back to AlumniConnection when the app
+        // isn't pooled (the previous, still-supported setup).
+        var configuration =
+            scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+        var migrationConnectionString =
+            configuration.GetConnectionString("AlumniMigrationConnection")
+            ?? configuration.GetConnectionString("AlumniConnection");
+
+        if (string.IsNullOrWhiteSpace(migrationConnectionString))
+        {
+            throw new InvalidOperationException(
+                "Neither ConnectionStrings:AlumniMigrationConnection nor ConnectionStrings:AlumniConnection is configured.");
+        }
+
+        var migrationOptions =
+            new DbContextOptionsBuilder<AlumniDbContext>()
+                .UseNpgsql(migrationConnectionString,
+                    b => b.MigrationsHistoryTable("__EFMigrationsHistory", "alumni"))
+                .Options;
+
+        await using var context =
+            new AlumniDbContext(
+                migrationOptions,
+                scope.ServiceProvider.GetRequiredService<ICurrentTenantService>());
 
         const int maxAttempts = 5;
 

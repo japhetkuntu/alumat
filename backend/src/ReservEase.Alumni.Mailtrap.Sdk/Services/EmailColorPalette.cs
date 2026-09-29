@@ -40,8 +40,8 @@ public static class EmailColorPalette
     // and silently flattened to flat gray.
     private const double AchromaticThreshold = 0.004;
 
-    /// <summary>Hue (radians) of the platform's own default green (#0e7143) — used when a seed has no real hue to preserve (see <see cref="ClampSeed"/>).</summary>
-    private static readonly double DefaultHue = ToOklch("#0e7143").h;
+    /// <summary>Hue (radians) of the platform's own default blue (#2563eb) — used when a seed has no real hue to preserve (see <see cref="ClampSeed"/>).</summary>
+    private static readonly double DefaultHue = ToOklch("#2563eb").h;
 
     // Mirrors MIN_ACCENT_HUE_SEPARATION_DEG in brand-palette.ts — below this
     // hue separation, primary and secondary render close enough to the same

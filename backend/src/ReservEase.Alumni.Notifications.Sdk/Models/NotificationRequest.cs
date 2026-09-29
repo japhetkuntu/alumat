@@ -65,6 +65,9 @@ public sealed class NotificationRequest
     public string? Title { get; init; }
     public string? Message { get; init; }
     public List<string>? Channels { get; init; }
+    /// <summary>Optional image for a broadcast — shown in the in-app notification panel and, if Email
+    /// is a selected channel, as a banner in the email.</summary>
+    public string? ImageUrl { get; init; }
 
     // Email.
     public SendEmailRequest? EmailRequest { get; init; }
@@ -124,8 +127,8 @@ public sealed class NotificationRequest
         ServiceTypeName = serviceTypeName, NewStage = newStage,
     };
 
-    public static NotificationRequest Broadcast(string institutionId, List<BroadcastRecipient> recipients, string? title, string message, List<string> channels) => new()
-    { Kind = NotificationKind.Broadcast, InstitutionId = institutionId, Recipients = recipients, Title = title, Message = message, Channels = channels };
+    public static NotificationRequest Broadcast(string institutionId, List<BroadcastRecipient> recipients, string? title, string message, List<string> channels, string? imageUrl = null) => new()
+    { Kind = NotificationKind.Broadcast, InstitutionId = institutionId, Recipients = recipients, Title = title, Message = message, Channels = channels, ImageUrl = imageUrl };
 
     public static NotificationRequest ClassNoteAlert(string institutionId, string noteId, string authorName) => new()
     { Kind = NotificationKind.ClassNoteAlert, InstitutionId = institutionId, NoteId = noteId, AuthorName = authorName };

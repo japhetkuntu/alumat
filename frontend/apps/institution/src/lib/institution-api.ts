@@ -1441,18 +1441,25 @@ export async function deletePushSubscription(payload: { endpoint: string }): Pro
 
 // ── Broadcasts ───────────────────────────────────────────────────────────────
 
+// "Dormant" (no login in 60+ days), "NoContributionsEver" (never a single successful
+// contribution), "NoContributionToActiveFundraiser" (hasn't given to any fundraiser that's
+// currently open — empty result when none is open, not "everyone"). See BroadcastService
+// on the backend for exactly how each is computed.
+export type EngagementSegment = "" | "Dormant" | "NoContributionsEver" | "NoContributionToActiveFundraiser";
+
 export interface BroadcastFilter {
   status?: string;
   departmentId?: string;
   graduationYearFrom?: number;
   graduationYearTo?: number;
+  engagementSegment?: EngagementSegment;
 }
 
-export interface SendBroadcastBody {
+export interface SendBroadcastBody extends BroadcastFilter {
   title?: string;
   message: string;
   channels: string[];
-  filter: BroadcastFilter;
+  image?: File;
 }
 
 export interface BroadcastResult {
@@ -1466,7 +1473,7 @@ export async function getBroadcastRecipientCount(filter: BroadcastFilter): Promi
 }
 
 export async function sendBroadcast(body: SendBroadcastBody): Promise<BroadcastResult> {
-  const res = await institutionClient.post<ApiResponse<BroadcastResult>>("/broadcast", body);
+  const res = await institutionClient.post<ApiResponse<BroadcastResult>>("/broadcast", toFormData(body));
   return res.data.data!;
 }
 

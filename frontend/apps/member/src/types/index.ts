@@ -574,6 +574,7 @@ export interface NotificationItem {
   relatedEntityId?: string | null;
   relatedEntityType?: string | null;
   actionUrl?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
 }
 

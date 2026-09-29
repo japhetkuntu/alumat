@@ -28,6 +28,7 @@ public class ActivationWorkService(
     IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
     IEmailService emailService,
     IAuditLogService auditLog,
+    IConfiguration configuration,
     ILogger<ActivationWorkService> logger) : IActivationWorkService
 {
     private static readonly Dictionary<string, string> MetricLabels = new()
@@ -565,6 +566,8 @@ public class ActivationWorkService(
                 RecipientStaffId = staff.Id, Title = title, Body = body, Type = type, ActionUrl = actionUrl, CreatedBy = "system",
             });
             if (!email || string.IsNullOrWhiteSpace(staff.Email)) return;
+            var portalUrl = configuration["PlatformPortalUrl"]?.TrimEnd('/');
+            var fullActionUrl = string.IsNullOrWhiteSpace(portalUrl) ? string.Empty : $"{portalUrl}{actionUrl}";
             await emailService.SendEmailAsync(new SendEmailRequest
             {
                 To = [new EmailContact { Email = staff.Email, Name = staff.Name }],
@@ -576,6 +579,8 @@ public class ActivationWorkService(
                     body,
                     badge_label = "Platform team",
                     pref_label = "you are on the AlumUnion platform team",
+                    action_url = fullActionUrl,
+                    action_label = "Open the platform portal",
                 },
             });
         }

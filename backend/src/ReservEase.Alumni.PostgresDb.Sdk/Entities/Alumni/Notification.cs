@@ -19,4 +19,7 @@ public class Notification : BaseEntity, ITenantScoped
     /// <summary>Job | Campaign | Event | Spotlight | ClassNote | Contribution</summary>
     public string? RelatedEntityType { get; set; }
     public string? ActionUrl { get; set; }
+    /// <summary>Optional image shown alongside the notification in the panel — currently only
+    /// set by admin broadcasts, to make a re-engagement push more eye-catching than plain text.</summary>
+    public string? ImageUrl { get; set; }
 }

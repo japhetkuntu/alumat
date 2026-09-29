@@ -29,6 +29,12 @@ public sealed class MemberWithPreference
 public sealed class InstitutionContactInfo
 {
     public string? Name { get; init; }
+    /// <summary>PortalName if set, else Name — the institution's own display name for its members, used
+    /// wherever brand_name would otherwise fall back to the legal/registered Name.</summary>
+    public string? PortalName { get; init; }
+    public string? PrimaryColorHex { get; init; }
+    public string? SecondaryColorHex { get; init; }
+    public string? LogoUrl { get; init; }
     public bool SmsNotificationsEnabled { get; init; } = true;
 
     /// <summary>Fully-built "https://{slug}.{domain}" URLs, computed once in the activity

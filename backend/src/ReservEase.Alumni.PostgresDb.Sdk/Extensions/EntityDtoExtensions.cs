@@ -545,6 +545,7 @@ public static class EntityDtoExtensions
         RelatedEntityId = n.RelatedEntityId,
         RelatedEntityType = n.RelatedEntityType,
         ActionUrl = n.ActionUrl,
+        ImageUrl = n.ImageUrl,
         CreatedAt = n.CreatedAt,
     };
 }

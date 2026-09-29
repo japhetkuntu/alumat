@@ -22,6 +22,7 @@ public class AnnouncementService(
     IEmailService emailService,
     ISmsService smsService,
     IAuditLogService auditLog,
+    IConfiguration configuration,
     ILogger<AnnouncementService> logger) : IAnnouncementService
 {
     public async Task<IApiResponse<List<AnnouncementResponse>>> GetAnnouncementsAsync()
@@ -131,11 +132,24 @@ public class AnnouncementService(
 
             if (channels.Contains(NotificationChannels.Email))
             {
+                // Each admin's own institution subdomain, batched once rather than per recipient —
+                // recipients can span many institutions when the audience is "All institutions".
+                var adminDomain = configuration["AdminPortalBaseDomain"];
+                var slugs = string.IsNullOrWhiteSpace(adminDomain)
+                    ? new Dictionary<string, string>()
+                    : (await institutionRepo.GetAllAsync(
+                            i => recipients.Select(r => r.InstitutionId).Distinct().Contains(i.Id), ignoreQueryFilters: true))
+                        .ToDictionary(i => i.Id, i => i.Slug);
+
                 var sent = 0;
                 foreach (var r in recipients)
                 {
                     try
                     {
+                        var actionUrl = !string.IsNullOrWhiteSpace(adminDomain) && slugs.TryGetValue(r.InstitutionId, out var slug)
+                            ? $"https://{slug}.{adminDomain}"
+                            : string.Empty;
+
                         var response = await emailService.SendEmailAsync(new SendEmailRequest
                         {
                             To = [new EmailContact { Email = r.Email, Name = $"{r.FirstName} {r.LastName}".Trim() }],
@@ -147,6 +161,8 @@ public class AnnouncementService(
                                 body = request.Body,
                                 badge_label = "Notice from AlumUnion",
                                 pref_label = "you are listed as an administrator on AlumUnion",
+                                action_url = actionUrl,
+                                action_label = "Open your portal",
                             },
                         });
                         if (response.Success) sent++;

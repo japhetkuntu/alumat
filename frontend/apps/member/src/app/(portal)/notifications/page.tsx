@@ -98,6 +98,17 @@ function NotifRow({
           </p>
         )}
 
+        {/* Image — currently only set on admin broadcasts, so this stays hidden for every other type */}
+        {notif.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={notif.imageUrl}
+            alt=""
+            className="mt-2 w-full max-w-[420px] object-cover"
+            style={{ maxHeight: 220, border: "1px solid var(--border)" }}
+          />
+        )}
+
         <div className="flex items-center gap-4 mt-2">
           {/* Mark read — always visible, not hover-only */}
           {!notif.isRead && (

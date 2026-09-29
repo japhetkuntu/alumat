@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.Notifications.Sdk.Workflows;
 using ReservEase.Alumni.Operations.Worker.Models;
@@ -396,6 +397,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
                 Body = request.Message!,
                 Type = "Broadcast",
                 ActionUrl = MemberUrl(institution, "/notifications"),
+                ImageUrl = request.ImageUrl,
                 CreatedBy = "system",
             }).ToList();
             await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
@@ -415,6 +417,50 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
                     var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendSmsAsync(r.Phone!, smsMessage), NotificationActivityOptions.ExternalGateway);
                     if (!sent) Workflow.Logger.LogWarning("Broadcast SMS reported failure for {Phone}", r.Phone);
                 }
+            }
+        }
+
+        if (channels.Contains("Email", StringComparer.OrdinalIgnoreCase))
+        {
+            var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+            var actionUrl = MemberUrl(institution, "/notifications");
+            var title = string.IsNullOrWhiteSpace(request.Title) ? "Announcement" : request.Title;
+            var imageUrl = request.ImageUrl ?? string.Empty;
+            // Expression-tree lambdas (what Workflow.ExecuteActivityAsync's overload below takes)
+            // can't contain a collection expression or a null-propagating operator, so both are
+            // resolved into plain local variables first rather than inlined into the call.
+            var brandName = institution is null ? null : institution.PortalName;
+            var brandColor = institution is null ? null : institution.PrimaryColorHex;
+            var brandSecondaryColor = institution is null ? null : institution.SecondaryColorHex;
+            var brandLogo = institution is null ? null : institution.LogoUrl;
+            foreach (var r in recipients.Where(r => !string.IsNullOrWhiteSpace(r.Email)))
+            {
+                var to = new List<EmailContact> { new() { Email = r.Email, Name = r.FirstName } };
+                var emailRequest = new SendEmailRequest
+                {
+                    To = to,
+                    TemplateId = "notification",
+                    TemplateVariables = new
+                    {
+                        first_name = r.FirstName,
+                        title,
+                        body = request.Message!,
+                        badge_label = "Announcement",
+                        pref_label = "you are a member of this community",
+                        action_url = actionUrl,
+                        action_label = "Open notifications",
+                        image_url = imageUrl,
+                        brand_name = brandName,
+                        brand_color = brandColor,
+                        brand_secondary_color = brandSecondaryColor,
+                        brand_logo = brandLogo,
+                    },
+                };
+                var context = $"broadcast email to {r.Email}";
+                var sent = await Workflow.ExecuteActivityAsync(
+                    (NotificationDispatchActivities a) => a.SendEmailAsync(emailRequest, context),
+                    NotificationActivityOptions.ExternalGateway);
+                if (!sent) Workflow.Logger.LogWarning("Broadcast email reported failure for {Email}", r.Email);
             }
         }
     }

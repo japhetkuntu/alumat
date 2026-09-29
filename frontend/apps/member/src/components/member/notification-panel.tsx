@@ -98,6 +98,10 @@ function NotificationRow({
         <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
+        {notif.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={notif.imageUrl} alt="" className="mt-1.5 w-full object-cover rounded-lg" style={{ maxHeight: 120 }} />
+        )}
         <div className="flex items-center gap-3 mt-1">
           <p className="text-[10px] text-muted-foreground/60">
             {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}

@@ -62,6 +62,10 @@ public class NotificationDispatchActivities(
             return new InstitutionContactInfo
             {
                 Name = institution.Name,
+                PortalName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName,
+                PrimaryColorHex = institution.PrimaryColorHex,
+                SecondaryColorHex = institution.SecondaryColorHex,
+                LogoUrl = institution.LogoUrl,
                 SmsNotificationsEnabled = institution.SmsNotificationsEnabled,
                 MemberPortalUrl = string.IsNullOrWhiteSpace(memberDomain) ? string.Empty : $"https://{institution.Slug}.{memberDomain}",
                 AdminPortalUrl = string.IsNullOrWhiteSpace(adminDomain) ? string.Empty : $"https://{institution.Slug}.{adminDomain}",

@@ -58,7 +58,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(origin),
     title: { default: title, template: `%s · ${title}` },
     description,
-    manifest: "/manifest.json",
+    manifest: "/manifest.webmanifest",
     icons: theme?.iconUrl
       ? { icon: theme.iconUrl, apple: theme.iconUrl }
       : {

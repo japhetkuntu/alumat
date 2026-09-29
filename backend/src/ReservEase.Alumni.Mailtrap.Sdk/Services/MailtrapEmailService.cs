@@ -124,7 +124,7 @@ public class MailtrapEmailService(
         // PrimaryColorHex for tenant-branded email); this is the platform's
         // own default when they don't.
         if (!variables.TryGetValue("brand_color", out var brandColor) || string.IsNullOrWhiteSpace(brandColor))
-            brandColor = "#0e7143";
+            brandColor = "#2563eb";
         brandColor = EmailColorPalette.ClampSeed(brandColor);
         variables["brand_color"] = brandColor;
         variables["brand_color_dark"] = EmailColorPalette.Dark(brandColor);
@@ -175,6 +175,14 @@ public class MailtrapEmailService(
         // in wherever they currently render `<div class="mark">{{brand_initial}}</div>`.
         variables["brand_mark_html"] = BuildBrandMarkHtml(variables);
 
+        // Optional banner image (currently only broadcasts set "image_url") — built here rather
+        // than left as a raw {{image_url}} in the template so a notification without one renders
+        // no broken-image placeholder at all, the same reasoning as brand_mark_html above.
+        var imageUrl = variables.GetValueOrDefault("image_url");
+        variables["image_block_html"] = string.IsNullOrWhiteSpace(imageUrl)
+            ? string.Empty
+            : $"<img src=\"{Sanitize(imageUrl)}\" alt=\"\" width=\"520\" style=\"width:100%;max-width:520px;height:auto;display:block;margin:0 0 20px;border-radius:0\" />";
+
         var templatePath = GetTemplatePath(templateId);
         if (templatePath is not null)
         {
@@ -200,7 +208,7 @@ public class MailtrapEmailService(
                    "style=\"width:40px;height:40px;border-radius:0;object-fit:cover;display:block\" />";
         }
 
-        var brandColor = variables.GetValueOrDefault("brand_color", "#0e7143");
+        var brandColor = variables.GetValueOrDefault("brand_color", "#2563eb");
         var brandColorDark = variables.GetValueOrDefault("brand_color_dark", brandColor);
         // The gradient runs brandColor -> brandColorDark, so the initial's
         // text color needs to read against both ends, not just assume white
@@ -236,7 +244,7 @@ public class MailtrapEmailService(
     // HTML-encoding each dynamic value itself before assembling the markup —
     // it needs the same raw treatment since it's a multi-item list block this
     // template engine's flat {{key}} substitution can't loop over on its own.
-    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html", "digest_sections_html" };
+    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html", "digest_sections_html", "image_block_html" };
 
     private static string ReplaceTemplateVariables(string templateText, Dictionary<string, string> variables)
     {
@@ -251,7 +259,7 @@ public class MailtrapEmailService(
 
     private static string BuildFallbackHtml(string templateId, Dictionary<string, string> variables)
     {
-        var brandColor = variables.GetValueOrDefault("brand_color", "#0e7143");
+        var brandColor = variables.GetValueOrDefault("brand_color", "#2563eb");
         var brandColorDark = variables.GetValueOrDefault("brand_color_dark", EmailColorPalette.Dark(brandColor));
         var brandColorLight = variables.GetValueOrDefault("brand_color_light", EmailColorPalette.Light(brandColor));
         var brandColorSoft = variables.GetValueOrDefault("brand_color_soft", EmailColorPalette.Soft(brandColor));
