@@ -67,6 +67,7 @@ public class NotificationDispatchActivities(
                 SecondaryColorHex = institution.SecondaryColorHex,
                 LogoUrl = institution.LogoUrl,
                 SmsNotificationsEnabled = institution.SmsNotificationsEnabled,
+                EmailNotificationsEnabled = institution.EmailNotificationsEnabled,
                 MemberPortalUrl = string.IsNullOrWhiteSpace(memberDomain) ? string.Empty : $"https://{institution.Slug}.{memberDomain}",
                 AdminPortalUrl = string.IsNullOrWhiteSpace(adminDomain) ? string.Empty : $"https://{institution.Slug}.{adminDomain}",
             };

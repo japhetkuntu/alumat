@@ -59,6 +59,7 @@ builder.Services.AddPlatformControllers();
 builder.Services.AddScoped<IPlatformAuthService, PlatformAuthService>();
 builder.Services.AddScoped<IInstitutionManagementService, InstitutionManagementService>();
 builder.Services.AddScoped<IPlatformMemberService, PlatformMemberService>();
+builder.Services.AddScoped<IPlatformBroadcastService, PlatformBroadcastService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IBatchPayoutService, BatchPayoutService>();
 builder.Services.AddScoped<IInstitutionPayoutService, InstitutionPayoutService>();

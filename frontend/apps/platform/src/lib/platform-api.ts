@@ -558,6 +558,44 @@ export async function uploadPlatformImage(file: File, institutionSlug?: string):
   return res.data.data!.url;
 }
 
+// ─── Broadcast (to one institution's own members) ──────────────────────────
+// The platform-side equivalent of the institution admin's own Broadcast page —
+// for Support/SuperAdmin outreach to a specific institution's members. Same
+// engagement segments as the institution side; see PlatformBroadcastService.
+
+export type PlatformEngagementSegment = "" | "Dormant" | "NoContributionsEver" | "NoContributionToActiveFundraiser";
+
+export interface PlatformBroadcastFilter {
+  institutionId: string;
+  status?: string;
+  departmentId?: string;
+  graduationYearFrom?: number;
+  graduationYearTo?: number;
+  engagementSegment?: PlatformEngagementSegment;
+}
+
+export interface SendPlatformBroadcastBody extends PlatformBroadcastFilter {
+  title?: string;
+  message: string;
+  channels: string[];
+  imageUrl?: string;
+}
+
+export interface PlatformBroadcastResult {
+  recipientCount: number;
+  channels: string[];
+}
+
+export async function getPlatformBroadcastRecipientCount(filter: PlatformBroadcastFilter): Promise<number> {
+  const res = await platformClient.get<ApiResponse<number>>("/broadcast/recipient-count", { params: filter });
+  return res.data.data ?? 0;
+}
+
+export async function sendPlatformBroadcast(body: SendPlatformBroadcastBody): Promise<PlatformBroadcastResult> {
+  const res = await platformClient.post<ApiResponse<PlatformBroadcastResult>>("/broadcast", body);
+  return res.data.data!;
+}
+
 // ─── Platform staff ──────────────────────────────────────────────────────
 
 export interface PlatformStaffItem {

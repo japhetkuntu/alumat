@@ -36,6 +36,7 @@ public sealed class InstitutionContactInfo
     public string? SecondaryColorHex { get; init; }
     public string? LogoUrl { get; init; }
     public bool SmsNotificationsEnabled { get; init; } = true;
+    public bool EmailNotificationsEnabled { get; init; } = true;
 
     /// <summary>Fully-built "https://{slug}.{domain}" URLs, computed once in the activity
     /// (which alone may read IConfiguration — workflow code must stay deterministic).

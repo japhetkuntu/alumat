@@ -39,8 +39,9 @@ import { SettlementAccountFields } from "@alumni/ui";
 import { getBanks, resolveAccount } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 import { InstitutionActivationCard } from "@/components/platform/institution-activation-card";
+import { InstitutionNotifyTab } from "@/components/platform/institution-notify-tab";
 
-const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments"] as const;
+const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments", "Notify"] as const;
 
 const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario: "", description: "", imageUrl: "" };
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
@@ -1234,6 +1235,14 @@ export default function InstitutionDetailPage() {
             )}
           </Card>
         </div>
+      )}
+
+      {tab === "Notify" && inst && (
+        <InstitutionNotifyTab
+          institutionId={id}
+          institutionSlug={inst.slug}
+          isCommunity={inst.organizationType === "Community"}
+        />
       )}
 
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
