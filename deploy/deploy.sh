@@ -142,8 +142,60 @@ check_disk_space
 # change to the template never reaches already-provisioned droplets on its
 # own. This project's nginx config also gets a manual SSL swap-in (see
 # nginx.ssl.conf) that a blind re-render here would clobber, so — same as
-# WishDem — this intentionally does NOT re-render nginx config. If you change
-# deploy/nginx.conf or nginx.ssl.conf, re-apply it by hand.
+# WishDem — this intentionally does NOT re-render the whole nginx config. If
+# you change anything else in deploy/nginx.conf or nginx.ssl.conf, re-apply
+# it by hand.
+#
+# The maintenance page (deploy/maintenance/index.html) is the one exception:
+# it's synced and wired in on every deploy, surgically and idempotently —
+# only ever ADDING the specific "if (-f .../enabled) return 503;" /
+# "error_page ... @maintenance" / "location @maintenance {...}" lines when
+# they're not already present, never touching or replacing anything else in
+# the live file (so it can't clobber the SSL swap-in or any other manual
+# edit). This exists because forgetting the "re-apply nginx config by hand"
+# step above is exactly what happened in practice — the page was written but
+# never reached the live config.
+echo "== syncing maintenance page =="
+mkdir -p /var/www/alumunion/maintenance
+cp "$SRC_DIR/deploy/maintenance/index.html" /var/www/alumunion/maintenance/index.html
+chown -R www-data:www-data /var/www/alumunion/maintenance
+
+NGINX_LIVE_CONF=/etc/nginx/sites-available/alumunion
+if [[ -f "$NGINX_LIVE_CONF" ]] && ! grep -q "location @maintenance" "$NGINX_LIVE_CONF"; then
+  echo "== wiring the maintenance page into the live Nginx config (one-time) =="
+  cp "$NGINX_LIVE_CONF" "${NGINX_LIVE_CONF}.bak-pre-maintenance"
+  awk '
+  {
+    if ($0 ~ /^\tgzip on;/) {
+      print "\tlocation @maintenance {"
+      print "\t\troot /var/www/alumunion/maintenance;"
+      print "\t\tinternal;"
+      print "\t\ttry_files /index.html =502;"
+      print "\t}"
+      print ""
+    }
+    print
+    if ($0 ~ /limit_conn conn_per_ip 100;/) {
+      print ""
+      print "\t# Maintenance page — see deploy/maintenance/index.html and deploy/toggle-maintenance.sh."
+      print "\tif (-f /var/www/alumunion/maintenance/enabled) { return 503; }"
+      print "\terror_page 502 503 504 =503 @maintenance;"
+    }
+  }
+  ' "$NGINX_LIVE_CONF" > "${NGINX_LIVE_CONF}.tmp"
+  mv "${NGINX_LIVE_CONF}.tmp" "$NGINX_LIVE_CONF"
+  if nginx -t; then
+    systemctl reload nginx
+    rm -f "${NGINX_LIVE_CONF}.bak-pre-maintenance"
+    echo "Maintenance page wired in and Nginx reloaded."
+  else
+    mv "${NGINX_LIVE_CONF}.bak-pre-maintenance" "$NGINX_LIVE_CONF"
+    echo "WARNING: auto-wiring the maintenance page produced an invalid Nginx config (nginx -t failed above)."
+    echo "Restored your original $NGINX_LIVE_CONF unchanged — nothing was reloaded, nothing is broken."
+    echo "This likely means your live config has diverged from deploy/nginx.conf / nginx.ssl.conf (e.g. hand-edited)."
+    echo "Wire it in manually if you want the maintenance page, or tell me what's different about your live config."
+  fi
+fi
 
 # Stop only what's about to be rebuilt, before touching its files — dotnet
 # publish and the frontend rsync both overwrite a running service's files in
