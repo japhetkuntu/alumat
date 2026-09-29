@@ -16,6 +16,7 @@ import {
   Inbox,
   GraduationCap,
   Target,
+  ScrollText,
 } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
@@ -37,6 +38,7 @@ const navItems = [
   { href: "/staff", label: "Platform Staff", icon: Users },
   { href: "/support", label: "Support", icon: LifeBuoy },
   { href: "/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/changelog", label: "Changelog", icon: ScrollText },
   { href: "/audit-log", label: "Audit Log", icon: ClipboardList },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

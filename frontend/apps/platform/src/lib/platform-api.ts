@@ -1184,3 +1184,4 @@ export async function addWorkTaskNote(id: string, text: string) {
   const res = await platformClient.post<ApiResponse<WorkTaskNote>>(`/work/tasks/${id}/notes`, { text });
   return res.data.data!;
 }
+
