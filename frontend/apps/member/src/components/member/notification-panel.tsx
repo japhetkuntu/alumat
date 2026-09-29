@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Bell, Check, CheckCheck, ChevronRight, Loader2, X } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   getNotifications,
@@ -99,8 +100,14 @@ function NotificationRow({
           {notif.body}
         </p>
         {notif.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={notif.imageUrl} alt="" className="mt-1.5 w-full object-cover rounded-lg" style={{ maxHeight: 120 }} />
+          <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+            <ZoomableImage
+              src={notif.imageUrl}
+              alt=""
+              wrapperClassName="w-full aspect-[16/9] rounded-lg bg-muted/40"
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
         <div className="flex items-center gap-3 mt-1">
           <p className="text-[10px] text-muted-foreground/60">

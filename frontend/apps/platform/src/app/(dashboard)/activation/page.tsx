@@ -227,17 +227,22 @@ function ScorecardTab() {
       <Card className="mb-4">
         <div className="px-5 py-4 border-b border-border">
           <p className="text-[14px] font-semibold">Onboarding funnel</p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">All time. Percentages are conversion from the stage before.</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">
+            All time. Percentages are conversion from the stage before.{" "}
+            <span className="font-medium text-foreground">New leads</span> — submitted interest, not yet reached out to.{" "}
+            <span className="font-medium text-foreground">Contacted</span> — a staff member has reached out.{" "}
+            <span className="font-medium text-foreground">Live</span> — the institution is onboarded and active on the platform.
+          </p>
         </div>
         {funnel.isError ? (
           <LoadError className="py-8" onRetry={() => funnel.refetch()} />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-            {(funnel.isLoading ? Array.from({ length: 6 }, () => null) : stages).map((stage, i) => {
+          <div className="grid grid-cols-1 sm:grid-cols-3">
+            {(funnel.isLoading ? Array.from({ length: 3 }, () => null) : stages).map((stage, i) => {
               const prev = i > 0 ? stages[i - 1]?.count : undefined;
               const rate = stage && prev ? Math.round((stage.count / prev) * 100) : null;
               return (
-                <div key={stage?.key ?? i} className="px-5 py-4 border-b lg:border-b-0 border-r border-border last:border-r-0">
+                <div key={stage?.key ?? i} className="px-5 py-4 border-b sm:border-b-0 border-r border-border last:border-r-0">
                   {stage ? (
                     <>
                       <p className="text-[12px] text-muted-foreground">{stage.label}</p>
@@ -363,7 +368,12 @@ function ScorecardTab() {
       <Card>
         <div className="px-5 py-4 border-b border-border">
           <p className="text-[14px] font-semibold">Week by week</p>
-          <p className="text-[12px] text-muted-foreground mt-0.5">How many leads and institutions first reached each stage that week (weeks start Monday).</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">
+            How many leads and institutions first reached each stage that week (weeks start Monday).{" "}
+            <span className="font-medium text-foreground">New leads</span> — submitted interest, not yet reached out to.{" "}
+            <span className="font-medium text-foreground">Contacted</span> — a staff member has reached out.{" "}
+            <span className="font-medium text-foreground">Live</span> — the institution is onboarded and active on the platform.
+          </p>
         </div>
         <Table stackOnMobile>
           <TableHeader>
@@ -371,16 +381,13 @@ function ScorecardTab() {
               <TableHead>Week of</TableHead>
               <TableHead>New leads</TableHead>
               <TableHead>Contacted</TableHead>
-              <TableHead>Demos</TableHead>
-              <TableHead>Trials</TableHead>
-              <TableHead>Went live</TableHead>
-              <TableHead>Activated</TableHead>
+              <TableHead>Live</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {funnel.isLoading &&
               Array.from({ length: 3 }, (_, i) => (
-                <tr key={i}><td colSpan={7} className="px-5 py-3"><Skeleton className="h-6 w-full" /></td></tr>
+                <tr key={i}><td colSpan={4} className="px-5 py-3"><Skeleton className="h-6 w-full" /></td></tr>
               ))}
             {weeks.map((w, i) => (
               <TableRow key={w.weekStart}>
@@ -388,7 +395,7 @@ function ScorecardTab() {
                   {formatDate(w.weekStart)}
                   {i === 0 && <span className="text-[12px] text-muted-foreground ml-1.5">this week</span>}
                 </TableCell>
-                {[w.leads, w.contacted, w.demoBooked, w.trial, w.live, w.activated].map((n, j) => (
+                {[w.leads, w.contacted, w.live].map((n, j) => (
                   <TableCell key={j} className={`tabular-nums ${n === 0 ? "text-muted-foreground" : "font-medium"}`}>{n}</TableCell>
                 ))}
               </TableRow>

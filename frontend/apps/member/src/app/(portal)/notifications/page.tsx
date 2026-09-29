@@ -6,6 +6,7 @@ import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tansta
 import { Bell, CheckCheck, ChevronRight, Loader2, Check } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import {
   getNotifications, getUnreadNotificationCount,
   markNotificationRead, markAllNotificationsRead,
@@ -100,13 +101,15 @@ function NotifRow({
 
         {/* Image — currently only set on admin broadcasts, so this stays hidden for every other type */}
         {notif.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={notif.imageUrl}
-            alt=""
-            className="mt-2 w-full max-w-[420px] object-cover"
-            style={{ maxHeight: 220, border: "1px solid var(--border)" }}
-          />
+          <div className="mt-2 w-full max-w-[420px]" onClick={(e) => e.stopPropagation()}>
+            <ZoomableImage
+              src={notif.imageUrl}
+              alt=""
+              wrapperClassName="w-full aspect-[16/9] bg-muted/40"
+              className="w-full h-full object-cover"
+              style={{ border: "1px solid var(--border)" }}
+            />
+          </div>
         )}
 
         <div className="flex items-center gap-4 mt-2">

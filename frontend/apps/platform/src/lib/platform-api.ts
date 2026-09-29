@@ -994,10 +994,7 @@ export interface FunnelWeek {
   weekStart: string;
   leads: number;
   contacted: number;
-  demoBooked: number;
-  trial: number;
   live: number;
-  activated: number;
 }
 
 export interface ActivationFunnel {

@@ -24,7 +24,7 @@ public record ActivationScorecardResponse(
 public record FunnelStage(string Key, string Label, int Count);
 
 /// <summary>How many leads/institutions first reached each stage during the week starting <see cref="WeekStart"/>.</summary>
-public record FunnelWeek(DateTime WeekStart, int Leads, int Contacted, int DemoBooked, int Trial, int Live, int Activated);
+public record FunnelWeek(DateTime WeekStart, int Leads, int Contacted, int Live);
 
 public record ActivationFunnelResponse(List<FunnelStage> Stages, List<FunnelWeek> Weeks);
 

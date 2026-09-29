@@ -63,21 +63,18 @@ public class ActivationTrackingService(
             var firstWeek = InstitutionActivationService.WeekStart(now).AddDays(-7 * (weeks - 1));
 
             var leads = await leadRepo.GetQueryable()
-                .Select(l => new { l.CreatedAt, l.ContactedAt, l.DemoBookedAt, l.TrialStartedAt })
+                .Select(l => new { l.CreatedAt, l.ContactedAt })
                 .ToListAsync();
             var institutions = await institutionRepo.GetQueryable()
-                .Select(i => new { i.OnboardedAt, i.ActivatedAt, i.Status })
+                .Select(i => new { i.OnboardedAt, i.Status })
                 .ToListAsync();
 
             var stages = new List<FunnelStage>
             {
-                new("leads", "Leads", leads.Count),
+                new("leads", "New leads", leads.Count),
                 new("contacted", "Contacted", leads.Count(l => l.ContactedAt != null)),
-                new("demo", "Demo booked", leads.Count(l => l.DemoBookedAt != null)),
-                new("trial", "Trial", leads.Count(l => l.TrialStartedAt != null)),
                 // Institutions rather than approved leads: some are created directly without a lead.
                 new("live", "Live", institutions.Count(i => i.Status == "Active")),
-                new("activated", "Activated", institutions.Count(i => i.Status == "Active" && i.ActivatedAt != null)),
             };
 
             int InWeek(IEnumerable<DateTime?> stamps, DateTime start) =>
@@ -89,10 +86,7 @@ public class ActivationTrackingService(
                 return new FunnelWeek(start,
                     InWeek(leads.Select(l => (DateTime?)l.CreatedAt), start),
                     InWeek(leads.Select(l => l.ContactedAt), start),
-                    InWeek(leads.Select(l => l.DemoBookedAt), start),
-                    InWeek(leads.Select(l => l.TrialStartedAt), start),
-                    InWeek(institutions.Select(i => (DateTime?)i.OnboardedAt), start),
-                    InWeek(institutions.Select(i => i.ActivatedAt), start));
+                    InWeek(institutions.Select(i => (DateTime?)i.OnboardedAt), start));
             }).ToList();
 
             return new ActivationFunnelResponse(stages, series).ToOkApiResponse();
