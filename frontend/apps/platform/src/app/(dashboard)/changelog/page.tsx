@@ -62,10 +62,12 @@ function EntryCard({ entry }: { entry: ChangelogEntry }) {
 export default function ChangelogPage() {
   const [scopeTab, setScopeTab] = useState<ChangelogScope | "All">("All");
 
-  const entries = useMemo(
-    () => (scopeTab === "All" ? CHANGELOG_ENTRIES : CHANGELOG_ENTRIES.filter((e) => e.scopes.includes(scopeTab))),
-    [scopeTab],
-  );
+  const entries = useMemo(() => {
+    // Sorted here rather than relying on insertion order in the data file — new entries can be
+    // appended anywhere in CHANGELOG_ENTRIES without needing to keep the array itself in date order.
+    const sorted = [...CHANGELOG_ENTRIES].sort((a, b) => b.date.localeCompare(a.date));
+    return scopeTab === "All" ? sorted : sorted.filter((e) => e.scopes.includes(scopeTab));
+  }, [scopeTab]);
 
   return (
     <div className="p-4 sm:p-[26px] max-w-[820px] mx-auto space-y-5">
