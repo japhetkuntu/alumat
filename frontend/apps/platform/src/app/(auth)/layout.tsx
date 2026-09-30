@@ -23,9 +23,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative space-y-7 w-full">
           <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
-            <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-primary">
-              <span className="text-[13px] font-bold text-white tracking-tight">P</span>
-            </div>
+            <img src="/alumunion-mark.svg" alt="AlumUnion" width={36} height={36} className="h-9 w-9 object-contain" />
             <span className="text-[15px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
               Platform Portal
             </span>
@@ -79,9 +77,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               small screens need their own compact header, matching member
               and institution's auth pages. */}
           <Link href="/" className="mb-8 md:hidden flex flex-col items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-primary">
-              <span className="text-[16px] font-bold text-white tracking-tight">P</span>
-            </div>
+            <img src="/alumunion-mark.svg" alt="AlumUnion" width={48} height={48} className="h-12 w-12 object-contain" />
             <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Platform Portal</p>
           </Link>
           <RedirectIfAuthenticated>{children}</RedirectIfAuthenticated>

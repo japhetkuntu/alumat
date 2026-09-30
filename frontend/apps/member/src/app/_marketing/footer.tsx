@@ -24,8 +24,7 @@ export function MarketingFooter() {
           {/* Brand column */}
           <div className="col-span-2 lg:max-w-[36ch]">
             <Link href="/" className="flex items-center gap-3 mb-4">
-              <img src="/alumunion-mark.svg" alt="" className="w-8 h-8 rounded-xl shrink-0" />
-              <span className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>AlumUnion</span>
+              <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-10 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
             </Link>
             <p className="text-[13px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
               A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.

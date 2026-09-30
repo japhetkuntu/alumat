@@ -667,8 +667,7 @@ export default function PlatformMarketingPage() {
         }}>
         <div className={cn("section__inner flex items-center justify-between gap-4 transition-[height] duration-300 ease-out", scrolled ? "h-14" : "h-16")}>
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img src="/alumunion-mark.svg" alt="" className={cn("rounded-xl shrink-0 transition-all duration-300", scrolled ? "w-7 h-7" : "w-9 h-9")} />
-            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>AlumUnion</p>
+            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className={cn("w-auto object-contain shrink-0 transition-[height] duration-300 dark:rounded-sm dark:bg-white dark:px-2", scrolled ? "h-8" : "h-9")} />
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5 p-1 rounded-full" style={{ background: "var(--secondary)" }} aria-label="Primary">
