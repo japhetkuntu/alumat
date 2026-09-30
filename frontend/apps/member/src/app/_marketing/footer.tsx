@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Mail } from "@alumni/ui";
-import { Button } from "@alumni/ui";
+import { Mail } from "@alumni/ui";
 
 const PLATFORM_LINKS = [
+  { label: "Explore the portal", href: "/#product" },
+  { label: "Costs", href: "/#costs" },
   { label: "Features",     href: "/#features"     },
   { label: "How it works", href: "/#how-it-works" },
   { label: "FAQ",          href: "/#faq"          },
@@ -61,12 +62,10 @@ export function MarketingFooter() {
             <Link href="/#onboard"
               className="block mb-3 text-[13px] font-medium transition-colors hover:text-primary w-fit"
               style={{ color: "var(--muted-foreground)" }}>
-              Onboard your institution
+              Request institution onboarding
             </Link>
             <Link href="/#onboard">
-              <Button size="sm" className="text-[12.5px] font-semibold gap-1.5">
-                Get onboarded <ArrowRight size={12} />
-              </Button>
+              <span className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-primary-foreground text-[12.5px] font-semibold">Get started, free</span>
             </Link>
           </div>
         </div>

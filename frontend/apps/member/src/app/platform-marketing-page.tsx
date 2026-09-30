@@ -1,39 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { IconType as LucideIcon } from "@alumni/ui";
-import {
-  Menu, X, ArrowRight, ChevronRight, ChevronDown,
-  Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell, FileText,
-  Images, Building2, ShieldCheck, Rocket, Sparkles, Landmark, SlidersHorizontal, Layer,
-  Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX,
-  Wallet, CalendarCheck, CheckCircle2, PartyPopper,
-  Crown, UserCheck, Settings2, Upload, BookOpen, Megaphone, GraduationCap, Users2,
-  Award, Target, Stamp, Receipt, UsersRound, HandCoins,
-} from "@alumni/ui";
-import { Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, IconTile } from "@alumni/ui";
+import { Menu, X, ArrowRight, ChevronRight, ChevronDown, Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell, FileText, Images, Building2, ShieldCheck, Rocket, Layer, Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX, Wallet, CheckCircle2, PartyPopper, Crown, UserCheck, Upload, BookOpen, Megaphone, Users2, Stamp, Receipt, UsersRound, HandCoins, Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
-import { Section, scrollToSection, useFadeUp, useCountUp, ScrollProgressBar, useScrolled, useMagnetic, useTilt, CustomCursor, CustomCursorStyles } from "./_marketing/primitives";
 import { MarketingFooter } from "./_marketing/footer";
+import { ProductTour } from "./_marketing/product-tour";
+import { WalkthroughForm } from "./_marketing/walkthrough-form";
 import { FAQS } from "./_marketing/faqs";
 import { INSTITUTION_AGREEMENT_VERSION } from "@alumni/ui";
-import {
-  JobsIllustration, MentorshipIllustration, ScatteredChatIllustration,
-  DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration,
-  AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration,
-  ServicesIllustration,
-  UnknownAlumniIllustration, ManualReconciliationIllustration,
-} from "./_marketing/product-panels";
+import { JobsIllustration, MentorshipIllustration, ScatteredChatIllustration, DirectoryIllustration, FundraisingIllustration, EventsIllustration, StoreIllustration, AlbumsIllustration, SpotlightIllustration, BusinessIllustration, NotificationsIllustration, ServicesIllustration, UnknownAlumniIllustration, ManualReconciliationIllustration } from "./_marketing/product-panels";
+import "./marketing-page.css";
 
-/* ─────────────────────────────────────────────────────────────────────────
-   DATA
-   ───────────────────────────────────────────────────────────────────────── */
 const NAV_LINKS = [
-  { label: "The Problem", href: "#problems"     },
-  { label: "How We Help", href: "#features"     },
+  { label: "The problem", href: "#problems" },
+  { label: "How we help", href: "#features" },
   { label: "How it works", href: "#how-it-works" },
-  { label: "FAQ",          href: "#faq"          },
+  { label: "FAQ", href: "#faq" },
 ];
 
 type Feature = { icon: LucideIcon; label: string; title: string; desc: string; big?: boolean; illustration: React.ComponentType<{ className?: string; tone?: "primary" | "accent" }> };
@@ -141,185 +125,6 @@ const WHATSAPP_PROBLEMS = [
   { icon: MessageCircleOff, title: "No directory, no data", desc: "No member directory, no RSVP tracking, no dues collection, and no engagement analytics in one place." },
 ];
 
-/** A hero stat tile whose number counts up from 0 the moment it scrolls into
- *  view — the kind of small "this page is alive" touch that separates a
- *  static screenshot-of-a-dashboard from something that feels like a real
- *  product demo. `format` renders the eased-in value (comma grouping,
- *  currency prefix, etc.) each frame of the count. */
-function HeroStat({ icon, end, format, label }: { icon: LucideIcon; end: number; format: (n: number) => string; label: string }) {
-  const { ref, value } = useCountUp(end, 0, 1400);
-  return (
-    <div ref={ref} className="border rounded-xl p-2.5 sm:p-3.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-      <IconTile icon={icon} size="sm" tone="primary" />
-      <p className="font-[family-name:var(--font-display)] font-bold tabular-nums mt-2 text-[17px] sm:text-[19px]" style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}>
-        {format(value)}
-      </p>
-      <p className="text-[10.5px] sm:text-[11px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{label}</p>
-    </div>
-  );
-}
-
-/** One feature as a full-width row: a coloured stage with the product panel on one side, the words on the other.
- *  Rows alternate sides down the page, so it reads as a walk through the product instead of a grid of boxes. */
-function FeatureRow({ feature, reverse }: { feature: Feature; reverse: boolean }) {
-  const { ref, visible } = useFadeUp();
-  return (
-    <div ref={ref}
-      className={cn("grid items-center gap-10 py-8 transition-all duration-700 sm:gap-12 md:py-12 lg:grid-cols-2", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
-      <div className={cn("flex min-w-0 items-center justify-center p-5 sm:p-10", reverse && "lg:order-2")} style={{ background: "var(--primary)" }}>
-        <feature.illustration className="w-full max-w-[420px]" />
-      </div>
-      <div className={cn("min-w-0", reverse && "lg:order-1")}>
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--primary)" }}>{feature.label}</p>
-        <h3 className="mb-3 text-[21px] font-semibold leading-snug sm:text-[24px]" style={{ color: "var(--foreground)" }}>{feature.title}</h3>
-        <p className="text-[14.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{feature.desc}</p>
-      </div>
-    </div>
-  );
-}
-
-/** One problem, told in full before any feature is named — the illustration
- *  and text alternate sides down the section (see `reverse`) so this reads
- *  as a deliberate story being walked through, not another repeated card. */
-function ProblemRow({ item, reverse }: { item: ProblemItem; reverse: boolean }) {
-  const { ref, visible } = useFadeUp();
-  const tilt = useTilt<HTMLDivElement>(3);
-  return (
-    <div ref={ref}
-      className={cn(
-        "grid items-center gap-10 sm:gap-12 lg:grid-cols-2 transition-all duration-700",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      )}>
-      <div className={cn(reverse && "lg:order-2")}>
-        <div ref={tilt.ref} onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave} style={tilt.style} className="mx-auto max-w-[420px] lg:max-w-none">
-          <div className="p-5 sm:p-8" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
-            <item.illustration className="w-full" />
-          </div>
-        </div>
-      </div>
-      <div className={cn(reverse && "lg:order-1")}>
-        <div className="flex items-center gap-3 mb-4">
-          <span className="font-[family-name:var(--font-display)] text-[13px] font-bold px-2.5 py-1 rounded-full"
-            style={{ color: "var(--destructive)", background: "color-mix(in oklch, var(--destructive) 10%, transparent)" }}>
-            {item.n}
-          </span>
-          <p className="text-[11px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--muted-foreground)" }}>{item.eyebrow}</p>
-        </div>
-        <h3 className="font-[family-name:var(--font-display)] mb-3.5" style={{ fontSize: "clamp(1.35rem,2.4vw,1.65rem)", lineHeight: 1.25, color: "var(--foreground)" }}>
-          {item.title}
-        </h3>
-        <p className="mb-5" style={{ fontSize: "0.975rem", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-          {item.desc}
-        </p>
-        <div className="rounded-2xl p-4 sm:p-5 border" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-          <div className="flex items-start gap-2.5 mb-3">
-            <ArrowRight size={15} className="shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
-            <p className="text-[13.5px] leading-relaxed font-medium" style={{ color: "var(--foreground)" }}>{item.fix}</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5 pl-[1.6rem]">
-            {item.chips.map((chip) => (
-              <span key={chip} className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ color: "var(--primary)", background: "var(--brand-primary-100, var(--color-background-info))" }}>
-                {chip}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WhatsAppProblemCard({ item, index, delay }: { item: typeof WHATSAPP_PROBLEMS[number]; index: number; delay: string }) {
-  const { ref, visible } = useFadeUp();
-  return (
-    <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn("relative pl-1 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
-      <p className="font-[family-name:var(--font-display)] leading-none select-none mb-2.5"
-        style={{ fontSize: "2.75rem", fontWeight: 700, color: "var(--destructive)", opacity: 0.13 }} aria-hidden="true">
-        {String(index + 1).padStart(2, "0")}
-      </p>
-      <div className="flex items-center gap-2 mb-2 -mt-7">
-        <item.icon size={16} style={{ color: "var(--destructive)" }} />
-        <h3 className="text-[14.5px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.title}</h3>
-      </div>
-      <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
-    </div>
-  );
-}
-
-/** School → Year Groups → Ambassadors → Alumni → Verified Profiles →
- *  Community, told as one connected flow rather than a paragraph — the
- *  same beat the marketing team uses in the sales deck for this pitch. */
-function PipelineFlow() {
-  const { ref, visible } = useFadeUp();
-  return (
-    <div ref={ref} className={cn("flex flex-wrap items-center justify-center gap-x-1.5 gap-y-4 transition-all duration-700", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
-      {NETWORK_PIPELINE.map((node, i) => (
-        <div key={node.label} className="flex items-center gap-1.5">
-          <div className="flex flex-col items-center gap-2 w-[92px] sm:w-[104px]">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center border shrink-0"
-              style={{
-                background: i === 2 ? "var(--primary)" : "var(--card)",
-                borderColor: i === 2 ? "var(--primary)" : "var(--border)",
-                boxShadow: i === 2 ? "0 12px 24px -10px color-mix(in oklch, var(--primary) 60%, transparent)" : "none",
-              }}>
-              <node.icon size={20} style={{ color: i === 2 ? "white" : "var(--primary)" }} />
-            </div>
-            <p className="text-[11px] sm:text-[11.5px] font-semibold text-center leading-tight" style={{ color: "var(--foreground)" }}>{node.label}</p>
-          </div>
-          {i < NETWORK_PIPELINE.length - 1 && (
-            <ChevronRight size={16} className="shrink-0 -mt-5" style={{ color: "var(--muted-foreground)", opacity: 0.4 }} />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function WhiteGloveStep({ step, index, delay }: { step: typeof WHITE_GLOVE_STEPS[number]; index: number; delay: string }) {
-  const { ref, visible } = useFadeUp();
-  return (
-    <div ref={ref} style={{ transitionDelay: delay }}
-      className={cn("flex gap-4 transition-all duration-500", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4")}>
-      <div className="relative shrink-0">
-        <IconTile icon={step.icon} size="default" tone="primary" />
-        <span className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold"
-          style={{ background: "var(--foreground)", color: "var(--background)" }}>
-          {index + 1}
-        </span>
-      </div>
-      <div className="min-w-0 pt-0.5">
-        <h4 className="text-[14px] font-semibold leading-snug mb-1" style={{ color: "var(--foreground)" }}>{step.title}</h4>
-        <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{step.desc}</p>
-      </div>
-    </div>
-  );
-}
-
-function FaqItem({ item, open, onToggle }: { item: typeof FAQS[number]; open: boolean; onToggle: () => void }) {
-  return (
-    <div className="card overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center justify-between gap-4 text-left px-5 py-4 sm:px-6 sm:py-5"
-        aria-expanded={open}
-      >
-        <span className="text-[14.5px] font-semibold" style={{ color: "var(--foreground)" }}>{item.q}</span>
-        <ChevronDown size={16} className="shrink-0 transition-transform duration-300" style={{ color: "var(--muted-foreground)", transform: open ? "rotate(180deg)" : "none" }} />
-      </button>
-      <div className="grid transition-all duration-300 ease-out" style={{ gridTemplateRows: open ? "1fr" : "0fr" }}>
-        <div className="overflow-hidden">
-          <p className="px-5 pb-4 sm:px-6 sm:pb-5 text-[13.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.a}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   ONBOARDING FORM
-   ───────────────────────────────────────────────────────────────────────── */
 interface LeadForm {
   institutionName: string;
   website: string;
@@ -496,14 +301,14 @@ function OnboardingForm() {
         <>
       <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
         <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Help us understand your community</p>
-        <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>These optional details help us prepare a more useful first conversation.</p>
+        <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Choose your role, then add any optional details to help us prepare a more useful first conversation.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label>Your role (optional)</Label>
+          <Label required>Your role</Label>
           <Select value={form.contactRole || undefined} onValueChange={(v) => set("contactRole", v)}>
             <SelectTrigger className="w-full"><SelectValue placeholder="What is your role?" /></SelectTrigger>
-            <SelectContent>{CONTACT_ROLES.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
+            <SelectContent className="mk-select-menu">{CONTACT_ROLES.map((role) => <SelectItem className="mk-select-option" key={role} value={role}>{role}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
@@ -515,7 +320,7 @@ function OnboardingForm() {
         <Label>What type of community are you building? (optional)</Label>
         <Select value={form.organizationType || undefined} onValueChange={(v) => set("organizationType", v)}>
           <SelectTrigger className="w-full"><SelectValue placeholder="Choose the closest fit" /></SelectTrigger>
-          <SelectContent>{ORGANIZATION_TYPES.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+          <SelectContent className="mk-select-menu">{ORGANIZATION_TYPES.map((type) => <SelectItem className="mk-select-option" key={type} value={type}>{type}</SelectItem>)}</SelectContent>
         </Select>
       </div>
       <fieldset>
@@ -541,14 +346,14 @@ function OnboardingForm() {
           <Label>How do you manage members today? (optional)</Label>
           <Select value={form.currentMemberManagement || undefined} onValueChange={(v) => set("currentMemberManagement", v)}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Choose your current process" /></SelectTrigger>
-            <SelectContent>{MANAGEMENT_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+            <SelectContent className="mk-select-menu">{MANAGEMENT_OPTIONS.map((option) => <SelectItem className="mk-select-option" key={option} value={option}>{option}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
           <Label>Do you need to import existing records? (optional)</Label>
           <Select value={form.dataImportStatus || undefined} onValueChange={(v) => set("dataImportStatus", v)}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Choose one" /></SelectTrigger>
-            <SelectContent>{["Yes, organized and ready", "Yes, but it needs cleaning", "No", "Not sure yet"].map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+            <SelectContent className="mk-select-menu">{["Yes, organized and ready", "Yes, but it needs cleaning", "No", "Not sure yet"].map((option) => <SelectItem className="mk-select-option" key={option} value={option}>{option}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       </div>
@@ -563,9 +368,9 @@ function OnboardingForm() {
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a range" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="mk-select-menu">
               {MEMBER_COUNT_RANGES.map((range) => (
-                <SelectItem key={range} value={range}>{range}</SelectItem>
+                <SelectItem className="mk-select-option" key={range} value={range}>{range}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -576,14 +381,14 @@ function OnboardingForm() {
           <Label>Preferred follow-up (optional)</Label>
           <Select value={form.preferredContactChannel || undefined} onValueChange={(v) => set("preferredContactChannel", v)}>
             <SelectTrigger className="w-full"><SelectValue placeholder="How should we reach you?" /></SelectTrigger>
-            <SelectContent>{CONTACT_CHANNELS.map((channel) => <SelectItem key={channel} value={channel}>{channel}</SelectItem>)}</SelectContent>
+            <SelectContent className="mk-select-menu">{CONTACT_CHANNELS.map((channel) => <SelectItem className="mk-select-option" key={channel} value={channel}>{channel}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
           <Label>Best time (optional)</Label>
           <Select value={form.preferredContactTime || undefined} onValueChange={(v) => set("preferredContactTime", v)}>
             <SelectTrigger className="w-full"><SelectValue placeholder="When works best?" /></SelectTrigger>
-            <SelectContent>{CONTACT_TIMES.map((time) => <SelectItem key={time} value={time}>{time}</SelectItem>)}</SelectContent>
+            <SelectContent className="mk-select-menu">{CONTACT_TIMES.map((time) => <SelectItem className="mk-select-option" key={time} value={time}>{time}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
@@ -618,7 +423,7 @@ function OnboardingForm() {
           <Button type="submit" className="font-semibold gap-2" isLoading={submitting} loadingText="Sending your request...">Get started, free <ArrowRight size={15} /></Button>
         )}
       </div>
-      <p className="text-center text-[11.5px]" style={{ color: "var(--muted-foreground)" }}><span style={{ color: "var(--primary)" }}>Free forever.</span> No obligation. Usually takes less than 2 minutes.</p>
+      <p className="text-center text-[11.5px]" style={{ color: "var(--muted-foreground)" }}><span style={{ color: "var(--primary)" }}>Free for your institution.</span> Your request includes acceptance of the Institution Agreement.</p>
       </div>
     </form>
   );
@@ -627,493 +432,84 @@ function OnboardingForm() {
 /* ─────────────────────────────────────────────────────────────────────────
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
+
 export default function PlatformMarketingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const scrolled = useScrolled(24);
-  const heroCta = useMagnetic(0.25);
-  const freeCta = useMagnetic(0.25);
-  const heroPanelTilt = useTilt<HTMLDivElement>(2.5);
-  const [heroSpotlightVars, setHeroSpotlightVars] = useState<React.CSSProperties>({ background: "var(--background)", "--hx": "50%", "--hy": "0%" } as React.CSSProperties);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
-
-  const onHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setHeroSpotlightVars({
-      background: "var(--background)",
-      "--hx": `${e.clientX - rect.left}px`,
-      "--hy": `${e.clientY - rect.top}px`,
-    } as React.CSSProperties);
-  };
-
+  const [enquiry, setEnquiry] = useState<"onboarding" | "walkthrough">("onboarding");
   return (
-    <div className="min-h-screen overflow-x-hidden au-cursor-zone" style={{ background: "var(--background)", color: "var(--foreground)" }}>
-      <CustomCursorStyles />
-      <CustomCursor />
-      <ScrollProgressBar />
-
-      {/* ════════════════════════════════════════════════════════════════
-          NAVBAR — shrinks slightly once the page has scrolled
-      ════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 border-b backdrop-blur-xl transition-shadow duration-300"
-        style={{
-          background: "color-mix(in oklch, var(--background) 86%, transparent)",
-          borderColor: "var(--border)",
-          boxShadow: scrolled ? "0 4px 20px rgba(0,0,0,0.05)" : "none",
-        }}>
-        <div className={cn("section__inner flex items-center justify-between gap-4 transition-[height] duration-300 ease-out", scrolled ? "h-14" : "h-16")}>
-          <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className={cn("w-auto object-contain shrink-0 transition-[height] duration-300 dark:rounded-sm dark:bg-white dark:px-2", scrolled ? "h-8" : "h-9")} />
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-0.5 p-1 rounded-full" style={{ background: "var(--secondary)" }} aria-label="Primary">
-            {NAV_LINKS.map((link) => (
-              <button key={link.label} onClick={() => scrollToSection(link.href)}
-                className="rounded-full px-4 py-1.5 text-[13.5px] font-medium transition-colors hover:bg-background"
-                style={{ color: "var(--muted-foreground)" }}>
-                {link.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="hidden md:flex items-center gap-2">
-            <Button size="sm" className="text-[13px] font-semibold gap-1.5 rounded-full px-5" onClick={() => scrollToSection("#onboard")}>
-              Request institution onboarding <ArrowRight size={12} />
-            </Button>
-          </div>
-
-          <button className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border transition-colors hover:bg-secondary"
-            style={{ borderColor: "var(--border)" }}
-            onClick={() => setMenuOpen((o) => !o)} aria-label="Toggle navigation" aria-expanded={menuOpen}>
-            {menuOpen ? <X size={16} /> : <Menu size={16} />}
-          </button>
+    <div className="marketing-site">
+      <header className="mk-nav">
+        <div className="mk-wrap mk-nav-inner">
+          <Link href="/" className="mk-logo"><img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} /></Link>
+          <nav aria-label="Primary" className="mk-desktop-nav">{NAV_LINKS.map(link => <a key={link.href} href={link.href}>{link.label}</a>)}</nav>
+          <a href="#onboard" className="mk-button mk-nav-cta">Get started, free <ArrowRight size={14} /></a>
+          <button type="button" className="mk-menu" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} aria-controls="marketing-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
         </div>
-
-        {menuOpen && (
-          <div className="md:hidden fixed inset-x-0 top-16 z-40 flex flex-col px-5 py-8 gap-5 overflow-y-auto h-[calc(100dvh-4rem)]"
-            style={{ background: "var(--background)", borderTop: "1px solid var(--border)" }}>
-            {NAV_LINKS.map((link) => (
-              <button key={link.label} onClick={() => { scrollToSection(link.href); setMenuOpen(false); }}
-                className="w-full text-left font-[family-name:var(--font-display)] text-[26px] font-semibold transition-colors hover:text-primary"
-                style={{ color: "var(--foreground)" }}>
-                {link.label}
-              </button>
-            ))}
-            <div className="mt-4 pt-4 flex flex-col gap-2.5" style={{ borderTop: "1px solid var(--border)" }}>
-              <Button className="w-full font-semibold gap-2" onClick={() => { scrollToSection("#onboard"); setMenuOpen(false); }}>
-                Request institution onboarding <ArrowRight size={14} />
-              </Button>
-            </div>
-          </div>
-        )}
+        {menuOpen && <nav id="marketing-navigation" aria-label="Mobile navigation" className="mk-mobile-nav mk-wrap">{NAV_LINKS.map(link => <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>{link.label}</a>)}<a href="#onboard" onClick={() => setMenuOpen(false)}>Get started, free →</a></nav>}
       </header>
-
-      {/* ════════════════════════════════════════════════════════════════
-          HERO
-      ════════════════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden" style={heroSpotlightVars} onMouseMove={onHeroMouseMove}>
-        <div className="absolute inset-0 bg-subtle-pattern opacity-[0.45] pointer-events-none" />
-        <div className="absolute -top-40 -right-40 w-[640px] h-[640px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--primary) 6%, transparent) 0%, transparent 65%)" }} />
-        {/* Cursor-tracked glow — a quiet, premium touch behind the headline rather than a decorative badge */}
-        <div className="absolute inset-0 pointer-events-none transition-opacity duration-500"
-          style={{ background: "radial-gradient(500px circle at var(--hx) var(--hy), color-mix(in oklch, var(--primary) 7%, transparent), transparent 70%)" }} />
-        {/* Concentric rings behind the headline — a quiet focal cue, echoing radar/signal without a literal icon */}
-        <div className="absolute left-1/2 top-12 pointer-events-none hidden sm:block" aria-hidden="true">
-          {[220, 340, 460].map((size) => (
-            <div key={size} className="absolute rounded-full"
-              style={{ width: size, height: size, left: 0, top: 0, transform: `translate(-50%, -50%)`, border: "1px solid color-mix(in oklch, var(--primary) 10%, transparent)" }} />
-          ))}
-        </div>
-
-        <div className="section__inner--wide relative pt-16 pb-20 text-center">
-
-          <h1 className="font-[family-name:var(--font-display)] mb-7 max-w-[22ch] mx-auto section__inner"
-            style={{ fontSize: "clamp(2.5rem,5.2vw,4.1rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.025em", color: "var(--foreground)" }}>
-            Give your community a home — <span style={{ color: "var(--primary)" }}>at no cost </span> <span>to your institution.</span>
-          </h1>
-          <p className="mb-10 max-w-[52ch] mx-auto"
-            style={{ fontSize: "clamp(1rem,1.5vw,1.125rem)", lineHeight: 1.75, color: "var(--muted-foreground)" }}>
-            AlumUnion helps institutions build, organize, and grow thriving communities — from alumni and former students to members, supporters, and stakeholders.
-          </p>
-          <div className="flex flex-col items-center gap-4 mb-14">
-            <div className="flex flex-col sm:flex-row items-center gap-3">
-            <Button ref={heroCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="px-9 text-[15.5px] font-semibold gap-2 rounded-full shadow-sm"
-              style={{ ...heroCta.style, height: 52 }} onMouseMove={heroCta.onMouseMove} onMouseLeave={heroCta.onMouseLeave}
-              onClick={() => scrollToSection("#onboard")}>
-              Request institution onboarding <ArrowRight size={15} />
-            </Button>
-            </div>
-            <button onClick={() => scrollToSection("#how-it-works")}
-              className="text-[13.5px] font-semibold underline decoration-transparent hover:decoration-current underline-offset-4 transition-all"
-              style={{ color: "var(--muted-foreground)" }}>
-              See how it works
-            </button>
+      <main>
+        <section className="mk-hero">
+          <div className="mk-hero-rings" aria-hidden="true"><span /><span /><span /></div>
+          <div className="mk-wrap mk-hero-content">
+            <h1>Give your community a home — <span>at no cost</span> to your institution.</h1>
+            <p className="mk-hero-description">AlumUnion helps institutions build, organize, and grow thriving communities — from alumni and former students to members, supporters, and stakeholders.</p>
+            <div className="mk-hero-actions"><a href="#onboard" className="mk-button mk-button-large">Request institution onboarding <ArrowRight size={17} /></a><a href="#how-it-works" className="mk-text-link">See how it works <ChevronDown size={14} /></a></div>
+            <div className="mk-hero-assurances"><span><ShieldCheck size={16} />No setup or subscription fee</span><span><Rocket size={16} />Setup with our team</span><span><Users size={16} />Built for every institution</span></div>
           </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-            {[
-              { icon: ShieldCheck, text: "Free, no hidden costs" },
-              { icon: Rocket,      text: "Live in days, not months" },
-              { icon: Users,       text: "Built for every institution" },
-            ].map((item, i) => (
-              <div key={item.text} className="flex items-center gap-2 cursor-default">
-                <item.icon size={15} style={{ color: i % 2 === 0 ? "var(--primary)" : "var(--brand-accent, var(--primary))" }} />
-                <p className="text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  {i === 0 ? <span style={{ color: "var(--primary)" }}>Free</span> : item.text}
-                  {i === 0 ? ", no hidden costs" : ""}
-                </p>
-              </div>
-            ))}
+        </section>
+        <section id="product" className="mk-wrap mk-product-section">
+          <div className="mk-product-heading"><div><p className="mk-eyebrow">Inside your community portal</p><h2>A closer look at the member experience.</h2></div><span className="mk-demo-label">Live interface · example data</span></div>
+          <div className="mk-product-frame"><ProductTour /></div>
+        </section>
+        <section id="problems" className="mk-section mk-problems">
+          <div className="mk-wrap">
+            <div className="mk-section-heading"><p className="mk-eyebrow">The reality</p><h2>Every institution we talk to is fighting the same three problems.</h2><p>Not a lack of features, a lack of one place where your community, records, and contributions all live together.</p></div>
+            <div className="mk-problem-list">{PROBLEMS.map((item,index) => <article key={item.n} className={`mk-problem ${index % 2 ? "mk-problem-reverse" : ""}`}>
+              <div className="mk-problem-visual"><span className="mk-problem-number" aria-hidden="true">{item.n}</span><item.illustration className="w-full" /><p>Illustrative product example</p></div>
+              <div className="mk-problem-copy"><p className="mk-eyebrow">{item.eyebrow}</p><h3>{item.title}</h3><p>{item.desc}</p><div className="mk-problem-fix"><ArrowRight size={17} /><p>{item.fix}</p></div><div className="mk-chips">{item.chips.map(chip => <span key={chip}>{chip}</span>)}</div></div>
+            </article>)}</div>
+            <details className="mk-whatsapp" open><summary>Specifically, if you’re running this over WhatsApp</summary><div className="mk-whatsapp-grid">{WHATSAPP_PROBLEMS.map(item => <div key={item.title}><item.icon size={18} /><h3>{item.title}</h3><p>{item.desc}</p></div>)}</div><Link href="/why-not-whatsapp" className="mk-text-link">See the full comparison <ArrowRight size={14} /></Link></details>
           </div>
-
-          {/* Hero visual — an illustrative preview of the portal's own
-              dashboard (real component language: IconTile, stat tiles, flat
-              corners) rather than a generic stock screenshot. Gives the hero
-              a focal anchor instead of floating text in empty space. */}
-          <div className="relative mt-16 sm:mt-20 max-w-[880px] mx-auto" style={{ perspective: "1800px" }}>
-            <div className="absolute -inset-x-10 -inset-y-14 pointer-events-none" aria-hidden="true"
-              style={{ background: "radial-gradient(60% 65% at 50% 40%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 72%)", filter: "blur(10px)" }} />
-
-
-            {/* Floating category chips — orbit the hero visual with their own
-                gentle, staggered bob so the whole hero doesn't sit still,
-                each a quiet nod to one thing the portal actually does. */}
-            {[
-              { icon: Briefcase, tone: "primary" as const, className: "left-0 top-6 sm:-left-6", delay: "0s" },
-              { icon: Heart,     tone: "accent" as const,  className: "right-2 top-24 sm:-right-8 sm:top-28", delay: "1.1s" },
-              { icon: Globe,     tone: "primary" as const, className: "left-10 -bottom-6 sm:left-14", delay: "0.6s" },
-            ].map(({ icon: Icon, tone, className, delay }, i) => (
-              <div key={i} className={cn("hidden sm:block absolute z-10", className)}
-                style={{ animation: "au-float 4.5s ease-in-out infinite", animationDelay: delay }} aria-hidden="true">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center border"
-                  style={{
-                    background: "var(--card)", borderColor: "var(--border)",
-                    boxShadow: "0 14px 30px -14px rgba(15,23,42,0.28)",
-                  }}>
-                  <Icon size={17} style={{ color: tone === "accent" ? "var(--brand-accent, var(--primary))" : "var(--primary)" }} />
-                </div>
-              </div>
-            ))}
-            <style jsx>{`
-              @keyframes au-float {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-10px); }
-              }
-            `}</style>
-
-            {/* Resting perspective — a fixed base tilt so the panel reads as a
-                floating card seen at an angle even before any mouse
-                interaction; heroPanelTilt's own transform layers on top of
-                this for the interactive nudge, composing naturally since
-                nested CSS transforms combine. */}
-            <div style={{ transform: "perspective(1800px) rotateX(6deg) rotateY(-8deg)", transformStyle: "preserve-3d" }}>
-              <div
-                ref={heroPanelTilt.ref}
-                onMouseMove={heroPanelTilt.onMouseMove}
-                onMouseLeave={heroPanelTilt.onMouseLeave}
-                style={{ ...heroPanelTilt.style, borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 60px 100px -40px rgba(15,23,42,0.35), 0 1px 0 rgba(255,255,255,0.4) inset" }}
-                className="relative text-left border rounded-3xl overflow-hidden"
-              >
-                <div className="flex items-center gap-2 px-4 h-10 border-b" style={{ borderColor: "var(--border)" }}>
-                  <span className="w-2 h-2 rounded-full" style={{ background: "var(--destructive)", opacity: 0.4 }} />
-                  <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand-accent, var(--primary))", opacity: 0.4 }} />
-                  <span className="w-2 h-2 rounded-full" style={{ background: "var(--primary)", opacity: 0.4 }} />
-                  <span className="ml-2.5 text-[11.5px] font-mono" style={{ color: "var(--muted-foreground)" }}>yourcommunity.alumunion.com</span>
-                </div>
-
-                <div className="p-4 sm:p-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-3 sm:mb-3.5">
-                    <HeroStat icon={Wallet} end={42300} label="Total collected" format={(n) => `GH₵${Math.round(n).toLocaleString()}`} />
-                    <HeroStat icon={Users} end={1204} label="Members" format={(n) => Math.round(n).toLocaleString()} />
-                    <HeroStat icon={CalendarCheck} end={6} label="Events" format={(n) => String(Math.round(n))} />
-                    <HeroStat icon={Briefcase} end={18} label="Jobs posted" format={(n) => String(Math.round(n))} />
-                  </div>
-
-                  <div className="grid sm:grid-cols-[1.3fr_1fr] gap-2.5 sm:gap-3">
-                    <div className="border rounded-xl p-3.5 sm:p-4" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-                      <p className="text-[11px] font-semibold mb-3" style={{ color: "var(--muted-foreground)" }}>Contributions, last 6 months</p>
-                      <div className="flex items-end gap-2 sm:gap-2.5" style={{ height: 64 }}>
-                        {[38, 55, 46, 72, 60, 90].map((h, i) => (
-                          <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${h}%`, background: i === 5 ? "var(--primary)" : "color-mix(in oklch, var(--primary) 28%, transparent)" }} />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="border rounded-xl p-3.5 sm:p-4 space-y-2.5" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
-                      <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>Recent activity</p>
-                      {[
-                        { icon: CheckCircle2, text: "New member approved" },
-                        { icon: Wallet, text: "Dues payment received" },
-                        { icon: PartyPopper, text: "Reunion RSVP’d" },
-                      ].map((a) => (
-                        <div key={a.text} className="flex items-center gap-2">
-                          <a.icon size={13} style={{ color: "var(--primary)" }} className="shrink-0" />
-                          <p className="text-[11.5px] truncate" style={{ color: "var(--foreground)" }}>{a.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating badge — overlaps the panel corner for depth */}
-              <div className="hidden sm:flex absolute -right-5 -bottom-6 items-center gap-2.5 border rounded-2xl px-3.5 py-3 z-10"
-                style={{ borderColor: "var(--border)", background: "var(--card)", boxShadow: "0 18px 40px -18px rgba(15,23,42,0.3)", transform: "translateZ(40px)" }}>
-                <IconTile icon={CheckCircle2} size="sm" tone="primary" filled />
-                <div>
-                  <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--foreground)" }}>Member approved</p>
-                  <p className="text-[10.5px]" style={{ color: "var(--muted-foreground)" }}>Just now</p>
-                </div>
-              </div>
-            </div>
+        </section>
+        <section id="features" className="mk-section">
+          <div className="mk-wrap">
+            <div className="mk-section-heading"><p className="mk-eyebrow">The fix</p><h2>One digital home for your institution’s community.</h2><p>Your community stays connected, your records become reliable, and contributions are collected and reconciled properly, all in the same place.</p></div>
+            <div className="mk-feature-groups">{FEATURE_GROUPS.map((group,index) => <section key={group.label} className="mk-feature-group">
+              <div className="mk-group-heading"><span>0{index+1}</span><div><h3>{group.label}</h3><p>{group.blurb}</p></div></div>
+              <div className={`mk-feature-grid ${group.items.length === 3 ? "mk-feature-grid-three" : ""}`}>{group.items.map(feature => <article key={feature.title} className="mk-feature">
+                <div className="mk-feature-visual"><feature.illustration className="w-full" /></div>
+                <div className="mk-feature-copy"><p className="mk-eyebrow"><feature.icon size={14} />{feature.label}</p><h4>{feature.title}</h4><p>{feature.desc}</p></div>
+              </article>)}</div>
+            </section>)}</div>
+            <p className="mk-example-note">Interface examples illustrate the features. Names, dates and amounts shown are sample data.</p>
+            <a href="#onboard" className="mk-feature-cta"><div><h3>Ready to build your community?</h3><p>Tell us about your institution — it’s free to get started.</p></div><span>Get started <ArrowRight size={17} /></span></a>
           </div>
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════════════
-          THE PROBLEM — three real problems, told in full, before a single
-          feature is named. Placed right after the hero, before Features:
-          agitate the pain you're already living with before pitching the
-          fix — a visitor reads their own situation first, which is why
-          they keep reading, rather than being sold a feature list before
-          the page has established there's a problem worth solving.
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="problems" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="mb-16 sm:mb-20 max-w-[62ch]">
-            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>The reality</p>
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              Every institution we talk to is fighting the same three problems.
-            </h2>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Not a lack of features, a lack of one place where your community, records, and contributions all live together.
-            </p>
+        </section>
+        <section id="how-it-works" className="mk-section mk-setup">
+          <div className="mk-wrap">
+            <div className="mk-section-heading mk-heading-centred"><p className="mk-eyebrow">For organizations starting from anywhere</p><h2>Don’t have an organized community yet? Start from where you are.</h2><p>Bring your people together, organize the groups that matter to you, and gradually grow a trusted community.</p></div>
+            <div className="mk-pipeline" aria-label="How your community is organised">{NETWORK_PIPELINE.map((node,index) => <div key={node.label} className="mk-pipeline-node"><span className={index===2 ? "mk-pipeline-icon mk-pipeline-highlight" : "mk-pipeline-icon"}><node.icon size={23} /></span><p>{node.label}</p>{index < NETWORK_PIPELINE.length-1 && <ChevronRight size={17} className="mk-pipeline-arrow" />}</div>)}</div>
+            <p className="mk-pipeline-description">Each group or chapter can have its own leader, responsible for bringing people in and keeping them connected, so the work spreads across your community instead of landing on one overworked administrator.</p>
+            <div className="mk-offer-heading"><h3>The offer: build your community, from the ground up.</h3><p>Our team does the setup with you. This is everything it covers, in the order it happens.</p></div>
+            <div className="mk-setup-grid">{WHITE_GLOVE_STEPS.map((step,index) => <article key={step.title} className="mk-setup-step"><div className="mk-step-top"><span>0{index+1}</span><step.icon size={20} /></div><h4>{step.title}</h4><p>{step.desc}</p></article>)}</div>
           </div>
-
-          <div className="space-y-20 sm:space-y-24">
-            {PROBLEMS.map((item, i) => (
-              <div key={item.n}>
-                <ProblemRow item={item} reverse={i % 2 === 1} />
-
-                {/* Supporting proof, nested under Problem 1 only — the
-                    concrete WhatsApp specifics back up the general claim
-                    without needing their own top-level section. */}
-                {i === 0 && (
-                  <div className="mt-10 rounded-2xl border p-6 sm:p-8" style={{ borderColor: "var(--border)", background: "var(--muted)" }}>
-                    <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--muted-foreground)" }}>
-                      Specifically, if you&apos;re running this over WhatsApp
-                    </p>
-                    <div className="grid gap-8 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x mb-6" style={{ borderColor: "var(--border)" }}>
-                      {WHATSAPP_PROBLEMS.map((wItem, wi) => (
-                        <div key={wItem.title} className={wi > 0 ? "lg:pl-6" : undefined}>
-                          <WhatsAppProblemCard item={wItem} index={wi} delay={`${wi * 65}ms`} />
-                        </div>
-                      ))}
-                    </div>
-                    <Link href="/why-not-whatsapp">
-                      <Button variant="outline" size="sm" className="h-10 px-5 font-semibold gap-2">
-                        See the full comparison <ArrowRight size={13} />
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            ))}
+        </section>
+        <section id="costs" className="mk-free-section">
+          <div className="mk-wrap mk-free-grid">
+            <div><p className="mk-eyebrow">What it costs your institution</p><h2>Completely free.<br />Full stop.</h2><p className="mk-free-description">No setup fee, no monthly bill, no per-member charge. Your members get a modern portal, and your organization never sees an invoice for running it.</p><a href="#onboard" className="mk-button mk-button-white">Get your institution onboarded <ArrowRight size={16} /></a></div>
+            <div className="mk-zero"><div>GH₵<span>0</span></div><p>to set up and run your portal</p><ul><li><CheckCircle2 size={17} />No setup fee</li><li><CheckCircle2 size={17} />No subscription</li><li><CheckCircle2 size={17} />No per-member charge</li></ul></div>
           </div>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          FEATURES — the solution to the problem just raised above. Grouped
-          into three named pillars (see FEATURE_GROUPS) instead of one flat
-          11-card grid, so a scanning visitor gets the shape of the product
-          in three headings before reading a single card.
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="mb-14 max-w-[56ch]">
-            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>The fix</p>
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              One digital home for your institution's community.
-            </h2>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
-              Your community stays connected, your records become reliable, and contributions are collected and reconciled
-              properly, all in the same place, without relying on scattered WhatsApp groups.
-            </p>
+          <div className="mk-wrap"><p className="mk-payment-note">Your portal is free. Fees apply to online payments and are shown before payment.</p></div>
+        </section>
+        <section id="onboard" className="mk-section mk-enquiry">
+          <div className="mk-wrap mk-enquiry-grid">
+            <div className="mk-enquiry-copy"><p className="mk-eyebrow">Let’s get your community started</p><h2>Let’s get your institution onboarded.</h2><p>Tell us a little about your institution and where to reach you. Our team will follow up to configure your portal, your branding, and your first admin account, free from day one.</p><div className="mk-contact-points"><span><Mail size={17} />We’ll reply within one business day</span><span><ShieldCheck size={17} />No setup or subscription fee</span><span><MapPin size={17} />Built for every community, anywhere</span></div><a href="mailto:hello@alumunion.com" className="mk-text-link">hello@alumunion.com <ArrowRight size={14} /></a></div>
+            <div className="mk-form-panel"><div className="mk-form-choice" aria-label="Choose your request type"><button type="button" aria-pressed={enquiry === "onboarding"} onClick={() => setEnquiry("onboarding")}>Onboard my institution</button><button type="button" aria-pressed={enquiry === "walkthrough"} onClick={() => setEnquiry("walkthrough")}>See a walkthrough first</button></div>{enquiry === "onboarding" ? <OnboardingForm /> : <WalkthroughForm />}</div>
           </div>
-
-          <div className="space-y-14">
-            {FEATURE_GROUPS.map((group, gi) => (
-              <div key={group.label}>
-                <div className="flex items-baseline gap-3 mb-5">
-                  <h3 className="text-[15px] sm:text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>{group.label}</h3>
-                  <span className="h-px flex-1" style={{ background: "var(--border)" }} aria-hidden="true" />
-                  <span className="hidden sm:inline text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>{group.blurb}</span>
-                </div>
-                <div className="border-t" style={{ borderColor: "var(--border)" }}>
-                  {group.items.map((feature, i) => (
-                    <div key={feature.title} className={i ? "border-t" : ""} style={{ borderColor: "var(--border)" }}>
-                      <FeatureRow feature={feature} reverse={(FEATURE_GROUPS.slice(0, gi).reduce((n, g) => n + g.items.length, 0) + i) % 2 === 1} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={() => scrollToSection("#onboard")}
-            className="mt-10 w-full card group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 text-left transition-all duration-500 hover:-translate-y-1"
-            style={{ background: "var(--primary)", borderColor: "var(--primary)" }}>
-            <div>
-              <p className="text-[14px] font-semibold text-white mb-1">Ready to build your community?</p>
-              <p className="text-[12.5px]" style={{ color: "color-mix(in oklch, white 75%, transparent)" }}>Tell us about your institution — it's <span style={{ color: "white" }}>free</span> to get started.</p>
-            </div>
-            <ArrowRight size={18} className="text-white shrink-0 transition-transform group-hover:translate-x-1" />
-          </button>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          HOW IT WORKS
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="how-it-works" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-
-          {/* ── Build a community from the ground up — for organizations with
-                an idea, a network, or a community ready to grow. ── */}
-          <div className="text-center max-w-[62ch] mx-auto mb-12">
-            <p className="text-[11px] font-bold tracking-[0.14em] uppercase mb-4" style={{ color: "var(--primary)" }}>For organizations starting from anywhere</p>
-            <h2 className="font-[family-name:var(--font-display)] mb-5" style={{ color: "var(--foreground)" }}>
-              Don&apos;t have an organized community yet? Start from where you are.
-            </h2>
-            <p className="font-[family-name:var(--font-display)] italic" style={{ fontSize: "1.15rem", lineHeight: 1.6, color: "var(--muted-foreground)" }}>
-              &ldquo;Bring your people together, organize the groups that matter to you, and gradually grow a trusted community.&rdquo;
-            </p>
-          </div>
-
-          <div className="mb-6 overflow-x-auto">
-            <PipelineFlow />
-          </div>
-          <p className="text-center max-w-[46ch] mx-auto mb-20 sm:mb-24" style={{ fontSize: "0.925rem", lineHeight: 1.7, color: "var(--muted-foreground)" }}>
-            Each group or chapter can have its own leader, responsible for bringing people in and keeping them connected, so the work spreads across your community instead of landing on one overworked administrator.
-          </p>
-
-          {/* ── The concrete offer — every step your team actually does ── */}
-          <div className="text-center max-w-[56ch] mx-auto mb-12">
-            <h3 className="font-[family-name:var(--font-display)] mb-4" style={{ fontSize: "1.5rem", color: "var(--foreground)" }}>
-              The offer: build your community, from the ground up.
-            </h3>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
-              Our team does the setup with you. This is everything it covers, in the order it happens.
-            </p>
-          </div>
-
-          <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
-            {WHITE_GLOVE_STEPS.map((step, i) => (
-              <WhiteGloveStep key={step.title} step={step} index={i} delay={`${(i % 3) * 65}ms`} />
-            ))}
-          </div>
-
-          <div className="flex justify-center mt-14">
-            <Button size="lg" className="px-8 h-12 text-[14.5px] font-semibold gap-2 rounded-full" onClick={() => scrollToSection("#onboard")}>
-              Request institution onboarding <ArrowRight size={15} />
-            </Button>
-          </div>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          "IT'S FREE" — dedicated reassurance section, no pricing table
-      ════════════════════════════════════════════════════════════════ */}
-      <Section style={{ background: "var(--brand-primary-dark, var(--primary))" }}>
-        <div className="relative overflow-hidden">
-          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)" }} />
-          <div className="absolute -bottom-32 -right-16 w-[420px] h-[420px] rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)" }} />
-          <div className="section__inner--wide relative py-20 sm:py-24 text-center">
-            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
-              What it costs
-            </p>
-            <h2 className="font-[family-name:var(--font-display)] mb-6 max-w-[24ch]"
-              style={{ fontSize: "clamp(2rem,4vw,3rem)", lineHeight: 1.12, color: "white", margin: "0 auto 1.5rem" }}>
-              Completely <span style={{ color: "rgba(255,255,255,0.9)" }}>free</span> for your institution. Full stop.
-            </h2>
-            <p className="max-w-[52ch] mb-9" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "rgba(255,255,255,0.82)", margin: "0 auto 2.25rem" }}>
-              No setup fee, no monthly bill, no per-member charge. Your members get a modern portal, and your organization
-              never sees an invoice for it.
-            </p>
-            <Button ref={freeCta.ref as React.Ref<HTMLButtonElement>} size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2 rounded-full"
-              style={{ ...freeCta.style, background: "white", color: "var(--primary)" }}
-              onMouseMove={freeCta.onMouseMove} onMouseLeave={freeCta.onMouseLeave}
-              onClick={() => scrollToSection("#onboard")}>
-              Get your institution onboarded <ChevronRight size={16} />
-            </Button>
-          </div>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          ONBOARDING FORM
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="onboard" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-        <div className="section__inner section">
-          <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] items-start">
-            <div className="lg:sticky lg:top-24">
-              <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[18ch]" style={{ color: "var(--foreground)" }}>
-                Let&apos;s get your institution onboarded.
-              </h2>
-              <p className="max-w-[46ch] mb-8" style={{ color: "var(--muted-foreground)", fontSize: "1rem", lineHeight: 1.75 }}>
-                Tell us a little about your institution and where to reach you. Our team will follow up to configure
-                your portal, your branding, and your first admin account, <span style={{ color: "var(--primary)" }}>free from day one.</span>
-              </p>
-              <div className="space-y-4">
-                {[
-                  { icon: Mail,     text: "We'll reply within one business day" },
-                  { icon: ShieldCheck, text: "No cost, no obligation, no catch" },
-                  { icon: MapPin,   text: "Built for every community, anywhere" },
-                ].map((item, index) => (
-                  <div key={item.text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}>
-                      <item.icon size={14} style={{ color: "var(--primary)" }} />
-                    </div>
-                    <p className="text-[13.5px] font-medium" style={{ color: "var(--foreground)" }}>
-                      {index === 1 ? <span style={{ color: "var(--primary)" }}>No cost</span> : item.text}
-                      {index === 1 ? ", no obligation, no catch" : ""}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <OnboardingForm />
-          </div>
-        </div>
-      </Section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          FAQ
-      ════════════════════════════════════════════════════════════════ */}
-      <Section id="faq" style={{ background: "var(--background)" }}>
-        <div className="section__inner section">
-          <div className="mb-12 max-w-[50ch] mx-auto text-center">
-            <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              Frequently asked questions.
-            </h2>
-          </div>
-          <div className="max-w-2xl mx-auto space-y-3">
-            {FAQS.map((item, i) => (
-              <FaqItem key={item.q} item={item} open={openFaq === i} onToggle={() => setOpenFaq((v) => (v === i ? null : i))} />
-            ))}
-          </div>
-        </div>
-      </Section>
-
+        </section>
+        <section id="faq" className="mk-section"><div className="mk-wrap mk-faq-grid"><div><p className="mk-eyebrow">A few things you might ask</p><h2>Frequently asked questions.</h2><p className="mk-faq-intro">Still have a question? Our team can walk you through it.</p><a href="mailto:hello@alumunion.com" className="mk-text-link">Talk to us <ArrowRight size={14} /></a></div><div>{FAQS.map(item => <details key={item.q} className="mk-faq"><summary>{item.q}</summary><p>{item.a}</p></details>)}</div></div></section>
+      </main>
       <MarketingFooter />
-
     </div>
   );
 }

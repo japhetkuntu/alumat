@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Check, X as XIcon, ExternalLink,
 } from "@alumni/ui";
 import { Button, cn } from "@alumni/ui";
-import { Section, ScrollProgressBar, useScrolled, useTilt, useCountUp, CustomCursor, CustomCursorStyles } from "../_marketing/primitives";
+import { Section, ScrollProgressBar, useScrolled, useCountUp } from "../_marketing/primitives";
 import { MarketingFooter } from "../_marketing/footer";
 import { CapIllustration, NoDirectoryIllustration, OnePhoneIllustration, NoDataIllustration, FraudIllustration } from "../_marketing/product-panels";
 
@@ -30,7 +30,7 @@ const COMPARISON: { row: string; whatsapp: string; alumunion: string }[] = [
   { row: "Jobs & mentorship",      whatsapp: "Buried somewhere in chat history",       alumunion: "Dedicated jobs board & mentorship matching" },
   { row: "Photos & memories",      whatsapp: "Lost when storage clears or phones change", alumunion: "Photo albums organized by event, kept by your organization" },
   { row: "Engagement insight",     whatsapp: "No idea who's actually engaged",         alumunion: "Engagement figures for your admin team, from what members do in the portal" },
-  { row: "Cost",                   whatsapp: "\"Free,\" but nobody's really running it", alumunion: "Free, and actually built for the job" },
+  { row: "Cost",                   whatsapp: "No subscription for group chats", alumunion: "No portal subscription; online payment fees are separate" },
 ];
 
 const SOURCES = [
@@ -44,11 +44,8 @@ const SOURCES = [
    COMPONENTS
    ───────────────────────────────────────────────────────────────────────── */
 function SourceCard({ s, index }: { s: typeof SOURCES[number]; index: number }) {
-  const tilt = useTilt<HTMLAnchorElement>(4);
   return (
-    <a ref={tilt.ref} href={s.url} target="_blank" rel="noopener noreferrer"
-      onMouseMove={tilt.onMouseMove} onMouseLeave={tilt.onMouseLeave}
-      style={tilt.style}
+    <a href={s.url} target="_blank" rel="noopener noreferrer"
       className="card group flex items-start gap-4 p-5 transition-shadow duration-300 hover:shadow-sm hover:border-primary/40">
       <div className="w-9 h-9 rounded-none flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
         style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))", color: "var(--primary)" }}>
@@ -138,9 +135,7 @@ function CompareAtAGlance() {
 export default function WhyNotWhatsAppPage() {
   const scrolled = useScrolled(24);
   return (
-    <div className="min-h-screen overflow-x-hidden au-cursor-zone" style={{ background: "var(--background)", color: "var(--foreground)" }}>
-      <CustomCursorStyles />
-      <CustomCursor />
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <ScrollProgressBar />
 
       {/* ── Header — shrinks slightly once the page has scrolled, matching the homepage ── */}
@@ -166,11 +161,10 @@ export default function WhyNotWhatsAppPage() {
         <div className="section__inner--wide relative pt-16 pb-16 text-center">
           <h1 className="font-[family-name:var(--font-display)] mb-6 max-w-[26ch]"
             style={{ fontSize: "clamp(2.2rem,4.6vw,3.5rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)", margin: "0 auto 1.5rem" }}>
-            WhatsApp wasn&apos;t built to run your community.
+            Keep WhatsApp for conversation. Use AlumUnion for community records.
           </h1>
           <p className="max-w-[54ch] mb-10" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
-            It&apos;s free, familiar, and everyone already has it, which is why so many communities start there.
-            A chat app can&apos;t keep records, collect money safely or hold your members together as you grow. Here&apos;s what that looks like, with sources.
+            Your group conversations can stay where they are. Use a dedicated portal for member records, event RSVPs and payment records. Here is how those roles differ.
           </p>
 
           <div className="max-w-[860px] mx-auto text-left">
@@ -181,7 +175,7 @@ export default function WhyNotWhatsAppPage() {
             <div className="mt-8 text-center">
               <Link href="/#onboard">
                 <Button size="lg" className="h-12 gap-2 px-8 text-[14.5px] font-semibold">
-                  Get your community onboarded <ArrowRight size={15} />
+                  Request a walkthrough <ArrowRight size={15} />
                 </Button>
               </Link>
             </div>
@@ -313,12 +307,12 @@ export default function WhyNotWhatsAppPage() {
           <div className="section__inner--wide relative py-20 sm:py-24 text-center">
             <h2 className="font-[family-name:var(--font-display)] mb-6 max-w-[22ch]"
               style={{ fontSize: "clamp(1.9rem,3.8vw,2.75rem)", lineHeight: 1.15, color: "white", margin: "0 auto 1.5rem" }}>
-              Give your community something built for the job, free.
+              See how member records, events and payments fit together.
             </h2>
             <Link href="/#onboard">
               <Button size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2"
                 style={{ background: "white", color: "var(--primary)" }}>
-                Get your institution onboarded <ArrowRight size={16} />
+                Request a walkthrough <ArrowRight size={16} />
               </Button>
             </Link>
           </div>

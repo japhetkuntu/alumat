@@ -38,3 +38,16 @@ public class CreateOnboardingLeadRequest
 }
 
 public record OnboardingLeadResponse(string Id, string InstitutionName, string ContactEmail, string Status);
+
+/// <summary>A product enquiry; this does not accept the Institution Agreement.</summary>
+public class CreateWalkthroughRequest
+{
+    [Required, MaxLength(200)]
+    public string InstitutionName { get; set; } = string.Empty;
+    [Required, MaxLength(200)]
+    public string ContactName { get; set; } = string.Empty;
+    [Required, EmailAddress, MaxLength(254)]
+    public string ContactEmail { get; set; } = string.Empty;
+    [MaxLength(100)]
+    public string? MainInterest { get; set; }
+}

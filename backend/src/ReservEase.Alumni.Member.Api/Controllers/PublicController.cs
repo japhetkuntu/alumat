@@ -112,17 +112,39 @@ public class PublicController(
         if (!request.AgreementAccepted || request.AgreementVersion != InstitutionAgreement.CurrentVersion)
             return ApiResponseExtensions.ToBadRequestApiResponse<OnboardingLeadResponse>("Please read and accept the Institution Agreement to continue.").ToActionResult();
 
+        return await SaveOnboardingLead(request, recordAgreement: true);
+    }
+
+    [HttpPost("walkthrough-requests")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Request a product walkthrough without accepting an institution agreement")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<OnboardingLeadResponse>))]
+    public async Task<IActionResult> CreateWalkthrough([FromBody] CreateWalkthroughRequest request)
+    {
+        return await SaveOnboardingLead(new CreateOnboardingLeadRequest
+        {
+            InstitutionName = request.InstitutionName.Trim(),
+            ContactName = request.ContactName.Trim(),
+            ContactEmail = request.ContactEmail.Trim(),
+            PrimaryGoals = string.IsNullOrWhiteSpace(request.MainInterest) ? [] : [request.MainInterest.Trim()],
+            Message = "Product walkthrough requested from the marketing site.",
+        }, recordAgreement: false);
+    }
+
+    private async Task<IActionResult> SaveOnboardingLead(CreateOnboardingLeadRequest request, bool recordAgreement)
+    {
         // Behind the reverse proxy the real address is the first entry of X-Forwarded-For.
         var forwarded = Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
         var ip = string.IsNullOrEmpty(forwarded) ? HttpContext.Connection.RemoteIpAddress?.ToString() : forwarded;
 
         var lead = new OnboardingLead
         {
-            AgreementVersion = request.AgreementVersion,
-            AgreementAcceptedAt = DateTime.UtcNow,
-            AgreementAcceptedByName = request.ContactName,
-            AgreementAcceptedByTitle = request.ContactRole,
-            AgreementAcceptedIp = ip,
+            AgreementVersion = recordAgreement ? request.AgreementVersion : null,
+            AgreementAcceptedAt = recordAgreement ? DateTime.UtcNow : null,
+            AgreementAcceptedByName = recordAgreement ? request.ContactName : null,
+            AgreementAcceptedByTitle = recordAgreement ? request.ContactRole : null,
+            AgreementAcceptedIp = recordAgreement ? ip : null,
+            Source = recordAgreement ? "Website" : "Website walkthrough",
             InstitutionName = request.InstitutionName,
             ContactName = request.ContactName,
             ContactEmail = request.ContactEmail,
@@ -145,14 +167,14 @@ public class PublicController(
         // Let the platform team know a lead came in — this is the top of the
         // "we'll build it for you" acquisition funnel, so a lead sitting
         // unseen until someone happens to check the dashboard is a real cost.
-        var staff = (await platformStaffRepo.GetAllAsync(s => !s.IsDisabled && (s.Role == "SuperAdmin" || s.Role == "Support"))).ToList();
+        var staff = (await platformStaffRepo.GetAllAsync(s => !s.IsDisabled && (s.Role == "SuperAdmin" || s.Role == "Sales"))).ToList();
         if (staff.Count > 0)
         {
             var notifications = staff.Select(s => new PlatformNotification
             {
                 RecipientStaffId = s.Id,
-                Title = "New onboarding lead",
-                Body = $"{lead.InstitutionName} — {lead.ContactName} ({lead.ContactEmail}) wants to get onboarded.",
+                Title = recordAgreement ? "New onboarding lead" : "New walkthrough request",
+                Body = $"{lead.InstitutionName} — {lead.ContactName} ({lead.ContactEmail}) {(recordAgreement ? "wants to get onboarded" : "requested a walkthrough")}.",
                 Type = "OnboardingLeadSubmitted",
                 RelatedEntityId = lead.Id,
                 RelatedEntityType = "OnboardingLead",

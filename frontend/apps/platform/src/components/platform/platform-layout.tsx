@@ -33,7 +33,7 @@ const navItems = [
   { href: "/institutions", label: "Institutions", icon: Building2 },
   { href: "/activation", label: "Activation", icon: Target },
   { href: "/members", label: "Members", icon: GraduationCap },
-  { href: "/onboarding-leads", label: "Onboarding Requests", icon: Inbox },
+  { href: "/onboarding-leads", label: "Onboarding & Demos", icon: Inbox },
   { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
   { href: "/staff", label: "Platform Staff", icon: Users },
   { href: "/support", label: "Support", icon: LifeBuoy },

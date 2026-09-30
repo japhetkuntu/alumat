@@ -16,9 +16,9 @@ import { PageHeader } from "@alumni/ui";
 import { searchDirectory } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
-import { cn } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
 import type { Member } from "@/types";
+import { DirectoryMemberCard } from "@/components/member/directory-member-card";
 import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
 import { useNavTheme } from "@/components/member/member-layout";
 
@@ -128,78 +128,10 @@ export default function MemberDirectoryPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {members.map(m => {
-            const isSelected = selected?.id === m.id;
-            return (
-              <button
-                key={m.id}
-                onClick={() => setSelected(isSelected ? null : m)}
-                className={cn(
-                  "text-left rounded-2xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                  isSelected && "ring-2 ring-primary/30",
-                )}
-                style={{
-                  borderColor: isSelected ? "var(--primary)" : "var(--border)",
-                  background:  "var(--background)",
-                }}
-              >
-                {/* Avatar + name */}
-                <div className="flex items-start gap-3 mb-4">
-                  <UserAvatar
-                    src={m.profilePictureUrl}
-                    name={`${m.firstName} ${m.lastName}`}
-                    size="lg"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-[14.5px] font-semibold leading-snug truncate"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      {m.firstName} {m.lastName}
-                    </p>
-                    {m.jobTitle && (
-                      <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
-                        {m.jobTitle}
-                        {m.company ? ` · ${m.company}` : ""}
-                      </p>
-                    )}
-                    {m.location && (
-                      <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
-                        {m.location}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Badges */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                  {!isCommunity && (
-                    <Badge variant="secondary" className="text-[10.5px] font-semibold">
-                      Class of {m.graduationYear}
-                    </Badge>
-                  )}
-                  {m.departmentName && (
-                    <Badge variant="outline" className="text-[10.5px] font-semibold truncate max-w-[110px]">
-                      {m.departmentName}
-                    </Badge>
-                  )}
-                  {m.linkedInUrl && (
-                    <a
-                      href={ensureAbsoluteUrl(m.linkedInUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-auto shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-blue-50"
-                      style={{ color: "#2563eb" }}
-                      onClick={e => e.stopPropagation()}
-                      aria-label={`${m.firstName} ${m.lastName} on LinkedIn`}
-                    >
-                      <Linkedin size={14} />
-                    </a>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+          {members.map(m => (
+            <DirectoryMemberCard key={m.id} member={m} selected={selected?.id === m.id} isCommunity={isCommunity}
+              onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
+          ))}
         </div>
       )}
 

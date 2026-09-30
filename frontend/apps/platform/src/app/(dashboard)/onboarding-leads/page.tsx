@@ -103,10 +103,13 @@ export default function OnboardingLeadsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
-  const { data: leads = [], isLoading, isError, refetch } = useQuery({
+  const [requestFilter, setRequestFilter] = useState<"all" | "demo" | "other">("all");
+  const { data: allLeads = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["onboarding-leads", statusFilter],
     queryFn: () => getOnboardingLeads(statusFilter === "all" ? undefined : statusFilter),
   });
+  const demoCount = allLeads.filter(lead => lead.source === "Website walkthrough").length;
+  const leads = allLeads.filter(lead => requestFilter === "all" || (requestFilter === "demo" ? lead.source === "Website walkthrough" : lead.source !== "Website walkthrough"));
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
   const active = leads.find((l) => l.id === activeId) ?? leads[0];
 
@@ -182,8 +185,8 @@ export default function OnboardingLeadsPage() {
     <div className="p-4 sm:p-7 max-w-[1500px]">
       <div className="flex items-end justify-between mb-6">
         <div>
-          <h1 className="text-[24px] font-bold">Onboarding Requests</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">Review prospective institutions, track them through demo and trial, and approve them into the platform.</p>
+          <h1 className="text-[24px] font-bold">Onboarding & Demo Requests</h1>
+          <p className="text-muted-foreground text-[13px] mt-1">Review onboarding and demo enquiries from the marketing site, follow up with contacts, and track institutions through demo and trial.</p>
         </div>
         <div className="flex gap-2">
         <Button variant="outline" onClick={() => setImportOpen(true)}>Import CSV</Button>
@@ -201,6 +204,9 @@ export default function OnboardingLeadsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-5" aria-label="Filter by request type">
+        {([{ id: "all", label: `All requests (${allLeads.length})` }, { id: "demo", label: `Demo requests (${demoCount})` }, { id: "other", label: `Onboarding & outreach (${allLeads.length - demoCount})` }] as const).map(item => <Button key={item.id} variant={requestFilter === item.id ? "default" : "outline"} size="sm" aria-pressed={requestFilter === item.id} onClick={() => { setRequestFilter(item.id); setActiveId(undefined); }}>{item.label}</Button>)}
+      </div>
       {isError ? (
         <LoadError onRetry={() => refetch()} />
       ) : isLoading ? (
@@ -209,8 +215,8 @@ export default function OnboardingLeadsPage() {
         <Card>
           <EmptyState
             icon={<Inbox size={24} />}
-            title="Requests from institutions that want to join"
-            description="When a school or group fills in the request form on your marketing site, it lands here. Log outreach and warm intros yourself with Log a lead, so the activation funnel counts them."
+            title={requestFilter === "demo" ? "No demo requests in this stage" : "No requests in this view"}
+            description="Onboarding forms and demo enquiries from the marketing site land here. Try another request type or stage, or log outreach with Log a lead."
           />
         </Card>
       ) : (
@@ -227,7 +233,7 @@ export default function OnboardingLeadsPage() {
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <p className="font-semibold text-[13.5px]">{l.institutionName}</p>
+                    <div><p className="font-semibold text-[13.5px]">{l.institutionName}</p>{l.source === "Website walkthrough" && <span className="inline-block mt-1 text-[11px] font-semibold text-primary">Demo request</span>}</div>
                     <Badge variant={statusBadgeVariant(l.status)}>{STATUS_LABELS[l.status] ?? l.status}</Badge>
                   </div>
                   {followUpState(l.nextFollowUpAt) && followUpState(l.nextFollowUpAt) !== "upcoming" && (
@@ -247,7 +253,7 @@ export default function OnboardingLeadsPage() {
               <CardContent className="p-5">
                 <h2 className="text-[17px] font-semibold">{active.institutionName}</h2>
                 <p className="text-[12.5px] text-muted-foreground mt-1">
-                  {active.source === "Website" || !active.source ? "Submitted" : `Logged (${active.source})`}{" "}
+                  {active.source === "Website walkthrough" ? "Demo requested" : active.source === "Website" || !active.source ? "Submitted" : `Logged (${active.source})`}{" "}
                   {active.ageHours < 48 ? `${active.ageHours}h ago` : `${Math.floor(active.ageHours / 24)} days ago`} &middot; {STATUS_LABELS[active.status] ?? active.status}
                 </p>
                 {(active.contactedAt || active.demoBookedAt || active.trialStartedAt || active.approvedAt) && (
@@ -289,14 +295,16 @@ export default function OnboardingLeadsPage() {
                     <p><b>Contact timing:</b> {[active.preferredContactTime, active.timeZone].filter(Boolean).join(" · ")}</p>
                   )}
                   {active.website && <p><b>Website:</b> <a className="text-primary hover:underline" href={active.website} target="_blank" rel="noreferrer">{active.website}</a></p>}
-                  {active.primaryGoals?.length > 0 && <p><b>Goals:</b> {active.primaryGoals.join(", ")}</p>}
+                  {active.primaryGoals?.length > 0 && <p><b>{active.source === "Website walkthrough" ? "Demo interest:" : "Goals:"}</b> {active.primaryGoals.join(", ")}</p>}
                 </div>
 
                 <p>
                   <b>Institution Agreement:</b>{" "}
                   {active.agreementAcceptedAt
                     ? `accepted ${new Date(active.agreementAcceptedAt).toLocaleString()} by ${active.agreementAcceptedByName ?? "the contact"}${active.agreementAcceptedByTitle ? ` (${active.agreementAcceptedByTitle})` : ""}, version ${active.agreementVersion}${active.agreementAcceptedIp ? `, from ${active.agreementAcceptedIp}` : ""}`
-                    : active.source && active.source !== "Website"
+                    : active.source === "Website walkthrough"
+                      ? "not required for a demo enquiry"
+                      : active.source && active.source !== "Website"
                       ? "not yet accepted (logged by platform staff)"
                       : "not recorded (request made before the agreement was introduced)"}
                 </p>
