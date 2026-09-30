@@ -1,8 +1,9 @@
 "use client";
 
+import { useDisabledFeatures } from "@/components/member/member-layout";
 import { useState } from "react";
 import { LoadError } from "@alumni/ui";
-import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   CreditCard, Calendar, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
@@ -388,7 +389,7 @@ function PulseEmpty({ label, action }: { label: string; action?: { label: string
 
 
 function JobsPulse() {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["m-dash-jobs"],
     queryFn: () => getJobs(1, 3),
   });
@@ -399,9 +400,9 @@ function JobsPulse() {
       {isLoading ? (
         <div className="space-y-3 py-1">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-10 rounded-lg animate-pulse bg-secondary" />)}</div>
       ) : isError ? (
-        <PulseEmpty label="Couldn't load jobs. Try again later." />
+        <LoadError title="Jobs couldn’t load" onRetry={() => void refetch()} />
       ) : jobs.length === 0 ? (
-        <PulseEmpty label="Job openings shared by members and your institution appear here." />
+        <PulseEmpty label="Opportunities will appear as your community shares them. Add your skills so your profile is ready." action={{ label: "Update your profile", href: "/profile" }} />
       ) : (
         jobs.map((j) => (
           <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-secondary group">
@@ -424,7 +425,7 @@ function JobsPulse() {
 }
 
 function SpotlightPulse() {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["m-dash-spotlight"],
     queryFn: () => getSpotlights(1, 1),
   });
@@ -435,7 +436,7 @@ function SpotlightPulse() {
       {isLoading ? (
         <div className="h-24 rounded-lg animate-pulse bg-secondary" />
       ) : isError ? (
-        <PulseEmpty label="Couldn't load spotlights. Try again later." />
+        <LoadError title="Member stories couldn’t load" onRetry={() => void refetch()} />
       ) : !spotlight ? (
         <PulseEmpty label="No spotlights yet." action={{ label: "Share your story", href: "/spotlights" }} />
       ) : (
@@ -464,13 +465,16 @@ function SpotlightPulse() {
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
 export default function MemberDashboardPage() {
+  const disabledFeatures = useDisabledFeatures();
+  const contributionsEnabled = !disabledFeatures.has("Contributions");
+  const eventsEnabled = !disabledFeatures.has("Events");
   const results = useQueries({
     queries: [
-      { queryKey: ["m-campaigns"],             queryFn: () => getMyCampaigns(1, 50)                    },
-      { queryKey: ["m-contributions-recent"],  queryFn: () => getMyContributions({ pageSize: 5 })      },
-      { queryKey: ["m-contribution-summary"],  queryFn: getMyContributionSummary                        },
-      { queryKey: ["m-events", "upcoming"],    queryFn: () => getEvents(1, 50, "Upcoming")             },
-      { queryKey: ["m-rsvps"],                 queryFn: () => getMyRsvps()                             },
+      { queryKey: ["m-campaigns"],             enabled: contributionsEnabled, queryFn: () => getMyCampaigns(1, 50)                    },
+      { queryKey: ["m-contributions-recent"],  enabled: contributionsEnabled, queryFn: () => getMyContributions({ pageSize: 5 })      },
+      { queryKey: ["m-contribution-summary"],  enabled: contributionsEnabled, queryFn: getMyContributionSummary                        },
+      { queryKey: ["m-events", "upcoming"],    enabled: eventsEnabled, queryFn: () => getEvents(1, 50, "Upcoming")             },
+      { queryKey: ["m-rsvps"],                 enabled: eventsEnabled, queryFn: () => getMyRsvps()                             },
     ],
   });
 
@@ -487,14 +491,17 @@ export default function MemberDashboardPage() {
   const unpaidMembershipCampaignsQuery = useQuery({
     queryKey: ["m-membership-current-unpaid"],
     queryFn: getMyCurrentYearUnpaidMembershipCampaigns,
+    enabled: contributionsEnabled,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: profile } = useQuery({
+  const profileQuery = useQuery({
     queryKey: ["m-profile"],
     queryFn: getMyProfile,
   });
+
+  const profile = profileQuery.data;
 
   // Community campaigns are scoped per-community on the backend (never
   // returned by the general /campaigns call), so pulling them onto the
@@ -506,7 +513,7 @@ export default function MemberDashboardPage() {
   const approvedCommunities = myCommunities.filter((c) => c.myStatus === "Approved");
 
   const communityCampaignResults = useQueries({
-    queries: approvedCommunities.map((c) => ({
+    queries: (contributionsEnabled ? approvedCommunities : []).map((c) => ({
       queryKey: ["m-community-campaigns-dash", c.id],
       queryFn: async () => ({ community: c, campaigns: (await getMyCampaigns(1, 20, c.id)).results }),
     })),
@@ -528,11 +535,11 @@ export default function MemberDashboardPage() {
       : c.amountPerMember;
 
   const currentYear = new Date().getFullYear();
-  const activeCampaigns = (campaigns.data?.results ?? []).filter((c) => c.status === "Active");
+  const activeCampaigns = (contributionsEnabled ? campaigns.data?.results ?? [] : []).filter((c) => c.status === "Active");
   const contributionsList = contributions.data?.results ?? [];
   const paidMembershipCampaignIds = new Set(contributionSummary.data?.paidCampaignIds ?? []);
 
-  const unpaidCurrentMembershipCampaigns = unpaidMembershipCampaignsQuery.data ?? [];
+  const unpaidCurrentMembershipCampaigns = contributionsEnabled ? unpaidMembershipCampaignsQuery.data ?? [] : [];
   const membershipCampaign = unpaidCurrentMembershipCampaigns[0] ?? null;
 
   const activeMembershipCampaigns = activeCampaigns.filter((c) => c.isMembershipCampaign);
@@ -543,11 +550,13 @@ export default function MemberDashboardPage() {
   const totalPaid = contributionSummary.data?.totalPaid ?? 0;
   const totalPaidThisYear = contributionSummary.data?.totalPaidThisYear ?? 0;
 
-  const upcomingEvents = events.data?.results ?? [];
+  const upcomingEvents = eventsEnabled ? events.data?.results ?? [] : [];
   const upcomingEventsCount = events.data?.totalCount ?? 0;
   const myRsvpIds = new Set((rsvps.data ?? []).map((r) => r.eventId));
 
   const nonMembershipActiveCampaigns = activeCampaigns.filter((c) => !c.isMembershipCampaign);
+  const failedQueries = [...results, membershipStatus, unpaidMembershipCampaignsQuery, profileQuery, ...communityCampaignResults].filter(query => query.isError);
+  const hasNoActivity = (!contributionsEnabled || campaigns.isSuccess) && (!eventsEnabled || events.isSuccess) && activeCampaigns.length === 0 && upcomingEvents.length === 0;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
@@ -561,12 +570,12 @@ export default function MemberDashboardPage() {
         />
       </div>
 
-      {results.some((r) => r.isError) && (
+      {failedQueries.length > 0 && (
         <LoadError
           className="py-6"
           title="Some of your dashboard couldn't load"
           description="The figures below may be incomplete. Try again."
-          onRetry={() => results.forEach((r) => { if (r.isError) void r.refetch(); })}
+          onRetry={() => failedQueries.forEach(query => void query.refetch())}
         />
       )}
 
@@ -574,7 +583,7 @@ export default function MemberDashboardPage() {
       <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-75">
         {membershipStatus.isLoading ? (
           <MembershipCardSkeleton />
-        ) : (
+        ) : membershipStatus.data ? (
           <MembershipCard
             profile={profile}
             membershipStatus={membershipStatus.data}
@@ -582,7 +591,7 @@ export default function MemberDashboardPage() {
             isPensioner={isPensioner}
             getMemberAmount={getMemberAmount}
           />
-        )}
+        ) : null}
       </div>
 
       {/* ── Arrears banner ── */}
@@ -590,7 +599,7 @@ export default function MemberDashboardPage() {
         <ArrearsBanner membershipStatus={membershipStatus.data} />
       )}
 
-      {/* ── Profile completion nudge ── */}
+      {hasNoActivity && <div className="border border-border bg-card p-6 sm:p-8" style={{borderRadius: 20}}><p className="text-xs text-primary font-semibold uppercase tracking-wide">Make yourself at home</p><h2 className="text-2xl font-semibold mt-3">Your community starts with its people.</h2><p className="text-sm text-muted-foreground leading-relaxed mt-3 max-w-xl">Introduce yourself while your institution prepares its next activities. Published events and campaigns will appear here when they are ready.</p><div className="flex flex-wrap gap-3 mt-5"><Link href="/profile" className="text-sm font-semibold text-primary underline underline-offset-4">Complete your profile</Link>{!disabledFeatures.has("Directory") && <Link href="/directory" className="text-sm font-semibold text-primary underline underline-offset-4">Explore the member directory</Link>}</div></div>}
 
       {/* ── Stat tiles ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100">
@@ -598,34 +607,34 @@ export default function MemberDashboardPage() {
           ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
           : (
             <>
-              <DashStat
+              {contributionsEnabled && campaigns.data && <DashStat
                 href="/contributions"
                 label="Open fundraisers"
                 value={activeCampaigns.length}
                 sub="Including dues"
                 tone="primary"
-              />
-              <DashStat
+              />}
+              {contributionsEnabled && contributionSummary.data && <DashStat
                 href="/contributions"
                 label="Total contributed"
                 value={formatCurrency(totalPaid)}
                 sub="All-time confirmed"
                 tone="accent"
-              />
-              <DashStat
+              />}
+              {contributionsEnabled && contributionSummary.data && <DashStat
                 href="/contributions"
                 label="This year"
                 value={formatCurrency(totalPaidThisYear)}
                 sub={`Contributed in ${currentYear}`}
                 tone="primary"
-              />
-              <DashStat
+              />}
+              {eventsEnabled && events.data && <DashStat
                 href="/events"
                 label="Upcoming events"
                 value={upcomingEventsCount}
                 sub="Events you can join"
                 tone="accent"
-              />
+              />}
             </>
           )}
       </div>
@@ -751,7 +760,7 @@ export default function MemberDashboardPage() {
                   Community fundraisers
                 </CardTitle>
                 <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                  Fundraisers from communities you've joined
+                  Fundraisers from communities you’ve joined
                 </p>
               </div>
               <Link href="/communities">
@@ -803,31 +812,31 @@ export default function MemberDashboardPage() {
       )}
 
       {/* ── What's new — the reason to open this outside of dues season ── */}
-      <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
+      {(!disabledFeatures.has("Jobs") || !disabledFeatures.has("Spotlights")) && <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
         <div>
           <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
             What&apos;s new
           </h2>
           <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-            Since you last checked in
+            From your community
           </p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          <JobsPulse />
-          <SpotlightPulse />
+          {!disabledFeatures.has("Jobs") && <JobsPulse />}
+          {!disabledFeatures.has("Spotlights") && <SpotlightPulse />}
         </div>
-      </section>
+      </section>}
 
       {/* ── Events + Recent activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
         {/* Events */}
-        <Card>
+        {eventsEnabled && <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
             <div>
               <CardTitle className="text-[15px] font-bold">Upcoming events</CardTitle>
               <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                Events open to all alumni
+                Events open to your community
               </p>
             </div>
             <Link href="/events">
@@ -862,7 +871,9 @@ export default function MemberDashboardPage() {
                   : <Badge variant="outline" className="text-[11px] font-bold shrink-0">Open</Badge>}
               </Link>
             ))}
-            {upcomingEvents.length === 0 && !isLoading && (
+            {events.isError && !events.data && <LoadError title="Events couldn’t load" onRetry={() => void events.refetch()} />}
+            {events.isLoading && <p className="text-sm text-muted-foreground py-5">Loading events…</p>}
+            {upcomingEvents.length === 0 && events.isSuccess && (
               <div className="py-10 text-center space-y-2">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
@@ -871,15 +882,15 @@ export default function MemberDashboardPage() {
                   <Calendar size={20} style={{ color: "var(--muted-foreground)" }} />
                 </div>
                 <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-                  No upcoming events yet
+                  Your institution will announce upcoming events here.
                 </p>
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Recent contributions */}
-        <Card>
+        {contributionsEnabled && <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
             <div>
               <CardTitle className="text-[15px] font-bold">Recent payments</CardTitle>
@@ -927,7 +938,9 @@ export default function MemberDashboardPage() {
                 </div>
               </Link>
             ))}
-            {contributionsList.length === 0 && !isLoading && (
+            {contributions.isError && !contributions.data && <LoadError title="Payments couldn’t load" onRetry={() => void contributions.refetch()} />}
+            {contributions.isLoading && <p className="text-sm text-muted-foreground py-5">Loading your payments…</p>}
+            {contributionsList.length === 0 && contributions.isSuccess && (
               <div className="py-10 text-center space-y-2">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
@@ -938,15 +951,11 @@ export default function MemberDashboardPage() {
                 <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>
                   No contributions yet
                 </p>
-                <Link href="/contributions">
-                  <Button size="sm" variant="outline" className="mt-1 font-semibold">
-                    Go to Give
-                  </Button>
-                </Link>
+                {activeCampaigns.length > 0 ? <Link href="/contributions"><Button size="sm" variant="outline" className="mt-1 font-semibold">Explore open campaigns</Button></Link> : <p className="text-xs text-muted-foreground">Your payment history will appear here when you make a contribution.</p>}
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
       </div>
     </div>

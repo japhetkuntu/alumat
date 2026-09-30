@@ -9,9 +9,10 @@ import {
   Menu, X, ArrowRight, ChevronRight, ChevronLeft,
   BookOpen, Trophy, CreditCard, Bell, FileText,
   MapPin, Zap, Shield, Star, Award, ShoppingBag,
-  Images, Building2, Newspaper, Clock,
+  Images, Building2, Clock,
   Facebook, Twitter, Instagram, Linkedin, Youtube, Tiktok,
 } from "@alumni/ui";
+import "./institution-landing.css";
 import { Skeleton } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
@@ -60,7 +61,7 @@ interface LandingContent {
   newsBanner?: DynamicNewsBanner | null;
   displayName?: string | null;
   logoUrl?: string | null;
-  /** Overrides the hero photo(s), shown as a carousel when there's more than one — falls back to IMG.heroPanel (generic stock photo) when empty. */
+  /** Overrides the hero photo(s), shown as a carousel when there's more than one — uses a branded welcome when empty. */
   heroImageUrls?: string[] | null;
   /** Overrides the short headline overlaid on the hero photo. */
   heroHeadline?: string | null;
@@ -109,47 +110,51 @@ interface PublicBusinessItem { id: string; businessName: string; description: st
 // in once the response lands.
 const PUBLIC_CONTENT_REFETCH_INTERVAL = 2 * 60 * 1000;
 
-function usePublicNews() {
-  const { data, isPending } = useQuery({
+function usePublicNews(enabled = true) {
+  const query = useQuery({
+    enabled,
     queryKey: ["public-news"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicNewsItem[] }>("/public/news", { params: { take: 3 } })).data.data,
     staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
-  return { items: data ?? [], isPending };
+  return { ...query, items: query.data ?? [] };
 }
-function usePublicEvents() {
-  const { data, isPending } = useQuery({
+function usePublicEvents(enabled = true) {
+  const query = useQuery({
+    enabled,
     queryKey: ["public-events"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicEventItem[] }>("/public/events", { params: { take: 3 } })).data.data,
     staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
-  return { items: data ?? [], isPending };
+  return { ...query, items: query.data ?? [] };
 }
-function usePublicSpotlight() {
-  const { data, isPending } = useQuery({
+function usePublicSpotlight(enabled = true) {
+  const query = useQuery({
+    enabled,
     queryKey: ["public-spotlight"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicSpotlightItem[] }>("/public/spotlights", { params: { take: 1 } })).data.data,
     staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
-  return { item: data?.[0], isPending };
+  return { ...query, item: query.data?.[0] };
 }
-function usePublicBusinesses() {
-  const { data, isPending } = useQuery({
+function usePublicBusinesses(enabled = true) {
+  const query = useQuery({
+    enabled,
     queryKey: ["public-businesses"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicBusinessItem[] }>("/public/businesses", { params: { take: 6 } })).data.data,
     staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
-  return { items: data ?? [], isPending };
+  return { ...query, items: query.data ?? [] };
 }
 
 interface PublicPulse { members: number; joinedLast30Days: number; eventsNext30Days: number | null; nextEventDate: string | null; openJobs: number | null; businesses: number | null; }
 function usePublicPulse() {
-  const { data } = useQuery({
+  const query = useQuery({
     queryKey: ["public-pulse"],
     queryFn: async () => (await publicMemberClient.get<{ data: PublicPulse }>("/public/pulse")).data.data,
     staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
-  return data;
+  return query;
 }
 
 function daysUntil(iso: string) {
@@ -173,15 +178,11 @@ function formatEventDate(iso: string) {
 // No stock photography on purpose: a photo of strangers makes every community's page look the same. Photos here come
 // from the institution itself (hero images, story images); without them the page uses the institution's own brand colour.
 
-/** Auto-advancing hero photo carousel — falls back to a single static image when there's nothing (or only one photo) to rotate through. */
+/** Institution photos, advanced by the visitor so the headline stays easy to read. */
 function HeroCarousel({ images }: { images: string[] }) {
   const [index, setIndex] = useState(0);
 
-  useEffect(() => {
-    if (images.length < 2) return;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % images.length), 5000);
-    return () => clearInterval(timer);
-  }, [images.length]);
+
 
   return (
     <>
@@ -227,7 +228,7 @@ const NAV_LINKS = [
 ];
 
 const FEATURES: { icon: LucideIcon; label: string; title: string; desc: string; featureKey: string | undefined }[] = [
-  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Roles posted by community employers before they reach public boards: first look, before LinkedIn.", featureKey: "Jobs" },
+  { icon: Briefcase,    label: "Careers",       title: "Jobs inside the network",       desc: "Discover opportunities shared by your institution and fellow members as they become available.", featureKey: "Jobs" },
   { icon: Users,        label: "Directory",     title: "Find people in your community", desc: "Search by name, group, location, or role, from local chapters to a global network.", featureKey: "Directory" },
   { icon: CreditCard,   label: "Contributions", title: "Fund what matters",             desc: "Easy payments for community projects, membership dues, campaigns, and member support.", featureKey: "Contributions" },
   { icon: Globe,        label: "Events",        title: "Bring people together",          desc: "RSVP for gatherings, services, chapter meetings, celebrations, and community events.", featureKey: "Events" },
@@ -263,25 +264,25 @@ const USE_CASES = [
   {
     icon: Briefcase,
     eyebrow: "Career",
-    scenario: "The job that never reached a public board",
-    desc: "Community employers post directly to the portal first, before LinkedIn and agencies. Being in the network means seeing those roles first.",
+    scenario: "Opportunities from your own network",
+    desc: "Discover roles shared by your institution and fellow members as opportunities become available.",
   },
   {
     icon: CreditCard,
     eyebrow: "Giving",
-    scenario: "The dormitory project that needed 200 people",
+    scenario: "A shared goal for your community",
     desc: "From community projects to member support, campaigns bring people together to contribute from wherever they are.",
   },
   {
     icon: Heart,
     eyebrow: "Mentorship",
-    scenario: "The mentor who's already done it",
+    scenario: "Experience worth passing on",
     desc: "Whatever path you are taking, there is an experienced member who can help. Mentorship makes that connection easier.",
   },
 ];
 
 const HOW_IT_WORKS = [
-  { n: "01", icon: Shield, title: "Register in under two minutes", desc: "Create your account with your community details. No long forms, no unnecessary friction." },
+  { n: "01", icon: Shield, title: "Request to join", desc: "Create your account with your community details. If approval is needed, we’ll show you the status and next steps." },
   { n: "02", icon: MapPin,  title: "Build out your profile",        desc: "Add your career, company, location. The more context you give, the easier it is for the right people to find you." },
   { n: "03", icon: Zap,    title: "Use it",                         desc: "Browse jobs, back a fundraiser, request a mentor, or just show up in the directory so others can reach you." },
 ];
@@ -332,10 +333,9 @@ function useCounter(end: number, active: boolean) {
 function Section({ id, children, className, style }: {
   id?: string; children: React.ReactNode; className?: string; style?: React.CSSProperties;
 }) {
-  const { ref, visible } = useFadeUp();
   return (
-    <section id={id} ref={ref}
-      className={cn("transition-all duration-700 ease-out", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6", className)}
+    <section id={id}
+      className={className}
       style={style}>
       {children}
     </section>
@@ -536,6 +536,7 @@ function AgendaRow({ item }: { item: PublicEventItem }) {
         <p className="text-[11px] font-bold tracking-[0.1em]" style={{ color: "var(--primary)" }}>{d.month}</p>
         <p className="font-[family-name:var(--font-display)] text-[30px] font-bold leading-none tabular-nums" style={{ color: "var(--foreground)" }}>{d.day}</p>
       </div>
+      {item.bannerImageUrl && <FitImage src={item.bannerImageUrl} alt="" className="il-event-image" />}
       <div className="min-w-0 flex-1">
         <h3 className="text-[16px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
         <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
@@ -559,18 +560,6 @@ function AgendaSkeleton() {
   );
 }
 
-function EmptyPanel({ icon: Icon, title, desc, big }: { icon: LucideIcon; title: string; desc: string; big?: boolean }) {
-  return (
-    <div className={cn("rounded-xl flex flex-col items-center justify-center text-center gap-2.5 px-6", big ? "py-16" : "py-10")}
-      style={{ background: "var(--muted)", border: "1px dashed var(--border)" }}>
-      <Icon size={big ? 26 : 20} style={{ color: "var(--muted-foreground)", opacity: 0.5 }} />
-      <p className={cn("font-semibold", big ? "text-[14px]" : "text-[12.5px]")} style={{ color: "var(--foreground)" }}>{title}</p>
-      <p className={cn("leading-relaxed max-w-[32ch]", big ? "text-[12.5px]" : "text-[11.5px]")} style={{ color: "var(--muted-foreground)" }}>{desc}</p>
-    </div>
-  );
-}
-
-/** Shimmer stand-in for a NewsCard, same proportions so nothing shifts when the real card swaps in. */
 function NewsCardSkeleton({ big }: { big?: boolean }) {
   return (
     <div>
@@ -661,9 +650,16 @@ function LiveStrip({ nextEvent, joined, openJobs }: { nextEvent?: PublicEventIte
   );
 }
 
-function NewsEventsSpotlight() {
-  const { items: news, isPending: newsPending } = usePublicNews();
-  const { item: spotlight, isPending: spotlightPending } = usePublicSpotlight();
+function NewsEventsSpotlight({ newsEnabled, spotlightEnabled }: { newsEnabled: boolean; spotlightEnabled: boolean }) {
+  const newsQuery = usePublicNews(newsEnabled);
+  const spotlightQuery = usePublicSpotlight(spotlightEnabled);
+  const news = newsEnabled ? newsQuery.items : [];
+  const spotlight = spotlightEnabled ? spotlightQuery.item : undefined;
+  const newsPending = newsEnabled && newsQuery.isPending;
+  const spotlightPending = spotlightEnabled && spotlightQuery.isPending;
+  const showNews = newsPending || news.length > 0;
+  const showSpotlight = spotlightPending || !!spotlight;
+  if (!showNews && !showSpotlight) return null;
 
   return (
     <Section id="news" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
@@ -671,10 +667,10 @@ function NewsEventsSpotlight() {
         <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
           From the community
         </p>
-        <div className={cn("grid gap-12", (spotlightPending || spotlight) && "lg:grid-cols-[1.6fr_1fr]")}>
+        <div className={cn("grid gap-12", showNews && showSpotlight && "lg:grid-cols-[1.6fr_1fr]")}>
 
           {/* News feed */}
-          <div>
+          {showNews && <div>
             <div className="flex items-end justify-between mb-8">
               <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Latest news</h2>
               {news.length > 0 && (
@@ -699,12 +695,12 @@ function NewsEventsSpotlight() {
                 )}
               </div>
             ) : (
-              <EmptyPanel icon={Newspaper} big title="News is on its way" desc="Updates from the association will be featured here as soon as they're posted." />
+              null
             )}
-          </div>
+          </div>}
 
           {/* Sidebar — community spotlight */}
-          <div className="flex flex-col gap-10">
+          {showSpotlight && <div className="flex flex-col gap-10">
             {spotlightPending ? (
               <SpotlightCardSkeleton />
             ) : spotlight ? (
@@ -733,7 +729,7 @@ function NewsEventsSpotlight() {
                 </div>
               </Link>
             ) : null}
-          </div>
+          </div>}
 
         </div>
       </div>
@@ -744,6 +740,7 @@ function NewsEventsSpotlight() {
 /** Upcoming events get a full-width strip of their own, with real cards, rather than being squeezed into a sidebar. */
 function UpcomingEventsSection() {
   const { items: events, isPending } = usePublicEvents();
+  if (!isPending && events.length === 0) return null;
 
   return (
     <Section id="events" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
@@ -768,7 +765,7 @@ function UpcomingEventsSection() {
             {events.map((e) => <AgendaRow key={e.id} item={e} />)}
           </div>
         ) : (
-          <EmptyPanel icon={Clock} big title="No events scheduled yet" desc="Gatherings, chapter meetups, and community events will show up here." />
+          null
         )}
       </div>
     </Section>
@@ -817,10 +814,36 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsActive, setStatsActive] = useState(false);
   const content = useLandingContent(initialContent);
-  const pulse = usePublicPulse();
-  const stats = useMemo(() => buildStats(pulse), [pulse]);
-  const { items: nextEvents } = usePublicEvents();
-  const nextEvent = nextEvents[0];
+  const pulseQuery = usePublicPulse();
+  const pulse = pulseQuery.data;
+  const enabled = (feature: string) => !content?.disabledFeatures?.includes(feature);
+  const newsQuery = usePublicNews(enabled("News"));
+  const eventsQuery = usePublicEvents(enabled("Events"));
+  const spotlightQuery = usePublicSpotlight(enabled("Spotlights"));
+  const businessesQuery = usePublicBusinesses(enabled("BusinessDirectory"));
+  const contentQueries = [
+    ...(enabled("News") ? [newsQuery] : []),
+    ...(enabled("Events") ? [eventsQuery] : []),
+    ...(enabled("Spotlights") ? [spotlightQuery] : []),
+    ...(enabled("BusinessDirectory") ? [businessesQuery] : []),
+  ];
+  const failedQueries = [...contentQueries, pulseQuery].filter(query => query.isError);
+  const isNewCommunity = contentQueries.every(query => query.isSuccess) &&
+    (!enabled("News") || newsQuery.items.length === 0) &&
+    (!enabled("Events") || eventsQuery.items.length === 0) &&
+    (!enabled("Spotlights") || !spotlightQuery.item) &&
+    (!enabled("BusinessDirectory") || businessesQuery.items.length === 0);
+  const navLinks = NAV_LINKS.filter(link =>
+    link.href === "#news" ? (enabled("News") && newsQuery.items.length > 0) || (enabled("Spotlights") && !!spotlightQuery.item) :
+    link.href === "#events" ? enabled("Events") && eventsQuery.items.length > 0 :
+    link.href === "#businesses" ? enabled("BusinessDirectory") && businessesQuery.items.length > 0 : true);
+  const stats = useMemo(() => buildStats(pulse ? {
+    ...pulse,
+    eventsNext30Days: content?.disabledFeatures?.includes("Events") ? null : pulse.eventsNext30Days,
+    openJobs: content?.disabledFeatures?.includes("Jobs") ? null : pulse.openJobs,
+    businesses: content?.disabledFeatures?.includes("BusinessDirectory") ? null : pulse.businesses,
+  } : undefined), [pulse, content?.disabledFeatures]);
+  const nextEvent = enabled("Events") ? eventsQuery.items[0] : undefined;
 
   const stories: UseCaseItem[] = useMemo(() => {
     if (!content?.landingPageStories?.length) return USE_CASES;
@@ -850,7 +873,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
   }, []);
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+    <div className="institution-landing min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
 
       {/* ── Announcement banner ── */}
       {content?.newsBanner?.enabled && content.newsBanner.text && (
@@ -870,7 +893,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
-            {NAV_LINKS.map(link => (
+            {navLinks.map(link => (
               <button key={link.label} onClick={() => scrollToSection(link.href)}
                 className="rounded-lg px-4 py-2 text-[13.5px] font-medium transition-colors hover:bg-secondary"
                 style={{ color: "var(--muted-foreground)" }}>
@@ -894,7 +917,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         {menuOpen && (
           <div className="md:hidden fixed inset-x-0 top-16 z-40 flex flex-col px-5 py-8 gap-5 overflow-y-auto h-[calc(100dvh-4rem)]"
             style={{ background: "var(--background)", borderTop: "1px solid var(--border)" }}>
-            {NAV_LINKS.map(link => (
+            {navLinks.map(link => (
               <button key={link.label} onClick={() => { scrollToSection(link.href); setMenuOpen(false); }}
                 className="w-full text-left font-[family-name:var(--font-display)] text-[26px] font-semibold transition-colors hover:text-primary"
                 style={{ color: "var(--foreground)" }}>
@@ -916,18 +939,19 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           overlay, the way an institution's own website leads with a campus
           photo rather than a product screenshot.
       ════════════════════════════════════════════════════════════════ */}
-      <div className="relative w-full overflow-hidden h-[78vh] min-h-[480px] max-h-[780px]">
+      <div className={cn("il-hero relative w-full overflow-hidden", !content?.heroImageUrls?.length && "il-hero-brand")}>
         {content?.heroImageUrls?.length ? (
           <>
             <HeroCarousel images={content.heroImageUrls} />
             <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.42) 50%, rgba(0,0,0,0.3) 100%)" }} />
           </>
         ) : (
-          <div className="absolute inset-0" style={{ background: "var(--brand-primary-dark, var(--primary))" }} />
+          <div className="absolute inset-0 il-brand-backdrop" style={{ background: "var(--brand-primary-dark, var(--primary))" }}><div className="il-brand-ring" /><div className="il-brand-ring il-brand-ring-inner" /></div>
         )}
 
         <div className="absolute inset-0 flex items-center justify-center px-6">
-          <div className="text-center max-w-[900px]">
+          <div className="il-hero-copy text-center max-w-[900px]">
+            {!content?.heroImageUrls?.length && content?.logoUrl && <img src={content.logoUrl} alt="" className="il-hero-crest" />}
             <p className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.75)" }}>
               {content?.displayName || "Community Portal"}
             </p>
@@ -949,7 +973,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       </div>
 
       {/* Live strip: a few plain, true facts about what is happening right now. Renders nothing when there is nothing true to say. */}
-      <LiveStrip nextEvent={nextEvent} joined={pulse?.joinedLast30Days ?? 0} openJobs={pulse?.openJobs ?? 0} />
+      <LiveStrip nextEvent={nextEvent} joined={pulse?.joinedLast30Days ?? 0} openJobs={enabled("Jobs") ? pulse?.openJobs ?? 0 : 0} />
 
       {/* ════════════════════════════════════════════════════════════════
           NEWS · SPOTLIGHT — this institution's own real content, in an
@@ -957,21 +981,23 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           association website leads rather than a product pitch. Hidden
           per-section when the institution has nothing published yet.
       ════════════════════════════════════════════════════════════════ */}
-      <NewsEventsSpotlight />
+      {failedQueries.length > 0 && <div className="section__inner--wide py-5"><div role="status" className="il-load-notice"><div><p className="font-semibold text-sm">Some community updates couldn’t load.</p><p className="text-sm text-muted-foreground mt-1">Please try again. Any available updates are still shown below.</p></div><Button variant="outline" disabled={failedQueries.some(query => query.isFetching)} onClick={() => failedQueries.forEach(query => void query.refetch())}>Try again</Button></div></div>}
+      {isNewCommunity && <Section id="welcome"><div className="section__inner--wide section il-welcome"><div><p className="il-eyebrow">A place to belong</p><h2>Welcome to your community’s home.</h2><p className="text-muted-foreground mt-4 leading-relaxed">Connect with your institution and take part as your community grows. Start with your profile and explore the benefits available to your members. Your institution can share more as the community grows.</p></div><div className="il-welcome-steps"><Link href="/register"><span>01</span><div><h3>Join your community</h3><p>Send your details to get started.</p></div><ArrowRight size={17} /></Link><Link href="/profile"><span>02</span><div><h3>Make yourself known</h3><p>Add your interests and a short introduction.</p></div><ArrowRight size={17} /></Link><Link href="#how-it-works"><span>03</span><div><h3>Find your next step</h3><p>See how membership works.</p></div><ArrowRight size={17} /></Link></div></div></Section>}
+      <NewsEventsSpotlight newsEnabled={enabled("News")} spotlightEnabled={enabled("Spotlights")} />
 
       {/* ════════════════════════════════════════════════════════════════
           UPCOMING EVENTS — its own full-width strip with real cards
           (date badge, banner photo, venue), rather than a few lines
           squeezed into the news sidebar.
       ════════════════════════════════════════════════════════════════ */}
-      <UpcomingEventsSection />
+      {enabled("Events") && <UpcomingEventsSection />}
 
       {/* ════════════════════════════════════════════════════════════════
           BUSINESS DIRECTORY — member-owned businesses, showing what the
           network is doing out in the world, not just inside the portal.
           Hidden entirely when the institution has no approved listings.
       ════════════════════════════════════════════════════════════════ */}
-      <BusinessDirectorySection />
+      {enabled("BusinessDirectory") && <BusinessDirectorySection />}
 
 
       {/* ════════════════════════════════════════════════════════════════
@@ -1039,10 +1065,10 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               Why they join
             </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
-              The three reasons most members join.
+              Ways to make the most of your community.
             </h2>
             <p style={{ color: "var(--muted-foreground)", lineHeight: 1.75 }}>
-              These are the most common ways members use the portal to move forward.
+              Explore what membership can make possible, at your own pace.
             </p>
           </div>
 

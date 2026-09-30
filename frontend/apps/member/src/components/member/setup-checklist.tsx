@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useDisabledFeatures } from "@/components/member/member-layout";
-import { getCommunities, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
+import { getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
+
+function subscribeDirectoryVisits(notify: () => void) {
+  window.addEventListener("storage", notify);
+  window.addEventListener("member-directory-visited", notify);
+  return () => { window.removeEventListener("storage", notify); window.removeEventListener("member-directory-visited", notify); };
+}
 
 function directoryVisitedKey(userId: string) {
   return `member-visited-directory:${userId}`;
@@ -18,35 +24,34 @@ export function MemberSetupChecklist() {
   const router = useRouter();
   const disabledFeatures = useDisabledFeatures();
   const eventsEnabled = !disabledFeatures.has("Events");
+  const contributionsEnabled = !disabledFeatures.has("Contributions");
   const directoryEnabled = !disabledFeatures.has("Directory");
-  const [directoryVisited, setDirectoryVisited] = useState(false);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    try {
-      setDirectoryVisited(localStorage.getItem(directoryVisitedKey(user.id)) === "1");
-    } catch { /* ignore */ }
-  }, [user?.id]);
+  const directoryVisited = useSyncExternalStore(subscribeDirectoryVisits, () => {
+    if (!user?.id) return false;
+    try { return localStorage.getItem(directoryVisitedKey(user.id)) === "1"; } catch { return false; }
+  }, () => false);
 
   const profile = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile });
-  const dues = useQuery({ queryKey: ["m-current-membership-campaign"], queryFn: getCurrentMembershipCampaign, staleTime: 5 * 60 * 1000 });
+  const dues = useQuery({ queryKey: ["m-current-membership-campaign"], queryFn: getCurrentMembershipCampaign, enabled: contributionsEnabled, staleTime: 5 * 60 * 1000 });
   const allCommunities = useQuery({ queryKey: ["m-communities"], queryFn: getCommunities, staleTime: 5 * 60 * 1000 });
   const myCommunities = useQuery({ queryKey: ["m-my-communities"], queryFn: getMyCommunities });
   const rsvps = useQuery({ queryKey: ["m-rsvps"], queryFn: () => getMyRsvps(), enabled: eventsEnabled });
 
+  const upcoming = useQuery({ queryKey: ["m-setup-upcoming-events"], queryFn: () => getEvents(1, 10, "Upcoming"), enabled: eventsEnabled, staleTime: 5 * 60 * 1000 });
+
   // A failed load isn't "not done yet": hide rather than tell a member to redo steps they may have finished.
-  if (!profile.data || dues.data === undefined || !allCommunities.data || !myCommunities.data || (eventsEnabled && !rsvps.data)) return null;
+  if (!profile.data) return null;
 
   const items: ChecklistItem[] = [
     {
       id: "profile",
       title: "Add a photo and short bio",
-      description: "Classmates find and recognize you in the directory by these.",
+      description: "Help other members recognize you and get to know your interests.",
       done: !!profile.data?.profilePictureUrl && !!profile.data?.bio?.trim(),
       actionLabel: "Update your profile",
       onAction: () => router.push("/profile"),
     },
-    ...(dues.data
+    ...(contributionsEnabled && dues.isSuccess && dues.data
       ? [{
           id: "dues",
           title: "Activate your membership",
@@ -69,7 +74,7 @@ export function MemberSetupChecklist() {
     ...(directoryEnabled
       ? [{
           id: "directory",
-          title: "Find someone from your year",
+          title: profile.data.graduationYear ? "Find someone from your year" : "Meet your community",
           description: profile.data?.graduationYear
             ? `See who else graduated in ${profile.data.graduationYear} and is on AlumUnion.`
             : "Browse the directory to see who else is already here.",
@@ -79,14 +84,14 @@ export function MemberSetupChecklist() {
             if (user?.id) {
               try { localStorage.setItem(directoryVisitedKey(user.id), "1"); } catch { /* ignore */ }
             }
-            setDirectoryVisited(true);
+            window.dispatchEvent(new Event("member-directory-visited"));
             router.push(
               profile.data?.graduationYear ? `/directory?year=${profile.data.graduationYear}` : "/directory",
             );
           },
         }]
       : []),
-    ...((allCommunities.data?.length ?? 0) > 0
+    ...(allCommunities.isSuccess && myCommunities.isSuccess && (allCommunities.data?.length ?? 0) > 0
       ? [{
           id: "community",
           title: "Join a community",
@@ -96,7 +101,7 @@ export function MemberSetupChecklist() {
           onAction: () => router.push("/communities"),
         }]
       : []),
-    ...(eventsEnabled
+    ...(eventsEnabled && upcoming.isSuccess && rsvps.isSuccess && ((upcoming.data?.results.length ?? 0) > 0 || (rsvps.data?.length ?? 0) > 0)
       ? [{
           id: "event",
           title: "RSVP to an event",
@@ -108,7 +113,7 @@ export function MemberSetupChecklist() {
       : []),
   ];
 
-  const loading = profile.isLoading || dues.isLoading || allCommunities.isLoading || myCommunities.isLoading || (eventsEnabled && rsvps.isLoading);
+  const loading = profile.isLoading;
 
   return (
     <GetStartedChecklist

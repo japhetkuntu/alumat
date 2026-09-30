@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { getBatches, getCommunities, getEvents, getInstitutionActivation, getInstitutionProfile } from "@/lib/institution-api";
+import { getBatches, getCommunities, getEvents, getInstitutionActivation, getInstitutionProfile, getNewsPosts } from "@/lib/institution-api";
 
 /**
  * The setup steps a new institution's SuperAdmin needs to finish, each derived from real
@@ -19,6 +19,8 @@ export function InstitutionSetupChecklist() {
   const isSuperAdmin = user?.role === "SuperAdmin";
 
   const profile = useQuery({ queryKey: ["institution-profile"], queryFn: getInstitutionProfile, enabled: isSuperAdmin });
+  const newsEnabled = isSuperAdmin && !!profile.data && !profile.data.disabledFeatures?.includes("News");
+  const news = useQuery({ queryKey: ["setup-published-news"], queryFn: () => getNewsPosts(1, 1, undefined, "Published"), enabled: newsEnabled });
   const activation = useQuery({ queryKey: ["institution-activation"], queryFn: getInstitutionActivation, enabled: isSuperAdmin });
   const batches = useQuery({ queryKey: ["dash-batches"], queryFn: getBatches, enabled: isSuperAdmin });
   const communities = useQuery({ queryKey: ["setup-communities"], queryFn: getCommunities, enabled: isSuperAdmin });
@@ -26,8 +28,7 @@ export function InstitutionSetupChecklist() {
 
   if (!isSuperAdmin) return null;
   // Activation failing (e.g. mid-deploy) degrades to the profile-derived steps rather than hiding the whole list.
-  if (!profile.data || (!activation.data && !activation.isError) || !batches.data || !communities.data) return null;
-  if (!profile.data.disabledFeatures?.includes("Events") && !events.data) return null;
+  if (!profile.data) return null;
 
   const institution = profile.data;
   const isCommunity = institution.organizationType === "Community";
@@ -48,18 +49,10 @@ export function InstitutionSetupChecklist() {
     {
       id: "branding",
       title: "Brand your portal",
-      description: `Add your logo, your colours and at least one story under Landing content.${branding ? ` ${branding.detail}.` : ""}`,
+      description: `Add your logo, colours and a welcome headline. You can add real community photos whenever you have them.${branding ? ` ${branding.detail}.` : ""}`,
       done: hasActivation ? !!branding?.met : !!institution.logoUrl,
       actionLabel: "Open settings",
       onAction: () => router.push("/settings"),
-    },
-    {
-      id: "hero",
-      title: "Add a photo of your community",
-      description: "A real photo of a gathering or your campus is the first thing visitors see. Without one, your page is a plain colour.",
-      done: (institution.heroImageUrls?.length ?? 0) > 0,
-      actionLabel: "Add a hero photo",
-      onAction: () => router.push("/settings?tab=landing"),
     },
     {
       id: "payouts",
@@ -71,7 +64,7 @@ export function InstitutionSetupChecklist() {
       actionLabel: payoutPending ? "View status" : "Add bank details",
       onAction: () => router.push("/settings"),
     },
-    isCommunity
+    ...((isCommunity ? communities.isSuccess : batches.isSuccess) ? [isCommunity
       ? {
           id: "groups",
           title: "Create your first community",
@@ -87,7 +80,15 @@ export function InstitutionSetupChecklist() {
           done: groupsDone,
           actionLabel: `Create a ${cohortLabel.toLowerCase()}`,
           onAction: () => router.push("/batches"),
-        },
+        }] : []),
+    ...(newsEnabled && news.isSuccess ? [{
+      id: "welcome",
+      title: "Publish your first update",
+      description: "A welcome message is a good first update. Choose institution-wide visibility if you want it to appear on your public site.",
+      done: (news.data?.totalCount ?? 0) > 0,
+      actionLabel: "Open news",
+      onAction: () => router.push("/news"),
+    }] : []),
     ...(hasActivation ? [{
       id: "members",
       title: `Get ${activation.data!.minMembers.toLocaleString()} members on board`,
@@ -112,7 +113,7 @@ export function InstitutionSetupChecklist() {
       actionLabel: "Invite staff",
       onAction: () => router.push("/staff"),
     }] : []),
-    ...(eventsEnabled
+    ...(eventsEnabled && events.isSuccess
       ? [{
           id: "event",
           title: "Post your first event",
@@ -124,7 +125,7 @@ export function InstitutionSetupChecklist() {
       : []),
   ];
 
-  const loading = profile.isLoading || activation.isLoading || batches.isLoading || communities.isLoading || events.isLoading;
+  const loading = profile.isLoading;
 
-  return <GetStartedChecklist items={items} loading={loading} storageKey={`institution-get-started:${user?.id ?? "anon"}`} />;
+  return <GetStartedChecklist items={items.filter(item => item.id !== "payments" || !institution.disabledFeatures?.includes("Contributions"))} loading={loading} storageKey={`institution-get-started:${user?.id ?? "anon"}`} />;
 }

@@ -1,0 +1,40 @@
+.institution-landing section[id] { scroll-margin-top: 84px; }
+.institution-landing .il-hero { height: 62vh; min-height: 430px; max-height: 650px; }
+.institution-landing .il-hero-brand { height: auto; min-height: 510px; }
+.institution-landing .il-hero-copy { position: relative; padding-block: 44px; }
+.institution-landing .il-hero-crest { width: 72px; height: 72px; object-fit: contain; background: white; padding: 10px; border-radius: 18px; margin: 0 auto 24px; box-shadow: 0 12px 32px #0002; }
+.institution-landing .il-brand-backdrop { overflow: hidden; }
+.institution-landing .il-brand-ring { width: 650px; height: 650px; position: absolute; right: -230px; top: -170px; border: 1px solid #ffffff20; border-radius: 50%; }
+.institution-landing .il-brand-ring-inner { width: 420px; height: 420px; right: -115px; top: -55px; border-color: #ffffff15; }
+.institution-landing .il-load-notice { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--muted); }
+.institution-landing .il-welcome { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center; }
+.institution-landing .il-welcome h2 { font-size: clamp(28px,3vw,40px); font-weight: 650; line-height: 1.17; letter-spacing: -.03em; max-width: 20ch; }
+.institution-landing .il-eyebrow { font-size: 11px; color: var(--primary); text-transform: uppercase; font-weight: 700; letter-spacing: .12em; margin-bottom: 16px; }
+.institution-landing .il-welcome-steps { border: 1px solid var(--border); border-radius: 20px; overflow: hidden; background: var(--card); }
+.institution-landing .il-welcome-steps a { display: flex; align-items: center; gap: 17px; padding: 24px; border-bottom: 1px solid var(--border); }
+.institution-landing .il-welcome-steps a:last-child { border-bottom: 0; }
+.institution-landing .il-welcome-steps a:hover { background: var(--muted); }
+.institution-landing .il-welcome-steps a > span { color: var(--primary); font-size: 12px; font-weight: 600; }
+.institution-landing .il-welcome-steps a > div { flex: 1; }
+.institution-landing .il-welcome-steps h3 { font-size: 15px; font-weight: 600; }
+.institution-landing .il-welcome-steps p { color: var(--muted-foreground); font-size: 13px; line-height: 1.6; margin-top: 5px; }
+.institution-landing .il-welcome-steps svg { flex-shrink: 0; color: var(--primary); }
+.institution-landing #news .card { border-radius: 20px; }
+.institution-landing #features .grid > div { border: 1px solid var(--border); padding: 25px; border-radius: 16px; background: var(--background); }
+.institution-landing #features .grid { gap: 16px; }
+.institution-landing #features h3 { margin-top: 12px; }
+.institution-landing .il-event-image { width: 112px; height: 76px; flex-shrink: 0; border-radius: 12px; overflow: hidden; }
+.institution-landing :is(button,a):focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+@media(max-width:767px) {
+  .institution-landing .il-hero { height: 64vh; min-height: 440px; max-height: 600px; }
+  .institution-landing .il-hero-brand { min-height: 520px; }
+  .institution-landing .il-hero-copy h1 { font-size: 36px !important; }
+  .institution-landing .il-welcome { grid-template-columns: 1fr; gap: 28px; }
+  .institution-landing .il-load-notice { align-items: start; flex-direction: column; }
+  .institution-landing .il-event-image { display: none; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .institution-landing *, .institution-landing *::before, .institution-landing *::after { animation: none !important; transition: none !important; }
+}
+
+.institution-landing .il-hero a > button, .institution-landing header a > button { border-radius: 999px; }

@@ -378,7 +378,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !isMember && pathname !== "/login") {
-      router.replace("/login");
+      router.replace(`/login?redirect=${encodeURIComponent(pathname + window.location.search)}`);
     }
   }, [isLoading, isMember, pathname, router]);
 
