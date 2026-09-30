@@ -27,11 +27,11 @@ export function MarketingFooter() {
             <Link href="/" className="flex items-center gap-3 mb-4">
               <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-10 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
             </Link>
-            <p className="text-[13px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-[16px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
               A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.
             </p>
             <a href="mailto:hello@alumunion.com"
-              className="inline-flex items-center gap-2 text-[12.5px] font-medium transition-colors hover:text-primary"
+              className="inline-flex items-center gap-2 text-[15px] font-medium transition-colors hover:text-primary"
               style={{ color: "var(--muted-foreground)" }}>
               <Mail size={13} /> hello@alumunion.com
             </a>
@@ -39,17 +39,17 @@ export function MarketingFooter() {
 
           {/* Platform column */}
           <div>
-            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Platform</p>
+            <p className="text-[13px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Platform</p>
             <nav className="flex flex-col gap-2.5" aria-label="Platform links">
               {PLATFORM_LINKS.map((link) => (
                 <Link key={link.label} href={link.href}
-                  className="text-[13px] font-medium transition-colors hover:text-primary w-fit"
+                  className="text-[16px] font-medium transition-colors hover:text-primary w-fit"
                   style={{ color: "var(--muted-foreground)" }}>
                   {link.label}
                 </Link>
               ))}
               <Link href="/why-not-whatsapp"
-                className="text-[13px] font-medium transition-colors hover:text-primary w-fit"
+                className="text-[16px] font-medium transition-colors hover:text-primary w-fit"
                 style={{ color: "var(--muted-foreground)" }}>
                 Why not WhatsApp?
               </Link>
@@ -58,26 +58,26 @@ export function MarketingFooter() {
 
           {/* Get started column */}
           <div>
-            <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Get started</p>
+            <p className="text-[13px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Get started</p>
             <Link href="/#onboard"
-              className="block mb-3 text-[13px] font-medium transition-colors hover:text-primary w-fit"
+              className="block mb-3 text-[16px] font-medium transition-colors hover:text-primary w-fit"
               style={{ color: "var(--muted-foreground)" }}>
               Request institution onboarding
             </Link>
             <Link href="/#onboard">
-              <span className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-primary-foreground text-[12.5px] font-semibold">Get started, free</span>
+              <span className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-primary-foreground text-[15px] font-semibold">Get started, free</span>
             </Link>
           </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-center sm:text-left" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
+          <p className="text-[14px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
             © {new Date().getFullYear()} AlumUnion. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/terms" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
-            <Link href="/privacy" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
-            <Link href="/institution-agreement" className="text-[12px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
+            <Link href="/terms" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
+            <Link href="/privacy" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
+            <Link href="/institution-agreement" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
           </div>
         </div>
       </div>

@@ -31,14 +31,14 @@ export function WalkthroughForm() {
       <Check size={28} className="text-primary mb-5" />
       <h3 className="text-2xl font-semibold mb-3">Your request is in.</h3>
       <p className="text-muted-foreground leading-relaxed">We’ll contact you at <span className="font-medium text-foreground">{form.contactEmail}</span> to arrange a walkthrough for {form.institutionName}.</p>
-      <p className="text-sm text-muted-foreground mt-4">You can ask about member records, payments and setup before deciding to proceed.</p>
+      <p className="text-base text-muted-foreground mt-4">You can ask about member records, payments and setup before deciding to proceed.</p>
       <Button variant="outline" className="mt-6" onClick={() => { setSubmitted(false); setForm({ institutionName: "", contactName: "", contactEmail: "", mainInterest: "" }); setStarted(false); }}>Send another enquiry</Button>
     </div>
   );
   return (
     <form onSubmit={submit} onFocus={() => { if (!started) { setStarted(true); trackMarketing("walkthrough_request_start"); } }}
       className="border border-border rounded-2xl bg-background p-6 sm:p-8 space-y-5">
-      <div><h3 className="text-xl font-semibold">Arrange a walkthrough</h3><p className="text-sm text-muted-foreground mt-2">Tell us where to reach you. We’ll take the setup details later.</p></div>
+      <div><h3 className="text-xl font-semibold">Arrange a walkthrough</h3><p className="text-base text-muted-foreground mt-2">Tell us where to reach you. We’ll take the setup details later.</p></div>
       <div><Label htmlFor="walkthrough-organisation" required>Organisation name</Label><Input id="walkthrough-organisation" name="organization" autoComplete="organization" required maxLength={200} value={form.institutionName} onChange={e => setForm({...form, institutionName: e.target.value})} /></div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div><Label htmlFor="walkthrough-name" required>Your name</Label><Input id="walkthrough-name" name="name" autoComplete="name" required maxLength={200} value={form.contactName} onChange={e => setForm({...form, contactName: e.target.value})} /></div>
@@ -54,7 +54,7 @@ export function WalkthroughForm() {
       </div>
       <FormError message={error} />
       <Button type="submit" disabled={submitting} isLoading={submitting} loadingText="Sending your request…" className="w-full min-h-11 font-semibold">Request a walkthrough <ArrowRight size={15} /></Button>
-      <p className="text-xs leading-relaxed text-muted-foreground">This is an enquiry, with no agreement to sign. We use these details to respond to your request. Read our <Link href="/privacy" className="underline underline-offset-2 text-foreground">privacy policy</Link>.</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">This is an enquiry, with no agreement to sign. We use these details to respond to your request. Read our <Link href="/privacy" className="underline underline-offset-2 text-foreground">privacy policy</Link>.</p>
     </form>
   );
 }

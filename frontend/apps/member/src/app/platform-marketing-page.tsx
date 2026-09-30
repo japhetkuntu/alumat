@@ -230,7 +230,7 @@ function OnboardingForm() {
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}>
           <PartyPopper size={28} style={{ color: "var(--primary)" }} />
         </div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: "var(--primary)" }}>You&apos;re on your way</p>
+        <p className="text-[13px] font-bold uppercase tracking-[0.12em] mb-2" style={{ color: "var(--primary)" }}>You&apos;re on your way</p>
         <h3 className="font-[family-name:var(--font-display)] mb-2.5" style={{ fontSize: "1.5rem", color: "var(--foreground)" }}>Let&apos;s build something your community will love.</h3>
         <p className="max-w-[42ch]" style={{ color: "var(--muted-foreground)", fontSize: "0.925rem", lineHeight: 1.7 }}>
           We&apos;ll reach out to <strong style={{ color: "var(--foreground)" }}>{form.contactEmail}</strong> within one business day with a thoughtful next step for {form.institutionName}.
@@ -242,9 +242,9 @@ function OnboardingForm() {
             ["03", "You get a next step", "No pressure, no handoff maze, no obligation."],
           ].map(([number, title, description]) => (
             <div key={number} className="rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--secondary)" }}>
-              <span className="text-[10px] font-bold" style={{ color: "var(--primary)" }}>{number}</span>
-              <p className="text-[12.5px] font-semibold mt-1" style={{ color: "var(--foreground)" }}>{title}</p>
-              <p className="text-[11.5px] leading-relaxed mt-1" style={{ color: "var(--muted-foreground)" }}>{description}</p>
+              <span className="text-[13px] font-bold" style={{ color: "var(--primary)" }}>{number}</span>
+              <p className="text-[15px] font-semibold mt-1" style={{ color: "var(--foreground)" }}>{title}</p>
+              <p className="text-[14px] leading-relaxed mt-1" style={{ color: "var(--muted-foreground)" }}>{description}</p>
             </div>
           ))}
         </div>
@@ -257,15 +257,15 @@ function OnboardingForm() {
       <div className="px-6 pt-6 sm:px-8 sm:pt-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--primary)" }}>Start your institution journey</p>
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--primary)" }}>Start your institution journey</p>
             <h3 className="font-[family-name:var(--font-display)] text-[1.35rem] sm:text-[1.55rem] font-bold mt-1" style={{ color: "var(--foreground)" }}>
               {step === 1 ? "Let’s start with you" : step === 2 ? "Make it yours" : "How should we connect?"}
             </h3>
-            <p className="text-[13px] mt-1 max-w-[48ch]" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-[16px] mt-1 max-w-[48ch]" style={{ color: "var(--muted-foreground)" }}>
               {step === 1 ? "Tell us who you are and which community you represent." : step === 2 ? "Pick what matters most. We’ll tailor the first conversation around it." : "A few final details help us make your welcome personal."}
             </p>
           </div>
-          <span className="shrink-0 text-[12px] font-semibold" style={{ color: "var(--muted-foreground)" }}>{step} of 3</span>
+          <span className="shrink-0 text-[14px] font-semibold" style={{ color: "var(--muted-foreground)" }}>{step} of 3</span>
         </div>
         <div className="flex gap-1.5 mt-5" aria-label={`Step ${step} of 3`}>
           {[1, 2, 3].map((item) => <span key={item} className="h-1.5 flex-1 rounded-full transition-colors duration-300" style={{ background: item <= step ? "var(--primary)" : "var(--border)" }} />)}
@@ -300,8 +300,8 @@ function OnboardingForm() {
       {step === 2 && (
         <>
       <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
-        <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Help us understand your community</p>
-        <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Choose your role, then add any optional details to help us prepare a more useful first conversation.</p>
+        <p className="text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>Help us understand your community</p>
+        <p className="text-[14px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Choose your role, then add any optional details to help us prepare a more useful first conversation.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
@@ -324,17 +324,17 @@ function OnboardingForm() {
         </Select>
       </div>
       <fieldset>
-        <legend className="text-[13px] font-semibold mb-2" style={{ color: "var(--foreground)" }}>What do you want to accomplish? <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span></legend>
+        <legend className="text-[16px] font-semibold mb-2" style={{ color: "var(--foreground)" }}>What do you want to accomplish? <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span></legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PRIMARY_GOALS.map((goal) => (
-            <label key={goal} className={cn("flex items-center gap-2.5 rounded-md border px-3 py-2.5 text-[12.5px] cursor-pointer transition-colors", form.primaryGoals.includes(goal) ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50")}>
+            <label key={goal} className={cn("flex items-center gap-2.5 rounded-md border px-3 py-2.5 text-[15px] cursor-pointer transition-colors", form.primaryGoals.includes(goal) ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50")}>
               <input type="checkbox" checked={form.primaryGoals.includes(goal)} onChange={() => toggleGoal(goal)} className="accent-primary" />
               <span>{goal}</span>
             </label>
           ))}
         </div>
       </fieldset>
-      <div className="rounded-lg px-4 py-3 text-[12.5px]" style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}>
+      <div className="rounded-lg px-4 py-3 text-[15px]" style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}>
         You can choose as many as you like — this helps us show up with relevant ideas, not a generic demo.
       </div>
         </>
@@ -403,12 +403,12 @@ function OnboardingForm() {
         </>
       )}
       {step === 3 && (
-        <label className="flex cursor-pointer items-start gap-3 border p-4 text-[13px] leading-relaxed" style={{ borderColor: form.agreementAccepted ? "var(--primary)" : "var(--border)", background: "var(--card)" }}>
+        <label className="flex cursor-pointer items-start gap-3 border p-4 text-[16px] leading-relaxed" style={{ borderColor: form.agreementAccepted ? "var(--primary)" : "var(--border)", background: "var(--card)" }}>
           <input type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-primary" checked={form.agreementAccepted} onChange={(e) => set("agreementAccepted", e.target.checked)} />
           <span style={{ color: "var(--foreground)" }}>
             I confirm I am authorised to act for {form.institutionName.trim() || "this institution"}, and I accept the{" "}
             <Link href="/institution-agreement" target="_blank" className="font-semibold underline" style={{ color: "var(--primary)" }}>Institution Agreement</Link>.
-            <span className="mt-1 block text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+            <span className="mt-1 block text-[14px]" style={{ color: "var(--muted-foreground)" }}>
               This covers how members&apos; personal data is handled, who is responsible for what, and that the platform is free for your institution. We record who accepted, when, and the version.
             </span>
           </span>
@@ -423,7 +423,7 @@ function OnboardingForm() {
           <Button type="submit" className="font-semibold gap-2" isLoading={submitting} loadingText="Sending your request...">Get started, free <ArrowRight size={15} /></Button>
         )}
       </div>
-      <p className="text-center text-[11.5px]" style={{ color: "var(--muted-foreground)" }}><span style={{ color: "var(--primary)" }}>Free for your institution.</span> Your request includes acceptance of the Institution Agreement.</p>
+      <p className="text-center text-[14px]" style={{ color: "var(--muted-foreground)" }}><span style={{ color: "var(--primary)" }}>Free for your institution.</span> Your request includes acceptance of the Institution Agreement.</p>
       </div>
     </form>
   );
