@@ -27,7 +27,7 @@ export function MarketingFooter() {
             <Link href="/" className="flex items-center gap-3 mb-4">
               <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-10 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
             </Link>
-            <p className="text-[16px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-[17px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
               A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.
             </p>
             <a href="mailto:hello@alumunion.com"
@@ -43,13 +43,13 @@ export function MarketingFooter() {
             <nav className="flex flex-col gap-2.5" aria-label="Platform links">
               {PLATFORM_LINKS.map((link) => (
                 <Link key={link.label} href={link.href}
-                  className="text-[16px] font-medium transition-colors hover:text-primary w-fit"
+                  className="text-[17px] font-medium transition-colors hover:text-primary w-fit"
                   style={{ color: "var(--muted-foreground)" }}>
                   {link.label}
                 </Link>
               ))}
               <Link href="/why-not-whatsapp"
-                className="text-[16px] font-medium transition-colors hover:text-primary w-fit"
+                className="text-[17px] font-medium transition-colors hover:text-primary w-fit"
                 style={{ color: "var(--muted-foreground)" }}>
                 Why not WhatsApp?
               </Link>
@@ -60,7 +60,7 @@ export function MarketingFooter() {
           <div>
             <p className="text-[13px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Get started</p>
             <Link href="/#onboard"
-              className="block mb-3 text-[16px] font-medium transition-colors hover:text-primary w-fit"
+              className="block mb-3 text-[17px] font-medium transition-colors hover:text-primary w-fit"
               style={{ color: "var(--muted-foreground)" }}>
               Request institution onboarding
             </Link>
@@ -71,13 +71,13 @@ export function MarketingFooter() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-center sm:text-left" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="text-[14px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
+          <p className="text-[15px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
             © {new Date().getFullYear()} AlumUnion. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/terms" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
-            <Link href="/privacy" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
-            <Link href="/institution-agreement" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
+            <Link href="/terms" className="text-[15px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
+            <Link href="/privacy" className="text-[15px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
+            <Link href="/institution-agreement" className="text-[15px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
           </div>
         </div>
       </div>

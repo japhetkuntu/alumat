@@ -371,7 +371,7 @@ function StatRow({ stat, active, index }: { stat: StatItem; active: boolean; ind
         }}>
         {count.toLocaleString()}{stat.suffix}
       </p>
-      <p className="text-[12px] sm:text-[12.5px] font-medium leading-snug max-w-[16ch]" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
+      <p className="text-[15px] sm:text-[16px] font-medium leading-snug max-w-[16ch]" style={{ color: "color-mix(in oklch, white 65%, transparent)" }}>{stat.label}</p>
     </div>
   );
 }
@@ -402,9 +402,9 @@ function UseCaseCard({ item, flip, index }: { item: UseCaseItem; flip?: boolean;
             {String(index + 1).padStart(2, "0")}
           </p>
           <div className={cn("min-w-0", flip && "flex flex-col items-end")}>
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>{item.eyebrow}</p>
+            <p className="text-[14px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>{item.eyebrow}</p>
             <h3 className="font-[family-name:var(--font-display)] leading-snug mb-2" style={{ fontSize: "clamp(1.25rem,2.1vw,1.65rem)", color: "var(--foreground)" }}>{item.scenario}</h3>
-            <p className="max-w-[60ch]" style={{ fontSize: "0.95rem", color: "var(--muted-foreground)", lineHeight: 1.8 }}>{item.desc}</p>
+            <p className="max-w-[60ch]" style={{ fontSize: "1.125rem", color: "var(--muted-foreground)", lineHeight: 1.8 }}>{item.desc}</p>
           </div>
         </div>
       </div>
@@ -415,9 +415,9 @@ function UseCaseCard({ item, flip, index }: { item: UseCaseItem; flip?: boolean;
       className={cn("grid gap-6 sm:gap-12 items-center sm:grid-cols-2 transition-all duration-700", visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5")}>
       <FitImage src={item.image} alt={item.eyebrow} className={cn("rounded-lg", flip && "sm:order-2")} style={{ aspectRatio: "4/3", background: "var(--muted)" }} />
       <div>
-        <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>{item.eyebrow}</p>
+        <p className="text-[14px] font-bold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>{item.eyebrow}</p>
         <h3 className="font-[family-name:var(--font-display)] leading-snug mb-3" style={{ fontSize: "clamp(1.3rem,2.2vw,1.75rem)", color: "var(--foreground)" }}>{item.scenario}</h3>
-        <p className="max-w-[46ch]" style={{ fontSize: "0.95rem", color: "var(--muted-foreground)", lineHeight: 1.8 }}>{item.desc}</p>
+        <p className="max-w-[46ch]" style={{ fontSize: "1.125rem", color: "var(--muted-foreground)", lineHeight: 1.8 }}>{item.desc}</p>
       </div>
     </div>
   );
@@ -442,9 +442,9 @@ function HowItWorksStep({ step, delay }: { step: typeof HOW_IT_WORKS[number]; de
       </p>
       <div className="flex items-center gap-2 mb-2 -mt-9">
         <step.icon size={15} style={{ color: "var(--primary)" }} />
-        <h3 className="text-[16px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
+        <h3 className="text-[20px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{step.title}</h3>
       </div>
-      <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
+      <p style={{ fontSize: "1.125rem", color: "var(--muted-foreground)", lineHeight: 1.75 }}>{step.desc}</p>
     </div>
   );
 }
@@ -460,7 +460,7 @@ function AnnouncementBanner({ banner }: { banner: DynamicNewsBanner }) {
     <div className="relative flex items-center justify-center gap-2.5 px-10 py-2.5 text-center"
       style={{ background: "var(--primary)", color: "white" }}>
       <Star size={11} className="shrink-0 opacity-75" />
-      <p className="text-[12.5px] font-medium">
+      <p className="text-[16px] font-medium">
         {banner.text}{" "}
         {banner.linkText && banner.linkUrl && (
           isAnchor ? (
@@ -499,15 +499,15 @@ function NewsCard({ item, big }: { item: PublicNewsItem; big?: boolean }) {
           <FitImage src={item.imageUrl} alt="" className="rounded-lg mb-3.5" imgClassName="transition-transform duration-500 group-hover:scale-105"
             style={{ aspectRatio: big ? "16/9" : "4/3", background: "var(--muted)" }} />
         )}
-        <p className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
-        <h3 className={cn("font-semibold leading-snug mb-2 transition-colors group-hover:text-primary", big ? "text-[22px]" : "text-[14.5px]")}
+        <p className="text-[14px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
+        <h3 className={cn("font-semibold leading-snug mb-2 transition-colors group-hover:text-primary", big ? "text-[22px]" : "text-[18px]")}
           style={{ color: "var(--foreground)" }}>
           {item.title}
         </h3>
         {big && (
-          <p className="text-[14px] leading-relaxed mb-2.5 max-w-[58ch]" style={{ color: "var(--muted-foreground)" }}>{item.excerpt}</p>
+          <p className="text-[18px] leading-relaxed mb-2.5 max-w-[58ch]" style={{ color: "var(--muted-foreground)" }}>{item.excerpt}</p>
         )}
-        <p className="text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>{formatNewsDate(item.publishedAt)}</p>
+        <p className="text-[15px] font-medium" style={{ color: "var(--muted-foreground)", opacity: 0.9 }}>{formatNewsDate(item.publishedAt)}</p>
       </article>
     </Link>
   );
@@ -518,10 +518,10 @@ function NewsRow({ item }: { item: PublicNewsItem }) {
   return (
     <Link href={`/news/${item.id}`} className="group flex items-baseline justify-between gap-6 py-4 border-t" style={{ borderColor: "var(--border)" }}>
       <div className="min-w-0">
-        <p className="text-[10px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
-        <h3 className="text-[15px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+        <p className="text-[14px] font-bold tracking-[0.1em] uppercase mb-1" style={{ color: "var(--primary)" }}>{item.category || "News"}</p>
+        <h3 className="text-[18px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
       </div>
-      <p className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--muted-foreground)" }}>{formatNewsDate(item.publishedAt)}</p>
+      <p className="shrink-0 text-[15px] font-medium" style={{ color: "var(--muted-foreground)" }}>{formatNewsDate(item.publishedAt)}</p>
     </Link>
   );
 }
@@ -533,18 +533,18 @@ function AgendaRow({ item }: { item: PublicEventItem }) {
   return (
     <Link href={`/events/${item.id}`} className="group flex items-center gap-5 sm:gap-8 py-5 border-t" style={{ borderColor: "var(--border)" }}>
       <div className="w-14 shrink-0 text-center">
-        <p className="text-[11px] font-bold tracking-[0.1em]" style={{ color: "var(--primary)" }}>{d.month}</p>
+        <p className="text-[14px] font-bold tracking-[0.1em]" style={{ color: "var(--primary)" }}>{d.month}</p>
         <p className="font-[family-name:var(--font-display)] text-[30px] font-bold leading-none tabular-nums" style={{ color: "var(--foreground)" }}>{d.day}</p>
       </div>
       {item.bannerImageUrl && <FitImage src={item.bannerImageUrl} alt="" className="il-event-image" />}
       <div className="min-w-0 flex-1">
-        <h3 className="text-[16px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
-        <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+        <h3 className="text-[20px] font-semibold leading-snug transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{item.title}</h3>
+        <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[16px]" style={{ color: "var(--muted-foreground)" }}>
           <span className="flex items-center gap-1"><Clock size={12} /> {d.time}</span>
           <span className="flex items-center gap-1 min-w-0"><MapPin size={12} /> <span className="truncate">{item.venue}</span></span>
         </p>
       </div>
-      <span className="hidden sm:flex shrink-0 items-center gap-1 text-[12.5px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+      <span className="hidden sm:flex shrink-0 items-center gap-1 text-[16px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
         Sign in to RSVP <ArrowRight size={12} />
       </span>
     </Link>
@@ -586,15 +586,15 @@ function BusinessCard({ item }: { item: PublicBusinessItem }) {
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <h4 className="text-[15px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.businessName}</h4>
-        <p className="flex items-center gap-1 text-[12px] mb-1.5" style={{ color: "var(--muted-foreground)" }}><MapPin size={11} /> {item.location}</p>
-        <p className="text-[13px] leading-relaxed line-clamp-2 mb-2" style={{ color: "var(--muted-foreground)" }}>{item.description}</p>
+        <h4 className="text-[18px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>{item.businessName}</h4>
+        <p className="flex items-center gap-1 text-[15px] mb-1.5" style={{ color: "var(--muted-foreground)" }}><MapPin size={11} /> {item.location}</p>
+        <p className="text-[16px] leading-relaxed line-clamp-2 mb-2" style={{ color: "var(--muted-foreground)" }}>{item.description}</p>
         {link ? (
-          <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+          <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[15px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
             Visit business <ArrowRight size={11} />
           </a>
         ) : (
-          <Link href="/login" className="inline-flex items-center gap-1 text-[12px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
+          <Link href="/login" className="inline-flex items-center gap-1 text-[15px] font-semibold transition-transform hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
             Sign in for contact info <ArrowRight size={11} />
           </Link>
         )}
@@ -643,7 +643,7 @@ function LiveStrip({ nextEvent, joined, openJobs }: { nextEvent?: PublicEventIte
   if (facts.length === 0) return null;
   return (
     <div className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-      <div className="section__inner--wide flex flex-wrap items-center gap-x-6 gap-y-1 py-3 text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+      <div className="section__inner--wide flex flex-wrap items-center gap-x-6 gap-y-1 py-3 text-[16px]" style={{ color: "var(--muted-foreground)" }}>
         {facts}
       </div>
     </div>
@@ -664,7 +664,7 @@ function NewsEventsSpotlight({ newsEnabled, spotlightEnabled }: { newsEnabled: b
   return (
     <Section id="news" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
       <div className="section__inner--wide section">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
+        <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-6" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
           From the community
         </p>
         <div className={cn("grid gap-12", showNews && showSpotlight && "lg:grid-cols-[1.6fr_1fr]")}>
@@ -674,7 +674,7 @@ function NewsEventsSpotlight({ newsEnabled, spotlightEnabled }: { newsEnabled: b
             <div className="flex items-end justify-between mb-8">
               <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Latest news</h2>
               {news.length > 0 && (
-                <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: "var(--primary)" }}>
+                <Link href="/login" className="hidden sm:flex items-center gap-1 text-[16px] font-semibold" style={{ color: "var(--primary)" }}>
                   See all <ArrowRight size={12} />
                 </Link>
               )}
@@ -714,16 +714,16 @@ function NewsEventsSpotlight({ newsEnabled, spotlightEnabled }: { newsEnabled: b
                       <Trophy size={28} style={{ color: "var(--primary)", opacity: 0.4 }} />
                     </div>
                   )}
-                  <div className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1"
+                  <div className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[14px] font-bold uppercase tracking-wide flex items-center gap-1"
                     style={{ background: "var(--primary)", color: "white" }}>
                     <Trophy size={10} /> Spotlight
                   </div>
                 </div>
                 <div className="card__content">
-                  <h3 className="text-[14px] font-semibold leading-snug mb-1 transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{spotlight.memberName}</h3>
-                  <p className="text-[12.5px] font-medium mb-2" style={{ color: "var(--primary)" }}>{spotlight.title}</p>
-                  <p className="text-[12.5px] leading-relaxed line-clamp-3 mb-2.5" style={{ color: "var(--muted-foreground)" }}>{spotlight.story}</p>
-                  <span className="flex items-center gap-1 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>
+                  <h3 className="text-[18px] font-semibold leading-snug mb-1 transition-colors group-hover:text-primary" style={{ color: "var(--foreground)" }}>{spotlight.memberName}</h3>
+                  <p className="text-[16px] font-medium mb-2" style={{ color: "var(--primary)" }}>{spotlight.title}</p>
+                  <p className="text-[16px] leading-relaxed line-clamp-3 mb-2.5" style={{ color: "var(--muted-foreground)" }}>{spotlight.story}</p>
+                  <span className="flex items-center gap-1 text-[15px] font-semibold" style={{ color: "var(--primary)" }}>
                     Sign in to read the full story <ArrowRight size={10} />
                   </span>
                 </div>
@@ -747,13 +747,13 @@ function UpcomingEventsSection() {
       <div className="section__inner--wide section">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
+            <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
               Don&apos;t miss out
             </p>
             <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Upcoming events</h2>
           </div>
           {events.length > 0 && (
-            <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
+            <Link href="/login" className="hidden sm:flex items-center gap-1 text-[16px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
               See full calendar <ArrowRight size={12} />
             </Link>
           )}
@@ -783,13 +783,13 @@ function BusinessDirectorySection() {
       <div className="section__inner--wide section">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
+            <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" }}>
               Out in the world
             </p>
             <h2 className="font-[family-name:var(--font-display)]" style={{ color: "var(--foreground)", fontSize: "1.6rem" }}>Community business directory</h2>
           </div>
           {businesses.length > 0 && (
-            <Link href="/login" className="hidden sm:flex items-center gap-1 text-[12.5px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
+            <Link href="/login" className="hidden sm:flex items-center gap-1 text-[16px] font-semibold shrink-0" style={{ color: "var(--primary)" }}>
               Browse full directory <ArrowRight size={12} />
             </Link>
           )}
@@ -889,13 +889,13 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-9 h-9 rounded-xl object-contain shrink-0" />
-            <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</p>
+            <p className="text-[16px] font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</p>
           </Link>
 
           <nav className="hidden md:flex items-center gap-0.5" aria-label="Primary">
             {navLinks.map(link => (
               <button key={link.label} onClick={() => scrollToSection(link.href)}
-                className="rounded-lg px-4 py-2 text-[13.5px] font-medium transition-colors hover:bg-secondary"
+                className="rounded-lg px-3 py-2 text-[16px] font-medium transition-colors hover:bg-secondary"
                 style={{ color: "var(--muted-foreground)" }}>
                 {link.label}
               </button>
@@ -903,8 +903,8 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link href="/login"><Button variant="ghost" size="sm" className="text-[13px] font-medium">Sign in</Button></Link>
-            <Link href="/register"><Button size="sm" className="text-[13px] font-semibold gap-1.5">Request to join <ArrowRight size={12} /></Button></Link>
+            <Link href="/login"><Button variant="ghost" size="sm" className="text-[16px] font-medium">Sign in</Button></Link>
+            <Link href="/register"><Button size="sm" className="text-[16px] font-semibold gap-1.5">Request to join <ArrowRight size={12} /></Button></Link>
           </div>
 
           <button className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border transition-colors hover:bg-secondary"
@@ -952,7 +952,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         <div className="absolute inset-0 flex items-center justify-center px-6">
           <div className="il-hero-copy text-center max-w-[900px]">
             {!content?.heroImageUrls?.length && content?.logoUrl && <img src={content.logoUrl} alt="" className="il-hero-crest" />}
-            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.75)" }}>
+            <p className="text-[14px] font-semibold tracking-[0.2em] uppercase mb-5" style={{ color: "rgba(255,255,255,0.75)" }}>
               {content?.displayName || "Community Portal"}
             </p>
             <h1 className="font-[family-name:var(--font-display)] mb-8"
@@ -960,11 +960,11 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               {content?.heroHeadline || content?.tagline || "Every member, one community, wherever they are."}
             </h1>
             <Link href="/register">
-              <Button size="lg" className="h-12 px-9 text-[14px] font-semibold gap-2 tracking-wide" style={{ background: "white", color: "var(--primary)" }}>
+              <Button size="lg" className="h-12 px-9 text-[18px] font-semibold gap-2 tracking-wide" style={{ background: "white", color: "var(--primary)" }}>
                 Request to join <ArrowRight size={15} />
               </Button>
             </Link>
-            <p className="mt-5 text-[13px]" style={{ color: "rgba(255,255,255,0.8)" }}>
+            <p className="mt-5 text-[16px]" style={{ color: "rgba(255,255,255,0.8)" }}>
               Already a member?{" "}
               <Link href="/login" className="font-semibold underline underline-offset-4 hover:opacity-90">Sign in</Link>
             </p>
@@ -981,7 +981,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           association website leads rather than a product pitch. Hidden
           per-section when the institution has nothing published yet.
       ════════════════════════════════════════════════════════════════ */}
-      {failedQueries.length > 0 && <div className="section__inner--wide py-5"><div role="status" className="il-load-notice"><div><p className="font-semibold text-sm">Some community updates couldn’t load.</p><p className="text-sm text-muted-foreground mt-1">Please try again. Any available updates are still shown below.</p></div><Button variant="outline" disabled={failedQueries.some(query => query.isFetching)} onClick={() => failedQueries.forEach(query => void query.refetch())}>Try again</Button></div></div>}
+      {failedQueries.length > 0 && <div className="section__inner--wide py-5"><div role="status" className="il-load-notice"><div><p className="font-semibold text-base">Some community updates couldn’t load.</p><p className="text-base text-muted-foreground mt-1">Please try again. Any available updates are still shown below.</p></div><Button variant="outline" disabled={failedQueries.some(query => query.isFetching)} onClick={() => failedQueries.forEach(query => void query.refetch())}>Try again</Button></div></div>}
       {isNewCommunity && <Section id="welcome"><div className="section__inner--wide section il-welcome"><div><p className="il-eyebrow">A place to belong</p><h2>Welcome to your community’s home.</h2><p className="text-muted-foreground mt-4 leading-relaxed">Connect with your institution and take part as your community grows. Start with your profile and explore the benefits available to your members. Your institution can share more as the community grows.</p></div><div className="il-welcome-steps"><Link href="/register"><span>01</span><div><h3>Join your community</h3><p>Send your details to get started.</p></div><ArrowRight size={17} /></Link><Link href="/profile"><span>02</span><div><h3>Make yourself known</h3><p>Add your interests and a short introduction.</p></div><ArrowRight size={17} /></Link><Link href="#how-it-works"><span>03</span><div><h3>Find your next step</h3><p>See how membership works.</p></div><ArrowRight size={17} /></Link></div></div></Section>}
       <NewsEventsSpotlight newsEnabled={enabled("News")} spotlightEnabled={enabled("Spotlights")} />
 
@@ -1008,7 +1008,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         <div className="section__inner--wide">
           <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0 py-14">
             <div className="lg:w-[280px] lg:pr-10 shrink-0">
-              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, white 55%, transparent)" }}>
+              <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "color-mix(in oklch, white 55%, transparent)" }}>
                 Right now
               </p>
               <h2 className="font-[family-name:var(--font-display)]" style={{ color: "white", fontSize: "clamp(1.5rem,2.4vw,2rem)", lineHeight: 1.15 }}>
@@ -1031,13 +1031,13 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       <Section id="features" className="border-b" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
         <div className="section__inner--wide section">
           <div className="mb-12 max-w-[56ch]">
-            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
+            <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
               What&apos;s inside
             </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
               One portal for every community need.
             </h2>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+            <p style={{ color: "var(--muted-foreground)", fontSize: "1.125rem", lineHeight: 1.75 }}>
               From jobs and mentorship to fundraisers, events, and community connections.
             </p>
           </div>
@@ -1046,9 +1046,9 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               .filter((feature) => !feature.featureKey || !content?.disabledFeatures?.includes(feature.featureKey))
               .map((feature) => (
                 <div key={feature.title} className="py-6 border-t" style={{ borderColor: "var(--border)" }}>
-                  <p className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>{feature.label}</p>
-                  <h3 className="text-[16px] font-semibold leading-snug mb-1.5" style={{ color: "var(--foreground)" }}>{feature.title}</h3>
-                  <p className="text-[13.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{feature.desc}</p>
+                  <p className="text-[14px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>{feature.label}</p>
+                  <h3 className="text-[20px] font-semibold leading-snug mb-1.5" style={{ color: "var(--foreground)" }}>{feature.title}</h3>
+                  <p className="text-[18px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{feature.desc}</p>
                 </div>
               ))}
           </div>
@@ -1061,7 +1061,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       <Section id="stories" className="border-b" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
         <div className="section__inner--wide section">
           <div className="mb-12 max-w-[50ch]">
-            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
+            <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
               Why they join
             </p>
             <h2 className="font-[family-name:var(--font-display)] mb-4" style={{ color: "var(--foreground)" }}>
@@ -1092,7 +1092,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       <Section id="how-it-works" style={{ background: "var(--secondary)" }}>
         <div className="section__inner--wide section">
           <div className="text-center mb-12">
-            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
+            <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-3" style={{ color: "var(--primary)" }}>
               Getting started
             </p>
             <h2 className="font-[family-name:var(--font-display)] max-w-[28ch] mx-auto" style={{ color: "var(--foreground)" }}>
@@ -1120,26 +1120,26 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           <div className="section__inner--wide relative py-20 sm:py-24">
             <div className="grid gap-10 lg:grid-cols-[1.2fr_auto] items-end">
               <div>
-                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+                <p className="text-[14px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Ready when you are
                 </p>
                 <h2 className="font-[family-name:var(--font-display)] mb-5 max-w-[16ch]"
                   style={{ fontSize: "clamp(2rem,4.2vw,3.4rem)", lineHeight: 1.06, color: "white" }}>
                   Your journey shaped you. Now shape what comes next.
                 </h2>
-                <p className="max-w-[46ch]" style={{ fontSize: "1.025rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
+                <p className="max-w-[46ch]" style={{ fontSize: "1.125rem", lineHeight: 1.75, color: "rgba(255,255,255,0.8)" }}>
                   Join a growing community using the portal to connect, contribute, and grow with trusted peers.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
                 <Link href="/register">
-                  <Button size="lg" className="w-full h-12 px-10 text-[15px] font-semibold gap-2"
+                  <Button size="lg" className="w-full h-12 px-10 text-[18px] font-semibold gap-2"
                     style={{ background: "white", color: "var(--primary)" }}>
                     Create my account <ChevronRight size={16} />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[15px] font-medium"
+                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[18px] font-medium"
                     style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
                     Sign in instead
                   </Button>
@@ -1157,10 +1157,10 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         <div className="section__inner--wide flex flex-col sm:flex-row items-center justify-between gap-5">
           <Link href="/" className="flex items-center gap-3">
             <img src={content?.logoUrl || "/alumunion-mark.svg"} alt={content?.displayName ?? "Logo"} className="w-8 h-8 rounded-xl object-contain shrink-0" />
-            <span className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</span>
+            <span className="text-[16px] font-semibold" style={{ color: "var(--foreground)" }}>{content?.displayName || "Member Portal"}</span>
           </Link>
 
-          <p className="text-[11.5px] text-center" style={{ color: "var(--muted-foreground)", opacity: 0.75 }}>
+          <p className="text-[15px] text-center" style={{ color: "var(--muted-foreground)", opacity: 0.9 }}>
             © {new Date().getFullYear()} {content?.displayName || "Member Portal"}
           </p>
 
@@ -1172,7 +1172,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               { label: "Privacy",   href: "/privacy"  },
             ].map(link => (
               <Link key={link.label} href={link.href}
-                className="text-[12.5px] font-medium transition-colors hover:text-foreground"
+                className="text-[16px] font-medium transition-colors hover:text-foreground"
                 style={{ color: "var(--muted-foreground)" }}>
                 {link.label}
               </Link>

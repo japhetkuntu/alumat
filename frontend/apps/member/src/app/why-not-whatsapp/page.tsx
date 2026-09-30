@@ -47,17 +47,17 @@ function SourceCard({ s, index }: { s: typeof SOURCES[number]; index: number }) 
   return (
     <a href={s.url} target="_blank" rel="noopener noreferrer"
       className="card group flex items-start gap-4 p-5 transition-shadow duration-300 hover:shadow-sm hover:border-primary/40">
-      <div className="w-9 h-9 rounded-none flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[13px]"
+      <div className="w-9 h-9 rounded-none flex items-center justify-center shrink-0 font-[family-name:var(--font-display)] font-bold text-[16px]"
         style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))", color: "var(--primary)" }}>
         {String(index + 1).padStart(2, "0")}
       </div>
       <div className="min-w-0">
-        <p className="text-[13.5px] font-semibold leading-snug mb-1 group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
+        <p className="text-[18px] font-semibold leading-snug mb-1 group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
           {s.name}
         </p>
-        <p className="text-[11.5px] font-medium mb-2" style={{ color: "var(--muted-foreground)" }}>{s.org}</p>
-        <p className="text-[12px] leading-relaxed mb-2.5" style={{ color: "var(--muted-foreground)", opacity: 0.85 }}>Backs: {s.backs}</p>
-        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>
+        <p className="text-[15px] font-medium mb-2" style={{ color: "var(--muted-foreground)" }}>{s.org}</p>
+        <p className="text-[15px] leading-relaxed mb-2.5" style={{ color: "var(--muted-foreground)", opacity: 0.85 }}>Backs: {s.backs}</p>
+        <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold" style={{ color: "var(--primary)" }}>
           View source <ExternalLink size={12} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </span>
       </div>
@@ -72,7 +72,7 @@ function StatCard({ end, decimals, suffix, desc }: { end: number; decimals: numb
       <p className="font-[family-name:var(--font-display)] leading-none mb-1.5" style={{ fontSize: "2rem", fontWeight: 700, color: "var(--foreground)" }}>
         {value}{suffix}
       </p>
-      <p className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>{desc}</p>
+      <p className="text-[18px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{desc}</p>
     </div>
   );
 }
@@ -85,10 +85,10 @@ function LimitRow({ item, index }: { item: typeof LIMITS[number]; index: number 
         <item.panel className="mx-auto w-full max-w-[420px]" />
       </div>
       <div className={cn("min-w-0", reverse && "lg:order-1")}>
-        <p className="mb-3 text-[13px] font-bold tabular-nums" style={{ color: "var(--destructive)" }}>{String(index + 1).padStart(2, "0")}</p>
+        <p className="mb-3 text-[16px] font-bold tabular-nums" style={{ color: "var(--destructive)" }}>{String(index + 1).padStart(2, "0")}</p>
         <h3 className="mb-3 text-[21px] font-semibold leading-snug sm:text-[24px]" style={{ color: "var(--foreground)" }}>{item.title}</h3>
-        <p className="mb-3 max-w-[52ch] text-[14.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
-        <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.7 }}>Source: {item.source}</p>
+        <p className="mb-3 max-w-[52ch] text-[18px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{item.desc}</p>
+        <p className="text-[15px]" style={{ color: "var(--muted-foreground)", opacity: 0.9 }}>Source: {item.source}</p>
       </div>
     </div>
   );
@@ -107,10 +107,10 @@ function CompareAtAGlance() {
   return (
     <div className="grid gap-4 text-left md:grid-cols-2">
       <div className="p-6 sm:p-8" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--muted-foreground)" }}>WhatsApp group</p>
+        <p className="mb-4 text-[14px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--muted-foreground)" }}>WhatsApp group</p>
         <ul className="space-y-3.5">
           {COMPARE_ROWS.map((r) => (
-            <li key={r.whatsapp} className="flex items-start gap-2.5 text-[14px]" style={{ color: "var(--muted-foreground)" }}>
+            <li key={r.whatsapp} className="flex items-start gap-2.5 text-[18px]" style={{ color: "var(--muted-foreground)" }}>
               <XIcon size={15} className="mt-0.5 shrink-0" style={{ color: "var(--destructive)" }} />
               {r.whatsapp}
             </li>
@@ -118,10 +118,10 @@ function CompareAtAGlance() {
         </ul>
       </div>
       <div className="p-6 sm:p-8" style={{ background: "var(--card)", border: "1px solid var(--primary)" }}>
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--primary)" }}>AlumUnion</p>
+        <p className="mb-4 text-[14px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--primary)" }}>AlumUnion</p>
         <ul className="space-y-3.5">
           {COMPARE_ROWS.map((r) => (
-            <li key={r.alumunion} className="flex items-start gap-2.5 text-[14px] font-medium" style={{ color: "var(--foreground)" }}>
+            <li key={r.alumunion} className="flex items-start gap-2.5 text-[18px] font-medium" style={{ color: "var(--foreground)" }}>
               <Check size={15} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />
               {r.alumunion}
             </li>
@@ -135,7 +135,7 @@ function CompareAtAGlance() {
 export default function WhyNotWhatsAppPage() {
   const scrolled = useScrolled(24);
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+    <div className="min-h-screen overflow-x-hidden text-[18px] leading-relaxed" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <ScrollProgressBar />
 
       {/* ── Header — shrinks slightly once the page has scrolled, matching the homepage ── */}
@@ -149,7 +149,7 @@ export default function WhyNotWhatsAppPage() {
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className={cn("w-auto object-contain shrink-0 transition-[height] duration-300 dark:rounded-sm dark:bg-white dark:px-2", scrolled ? "h-8" : "h-9")} />
           </Link>
-          <Link href="/" className="flex items-center gap-1.5 text-[13px] font-medium hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>
+          <Link href="/" className="flex items-center gap-1.5 text-[16px] font-medium hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>
             <ArrowLeft size={14} /> Back to home
           </Link>
         </div>
@@ -163,18 +163,18 @@ export default function WhyNotWhatsAppPage() {
             style={{ fontSize: "clamp(2.2rem,4.6vw,3.5rem)", fontWeight: 700, lineHeight: 1.12, letterSpacing: "-0.025em", color: "var(--foreground)", margin: "0 auto 1.5rem" }}>
             Keep WhatsApp for conversation. Use AlumUnion for community records.
           </h1>
-          <p className="max-w-[54ch] mb-10" style={{ fontSize: "1.05rem", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
+          <p className="max-w-[54ch] mb-10" style={{ fontSize: "clamp(1.1875rem, 2vw, 1.375rem)", lineHeight: 1.75, color: "var(--muted-foreground)", margin: "0 auto 2.5rem" }}>
             Your group conversations can stay where they are. Use a dedicated portal for member records, event RSVPs and payment records. Here is how those roles differ.
           </p>
 
           <div className="max-w-[860px] mx-auto text-left">
-            <p className="text-center text-[12px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-center text-[15px] font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--muted-foreground)" }}>
               The short version
             </p>
             <CompareAtAGlance />
             <div className="mt-8 text-center">
               <Link href="/#onboard">
-                <Button size="lg" className="h-12 gap-2 px-8 text-[14.5px] font-semibold">
+                <Button size="lg" className="h-12 gap-2 px-8 text-[18px] font-semibold">
                   Request a walkthrough <ArrowRight size={15} />
                 </Button>
               </Link>
@@ -190,7 +190,7 @@ export default function WhyNotWhatsAppPage() {
             <h2 className="font-[family-name:var(--font-display)] mb-4 " style={{ color: "var(--foreground)" }}>
               Five ways it actually holds your community back.
             </h2>
-            <p style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+            <p style={{ color: "var(--muted-foreground)", fontSize: "1.125rem", lineHeight: 1.75 }}>
               Each point names its source, and the full list with links is at the bottom of the page.
             </p>
           </div>
@@ -212,11 +212,11 @@ export default function WhyNotWhatsAppPage() {
           <ul className="space-y-3 sm:hidden">
             {COMPARISON.map((r) => (
               <li key={r.row} className="border p-4" style={{ borderColor: "var(--border)", background: "var(--card)" }}>
-                <p className="mb-3 text-[13px] font-bold" style={{ color: "var(--foreground)" }}>{r.row}</p>
-                <p className="mb-2 flex items-start gap-2 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+                <p className="mb-3 text-[16px] font-bold" style={{ color: "var(--foreground)" }}>{r.row}</p>
+                <p className="mb-2 flex items-start gap-2 text-[16px]" style={{ color: "var(--muted-foreground)" }}>
                   <XIcon size={14} className="mt-0.5 shrink-0" style={{ color: "var(--destructive)" }} />{r.whatsapp}
                 </p>
-                <p className="flex items-start gap-2 text-[13px] font-medium" style={{ color: "var(--foreground)" }}>
+                <p className="flex items-start gap-2 text-[16px] font-medium" style={{ color: "var(--foreground)" }}>
                   <Check size={14} className="mt-0.5 shrink-0" style={{ color: "var(--primary)" }} />{r.alumunion}
                 </p>
               </li>
@@ -231,22 +231,22 @@ export default function WhyNotWhatsAppPage() {
             <table className="w-full text-left border-collapse min-w-[560px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  <th className="p-4 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}></th>
-                  <th className="p-4 text-[12.5px] font-bold" style={{ color: "var(--muted-foreground)" }}>WhatsApp group</th>
-                  <th className="p-4 text-[12.5px] font-bold" style={{ color: "var(--primary)" }}>AlumUnion</th>
+                  <th className="p-4 text-[14px] font-bold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}></th>
+                  <th className="p-4 text-[18px] font-bold" style={{ color: "var(--muted-foreground)" }}>WhatsApp group</th>
+                  <th className="p-4 text-[18px] font-bold" style={{ color: "var(--primary)" }}>AlumUnion</th>
                 </tr>
               </thead>
               <tbody>
                 {COMPARISON.map((r) => (
                   <tr key={r.row} className="transition-colors duration-150 hover:bg-muted/60" style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td className="p-4 text-[13px] font-semibold whitespace-nowrap" style={{ color: "var(--foreground)" }}>{r.row}</td>
-                    <td className="p-4 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+                    <td className="p-4 text-[18px] font-semibold whitespace-nowrap" style={{ color: "var(--foreground)" }}>{r.row}</td>
+                    <td className="p-4 text-[18px]" style={{ color: "var(--muted-foreground)" }}>
                       <span className="flex items-start gap-2">
                         <XIcon size={14} className="shrink-0 mt-0.5" style={{ color: "var(--destructive)" }} />
                         {r.whatsapp}
                       </span>
                     </td>
-                    <td className="p-4 text-[13px] font-medium" style={{ color: "var(--foreground)" }}>
+                    <td className="p-4 text-[18px] font-medium" style={{ color: "var(--foreground)" }}>
                       <span className="flex items-start gap-2">
                         <Check size={14} className="shrink-0 mt-0.5" style={{ color: "var(--primary)" }} />
                         {r.alumunion}
@@ -269,7 +269,7 @@ export default function WhyNotWhatsAppPage() {
               <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[20ch]" style={{ color: "var(--foreground)" }}>
                 Keeping a community engaged is hard everywhere, not just on WhatsApp.
               </h2>
-              <p style={{ color: "var(--muted-foreground)", fontSize: "0.975rem", lineHeight: 1.75 }}>
+              <p style={{ color: "var(--muted-foreground)", fontSize: "1.125rem", lineHeight: 1.75 }}>
                 To be fair, WhatsApp isn&apos;t the cause. Participation in member organizations has been falling for
                 decades, however they communicate. The best-measured example is alumni associations, so that&apos;s where
                 these figures come from. A real platform can help push back against the trend; a chat group alone won&apos;t.
@@ -289,7 +289,7 @@ export default function WhyNotWhatsAppPage() {
           <h2 className="font-[family-name:var(--font-display)] mb-4 max-w-[26ch] text-center" style={{ color: "var(--foreground)", margin: "0 auto 1rem" }}>
             Every claim on this page, sourced.
           </h2>
-          <p className="mb-10 max-w-[56ch] mx-auto text-center" style={{ color: "var(--muted-foreground)", fontSize: "1.025rem", lineHeight: 1.75 }}>
+          <p className="mb-10 max-w-[56ch] mx-auto text-center" style={{ color: "var(--muted-foreground)", fontSize: "1.125rem", lineHeight: 1.75 }}>
             Nothing above is a guess. Here&apos;s exactly where each number and claim comes from. Click through and check
             for yourself.
           </p>
@@ -310,7 +310,7 @@ export default function WhyNotWhatsAppPage() {
               See how member records, events and payments fit together.
             </h2>
             <Link href="/#onboard">
-              <Button size="lg" className="h-12 px-10 text-[15px] font-semibold gap-2"
+              <Button size="lg" className="h-12 px-10 text-[18px] font-semibold gap-2"
                 style={{ background: "white", color: "var(--primary)" }}>
                 Request a walkthrough <ArrowRight size={16} />
               </Button>

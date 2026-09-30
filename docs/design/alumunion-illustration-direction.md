@@ -1,0 +1,34 @@
+# AlumUnion illustration direction — hero study
+
+Status: concept selected for the first study; artwork not generated or approved. Built-in image generation returned usage_limit_reached on 30 September 2026. No image has been installed on the website.
+
+## Website context
+The current homepage uses a centred headline explaining that institutions can start at no cost, followed by an interactive product preview. Preserve that content and the enlarged typography. The illustration should sit below the hero copy, before the preview, rather than compete with the headline or replace the working product demonstration.
+
+## Three concepts
+1. **The shared courtyard.** Different generations occupy one contemporary institutional courtyard. Repeated doorways and converging paths express lifelong belonging. Strongest balance of human storytelling, mobile cropping, and applicability across institution types. Risk: a generic campus scene; counter this with the specific generational relationships, auditorium threshold, and recurring architectural rhythm.
+2. **The living archive.** Layered yearbook pages and institutional architecture bring generations into the same composition. Most distinctive mixed-media option, but risks nostalgia and overemphasizing alumni over wider communities.
+3. **Before the gathering.** Members of different ages prepare an institutional gathering. The strongest expression of participation, but could position the platform too narrowly around events.
+
+## Selected first study: The shared courtyard
+A young member arrives in the foreground, two professionals converse naturally in the middle distance, and an older member occupies an auditorium threshold. People share the environment without lining up or posing. Use warm cream, matte brushwork, lightly grained surfaces, observed anatomy and simplified architecture. Reserve cobalt for physical accents. All people are fictional and clearly illustrated.
+
+The proposed recurring visual vocabulary is institutional thresholds, intersecting pathways, layered generations, and shared physical spaces. These motifs can extend from fragmentation through identity, mentorship, opportunity, events, contribution and growth. They remain provisional until the hero rendering is reviewed and approved.
+
+## Responsive use
+Create a wide study with quiet space above and primary relationships within the central 60% of the width. Keep live website text outside the artwork. On mobile, prefer displaying the complete scene below the headline; use a tighter crop only if it preserves the relationships. Review at desktop, tablet and narrow mobile widths before implementation.
+
+## Approval gate
+Review the hero for anatomy, illustrated rather than photographic treatment, modern Ghanaian context without stereotypes, negative space and distinctiveness. Refine before approving it as the master reference. Only then produce the remaining illustrations, using that approved image as the rendering and composition reference. No stock photography, synthetic testimonials, fake institution names or text inside artwork.
+
+## Exact generation prompt
+
+Use case: illustration-story.
+Asset type: first hero illustration study for AlumUnion, a platform giving institutions infrastructure for lifelong community. Produce ONE wide landscape editorial illustration, approximately 2:1. Artwork only, no typography, logos or mockups.
+Concept: THE SHARED COURTYARD — one institutional home across generations. A contemporary Ghanaian institutional courtyard connects different stages of life through a repeated rhythm of shaded colonnades, a low auditorium and intersecting paved paths. Not a famous or identifiable campus. The architecture provides one common physical frame, rather than isolated portrait vignettes.
+Composition: generous quiet warm-cream negative space across upper 30 percent, simplified architecture in the middle distance, human narrative in lower middle/right. Asymmetric depth, no lineup. Keep the central human relationships inside the central 60 percent width so a mobile crop remains meaningful; peripheral architecture may crop. Foreground at center-right: a young Black African woman, early twenties, seen in three-quarter back profile with a plain cobalt folder under her arm, arriving along a path. Midground nearby: a Black African woman in her forties in an ivory blouse and muted olive trousers walking in natural conversation with a Black African man in his late twenties, wearing a restrained blue shirt and charcoal trousers, holding a closed plain notebook. Further back: an older Black African man in his sixties with greying hair and a warm-grey short-sleeved shirt pauses at a shaded auditorium doorway, with a younger adult casually carrying two nested chairs nearby. Five individuals total, differently scaled in space, relaxed believable postures, nobody facing the viewer, no staged smiles or pointing at laptops.
+Signature visual vocabulary: repeated institutional thresholds and pathways drawing different generations into one shared courtyard; a small grouping of empty cobalt auditorium chairs visible through the shaded doorway suggests a community gathering beyond the frame. One understated tropical tree, architectural shade, warm plaster and textured paving; modern African context through environment and everyday professional clothing, no stereotypes.
+Rendering: sophisticated contemporary editorial illustration with believable anatomy and draped clothing, 70 percent observational realism / 30 percent artistic interpretation. Clearly illustrated, not photography and not cartoons. Matte gouache and dry colored-pencil edges on lightly grained cream paper; selectively modeled skin with restrained warm brown variations, visible brushed planes rather than pore detail; facial features understated and natural. Simplified architectural geometry and paper-like shapes contrast with carefully observed human silhouettes. Premium restrained mixed-media editorial composition, not flat SaaS vectors, not 3D.
+Palette: warm neutral #F8F6F1 and white dominate background; AlumUnion cobalt #2563EB appears sparingly in a folder, shirt, chairs and one architectural detail. Natural brown skin, charcoal, muted olive, warm stone. Do not wash scene blue. Soft consistent daylight, calm unforced mood, restrained shadows, no cinematic grading.
+Avoid absolutely: readable or fake text, letters, numbers, logos, signage, certificates, UI, screens, phones, network lines, glow, holograms, particles, gradients, glossy or plastic skin, photographic faces, exaggerated proportions, perfect symmetry, stock business meetings, handshakes, money in hands, generic African patterns, safari imagery, flags, stereotyped costumes, dense vegetation, a row of posed people. Preserve generous negative space and convincing hands and limbs.
+
