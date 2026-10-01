@@ -110,7 +110,8 @@ function StructuredData({ isMarketing, theme, origin }: { isMarketing: boolean; 
 // marketing-site visitor.
 export default async function RootPage() {
   const [{ status, theme }, origin] = await Promise.all([getInstitutionThemeStatus(), getRequestOrigin()]);
-  if (status === "not-found" || status === "error")  {
+  var test=true;
+  if (test && (status === "not-found" || status === "error")) {
     return (
       <>
         <StructuredData isMarketing theme={theme} origin={origin} />

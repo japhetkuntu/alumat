@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { EmptyState } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, StatCard } from "@alumni/ui";
+import { Card, CardContent, StatCard, StatCardSkeleton } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { TrendChart } from "@alumni/ui";
@@ -12,22 +12,36 @@ import { getActivationScorecard, getDashboardSummary, getInstitutions } from "@/
 import { useAuth } from "@/hooks/use-auth";
 import { MyTasksCard } from "@/components/platform/work/my-tasks-card";
 
+function ListRowSkeleton() {
+  return (
+    <div className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
+      <div className="min-w-0 space-y-1.5 flex-1">
+        <div className="skeleton h-3.5 w-1/2" />
+        <div className="skeleton h-3 w-3/4" />
+      </div>
+      <div className="skeleton h-5 w-16 shrink-0 ml-3" />
+    </div>
+  );
+}
+
 export default function PlatformDashboardPage() {
-  const { data: summary } = useQuery({
+  const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: getDashboardSummary,
   });
-  const { data: institutionsPage } = useQuery({
+  const { data: institutionsPage, isLoading: institutionsLoading } = useQuery({
     queryKey: ["institutions", { page: 1, pageSize: 50 }],
     queryFn: () => getInstitutions({ page: 1, pageSize: 50 }),
   });
   const institutions = institutionsPage?.results ?? [];
   const { user } = useAuth();
-  const { data: scorecard } = useQuery({
+  const { data: scorecard, isLoading: scorecardLoading } = useQuery({
     queryKey: ["activation-scorecard"],
     queryFn: getActivationScorecard,
     enabled: !!user && user.role !== "Billing",
   });
+  const scorecardEnabled = !!user && user.role !== "Billing";
+  const attentionLoading = institutionsLoading || (scorecardEnabled && scorecardLoading);
   // Overdue (past the 30-day window) before merely stalled (live over 14 days).
   const stalled = (scorecard?.items ?? [])
     .filter((i) => !i.isActivated && (i.isStalled || i.isOverdue))
@@ -56,24 +70,30 @@ export default function PlatformDashboardPage() {
       {/* Revenue leads — the one figure platform staff check first when
           scanning fleet health, everything else demoted to a supporting row. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-4 mb-5 items-stretch">
-        <StatCard
-          variant="hero"
-          label="Platform revenue"
-          value={formatCurrency(summary?.revenue ?? 0, "GHS")}
-          sub="Platform fee collected across all institutions"
-        />
+        {summaryLoading ? <StatCardSkeleton variant="hero" /> : (
+          <StatCard
+            variant="hero"
+            label="Platform revenue"
+            value={formatCurrency(summary?.revenue ?? 0, "GHS")}
+            sub="Platform fee collected across all institutions"
+          />
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            label="Total institutions"
-            value={summary?.totalInstitutions ?? "—"}
-            sub={`${summary?.activeCount ?? 0} active · ${summary?.suspendedCount ?? 0} suspended`}
-          />
-          <StatCard
-            label="Total members"
-            value={(summary?.totalMembers ?? 0).toLocaleString()}
-            sub={<span style={{ color: "var(--success)" }}>Across every institution</span>}
-          />
-          {scorecard ? (
+          {summaryLoading ? <StatCardSkeleton /> : (
+            <StatCard
+              label="Total institutions"
+              value={summary?.totalInstitutions ?? "—"}
+              sub={`${summary?.activeCount ?? 0} active · ${summary?.suspendedCount ?? 0} suspended`}
+            />
+          )}
+          {summaryLoading ? <StatCardSkeleton /> : (
+            <StatCard
+              label="Total members"
+              value={(summary?.totalMembers ?? 0).toLocaleString()}
+              sub={<span style={{ color: "var(--success)" }}>Across every institution</span>}
+            />
+          )}
+          {summaryLoading || (scorecardEnabled && scorecardLoading) ? <StatCardSkeleton /> : scorecard ? (
             <Link href="/activation" className="block">
               <StatCard
                 tone="accent"
@@ -121,8 +141,9 @@ export default function PlatformDashboardPage() {
             <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all</Link>
           </div>
           <CardContent className="p-0">
-            {attentionList.length === 0 && stalled.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">Nothing needs attention right now.</p>}
-            {stalled.slice(0, 5).map((item) => (
+            {attentionLoading && <><ListRowSkeleton /><ListRowSkeleton /><ListRowSkeleton /></>}
+            {!attentionLoading && attentionList.length === 0 && stalled.length === 0 && <p className="px-5 py-6 text-[13px] text-muted-foreground">Nothing needs attention right now.</p>}
+            {!attentionLoading && stalled.slice(0, 5).map((item) => (
               <Link key={item.institutionId} href="/activation" className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0 hover:bg-muted/40">
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold truncate">{item.name}</p>
@@ -133,7 +154,7 @@ export default function PlatformDashboardPage() {
                 <Badge variant={item.isOverdue ? "destructive" : "warning"}>{item.isOverdue ? "Overdue" : "Stalled"}</Badge>
               </Link>
             ))}
-            {attentionList.map((inst) => (
+            {!attentionLoading && attentionList.map((inst) => (
               <div key={inst.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold truncate">{inst.name}</p>
@@ -152,7 +173,8 @@ export default function PlatformDashboardPage() {
           <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all institutions</Link>
         </div>
         <CardContent className="p-0">
-          {recentSignups.length === 0 && (
+          {institutionsLoading && <><ListRowSkeleton /><ListRowSkeleton /><ListRowSkeleton /></>}
+          {!institutionsLoading && recentSignups.length === 0 && (
             <EmptyState
               className="py-10"
               title="An institution is one customer"
@@ -160,7 +182,7 @@ export default function PlatformDashboardPage() {
               action={<Link href="/institutions/new"><Button size="sm" className="font-semibold">Add your first institution</Button></Link>}
             />
           )}
-          {recentSignups.map((inst) => (
+          {!institutionsLoading && recentSignups.map((inst) => (
             <div key={inst.id} className="flex items-center justify-between px-5 py-3.5 border-b border-border last:border-0">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold truncate">{inst.name}</p>

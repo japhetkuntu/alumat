@@ -34,6 +34,7 @@ const navItems = [
   { href: "/activation", label: "Activation", icon: Target },
   { href: "/members", label: "Members", icon: GraduationCap },
   { href: "/onboarding-leads", label: "Onboarding & Demos", icon: Inbox },
+  { href: "/marketing-campaigns", label: "Marketing Campaigns", icon: Megaphone },
   { href: "/billing", label: "Payments & Revenue", icon: CreditCard },
   { href: "/staff", label: "Platform Staff", icon: Users },
   { href: "/support", label: "Support", icon: LifeBuoy },
@@ -49,6 +50,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   const isSupport = user?.role === "Support";
 
   const visibleNavItems = navItems.filter((item) => {
+    if (item.href === "/marketing-campaigns" && !isSuperAdmin && user?.role !== "Sales") return false;
     if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
     if (item.href === "/members" && !isSuperAdmin && !isSupport) return false;
     if (item.href === "/activation" && user?.role === "Billing") return false;

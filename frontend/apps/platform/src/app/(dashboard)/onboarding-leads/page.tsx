@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Card, CardContent } from "@alumni/ui";
+import { Card, CardContent, Skeleton } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -210,7 +210,33 @@ export default function OnboardingLeadsPage() {
       {isError ? (
         <LoadError onRetry={() => refetch()} />
       ) : isLoading ? (
-        <p className="text-[13px] text-muted-foreground">Loading…</p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4">
+          <Card>
+            <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Requests</p></div>
+            <CardContent className="p-0">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="px-5 py-3.5 border-b border-border last:border-0 space-y-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <Skeleton className="h-4 w-2/5" variant="text" />
+                    <Skeleton className="h-4 w-16" variant="text" />
+                  </div>
+                  <Skeleton className="h-3 w-3/5" variant="text" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <div className="px-5 py-4 border-b border-border space-y-2">
+              <Skeleton className="h-5 w-1/2" variant="text" />
+              <Skeleton className="h-3 w-1/3" variant="text" />
+            </div>
+            <CardContent className="p-5 space-y-3">
+              <Skeleton className="h-3 w-full" variant="text" />
+              <Skeleton className="h-3 w-4/5" variant="text" />
+              <Skeleton className="h-3 w-3/5" variant="text" />
+            </CardContent>
+          </Card>
+        </div>
       ) : leads.length === 0 ? (
         <Card>
           <EmptyState

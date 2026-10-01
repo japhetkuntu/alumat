@@ -339,6 +339,6 @@ public class OnboardingLeadService(
             Math.Round((now - l.CreatedAt).TotalHours, 1),
             l.AgreementVersion, l.AgreementAcceptedAt, l.AgreementAcceptedByName, l.AgreementAcceptedByTitle, l.AgreementAcceptedIp,
             l.Source, l.CreatedAt, l.ContactedAt, l.DemoBookedAt, l.TrialStartedAt, l.ApprovedAt,
-            l.NextFollowUpAt, l.ApprovedInstitutionId != null ? trialEnds.GetValueOrDefault(l.ApprovedInstitutionId) : null)).ToList();
+            l.NextFollowUpAt, l.ApprovedInstitutionId != null ? trialEnds.GetValueOrDefault(l.ApprovedInstitutionId) : null, l.MarketingShareId, l.MarketingAttribution)).ToList();
     }
 }

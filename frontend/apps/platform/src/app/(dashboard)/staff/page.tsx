@@ -10,7 +10,7 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
-import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow, TableSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { createPlatformStaff, getPlatformStaff, updatePlatformStaff, type PlatformStaffItem } from "@/lib/platform-api";
@@ -90,7 +90,7 @@ export default function PlatformStaffPage() {
         <div className="px-5 py-4 border-b border-border">
           <p className="text-[14px] font-semibold">Staff access</p>
           <p className="text-[12px] text-muted-foreground">
-            {activeCount} active &middot; {disabledCount} disabled
+            {isLoading ? "Loading…" : <>{activeCount} active &middot; {disabledCount} disabled</>}
           </p>
         </div>
         <Table stackOnMobile>
@@ -106,6 +106,7 @@ export default function PlatformStaffPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {isLoading && <TableSkeleton rows={6} cols={7} />}
             {isError && <tr><td colSpan={7}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
             {!isLoading && !isError && staff.length === 0 && <TableEmpty title="No platform staff yet" colSpan={7} />}
             {staff.map((s) => (

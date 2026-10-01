@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EmptyState } from "@alumni/ui";
+import { EmptyState, Skeleton } from "@alumni/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
@@ -17,7 +17,7 @@ import { handleApiError } from "@/lib/api-client";
 
 export default function SupportPage() {
   const queryClient = useQueryClient();
-  const { data: supportCases = [] } = useQuery({ queryKey: ["support-cases"], queryFn: () => getSupportCases() });
+  const { data: supportCases = [], isLoading } = useQuery({ queryKey: ["support-cases"], queryFn: () => getSupportCases() });
   const [activeId, setActiveId] = useState<string | undefined>(undefined);
   const active = supportCases.find((c) => c.id === activeId) ?? supportCases[0];
 
@@ -79,7 +79,16 @@ export default function SupportPage() {
         <Card>
           <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Open cases</p></div>
           <CardContent className="p-0">
-            {supportCases.length === 0 && (
+            {isLoading && Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-5 py-3.5 border-b border-border last:border-0 space-y-2">
+                <div className="flex justify-between items-start gap-2">
+                  <Skeleton className="h-4 w-2/5" variant="text" />
+                  <Skeleton className="h-4 w-16" variant="text" />
+                </div>
+                <Skeleton className="h-3 w-3/5" variant="text" />
+              </div>
+            ))}
+            {!isLoading && supportCases.length === 0 && (
               <EmptyState
                 className="py-10"
                 title="Support cases track institution problems"
@@ -87,7 +96,7 @@ export default function SupportPage() {
                 action={<Button size="sm" className="font-semibold" onClick={() => setCreateOpen(true)}>Log a support case</Button>}
               />
             )}
-            {supportCases.map((c) => (
+            {!isLoading && supportCases.map((c) => (
               <button
                 key={c.id}
                 onClick={() => setActiveId(c.id)}

@@ -1,3 +1,4 @@
+import { MarketingAttribution } from "@/components/marketing-attribution";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -114,7 +115,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         )}
-        <Providers>{children}</Providers>
+        <Providers><MarketingAttribution />{children}</Providers>
       </body>
     </html>
   );

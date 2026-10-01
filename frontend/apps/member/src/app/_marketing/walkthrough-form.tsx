@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { getMarketingShareId } from "@/lib/marketing-attribution";
 import { useState, type FormEvent } from "react";
 import { ArrowRight, Check, Input, Label, Button, FormError, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
 import { memberClient, handleApiError } from "@/lib/api-client";
@@ -19,6 +20,7 @@ export function WalkthroughForm() {
     setError(null); setSubmitting(true);
     try {
       await memberClient.post("/public/walkthrough-requests", {
+        marketingShareId: getMarketingShareId(),
         institutionName: form.institutionName.trim(), contactName: form.contactName.trim(),
         contactEmail: form.contactEmail.trim(), mainInterest: form.mainInterest || undefined,
       });

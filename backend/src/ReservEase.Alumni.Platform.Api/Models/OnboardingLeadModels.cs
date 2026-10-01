@@ -100,4 +100,4 @@ public record OnboardingLeadResponse(
     string? AgreementAcceptedByTitle = null, string? AgreementAcceptedIp = null,
     string? Source = null, DateTime? CreatedAt = null, DateTime? ContactedAt = null, DateTime? DemoBookedAt = null,
     DateTime? TrialStartedAt = null, DateTime? ApprovedAt = null,
-    DateTime? NextFollowUpAt = null, DateTime? InstitutionTrialEndsAt = null);
+    DateTime? NextFollowUpAt = null, DateTime? InstitutionTrialEndsAt = null, string? MarketingShareId = null, string? MarketingAttribution = null);

@@ -25,6 +25,11 @@ internal sealed class IdentityJsonNamingPolicy : JsonNamingPolicy
 
 public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrentTenantService currentTenant) : DbContext(options)
 {
+    public DbSet<MarketingCampaign> MarketingCampaigns => Set<MarketingCampaign>();
+    public DbSet<MarketingPost> MarketingPosts => Set<MarketingPost>();
+    public DbSet<MarketingAsset> MarketingAssets => Set<MarketingAsset>();
+    public DbSet<MarketingShare> MarketingShares => Set<MarketingShare>();
+    public DbSet<MarketingVisit> MarketingVisits => Set<MarketingVisit>();
     public DbSet<Institution> Institutions => Set<Institution>();
     public DbSet<PlatformSettings> PlatformSettings => Set<PlatformSettings>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
@@ -86,6 +91,13 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasDefaultSchema("alumni");
+        modelBuilder.Entity<MarketingPost>().HasIndex(x => x.CampaignId);
+        modelBuilder.Entity<MarketingAsset>().HasIndex(x => x.CampaignId);
+        modelBuilder.Entity<MarketingShare>().HasIndex(x => x.CampaignId);
+        modelBuilder.Entity<MarketingShare>().HasIndex(x => x.PostId);
+        modelBuilder.Entity<MarketingShare>().HasIndex(x => x.ShortCode).IsUnique();
+        modelBuilder.Entity<MarketingVisit>().HasIndex(x => new { x.ShareId, x.SessionId }).IsUnique();
+        modelBuilder.Entity<OnboardingLead>().HasIndex(x => x.MarketingShareId);
 
         // ── JSONB snapshot converters (no FK constraints anywhere) ──────────
         // PropertyNamingPolicy also camel-cases Dictionary<string,T> KEYS (not just

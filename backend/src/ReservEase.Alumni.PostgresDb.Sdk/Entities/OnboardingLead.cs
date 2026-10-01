@@ -29,6 +29,8 @@ public class OnboardingLead : BaseEntity
     public string Status { get; set; } = "New"; // see OnboardingLeadStatuses
     /// <summary>Where the lead came from — "Website" for the public request form, otherwise whatever platform staff chose when logging it (e.g. "Warm intro", "Outreach", "Referral").</summary>
     public string? Source { get; set; }
+    public string? MarketingShareId { get; set; }
+    public string? MarketingAttribution { get; set; }
     // When each funnel stage was first reached — set once, never cleared, so the
     // platform's onboarding funnel can count "reached this stage in week N" even
     // after a lead moves on or is rejected. Skipping a stage backfills it.

@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@alumni/ui";
 import { Input } from "@alumni/ui";
-import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow, TableSkeleton } from "@alumni/ui";
 import { getAuditLog } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function AuditLogPage() {
   const { isSuperAdmin } = useAuth();
   const [search, setSearch] = useState("");
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["audit-log", { page: 1, pageSize: 100, search }],
     queryFn: () => getAuditLog({ page: 1, pageSize: 100, search: search || undefined }),
   });
@@ -46,8 +46,9 @@ export default function AuditLogPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.length === 0 && <TableEmpty title="No matching events" colSpan={5} />}
-            {entries.map((a) => (
+            {isLoading && <TableSkeleton rows={8} cols={5} />}
+            {!isLoading && entries.length === 0 && <TableEmpty title="No matching events" colSpan={5} />}
+            {!isLoading && entries.map((a) => (
               <TableRow key={a.id}>
                 <TableCell className="font-semibold">{a.actor}</TableCell>
                 <TableCell>{a.action}</TableCell>

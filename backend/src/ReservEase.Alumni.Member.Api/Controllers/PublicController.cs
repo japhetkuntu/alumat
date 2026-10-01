@@ -128,6 +128,7 @@ public class PublicController(
             ContactEmail = request.ContactEmail.Trim(),
             PrimaryGoals = string.IsNullOrWhiteSpace(request.MainInterest) ? [] : [request.MainInterest.Trim()],
             Message = "Product walkthrough requested from the marketing site.",
+            MarketingShareId = request.MarketingShareId,
         }, recordAgreement: false);
     }
 
@@ -162,6 +163,17 @@ public class PublicController(
             PreferredContactTime = request.PreferredContactTime,
             TimeZone = request.TimeZone,
         };
+        if (!string.IsNullOrWhiteSpace(request.MarketingShareId))
+        {
+            var db = HttpContext.RequestServices.GetRequiredService<ReservEase.Alumni.PostgresDb.Sdk.DbContexts.AlumniDbContext>();
+            var share = await db.MarketingShares.FindAsync(request.MarketingShareId);
+            if (share != null && !share.Disabled)
+            {
+                var snapshot = ReservEase.Alumni.PostgresDb.Sdk.Marketing.MarketingRules.Snapshot(share);
+                lead.MarketingShareId = share.Id;
+                lead.MarketingAttribution = $"{snapshot.CampaignTitle} → {snapshot.Title} → {share.Channel}";
+            }
+        }
         await onboardingLeadRepo.AddAsync(lead);
 
         // Let the platform team know a lead came in — this is the top of the

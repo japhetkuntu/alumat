@@ -9,7 +9,7 @@ import { Card, ChipRow } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
-import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from "@alumni/ui";
+import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow, TableSkeleton } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { formatDate, formatCurrency } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
@@ -126,7 +126,7 @@ export default function InstitutionsPage() {
       <Card>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <p className="text-[14px] font-semibold">
-            All institutions <span className="text-muted-foreground font-normal">{results.length} results</span>
+            All institutions <span className="text-muted-foreground font-normal">{isLoading ? "…" : `${results.length} results`}</span>
           </p>
         </div>
         <Table stackOnMobile>
@@ -141,6 +141,7 @@ export default function InstitutionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {isLoading && <TableSkeleton rows={6} cols={6} />}
             {isError && <tr><td colSpan={6}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
             {!isLoading && !isError && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={6} />}
             {results.map((inst) => (

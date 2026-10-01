@@ -7,7 +7,7 @@ import { Plus, Trash2, Copy, ExternalLink, X, Pencil } from "@alumni/ui";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Card, CardContent } from "@alumni/ui";
+import { Card, CardContent, Skeleton, CardSkeleton } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -396,7 +396,24 @@ export default function InstitutionDetailPage() {
 
   if (isError) notFound();
   if (isLoading || !inst) {
-    return <div className="p-4 sm:p-7 text-[13px] text-muted-foreground">Loading institution…</div>;
+    return (
+      <div className="p-4 sm:p-7 max-w-[1500px]">
+        <Skeleton className="h-3 w-40 mb-3" variant="text" />
+        <Card className="mb-5">
+          <CardContent className="p-5 flex items-center gap-4">
+            <Skeleton className="h-14 w-14" variant="circular" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-48" variant="text" />
+              <Skeleton className="h-3 w-64" variant="text" />
+            </div>
+          </CardContent>
+        </Card>
+        <div className="flex gap-6 border-b border-border mb-5">
+          {TABS.map((t) => <Skeleton key={t} className="h-4 w-20 mb-3" variant="text" />)}
+        </div>
+        <CardSkeleton className="rounded-none" />
+      </div>
+    );
   }
 
   if (branding === null) {

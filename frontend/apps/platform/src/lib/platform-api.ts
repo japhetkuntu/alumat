@@ -844,6 +844,8 @@ export interface OnboardingLead {
   agreementAcceptedByName?: string;
   agreementAcceptedByTitle?: string;
   agreementAcceptedIp?: string;
+  marketingShareId?: string;
+  marketingAttribution?: string;
   source?: string;
   createdAt?: string;
   contactedAt?: string;

@@ -12,6 +12,7 @@ namespace ReservEase.Alumni.Member.Api.Models;
 /// </summary>
 public class CreateOnboardingLeadRequest
 {
+    [MaxLength(32)] public string? MarketingShareId { get; set; }
     [Required, MaxLength(200)]
     public string InstitutionName { get; set; } = string.Empty;
     [Required]
@@ -42,6 +43,7 @@ public record OnboardingLeadResponse(string Id, string InstitutionName, string C
 /// <summary>A product enquiry; this does not accept the Institution Agreement.</summary>
 public class CreateWalkthroughRequest
 {
+    [MaxLength(32)] public string? MarketingShareId { get; set; }
     [Required, MaxLength(200)]
     public string InstitutionName { get; set; } = string.Empty;
     [Required, MaxLength(200)]

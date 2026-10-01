@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
@@ -12,9 +13,11 @@ using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 {
     [DbContext(typeof(AlumniDbContext))]
-    partial class AlumniDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260930192609_AddMarketingCampaigns")]
+    partial class AddMarketingCampaigns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3651,9 +3654,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<DateTime?>("SharedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ShortCode")
-                        .HasColumnType("text");
-
                     b.Property<string>("SnapshotJson")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3669,9 +3669,6 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("CampaignId");
 
                     b.HasIndex("PostId");
-
-                    b.HasIndex("ShortCode")
-                        .IsUnique();
 
                     b.ToTable("MarketingShares", "alumni");
                 });

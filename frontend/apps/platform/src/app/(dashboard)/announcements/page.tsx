@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EmptyState } from "@alumni/ui";
+import { EmptyState, Skeleton } from "@alumni/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@alumni/ui";
@@ -114,7 +114,7 @@ function RecipientPicker({
 
 export default function AnnouncementsPage() {
   const queryClient = useQueryClient();
-  const { data: items = [] } = useQuery({ queryKey: ["announcements"], queryFn: getAnnouncements });
+  const { data: items = [], isLoading: itemsLoading } = useQuery({ queryKey: ["announcements"], queryFn: getAnnouncements });
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -234,7 +234,14 @@ export default function AnnouncementsPage() {
         <Card>
           <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">History</p></div>
           <CardContent className="p-0">
-            {items.length === 0 && (
+            {itemsLoading && Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="px-5 py-4 border-b border-border last:border-0 space-y-2">
+                <Skeleton className="h-4 w-2/5" variant="text" />
+                <Skeleton className="h-3 w-full" variant="text" />
+                <Skeleton className="h-3 w-1/3" variant="text" />
+              </div>
+            ))}
+            {!itemsLoading && items.length === 0 && (
               <EmptyState
                 className="py-10"
                 title="Reach institution admins directly"
@@ -242,7 +249,7 @@ export default function AnnouncementsPage() {
                 action={<Button size="sm" className="font-semibold" onClick={() => document.getElementById("announcement-title")?.focus()}>Write a notification</Button>}
               />
             )}
-            {items.map((a) => (
+            {!itemsLoading && items.map((a) => (
               <div key={a.id} className="px-5 py-4 border-b border-border last:border-0">
                 <p className="font-semibold text-[13.5px]">{a.title}</p>
                 <p className="text-[13px] text-muted-foreground mt-1">{a.body}</p>

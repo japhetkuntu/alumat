@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getMarketingShareId } from "@/lib/marketing-attribution";
 import { useState } from "react";
 import type { IconType as LucideIcon } from "@alumni/ui";
 import { Menu, X, ArrowRight, ChevronRight, ChevronDown, Briefcase, Users, CreditCard, Globe, Heart, ShoppingBag, Trophy, Bell, FileText, Images, Building2, ShieldCheck, Rocket, Layer, Mail, MapPin, MessageCircleOff, SearchX, ShieldAlert, UserX, Wallet, CheckCircle2, PartyPopper, Crown, UserCheck, Upload, BookOpen, Megaphone, Users2, Stamp, Receipt, UsersRound, HandCoins, Button, Input, Label, Textarea, FormError, cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@alumni/ui";
@@ -197,6 +198,7 @@ function OnboardingForm() {
     setSubmitting(true);
     try {
       await memberClient.post("/public/onboarding-leads", {
+        marketingShareId: getMarketingShareId(),
         agreementAccepted: true,
         agreementVersion: INSTITUTION_AGREEMENT_VERSION,
         institutionName: form.institutionName.trim(),
