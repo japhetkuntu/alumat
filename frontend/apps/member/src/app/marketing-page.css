@@ -16,7 +16,7 @@
 .marketing-site .mk-mobile-nav { display: flex; flex-direction: column; padding-bottom: 18px; }
 .marketing-site .mk-mobile-nav a { padding: 12px 0; font-weight: 500; }
 .marketing-site .mk-hero { position: relative; overflow: hidden; background: radial-gradient(ellipse at 85% 70%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 50%); }
-.marketing-site .mk-hero-content { position: relative; display: grid; grid-template-columns: minmax(0,1.08fr) minmax(420px,.92fr); align-items: center; gap: clamp(48px,5vw,88px); padding-block: 68px 56px; }
+.marketing-site .mk-hero-content { position: relative; display: grid; grid-template-columns: minmax(0,1.08fr) minmax(420px,.92fr); align-items: center; gap: clamp(48px,5vw,88px); padding-block: 32px 38px; }
 .marketing-site .mk-hero-copy { position: relative; z-index: 1; }
 .marketing-site .mk-hero h1 { font-size: clamp(40px, 4.5vw, 62px); font-weight: 700; line-height: 1.08; letter-spacing: -.038em; max-width: 720px; text-wrap: balance; }
 .marketing-site .mk-hero h1 span { color: var(--primary); }
@@ -36,7 +36,7 @@
 .marketing-site .mk-story-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
 .marketing-site .mk-story-photo:hover img { transform: scale(1.025); }
 .marketing-site .mk-story-photo-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 48%, rgba(6,18,34,.72) 100%); }
-.marketing-site .mk-hero-photo { min-height: 0; aspect-ratio: 4 / 5; border-radius: 30px 30px 30px 9px; }
+.marketing-site .mk-hero-photo { width: 100%; height: clamp(430px, calc(100svh - 190px), 540px); min-height: 0; border-radius: 30px 30px 30px 9px; }
 .marketing-site .mk-hero-photo img { object-position: center; }
 .marketing-site .mk-hero-photo::before { content: "One community. More ways to belong, contribute and grow."; position: absolute; z-index: 2; left: 24px; right: 24px; bottom: 28px; color: white; font-size: 20px; font-weight: 600; line-height: 1.35; text-wrap: balance; }
 .marketing-site .mk-wide-story-photo { min-height: 0; aspect-ratio: 16 / 7; margin: 0 0 48px; }
@@ -163,7 +163,7 @@
   .marketing-site .mk-nav-cta { margin-left: auto; }
   .marketing-site .mk-problem { gap: 30px; }
   .marketing-site .mk-hero-content { grid-template-columns: 1fr 360px; gap: 34px; }
-  .marketing-site .mk-hero-photo { min-height: 0; aspect-ratio: 4 / 5; }
+  .marketing-site .mk-hero-photo { height: auto; min-height: 0; aspect-ratio: 4 / 5; }
   .marketing-site .mk-feature-grid-three { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .marketing-site .mk-free-grid { gap: 40px; }
   .marketing-site .mk-zero { padding-left: 35px; }
