@@ -20,6 +20,48 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-01",
+    title: "Platform staff can run marketing campaigns end to end",
+    body: "A campaign holds posts, each post holds artwork/video and a per-channel caption, and \"prepare\" generates a tracked public link without auto-publishing anywhere. Visits and the enquiries they lead to (tied back to the same onboarding lead record) show up directly against each share, so a campaign's real results live next to the content that produced them.",
+    scopes: ["Platform", "Member"],
+    type: "Feature",
+  },
+  {
+    date: "2026-10-01",
+    title: "Campaign landing pages now require a clear value proposition",
+    body: "Replaced a single free-text box with five specific prompts (who it's for, their problem, the value this page delivers, the proof, the next action) plus a getting-started checklist, so a landing page has to earn the click instead of just restating the social caption.",
+    scopes: ["Platform"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-01",
+    title: "Redesigned the public campaign landing page",
+    body: "An asymmetric layout with real visual hierarchy, matching this app's actual sharp-cornered brand system, replacing a plain stacked page.",
+    scopes: ["Member"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-01",
+    title: "Shortened and deletable campaign share links",
+    body: "Prepared share links now use a short code (alumunion.com/campaigns/kt7mq2x) instead of a long id, and an unused prepared link, post, or image can be deleted outright with a confirmation step — a link or post already confirmed as shared is protected and must be disabled or archived instead, so real results history is never lost by accident.",
+    scopes: ["Platform", "Member"],
+    type: "Feature",
+  },
+  {
+    date: "2026-10-01",
+    title: "Fixed misleading loading states on the platform portal",
+    body: "Several pages (dashboard, institutions, staff, audit log, support, announcements, onboarding leads) briefly showed real-looking zero stats or false empty states (\"nothing needs attention\", \"no cases yet\") while data was still loading, before the real numbers appeared. Replaced with loading skeletons that match each page's actual layout.",
+    scopes: ["Platform"],
+    type: "Fix",
+  },
+  {
+    date: "2026-10-01",
+    title: "Fixed delete buttons showing in black instead of red",
+    body: "Delete actions across the marketing campaigns tool used the same neutral button style as non-destructive actions like \"Disable link\", making them easy to miss or mistake for something reversible. Now styled consistently with every other destructive action in the app.",
+    scopes: ["Platform"],
+    type: "Fix",
+  },
+  {
     date: "2026-09-30",
     title: "Refreshed the AlumUnion logo across every portal",
     body: "A bolder, more visible mark and wordmark, with the header/footer logo sized up — replacing the old thin-lined version everywhere: favicons, home-screen icons, and both portal headers.",
