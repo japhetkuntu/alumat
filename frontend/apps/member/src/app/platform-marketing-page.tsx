@@ -161,6 +161,33 @@ const EMPTY_LEAD: LeadForm = {
   preferredContactTime: "", timeZone: "", message: "", agreementAccepted: false,
 };
 
+type StoryPhotoData = { alt:string; url:string };
+
+const STORY_PHOTOS: Record<"hero" | "collaboration" | "onboarding", StoryPhotoData> = {
+  hero: {
+    alt: "A diverse circle of hands brought together in solidarity",
+    url: "https://images.unsplash.com/photo-1740065592719-052d3e5ec6fb?auto=format&fit=crop&w=1600&q=84",
+  },
+  collaboration: {
+    alt: "Black professionals working together across a laptop and phone",
+    url: "https://images.unsplash.com/photo-1573164574230-db1d5e960238?auto=format&fit=crop&w=1800&q=84",
+  },
+  onboarding: {
+    alt: "Hands raised together as a symbol of trust and partnership",
+    url: "https://images.unsplash.com/photo-1682353213514-81a621a39d8b?auto=format&fit=crop&w=1400&q=84",
+  },
+};
+
+function StoryPhoto({ photo, className = "", priority = false }: { photo?: StoryPhotoData; className?: string; priority?: boolean }) {
+  if (!photo) return <div className={`mk-story-photo mk-story-photo-loading ${className}`} aria-hidden="true" />;
+  return (
+    <figure className={`mk-story-photo ${className}`}>
+      <img src={photo.url} alt={photo.alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} />
+      <div className="mk-story-photo-overlay" aria-hidden="true" />
+    </figure>
+  );
+}
+
 function OnboardingForm() {
   const [form, setForm] = useState<LeadForm>(EMPTY_LEAD);
   const [error, setError] = useState<string | null>(null);
@@ -453,19 +480,20 @@ export default function PlatformMarketingPage() {
         <section className="mk-hero">
           <div className="mk-hero-rings" aria-hidden="true"><span /><span /><span /></div>
           <div className="mk-wrap mk-hero-content">
-            <h1>Give your community a home — <span>at no cost</span> to your institution.</h1>
-            <p className="mk-hero-description">AlumUnion helps institutions build, organize, and grow thriving communities — from alumni and former students to members, supporters, and stakeholders.</p>
-            <div className="mk-hero-actions"><a href="#onboard" className="mk-button mk-button-large">Request institution onboarding <ArrowRight size={17} /></a><a href="#how-it-works" className="mk-text-link">See how it works <ChevronDown size={14} /></a></div>
-            <div className="mk-hero-assurances"><span><ShieldCheck size={16} />No setup or subscription fee</span><span><Rocket size={16} />Setup with our team</span><span><Users size={16} />Built for every institution</span></div>
+            <div className="mk-hero-copy"><p className="mk-eyebrow">Community infrastructure, built with you</p><h1>Give your community a home, <span>at no cost</span> to your institution.</h1>
+            <p className="mk-hero-description">AlumUnion helps institutions build, organize, and grow thriving communities, including alumni, former students, members, supporters, and stakeholders.</p>
+            <div className="mk-hero-actions"><a href="#onboard" className="mk-button mk-button-large">Build my community — free <ArrowRight size={17} /></a><a href="#product" className="mk-text-link">See the member experience <ChevronDown size={14} /></a></div>
+            <div className="mk-hero-assurances"><span><ShieldCheck size={16} />Free for your institution</span><span><Rocket size={16} />We handle setup</span><span><Users size={16} />Your branding, your community</span></div></div>
+            <StoryPhoto photo={STORY_PHOTOS.hero} className="mk-hero-photo" priority />
           </div>
         </section>
         <section id="product" className="mk-wrap mk-product-section">
-          <div className="mk-product-heading"><div><p className="mk-eyebrow">Inside your community portal</p><h2>A closer look at the member experience.</h2></div><span className="mk-demo-label">Live interface · example data</span></div>
+          <div className="mk-product-heading"><div><p className="mk-eyebrow">The member experience</p><h2>See what your community actually gets.</h2></div><span className="mk-demo-label">Interactive preview · example data</span></div>
           <div className="mk-product-frame"><ProductTour /></div>
         </section>
         <section id="problems" className="mk-section mk-problems">
           <div className="mk-wrap">
-            <div className="mk-section-heading"><p className="mk-eyebrow">The reality</p><h2>Every institution we talk to is fighting the same three problems.</h2><p>Not a lack of features, a lack of one place where your community, records, and contributions all live together.</p></div>
+            <div className="mk-section-heading"><p className="mk-eyebrow">The daily reality</p><h2>Your community should not run on scattered chats, stale spreadsheets and payment screenshots.</h2><p>The problem is not effort. Your team simply lacks one trusted place for people, activity and money.</p></div>
             <div className="mk-problem-list">{PROBLEMS.map((item,index) => <article key={item.n} className={`mk-problem ${index % 2 ? "mk-problem-reverse" : ""}`}>
               <div className="mk-problem-visual"><span className="mk-problem-number" aria-hidden="true">{item.n}</span><item.illustration className="w-full" /><p>Illustrative product example</p></div>
               <div className="mk-problem-copy"><p className="mk-eyebrow">{item.eyebrow}</p><h3>{item.title}</h3><p>{item.desc}</p><div className="mk-problem-fix"><ArrowRight size={17} /><p>{item.fix}</p></div><div className="mk-chips">{item.chips.map(chip => <span key={chip}>{chip}</span>)}</div></div>
@@ -475,7 +503,7 @@ export default function PlatformMarketingPage() {
         </section>
         <section id="features" className="mk-section">
           <div className="mk-wrap">
-            <div className="mk-section-heading"><p className="mk-eyebrow">The fix</p><h2>One digital home for your institution’s community.</h2><p>Your community stays connected, your records become reliable, and contributions are collected and reconciled properly, all in the same place.</p></div>
+            <div className="mk-section-heading"><p className="mk-eyebrow">One connected system</p><h2>Everything your community needs to connect and participate.</h2><p>People find each other, discover what matters and take action. Your team gets reliable records without chasing updates across multiple tools.</p></div>
             <div className="mk-feature-groups">{FEATURE_GROUPS.map((group,index) => <section key={group.label} className="mk-feature-group">
               <div className="mk-group-heading"><span>0{index+1}</span><div><h3>{group.label}</h3><p>{group.blurb}</p></div></div>
               <div className={`mk-feature-grid ${group.items.length === 3 ? "mk-feature-grid-three" : ""}`}>{group.items.map(feature => <article key={feature.title} className="mk-feature">
@@ -484,28 +512,29 @@ export default function PlatformMarketingPage() {
               </article>)}</div>
             </section>)}</div>
             <p className="mk-example-note">Interface examples illustrate the features. Names, dates and amounts shown are sample data.</p>
-            <a href="#onboard" className="mk-feature-cta"><div><h3>Ready to build your community?</h3><p>Tell us about your institution — it’s free to get started.</p></div><span>Get started <ArrowRight size={17} /></span></a>
+            <a href="#onboard" className="mk-feature-cta"><div><h3>Give your community a place worth returning to.</h3><p>We will help you set it up, at no cost to your institution.</p></div><span>Start building <ArrowRight size={17} /></span></a>
           </div>
         </section>
         <section id="how-it-works" className="mk-section mk-setup">
           <div className="mk-wrap">
-            <div className="mk-section-heading mk-heading-centred"><p className="mk-eyebrow">For organizations starting from anywhere</p><h2>Don’t have an organized community yet? Start from where you are.</h2><p>Bring your people together, organize the groups that matter to you, and gradually grow a trusted community.</p></div>
+            <div className="mk-section-heading mk-heading-centred"><p className="mk-eyebrow">Start from where you are</p><h2>Begin with the people you have. Grow from there.</h2><p>We help you bring existing records together, organise the groups that matter and build trust one step at a time.</p></div>
             <div className="mk-pipeline" aria-label="How your community is organised">{NETWORK_PIPELINE.map((node,index) => <div key={node.label} className="mk-pipeline-node"><span className={index===2 ? "mk-pipeline-icon mk-pipeline-highlight" : "mk-pipeline-icon"}><node.icon size={23} /></span><p>{node.label}</p>{index < NETWORK_PIPELINE.length-1 && <ChevronRight size={17} className="mk-pipeline-arrow" />}</div>)}</div>
             <p className="mk-pipeline-description">Each group or chapter can have its own leader, responsible for bringing people in and keeping them connected, so the work spreads across your community instead of landing on one overworked administrator.</p>
-            <div className="mk-offer-heading"><h3>The offer: build your community, from the ground up.</h3><p>Our team does the setup with you. This is everything it covers, in the order it happens.</p></div>
+            <StoryPhoto photo={STORY_PHOTOS.collaboration} className="mk-wide-story-photo" />
+            <div className="mk-offer-heading"><h3>We do the setup with you.</h3><p>From your first imported record to your first live campaign, our team helps at every step.</p></div>
             <div className="mk-setup-grid">{WHITE_GLOVE_STEPS.map((step,index) => <article key={step.title} className="mk-setup-step"><div className="mk-step-top"><span>0{index+1}</span><step.icon size={20} /></div><h4>{step.title}</h4><p>{step.desc}</p></article>)}</div>
           </div>
         </section>
         <section id="costs" className="mk-free-section">
           <div className="mk-wrap mk-free-grid">
-            <div><p className="mk-eyebrow">What it costs your institution</p><h2>Completely free.<br />Full stop.</h2><p className="mk-free-description">No setup fee, no monthly bill, no per-member charge. Your members get a modern portal, and your organization never sees an invoice for running it.</p><a href="#onboard" className="mk-button mk-button-white">Get your institution onboarded <ArrowRight size={16} /></a></div>
+            <div><p className="mk-eyebrow">Simple pricing</p><h2>Your institution pays GH₵0.</h2><p className="mk-free-description">No setup fee. No subscription. No charge per member. Your institution gets the complete platform without another software bill.</p><a href="#onboard" className="mk-button mk-button-white">Build my community <ArrowRight size={16} /></a></div>
             <div className="mk-zero"><div>GH₵<span>0</span></div><p>to set up and run your portal</p><ul><li><CheckCircle2 size={17} />No setup fee</li><li><CheckCircle2 size={17} />No subscription</li><li><CheckCircle2 size={17} />No per-member charge</li></ul></div>
           </div>
           <div className="mk-wrap"><p className="mk-payment-note">Your portal is free. Fees apply to online payments and are shown before payment.</p></div>
         </section>
         <section id="onboard" className="mk-section mk-enquiry">
           <div className="mk-wrap mk-enquiry-grid">
-            <div className="mk-enquiry-copy"><p className="mk-eyebrow">Let’s get your community started</p><h2>Let’s get your institution onboarded.</h2><p>Tell us a little about your institution and where to reach you. Our team will follow up to configure your portal, your branding, and your first admin account, free from day one.</p><div className="mk-contact-points"><span><Mail size={17} />We’ll reply within one business day</span><span><ShieldCheck size={17} />No setup or subscription fee</span><span><MapPin size={17} />Built for every community, anywhere</span></div><a href="mailto:hello@alumunion.com" className="mk-text-link">hello@alumunion.com <ArrowRight size={14} /></a></div>
+            <div className="mk-enquiry-copy"><StoryPhoto photo={STORY_PHOTOS.onboarding} className="mk-enquiry-photo" /><p className="mk-eyebrow">Tell us what you want to build</p><h2>Your community can have a better home.</h2><p>Share where you are today and what you want to improve. We will respond with a practical setup plan for your institution.</p><div className="mk-contact-points"><span><Mail size={17} />A reply within one business day</span><span><ShieldCheck size={17} />No setup or subscription fee</span><span><MapPin size={17} />Built for communities everywhere</span></div><a href="mailto:hello@alumunion.com" className="mk-text-link">hello@alumunion.com <ArrowRight size={14} /></a></div>
             <div className="mk-form-panel"><div className="mk-form-choice" aria-label="Choose your request type"><button type="button" aria-pressed={enquiry === "onboarding"} onClick={() => setEnquiry("onboarding")}>Onboard my institution</button><button type="button" aria-pressed={enquiry === "walkthrough"} onClick={() => setEnquiry("walkthrough")}>See a walkthrough first</button></div>{enquiry === "onboarding" ? <OnboardingForm /> : <WalkthroughForm />}</div>
           </div>
         </section>
