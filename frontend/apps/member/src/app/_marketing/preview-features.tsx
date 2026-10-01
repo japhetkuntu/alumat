@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Briefcase, MapPin, Heart, Check, Button } from "@alumni/ui";
+import { ArrowRight, Briefcase, MapPin, Heart, Check, Calendar, Images, Trophy, Button } from "@alumni/ui";
 import { trackMarketing } from "./analytics";
 
 const CAMPAIGNS = [
@@ -45,7 +45,7 @@ export function JobsPreview() {
   const jobs = JOBS.filter(job => filter === "All roles" || job.type === filter);
   const job = JOBS.find(item => item.id === selected);
   return <>
-    <h3 className="text-xl font-semibold">Opportunity brings people back.</h3>
+    <h3 className="text-xl font-semibold">Jobs bring people back.</h3>
     <p className="text-sm text-muted-foreground mt-2 mb-5">Filter the example roles, then open one to explore the details.</p>
     <div className="flex flex-wrap gap-2 mb-5" aria-label="Filter example jobs">{["All roles", "Full-time", "Internship", "Contract"].map(type => <button key={type} className="mk-preview-chip" aria-pressed={filter === type} onClick={() => { setFilter(type); setSelected(null); }}>{type}</button>)}</div>
     <div className="grid gap-3 lg:grid-cols-2">{jobs.map(item => <article className="mk-preview-card" key={item.id}>
@@ -74,5 +74,26 @@ export function MentorshipPreview() {
       <Button variant="outline" size="sm" className="mt-5 mk-preview-action" onClick={() => { setRequested(requested.includes(mentor.id) ? requested.filter(id => id !== mentor.id) : [...requested, mentor.id]); trackMarketing("product_preview_action", "mentorship_request"); }}>{requested.includes(mentor.id) ? "Cancel example request" : "Try a mentorship request"}</Button>
       {requested.includes(mentor.id) && <p role="status" className="text-xs text-primary leading-relaxed mt-3 flex gap-2"><Check size={14} className="shrink-0 mt-0.5" />Example request pending. In the portal, the mentor reviews your request before accepting.</p>}
     </article>)}</div>
+  </>;
+}
+
+const UPDATES = [
+  { id: "gathering", type: "Event recap", title: "A night of new connections", description: "See the highlights from our September community gathering and the conversations members want to continue.", icon: Calendar },
+  { id: "photos", type: "Photo album", title: "Community day in pictures", description: "A new collection of moments from the people, projects, and teams that made the day memorable.", icon: Images },
+  { id: "spotlight", type: "Member spotlight", title: "Meet the team behind the library drive", description: "Three members share why they chose to support the project and how others can take part.", icon: Trophy },
+];
+
+export function UpdatesPreview() {
+  const [saved, setSaved] = useState<string[]>([]);
+  return <>
+    <h3 className="text-xl font-semibold">Stay close to what your community is doing.</h3>
+    <p className="text-sm text-muted-foreground mt-2 mb-5">Updates turn activity into stories people can follow and return to.</p>
+    <div className="grid gap-3 lg:grid-cols-2">{UPDATES.map(update => <article className="mk-preview-card" key={update.id}>
+      <div className="flex items-center gap-2 text-primary text-xs font-semibold"><update.icon size={14} />{update.type}</div>
+      <h4 className="font-semibold mt-3">{update.title}</h4>
+      <p className="text-sm text-muted-foreground leading-relaxed mt-2">{update.description}</p>
+      <Button variant="outline" size="sm" className="mt-4 mk-preview-action" onClick={() => { setSaved(saved.includes(update.id) ? saved.filter(id => id !== update.id) : [...saved, update.id]); trackMarketing("product_preview_action", "save_update"); }}>{saved.includes(update.id) ? "Saved" : "Save for later"}</Button>
+    </article>)}</div>
+    <p role="status" className="text-xs text-muted-foreground mt-4">{saved.length ? `${saved.length} example ${saved.length === 1 ? "update" : "updates"} saved in this preview.` : "Members can save useful stories and return to them later."}</p>
   </>;
 }

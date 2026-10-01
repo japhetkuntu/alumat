@@ -1,5 +1,5 @@
 .marketing-site { background: var(--background); color: var(--foreground); --mk-radius: 22px; --muted-foreground: color-mix(in srgb, var(--foreground) 76%, var(--background)); font-size: 16px; line-height: 1.65; }
-.marketing-site .mk-wrap { width: min(1200px, calc(100% - 96px)); margin-inline: auto; }
+.marketing-site .mk-wrap { width: min(1440px, calc(100% - 64px)); margin-inline: auto; }
 .marketing-site section[id] { scroll-margin-top: 94px; }
 .marketing-site :is(a,button,input,select,textarea,summary):focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
 .marketing-site .mk-nav { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 94%, transparent); backdrop-filter: blur(16px); }
@@ -16,7 +16,7 @@
 .marketing-site .mk-mobile-nav { display: flex; flex-direction: column; padding-bottom: 18px; }
 .marketing-site .mk-mobile-nav a { padding: 12px 0; font-weight: 500; }
 .marketing-site .mk-hero { position: relative; overflow: hidden; background: radial-gradient(ellipse at 85% 70%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 50%); }
-.marketing-site .mk-hero-content { position: relative; display: grid; grid-template-columns: minmax(0,1.05fr) minmax(380px,.95fr); align-items: center; gap: 58px; padding-block: 68px 56px; }
+.marketing-site .mk-hero-content { position: relative; display: grid; grid-template-columns: minmax(0,1.08fr) minmax(420px,.92fr); align-items: center; gap: clamp(48px,5vw,88px); padding-block: 68px 56px; }
 .marketing-site .mk-hero-copy { position: relative; z-index: 1; }
 .marketing-site .mk-hero h1 { font-size: clamp(40px, 4.5vw, 62px); font-weight: 700; line-height: 1.08; letter-spacing: -.038em; max-width: 720px; text-wrap: balance; }
 .marketing-site .mk-hero h1 span { color: var(--primary); }
@@ -56,7 +56,8 @@
 .marketing-site .mk-product-frame > div { border-radius: 16px; }
 .marketing-site .mk-problems { background: color-mix(in srgb, var(--primary) 3%, var(--background)); border-block: 1px solid var(--border); }
 .marketing-site .mk-problem-list { display: grid; gap: 50px; }
-.marketing-site .mk-problem { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 60px; }
+.marketing-site .mk-problem { display: grid; grid-template-columns: minmax(0,1.08fr) minmax(0,.92fr); align-items: center; gap: clamp(60px,7vw,112px); }
+.marketing-site .mk-problem-reverse { grid-template-columns: minmax(0,.92fr) minmax(0,1.08fr); }
 .marketing-site .mk-problem-reverse .mk-problem-visual { order: 2; }
 .marketing-site .mk-problem-visual { position: relative; border-radius: var(--mk-radius); padding: 32px; background: color-mix(in srgb, var(--primary) 7%, var(--background)); overflow: hidden; }
 .marketing-site .mk-problem-number { position: absolute; top: 8px; right: 18px; font-size: 70px; font-weight: 700; letter-spacing: -.05em; color: color-mix(in srgb, var(--primary) 10%, transparent); }

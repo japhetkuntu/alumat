@@ -42,7 +42,7 @@ const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
     label: "Grow together",
     blurb: "A community people want to stay in because opportunity brings them back.",
     items: [
-      { icon: Briefcase,   label: "Careers",    title: "A jobs board for your community",      desc: "Employers post roles for members and supporters before they ever hit public boards.", illustration: JobsIllustration },
+      { icon: Briefcase,   label: "Jobs",       title: "A jobs board for your community",      desc: "Employers post roles for members and supporters before they ever hit public boards.", illustration: JobsIllustration },
       { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Former students and experienced members connect with those just starting out.", illustration: MentorshipIllustration },
       { icon: Building2,   label: "Businesses", title: "A member business directory",            desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
       { icon: Trophy,      label: "Spotlight",  title: "Celebrate your standout members",       desc: "Recognize members, leaders, supporters, and changemakers right on your community home page.", illustration: SpotlightIllustration },
@@ -148,7 +148,7 @@ interface LeadForm {
 
 const MEMBER_COUNT_RANGES = ["0 – 100", "101 – 500", "501 – 999", "1,000+"];
 const ORGANIZATION_TYPES = ["Alumni association", "University or college", "School network", "Professional association", "Nonprofit or NGO", "Faith-based organization", "Membership organization", "Other"];
-const PRIMARY_GOALS = ["Member directory", "Member registration and approvals", "Membership dues", "Contributions and fundraising", "Events and RSVPs", "Communities or chapters", "Mentorship", "Jobs and opportunities", "News and announcements", "Digital resources", "Merchandise/store", "Official document or service requests"];
+const PRIMARY_GOALS = ["Member directory", "Member registration and approvals", "Membership dues", "Contributions and fundraising", "Events and RSVPs", "Communities or chapters", "Mentorship", "Jobs", "News and announcements", "Digital resources", "Merchandise/store", "Official document or service requests"];
 const CONTACT_ROLES = ["Executive leadership", "Community or membership office", "IT or digital transformation", "Finance", "Communications or marketing", "Programs or member services", "Other"];
 const MANAGEMENT_OPTIONS = ["Spreadsheet", "WhatsApp groups", "Existing alumni or community software", "CRM", "Student information system", "Website or custom system", "Mostly manual processes", "Other"];
 const CONTACT_CHANNELS = ["Email", "Phone call", "WhatsApp", "Video call"];
