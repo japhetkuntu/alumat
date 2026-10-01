@@ -16,7 +16,7 @@
 .marketing-site .mk-mobile-nav { display: flex; flex-direction: column; padding-bottom: 18px; }
 .marketing-site .mk-mobile-nav a { padding: 12px 0; font-weight: 500; }
 .marketing-site .mk-hero { position: relative; overflow: hidden; background: radial-gradient(ellipse at 85% 70%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 50%); }
-.marketing-site .mk-hero-content { position: relative; display: grid; grid-template-columns: minmax(0,1.08fr) minmax(420px,.92fr); align-items: center; gap: clamp(48px,5vw,88px); padding-block: 32px 38px; }
+.marketing-site .mk-hero-content { position: relative; display: grid; grid-template-columns: minmax(0,1.08fr) minmax(420px,.92fr); align-items: center; gap: clamp(60px,6vw,120px); padding-block: 32px 38px; }
 .marketing-site .mk-hero-copy { position: relative; z-index: 1; }
 .marketing-site .mk-hero h1 { font-size: clamp(40px, 4.5vw, 62px); font-weight: 700; line-height: 1.08; letter-spacing: -.038em; max-width: 720px; text-wrap: balance; }
 .marketing-site .mk-hero h1 span { color: var(--primary); }
@@ -42,7 +42,7 @@
 .marketing-site .mk-wide-story-photo { min-height: 0; aspect-ratio: 16 / 7; margin: 0 0 48px; }
 .marketing-site .mk-wide-story-photo img { object-position: center 58%; }
 .marketing-site .mk-wide-story-photo::before { content: "Your team knows the community. We help turn that knowledge into a system that works."; position: absolute; z-index: 2; left: 32px; bottom: 28px; max-width: 680px; color: white; font-size: clamp(23px,3vw,38px); font-weight: 650; line-height: 1.16; letter-spacing: -.02em; }
-.marketing-site .mk-section { padding-block: 88px; }
+.marketing-site .mk-section { padding-block: 64px 76px; }
 .marketing-site h2 { font-size: clamp(29px, 3.2vw, 42px); font-weight: 650; letter-spacing: -.027em; line-height: 1.16; text-wrap: balance; }
 .marketing-site .mk-eyebrow { display: flex; align-items: center; gap: 7px; color: var(--primary); font-size: 14px; line-height: 1.5; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; margin-bottom: 14px; }
 .marketing-site .mk-section-heading { max-width: 690px; margin-bottom: 44px; }
@@ -72,7 +72,7 @@
 .marketing-site .mk-chips span { padding: 5px 9px; color: var(--primary); background: color-mix(in srgb, var(--primary) 7%, var(--background)); border-radius: 999px; font-size: 14px; font-weight: 600; }
 .marketing-site .mk-whatsapp { border-top: 1px solid var(--border); margin-top: 44px; padding-top: 24px; }
 .marketing-site summary { cursor: pointer; }
-.marketing-site .mk-whatsapp summary { font-size: 19px; font-weight: 600; }
+.marketing-site .mk-whatsapp-title { font-size: 19px; font-weight: 600; }
 .marketing-site .mk-whatsapp-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 28px; padding-top: 25px; }
 .marketing-site .mk-whatsapp-grid svg { color: var(--primary); margin-bottom: 12px; }
 .marketing-site .mk-whatsapp h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
@@ -95,10 +95,13 @@
 .marketing-site .mk-feature-copy > p:last-child { font-size: 18px; line-height: 1.8; color: var(--muted-foreground); }
 .marketing-site .mk-feature-copy .mk-eyebrow { margin-bottom: 10px; }
 .marketing-site .mk-example-note { font-size: 15px; margin-top: 17px; color: var(--muted-foreground); }
-.marketing-site .mk-feature-cta { margin-top: 38px; display: flex; justify-content: space-between; align-items: center; gap: 24px; background: var(--primary); color: var(--primary-foreground); border-radius: var(--mk-radius); padding: 26px 30px; }
-.marketing-site .mk-feature-cta h3 { font-weight: 600; font-size: 22px; }
-.marketing-site .mk-feature-cta p { margin-top: 5px; font-size: 18px; opacity: .85; }
-.marketing-site .mk-feature-cta > span { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; flex-shrink: 0; }
+.marketing-site .mk-feature-cta { position: relative; overflow: hidden; margin-top: 38px; display: flex; justify-content: space-between; align-items: center; gap: 32px; background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 82%, #071a3d)); color: var(--primary-foreground); border-radius: var(--mk-radius); padding: 30px 34px; box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--primary) 70%, transparent); }
+.marketing-site .mk-feature-cta::after { content: ""; position: absolute; width: 240px; height: 240px; right: 9%; top: 50%; transform: translateY(-50%); border: 1px solid rgba(255,255,255,.14); border-radius: 50%; box-shadow: 0 0 0 46px rgba(255,255,255,.05), 0 0 0 92px rgba(255,255,255,.035); pointer-events: none; }
+.marketing-site .mk-feature-cta-copy { position: relative; z-index: 1; }
+.marketing-site .mk-feature-cta h3 { color: white; font-weight: 650; font-size: 24px; letter-spacing: -.015em; }
+.marketing-site .mk-feature-cta p { max-width: 620px; margin-top: 6px; color: rgba(255,255,255,.82); font-size: 17px; }
+.marketing-site .mk-feature-cta-action { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 46px; padding: 12px 19px; border-radius: 999px; background: white; color: var(--primary); font-size: 15px; font-weight: 700; box-shadow: 0 10px 24px rgba(5,18,45,.2); transition: transform .18s, box-shadow .18s; }
+.marketing-site .mk-feature-cta:hover .mk-feature-cta-action { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(5,18,45,.26); }
 .marketing-site .mk-setup { background: var(--muted); border-block: 1px solid var(--border); }
 .marketing-site .mk-heading-centred { text-align: center; margin-inline: auto; }
 .marketing-site .mk-heading-centred .mk-eyebrow { justify-content: center; }
@@ -185,7 +188,7 @@
   .marketing-site .mk-hero-photo { min-height: 0; aspect-ratio: 4 / 3; border-radius: 22px 22px 22px 7px; }
   .marketing-site .mk-wide-story-photo { min-height: 0; aspect-ratio: 4 / 3; margin-bottom: 38px; }
   .marketing-site .mk-wide-story-photo::before { left: 20px; right: 20px; bottom: 46px; }
-  .marketing-site .mk-section { padding-block: 56px; }
+  .marketing-site .mk-section { padding-block: 48px 56px; }
   .marketing-site .mk-product-section { padding-bottom: 48px; }
   .marketing-site .mk-product-heading { align-items: start; flex-direction: column; gap: 8px; }
   .marketing-site .mk-product-heading h2 { font-size: 21px; }
@@ -202,14 +205,15 @@
   .marketing-site .mk-feature-visual { padding: 24px; min-height: 0; }
   .marketing-site .mk-feature-copy { padding: 22px; }
   .marketing-site .mk-feature h4 { font-size: 24px; }
-  .marketing-site .mk-feature-cta { flex-direction: column; align-items: start; padding: 25px; gap: 16px; }
+  .marketing-site .mk-feature-cta { flex-direction: column; align-items: start; padding: 25px; gap: 20px; }
+  .marketing-site .mk-feature-cta::after { right: -110px; }
+  .marketing-site .mk-feature-cta-action { width: 100%; justify-content: center; }
   .marketing-site .mk-pipeline { grid-template-columns: repeat(3,minmax(0,1fr)); row-gap: 25px; padding: 24px 12px; }
   .marketing-site .mk-pipeline-node:nth-child(3) .mk-pipeline-arrow { display: none; }
   .marketing-site .mk-pipeline-icon { width: 48px; height: 48px; border-radius: 14px; }
   .marketing-site .mk-pipeline-node p { font-size: 16px; }
   .marketing-site .mk-setup-grid { grid-template-columns: 1fr; }
-  .marketing-site .mk-setup-step { padding: 24px; border-right: 0; }
-  .marketing-site .mk-setup-step:nth-last-child(-n+3) { border-bottom: 1px solid var(--border); }
+  .marketing-site .mk-setup-step { padding: 24px; border-right: 0; border-bottom: 1px solid var(--border); }
   .marketing-site .mk-setup-step:last-child { border-bottom: 0; }
   .marketing-site .mk-free-section { padding-top: 48px; }
   .marketing-site .mk-free-grid { grid-template-columns: 1fr; gap: 32px; }

@@ -98,22 +98,22 @@ type ProblemItem = {
 const PROBLEMS: ProblemItem[] = [
   {
     n: "01", icon: MessageCircleOff, eyebrow: "Problem one", title: "Your community is scattered",
-    desc: "A WhatsApp group for one chapter. A Facebook group nobody moderates. A spreadsheet that is a year out of date. Different groups, channels, and lists, with no single place where your community actually lives.",
-    fix: "One searchable directory organized by group, chapter, and role, plus notifications that reach people instead of disappearing into chat.",
+    desc: "People are split across chats, social groups, and outdated lists. Nobody has one reliable place to find the community.",
+    fix: "Bring profiles, groups, events, and updates into one searchable home.",
     chips: ["Directory", "Notifications", "Events"],
     illustration: ScatteredChatIllustration,
   },
   {
     n: "02", icon: SearchX, eyebrow: "Problem two", title: "Member records are incomplete",
-    desc: "Ask “how many members do we have, and who are they?” and the honest answer is a guess, an old headcount, or a folder of screenshots. There's no reliable, verified record of your community.",
-    fix: "A member database your institution approves and owns, searchable by name, year and location.",
+    desc: "Old spreadsheets and screenshots cannot show who is active, where people are, or how to reach them.",
+    fix: "Build a trusted member directory searchable by name, year, group, and location.",
     chips: ["Directory", "Businesses"],
     illustration: UnknownAlumniIllustration,
   },
   {
     n: "03", icon: Wallet, eyebrow: "Problem three", title: "Contributions are still tracked by hand",
-    desc: "You need GH₵100 from 500 members. Someone drafts a broadcast message. People pay however they can and send screenshots as proof. Someone reconciles every one by hand. Two weeks in, someone asks “how much have we raised?” and the honest answer is “let me check.”",
-    fix: "Built-in campaigns and dues with online payments through a licensed provider, a record of every payment, and a running total from the payments recorded.",
+    desc: "Payment screenshots leave finance teams matching names, amounts, and messages by hand.",
+    fix: "Give every campaign, contribution, and payment a clear digital record.",
     chips: ["Fundraising", "Store", "Services"],
     illustration: ManualReconciliationIllustration,
   },
@@ -493,17 +493,17 @@ export default function PlatformMarketingPage() {
         </section>
         <section id="problems" className="mk-section mk-problems">
           <div className="mk-wrap">
-            <div className="mk-section-heading"><p className="mk-eyebrow">The daily reality</p><h2>Your community should not run on scattered chats, stale spreadsheets and payment screenshots.</h2><p>The problem is not effort. Your team simply lacks one trusted place for people, activity and money.</p></div>
+            <div className="mk-section-heading mk-heading-centred"><p className="mk-eyebrow">The daily reality</p><h2>Your community should not run on scattered chats, stale spreadsheets and payment screenshots.</h2><p>The problem is not effort. Your team simply lacks one trusted place for people, activity and money.</p></div>
             <div className="mk-problem-list">{PROBLEMS.map((item,index) => <article key={item.n} className={`mk-problem ${index % 2 ? "mk-problem-reverse" : ""}`}>
-              <div className="mk-problem-visual"><span className="mk-problem-number" aria-hidden="true">{item.n}</span><item.illustration className="w-full" /><p>Illustrative product example</p></div>
+              <div className="mk-problem-visual"><span className="mk-problem-number" aria-hidden="true">{item.n}</span><item.illustration className="w-full" /></div>
               <div className="mk-problem-copy"><p className="mk-eyebrow">{item.eyebrow}</p><h3>{item.title}</h3><p>{item.desc}</p><div className="mk-problem-fix"><ArrowRight size={17} /><p>{item.fix}</p></div><div className="mk-chips">{item.chips.map(chip => <span key={chip}>{chip}</span>)}</div></div>
             </article>)}</div>
-            <details className="mk-whatsapp" open><summary>Specifically, if you’re running this over WhatsApp</summary><div className="mk-whatsapp-grid">{WHATSAPP_PROBLEMS.map(item => <div key={item.title}><item.icon size={18} /><h3>{item.title}</h3><p>{item.desc}</p></div>)}</div><Link href="/why-not-whatsapp" className="mk-text-link">See the full comparison <ArrowRight size={14} /></Link></details>
+            <section className="mk-whatsapp" aria-labelledby="whatsapp-comparison"><h3 id="whatsapp-comparison" className="mk-whatsapp-title">Specifically, if you’re running this over WhatsApp</h3><div className="mk-whatsapp-grid">{WHATSAPP_PROBLEMS.map(item => <div key={item.title}><item.icon size={18} /><h3>{item.title}</h3><p>{item.desc}</p></div>)}</div><Link href="/why-not-whatsapp" className="mk-text-link">See the full comparison <ArrowRight size={14} /></Link></section>
           </div>
         </section>
         <section id="features" className="mk-section">
           <div className="mk-wrap">
-            <div className="mk-section-heading"><p className="mk-eyebrow">One connected system</p><h2>Everything your community needs to connect and participate.</h2><p>People find each other, discover what matters and take action. Your team gets reliable records without chasing updates across multiple tools.</p></div>
+            <div className="mk-section-heading mk-heading-centred"><p className="mk-eyebrow">One connected system</p><h2>Everything your community needs to connect and participate.</h2><p>People find each other, discover what matters and take action. Your team gets reliable records without chasing updates across multiple tools.</p></div>
             <div className="mk-feature-groups">{FEATURE_GROUPS.map((group,index) => <section key={group.label} className="mk-feature-group">
               <div className="mk-group-heading"><span>0{index+1}</span><div><h3>{group.label}</h3><p>{group.blurb}</p></div></div>
               <div className={`mk-feature-grid ${group.items.length === 3 ? "mk-feature-grid-three" : ""}`}>{group.items.map(feature => <article key={feature.title} className="mk-feature">
@@ -512,7 +512,7 @@ export default function PlatformMarketingPage() {
               </article>)}</div>
             </section>)}</div>
             <p className="mk-example-note">Interface examples illustrate the features. Names, dates and amounts shown are sample data.</p>
-            <a href="#onboard" className="mk-feature-cta"><div><h3>Give your community a place worth returning to.</h3><p>We will help you set it up, at no cost to your institution.</p></div><span>Start building <ArrowRight size={17} /></span></a>
+            <a href="#onboard" className="mk-feature-cta"><div className="mk-feature-cta-copy"><h3>Give your community a place worth returning to.</h3><p>We will help you set it up, at no cost to your institution.</p></div><span className="mk-feature-cta-action">Start building <ArrowRight size={17} /></span></a>
           </div>
         </section>
         <section id="how-it-works" className="mk-section mk-setup">

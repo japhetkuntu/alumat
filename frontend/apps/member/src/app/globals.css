@@ -286,6 +286,17 @@ table {
   padding-inline: clamp(1.5rem, 6vw, 5rem);
 }
 
+.marketing-footer-inner {
+  width: min(1440px, calc(100% - 64px));
+  margin-inline: auto;
+}
+
+@media (max-width: 767px) {
+  .marketing-footer-inner {
+    width: calc(100% - 40px);
+  }
+}
+
 .section__inner--narrow {
   max-width: 900px;
   margin-inline: auto;

@@ -19,65 +19,52 @@ const PLATFORM_LINKS = [
 export function MarketingFooter() {
   return (
     <footer className="border-t" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-      <div className="section__inner--wide py-12">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:gap-x-8 lg:grid-cols-[1.6fr_1fr_1fr] pb-8">
-
-          {/* Brand column */}
-          <div className="col-span-2 lg:max-w-[36ch]">
-            <Link href="/" className="flex items-center gap-3 mb-4">
-              <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-10 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
+      <div className="mk-wrap marketing-footer-inner py-8 sm:py-9">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between pb-6">
+          <div className="max-w-[58ch]">
+            <Link href="/" className="flex items-center gap-3 mb-3">
+              <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-8 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
             </Link>
-            <p className="text-[17px] leading-relaxed mb-4 max-w-[36ch]" style={{ color: "var(--muted-foreground)" }}>
+            <p className="text-[15px] leading-relaxed mb-3" style={{ color: "var(--muted-foreground)" }}>
               A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.
             </p>
             <a href="mailto:hello@alumunion.com"
-              className="inline-flex items-center gap-2 text-[15px] font-medium transition-colors hover:text-primary"
+              className="inline-flex items-center gap-2 text-[14px] font-medium transition-colors hover:text-primary"
               style={{ color: "var(--muted-foreground)" }}>
               <Mail size={13} /> hello@alumunion.com
             </a>
           </div>
-
-          {/* Platform column */}
-          <div>
-            <p className="text-[13px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Platform</p>
-            <nav className="flex flex-col gap-2.5" aria-label="Platform links">
-              {PLATFORM_LINKS.map((link) => (
-                <Link key={link.label} href={link.href}
-                  className="text-[17px] font-medium transition-colors hover:text-primary w-fit"
-                  style={{ color: "var(--muted-foreground)" }}>
-                  {link.label}
-                </Link>
-              ))}
-              <Link href="/why-not-whatsapp"
-                className="text-[17px] font-medium transition-colors hover:text-primary w-fit"
-                style={{ color: "var(--muted-foreground)" }}>
-                Why not WhatsApp?
-              </Link>
-            </nav>
-          </div>
-
-          {/* Get started column */}
-          <div>
-            <p className="text-[13px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--foreground)" }}>Get started</p>
-            <Link href="/#onboard"
-              className="block mb-3 text-[17px] font-medium transition-colors hover:text-primary w-fit"
-              style={{ color: "var(--muted-foreground)" }}>
-              Request institution onboarding
-            </Link>
-            <Link href="/#onboard">
-              <span className="inline-flex min-h-10 items-center rounded-full bg-primary px-4 text-primary-foreground text-[15px] font-semibold">Get started, free</span>
-            </Link>
-          </div>
+          <Link href="/#onboard" className="shrink-0">
+            <span className="inline-flex min-h-11 whitespace-nowrap items-center rounded-full bg-primary px-6 text-primary-foreground text-[15px] font-semibold">Build your community</span>
+          </Link>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-center sm:text-left" style={{ borderTop: "1px solid var(--border)" }}>
-          <p className="text-[15px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
+        <div className="flex flex-col gap-4 border-t border-border py-5 md:flex-row md:items-center md:gap-9">
+          <p className="shrink-0 text-[13px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--foreground)" }}>Explore</p>
+          <nav className="flex flex-wrap gap-x-8 gap-y-3" aria-label="Platform links">
+            {PLATFORM_LINKS.map((link) => (
+              <Link key={link.label} href={link.href}
+                className="text-[15px] font-medium transition-colors hover:text-primary"
+                style={{ color: "var(--muted-foreground)" }}>
+                {link.label}
+              </Link>
+            ))}
+            <Link href="/why-not-whatsapp"
+              className="text-[15px] font-medium transition-colors hover:text-primary"
+              style={{ color: "var(--muted-foreground)" }}>
+              Why not WhatsApp?
+            </Link>
+          </nav>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 text-center sm:text-left border-t border-border">
+          <p className="text-[14px]" style={{ color: "var(--muted-foreground)", opacity: 0.8 }}>
             © {new Date().getFullYear()} AlumUnion. All rights reserved.
           </p>
-          <div className="flex items-center gap-5">
-            <Link href="/terms" className="text-[15px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
-            <Link href="/privacy" className="text-[15px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
-            <Link href="/institution-agreement" className="text-[15px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link href="/terms" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Terms</Link>
+            <Link href="/privacy" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Privacy</Link>
+            <Link href="/institution-agreement" className="text-[14px] font-medium transition-colors hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>Institution Agreement</Link>
           </div>
         </div>
       </div>

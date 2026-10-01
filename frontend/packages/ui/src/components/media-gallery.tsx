@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight, ZoomIn, ImageOff } from "./icons";
 import { cn } from "../lib/utils";
 import { YouTubeGrid } from "./youtube-embed";
@@ -235,23 +236,27 @@ export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...i
         </div>
       </div>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setOpen(false)}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}
           role="dialog"
           aria-modal="true"
           aria-label="Full image"
         >
           <button
+            type="button"
             className="absolute top-4 right-4 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
-            onClick={() => setOpen(false)}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}
             aria-label="Close"
           >
             <X size={20} />
           </button>
-          <img src={src} alt={alt} className="max-w-full max-h-[90vh] object-contain animate-scale-in" onClick={(e) => e.stopPropagation()} />
-        </div>
+          <img src={src} alt={alt} className="max-w-full max-h-[90vh] object-contain animate-scale-in" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} />
+        </div>,
+        document.body,
       )}
     </>
   );
