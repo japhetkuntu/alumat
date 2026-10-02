@@ -130,7 +130,7 @@ export function LegalPageShell({
           {/* Desktop sticky sidebar */}
           {toc.length > 0 && (
             <nav aria-label="On this page" className="hidden lg:block sticky top-24 self-start">
-              <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-[12px] font-bold tracking-[0.1em] uppercase mb-3" style={{ color: "var(--muted-foreground)" }}>
                 On this page
               </p>
               <div className="space-y-0.5" style={{ borderLeft: "2px solid var(--border)" }}>

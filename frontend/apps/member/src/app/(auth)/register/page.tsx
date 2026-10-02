@@ -115,7 +115,7 @@ function StepIndicator({ step }: { step: Step }) {
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-medium leading-none whitespace-nowrap",
+                  "text-[12px] font-medium leading-none whitespace-nowrap",
                   active && "text-primary",
                   done   && "text-foreground/60",
                   !done && !active && "text-muted-foreground",
@@ -128,7 +128,7 @@ function StepIndicator({ step }: { step: Step }) {
             {i < STEPS.length - 1 && (
               <div
                 className={cn(
-                  "w-16 h-[2px] mx-2 mt-[-12px] rounded-full transition-all duration-500 shrink-0",
+                  "w-6 sm:w-16 h-[2px] mx-1.5 sm:mx-2 mt-[-12px] rounded-full transition-all duration-500 shrink-0",
                   done ? "bg-primary" : "bg-border",
                 )}
               />
@@ -187,7 +187,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
             <p className="text-[20px] font-bold" style={{ color: "var(--primary)" }}>
               {formatCurrency(campaign.amountPerMember)}
             </p>
-            <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>per member</p>
+            <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>per member</p>
           </div>
         </div>
 
@@ -221,7 +221,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
           Activate: {formatCurrency(campaign.amountPerMember)}
         </Link>
 
-        <p className="text-center text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+        <p className="text-center text-[12px]" style={{ color: "var(--muted-foreground)" }}>
           Payment confirms your membership and speeds up approval.
         </p>
       </div>
@@ -646,7 +646,7 @@ function RegisterForm() {
 
           {/* Heading */}
           <div className="mb-6">
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+            <p className="text-[12px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
               Step {visibleSubStep} of {totalSteps}
             </p>
             <h1
@@ -731,7 +731,7 @@ function RegisterForm() {
                     </a>
                     <div className="flex items-center gap-3">
                       <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-                      <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
+                      <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
                       <div className="h-px flex-1" style={{ background: "var(--border)" }} />
                     </div>
                   </>
@@ -770,7 +770,7 @@ function RegisterForm() {
                     value={watch("phone") ?? ""}
                     onChange={(val) => setValue("phone", val, { shouldValidate: true })} />
                   <FieldError message={errors.phone?.message} />
-                  <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
                     Used to reach you by SMS & WhatsApp for important updates.
                   </p>
                 </div>
@@ -947,7 +947,7 @@ function RegisterForm() {
       {step === "otp" && (
         <div className="animate-in fade-in slide-in-from-bottom-3 duration-300">
           <div className="mb-7">
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+            <p className="text-[12px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
               Step 2 of 3
             </p>
             <h1 className="font-[family-name:var(--font-display)] mb-1"

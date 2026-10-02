@@ -32,7 +32,7 @@ function Frame({ className, children, toast }: { className?: string; children: R
 function Avatar({ initials }: { initials: string }) {
   return (
     <span
-      className="flex h-8 w-8 shrink-0 items-center justify-center text-[11px] font-bold"
+      className="flex h-8 w-8 shrink-0 items-center justify-center text-[12px] font-bold"
       style={{ background: "var(--muted)", color: "var(--primary)", border: "1px solid var(--border)" }}
     >
       {initials}
@@ -43,7 +43,7 @@ function Avatar({ initials }: { initials: string }) {
 function Tag({ children, solid }: { children: React.ReactNode; solid?: boolean }) {
   return (
     <span
-      className="inline-block shrink-0 whitespace-nowrap px-2 py-0.5 text-[10.5px] font-semibold"
+      className="inline-block shrink-0 whitespace-nowrap px-2 py-0.5 text-[12px] font-semibold"
       style={solid
         ? { background: "var(--primary)", color: "var(--primary-foreground)" }
         : { border: "1px solid var(--border-emphasis, var(--border))", color: "var(--primary)" }}
@@ -54,7 +54,7 @@ function Tag({ children, solid }: { children: React.ReactNode; solid?: boolean }
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 text-[10.5px] font-bold uppercase tracking-[0.1em]" style={muted}>{children}</p>;
+  return <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.1em]" style={muted}>{children}</p>;
 }
 
 function Line({ children, sub, right }: { children: React.ReactNode; sub?: React.ReactNode; right?: React.ReactNode }) {
@@ -62,7 +62,7 @@ function Line({ children, sub, right }: { children: React.ReactNode; sub?: React
     <div className="flex w-full min-w-0 flex-1 items-center justify-between gap-3">
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-semibold leading-snug" style={strong}>{children}</p>
-        {sub && <p className="text-[11.5px] leading-snug" style={muted}>{sub}</p>}
+        {sub && <p className="text-[12.5px] leading-snug" style={muted}>{sub}</p>}
       </div>
       {right}
     </div>
@@ -96,13 +96,13 @@ export function EventsIllustration({ className }: PanelProps) {
     <Frame className={className} toast="Kofi Boateng just RSVP'd">
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center" style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}>
-          <span className="text-[9.5px] font-bold uppercase tracking-wider">Nov</span>
+          <span className="text-[12px] font-bold uppercase tracking-wider">Nov</span>
           <span className="text-[18px] font-bold leading-none">14</span>
         </div>
         <p className="min-w-0 text-[13.5px] font-semibold leading-snug" style={strong}>Annual Members' Dinner</p>
       </div>
-      <p className="mt-3 text-[11.5px]" style={muted}>Community Hall · 6:00 pm</p>
-      <p className="text-[11.5px]" style={muted}>128 going · 72 spots left</p>
+      <p className="mt-3 text-[12.5px]" style={muted}>Community Hall · 6:00 pm</p>
+      <p className="text-[12.5px]" style={muted}>128 going · 72 spots left</p>
       <div className="mt-4 flex gap-2">
         <span className="flex-1 py-2 text-center text-[12px] font-semibold" style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}>RSVP</span>
         <span className="px-4 py-2 text-[12px] font-semibold" style={{ border: "1px solid var(--border)", ...muted }}>Details</span>
@@ -151,7 +151,7 @@ export function JobsIllustration({ className }: PanelProps) {
       ].map(([t, s, tag], k) => (
         <div key={t} className="py-3" style={k ? rule : { paddingTop: 0 }}>
           <Line sub={s} right={<Tag>{tag}</Tag>}>{t}</Line>
-          <p className="mt-1.5 text-[11.5px] font-semibold" style={{ color: "var(--primary)" }}>View details</p>
+          <p className="mt-1.5 text-[12.5px] font-semibold" style={{ color: "var(--primary)" }}>View details</p>
         </div>
       ))}
     </Frame>
@@ -165,7 +165,7 @@ export function MentorshipIllustration({ className }: PanelProps) {
         <Avatar initials="KA" />
         <Line sub="Product management">Kwame Asante</Line>
       </div>
-      <p className="mt-3 text-[11.5px]" style={muted}>2 of 3 mentee spots open</p>
+      <p className="mt-3 text-[12.5px]" style={muted}>2 of 3 mentee spots open</p>
       <span className="mt-3 block py-2 text-center text-[12px] font-semibold" style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}>Request mentorship</span>
     </Frame>
   );
@@ -209,7 +209,7 @@ export function FundraisingIllustration({ className }: PanelProps) {
       <div className="mt-3 h-2 w-full" style={{ background: "var(--muted)" }}>
         <div className="h-2" style={{ width: "62%", background: "var(--primary)" }} />
       </div>
-      <div className="mt-2 flex justify-between text-[11.5px]" style={muted}>
+      <div className="mt-2 flex justify-between text-[12.5px]" style={muted}>
         <span>GH₵12,400 raised of GH₵20,000</span>
         <span>84 contributors</span>
       </div>
@@ -278,7 +278,7 @@ export function UnknownAlumniIllustration({ className }: PanelProps) {
   return (
     <Frame className={className}>
       <Label>The member list today</Label>
-      <div className="grid grid-cols-[1.4fr_0.6fr_1.2fr] gap-x-3 pb-2 text-[10.5px] font-bold uppercase tracking-wider" style={muted}>
+      <div className="grid grid-cols-[1.4fr_0.6fr_1.2fr] gap-x-3 pb-2 text-[12px] font-bold uppercase tracking-wider" style={muted}>
         <span>Name</span><span>Joined</span><span>Phone</span>
       </div>
       {rows.map(([n, y, p], k) => (
@@ -288,7 +288,7 @@ export function UnknownAlumniIllustration({ className }: PanelProps) {
           <span style={p === "—" ? { color: "var(--destructive)" } : muted}>{p}</span>
         </div>
       ))}
-      <p className="mt-2 text-[11.5px]" style={{ color: "var(--destructive)" }}>Missing details and a possible duplicate</p>
+      <p className="mt-2 text-[12.5px]" style={{ color: "var(--destructive)" }}>Missing details and a possible duplicate</p>
     </Frame>
   );
 }
@@ -307,7 +307,7 @@ export function ManualReconciliationIllustration({ className }: PanelProps) {
         </div>
       ))}
       <div className="mt-2 flex items-baseline justify-between pt-3" style={{ borderTop: "1px solid var(--border-emphasis, var(--border))" }}>
-        <span className="text-[11.5px]" style={muted}>Raised so far</span>
+        <span className="text-[12.5px]" style={muted}>Raised so far</span>
         <span className="text-[15px] font-bold" style={strong}>Let me check…</span>
       </div>
     </Frame>
@@ -334,7 +334,7 @@ export function NoDirectoryIllustration({ className }: PanelProps) {
   return (
     <Frame className={className}>
       <div className="mb-3 px-3 py-2 text-[12px]" style={{ border: "1px solid var(--border)", ...strong }}>Ama from Takoradi</div>
-      <p className="mb-2 text-[11.5px]" style={muted}>3 messages found</p>
+      <p className="mb-2 text-[12.5px]" style={muted}>3 messages found</p>
       {[
         ["Kofi", "Anyone know Ama's number? 14:02"],
         ["Esi", "Ama from Takoradi joined us last year 09:15"],
@@ -344,7 +344,7 @@ export function NoDirectoryIllustration({ className }: PanelProps) {
           <Line sub={m}>{n}</Line>
         </div>
       ))}
-      <p className="mt-2 text-[11.5px] font-semibold" style={{ color: "var(--destructive)" }}>Messages, not people. No profile, no filter.</p>
+      <p className="mt-2 text-[12.5px] font-semibold" style={{ color: "var(--destructive)" }}>Messages, not people. No profile, no filter.</p>
     </Frame>
   );
 }
@@ -360,7 +360,7 @@ export function OnePhoneIllustration({ className }: PanelProps) {
       <div className="mt-4 px-3 py-2.5 text-[12px] font-semibold" style={{ border: "1px solid var(--border)", background: "var(--muted)", ...muted }}>
         This number is no longer in use
       </div>
-      <p className="mt-3 text-[11.5px] font-semibold" style={{ color: "var(--destructive)" }}>The group belongs to a phone, not to your organization.</p>
+      <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--destructive)" }}>The group belongs to a phone, not to your organization.</p>
     </Frame>
   );
 }
@@ -387,10 +387,10 @@ export function FraudIllustration({ className }: PanelProps) {
     <Frame className={className}>
       <Label>Group chat</Label>
       <div className="px-3 py-2.5" style={{ border: "1px solid var(--border)", background: "var(--muted)" }}>
-        <p className="text-[11.5px] font-semibold" style={muted}>New number · claims to be Kofi</p>
+        <p className="text-[12.5px] font-semibold" style={muted}>New number · claims to be Kofi</p>
         <p className="mt-1 text-[13px]" style={strong}>Hi all, my usual account is down. Please send GH₵100 for the fundraiser to this number.</p>
       </div>
-      <p className="mt-3 text-[11.5px] font-semibold" style={{ color: "var(--destructive)" }}>Members have to spot the fake for themselves.</p>
+      <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--destructive)" }}>Members have to spot the fake for themselves.</p>
     </Frame>
   );
 }
