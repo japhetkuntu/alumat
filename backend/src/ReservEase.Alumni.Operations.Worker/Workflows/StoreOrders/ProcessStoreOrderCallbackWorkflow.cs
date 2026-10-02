@@ -82,7 +82,7 @@ public class ProcessStoreOrderCallbackWorkflow : IProcessStoreOrderCallbackWorkf
             foreach (var item in order.Items)
             {
                 var product = await Workflow.ExecuteActivityAsync((StoreOrderCallbackActivities a) => a.LoadProductAsync(item.ProductId), PaymentActivityOptions.DatabaseRead);
-                if (product is null) continue;
+                if (product is null || !product.TrackStock) continue;
 
                 if (!string.IsNullOrEmpty(item.VariantId))
                 {

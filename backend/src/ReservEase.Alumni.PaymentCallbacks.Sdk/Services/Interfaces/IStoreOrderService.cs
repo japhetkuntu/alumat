@@ -8,7 +8,8 @@ public interface IStoreOrderService
 {
     Task<IApiResponse<PgPagedResult<StoreProductDto>>> GetProductsAsync(StoreProductFilter filter);
     Task<IApiResponse<StoreProductDto>> GetProductByIdAsync(string productId);
-    Task<IApiResponse<StoreCheckoutResponse>> InitiateCheckoutAsync(CheckoutRequest request, AuthData member);
+    /// <param name="files">Uploaded files for File questions, keyed "{itemIndex}:{details|delivery}:{questionKey}". Null for a JSON checkout.</param>
+    Task<IApiResponse<StoreCheckoutResponse>> InitiateCheckoutAsync(CheckoutRequest request, AuthData member, IReadOnlyDictionary<string, Microsoft.AspNetCore.Http.IFormFile>? files = null);
     Task<IApiResponse<StoreOrderStatusResponse>> GetOrderStatusAsync(string reference, AuthData member);
     Task<IApiResponse<PgPagedResult<StoreOrderDto>>> GetMyOrdersAsync(StoreOrderFilter filter, string memberId);
     /// <summary>Cheap existence check the Paystack webhook dispatcher uses to decide whether a reference belongs to a store order (vs a Contribution).</summary>

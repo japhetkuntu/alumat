@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { institutionClient } from "@/lib/api-client";
 
@@ -43,7 +43,11 @@ export function useFeatures() {
   const disabled = useDisabledFeatures();
   // "Arrived or failed", not "!isLoading": while the persisted query cache is still being restored on page
   // load, a pending query reports isLoading=false, which would read as ready with nothing disabled.
-  const ready = isSuccess || isError;
+  // Once settled it stays settled: retrying a failed request puts the query back to "pending", and
+  // un-readying then would unmount and remount every feature page in a loop while the API is down.
+  const settled = useRef(false);
+  if (isSuccess || isError) settled.current = true;
+  const ready = settled.current;
   return useMemo(
     () => ({ ready, disabled, enabled: (key: string) => ready && !disabled.has(key) }),
     [ready, disabled],

@@ -23,6 +23,17 @@ public class CreateStoreProductRequest
     /// <summary>Empty (default) means a simple product with no variants — Price/QuantityAvailable above are used as-is.</summary>
     public List<string> VariantOptionTypes { get; set; } = [];
     public List<VariantRequest> Variants { get; set; } = [];
+    /// <summary>Label shown beside the price, e.g. "per night".</summary>
+    public string? PriceLabel { get; set; }
+    /// <summary>False = unlimited availability (no stock tracked).</summary>
+    public bool TrackStock { get; set; } = true;
+    // The four lists below arrive as JSON strings (like VariantRequest.OptionsJson): this endpoint is
+    // multipart/form-data because of the images, and the form binder mangles nested lists of objects.
+    // Null on update means "leave unchanged".
+    public string? DetailsJson { get; set; }
+    public string? FieldsJson { get; set; }
+    public string? DeliveryFieldsJson { get; set; }
+    public string? StagesJson { get; set; }
 }
 
 public class UpdateStoreProductRequest
@@ -39,6 +50,17 @@ public class UpdateStoreProductRequest
     /// <summary>Empty (default) means a simple product with no variants — Price/QuantityAvailable above are used as-is.</summary>
     public List<string> VariantOptionTypes { get; set; } = [];
     public List<VariantRequest> Variants { get; set; } = [];
+    /// <summary>Label shown beside the price, e.g. "per night".</summary>
+    public string? PriceLabel { get; set; }
+    /// <summary>False = unlimited availability (no stock tracked).</summary>
+    public bool TrackStock { get; set; } = true;
+    // The four lists below arrive as JSON strings (like VariantRequest.OptionsJson): this endpoint is
+    // multipart/form-data because of the images, and the form binder mangles nested lists of objects.
+    // Null on update means "leave unchanged".
+    public string? DetailsJson { get; set; }
+    public string? FieldsJson { get; set; }
+    public string? DeliveryFieldsJson { get; set; }
+    public string? StagesJson { get; set; }
 }
 
 public record StoreSettingsResponse(string? DefaultDeliveryInfo, List<string> DeliveryStages);
@@ -53,4 +75,32 @@ public class UpdateStoreOrderDeliveryStatusRequest
 {
     /// <summary>Null clears delivery tracking for the order.</summary>
     public string? DeliveryStatus { get; set; }
+}
+
+public class StoreDetailItemRequest
+{
+    public string Label { get; set; } = "";
+    public string Value { get; set; } = "";
+}
+
+/// <summary>Create/update body for a reusable store setup (JSON, so typed lists bind directly).</summary>
+public class StoreProductTemplateRequest
+{
+    public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public string? PriceLabel { get; set; }
+    public bool TrackStock { get; set; } = true;
+    public string? DeliveryInfo { get; set; }
+    public List<StoreDetailItemRequest> Details { get; set; } = [];
+    public List<ServiceFieldDefinitionRequest> Fields { get; set; } = [];
+    public List<ServiceFieldDefinitionRequest> DeliveryFields { get; set; } = [];
+    public List<string> Stages { get; set; } = [];
+}
+
+/// <summary>A stage change and/or note (and optionally a file handed back) for one ordered item.</summary>
+public class UpdateStoreOrderItemRequest
+{
+    public string? Stage { get; set; }
+    public string? Note { get; set; }
+    public IFormFile? Attachment { get; set; }
 }

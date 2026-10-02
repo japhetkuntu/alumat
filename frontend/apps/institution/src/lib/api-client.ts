@@ -59,6 +59,12 @@ function createClient(baseURL: string): AxiosInstance {
   instance.interceptors.response.use(
     (res) => res,
     async (error: AxiosError) => {
+      // The API refused because a feature was switched off after this browser cached the feature list;
+      // tell the layout to refresh it so the page is replaced instead of left showing a load error.
+      if (typeof window !== "undefined" && error.response?.status === 403 &&
+          /feature is not enabled/i.test((error.response.data as { message?: string } | undefined)?.message ?? "")) {
+        window.dispatchEvent(new Event("feature-disabled"));
+      }
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
       if (error.response?.status !== 401 || typeof window === "undefined" || originalRequest._retry) {
         return Promise.reject(error);

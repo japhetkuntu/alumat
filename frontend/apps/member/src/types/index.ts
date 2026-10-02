@@ -604,11 +604,27 @@ export interface StoreProductVariant {
   imageUrl?: string;
 }
 
+export interface StoreDetailItem {
+  label: string;
+  value: string;
+}
+
 export interface StoreProduct {
   id: string;
   name: string;
   description?: string;
   price: number;
+  /** Shown beside the price, e.g. "per night". */
+  priceLabel?: string | null;
+  /** False = unlimited availability; quantityAvailable is meaningless. */
+  trackStock: boolean;
+  details: StoreDetailItem[];
+  /** Questions the buyer answers for this item. */
+  fields: ServiceFieldDefinition[];
+  /** Delivery/handover questions the buyer answers for this item. */
+  deliveryFields: ServiceFieldDefinition[];
+  /** Per-item progress stages; empty = the institution's order-level delivery stages apply. */
+  stages: string[];
   imageUrls?: string[];
   quantityAvailable: number;
   /** Delivery/pickup instructions from institution staff — fulfillment happens outside the platform. */
@@ -630,6 +646,18 @@ export interface StoreOrderItem {
   variantId?: string;
   variantOptions?: Record<string, string>;
   sku?: string;
+  answers: StoreOrderItemAnswer[];
+  stages: string[];
+  currentStage?: string | null;
+  updates: ServiceRequestUpdate[];
+}
+
+export interface StoreOrderItemAnswer {
+  section: "Details" | "Delivery";
+  key: string;
+  label: string;
+  type: ServiceFieldType;
+  value: string;
 }
 
 export interface StoreOrderDeliveryEvent {

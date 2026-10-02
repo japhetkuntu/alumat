@@ -2,12 +2,19 @@ using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 
 namespace ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 
+/// <summary>One "label: value" line an institution shows on a product's page (e.g. "Location: Block A", "Check-in: 2pm").</summary>
+public class StoreDetailItem
+{
+    public string Label { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+}
+
 /// <summary>
-/// A physical/merch item an institution's SuperAdmins list for sale.
-/// Delivery is handled operationally by institution staff outside the
-/// platform — <see cref="DeliveryInfo"/> is just the instructions shown to
-/// buyers (e.g. pickup location/hours, shipping timeframe), never an actual
-/// fulfillment workflow.
+/// Anything an institution wants to sell — merchandise, accommodation, passes,
+/// tickets. What members see, what they are asked to fill in and how the
+/// order is fulfilled are all configured per product (see <see cref="Details"/>,
+/// <see cref="Fields"/>, <see cref="DeliveryFields"/>, <see cref="Stages"/>);
+/// a product with none of these configured behaves like a plain shop item.
 /// </summary>
 public class StoreProduct : BaseEntity, ITenantScoped
 {
@@ -23,6 +30,28 @@ public class StoreProduct : BaseEntity, ITenantScoped
     public string? DeliveryInfo { get; set; }
 
     public string Status { get; set; } = "Active"; // Active, Draft, Archived
+
+    /// <summary>Label shown beside the price, e.g. "per night", "per person". Null shows the bare price.</summary>
+    public string? PriceLabel { get; set; }
+
+    /// <summary>False means unlimited availability (services, bookings): no stock is checked or decremented and no "left in stock" is shown. True (the default) keeps the original stock behaviour.</summary>
+    public bool TrackStock { get; set; } = true;
+
+    /// <summary>Extra "label: value" lines shown on the product page.</summary>
+    public List<StoreDetailItem> Details { get; set; } = [];
+
+    /// <summary>What the buyer is asked about this item when ordering (reuses the Services field definitions).</summary>
+    public List<ServiceFieldDefinition> Fields { get; set; } = [];
+
+    /// <summary>The delivery or pickup details collected for this item (e.g. address, phone, preferred time).</summary>
+    public List<ServiceFieldDefinition> DeliveryFields { get; set; } = [];
+
+    /// <summary>
+    /// Ordered fulfilment stages for this product. Empty (the default) keeps the original behaviour:
+    /// the order uses the institution-wide delivery stages set in store settings. When set, each
+    /// ordered item of this product moves through these stages on its own.
+    /// </summary>
+    public List<string> Stages { get; set; } = [];
 
     /// <summary>
     /// Names of the variant option axes this product is sold by, e.g.

@@ -15,6 +15,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Storage.Sdk.Services;
 using ReservEase.Alumni.Temporal.Sdk;
 using Institution = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
@@ -41,6 +42,7 @@ public class StoreOrderService(
     IPaystackService paystackService,
     PaystackConfig paystackConfig,
     ITemporalClientProvider temporalProvider,
+    IStorageService storageService,
     IConfiguration configuration,
     ILogger<StoreOrderService> logger) : IStoreOrderService
 {
@@ -139,7 +141,65 @@ public class StoreOrderService(
         }
     }
 
-    public async Task<IApiResponse<StoreCheckoutResponse>> InitiateCheckoutAsync(CheckoutRequest request, AuthData member)
+    /// <summary>
+    /// Checks a buyer's answers to one product's order and delivery questions and turns them into the
+    /// labelled answers saved on the order item. Files are uploaded here, after every answer has been
+    /// checked, so a rejected form never leaves stray uploads behind.
+    /// </summary>
+    private async Task<(List<StoreOrderItemAnswer>? Answers, string? Error)> CollectAnswersAsync(
+        StoreProduct product, CheckoutItemRequest line, int lineIndex, IReadOnlyDictionary<string, IFormFile>? files)
+    {
+        var collected = new List<StoreOrderItemAnswer>();
+        var pendingUploads = new List<(StoreOrderItemAnswer Answer, IFormFile File)>();
+
+        string? Check(IEnumerable<ServiceFieldDefinition> fields, Dictionary<string, string>? given, string section)
+        {
+            foreach (var field in fields)
+            {
+                var answer = new StoreOrderItemAnswer { Section = section, Key = field.Key, Label = field.Label, Type = field.Type };
+                if (field.Type == "File")
+                {
+                    var fileKey = $"{lineIndex}:{section.ToLowerInvariant()}:{field.Key}";
+                    if (files is not null && files.TryGetValue(fileKey, out var file) && file.Length > 0)
+                        pendingUploads.Add((answer, file));
+                    else if (field.Required)
+                        return $"Please attach \"{field.Label}\" for \"{product.Name}\".";
+                    else
+                        continue;
+                }
+                else
+                {
+                    var value = given is not null && given.TryGetValue(field.Key, out var v) ? v?.Trim() ?? "" : "";
+                    if (value.Length == 0)
+                    {
+                        if (field.Required) return $"Please fill in \"{field.Label}\" for \"{product.Name}\".";
+                        continue;
+                    }
+                    if (field.Type == "Select" && field.Options is { Count: > 0 } && !field.Options.Contains(value))
+                        return $"\"{value}\" is not a valid choice for \"{field.Label}\".";
+                    if (field.Type == "Number" && !decimal.TryParse(value, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out _))
+                        return $"\"{field.Label}\" must be a number.";
+                    if (field.Type == "Date" && !DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+                        return $"\"{field.Label}\" must be a valid date.";
+                    answer.Value = value;
+                }
+                collected.Add(answer);
+            }
+            return null;
+        }
+
+        var error = Check(product.Fields, line.Answers, "Details") ?? Check(product.DeliveryFields, line.DeliveryAnswers, "Delivery");
+        if (error is not null) return (null, error);
+
+        foreach (var (answer, file) in pendingUploads)
+        {
+            var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
+            answer.Value = await storageService.UploadFileAsync(file, objectName, "alumni", currentTenant.InstitutionSlug ?? "");
+        }
+        return (collected, null);
+    }
+
+    public async Task<IApiResponse<StoreCheckoutResponse>> InitiateCheckoutAsync(CheckoutRequest request, AuthData member, IReadOnlyDictionary<string, IFormFile>? files = null)
     {
         try
         {
@@ -150,14 +210,19 @@ public class StoreOrderService(
 
             var items = new List<StoreOrderItem>();
             decimal total = 0m;
-            foreach (var line in request.Items)
+            for (var lineIndex = 0; lineIndex < request.Items.Count; lineIndex++)
             {
+                var line = request.Items[lineIndex];
                 if (line.Quantity <= 0)
                     return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>("Quantity must be greater than zero.");
 
                 var product = await productRepo.GetByIdAsync(line.ProductId);
                 if (product is null || product.Status != "Active")
                     return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"A product in your cart is no longer available.");
+
+                var (answers, answerError) = await CollectAnswersAsync(product, line, lineIndex, files);
+                if (answerError is not null)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>(answerError);
 
                 if (product.VariantOptionTypes is { Count: > 0 })
                 {
@@ -168,7 +233,7 @@ public class StoreOrderService(
                     var variant = await variantRepo.GetByIdAsync(line.VariantId);
                     if (variant is null || variant.ProductId != product.Id)
                         return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"The selected option for \"{product.Name}\" is no longer available.");
-                    if (variant.QuantityAvailable < line.Quantity)
+                    if (product.TrackStock && variant.QuantityAvailable < line.Quantity)
                         return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Only {variant.QuantityAvailable} of \"{product.Name}\" left in stock.");
 
                     var variantPrice = variant.PriceOverride ?? product.Price;
@@ -183,12 +248,15 @@ public class StoreOrderService(
                         VariantId = variant.Id,
                         VariantOptions = variant.Options,
                         Sku = variant.Sku,
+                        Answers = answers!,
+                        Stages = [.. product.Stages],
+                        CurrentStage = product.Stages.FirstOrDefault(),
                     });
                     total += variantPrice * line.Quantity;
                 }
                 else
                 {
-                    if (product.QuantityAvailable < line.Quantity)
+                    if (product.TrackStock && product.QuantityAvailable < line.Quantity)
                         return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Only {product.QuantityAvailable} of \"{product.Name}\" left in stock.");
 
                     items.Add(new StoreOrderItem
@@ -199,6 +267,9 @@ public class StoreOrderService(
                         UnitPrice = product.Price,
                         Quantity = line.Quantity,
                         DeliveryInfo = product.DeliveryInfo,
+                        Answers = answers!,
+                        Stages = [.. product.Stages],
+                        CurrentStage = product.Stages.FirstOrDefault(),
                     });
                     total += product.Price * line.Quantity;
                 }

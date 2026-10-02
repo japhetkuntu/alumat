@@ -764,6 +764,10 @@ export interface CartItem {
   quantity: number;
   /** Set only for products with variants; identifies the exact variant purchased. */
   variantId?: string;
+  /** Answers to the product's buyer questions (non-File), keyed by question key. */
+  answers?: Record<string, string>;
+  /** Answers to the product's delivery questions (non-File), keyed by question key. */
+  deliveryAnswers?: Record<string, string>;
 }
 
 export interface StoreCheckoutResponse {
@@ -788,8 +792,20 @@ export async function getStoreProduct(id: string): Promise<StoreProduct> {
   return res.data.data!;
 }
 
-export async function checkoutStoreCart(items: CartItem[], callbackUrl?: string): Promise<StoreCheckoutResponse> {
-  const res = await memberClient.post("/store/checkout", { items, callbackUrl });
+/**
+ * files: keyed "{itemIndex}:{details|delivery}:{questionKey}". Sent as multipart (cart as a JSON string
+ * plus one file part per key) only when there are files; otherwise a plain JSON body.
+ */
+export async function checkoutStoreCart(items: CartItem[], callbackUrl?: string, files: Record<string, File> = {}): Promise<StoreCheckoutResponse> {
+  const entries = Object.entries(files);
+  if (entries.length === 0) {
+    const res = await memberClient.post("/store/checkout", { items, callbackUrl });
+    return res.data.data!;
+  }
+  const fd = new FormData();
+  fd.append("cartJson", JSON.stringify({ items, callbackUrl }));
+  entries.forEach(([key, file]) => fd.append(key, file));
+  const res = await memberClient.post("/store/checkout", fd, { headers: { "Content-Type": "multipart/form-data" } });
   return res.data.data!;
 }
 

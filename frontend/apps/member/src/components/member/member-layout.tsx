@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useMemo, ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useMemo, useRef, ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -183,7 +183,11 @@ export function useFeatures() {
   const disabled = useDisabledFeatures();
   // "Arrived or failed", not "!isLoading": while the persisted query cache is still being restored on page
   // load, a pending query reports isLoading=false, which would read as ready with nothing disabled.
-  const ready = isSuccess || isError;
+  // Once settled it stays settled: retrying a failed request puts the query back to "pending", and
+  // un-readying then would unmount and remount every feature page in a loop while the API is down.
+  const settled = useRef(false);
+  if (isSuccess || isError) settled.current = true;
+  const ready = settled.current;
   return useMemo(
     () => ({ ready, disabled, enabled: (key: string) => ready && !disabled.has(key) }),
     [ready, disabled],
@@ -422,6 +426,14 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (featureOff) router.replace("/dashboard");
   }, [featureOff, router]);
+
+  // A request was refused because its feature is off, so the cached feature list is out of date.
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ["member-nav-theme"] });
+    window.addEventListener("feature-disabled", refresh);
+    return () => window.removeEventListener("feature-disabled", refresh);
+  }, [queryClient]);
 
   useEffect(() => {
     if (!isLoading && !isMember && pathname !== "/login") {

@@ -562,6 +562,44 @@ export interface StoreProduct {
   /** Empty means this is a simple product with no variants. */
   variantOptionTypes?: string[];
   variants?: StoreProductVariant[];
+  /** Shown beside the price, e.g. "per night". */
+  priceLabel?: string;
+  /** False means unlimited availability — no stock count is kept. */
+  trackStock?: boolean;
+  details?: StoreDetailItem[];
+  /** Questions the buyer answers for this item. */
+  fields?: ServiceFieldDefinition[];
+  /** Delivery or pickup details collected for this item. */
+  deliveryFields?: ServiceFieldDefinition[];
+  /** This product's own fulfilment stages; empty means the store's default delivery stages apply to the order. */
+  stages?: string[];
+}
+
+export interface StoreDetailItem {
+  label: string;
+  value: string;
+}
+
+/** A reusable setup imported (copied) into products. */
+export interface StoreProductTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  priceLabel?: string;
+  trackStock: boolean;
+  deliveryInfo?: string;
+  details: StoreDetailItem[];
+  fields: ServiceFieldDefinition[];
+  deliveryFields: ServiceFieldDefinition[];
+  stages: string[];
+}
+
+export interface StoreOrderItemAnswer {
+  section: "Details" | "Delivery";
+  key: string;
+  label: string;
+  type: ServiceFieldType;
+  value: string;
 }
 
 export interface StoreOrderItem {
@@ -574,6 +612,11 @@ export interface StoreOrderItem {
   variantId?: string;
   variantOptions?: Record<string, string>;
   sku?: string;
+  answers?: StoreOrderItemAnswer[];
+  /** Empty means the order-level delivery status applies to this item. */
+  stages?: string[];
+  currentStage?: string;
+  updates?: ServiceRequestUpdate[];
 }
 
 export interface StoreOrderDeliveryEvent {

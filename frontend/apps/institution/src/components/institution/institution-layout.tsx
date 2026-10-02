@@ -32,7 +32,7 @@ import {
   FileText,
 } from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
 import { useFeatures } from "@/hooks/use-institution-features";
@@ -320,6 +320,14 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (featureOff) router.replace("/dashboard");
   }, [featureOff, router]);
+
+  // A request was refused because its feature is off, so the cached feature list is out of date.
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ["institution-nav-theme"] });
+    window.addEventListener("feature-disabled", refresh);
+    return () => window.removeEventListener("feature-disabled", refresh);
+  }, [queryClient]);
 
   // Client pages can't export metadata, so the browser tab and history show the page name here.
   useEffect(() => {

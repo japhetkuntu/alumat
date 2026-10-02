@@ -25,7 +25,7 @@ function optionValueIsAvailable(
 ) {
   return product.variants.some((v) => {
     if (v.options[optionType] !== candidate) return false;
-    if (v.quantityAvailable <= 0) return false;
+    if (product.trackStock !== false && v.quantityAvailable <= 0) return false;
     return Object.entries(selected).every(([type, value]) => type === optionType || v.options[type] === value);
   });
 }
@@ -56,9 +56,10 @@ export default function StoreProductDetailPage() {
   const inCart = cart.find((l) => l.productId === id && (l.variantId ?? undefined) === (selectedVariant?.id ?? undefined));
 
   const effectivePrice = product ? (hasVariants ? selectedVariant?.price : product.price) : undefined;
+  const tracked = product?.trackStock !== false;
   const effectiveStock = product ? (hasVariants ? selectedVariant?.quantityAvailable : product.quantityAvailable) : undefined;
-  const soldOut = hasVariants ? (selectedVariant ? selectedVariant.quantityAvailable <= 0 : false) : !!product && product.quantityAvailable <= 0;
-  const canAdd = hasVariants ? !!selectedVariant && selectedVariant.quantityAvailable > 0 : !soldOut;
+  const soldOut = !tracked ? false : hasVariants ? (selectedVariant ? selectedVariant.quantityAvailable <= 0 : false) : !!product && product.quantityAvailable <= 0;
+  const canAdd = hasVariants ? !!selectedVariant && (!tracked || selectedVariant.quantityAvailable > 0) : !soldOut;
 
   const displayImage = (hasVariants && selectedVariant?.imageUrl) || undefined;
   const images = product?.imageUrls?.length ? product.imageUrls : [];
@@ -131,8 +132,11 @@ export default function StoreProductDetailPage() {
             <h1 className="text-[22px] font-bold leading-snug">{product.name}</h1>
             <p className="text-[20px] font-bold text-primary mt-1">
               {effectivePrice !== undefined ? formatCurrency(effectivePrice) : hasVariants ? "Select options" : formatCurrency(product.price)}
+              {effectivePrice !== undefined && product.priceLabel && (
+                <span className="text-[13px] font-medium text-muted-foreground"> {product.priceLabel}</span>
+              )}
             </p>
-            {hasVariants ? (
+            {!tracked ? null : hasVariants ? (
               selectedVariant ? (
                 soldOut ? (
                   <p className="text-[12.5px] text-destructive font-medium mt-1">Sold out</p>
@@ -151,6 +155,17 @@ export default function StoreProductDetailPage() {
 
           {product.description && (
             <p className="text-[13.5px] text-muted-foreground leading-relaxed">{product.description}</p>
+          )}
+
+          {product.details?.length > 0 && (
+            <dl className="border-t border-border/60">
+              {product.details.map((d, i) => (
+                <div key={i} className="flex gap-4 py-2 border-b border-border/60 text-[13px]">
+                  <dt className="w-32 shrink-0 text-muted-foreground">{d.label}</dt>
+                  <dd className="font-medium min-w-0 break-words">{d.value}</dd>
+                </div>
+              ))}
+            </dl>
           )}
 
           {hasVariants && (
@@ -201,7 +216,27 @@ export default function StoreProductDetailPage() {
             </Card>
           )}
 
-          <div className="flex items-center gap-3 pt-2">
+          {product.stages?.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[12.5px] font-semibold">What happens after you order</p>
+              <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {product.stages.map((st, i) => (
+                  <li key={st} className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+                    {i > 0 && <span aria-hidden>→</span>}
+                    <span>{st}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {(product.fields?.length > 0 || product.deliveryFields?.length > 0) && (
+            <p className="text-[12.5px] text-muted-foreground">
+              We&apos;ll ask for a few details in your cart before you pay.
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             {inCart ? (
               <div className="flex items-center gap-2">
                 <button

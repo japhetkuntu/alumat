@@ -20,6 +20,7 @@ public class StoreService(
     IAlumniPgRepository<StoreProduct> productRepo,
     IAlumniPgRepository<StoreOrder> orderRepo,
     IAlumniPgRepository<StoreProductVariant> variantRepo,
+    IAlumniPgRepository<StoreProductTemplate> templateRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
     IAlumniPgRepository<Member> memberRepo,
     IStorageService storageService,
@@ -70,6 +71,47 @@ public class StoreService(
         product.QuantityAvailable = newVariants.Sum(v => v.QuantityAvailable);
 
         return newVariants;
+    }
+
+    /// <summary>
+    /// Applies the submitted display/question/delivery/stage configuration to a product. A null JSON
+    /// string means "leave that part unchanged" (update only); returns an error message when anything
+    /// submitted is invalid, in which case the product must not be saved.
+    /// </summary>
+    private static string? ApplyProductConfig(StoreProduct product, string? priceLabel, bool trackStock, string? detailsJson, string? fieldsJson, string? deliveryFieldsJson, string? stagesJson)
+    {
+        product.PriceLabel = string.IsNullOrWhiteSpace(priceLabel) ? null : priceLabel.Trim();
+        product.TrackStock = trackStock;
+
+        if (detailsJson is not null)
+        {
+            var (details, error) = StoreConfigParser.ParseJson<StoreDetailItemRequest>(detailsJson, "product details");
+            if (error is not null) return error;
+            product.Details = StoreConfigParser.MapDetails(details);
+        }
+        if (fieldsJson is not null)
+        {
+            var (raw, error) = StoreConfigParser.ParseJson<ServiceFieldDefinitionRequest>(fieldsJson, "order questions");
+            if (error is not null) return error;
+            var (fields, mapError) = StoreConfigParser.MapFields(raw!, "order");
+            if (mapError is not null) return mapError;
+            product.Fields = fields!;
+        }
+        if (deliveryFieldsJson is not null)
+        {
+            var (raw, error) = StoreConfigParser.ParseJson<ServiceFieldDefinitionRequest>(deliveryFieldsJson, "delivery questions");
+            if (error is not null) return error;
+            var (fields, mapError) = StoreConfigParser.MapFields(raw!, "delivery");
+            if (mapError is not null) return mapError;
+            product.DeliveryFields = fields!;
+        }
+        if (stagesJson is not null)
+        {
+            var (stages, error) = StoreConfigParser.ParseJson<string>(stagesJson, "stages");
+            if (error is not null) return error;
+            product.Stages = StoreConfigParser.NormalizeStages(stages);
+        }
+        return null;
     }
 
     public async Task<IApiResponse<PgPagedResult<StoreProductDto>>> GetProductsAsync(StoreProductFilter filter)
@@ -159,6 +201,10 @@ public class StoreService(
                 CreatedBy = admin.Id,
             };
 
+            var configError = ApplyProductConfig(product, request.PriceLabel, request.TrackStock, request.DetailsJson, request.FieldsJson, request.DeliveryFieldsJson, request.StagesJson);
+            if (configError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(configError);
+
             if (request.Images is { Count: > 0 })
                 product.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
@@ -201,6 +247,10 @@ public class StoreService(
             product.QuantityAvailable = request.QuantityAvailable;
             product.DeliveryInfo = request.DeliveryInfo;
             product.Status = request.Status;
+
+            var configError = ApplyProductConfig(product, request.PriceLabel, request.TrackStock, request.DetailsJson, request.FieldsJson, request.DeliveryFieldsJson, request.StagesJson);
+            if (configError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(configError);
 
             var imageUrls = new List<string>();
             if (request.ExistingImageUrls is { Count: > 0 })
@@ -376,6 +426,152 @@ public class StoreService(
         {
             logger.LogError(e, "Error updating delivery status for store order {OrderId} by admin {AdminId}", orderId, admin.Id);
             return ApiResponseExtensions.ToServerErrorApiResponse<StoreOrderDto>("Failed to update delivery status");
+        }
+    }
+
+    // ── Reusable setups ────────────────────────────────────────────────────
+
+    public async Task<IApiResponse<List<StoreProductTemplateDto>>> GetTemplatesAsync()
+    {
+        try
+        {
+            var templates = (await templateRepo.GetAllAsync()).OrderBy(t => t.Name).Select(t => t.ToDto()).ToList();
+            return templates.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving store templates");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<StoreProductTemplateDto>>("Failed to retrieve templates");
+        }
+    }
+
+    private static string? ApplyTemplate(StoreProductTemplate template, StoreProductTemplateRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name)) return "Give this setup a name.";
+        var (fields, fieldError) = StoreConfigParser.MapFields(request.Fields, "order");
+        if (fieldError is not null) return fieldError;
+        var (deliveryFields, deliveryError) = StoreConfigParser.MapFields(request.DeliveryFields, "delivery");
+        if (deliveryError is not null) return deliveryError;
+
+        template.Name = request.Name.Trim();
+        template.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        template.PriceLabel = string.IsNullOrWhiteSpace(request.PriceLabel) ? null : request.PriceLabel.Trim();
+        template.TrackStock = request.TrackStock;
+        template.DeliveryInfo = string.IsNullOrWhiteSpace(request.DeliveryInfo) ? null : request.DeliveryInfo.Trim();
+        template.Details = StoreConfigParser.MapDetails(request.Details);
+        template.Fields = fields!;
+        template.DeliveryFields = deliveryFields!;
+        template.Stages = StoreConfigParser.NormalizeStages(request.Stages);
+        return null;
+    }
+
+    public async Task<IApiResponse<StoreProductTemplateDto>> CreateTemplateAsync(StoreProductTemplateRequest request, AuthData admin)
+    {
+        try
+        {
+            var template = new StoreProductTemplate { CreatedBy = admin.Id };
+            var error = ApplyTemplate(template, request);
+            if (error is not null) return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductTemplateDto>(error);
+            await templateRepo.AddAsync(template);
+            return template.ToDto().ToCreatedApiResponse("Setup saved");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error creating store template by admin {AdminId}", admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<StoreProductTemplateDto>("Failed to save setup");
+        }
+    }
+
+    public async Task<IApiResponse<StoreProductTemplateDto>> UpdateTemplateAsync(string templateId, StoreProductTemplateRequest request, AuthData admin)
+    {
+        try
+        {
+            var template = await templateRepo.GetByIdAsync(templateId);
+            if (template is null) return ApiResponseExtensions.ToNotFoundApiResponse<StoreProductTemplateDto>("Setup not found");
+            var error = ApplyTemplate(template, request);
+            if (error is not null) return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductTemplateDto>(error);
+            template.UpdatedAt = DateTime.UtcNow;
+            template.UpdatedBy = admin.Id;
+            await templateRepo.UpdateAsync(template);
+            return template.ToDto().ToOkApiResponse("Setup updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating store template {TemplateId} by admin {AdminId}", templateId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<StoreProductTemplateDto>("Failed to update setup");
+        }
+    }
+
+    public async Task<IApiResponse<object>> DeleteTemplateAsync(string templateId)
+    {
+        try
+        {
+            var template = await templateRepo.GetByIdAsync(templateId);
+            if (template is null) return ApiResponseExtensions.ToNotFoundApiResponse<object>("Setup not found");
+            // Products were configured from a copy, so removing the template never affects them.
+            await templateRepo.RemoveAsync(template);
+            return new object().ToOkApiResponse("Setup deleted");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error deleting store template {TemplateId}", templateId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to delete setup");
+        }
+    }
+
+    // ── Per-item fulfilment ────────────────────────────────────────────────
+
+    public async Task<IApiResponse<StoreOrderDto>> UpdateOrderItemAsync(string orderId, int itemIndex, UpdateStoreOrderItemRequest request, AuthData admin)
+    {
+        try
+        {
+            var order = await orderRepo.GetByIdAsync(orderId);
+            if (order is null || itemIndex < 0 || itemIndex >= order.Items.Count)
+                return ApiResponseExtensions.ToNotFoundApiResponse<StoreOrderDto>("Order item not found");
+            var item = order.Items[itemIndex];
+
+            if (item.Stages.Count == 0)
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreOrderDto>("This item has no stages of its own; update the order's delivery status instead.");
+            if (string.IsNullOrWhiteSpace(request.Stage) && string.IsNullOrWhiteSpace(request.Note) && request.Attachment is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreOrderDto>("Provide a stage, a note, or an attachment");
+            if (!string.IsNullOrWhiteSpace(request.Stage) && !item.Stages.Contains(request.Stage))
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreOrderDto>($"\"{request.Stage}\" is not one of this item's stages.");
+
+            string? attachmentUrl = null;
+            if (request.Attachment is { Length: > 0 })
+            {
+                var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(request.Attachment.FileName)}";
+                attachmentUrl = await storageService.UploadFileAsync(request.Attachment, objectName, "alumni", currentTenant.InstitutionSlug ?? "");
+            }
+
+            item.Updates.Add(new ServiceRequestUpdate
+            {
+                ChangedAt = DateTime.UtcNow,
+                Stage = string.IsNullOrWhiteSpace(request.Stage) ? null : request.Stage,
+                Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
+                AttachmentUrl = attachmentUrl,
+                ChangedByStaffName = $"{admin.FirstName} {admin.LastName}",
+            });
+            if (!string.IsNullOrWhiteSpace(request.Stage))
+                item.CurrentStage = request.Stage;
+
+            // Reassign so EF notices the change inside the jsonb Items list.
+            order.Items = [.. order.Items];
+            order.UpdatedAt = DateTime.UtcNow;
+            order.UpdatedBy = admin.Id;
+            await orderRepo.UpdateAsync(order);
+
+            await temporalProvider.EnqueueNotificationAsync(NotificationRequest.StoreDeliveryStatusUpdated(
+                currentTenant.InstitutionId!, order.MemberId, order.Id, order.OrderNumber,
+                $"{item.ProductName}: {item.CurrentStage}"), logger);
+
+            logger.LogInformation("Store order {OrderId} item {ItemIndex} updated by admin {AdminId} — stage={Stage}", orderId, itemIndex, admin.Id, request.Stage);
+            return order.ToDto().ToOkApiResponse("Item updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating item {ItemIndex} of store order {OrderId}", itemIndex, orderId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<StoreOrderDto>("Failed to update item");
         }
     }
 }

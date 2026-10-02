@@ -18,6 +18,10 @@ public class CheckoutItemRequest
     public int Quantity { get; set; }
     /// <summary>Required when the product has VariantOptionTypes; ignored for simple products.</summary>
     public string? VariantId { get; set; }
+    /// <summary>Answers to the product's order questions, keyed by question key. File questions are not sent here (see the multipart checkout).</summary>
+    public Dictionary<string, string>? Answers { get; set; }
+    /// <summary>Answers to the product's delivery questions, keyed by question key.</summary>
+    public Dictionary<string, string>? DeliveryAnswers { get; set; }
 }
 
 public class CheckoutRequest

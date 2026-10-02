@@ -8,6 +8,7 @@ import { Button } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { getStoreOrderStatus } from "@/lib/member-api";
+import { clearStoredCart } from "@/hooks/use-store-cart";
 import { handleApiError } from "@/lib/api-client";
 
 export default function StoreCallbackPage() {
@@ -40,6 +41,7 @@ export default function StoreCallbackPage() {
 
       if (normalized === "confirmed" || normalized === "success" || normalized === "successful") {
         setStatus("success");
+        clearStoredCart();
         setMessage(response.message ?? "Your payment was successful and your order has been recorded.");
         return;
       }

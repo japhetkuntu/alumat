@@ -17,6 +17,12 @@ function cartStorageKey() {
   return `alumni-store-cart:${slug ?? "default"}`;
 }
 
+/** Empties the saved cart — called once a payment is confirmed so bought items don't linger in it. */
+export function clearStoredCart() {
+  const key = cartStorageKey();
+  if (key) localStorage.removeItem(key);
+}
+
 function loadCart(): CartLine[] {
   const key = cartStorageKey();
   if (!key) return [];
@@ -33,7 +39,8 @@ function sameLine(a: { productId: string; variantId?: string }, b: { productId: 
 }
 
 /** Effective unit price/stock for a line — the variant's if present, else the product's. */
-function lineStock(product: StoreProduct, variant?: StoreProductVariant) {
+export function lineStock(product: StoreProduct, variant?: StoreProductVariant) {
+  if (product.trackStock === false) return Number.POSITIVE_INFINITY;
   return variant ? variant.quantityAvailable : product.quantityAvailable;
 }
 

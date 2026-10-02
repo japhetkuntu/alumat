@@ -39,12 +39,32 @@ public class StoreController(IStoreOrderService storeOrderService) : DefaultCont
     }
 
     [HttpPost("checkout")]
+    [Consumes("application/json")]
     [SwaggerOperation(Summary = "Initiate checkout for a cart of products")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StoreCheckoutResponse>))]
     public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
     {
         var member = User.GetAccount();
         var result = await storeOrderService.InitiateCheckoutAsync(request, member);
+        return result.ToActionResult();
+    }
+
+    /// <summary>The same checkout, for carts with file questions: the cart is sent as CartJson and each file as its own form part named "{itemIndex}:{details|delivery}:{questionKey}".</summary>
+    [HttpPost("checkout")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(60 * 1024 * 1024)]
+    [SwaggerOperation(Summary = "Initiate checkout for a cart that includes file uploads")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StoreCheckoutResponse>))]
+    public async Task<IActionResult> CheckoutWithFiles([FromForm] string cartJson)
+    {
+        CheckoutRequest? request;
+        try { request = System.Text.Json.JsonSerializer.Deserialize<CheckoutRequest>(cartJson, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)); }
+        catch (System.Text.Json.JsonException) { request = null; }
+        if (request is null)
+            return BadRequest(new { message = "Could not read your cart." });
+
+        var files = Request.Form.Files.ToDictionary(f => f.Name, f => f);
+        var result = await storeOrderService.InitiateCheckoutAsync(request, User.GetAccount(), files);
         return result.ToActionResult();
     }
 

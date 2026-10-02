@@ -19,13 +19,16 @@ import { formatCurrency, formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
   getStoreProducts, createStoreProduct, updateStoreProduct, deleteStoreProduct, getStoreOrders,
-  getStoreSettings, updateStoreSettings, updateStoreOrderDeliveryStatus,
+  getStoreSettings, updateStoreSettings, updateStoreOrderDeliveryStatus, updateStoreOrderItem,
 } from "@/lib/institution-api";
+import {
+  StoreConfigEditor, configFromProduct, configToBody, emptyConfigDraft, type ConfigDraft,
+} from "@/components/institution/store-config-editor";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
-import type { StoreProduct, StoreProductVariant } from "@/types";
+import type { StoreOrderItem, StoreProduct, StoreProductVariant } from "@/types";
 
 const statusVariant: Record<string, "success" | "secondary" | "warning"> = {
   Active: "success",
@@ -62,12 +65,15 @@ interface FormState {
   optionValuesRaw: Record<string, string>;
   /** Keyed by comboKey(optionTypes, combo) — sku/price-override/qty entered per variant combination. */
   variantRowValues: Record<string, RowValues>;
+  /** What to show, what to ask and how to fulfil — see StoreConfigEditor. */
+  config: ConfigDraft;
 }
 
 const emptyForm: FormState = {
   name: "", description: "", price: "", quantityAvailable: "", deliveryInfo: "", status: "Active",
   images: [], existingImageUrls: [],
   optionTypes: [], optionValuesRaw: {}, variantRowValues: {},
+  config: emptyConfigDraft,
 };
 
 function parseValues(raw: string): string[] {
@@ -152,8 +158,10 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
                 ]} /></div>
             <div className="space-y-2"><Label>Price (GHS)</Label>
               <Input type="number" min="0" step="0.01" placeholder="150" value={form.price} onChange={(e) => f("price", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Quantity available</Label>
-              <Input type="number" min="0" placeholder="50" value={form.quantityAvailable} onChange={(e) => f("quantityAvailable", e.target.value)} required /></div>
+            {form.config.trackStock && (
+              <div className="space-y-2"><Label>Quantity available</Label>
+                <Input type="number" min="0" placeholder="50" value={form.quantityAvailable} onChange={(e) => f("quantityAvailable", e.target.value)} required /></div>
+            )}
           </div>
           <div className="space-y-2"><Label>Description</Label>
             <Textarea placeholder="Describe the product..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
@@ -176,6 +184,13 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
               onRemoveFile={(i) => setForm((prev) => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))}
               onRemoveExisting={(i) => setForm((prev) => ({ ...prev, existingImageUrls: prev.existingImageUrls.filter((_, idx) => idx !== i) }))}
               label="Add photo" /></div>
+
+          <StoreConfigEditor
+            value={form.config}
+            onChange={(config) => setForm((prev) => ({ ...prev, config }))}
+            deliveryInfo={form.deliveryInfo}
+            onApplyTemplate={(t) => setForm((prev) => ({ ...prev, deliveryInfo: t.deliveryInfo ?? prev.deliveryInfo }))}
+          />
 
           <div className="space-y-3 pt-2 border-t border-border/40">
             <div>
@@ -267,6 +282,76 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
   );
 }
 
+function OrderItemRow({ orderId, item, index, paid }: { orderId: string; item: StoreOrderItem; index: number; paid: boolean }) {
+  const qc = useQueryClient();
+  const [stage, setStage] = useState(item.currentStage ?? "");
+  const [note, setNote] = useState("");
+  const [open, setOpen] = useState(false);
+  const stages = item.stages ?? [];
+  const answers = item.answers ?? [];
+  const updateMut = useMutation({
+    mutationFn: () => updateStoreOrderItem(orderId, index, { stage: stage && stage !== item.currentStage ? stage : undefined, note: note.trim() || undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-store-orders"] }); setNote(""); toast.success("Item updated and the buyer has been notified"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+  const canSubmit = (stage && stage !== item.currentStage) || note.trim().length > 0;
+
+  return (
+    <div className="py-2.5 space-y-2 text-[12.5px]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-foreground">
+          {item.productName}
+          {item.variantOptions && Object.keys(item.variantOptions).length > 0 && (
+            <span className="text-muted-foreground"> — {Object.values(item.variantOptions).join(" / ")}</span>
+          )}
+          {" "}× {item.quantity}
+        </span>
+        <span className="flex items-center gap-2">
+          {item.currentStage && <Badge variant="info" size="sm">{item.currentStage}</Badge>}
+          <span className="text-muted-foreground">{formatCurrency(item.unitPrice * item.quantity)}</span>
+        </span>
+      </div>
+
+      {answers.length > 0 && (
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 bg-muted/30 px-3 py-2">
+          {answers.map((a) => (
+            <div key={`${a.section}:${a.key}`} className="min-w-0">
+              <dt className="text-[11px] text-muted-foreground">{a.section === "Delivery" ? "Delivery: " : ""}{a.label}</dt>
+              <dd className="break-words">
+                {a.type === "File" ? <a href={a.value} target="_blank" rel="noreferrer" className="text-accent underline">Open file</a> : a.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {stages.length > 0 && paid && (
+        <div className="space-y-2">
+          <button type="button" className="text-[12px] font-semibold text-accent hover:underline" onClick={() => setOpen((v) => !v)}>
+            {open ? "Hide progress" : "Update progress"}
+          </button>
+          {open && (
+            <div className="space-y-2 border border-border/60 p-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <FormSelect className="h-9 text-[12.5px] min-w-[10rem]" value={stage} onValueChange={setStage} options={stages.map((s) => ({ value: s, label: s }))} placeholder="Choose a stage" />
+                <Input className="h-9 flex-1 min-w-[10rem]" placeholder="Note for the buyer (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+                <Button type="button" size="sm" disabled={!canSubmit} isLoading={updateMut.isPending} onClick={() => updateMut.mutate()}>Update</Button>
+              </div>
+              {(item.updates ?? []).length > 0 && (
+                <ul className="space-y-1 text-[11.5px] text-muted-foreground">
+                  {[...(item.updates ?? [])].reverse().map((u, i) => (
+                    <li key={i}>{formatDate(u.changedAt)}{u.stage ? ` · ${u.stage}` : ""}{u.note ? ` · ${u.note}` : ""}{u.changedByStaffName ? ` (${u.changedByStaffName})` : ""}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminStorePage() {
   const [tab, setTab] = useState<"Products" | "Orders">("Products");
   const [showCreate, setShowCreate] = useState(false);
@@ -344,8 +429,9 @@ export default function AdminStorePage() {
   const createMut = useMutation({
     mutationFn: (f: FormState) => createStoreProduct({
       name: f.name, description: f.description || undefined, price: Number(f.price),
-      quantityAvailable: Number(f.quantityAvailable), deliveryInfo: f.deliveryInfo || undefined,
+      quantityAvailable: f.config.trackStock ? Number(f.quantityAvailable) : 0, deliveryInfo: f.deliveryInfo || undefined,
       status: f.status, images: f.images.length > 0 ? f.images : undefined,
+      config: configToBody(f.config),
       ...buildVariantFields(f),
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-store-products"] }); setShowCreate(false); toast.success("Product created"); },
@@ -355,9 +441,10 @@ export default function AdminStorePage() {
   const updateMut = useMutation({
     mutationFn: ({ id, f }: { id: string; f: FormState }) => updateStoreProduct(id, {
       name: f.name, description: f.description || undefined, price: Number(f.price),
-      quantityAvailable: Number(f.quantityAvailable), deliveryInfo: f.deliveryInfo || undefined,
+      quantityAvailable: f.config.trackStock ? Number(f.quantityAvailable) : 0, deliveryInfo: f.deliveryInfo || undefined,
       status: f.status, images: f.images.length > 0 ? f.images : undefined,
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,
+      config: configToBody(f.config),
       ...buildVariantFields(f),
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-store-products"] }); setEditProduct(null); toast.success("Product updated"); },
@@ -495,6 +582,7 @@ export default function AdminStorePage() {
                 price: String(editProduct.price), quantityAvailable: String(editProduct.quantityAvailable),
                 deliveryInfo: editProduct.deliveryInfo ?? "", status: editProduct.status,
                 images: [], existingImageUrls: editProduct.imageUrls ?? [],
+                config: configFromProduct(editProduct),
                 optionTypes: editProduct.variantOptionTypes ?? [],
                 optionValuesRaw: buildOptionValuesRaw(editProduct.variantOptionTypes ?? [], editProduct.variants ?? []),
                 variantRowValues: Object.fromEntries(
@@ -553,10 +641,14 @@ export default function AdminStorePage() {
                       <h3 className="font-bold text-[14px] leading-snug line-clamp-2">{p.name}</h3>
                       <Badge variant={statusVariant[p.status] ?? "secondary"} size="sm">{p.status}</Badge>
                     </div>
-                    <p className="text-[15px] font-bold text-primary">{formatCurrency(p.price)}</p>
+                    <p className="text-[15px] font-bold text-primary">
+                      {formatCurrency(p.price)}{p.priceLabel && <span className="text-[12px] font-normal text-muted-foreground"> {p.priceLabel}</span>}
+                    </p>
                     <p className="text-[12px] text-muted-foreground">
-                      {p.quantityAvailable} in stock
+                      {p.trackStock === false ? "Unlimited availability" : `${p.quantityAvailable} in stock`}
                       {p.variants && p.variants.length > 0 && ` · ${p.variants.length} variant${p.variants.length === 1 ? "" : "s"}`}
+                      {(p.fields?.length ?? 0) > 0 && ` · ${p.fields!.length} question${p.fields!.length === 1 ? "" : "s"}`}
+                      {(p.stages?.length ?? 0) > 0 && ` · ${p.stages!.length} stages`}
                     </p>
                     {p.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{p.description}</p>}
                     <div className="flex items-center gap-2 pt-2 mt-auto border-t border-border/40">
@@ -600,7 +692,7 @@ export default function AdminStorePage() {
                       </div>
                     </div>
 
-                    {deliveryStages.length > 0 && (
+                    {deliveryStages.length > 0 && o.items.some((it) => (it.stages ?? []).length === 0) && (
                       <div className="flex items-center gap-2 flex-wrap pt-1">
                         <span className="text-[11.5px] font-semibold text-muted-foreground">Delivery status:</span>
                         <FormSelect
@@ -613,18 +705,9 @@ export default function AdminStorePage() {
                       </div>
                     )}
 
-                    <div className="divide-y divide-border/40 border-t border-border/40 pt-2">
+                    <div className="divide-y divide-border/40 border-t border-border/40 pt-1">
                       {o.items.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between gap-2 py-1.5 text-[12.5px]">
-                          <span className="text-foreground">
-                            {item.productName}
-                            {item.variantOptions && Object.keys(item.variantOptions).length > 0 && (
-                              <span className="text-muted-foreground"> — {Object.values(item.variantOptions).join(" / ")}</span>
-                            )}
-                            {" "}× {item.quantity}
-                          </span>
-                          <span className="text-muted-foreground">{formatCurrency(item.unitPrice * item.quantity)}</span>
-                        </div>
+                        <OrderItemRow key={i} orderId={o.id} item={item} index={i} paid={o.status === "Successful"} />
                       ))}
                     </div>
                   </CardContent>

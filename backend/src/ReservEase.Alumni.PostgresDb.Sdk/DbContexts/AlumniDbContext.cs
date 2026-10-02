@@ -82,6 +82,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<ServiceType> ServiceTypes => Set<ServiceType>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
     public DbSet<StoreProductVariant> StoreProductVariants => Set<StoreProductVariant>();
+    public DbSet<StoreProductTemplate> StoreProductTemplates => Set<StoreProductTemplate>();
     public DbSet<PhotoAlbum> PhotoAlbums => Set<PhotoAlbum>();
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
     public DbSet<BusinessListing> BusinessListings => Set<BusinessListing>();
@@ -293,6 +294,25 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // a leading-wildcard Contains) a plain btree index serves directly.
         modelBuilder.Entity<Member>()
             .HasIndex(m => m.MemberNumber);
+        // Store products and templates: per-product configuration (display details, buyer questions,
+        // delivery questions, stages) — jsonb lists, same pattern as ServiceType above.
+        var storeDetailListComparer = new ValueComparer<List<StoreDetailItem>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<StoreDetailItem>(l));
+        foreach (var productConfig in new[] { typeof(StoreProduct), typeof(StoreProductTemplate) })
+        {
+            var entity = modelBuilder.Entity(productConfig);
+            entity.Property(nameof(StoreProduct.Details)).HasColumnType("jsonb")
+                .HasConversion(new JsonbConverter<List<StoreDetailItem>>(jsonOpts)).Metadata.SetValueComparer(storeDetailListComparer);
+            entity.Property(nameof(StoreProduct.Fields)).HasColumnType("jsonb")
+                .HasConversion(new JsonbConverter<List<ServiceFieldDefinition>>(jsonOpts)).Metadata.SetValueComparer(serviceFieldListComparer);
+            entity.Property(nameof(StoreProduct.DeliveryFields)).HasColumnType("jsonb")
+                .HasConversion(new JsonbConverter<List<ServiceFieldDefinition>>(jsonOpts)).Metadata.SetValueComparer(serviceFieldListComparer);
+            entity.Property(nameof(StoreProduct.Stages)).HasColumnType("jsonb")
+                .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        }
+
         // Composite (InstitutionId, CreatedAt) — matches the actual shape of the
         // dashboard/report aggregations (ReportService, InstitutionManagementService's
         // platform dashboard, PayoutService's date-window forecasts): always a

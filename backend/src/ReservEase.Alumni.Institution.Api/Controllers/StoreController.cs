@@ -110,4 +110,51 @@ public class StoreController(IStoreService storeService) : DefaultController
         var result = await storeService.UpdateDeliveryStatusAsync(orderId, request.DeliveryStatus, admin);
         return result.ToActionResult();
     }
+
+    [HttpGet("templates")]
+    [SwaggerOperation(Summary = "List reusable store setups", Description = "Saved questions, delivery details and stages an admin can import into any product.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<StoreProductTemplateDto>>))]
+    public async Task<IActionResult> GetTemplates()
+    {
+        var result = await storeService.GetTemplatesAsync();
+        return result.ToActionResult();
+    }
+
+    [HttpPost("templates")]
+    [SwaggerOperation(Summary = "Save a reusable store setup")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<StoreProductTemplateDto>))]
+    public async Task<IActionResult> CreateTemplate([FromBody] StoreProductTemplateRequest request)
+    {
+        var result = await storeService.CreateTemplateAsync(request, User.GetAccount());
+        return result.ToActionResult();
+    }
+
+    [HttpPut("templates/{templateId}")]
+    [SwaggerOperation(Summary = "Update a reusable store setup", Description = "Products already created from this setup are not changed.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StoreProductTemplateDto>))]
+    public async Task<IActionResult> UpdateTemplate(string templateId, [FromBody] StoreProductTemplateRequest request)
+    {
+        var result = await storeService.UpdateTemplateAsync(templateId, request, User.GetAccount());
+        return result.ToActionResult();
+    }
+
+    [HttpDelete("templates/{templateId}")]
+    [SwaggerOperation(Summary = "Delete a reusable store setup")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> DeleteTemplate(string templateId)
+    {
+        var result = await storeService.DeleteTemplateAsync(templateId);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("orders/{orderId}/items/{itemIndex:int}/update")]
+    [Consumes("multipart/form-data")]
+    [SwaggerOperation(Summary = "Move one ordered item to its next stage or add a note", Description = "Only for items whose product has its own stages.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<StoreOrderDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateOrderItem(string orderId, int itemIndex, [FromForm] UpdateStoreOrderItemRequest request)
+    {
+        var result = await storeService.UpdateOrderItemAsync(orderId, itemIndex, request, User.GetAccount());
+        return result.ToActionResult();
+    }
 }

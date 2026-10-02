@@ -166,6 +166,12 @@ public class BusinessListingDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class StoreDetailItemDto
+{
+    public string Label { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+}
+
 public class StoreProductDto
 {
     public string Id { get; set; } = string.Empty;
@@ -180,6 +186,31 @@ public class StoreProductDto
     /// <summary>Empty means this is a simple product with no variants.</summary>
     public List<string> VariantOptionTypes { get; set; } = [];
     public List<StoreProductVariantDto> Variants { get; set; } = [];
+    /// <summary>e.g. "per night" — shown beside the price. Null shows the bare price.</summary>
+    public string? PriceLabel { get; set; }
+    /// <summary>False means unlimited availability: no stock count is shown or enforced.</summary>
+    public bool TrackStock { get; set; } = true;
+    public List<StoreDetailItemDto> Details { get; set; } = [];
+    /// <summary>Questions the buyer answers for this item.</summary>
+    public List<ServiceFieldDefinitionDto> Fields { get; set; } = [];
+    /// <summary>Delivery or pickup details the buyer provides for this item.</summary>
+    public List<ServiceFieldDefinitionDto> DeliveryFields { get; set; } = [];
+    /// <summary>This product's own fulfilment stages. Empty means the institution-wide delivery stages apply to the order.</summary>
+    public List<string> Stages { get; set; } = [];
+}
+
+public class StoreProductTemplateDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? PriceLabel { get; set; }
+    public bool TrackStock { get; set; } = true;
+    public string? DeliveryInfo { get; set; }
+    public List<StoreDetailItemDto> Details { get; set; } = [];
+    public List<ServiceFieldDefinitionDto> Fields { get; set; } = [];
+    public List<ServiceFieldDefinitionDto> DeliveryFields { get; set; } = [];
+    public List<string> Stages { get; set; } = [];
 }
 
 public class StoreProductVariantDto
@@ -193,6 +224,15 @@ public class StoreProductVariantDto
     public string? ImageUrl { get; set; }
 }
 
+public class StoreOrderItemAnswerDto
+{
+    public string Section { get; set; } = "Details";
+    public string Key { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Type { get; set; } = "Text";
+    public string Value { get; set; } = string.Empty;
+}
+
 public class StoreOrderItemDto
 {
     public string ProductId { get; set; } = string.Empty;
@@ -204,6 +244,11 @@ public class StoreOrderItemDto
     public string? VariantId { get; set; }
     public Dictionary<string, string>? VariantOptions { get; set; }
     public string? Sku { get; set; }
+    public List<StoreOrderItemAnswerDto> Answers { get; set; } = [];
+    /// <summary>Empty means the order-level delivery status applies to this item.</summary>
+    public List<string> Stages { get; set; } = [];
+    public string? CurrentStage { get; set; }
+    public List<ServiceRequestUpdateDto> Updates { get; set; } = [];
 }
 
 public class StoreOrderDeliveryEventDto

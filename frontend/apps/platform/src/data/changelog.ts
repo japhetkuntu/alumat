@@ -21,6 +21,20 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-02",
+    title: "Portals no longer loop or lose a store cart when the server is unreachable",
+    body: "If the server could not be reached, member and institution pages for feature-gated sections (Store, Jobs, Events and so on) kept re-rendering in a tight loop instead of settling into their normal error state. A failed product fetch could also empty the member's saved store cart, and a paid order left its items in the cart. Pages now settle once, the cart is only reconciled after the product list has actually loaded, and it is cleared when payment is confirmed. Also fixed: the product page's \"Continue shopping\" button spilling off narrow screens, and cart rows cutting off product names on phones.",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+  },
+  {
+    date: "2026-10-02",
+    title: "The Store can sell anything, with its own questions and stages per item",
+    body: "Each store item can now carry its own details list, price label (e.g. \"per night\"), unlimited availability, buyer questions, delivery questions and progress stages, so the Store works for products, accommodation or any other offering. Institutions can save a setup as a reusable template and import a copy into any item, then adjust it. Members answer each item's questions in their cart (including file uploads) and follow each item's progress in their orders; admins see the answers and post stage updates per item. Items with no custom setup behave exactly as before.",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+  },
+  {
+    date: "2026-10-02",
     title: "Dashboards no longer show errors or empty sections for switched-off features",
     body: "When an institution turned features off (Contributions, Events, Jobs, Store, Services and so on), the member and institution portals still requested that data, got refused, and showed \"couldn't load\" errors, zero-value tiles, or sections promising content that would never appear. Dashboards, get-started checklists, the member calendar, search, profile settings and the institution reports page now only request and show what the institution actually uses, and a switched-off feature's own pages (reached by a bookmark or old link) send the user to the dashboard instead of an error.",
     scopes: ["Institution", "Member"],

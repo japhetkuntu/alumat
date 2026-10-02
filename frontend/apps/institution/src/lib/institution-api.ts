@@ -23,6 +23,8 @@ import type {
   NotificationItem,
   StoreProduct,
   StoreOrder,
+  StoreProductTemplate,
+  StoreDetailItem,
   ServiceType,
   ServiceRequest,
   ServiceFieldDefinition,
@@ -1120,6 +1122,17 @@ export interface CreateStoreProductBody {
   /** Empty/omitted means a simple product with no variants. */
   variantOptionTypes?: string[];
   variants?: StoreVariantBody[];
+  config?: StoreProductConfigBody;
+}
+
+/** What to show, what to ask and how to fulfil one product (or a saved setup). */
+export interface StoreProductConfigBody {
+  priceLabel?: string;
+  trackStock: boolean;
+  details: StoreDetailItem[];
+  fields: ServiceFieldDefinitionBody[];
+  deliveryFields: ServiceFieldDefinitionBody[];
+  stages: string[];
 }
 
 export interface UpdateStoreProductBody {
@@ -1134,6 +1147,7 @@ export interface UpdateStoreProductBody {
   /** Empty/omitted means a simple product with no variants. */
   variantOptionTypes?: string[];
   variants?: StoreVariantBody[];
+  config?: StoreProductConfigBody;
 }
 
 // ASP.NET Core model binds List<T> from form fields using indexed/bracket key
@@ -1157,6 +1171,18 @@ function appendStoreVariantFields(fd: FormData, variantOptionTypes?: string[], v
   });
 }
 
+// The configuration lists go up as JSON strings for the same reason as variant options: the endpoint
+// is multipart (images), and ASP.NET Core's form binder mangles nested lists of objects.
+function appendStoreConfigFields(fd: FormData, config?: StoreProductConfigBody) {
+  if (!config) return;
+  if (config.priceLabel) fd.append("priceLabel", config.priceLabel);
+  fd.append("trackStock", String(config.trackStock));
+  fd.append("detailsJson", JSON.stringify(config.details));
+  fd.append("fieldsJson", JSON.stringify(config.fields));
+  fd.append("deliveryFieldsJson", JSON.stringify(config.deliveryFields));
+  fd.append("stagesJson", JSON.stringify(config.stages));
+}
+
 export async function getStoreProducts(page = 1, pageSize = 20, status?: string, search?: string) {
   const res = await institutionClient.get<ApiResponse<PagedResult<StoreProduct>>>("/store/products", {
     params: { page, pageSize, status: status || undefined, search: search || undefined },
@@ -1170,9 +1196,10 @@ export async function getStoreProduct(id: string) {
 }
 
 export async function createStoreProduct(body: CreateStoreProductBody) {
-  const { variantOptionTypes, variants, ...rest } = body;
+  const { variantOptionTypes, variants, config, ...rest } = body;
   const fd = toFormData(rest);
   appendStoreVariantFields(fd, variantOptionTypes, variants);
+  appendStoreConfigFields(fd, config);
   const res = await institutionClient.post<ApiResponse<StoreProduct>>("/store/products", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -1180,10 +1207,43 @@ export async function createStoreProduct(body: CreateStoreProductBody) {
 }
 
 export async function updateStoreProduct(id: string, body: UpdateStoreProductBody) {
-  const { variantOptionTypes, variants, ...rest } = body;
+  const { variantOptionTypes, variants, config, ...rest } = body;
   const fd = toFormData(rest);
   appendStoreVariantFields(fd, variantOptionTypes, variants);
+  appendStoreConfigFields(fd, config);
   const res = await institutionClient.put<ApiResponse<StoreProduct>>(`/store/products/${id}`, fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data!;
+}
+
+export async function getStoreTemplates() {
+  const res = await institutionClient.get<ApiResponse<StoreProductTemplate[]>>("/store/templates");
+  return res.data.data ?? [];
+}
+
+export async function createStoreTemplate(body: StoreProductConfigBody & { name: string; description?: string; deliveryInfo?: string }) {
+  const res = await institutionClient.post<ApiResponse<StoreProductTemplate>>("/store/templates", body);
+  return res.data.data!;
+}
+
+export async function updateStoreTemplate(id: string, body: StoreProductConfigBody & { name: string; description?: string; deliveryInfo?: string }) {
+  const res = await institutionClient.put<ApiResponse<StoreProductTemplate>>(`/store/templates/${id}`, body);
+  return res.data.data!;
+}
+
+export async function deleteStoreTemplate(id: string) {
+  const res = await institutionClient.delete<ApiResponse<unknown>>(`/store/templates/${id}`);
+  return res.data;
+}
+
+/** Moves one ordered item to a stage and/or adds a note (and optionally a file handed back to the buyer). */
+export async function updateStoreOrderItem(orderId: string, itemIndex: number, body: { stage?: string; note?: string; attachment?: File }) {
+  const fd = new FormData();
+  if (body.stage) fd.append("stage", body.stage);
+  if (body.note) fd.append("note", body.note);
+  if (body.attachment) fd.append("attachment", body.attachment);
+  const res = await institutionClient.post<ApiResponse<StoreOrder>>(`/store/orders/${orderId}/items/${itemIndex}/update`, fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data.data!;

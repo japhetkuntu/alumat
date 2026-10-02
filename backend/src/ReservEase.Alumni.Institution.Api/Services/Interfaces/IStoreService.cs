@@ -15,4 +15,9 @@ public interface IStoreService
     Task<IApiResponse<StoreSettingsResponse>> GetSettingsAsync();
     Task<IApiResponse<StoreSettingsResponse>> UpdateSettingsAsync(UpdateStoreSettingsRequest request, AuthData admin);
     Task<IApiResponse<StoreOrderDto>> UpdateDeliveryStatusAsync(string orderId, string? newStatus, AuthData admin);
+    Task<IApiResponse<List<StoreProductTemplateDto>>> GetTemplatesAsync();
+    Task<IApiResponse<StoreProductTemplateDto>> CreateTemplateAsync(StoreProductTemplateRequest request, AuthData admin);
+    Task<IApiResponse<StoreProductTemplateDto>> UpdateTemplateAsync(string templateId, StoreProductTemplateRequest request, AuthData admin);
+    Task<IApiResponse<object>> DeleteTemplateAsync(string templateId);
+    Task<IApiResponse<StoreOrderDto>> UpdateOrderItemAsync(string orderId, int itemIndex, UpdateStoreOrderItemRequest request, AuthData admin);
 }

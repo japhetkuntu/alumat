@@ -22,6 +22,28 @@ public class StoreOrderItem
     /// <summary>Snapshot of the variant's option values at purchase time, e.g. {"Size":"Medium"}.</summary>
     public Dictionary<string, string>? VariantOptions { get; set; }
     public string? Sku { get; set; }
+
+    /// <summary>What the buyer filled in for this item (questions and delivery details), with the labels as they were at purchase time.</summary>
+    public List<StoreOrderItemAnswer> Answers { get; set; } = [];
+
+    /// <summary>Snapshot of the product's stages at purchase time. Empty means the order-level delivery status applies instead.</summary>
+    public List<string> Stages { get; set; } = [];
+    /// <summary>Current position in <see cref="Stages"/>. Null when <see cref="Stages"/> is empty.</summary>
+    public string? CurrentStage { get; set; }
+    /// <summary>Stage changes and staff notes for this item, newest last.</summary>
+    public List<ServiceRequestUpdate> Updates { get; set; } = [];
+}
+
+/// <summary>One answer a buyer gave while ordering an item — stored with its label so a later edit to the product's form never changes what a past order shows.</summary>
+public class StoreOrderItemAnswer
+{
+    /// <summary>"Details" or "Delivery".</summary>
+    public string Section { get; set; } = "Details";
+    public string Key { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    /// <summary>Text, TextArea, Number, Date, Select or File — File answers hold the uploaded file's URL in <see cref="Value"/>.</summary>
+    public string Type { get; set; } = "Text";
+    public string Value { get; set; } = string.Empty;
 }
 
 /// <summary>One entry in a <see cref="StoreOrder"/>'s delivery status timeline.</summary>

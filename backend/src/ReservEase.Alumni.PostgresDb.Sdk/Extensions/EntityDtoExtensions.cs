@@ -189,6 +189,38 @@ public static class EntityDtoExtensions
         CreatedAt = p.CreatedAt,
         VariantOptionTypes = p.VariantOptionTypes,
         Variants = (variants ?? []).Select(v => v.ToDto(p)).ToList(),
+        PriceLabel = p.PriceLabel,
+        TrackStock = p.TrackStock,
+        Details = p.Details.Select(d => d.ToDto()).ToList(),
+        Fields = p.Fields.Select(f => f.ToDto()).ToList(),
+        DeliveryFields = p.DeliveryFields.Select(f => f.ToDto()).ToList(),
+        Stages = p.Stages,
+    };
+
+    public static StoreDetailItemDto ToDto(this StoreDetailItem d) => new() { Label = d.Label, Value = d.Value };
+
+    public static ServiceFieldDefinitionDto ToDto(this ServiceFieldDefinition f) => new()
+    {
+        Key = f.Key,
+        Label = f.Label,
+        Type = f.Type,
+        Required = f.Required,
+        Options = f.Options,
+        HelpText = f.HelpText,
+    };
+
+    public static StoreProductTemplateDto ToDto(this StoreProductTemplate t) => new()
+    {
+        Id = t.Id,
+        Name = t.Name,
+        Description = t.Description,
+        PriceLabel = t.PriceLabel,
+        TrackStock = t.TrackStock,
+        DeliveryInfo = t.DeliveryInfo,
+        Details = t.Details.Select(d => d.ToDto()).ToList(),
+        Fields = t.Fields.Select(f => f.ToDto()).ToList(),
+        DeliveryFields = t.DeliveryFields.Select(f => f.ToDto()).ToList(),
+        Stages = t.Stages,
     };
 
     public static StoreProductVariantDto ToDto(this StoreProductVariant v, StoreProduct parentProduct) => new()
@@ -219,6 +251,17 @@ public static class EntityDtoExtensions
             VariantId = i.VariantId,
             VariantOptions = i.VariantOptions,
             Sku = i.Sku,
+            Answers = i.Answers.Select(a => new StoreOrderItemAnswerDto { Section = a.Section, Key = a.Key, Label = a.Label, Type = a.Type, Value = a.Value }).ToList(),
+            Stages = i.Stages,
+            CurrentStage = i.CurrentStage,
+            Updates = i.Updates.Select(u => new ServiceRequestUpdateDto
+            {
+                ChangedAt = u.ChangedAt,
+                Stage = u.Stage,
+                Note = u.Note,
+                AttachmentUrl = u.AttachmentUrl,
+                ChangedByStaffName = u.ChangedByStaffName,
+            }).ToList(),
         }).ToList(),
         TotalAmount = o.TotalAmount,
         Status = o.Status,

@@ -122,8 +122,10 @@ export default function MyStoreOrdersPage() {
                   <div className="space-y-3 border-t border-border/50 pt-3.5">
                     {o.items.map((item, i) => {
                       const label = variantLabel(item.variantOptions);
+                      const hasProgress = o.status === "Successful" && (item.stages?.length ?? 0) > 0;
                       return (
-                        <div key={i} className="flex items-center gap-3">
+                        <div key={i} className={`space-y-3${i > 0 ? " pt-3.5 border-t border-border/40" : ""}`}>
+                        <div className="flex items-center gap-3">
                           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-muted/60 border border-border/40">
                             {item.productImageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -133,7 +135,7 @@ export default function MyStoreOrdersPage() {
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[13.5px] font-medium text-foreground truncate">
+                            <p className="text-[13.5px] font-medium text-foreground break-words">
                               {item.productName}
                               {label && <span className="text-muted-foreground"> ({label})</span>}
                             </p>
@@ -148,11 +150,50 @@ export default function MyStoreOrdersPage() {
                             {formatCurrency(item.unitPrice * item.quantity)}
                           </span>
                         </div>
+                        {item.answers?.length > 0 && (
+                          <dl className="sm:ml-[68px] grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
+                            {item.answers.map((a) => (
+                              <div key={`${a.section}:${a.key}`} className="min-w-0">
+                                <dt className="text-[11.5px] text-muted-foreground">{a.label}</dt>
+                                <dd className="text-[12.5px] font-medium break-words">
+                                  {a.type === "File" ? (
+                                    <a href={a.value} target="_blank" rel="noreferrer" className="underline">View file</a>
+                                  ) : (
+                                    a.value || "—"
+                                  )}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+                        {hasProgress && (
+                          <div className="sm:ml-[68px] space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] font-semibold">Progress</span>
+                              {item.currentStage && <Badge variant="info" size="sm">{item.currentStage}</Badge>}
+                            </div>
+                            {item.updates?.length > 0 && (
+                              <ol className="space-y-2">
+                                {[...item.updates].reverse().map((u, ui) => (
+                                  <li key={ui}>
+                                    <p className="text-[12.5px] font-medium leading-tight">{u.stage ?? "Update"}</p>
+                                    {u.note && <p className="text-[12px] text-muted-foreground mt-0.5">{u.note}</p>}
+                                    {u.attachmentUrl && (
+                                      <a href={u.attachmentUrl} target="_blank" rel="noreferrer" className="text-[12px] underline text-muted-foreground">Attachment</a>
+                                    )}
+                                    <p className="text-[11px] text-muted-foreground">{formatDate(u.changedAt)}</p>
+                                  </li>
+                                ))}
+                              </ol>
+                            )}
+                          </div>
+                        )}
+                        </div>
                       );
                     })}
                   </div>
 
-                  {o.deliveryStatus && (
+                  {o.deliveryStatus && !o.items.some((it) => it.stages?.length > 0) && (
                     <div className="pt-3.5 border-t border-border/50 space-y-2.5">
                       <div className="flex items-center gap-2">
                         <span className="text-[12px] font-semibold text-foreground">Delivery status</span>
