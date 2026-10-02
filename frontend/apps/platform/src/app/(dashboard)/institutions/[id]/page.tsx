@@ -474,28 +474,28 @@ export default function InstitutionDetailPage() {
       </p>
 
       <Card className="mb-5">
-        <CardContent className="p-5 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-4">
+        <CardContent className="p-4 sm:p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <UserAvatar src={inst.logoUrl} name={inst.name} size="lg" />
-            <div>
-              <h1 className="text-[20px] font-bold flex items-center gap-2">
-                {inst.name}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                <h1 className="text-[20px] font-bold leading-tight">{inst.name}</h1>
                 <button
                   type="button"
                   aria-label="Rename institution"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => { setNameDraft(inst.name); setRenameOpen(true); }}
                 >
-                  <Pencil size={13} />
+                  <Pencil size={14} />
                 </button>
                 <Badge variant={badge.variant}>{badge.label}</Badge>
-              </h1>
-              <p className="text-[13px] text-muted-foreground font-mono mt-1">
+              </div>
+              <p className="text-[13px] text-muted-foreground font-mono mt-1.5 break-all">
                 {inst.customDomain ?? inst.memberPortalUrl.replace(/^https?:\/\//, "")} &middot; {inst.memberCount.toLocaleString()} members
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 max-sm:[&_button]:w-full max-sm:[&>*]:flex-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={statusMutation.isPending}>More actions</Button>
@@ -523,7 +523,7 @@ export default function InstitutionDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="flex gap-6 border-b border-border mb-5 overflow-x-auto">
+      <div className="-mx-4 flex gap-6 overflow-x-auto border-b border-border px-4 mb-5 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => (
           <button
             key={t}
@@ -1207,7 +1207,7 @@ export default function InstitutionDetailPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px]">
                     <thead>
-                      <tr className="border-b border-border text-left text-[11.5px] text-muted-foreground uppercase tracking-wide">
+                      <tr className="border-b border-border text-left text-[12px] text-muted-foreground uppercase tracking-wide">
                         <th className="px-5 py-2.5 font-semibold">Payer</th>
                         <th className="px-5 py-2.5 font-semibold">Description</th>
                         <th className="px-5 py-2.5 font-semibold">Source</th>
@@ -1227,7 +1227,7 @@ export default function InstitutionDetailPage() {
                         >
                           <td className="px-5 py-3">
                             <p className="font-medium">{p.payerName ?? "—"}</p>
-                            <p className="text-[11.5px] text-muted-foreground">{p.payerEmail}</p>
+                            <p className="text-[12px] text-muted-foreground">{p.payerEmail}</p>
                           </td>
                           <td className="px-5 py-3">{p.description}</td>
                           <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : p.source === "StoreOrder" ? "Store order" : "Service request"}</td>
@@ -1405,7 +1405,7 @@ export default function InstitutionDetailPage() {
             <div className="space-y-5 mt-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Payer</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide">Payer</p>
                   <p className="text-[13px] font-medium mt-0.5">{paymentDetail.payerName ?? "—"}</p>
                   <p className="text-[12px] text-muted-foreground">{paymentDetail.payerEmail ?? "—"}</p>
                   {paymentDetail.memberNumber && (
@@ -1413,7 +1413,7 @@ export default function InstitutionDetailPage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Status</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide">Status</p>
                   <div className="mt-0.5">
                     <Badge variant={paymentDetail.status === "Successful" ? "success" : paymentDetail.status === "Pending" ? "warning" : "destructive"} size="sm">
                       {paymentDetail.status}
@@ -1428,21 +1428,21 @@ export default function InstitutionDetailPage() {
 
               {paymentDetail.campaignTitle && (
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Campaign</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide">Campaign</p>
                   <p className="text-[13px] font-medium mt-0.5">{paymentDetail.campaignTitle}</p>
                 </div>
               )}
 
               {paymentDetail.items && paymentDetail.items.length > 0 && (
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide mb-1.5">Items</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide mb-1.5">Items</p>
                   <div className="border border-border rounded-lg divide-y divide-border">
                     {paymentDetail.items.map((item, idx) => (
                       <div key={idx} className="px-3 py-2 flex items-center justify-between gap-3">
                         <div>
                           <p className="text-[13px] font-medium">{item.productName}</p>
                           {item.variantOptions && Object.keys(item.variantOptions).length > 0 && (
-                            <p className="text-[11.5px] text-muted-foreground">
+                            <p className="text-[12px] text-muted-foreground">
                               {Object.entries(item.variantOptions).map(([k, v]) => `${k}: ${v}`).join(", ")}
                             </p>
                           )}
@@ -1457,7 +1457,7 @@ export default function InstitutionDetailPage() {
               )}
 
               <div>
-                <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide mb-1.5">Fee breakdown</p>
+                <p className="text-[12px] text-muted-foreground uppercase tracking-wide mb-1.5">Fee breakdown</p>
                 <div className="border border-border rounded-lg divide-y divide-border text-[13px]">
                   <div className="px-3 py-2 flex items-center justify-between">
                     <span className="text-muted-foreground">Amount institution receives</span>
@@ -1484,18 +1484,18 @@ export default function InstitutionDetailPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Payment method</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide">Payment method</p>
                   <p className="text-[13px] mt-0.5">{paymentDetail.paymentMethod}{paymentDetail.channel ? ` · ${paymentDetail.channel}` : ""}</p>
                 </div>
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Transaction ref</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide">Transaction ref</p>
                   <p className="text-[13px] mt-0.5 font-mono">{paymentDetail.transactionRef ?? "—"}</p>
                 </div>
               </div>
 
               {paymentDetail.gatewayResponse && (
                 <div>
-                  <p className="text-[11.5px] text-muted-foreground uppercase tracking-wide">Gateway response</p>
+                  <p className="text-[12px] text-muted-foreground uppercase tracking-wide">Gateway response</p>
                   <p className="text-[13px] mt-0.5">{paymentDetail.gatewayResponse}</p>
                 </div>
               )}

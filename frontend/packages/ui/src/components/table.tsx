@@ -9,7 +9,7 @@ const STACK_CLASSES = [
   "[&_tr]:max-md:block [&_tr]:max-md:!h-auto [&_tr]:max-md:border [&_tr]:max-md:border-border/60 [&_tr]:max-md:mb-3 [&_tr]:max-md:p-3 [&_tbody_tr:last-child]:max-md:border",
   "[&_td]:max-md:flex [&_td]:max-md:items-center [&_td]:max-md:justify-between [&_td]:max-md:gap-4 [&_td]:max-md:!px-0 [&_td]:max-md:!py-1.5 [&_td]:max-md:text-right",
   "[&_td:first-child]:max-md:block [&_td:first-child]:max-md:text-left [&_td:first-child]:before:max-md:hidden",
-  "[&_td]:before:max-md:content-[attr(data-label)] [&_td]:before:max-md:text-left [&_td]:before:max-md:text-[11px] [&_td]:before:max-md:font-bold [&_td]:before:max-md:uppercase [&_td]:before:max-md:tracking-[.08em] [&_td]:before:max-md:text-muted-foreground",
+  "[&_td]:before:max-md:content-[attr(data-label)] [&_td]:before:max-md:text-left [&_td]:before:max-md:text-[12px] [&_td]:before:max-md:font-bold [&_td]:before:max-md:uppercase [&_td]:before:max-md:tracking-[.08em] [&_td]:before:max-md:text-muted-foreground",
 ].join(" ");
 
 /** Copies each column header onto its cells so the stacked phone layout can show "Label  value" rows. */
@@ -93,7 +93,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
       ref={ref}
       className={cn(
         "h-11 px-4 py-3 text-left align-middle",
-        "text-[11px] font-bold uppercase tracking-[.08em] text-muted-foreground",
+        "text-[12px] font-bold uppercase tracking-[.08em] text-muted-foreground",
         "[&:has([role=checkbox])]:pr-0",
         className
       )}

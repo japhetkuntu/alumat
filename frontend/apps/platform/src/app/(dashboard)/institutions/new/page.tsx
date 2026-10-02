@@ -15,6 +15,7 @@ import { createInstitution, getBaseDomains, getOnboardingLead, updateOnboardingL
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@alumni/ui";
 import { getBanks, resolveAccount } from "@/lib/platform-api";
+import { PageHeading } from "@/components/platform/page-heading";
 
 const STEPS = ["Institution details", "Branding", "Payments & payouts", "First admin", "Review"] as const;
 
@@ -165,19 +166,29 @@ function NewInstitutionPageContent() {
   return (
     <div className="p-4 sm:p-7 max-w-[1100px]">
       <p className="text-[12px] text-primary font-semibold mb-2">&larr; Institutions</p>
-      <div className="flex items-end justify-between mb-5">
-        <div>
-          <h1 className="text-[24px] font-bold">{isTrial ? "Start a trial" : "Add institution"}</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">
-            {isTrial
-              ? "Set up the institution on a trial. Converting the onboarding request to full later ends the trial."
-              : "Create a tenant and establish its first Institution Portal administrator."}
-          </p>
-        </div>
+      <PageHeading
+        title={isTrial ? "Start a trial" : "Add institution"}
+        description={isTrial
+          ? "Set up the institution on a trial. Converting the onboarding request to full later ends the trial."
+          : "Create a tenant and establish its first Institution Portal administrator."}
+      >
         <Button variant="outline" onClick={() => router.push("/institutions")}>Cancel</Button>
+      </PageHeading>
+
+      {/* Phone: five cramped cells become "Step n of 5" with a progress bar. */}
+      <div className="sm:hidden mb-5" role="status" aria-label={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}>
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <p className="text-[15px] font-semibold">{STEPS[step]}</p>
+          <p className="text-[13px] text-muted-foreground whitespace-nowrap">Step {step + 1} of {STEPS.length}</p>
+        </div>
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${STEPS.length}, 1fr)` }} aria-hidden="true">
+          {STEPS.map((s, i) => (
+            <span key={s} className={`h-1.5 ${i <= step ? "bg-primary" : "bg-border"}`} />
+          ))}
+        </div>
       </div>
 
-      <div className="flex border border-border rounded-lg overflow-hidden mb-6 text-[13px]">
+      <div className="hidden sm:flex border border-border rounded-lg overflow-hidden mb-6 text-[13px]">
         {STEPS.map((s, i) => (
           <div
             key={s}
@@ -252,10 +263,10 @@ function NewInstitutionPageContent() {
                     <p className="text-[12px] text-muted-foreground -mt-0.5">
                       Enter a graduation-year range to auto-create one batch per year, named after the year by default, renameable later. Leave blank to add batches manually afterward.
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="space-y-1.5"><Label>Start year</Label><Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="e.g. 1990" className="w-[160px]" /></div>
-                      <span className="text-[13px] text-muted-foreground">to</span>
-                      <div className="space-y-1.5"><Label>End year</Label><Input type="number" value={form.batchEndYear} onChange={(e) => update("batchEndYear", e.target.value)} placeholder="e.g. 2026" className="w-[160px]" /></div>
+                    <div className="grid max-w-[420px] grid-cols-[1fr_auto_1fr] items-end gap-3">
+                      <div className="space-y-1.5"><Label>Start year</Label><Input type="number" value={form.batchStartYear} onChange={(e) => update("batchStartYear", e.target.value)} placeholder="e.g. 1990" className="w-full" /></div>
+                      <span className="pb-3 text-[13px] text-muted-foreground">to</span>
+                      <div className="space-y-1.5"><Label>End year</Label><Input type="number" value={form.batchEndYear} onChange={(e) => update("batchEndYear", e.target.value)} placeholder="e.g. 2026" className="w-full" /></div>
                     </div>
                   </div>
                 )}
@@ -423,7 +434,7 @@ function NewInstitutionPageContent() {
               </>
             )}
 
-            <div className="flex justify-between pt-4">
+            <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-between">
               <Button variant="outline" disabled={step === 0 || submitting} onClick={() => setStep((s) => s - 1)}>Back</Button>
               <Button onClick={next} disabled={submitting}>
                 {submitting ? "Creating…" : step === STEPS.length - 1 ? "Create institution" : `Continue to ${STEPS[step + 1]?.toLowerCase()}`}

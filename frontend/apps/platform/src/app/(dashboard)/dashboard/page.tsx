@@ -11,6 +11,7 @@ import { formatCurrency } from "@alumni/ui";
 import { getActivationScorecard, getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 import { MyTasksCard } from "@/components/platform/work/my-tasks-card";
+import { PageHeading } from "@/components/platform/page-heading";
 
 function ListRowSkeleton() {
   return (
@@ -57,15 +58,11 @@ export default function PlatformDashboardPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-[26px] font-bold">Platform overview</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">Platform health as of today &middot; every institution at a glance</p>
-        </div>
+      <PageHeading title="Platform overview" description="Platform health as of today · every institution at a glance">
         <Link href="/institutions/new">
           <Button>Add institution</Button>
         </Link>
-      </div>
+      </PageHeading>
 
       {/* Revenue leads — the one figure platform staff check first when
           scanning fleet health, everything else demoted to a supporting row. */}
@@ -78,7 +75,7 @@ export default function PlatformDashboardPage() {
             sub="Platform fee collected across all institutions"
           />
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-sm:[&>*:nth-child(3)]:col-span-2">
           {summaryLoading ? <StatCardSkeleton /> : (
             <StatCard
               label="Total institutions"
@@ -138,7 +135,7 @@ export default function PlatformDashboardPage() {
         <Card style={{ borderColor: attentionList.length + stalled.length > 0 ? "var(--border-emphasis)" : undefined }}>
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <p className="text-[14px] font-semibold">Needs attention</p>
-            <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all</Link>
+            <Link href="/institutions" className="inline-block -my-2.5 py-2.5 text-[13px] font-semibold text-accent hover:underline">View all</Link>
           </div>
           <CardContent className="p-0">
             {attentionLoading && <><ListRowSkeleton /><ListRowSkeleton /><ListRowSkeleton /></>}
@@ -170,7 +167,7 @@ export default function PlatformDashboardPage() {
       <Card className="mt-4">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <p className="text-[14px] font-semibold">Recent signups</p>
-          <Link href="/institutions" className="text-[12px] font-semibold text-accent hover:underline">View all institutions</Link>
+          <Link href="/institutions" className="inline-block -my-2.5 py-2.5 text-[13px] font-semibold text-accent hover:underline">View all institutions</Link>
         </div>
         <CardContent className="p-0">
           {institutionsLoading && <><ListRowSkeleton /><ListRowSkeleton /><ListRowSkeleton /></>}

@@ -65,7 +65,7 @@ export function TargetProgressBar({ target }: { target: WorkTarget }) {
       </div>
       <Progress value={p.percent} />
       {!ended && (
-        <p className="text-[11.5px] text-muted-foreground mt-1.5">
+        <p className="text-[12px] text-muted-foreground mt-1.5">
           Should be at {formatMetricValue(target.metric, p.expected)} by today to finish on time.
         </p>
       )}

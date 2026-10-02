@@ -64,7 +64,7 @@ function RequestLinkForm() {
   return (
     <div className="w-full max-w-[420px] mx-auto space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-2">
-        <p className="text-[11.5px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>Account recovery</p>
+        <p className="text-[12px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>Account recovery</p>
         <h1 className="text-[26px] font-bold leading-tight" style={{ color: "var(--foreground)" }}>Reset your password</h1>
         <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>
           Enter your work email and we&apos;ll send instructions if the account is eligible.
@@ -125,7 +125,7 @@ function SetNewPasswordForm({ token, email }: { token: string; email: string }) 
   return (
     <div className="w-full max-w-[420px] mx-auto space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-2">
-        <p className="text-[11.5px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>Account recovery</p>
+        <p className="text-[12px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>Account recovery</p>
         <h1 className="text-[26px] font-bold leading-tight" style={{ color: "var(--foreground)" }}>Set a new password</h1>
         <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>Resetting the password for <b>{email}</b>.</p>
       </div>

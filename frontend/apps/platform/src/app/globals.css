@@ -214,6 +214,11 @@
   min-width: 0;
 }
 
+/* Phones: 28px card padding eats a third of a 375px screen. 20px lines up with the px-5 used by card section headers. */
+@media (max-width: 640px) {
+  :root { --space-card: 20px; }
+}
+
 /* Button reset to match Paystack */
 .btn {
   border-radius: 0px;

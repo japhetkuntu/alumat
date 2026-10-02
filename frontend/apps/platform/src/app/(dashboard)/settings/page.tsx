@@ -12,6 +12,7 @@ import { Lock, Eye, EyeOff, AlertCircle, Loader2, Landmark } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { changePlatformPassword, getPlatformSettings, updatePlatformSettings } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { PageHeading } from "@/components/platform/page-heading";
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -79,8 +80,7 @@ export default function PlatformSettingsPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1100px]">
-      <h1 className="text-[24px] font-bold">Settings</h1>
-      <p className="text-muted-foreground text-[13px] mt-1 mb-6">Global platform configuration.</p>
+      <PageHeading title="Settings" description="Global platform configuration." />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <Card>
@@ -101,7 +101,7 @@ export default function PlatformSettingsPage() {
             <div className="pt-2 flex items-center justify-between gap-4 border-t border-border">
               <div className="pt-3">
                 <p className="text-[13px] font-semibold">Log out</p>
-                <p className="text-[11.5px] text-muted-foreground mt-0.5">Sign out of this device.</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Sign out of this device.</p>
               </div>
               <Button variant="outline" size="sm" className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={logout}>
                 Log out

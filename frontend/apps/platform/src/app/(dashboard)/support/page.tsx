@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { FormError } from "@alumni/ui";
 import { addSupportCaseNote, createSupportCase, getSupportCases, updateSupportCaseStatus } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { PageHeading } from "@/components/platform/page-heading";
 
 export default function SupportPage() {
   const queryClient = useQueryClient();
@@ -67,13 +68,9 @@ export default function SupportPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-[24px] font-bold">Support</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">Triage institution issues from report to accountable resolution.</p>
-        </div>
+      <PageHeading title="Support" description="Triage institution issues from report to accountable resolution.">
         <Button onClick={() => setCreateOpen(true)}>Create case</Button>
-      </div>
+      </PageHeading>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4">
         <Card>

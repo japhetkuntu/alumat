@@ -62,7 +62,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
       <div className="px-4 pt-5 pb-4 border-b border-sidebar-border flex items-center justify-between">
         <div className="flex flex-col gap-1.5 min-w-0">
           <img src="/alumunion-logo-white.svg" alt="AlumUnion" width={1490} height={405} className="h-9 w-auto object-contain object-left" />
-          <span className="font-semibold text-[11.5px] tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.65)" }}>Platform Portal</span>
+          <span className="font-semibold text-[12px] tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.65)" }}>Platform Portal</span>
         </div>
         {onClose && (
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-sidebar-foreground hover:bg-white/10 hover:text-white" onClick={onClose} aria-label="Close sidebar">
@@ -98,11 +98,11 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
       <div className="p-4 mt-auto border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-4 px-1">
           <Avatar className="h-8 w-8 ring-2 ring-sidebar shadow-md">
-            <AvatarFallback name={user?.name} className="text-[10px]">{getInitials(user?.name ?? "P")}</AvatarFallback>
+            <AvatarFallback name={user?.name} className="text-[12px]">{getInitials(user?.name ?? "P")}</AvatarFallback>
           </Avatar>
           <div className="overflow-hidden flex-1">
             <p className="text-[12px] font-bold truncate leading-tight text-white">{user?.name ?? "Platform staff"}</p>
-            <p className="text-[10px] text-blue-300 font-bold uppercase tracking-wider">{user?.role ?? "SuperAdmin"}</p>
+            <p className="text-[12px] text-blue-300 font-bold uppercase tracking-wider">{user?.role ?? "SuperAdmin"}</p>
           </div>
         </div>
       </div>

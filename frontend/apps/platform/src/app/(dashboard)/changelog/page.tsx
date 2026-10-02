@@ -48,7 +48,7 @@ function EntryCard({ entry }: { entry: ChangelogEntry }) {
         {entry.scopes.map((s) => (
           <span
             key={s}
-            className="text-[10.5px] font-bold uppercase tracking-wide px-2 py-0.5"
+            className="text-[12px] font-bold uppercase tracking-wide px-2 py-0.5"
             style={{ background: `color-mix(in oklch, ${SCOPE_COLOR[s]} 12%, transparent)`, color: SCOPE_COLOR[s] }}
           >
             {s}

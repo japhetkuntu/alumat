@@ -49,6 +49,7 @@ import {
   type ActivationScorecardItem,
   type MilestoneProgress,
 } from "@/lib/platform-api";
+import { PageHeading } from "@/components/platform/page-heading";
 
 type Filter = "all" | "overdue" | "stalled" | "progress" | "activated";
 
@@ -164,28 +165,20 @@ function ScorecardTab() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-[24px] font-bold">Activation</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">
-            Which institutions are actually using the platform, and how the onboarding pipeline is moving.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            disabled={!data?.items.length}
-            onClick={() => downloadCsv(`activation-${new Date().toISOString().slice(0, 10)}.csv`, scorecardToCsv(data?.items ?? []))}
-          >
-            Export CSV
+      <PageHeading title="Activation" description="Which institutions are actually using the platform, and how the onboarding pipeline is moving.">
+        <Button
+          variant="outline"
+          disabled={!data?.items.length}
+          onClick={() => downloadCsv(`activation-${new Date().toISOString().slice(0, 10)}.csv`, scorecardToCsv(data?.items ?? []))}
+        >
+          Export CSV
+        </Button>
+        {isSuperAdmin && (
+          <Button variant="outline" onClick={openTargetDialog}>
+            {data?.targetCount ? "Edit target" : "Set a target"}
           </Button>
-          {isSuperAdmin && (
-            <Button variant="outline" onClick={openTargetDialog}>
-              {data?.targetCount ? "Edit target" : "Set a target"}
-            </Button>
-          )}
-        </div>
-      </div>
+        )}
+      </PageHeading>
 
       {/* Goal line and milestones — only when a target is set; progress counts activated institutions, not sign-ups. */}
       {data?.targetCount ? (
@@ -331,7 +324,7 @@ function ScorecardTab() {
                             <button
                               type="button"
                               onClick={() => setTaskFor({ title: `${item.name}: ${item.nextStep}`, institutionId: item.institutionId })}
-                              className="ml-2 text-[12px] font-semibold text-primary underline underline-offset-2 hover:no-underline"
+                              className="ml-2 inline-block py-2 -my-2 text-[13px] font-semibold text-primary underline underline-offset-2 hover:no-underline"
                             >
                               Create task
                             </button>
@@ -434,15 +427,15 @@ function ScorecardTab() {
               {milestones.map((m, i) => (
                 <div key={i} className="grid grid-cols-[1.3fr_1fr_1fr_auto] gap-2 items-end">
                   <div className="grid gap-1">
-                    {i === 0 && <span className="text-[11.5px] text-muted-foreground">Date</span>}
+                    {i === 0 && <span className="text-[12px] text-muted-foreground">Date</span>}
                     <Input type="date" aria-label="Milestone date" value={m.date} onChange={(e) => setMilestones(milestones.map((x, j) => (j === i ? { ...x, date: e.target.value } : x)))} />
                   </div>
                   <div className="grid gap-1">
-                    {i === 0 && <span className="text-[11.5px] text-muted-foreground">Live</span>}
+                    {i === 0 && <span className="text-[12px] text-muted-foreground">Live</span>}
                     <Input type="number" min={0} aria-label="Live target" value={m.liveTarget} onChange={(e) => setMilestones(milestones.map((x, j) => (j === i ? { ...x, liveTarget: e.target.value } : x)))} />
                   </div>
                   <div className="grid gap-1">
-                    {i === 0 && <span className="text-[11.5px] text-muted-foreground">Activated</span>}
+                    {i === 0 && <span className="text-[12px] text-muted-foreground">Activated</span>}
                     <Input type="number" min={0} aria-label="Activated target" value={m.activatedTarget} onChange={(e) => setMilestones(milestones.map((x, j) => (j === i ? { ...x, activatedTarget: e.target.value } : x)))} />
                   </div>
                   <Button size="sm" variant="ghost" aria-label="Remove milestone" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))}>

@@ -43,7 +43,7 @@ export default function TargetDetailPage() {
   });
 
   const back = (
-    <Link href="/activation?tab=targets" className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground mb-4">
+    <Link href="/activation?tab=targets" className="inline-flex min-h-10 items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground mb-2">
       <ArrowLeft size={14} /> All targets
     </Link>
   );

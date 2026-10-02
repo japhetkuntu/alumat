@@ -16,6 +16,7 @@ import { FormError } from "@alumni/ui";
 import { createPlatformStaff, getPlatformStaff, updatePlatformStaff, type PlatformStaffItem } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
+import { PageHeading } from "@/components/platform/page-heading";
 
 export default function PlatformStaffPage() {
   const { isSuperAdmin } = useAuth();
@@ -78,13 +79,9 @@ export default function PlatformStaffPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-[24px] font-bold">Platform staff</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">Manage internal access, roles, and accountability.</p>
-        </div>
+      <PageHeading title="Platform staff" description="Manage internal access, roles, and accountability.">
         <Button onClick={() => setInviteOpen(true)}>Invite staff member</Button>
-      </div>
+      </PageHeading>
 
       <Card>
         <div className="px-5 py-4 border-b border-border">

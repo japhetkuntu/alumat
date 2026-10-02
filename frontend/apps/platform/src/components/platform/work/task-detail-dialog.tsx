@@ -115,7 +115,7 @@ export function TaskDetailDialog({ taskId, onClose }: { taskId: string; onClose:
                   <ul className="space-y-2.5 max-h-56 overflow-y-auto">
                     {data!.notes.map((n) => (
                       <li key={n.id} className="text-[13px]">
-                        <p className="text-[11.5px] text-muted-foreground">{n.authorName} · {formatDateTime(n.createdAt)}</p>
+                        <p className="text-[12px] text-muted-foreground">{n.authorName} · {formatDateTime(n.createdAt)}</p>
                         <p className="whitespace-pre-wrap">{n.text}</p>
                       </li>
                     ))}

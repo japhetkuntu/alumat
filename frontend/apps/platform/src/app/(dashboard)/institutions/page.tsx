@@ -15,6 +15,7 @@ import { formatDate, formatCurrency } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
 import { getInstitutions, type InstitutionListItem } from "@/lib/platform-api";
 import { InstitutionStatus } from "@/types";
+import { PageHeading } from "@/components/platform/page-heading";
 
 const STATUS_FILTERS: { label: string; value: InstitutionStatus | "All" }[] = [
   { label: "All", value: "All" },
@@ -81,20 +82,14 @@ export default function InstitutionsPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <div className="flex items-end justify-between mb-1">
-        <div>
-          <h1 className="text-[24px] font-bold">Institutions</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">A complete registry of tenant institutions and their operational state.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={exporting} onClick={exportCsv}>
-            {exporting ? "Exporting…" : "Export CSV"}
-          </Button>
-          <Link href="/institutions/new">
-            <Button>Add institution</Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeading title="Institutions" description="A complete registry of tenant institutions and their operational state.">
+        <Button variant="outline" disabled={exporting} onClick={exportCsv}>
+          {exporting ? "Exporting…" : "Export CSV"}
+        </Button>
+        <Link href="/institutions/new">
+          <Button>Add institution</Button>
+        </Link>
+      </PageHeading>
 
       <Card className="mt-5 mb-4">
         <div className="p-4 flex flex-col sm:flex-row gap-3 sm:items-center">

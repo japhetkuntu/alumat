@@ -16,6 +16,7 @@ import {
   getPendingInstitutionPayouts, approveInstitutionPayout, rejectInstitutionPayout,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { PageHeading } from "@/components/platform/page-heading";
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -103,10 +104,9 @@ export default function BillingPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <h1 className="text-[24px] font-bold">Payments &amp; Revenue</h1>
-      <p className="text-muted-foreground text-[13px] mt-1 mb-6">Platform-wide revenue operations across every institution.</p>
+      <PageHeading title="Payments & Revenue" description="Platform-wide revenue operations across every institution." />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 max-sm:[&>*:nth-child(3)]:col-span-2">
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Active institutions</p><p className="text-[24px] font-bold mt-1">{activeInstitutions.length}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Suspended institutions</p><p className="text-[24px] font-bold mt-1">{suspendedCount}</p></CardContent></Card>
         <Card><CardContent className="p-5"><p className="text-[12px] text-muted-foreground">Total platform revenue</p><p className="text-[24px] font-bold mt-1">{formatCurrency(totalRevenue, "GHS")}</p></CardContent></Card>
@@ -164,7 +164,7 @@ export default function BillingPage() {
                 </TableBody>
               </Table>
             </Card>
-            <p className="text-[11px] text-muted-foreground mt-2">Estimated from confirmed transactions, not a figure confirmed by Paystack. Matches exactly what each institution's own SuperAdmins see on their dashboard.</p>
+            <p className="text-[12px] text-muted-foreground mt-2">Estimated from confirmed transactions, not a figure confirmed by Paystack. Matches exactly what each institution's own SuperAdmins see on their dashboard.</p>
           </>
         ) : null}
       </div>
@@ -210,7 +210,7 @@ export default function BillingPage() {
             </TableBody>
           </Table>
         </Card>
-        <p className="text-[11px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the batch over immediately, same platform fee percentage as its institution.</p>
+        <p className="text-[12px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the batch over immediately, same platform fee percentage as its institution.</p>
       </div>
 
       <div className="mb-5">
@@ -248,7 +248,7 @@ export default function BillingPage() {
             </TableBody>
           </Table>
         </Card>
-        <p className="text-[11px] text-muted-foreground mt-2">Approving creates (or links) the institution's own Paystack subaccount, same platform fee percentage already on file.</p>
+        <p className="text-[12px] text-muted-foreground mt-2">Approving creates (or links) the institution's own Paystack subaccount, same platform fee percentage already on file.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 mb-5 items-start">

@@ -13,6 +13,7 @@ import { InfoTip } from "@alumni/ui";
 import { UserAvatar, formatDate, formatDateTime } from "@alumni/ui";
 import { getPlatformMembers } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
+import { PageHeading } from "@/components/platform/page-heading";
 
 const STATUS_OPTIONS = ["All", "Active", "Pending", "Suspended", "Blocked", "Banned"] as const;
 const ACTIVITY_OPTIONS = [
@@ -53,12 +54,7 @@ export default function PlatformMembersPage() {
 
   return (
     <div className="p-5 sm:p-7 max-w-[1500px]">
-      <div className="mb-6 max-w-2xl">
-                <h1 className="text-[26px] font-bold tracking-tight">Member directory</h1>
-        <p className="text-muted-foreground text-[13px] mt-1.5">
-          Every member across all institutions, and whether they have signed in lately.
-        </p>
-      </div>
+      <PageHeading title="Member directory" description="Every member across all institutions, and whether they have signed in lately." />
 
       <Card>
         <div className="px-5 py-4 border-b border-border flex flex-col gap-4 lg:flex-row lg:items-center">

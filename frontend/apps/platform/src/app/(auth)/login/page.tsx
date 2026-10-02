@@ -101,7 +101,7 @@ export default function PlatformLoginPage() {
     <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-7">
         <div className="space-y-2">
-          <p className="text-[11.5px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>
+          <p className="text-[12px] font-bold tracking-[0.1em] uppercase" style={{ color: "var(--primary)" }}>
             Platform Portal
           </p>
           <h1
@@ -173,7 +173,7 @@ export default function PlatformLoginPage() {
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
+          <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
           <div className="h-px flex-1" style={{ background: "var(--border)" }} />
         </div>
 

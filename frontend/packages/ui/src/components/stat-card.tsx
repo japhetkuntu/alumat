@@ -54,7 +54,7 @@ export function StatCard({ label, value, sub, tone = "primary", variant = "defau
         >
           {label}
         </p>
-        {sub && <div className="text-[11px] sm:text-[11.5px] mt-1 text-muted-foreground leading-snug line-clamp-2 break-words">{sub}</div>}
+        {sub && <div className="text-[12px] mt-1 text-muted-foreground leading-snug line-clamp-2 break-words">{sub}</div>}
       </div>
     </div>
   );

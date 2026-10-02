@@ -49,7 +49,7 @@ export function InstitutionActivationCard({ institutionId }: { institutionId: st
 
   return (
     <Card className="lg:col-span-2">
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+      <div className="px-4 sm:px-5 py-4 border-b border-border flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div>
           <p className="text-[14px] font-semibold">Activation</p>
           {item && (
@@ -59,21 +59,21 @@ export function InstitutionActivationCard({ institutionId }: { institutionId: st
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
           {status && (
             <Badge variant={status === "Activated" ? "success" : status === "Overdue" ? "destructive" : status === "Stalled" ? "warning" : "neutral"}>
               {status}
             </Badge>
           )}
-          <Link href="/activation" className="text-[12px] font-semibold text-accent hover:underline">All institutions</Link>
+          <Link href="/activation" className="inline-block -my-2.5 py-2.5 text-[13px] font-semibold text-accent hover:underline">All institutions</Link>
         </div>
       </div>
-      <CardContent className="p-5">
+      <CardContent className="p-4 sm:p-5">
         {query.isError && <LoadError onRetry={() => query.refetch()} />}
         {query.isLoading && <Skeleton className="h-32 w-full" />}
         {item && (
           <>
-            <ul className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5 sm:gap-3">
               {item.criteria.map((c) => (
                 <li key={c.key} className="border border-border p-3">
                   <div className="flex items-center gap-1.5 text-[13px] font-semibold">

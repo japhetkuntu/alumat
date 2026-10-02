@@ -30,6 +30,7 @@ import {
   type OnboardingLeadStatus,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { PageHeading } from "@/components/platform/page-heading";
 
 const STATUS_LABELS: Record<OnboardingLeadStatus, string> = {
   New: "New",
@@ -183,12 +184,7 @@ export default function OnboardingLeadsPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <div className="flex items-end justify-between mb-6">
-        <div>
-          <h1 className="text-[24px] font-bold">Onboarding & Demo Requests</h1>
-          <p className="text-muted-foreground text-[13px] mt-1">Review onboarding and demo enquiries from the marketing site, follow up with contacts, and track institutions through demo and trial.</p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeading title="Onboarding & Demo Requests" description="Review onboarding and demo enquiries from the marketing site, follow up with contacts, and track institutions through demo and trial.">
         <Button variant="outline" onClick={() => setImportOpen(true)}>Import CSV</Button>
         <Button variant="outline" onClick={() => setLogOpen(true)}>Log a lead</Button>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -201,8 +197,7 @@ export default function OnboardingLeadsPage() {
             ))}
           </SelectContent>
         </Select>
-        </div>
-      </div>
+      </PageHeading>
 
       <div className="flex flex-wrap gap-2 mb-5" aria-label="Filter by request type">
         {([{ id: "all", label: `All requests (${allLeads.length})` }, { id: "demo", label: `Demo requests (${demoCount})` }, { id: "other", label: `Onboarding & outreach (${allLeads.length - demoCount})` }] as const).map(item => <Button key={item.id} variant={requestFilter === item.id ? "default" : "outline"} size="sm" aria-pressed={requestFilter === item.id} onClick={() => { setRequestFilter(item.id); setActiveId(undefined); }}>{item.label}</Button>)}
@@ -259,7 +254,7 @@ export default function OnboardingLeadsPage() {
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <div><p className="font-semibold text-[13.5px]">{l.institutionName}</p>{l.source === "Website walkthrough" && <span className="inline-block mt-1 text-[11px] font-semibold text-primary">Demo request</span>}</div>
+                    <div><p className="font-semibold text-[13.5px]">{l.institutionName}</p>{l.source === "Website walkthrough" && <span className="inline-block mt-1 text-[12px] font-semibold text-primary">Demo request</span>}</div>
                     <Badge variant={statusBadgeVariant(l.status)}>{STATUS_LABELS[l.status] ?? l.status}</Badge>
                   </div>
                   {followUpState(l.nextFollowUpAt) && followUpState(l.nextFollowUpAt) !== "upcoming" && (

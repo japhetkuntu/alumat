@@ -17,6 +17,7 @@ import {
   type NotificationChannel, type StaffDirectoryEntry,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
+import { PageHeading } from "@/components/platform/page-heading";
 
 type RecipientMode = "all" | "institution" | "specific";
 
@@ -102,7 +103,7 @@ function RecipientPicker({
                   <span className="block truncate font-medium">{r.firstName} {r.lastName} <span className="font-normal text-muted-foreground">· {r.role}</span></span>
                   <span className="block truncate text-[12px] text-muted-foreground">{r.email} · {r.institutionName}</span>
                 </span>
-                {!r.hasPhone && <span className="shrink-0 text-[10.5px] text-muted-foreground">no phone</span>}
+                {!r.hasPhone && <span className="shrink-0 text-[12px] text-muted-foreground">no phone</span>}
               </button>
             ))
           )}
@@ -162,8 +163,7 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <h1 className="text-[24px] font-bold">Notifications</h1>
-      <p className="text-muted-foreground text-[13px] mt-1 mb-6">Send a message to institution admins — in the app, by email, by SMS, or all three.</p>
+      <PageHeading title="Notifications" description="Send a message to institution admins — in the app, by email, by SMS, or all three." />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-4">
         <Card>
@@ -197,7 +197,7 @@ export default function AnnouncementsPage() {
                 })}
               </div>
               {channels.includes("Sms") && (
-                <p className="text-[11.5px] text-muted-foreground">Only reaches admins who have a phone number on file. Most don&apos;t yet — this shows once you pick recipients.</p>
+                <p className="text-[12px] text-muted-foreground">Only reaches admins who have a phone number on file. Most don&apos;t yet — this shows once you pick recipients.</p>
               )}
             </div>
 
@@ -222,7 +222,7 @@ export default function AnnouncementsPage() {
               <RecipientPicker institutionId={institutionId} onInstitutionChange={setInstitutionId} selected={selectedStaff} onSelectedChange={setSelectedStaff} />
             )}
             {smsSelectedWithoutPhone > 0 && (
-              <p className="text-[11.5px] text-warning">{smsSelectedWithoutPhone} of the selected admins have no phone number, so they won&apos;t get the SMS.</p>
+              <p className="text-[12px] text-warning">{smsSelectedWithoutPhone} of the selected admins have no phone number, so they won&apos;t get the SMS.</p>
             )}
 
             <Button onClick={send} className="w-full" disabled={sendMutation.isPending} isLoading={sendMutation.isPending} loadingText="Sending…">
@@ -254,7 +254,7 @@ export default function AnnouncementsPage() {
                 <p className="font-semibold text-[13.5px]">{a.title}</p>
                 <p className="text-[13px] text-muted-foreground mt-1">{a.body}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {a.channels.map((c) => <Badge key={c} variant="outline" className="text-[10.5px]">{c === "InApp" ? "In app" : c}</Badge>)}
+                  {a.channels.map((c) => <Badge key={c} variant="outline" className="text-[12px]">{c === "InApp" ? "In app" : c}</Badge>)}
                 </div>
                 <p className="text-[12px] text-muted-foreground mt-2">
                   {a.audience} &middot; {new Date(a.sentAt).toLocaleString()} &middot; {a.totalAdmins} admin{a.totalAdmins === 1 ? "" : "s"}

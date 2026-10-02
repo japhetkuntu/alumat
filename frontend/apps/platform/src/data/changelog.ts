@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-02",
+    title: "Platform portal works properly on phones",
+    body: "Page headers no longer push their buttons off the edge of a phone screen (Institutions, Onboarding leads and others now stack the description above full-width, paired actions), cards use 20px instead of 28px padding on phones, dashboard and payment figures sit two to a row, the institution page's identity header, activation card and tabs fit, the new-institution wizard shows Step n of 5 with a progress bar instead of five cramped cells, the batch year fields no longer get cut off, status chips stop wrapping out of their borders, and small text and tap targets were enlarged. Every platform page was checked at six widths from 320 to 768 pixels with no horizontal overflow.",
+    scopes: ["Platform"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-02",
     title: "New AlumUnion full logo across the marketing site and platform portal",
     body: "The full AlumUnion logo is replaced with the new letter-spaced version (transparent background, cropped to the artwork) on the marketing site, legal pages and campaign page, and now also appears in the platform portal's sign-in screen and sidebar, with an all-white version for the dark backgrounds. Institution and member portals keep showing each institution's own logo.",
     scopes: ["Marketing", "Platform"],

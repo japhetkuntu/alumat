@@ -7,6 +7,7 @@ import { Input } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow, TableSkeleton } from "@alumni/ui";
 import { getAuditLog } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
+import { PageHeading } from "@/components/platform/page-heading";
 
 export default function AuditLogPage() {
   const { isSuperAdmin } = useAuth();
@@ -28,8 +29,7 @@ export default function AuditLogPage() {
 
   return (
     <div className="p-4 sm:p-7 max-w-[1500px]">
-      <h1 className="text-[24px] font-bold">Audit Log</h1>
-      <p className="text-muted-foreground text-[13px] mt-1 mb-6">Platform-wide accountability trail: every sensitive action taken by platform staff.</p>
+      <PageHeading title="Audit Log" description="Platform-wide accountability trail: every sensitive action taken by platform staff." />
 
       <Card>
         <div className="px-5 py-4 border-b border-border">
