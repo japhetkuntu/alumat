@@ -22,9 +22,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         />
 
         <div className="relative space-y-7 w-full">
-          <Link href="/" className="flex items-center gap-3 w-fit transition-opacity hover:opacity-80">
-            <img src="/alumunion-mark.svg" alt="AlumUnion" width={36} height={36} className="h-9 w-9 object-contain" />
-            <span className="text-[15px] font-semibold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.75)" }}>
+          <Link href="/" className="flex flex-col items-start gap-3 xl:flex-row xl:items-center xl:gap-5 w-fit transition-opacity hover:opacity-80">
+            <img src="/alumunion-logo-white.svg" alt="AlumUnion" width={1490} height={405} className="h-12 w-auto object-contain" />
+            <span className="hidden xl:block h-7 w-px" style={{ background: "rgba(255,255,255,0.25)" }} aria-hidden="true" />
+            <span className="text-[13px] font-semibold tracking-[0.14em] uppercase whitespace-nowrap" style={{ color: "rgba(255,255,255,0.75)" }}>
               Platform Portal
             </span>
           </Link>
@@ -76,9 +77,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Mobile-only brand mark — the aside above is hidden below md, so
               small screens need their own compact header, matching member
               and institution's auth pages. */}
-          <Link href="/" className="mb-8 md:hidden flex flex-col items-center gap-3 transition-opacity hover:opacity-80">
-            <img src="/alumunion-mark.svg" alt="AlumUnion" width={48} height={48} className="h-12 w-12 object-contain" />
-            <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>Platform Portal</p>
+          <Link href="/" className="mb-8 md:hidden flex justify-center transition-opacity hover:opacity-80">
+            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} className="h-14 w-auto object-contain" />
           </Link>
           <RedirectIfAuthenticated>{children}</RedirectIfAuthenticated>
         </div>

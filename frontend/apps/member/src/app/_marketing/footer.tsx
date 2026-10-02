@@ -23,7 +23,7 @@ export function MarketingFooter() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between pb-6">
           <div className="max-w-[58ch]">
             <Link href="/" className="flex items-center gap-3 mb-3">
-              <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-8 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
+              <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} className="h-11 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
             </Link>
             <p className="text-[15px] leading-relaxed mb-3" style={{ color: "var(--muted-foreground)" }}>
               A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.

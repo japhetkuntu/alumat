@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-02",
+    title: "New AlumUnion full logo across the marketing site and platform portal",
+    body: "The full AlumUnion logo is replaced with the new letter-spaced version (transparent background, cropped to the artwork) on the marketing site, legal pages and campaign page, and now also appears in the platform portal's sign-in screen and sidebar, with an all-white version for the dark backgrounds. Institution and member portals keep showing each institution's own logo.",
+    scopes: ["Marketing", "Platform"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-02",
     title: "The interactive product preview now works properly on phones and small screens",
     body: "On a phone the member-portal preview on the marketing site wrapped its seven view buttons into a block that took most of the first screen, with inflated text and nested frames. It is now a single scrolling tab row that keeps the chosen tab in view, with a compact header, tighter cards, readable text sizes and no duplicate labels, while tablets and desktops keep the side navigation. The whole public site (marketing page, institution landing page, sign-in, register, terms, privacy and the WhatsApp comparison) was checked at 17 widths from 320 to 1920 pixels with no horizontal overflow, small mock-up and label text was raised to a readable minimum, and the sign-up progress steps no longer overflow at 320 pixels.",
     scopes: ["Marketing", "Member"],

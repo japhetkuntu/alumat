@@ -469,7 +469,7 @@ export default function PlatformMarketingPage() {
     <div className="marketing-site">
       <header className="mk-nav">
         <div className="mk-wrap mk-nav-inner">
-          <Link href="/" className="mk-logo"><img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} /></Link>
+          <Link href="/" className="mk-logo"><img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} /></Link>
           <nav aria-label="Primary" className="mk-desktop-nav">{NAV_LINKS.map(link => <a key={link.href} href={link.href}>{link.label}</a>)}</nav>
           <a href="#onboard" className="mk-button mk-nav-cta">Get started, free <ArrowRight size={14} /></a>
           <button type="button" className="mk-menu" aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} aria-controls="marketing-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>

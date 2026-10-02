@@ -81,7 +81,7 @@ export function LegalPageShell({
       <header className="sticky top-0 z-50 border-b backdrop-blur-xl" style={{ background: "color-mix(in oklch, var(--background) 86%, transparent)", borderColor: "var(--border)" }}>
         <div className="max-w-[1040px] mx-auto flex items-center justify-between h-16 px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className="h-9 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
+            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} className="h-11 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
           </Link>
           <Link href="/" className="flex items-center gap-1.5 text-[13px] font-medium hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>
             <ArrowLeft size={14} /> Back

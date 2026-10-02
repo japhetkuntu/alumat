@@ -76,7 +76,7 @@ export default async function Page({params}:{params:Promise<{token:string}>}){
       <header className="border-b border-border">
         <div className="section__inner--wide flex items-center justify-between py-5">
           <Link href="/" aria-label="AlumUnion home">
-            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" className="h-7 w-auto" />
+            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} className="h-9 w-auto" />
           </Link>
           <span className="hidden sm:block text-[13px] text-muted-foreground">A community platform for institutions, members and supporters</span>
         </div>

@@ -148,7 +148,7 @@ export default function WhyNotWhatsAppPage() {
         }}>
         <div className={cn("section__inner flex items-center justify-between gap-4 transition-[height] duration-300 ease-out", scrolled ? "h-14" : "h-16")}>
           <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1870} height={420} className={cn("w-auto object-contain shrink-0 transition-[height] duration-300 dark:rounded-sm dark:bg-white dark:px-2", scrolled ? "h-8" : "h-9")} />
+            <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} className={cn("w-auto object-contain shrink-0 transition-[height] duration-300 dark:rounded-sm dark:bg-white dark:px-2", scrolled ? "h-10" : "h-11")} />
           </Link>
           <Link href="/" className="flex items-center gap-1.5 text-[16px] font-medium hover:text-foreground" style={{ color: "var(--muted-foreground)" }}>
             <ArrowLeft size={14} /> Back to home

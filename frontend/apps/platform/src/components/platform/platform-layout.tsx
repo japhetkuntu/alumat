@@ -60,9 +60,9 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground w-[248px] select-none">
       <div className="px-4 pt-5 pb-4 border-b border-sidebar-border flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <img src="/alumunion-mark.svg" alt="" className="w-7 h-7 object-contain shrink-0" />
-          <span className="font-bold text-[15px] tracking-tight text-white">Platform Portal</span>
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <img src="/alumunion-logo-white.svg" alt="AlumUnion" width={1490} height={405} className="h-9 w-auto object-contain object-left" />
+          <span className="font-semibold text-[11.5px] tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.65)" }}>Platform Portal</span>
         </div>
         {onClose && (
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-sidebar-foreground hover:bg-white/10 hover:text-white" onClick={onClose} aria-label="Close sidebar">

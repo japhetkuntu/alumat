@@ -5,7 +5,7 @@
 .marketing-site .mk-nav { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 94%, transparent); backdrop-filter: blur(16px); }
 .marketing-site .mk-nav-inner { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .marketing-site .mk-logo { flex-shrink: 0; }
-.marketing-site .mk-logo img { width: 166px; height: auto; }
+.marketing-site .mk-logo img { width: auto; height: 46px; }
 .dark .marketing-site .mk-logo img { background: white; border-radius: 6px; padding: 4px 8px; }
 .marketing-site .mk-desktop-nav { display: flex; gap: 22px; font-size: 16px; font-weight: 500; color: var(--muted-foreground); }
 .marketing-site .mk-desktop-nav a:hover { color: var(--primary); }
@@ -176,7 +176,7 @@
 @media (max-width: 767px) {
   .marketing-site .mk-wrap { width: calc(100% - 40px); }
   .marketing-site .mk-nav-inner { height: 64px; gap: 14px; }
-  .marketing-site .mk-logo img { width: 156px; }
+  .marketing-site .mk-logo img { height: 40px; }
   .marketing-site .mk-nav-cta { display: none; }
   .marketing-site .mk-hero-content { grid-template-columns: 1fr; padding-block: 36px 56px; gap: 44px; }
   .marketing-site .mk-hero .mk-eyebrow { margin-bottom: 20px; letter-spacing: .1em; }
