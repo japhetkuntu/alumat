@@ -1,6 +1,7 @@
 "use client";
 
-import { useDisabledFeatures } from "@/components/member/member-layout";
+import { useFeatures } from "@/components/member/member-layout";
+import { isFeatureDisabledError } from "@/lib/feature-errors";
 import { useState } from "react";
 import { LoadError } from "@alumni/ui";
 import { useQueries, useQuery } from "@tanstack/react-query";
@@ -465,9 +466,13 @@ function SpotlightPulse() {
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
 export default function MemberDashboardPage() {
-  const disabledFeatures = useDisabledFeatures();
-  const contributionsEnabled = !disabledFeatures.has("Contributions");
-  const eventsEnabled = !disabledFeatures.has("Events");
+  const features = useFeatures();
+  const contributionsEnabled = features.enabled("Contributions");
+  const eventsEnabled = features.enabled("Events");
+  const jobsEnabled = features.enabled("Jobs");
+  const spotlightsEnabled = features.enabled("Spotlights");
+  const directoryEnabled = features.enabled("Directory");
+  const communitiesEnabled = features.enabled("Communities");
   const results = useQueries({
     queries: [
       { queryKey: ["m-campaigns"],             enabled: contributionsEnabled, queryFn: () => getMyCampaigns(1, 50)                    },
@@ -479,11 +484,12 @@ export default function MemberDashboardPage() {
   });
 
   const [campaigns, contributions, contributionSummary, events, rsvps] = results;
-  const isLoading = results.some((r) => r.isLoading);
+  const isLoading = !features.ready || results.some((r) => r.isLoading);
 
   const membershipStatus = useQuery({
     queryKey: ["m-membership-status"],
     queryFn: getMyMembershipStatus,
+    enabled: contributionsEnabled,
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
@@ -509,11 +515,12 @@ export default function MemberDashboardPage() {
   const { data: myCommunities = [] } = useQuery({
     queryKey: ["m-my-communities"],
     queryFn: getMyCommunities,
+    enabled: communitiesEnabled,
   });
   const approvedCommunities = myCommunities.filter((c) => c.myStatus === "Approved");
 
   const communityCampaignResults = useQueries({
-    queries: (contributionsEnabled ? approvedCommunities : []).map((c) => ({
+    queries: (contributionsEnabled && communitiesEnabled ? approvedCommunities : []).map((c) => ({
       queryKey: ["m-community-campaigns-dash", c.id],
       queryFn: async () => ({ community: c, campaigns: (await getMyCampaigns(1, 20, c.id)).results }),
     })),
@@ -555,8 +562,9 @@ export default function MemberDashboardPage() {
   const myRsvpIds = new Set((rsvps.data ?? []).map((r) => r.eventId));
 
   const nonMembershipActiveCampaigns = activeCampaigns.filter((c) => !c.isMembershipCampaign);
-  const failedQueries = [...results, membershipStatus, unpaidMembershipCampaignsQuery, profileQuery, ...communityCampaignResults].filter(query => query.isError);
-  const hasNoActivity = (!contributionsEnabled || campaigns.isSuccess) && (!eventsEnabled || events.isSuccess) && activeCampaigns.length === 0 && upcomingEvents.length === 0;
+  const failedQueries = [...results, membershipStatus, unpaidMembershipCampaignsQuery, profileQuery, ...communityCampaignResults].filter(query => query.isError && !isFeatureDisabledError(query.error));
+  const hasNoActivity = features.ready && (!contributionsEnabled || campaigns.isSuccess) && (!eventsEnabled || events.isSuccess) && activeCampaigns.length === 0 && upcomingEvents.length === 0;
+  const hasActivityFeatures = contributionsEnabled || eventsEnabled;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
@@ -599,45 +607,40 @@ export default function MemberDashboardPage() {
         <ArrearsBanner membershipStatus={membershipStatus.data} />
       )}
 
-      {hasNoActivity && <div className="border border-border bg-card p-6 sm:p-8" style={{borderRadius: 20}}><p className="text-xs text-primary font-semibold uppercase tracking-wide">Make yourself at home</p><h2 className="text-2xl font-semibold mt-3">Your community starts with its people.</h2><p className="text-sm text-muted-foreground leading-relaxed mt-3 max-w-xl">Introduce yourself while your institution prepares its next activities. Published events and campaigns will appear here when they are ready.</p><div className="flex flex-wrap gap-3 mt-5"><Link href="/profile" className="text-sm font-semibold text-primary underline underline-offset-4">Complete your profile</Link>{!disabledFeatures.has("Directory") && <Link href="/directory" className="text-sm font-semibold text-primary underline underline-offset-4">Explore the member directory</Link>}</div></div>}
+      {hasNoActivity && (
+        <div className="border border-border bg-card p-6 sm:p-8" style={{ borderRadius: 20 }}>
+          <p className="text-xs text-primary font-semibold uppercase tracking-wide">Make yourself at home</p>
+          <h2 className="text-2xl font-semibold mt-3">Your community starts with its people.</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed mt-3 max-w-xl">
+            {hasActivityFeatures
+              ? "Introduce yourself while your institution prepares its next activities. Published events and campaigns will appear here when they are ready."
+              : "Complete your profile so other members can find and recognise you."}
+          </p>
+          <div className="flex flex-wrap gap-3 mt-5">
+            <Link href="/profile" className="text-sm font-semibold text-primary underline underline-offset-4">Complete your profile</Link>
+            {directoryEnabled && <Link href="/directory" className="text-sm font-semibold text-primary underline underline-offset-4">Explore the member directory</Link>}
+          </div>
+        </div>
+      )}
 
-      {/* ── Stat tiles ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
-          : (
-            <>
-              {contributionsEnabled && campaigns.data && <DashStat
-                href="/contributions"
-                label="Open fundraisers"
-                value={activeCampaigns.length}
-                sub="Including dues"
-                tone="primary"
-              />}
-              {contributionsEnabled && contributionSummary.data && <DashStat
-                href="/contributions"
-                label="Total contributed"
-                value={formatCurrency(totalPaid)}
-                sub="All-time confirmed"
-                tone="accent"
-              />}
-              {contributionsEnabled && contributionSummary.data && <DashStat
-                href="/contributions"
-                label="This year"
-                value={formatCurrency(totalPaidThisYear)}
-                sub={`Contributed in ${currentYear}`}
-                tone="primary"
-              />}
-              {eventsEnabled && events.data && <DashStat
-                href="/events"
-                label="Upcoming events"
-                value={upcomingEventsCount}
-                sub="Events you can join"
-                tone="accent"
-              />}
-            </>
-          )}
-      </div>
+      {/* ── Stat tiles — only the ones whose feature is on; the grid is sized to however many there are ── */}
+      {(() => {
+        const tiles = [
+          contributionsEnabled && campaigns.data && <DashStat key="open" href="/contributions" label="Open fundraisers" value={activeCampaigns.length} sub="Including dues" tone="primary" />,
+          contributionsEnabled && contributionSummary.data && <DashStat key="total" href="/contributions" label="Total contributed" value={formatCurrency(totalPaid)} sub="All-time confirmed" tone="accent" />,
+          contributionsEnabled && contributionSummary.data && <DashStat key="year" href="/contributions" label="This year" value={formatCurrency(totalPaidThisYear)} sub={`Contributed in ${currentYear}`} tone="primary" />,
+          eventsEnabled && events.data && <DashStat key="events" href="/events" label="Upcoming events" value={upcomingEventsCount} sub="Events you can join" tone="accent" />,
+        ].filter(Boolean);
+        const expected = (contributionsEnabled ? 3 : 0) + (eventsEnabled ? 1 : 0);
+        const count = isLoading ? (features.ready ? expected : 4) : tiles.length;
+        if (count === 0) return null;
+        const lgCols = ["", "lg:grid-cols-1", "lg:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4"][Math.min(count, 4)];
+        return (
+          <div className={`grid grid-cols-2 ${lgCols} gap-3 sm:gap-4 items-start animate-in fade-in duration-500 delay-100 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1`}>
+            {isLoading ? Array.from({ length: count }).map((_, i) => <StatCardSkeleton key={i} />) : tiles}
+          </div>
+        );
+      })()}
 
       {/* ── Unpaid current-year membership campaigns ── */}
       {unpaidCurrentMembershipCampaigns.length > 0 && (
@@ -812,7 +815,7 @@ export default function MemberDashboardPage() {
       )}
 
       {/* ── What's new — the reason to open this outside of dues season ── */}
-      {(!disabledFeatures.has("Jobs") || !disabledFeatures.has("Spotlights")) && <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
+      {(jobsEnabled || spotlightsEnabled) && <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
         <div>
           <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
             What&apos;s new
@@ -821,14 +824,14 @@ export default function MemberDashboardPage() {
             From your community
           </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {!disabledFeatures.has("Jobs") && <JobsPulse />}
-          {!disabledFeatures.has("Spotlights") && <SpotlightPulse />}
+        <div className={`grid grid-cols-1 ${jobsEnabled && spotlightsEnabled ? "lg:grid-cols-2" : ""} gap-4 sm:gap-6`}>
+          {jobsEnabled && <JobsPulse />}
+          {spotlightsEnabled && <SpotlightPulse />}
         </div>
       </section>}
 
       {/* ── Events + Recent activity ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {(eventsEnabled || contributionsEnabled) && <div className={`grid grid-cols-1 ${eventsEnabled && contributionsEnabled ? "lg:grid-cols-2" : ""} gap-4 sm:gap-6`}>
 
         {/* Events */}
         {eventsEnabled && <Card>
@@ -957,7 +960,7 @@ export default function MemberDashboardPage() {
           </CardContent>
         </Card>}
 
-      </div>
+      </div>}
     </div>
   );
 }

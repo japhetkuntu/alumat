@@ -19,12 +19,21 @@ export function InstitutionSetupChecklist() {
   const isSuperAdmin = user?.role === "SuperAdmin";
 
   const profile = useQuery({ queryKey: ["institution-profile"], queryFn: getInstitutionProfile, enabled: isSuperAdmin });
-  const newsEnabled = isSuperAdmin && !!profile.data && !profile.data.disabledFeatures?.includes("News");
+  // Nothing is requested for a feature that's switched off (its API answers 403), and the
+  // list below only offers steps for what this institution actually uses.
+  const profileReady = isSuperAdmin && !!profile.data;
+  const featureOn = (key: string) => profileReady && !profile.data!.disabledFeatures?.includes(key);
+  const isCommunityOrg = profile.data?.organizationType === "Community";
+  const newsEnabled = featureOn("News");
+  const eventsOn = featureOn("Events");
+  const communitiesOn = featureOn("Communities") && isCommunityOrg;
+  const batchesOn = profileReady && !isCommunityOrg;
+  const moneyOn = featureOn("Contributions") || featureOn("Store") || featureOn("Services");
   const news = useQuery({ queryKey: ["setup-published-news"], queryFn: () => getNewsPosts(1, 1, undefined, "Published"), enabled: newsEnabled });
   const activation = useQuery({ queryKey: ["institution-activation"], queryFn: getInstitutionActivation, enabled: isSuperAdmin });
-  const batches = useQuery({ queryKey: ["dash-batches"], queryFn: getBatches, enabled: isSuperAdmin });
-  const communities = useQuery({ queryKey: ["setup-communities"], queryFn: getCommunities, enabled: isSuperAdmin });
-  const events = useQuery({ queryKey: ["dash-events"], queryFn: () => getEvents(1, 1), enabled: isSuperAdmin });
+  const batches = useQuery({ queryKey: ["dash-batches"], queryFn: getBatches, enabled: batchesOn });
+  const communities = useQuery({ queryKey: ["setup-communities"], queryFn: getCommunities, enabled: communitiesOn });
+  const events = useQuery({ queryKey: ["dash-events"], queryFn: () => getEvents(1, 1), enabled: eventsOn });
 
   if (!isSuperAdmin) return null;
   // Activation failing (e.g. mid-deploy) degrades to the profile-derived steps rather than hiding the whole list.
@@ -42,7 +51,6 @@ export function InstitutionSetupChecklist() {
   const staff = criterion("staff");
 
   const groupsDone = isCommunity ? (communities.data?.length ?? 0) > 0 : (batches.data?.length ?? 0) > 0;
-  const eventsEnabled = !institution.disabledFeatures?.includes("Events");
   const payoutPending = institution.payoutStatus === "Pending";
 
   const items: ChecklistItem[] = [
@@ -54,7 +62,7 @@ export function InstitutionSetupChecklist() {
       actionLabel: "Open settings",
       onAction: () => router.push("/settings"),
     },
-    {
+    ...(!moneyOn ? [] : [{
       id: "payouts",
       title: "Set up payouts",
       description: payoutPending
@@ -63,7 +71,7 @@ export function InstitutionSetupChecklist() {
       done: hasActivation ? !!payouts?.met : institution.payoutStatus === "Approved",
       actionLabel: payoutPending ? "View status" : "Add bank details",
       onAction: () => router.push("/settings"),
-    },
+    }]),
     ...((isCommunity ? communities.isSuccess : batches.isSuccess) ? [isCommunity
       ? {
           id: "groups",
@@ -113,7 +121,7 @@ export function InstitutionSetupChecklist() {
       actionLabel: "Invite staff",
       onAction: () => router.push("/staff"),
     }] : []),
-    ...(eventsEnabled && events.isSuccess
+    ...(eventsOn && events.isSuccess
       ? [{
           id: "event",
           title: "Post your first event",

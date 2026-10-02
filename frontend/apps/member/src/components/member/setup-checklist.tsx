@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { useDisabledFeatures } from "@/components/member/member-layout";
+import { useFeatures } from "@/components/member/member-layout";
 import { getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
 
 function subscribeDirectoryVisits(notify: () => void) {
@@ -22,10 +22,14 @@ function directoryVisitedKey(userId: string) {
 export function MemberSetupChecklist() {
   const { user } = useAuth();
   const router = useRouter();
-  const disabledFeatures = useDisabledFeatures();
-  const eventsEnabled = !disabledFeatures.has("Events");
-  const contributionsEnabled = !disabledFeatures.has("Contributions");
-  const directoryEnabled = !disabledFeatures.has("Directory");
+  // enabled() is false until the feature list has loaded, so nothing is requested for a
+  // feature that turns out to be off (its API answers 403).
+  const features = useFeatures();
+  const disabledFeatures = features.disabled;
+  const eventsEnabled = features.enabled("Events");
+  const contributionsEnabled = features.enabled("Contributions");
+  const directoryEnabled = features.enabled("Directory");
+  const communitiesEnabled = features.enabled("Communities");
   const directoryVisited = useSyncExternalStore(subscribeDirectoryVisits, () => {
     if (!user?.id) return false;
     try { return localStorage.getItem(directoryVisitedKey(user.id)) === "1"; } catch { return false; }
@@ -33,8 +37,8 @@ export function MemberSetupChecklist() {
 
   const profile = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile });
   const dues = useQuery({ queryKey: ["m-current-membership-campaign"], queryFn: getCurrentMembershipCampaign, enabled: contributionsEnabled, staleTime: 5 * 60 * 1000 });
-  const allCommunities = useQuery({ queryKey: ["m-communities"], queryFn: getCommunities, staleTime: 5 * 60 * 1000 });
-  const myCommunities = useQuery({ queryKey: ["m-my-communities"], queryFn: getMyCommunities });
+  const allCommunities = useQuery({ queryKey: ["m-communities"], queryFn: getCommunities, enabled: communitiesEnabled, staleTime: 5 * 60 * 1000 });
+  const myCommunities = useQuery({ queryKey: ["m-my-communities"], queryFn: getMyCommunities, enabled: communitiesEnabled });
   const rsvps = useQuery({ queryKey: ["m-rsvps"], queryFn: () => getMyRsvps(), enabled: eventsEnabled });
 
   const upcoming = useQuery({ queryKey: ["m-setup-upcoming-events"], queryFn: () => getEvents(1, 10, "Upcoming"), enabled: eventsEnabled, staleTime: 5 * 60 * 1000 });
@@ -61,7 +65,7 @@ export function MemberSetupChecklist() {
           onAction: () => router.push(`/contributions/${dues.data!.id}`),
         }]
       : []),
-    ...(!disabledFeatures.has("AlumniMap")
+    ...(features.enabled("AlumniMap")
       ? [{
           id: "location",
           title: "Add your location",

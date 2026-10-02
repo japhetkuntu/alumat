@@ -14,6 +14,7 @@ import { formatCurrency, formatDate } from "@alumni/ui";
 import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getRevenueTrend } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 import { InviteKitCard } from "@/components/institution/invite-kit-card";
+import { useFeatures } from "@/hooks/use-institution-features";
 
 const STATUS_COLORS: Record<string, string> = {
   Successful: "var(--success, #16a34a)",
@@ -83,23 +84,32 @@ function PayoutPanel() {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, isScopedAdmin } = useAuth();
+  // A switched-off feature's API answers 403, so its data is never requested and its
+  // tiles/sections are never rendered: the dashboard is simply built from what this institution uses.
+  const features = useFeatures();
+  const contributionsOn = features.enabled("Contributions");
+  const eventsOn = features.enabled("Events");
+  const jobsOn = features.enabled("Jobs");
+  const storeOn = features.enabled("Store");
+  const servicesOn = features.enabled("Services");
+  const moneyOn = contributionsOn || storeOn || servicesOn;
   const results = useQueries({
     queries: [
       { queryKey: ["dash-members-total"], queryFn: () => getMembers({ pageSize: 1 }) },
       { queryKey: ["dash-members-pending"], queryFn: () => getMembers({ pageSize: 20, status: "Pending" }) },
-      { queryKey: ["dash-campaigns"], queryFn: () => getCampaigns(1, 100) },
-      { queryKey: ["dash-contributions"], queryFn: () => getContributions({ pageSize: 500 }) },
-      { queryKey: ["dash-events"], queryFn: () => getEvents(1, 1) },
-      { queryKey: ["dash-jobs"], queryFn: () => getJobs(1, 1) },
+      { queryKey: ["dash-campaigns"], enabled: contributionsOn, queryFn: () => getCampaigns(1, 100) },
+      { queryKey: ["dash-contributions"], enabled: contributionsOn, queryFn: () => getContributions({ pageSize: 500 }) },
+      { queryKey: ["dash-events"], enabled: eventsOn, queryFn: () => getEvents(1, 1) },
+      { queryKey: ["dash-jobs"], enabled: jobsOn, queryFn: () => getJobs(1, 1) },
       { queryKey: ["dash-batches"], queryFn: getBatches },
-      { queryKey: ["dash-store-orders"], queryFn: () => getStoreOrders(1, 500) },
-      { queryKey: ["dash-service-requests"], queryFn: () => getServiceRequests(1, 500) },
-      { queryKey: ["dash-revenue-trend"], queryFn: () => getRevenueTrend(6) },
+      { queryKey: ["dash-store-orders"], enabled: storeOn, queryFn: () => getStoreOrders(1, 500) },
+      { queryKey: ["dash-service-requests"], enabled: servicesOn, queryFn: () => getServiceRequests(1, 500) },
+      { queryKey: ["dash-revenue-trend"], enabled: moneyOn, queryFn: () => getRevenueTrend(6) },
     ],
   });
 
   const [membersTotal, membersPending, campaigns, contributions, events, jobs, batches, storeOrders, serviceRequests, revenueTrend] = results;
-  const isLoading = results.some((r) => r.isLoading);
+  const isLoading = !features.ready || results.some((r) => r.isLoading);
 
   const totalMembers = membersTotal.data?.totalCount ?? 0;
   const pendingApprovals = membersPending.data?.totalCount ?? 0;
@@ -126,12 +136,18 @@ export default function AdminDashboardPage() {
   // The chart shows the latest six calendar months, totalled by the server (so it stays exact at any volume).
   // Older history is on the Reports page.
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const trendMonths = (revenueTrend.data?.months ?? []).map((m) => ({
+  const trendMonths: Record<string, string | number>[] = (revenueTrend.data?.months ?? []).map((m) => ({
     month: monthNames[m.month - 1],
-    Contributions: m.contributions,
-    Store: m.store,
-    Services: m.services,
+    ...(contributionsOn && { Contributions: m.contributions }),
+    ...(storeOn && { Store: m.store }),
+    ...(servicesOn && { Services: m.services }),
   }));
+  const trendSeries = [
+    contributionsOn && { key: "Contributions", label: "Contributions", color: "var(--brand-primary-500, var(--primary))" },
+    storeOn && { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
+    servicesOn && { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
+  ].filter((x): x is { key: string; label: string; color: string } => Boolean(x));
+  const trendSources = trendSeries.map((x) => x.label).join(" + ");
   const statusCounts = revenueTrend.data?.statusCounts ?? {};
   const statusPieData = Object.entries(statusCounts).map(([status, count]) => ({
     label: status,
@@ -156,42 +172,25 @@ export default function AdminDashboardPage() {
         </span>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
-          <StatCardSkeleton variant="hero" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
-          </div>
-        </div>
-      ) : (
-        // Money leads — one dominant "total collected" figure (the number an
-        // institution admin cares about most, day to day) with the other three
-        // metrics demoted to a supporting row, instead of four equal boxes.
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,1.3fr)_2fr] gap-3.5 items-stretch">
-          <Link href="/contributions" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      {(() => {
+        // Supporting tiles: only for features that are on. With money off there is no hero,
+        // so these simply fill the row on their own.
+        const supporting = [
+          <Link key="members" href="/members" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <StatCard
               tone="primary"
-              variant="hero"
-              label="Total collected"
-              value={formatCurrency(totalAmountCollected)}
-              sub={<span style={{ color: "var(--success)" }}>{totalContributions} contributions</span>}
+              label="Total members"
+              value={totalMembers.toLocaleString()}
+              sub={
+                <span style={{ color: "var(--success)" }}>
+                  +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
+                  <span className="underline">{pendingApprovals} pending</span>
+                </span>
+              }
             />
-          </Link>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Link href="/members" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              <StatCard
-                tone="primary"
-                label="Total members"
-                value={totalMembers.toLocaleString()}
-                sub={
-                  <span style={{ color: "var(--success)" }}>
-                    +{Math.max(0, Math.round(totalMembers * 0.02))} this period &middot;{" "}
-                    <span className="underline">{pendingApprovals} pending</span>
-                  </span>
-                }
-              />
-            </Link>
-            <Link href="/campaigns" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          </Link>,
+          contributionsOn && (
+            <Link key="campaigns" href="/campaigns" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <StatCard
                 tone="accent"
                 label="Active fundraisers & dues"
@@ -203,40 +202,75 @@ export default function AdminDashboardPage() {
                 }
               />
             </Link>
-            <Link href="/events" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          ),
+          eventsOn && (
+            <Link key="events" href="/events" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <StatCard
                 tone="accent"
                 label="Upcoming events"
                 value={upcomingEvents}
-                sub={`+ ${openJobs} open job postings`}
+                sub={jobsOn ? `+ ${openJobs} open job postings` : undefined}
               />
             </Link>
+          ),
+          !eventsOn && jobsOn && (
+            <Link key="jobs" href="/jobs" className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <StatCard tone="accent" label="Open job postings" value={openJobs} />
+            </Link>
+          ),
+        ].filter(Boolean);
+        const cols = ["", "sm:grid-cols-1", "sm:grid-cols-2", "sm:grid-cols-3"][Math.min(supporting.length, 3)];
+        const expectedSupporting = 1 + (contributionsOn ? 1 : 0) + (eventsOn || jobsOn ? 1 : 0);
+        const heroHref = contributionsOn ? "/contributions" : storeOn ? "/store" : "/services";
+
+        if (isLoading) {
+          return (
+            <div className={`grid grid-cols-1 ${moneyOn || !features.ready ? "lg:grid-cols-[minmax(280px,1.3fr)_2fr]" : ""} gap-3.5 items-stretch`}>
+              {(moneyOn || !features.ready) && <StatCardSkeleton variant="hero" />}
+              <div className={`grid grid-cols-1 ${["", "sm:grid-cols-1", "sm:grid-cols-2", "sm:grid-cols-3"][Math.min(features.ready ? expectedSupporting : 3, 3)]} gap-3`}>
+                {Array.from({ length: features.ready ? expectedSupporting : 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
+              </div>
+            </div>
+          );
+        }
+        // Money leads when the institution takes payments — one dominant "total collected"
+        // figure with the other metrics demoted to a supporting row.
+        return (
+          <div className={`grid grid-cols-1 ${moneyOn ? "lg:grid-cols-[minmax(280px,1.3fr)_2fr]" : ""} gap-3.5 items-stretch`}>
+            {moneyOn && (
+              <Link href={heroHref} className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                <StatCard
+                  tone="primary"
+                  variant="hero"
+                  label="Total collected"
+                  value={formatCurrency(totalAmountCollected)}
+                  sub={contributionsOn ? <span style={{ color: "var(--success)" }}>{totalContributions} contributions</span> : undefined}
+                />
+              </Link>
+            )}
+            <div className={`grid grid-cols-1 ${cols} gap-3`}>{supporting}</div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {!isLoading && (
         <InviteKitCard totalMembers={totalMembers} upcomingEvents={upcomingEvents} activeCampaignCount={activeCampaigns.length} />
       )}
 
-      {user?.role === "SuperAdmin" && <PayoutPanel />}
+      {user?.role === "SuperAdmin" && moneyOn && <PayoutPanel />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
+      {moneyOn && <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
         <section className="card p-[18px]">
           <h2 className="text-[15px] font-semibold m-0 mb-3.5 flex items-baseline justify-between gap-3">
             <span>
-              Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, Contributions + Store + Services</span>
+              Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, {trendSources}</span>
             </span>
             <Link href="/reports" className="shrink-0 text-[12px] font-normal text-muted-foreground hover:text-accent">Full report &rarr;</Link>
           </h2>
           <TrendChart
             data={trendMonths}
             xKey="month"
-            series={[
-              { key: "Contributions", label: "Contributions", color: "var(--brand-primary-500, var(--primary))" },
-              { key: "Store", label: "Store", color: "var(--brand-accent-500, var(--brand-accent))" },
-              { key: "Services", label: "Services", color: "var(--chart-3, #f59e0b)" },
-            ]}
+            series={trendSeries}
             variant="bar"
             stacked
             height={150}
@@ -258,7 +292,7 @@ export default function AdminDashboardPage() {
             valueFormatter={(v) => v.toLocaleString()}
           />
         </section>
-      </div>
+      </div>}
 
       <div className="grid grid-cols-1 gap-3.5 mt-3.5">
         {/* Emphasis border — this card asks for action, the chart cards above only inform */}
@@ -293,7 +327,7 @@ export default function AdminDashboardPage() {
         </section>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
+      {contributionsOn && <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3.5 mt-3.5">
         <section className="card p-[18px]">
           <h2 className="text-[15px] font-semibold m-0 mb-3.5">Active fundraisers &amp; dues</h2>
           {isLoading ? (
@@ -359,7 +393,7 @@ export default function AdminDashboardPage() {
             </table>
           )}
         </section>
-      </div>
+      </div>}
     </div>
   );
 }

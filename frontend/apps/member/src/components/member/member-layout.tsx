@@ -155,6 +155,24 @@ export function useDisabledFeatures(): Set<string> {
   return useMemo(() => new Set(data?.disabledFeatures ?? []), [data]);
 }
 
+/**
+ * Feature gating for pages that fetch feature data. `enabled(key)` is false until the
+ * institution's feature list has actually loaded — useDisabledFeatures() alone returns an
+ * empty set while loading, which reads as "everything is on" and makes a page fire requests
+ * for features that are off (the API answers 403, which then surfaces as a load error).
+ * If the list itself fails to load, features are treated as on so the page degrades to its
+ * own per-section error handling instead of going blank.
+ */
+export function useFeatures() {
+  const { isLoading } = useNavTheme();
+  const disabled = useDisabledFeatures();
+  const ready = !isLoading;
+  return useMemo(
+    () => ({ ready, disabled, enabled: (key: string) => ready && !disabled.has(key) }),
+    [ready, disabled],
+  );
+}
+
 /** Shared across Sidebar and MobileBottomNav for the jobs/events/forum unread badges — 30s poll matches the notification-bell badge's cadence. */
 function useUnreadByCategory() {
   const { isMember } = useAuth();
