@@ -34,7 +34,8 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
-import { PortalShellSkeleton } from "@alumni/ui";
+import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
+import { useFeatures } from "@/hooks/use-institution-features";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
@@ -66,6 +67,21 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",
 };
+
+// Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
+const EXTRA_ROUTE_FEATURES: Record<string, string> = {
+  "/communities": "Communities",
+  "/flagged-content": "Forum",
+};
+
+/** The feature that owns an admin path (or null if it isn't feature-gated), so a switched-off feature's pages never mount. */
+function featureForPath(pathname: string): string | null {
+  const routes = { ...NAV_FEATURE_KEYS, ...EXTRA_ROUTE_FEATURES };
+  const match = Object.keys(routes)
+    .filter((href) => pathname === href || pathname.startsWith(href + "/"))
+    .sort((a, b) => b.length - a.length)[0];
+  return match ? routes[match] : null;
+}
 
 // Grouped by job-to-be-done, money first — an institution's own admins care
 // most about dues/campaign health day to day, so that's the first thing they
@@ -294,6 +310,17 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
     [navForSearch],
   );
 
+  // A page owned by a feature mounts only once we know the feature is on. Mounting earlier fires its
+  // requests (which the API refuses with 403 when the feature is off); a switched-off feature's page,
+  // reached by a bookmark or an old link, sends the admin to the dashboard instead.
+  const features = useFeatures();
+  const routeFeature = featureForPath(pathname);
+  const featureOff = !!routeFeature && features.ready && features.disabled.has(routeFeature);
+  const holdPage = !!routeFeature && (!features.ready || featureOff);
+  useEffect(() => {
+    if (featureOff) router.replace("/dashboard");
+  }, [featureOff, router]);
+
   // Client pages can't export metadata, so the browser tab and history show the page name here.
   useEffect(() => {
     const base = document.title.split(" · ").pop() || "Alumni Portal";
@@ -369,7 +396,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto bg-background selection:bg-accent/20 relative pt-14 lg:pt-0">
           <div className="max-w-[1800px] mx-auto min-h-full">
             <PortalNudge />
-            {children}
+            {holdPage ? <div className="p-4 sm:p-6 space-y-4" aria-busy="true"><Skeleton className="h-8 w-56" /><Skeleton className="h-40 w-full" /></div> : children}
           </div>
         </main>
       </div>

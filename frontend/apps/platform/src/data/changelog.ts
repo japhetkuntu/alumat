@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-02",
+    title: "Dashboards no longer show errors or empty sections for switched-off features",
+    body: "When an institution turned features off (Contributions, Events, Jobs, Store, Services and so on), the member and institution portals still requested that data, got refused, and showed \"couldn't load\" errors, zero-value tiles, or sections promising content that would never appear. Dashboards, get-started checklists, the member calendar, search, profile settings and the institution reports page now only request and show what the institution actually uses, and a switched-off feature's own pages (reached by a bookmark or old link) send the user to the dashboard instead of an error.",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+  },
+  {
     date: "2026-10-01",
     title: "Platform staff can run marketing campaigns end to end",
     body: "A campaign holds posts, each post holds artwork/video and a per-channel caption, and \"prepare\" generates a tracked public link without auto-publishing anywhere. Visits and the enquiries they lead to (tied back to the same onboarding lead record) show up directly against each share, so a campaign's real results live next to the content that produced them.",

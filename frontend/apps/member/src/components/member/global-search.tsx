@@ -40,6 +40,8 @@ function hasAllWords(text: string, typed: string): boolean {
  * businesses at the same time, and shows whatever answers. Nothing here is a new endpoint: each
  * section uses the same request its own page already makes.
  */
+import { useFeatures } from "@/components/member/member-layout";
+
 export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; hotkey?: boolean }) {
   const [open, setOpen] = useState(false);
   const [term, setTerm] = useState("");
@@ -58,15 +60,24 @@ export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; h
     return () => window.removeEventListener("keydown", onKey);
   }, [hotkey]);
 
-  const opts = { enabled: active, staleTime: 30_000, retry: 0 } as const;
-  const jobs = useQuery({ queryKey: ["gs-jobs", q], queryFn: () => getJobs(1, 5, undefined, q), ...opts });
-  const news = useQuery({ queryKey: ["gs-news", q], queryFn: () => getNewsPosts(1, 5, undefined, q), ...opts });
-  const resources = useQuery({ queryKey: ["gs-resources", q], queryFn: () => getResources(1, 5, undefined, q), ...opts });
-  const threads = useQuery({ queryKey: ["gs-threads", q], queryFn: () => getForumThreads(1, 5, undefined, q), ...opts });
-  const people = useQuery({ queryKey: ["gs-people", q], queryFn: () => searchDirectory({ page: 1, pageSize: 5, search: q }), ...opts });
-  const businesses = useQuery({ queryKey: ["gs-biz", q], queryFn: () => getBusinessListings(1, 5, q), ...opts });
+  // Each section is searched (and shown) only if its feature is on; the API refuses a switched-off one.
+  const features = useFeatures();
+  const on = (key: string) => active && features.enabled(key);
+  const base = { staleTime: 30_000, retry: 0 } as const;
+  const jobs = useQuery({ queryKey: ["gs-jobs", q], queryFn: () => getJobs(1, 5, undefined, q), enabled: on("Jobs"), ...base });
+  const news = useQuery({ queryKey: ["gs-news", q], queryFn: () => getNewsPosts(1, 5, undefined, q), enabled: on("News"), ...base });
+  const resources = useQuery({ queryKey: ["gs-resources", q], queryFn: () => getResources(1, 5, undefined, q), enabled: on("Resources"), ...base });
+  const threads = useQuery({ queryKey: ["gs-threads", q], queryFn: () => getForumThreads(1, 5, undefined, q), enabled: on("Forum"), ...base });
+  const people = useQuery({ queryKey: ["gs-people", q], queryFn: () => searchDirectory({ page: 1, pageSize: 5, search: q }), enabled: on("Directory"), ...base });
+  const businesses = useQuery({ queryKey: ["gs-biz", q], queryFn: () => getBusinessListings(1, 5, q), enabled: on("BusinessDirectory"), ...base });
   // Events have no search on the server, so fetch one page once and filter it here.
-  const events = useQuery({ queryKey: ["gs-events"], queryFn: () => getEvents(1, 50), enabled: open, staleTime: 5 * 60_000, retry: 0 });
+  const events = useQuery({ queryKey: ["gs-events"], queryFn: () => getEvents(1, 50), enabled: open && features.enabled("Events"), staleTime: 5 * 60_000, retry: 0 });
+  const searchable = [
+    features.enabled("Jobs") && "jobs", features.enabled("Events") && "events", features.enabled("News") && "news",
+    features.enabled("Resources") && "resources", features.enabled("Forum") && "forum threads",
+    features.enabled("Directory") && "members", features.enabled("BusinessDirectory") && "businesses",
+  ].filter(Boolean) as string[];
+  const searchableText = searchable.length > 1 ? `${searchable.slice(0, -1).join(", ")} and ${searchable[searchable.length - 1]}` : searchable[0] ?? "";
 
   const groups: Group[] = useMemo(() => {
     const lc = q.toLowerCase();
@@ -112,14 +123,14 @@ export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; h
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : close())}>
         <DialogContent className="top-[4%] max-h-[90dvh] translate-y-0 gap-0 overflow-hidden p-0 sm:top-[8%] sm:max-w-xl">
           <DialogTitle className="sr-only">Search the portal</DialogTitle>
-          <DialogDescription className="sr-only">Find pages, jobs, events, news, resources, forum threads, members and businesses.</DialogDescription>
+          <DialogDescription className="sr-only">Find pages{searchableText ? `, ${searchableText}` : ""}.</DialogDescription>
           <div className="flex items-center gap-2 border-b border-border pl-3 pr-14">
             <Search size={16} className="shrink-0 text-muted-foreground" />
             <input
               autoFocus
               value={term}
               onChange={(e) => setTerm(e.target.value)}
-              placeholder="Search jobs, events, news, people…"
+              placeholder={searchable.length > 0 ? `Search ${searchable.slice(0, 3).join(", ")}${searchable.length > 3 ? "…" : ""}` : "Search the portal"}
               aria-label="Search the portal"
               className="h-12 min-h-0 w-full !border-0 bg-transparent text-[16px] !shadow-none !outline-none !ring-0 placeholder:text-muted-foreground/70 focus:!border-0 focus:!shadow-none md:text-[14px]"
             />
@@ -130,7 +141,7 @@ export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; h
               <div className="px-4 py-6">
                 <p className="text-[13px] font-semibold text-foreground">Find anything in one place</p>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
-                  Type at least two letters to search jobs, events, news, resources, forum threads, members and businesses. Or jump straight to a page:
+                  {searchableText ? `Type at least two letters to search ${searchableText}. Or jump straight to a page:` : "Jump straight to a page:"}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {pages.slice(0, 8).map((p) => (

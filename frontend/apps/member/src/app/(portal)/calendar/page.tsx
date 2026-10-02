@@ -13,14 +13,19 @@ import { cn, formatCurrency } from "@alumni/ui";
 import {
   getEvents, getMyRsvps, getMyCampaigns, getMyContributionSummary, getMyMembershipStatus,
 } from "@/lib/member-api";
+import { useFeatures } from "@/components/member/member-layout";
 import { ActivityCalendarGrid, type CalendarItem } from "@/components/member/activity-calendar-grid";
 
 function useCalendarItems() {
-  const eventsQ = useQuery({ queryKey: ["cal-events"], queryFn: () => getEvents(1, 250, "All") });
-  const rsvpsQ = useQuery({ queryKey: ["cal-rsvps"], queryFn: () => getMyRsvps("Confirmed") });
-  const campaignsQ = useQuery({ queryKey: ["cal-campaigns"], queryFn: () => getMyCampaigns(1, 250) });
-  const contributionsQ = useQuery({ queryKey: ["m-contribution-summary"], queryFn: getMyContributionSummary });
-  const membershipQ = useQuery({ queryKey: ["cal-membership"], queryFn: getMyMembershipStatus });
+  // The calendar only shows the sources this institution has switched on (events, payments).
+  const features = useFeatures();
+  const eventsOn = features.enabled("Events");
+  const contributionsOn = features.enabled("Contributions");
+  const eventsQ = useQuery({ queryKey: ["cal-events"], queryFn: () => getEvents(1, 250, "All"), enabled: eventsOn });
+  const rsvpsQ = useQuery({ queryKey: ["cal-rsvps"], queryFn: () => getMyRsvps("Confirmed"), enabled: eventsOn });
+  const campaignsQ = useQuery({ queryKey: ["cal-campaigns"], queryFn: () => getMyCampaigns(1, 250), enabled: contributionsOn });
+  const contributionsQ = useQuery({ queryKey: ["m-contribution-summary"], queryFn: getMyContributionSummary, enabled: contributionsOn });
+  const membershipQ = useQuery({ queryKey: ["cal-membership"], queryFn: getMyMembershipStatus, enabled: contributionsOn });
 
   const queries = [eventsQ, rsvpsQ, campaignsQ, contributionsQ, membershipQ];
   const isError = queries.some((q) => q.isError);
@@ -113,7 +118,13 @@ function ItemRow({ item }: { item: CalendarItem }) {
 export default function CalendarPage() {
   const [tab, setTab] = useState<"mine" | "all">("mine");
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
-  const { items, isLoading, isError, refetch, membershipStatus } = useCalendarItems();
+  const { items, isLoading: itemsLoading, isError, refetch, membershipStatus } = useCalendarItems();
+  const features = useFeatures();
+  const isLoading = itemsLoading || !features.ready;
+  const emptySources = [
+    features.enabled("Events") && "Events",
+    features.enabled("Contributions") && "fundraiser deadlines and dues dates",
+  ].filter(Boolean).join(", ").replace(/, ([^,]*)$/, " and $1");
 
   const visible = tab === "mine" ? items.filter((i) => i.mine) : items;
 
@@ -137,7 +148,11 @@ export default function CalendarPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
       <PageHeader
         title="Calendar"
-        description="Every event and payment deadline in one place, so nothing catches you by surprise."
+        description={features.enabled("Events") && features.enabled("Contributions")
+          ? "Every event and payment deadline in one place, so nothing catches you by surprise."
+          : features.enabled("Events") ? "Every upcoming event in one place, so nothing catches you by surprise."
+          : features.enabled("Contributions") ? "Every payment deadline in one place, so nothing catches you by surprise."
+          : "What's coming up, in one place."}
       />
 
       {membershipStatus && !membershipStatus.isCurrentYearPaid && (
@@ -183,7 +198,7 @@ export default function CalendarPage() {
         <EmptyState
           icon={<CalendarDays size={26} />}
           title="Everything coming up, in one place"
-          description="Events, fundraiser deadlines and dues dates from your institution appear on this calendar, so you can see what is coming and what needs your action. Nothing is scheduled yet."
+          description={`${emptySources || "Activities"} from your institution appear on this calendar, so you can see what is coming and what needs your action. Nothing is scheduled yet.`}
         />
       ) : tab === "all" ? (
         // "All activities" is a flat chronological list, not the calendar

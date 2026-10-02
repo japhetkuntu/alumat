@@ -33,7 +33,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
-import { useNavTheme, useDisabledFeatures } from "@/components/member/member-layout";
+import { useNavTheme, useDisabledFeatures, useFeatures } from "@/components/member/member-layout";
 import type { NotificationPreference } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -142,10 +142,11 @@ export default function MemberProfilePage() {
     enabled: profileQueriesEnabled,
   });
 
+  const featureFlags = useFeatures();
   const { data: membershipCampaign } = useQuery({
     queryKey: ["m-current-membership-campaign"],
     queryFn:  getCurrentMembershipCampaign,
-    enabled: profileQueriesEnabled,
+    enabled: profileQueriesEnabled && featureFlags.enabled("Contributions"),
   });
 
   const { data: notifPrefs } = useQuery({
@@ -159,6 +160,11 @@ export default function MemberProfilePage() {
   const institutionName = navTheme?.displayName || "Member Portal";
   const disabledFeatures = useDisabledFeatures();
   const digestEnabled = !disabledFeatures.has("Digest");
+  // Settings and copy that only make sense for a feature this institution uses.
+  const contributionsOn = !disabledFeatures.has("Contributions");
+  const eventsOn = !disabledFeatures.has("Events");
+  const jobsOn = !disabledFeatures.has("Jobs");
+  const spotlightsOn = !disabledFeatures.has("Spotlights");
   const smsNotificationsEnabled = navTheme?.smsNotificationsEnabled ?? true;
   const pushNotifications = usePushNotifications();
 
@@ -791,8 +797,8 @@ export default function MemberProfilePage() {
         </Card>
         )}
 
-        {/* ── Employment status ── */}
-        <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+        {/* ── Employment status — only sets the dues amount, so it's pointless without Contributions ── */}
+        {contributionsOn && <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Employment status</CardTitle>
             <CardDescription>Determines your membership renewal amount</CardDescription>
@@ -843,7 +849,7 @@ export default function MemberProfilePage() {
               </p>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* ═══════════════════ SETTINGS ═══════════════════ */}
 
@@ -887,6 +893,7 @@ export default function MemberProfilePage() {
                 </div>
               </div>
             )}
+            {contributionsOn && (
             <Toggle
               checked={notifPrefs?.membershipReminders ?? true}
               onChange={(v) => toggleNotif("membershipReminders", v)}
@@ -894,30 +901,39 @@ export default function MemberProfilePage() {
               tip="A nudge before your membership dues expire."
               description="Reminders about upcoming membership renewals"
             />
+            )}
+            {contributionsOn && (
             <Toggle
               checked={notifPrefs?.campaignAlerts ?? true}
               onChange={(v) => toggleNotif("campaignAlerts", v)}
               label="Fundraiser Alerts"
               description="Notifications when new fundraisers are launched"
             />
+            )}
+            {eventsOn && (
             <Toggle
               checked={notifPrefs?.eventReminders ?? true}
               onChange={(v) => toggleNotif("eventReminders", v)}
               label="Event Reminders"
               description="Get notified about upcoming community events"
             />
+            )}
+            {jobsOn && (
             <Toggle
               checked={notifPrefs?.jobAlerts ?? true}
               onChange={(v) => toggleNotif("jobAlerts", v)}
               label="Job Alerts"
               description="Notifications for new job postings"
             />
+            )}
+            {spotlightsOn && (
             <Toggle
               checked={notifPrefs?.spotlightAlerts ?? true}
               onChange={(v) => toggleNotif("spotlightAlerts", v)}
               label="Spotlight Updates"
               description="Get notified about new member spotlights"
             />
+            )}
             {smsNotificationsEnabled && (
               <Toggle
                 checked={notifPrefs?.smsAlerts ?? false}

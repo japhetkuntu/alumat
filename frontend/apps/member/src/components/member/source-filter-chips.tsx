@@ -17,15 +17,20 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
  * button below sm — a whole extra pill group wrapping onto its own broken
  * line is what made mobile look cluttered, not the filter itself.
  */
+import { useFeatures } from "@/components/member/member-layout";
+
 export function SourceFilterChips({ value, onChange, divider = true }: {
   value: string | null;
   onChange: (communityId: string | null) => void;
   /** Set false when these are the only pills in their row (no preceding filter group to separate from). */
   divider?: boolean;
 }) {
+  // Communities can be switched off for an institution; then there is simply nothing to filter by.
+  const features = useFeatures();
   const { data } = useQuery({
     queryKey: ["my-communities-chips"],
     queryFn: getMyCommunities,
+    enabled: features.enabled("Communities"),
   });
   const communities = (data ?? []).filter((c) => c.myStatus === "Approved");
 

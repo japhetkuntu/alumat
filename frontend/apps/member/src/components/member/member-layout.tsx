@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { PortalShellSkeleton } from "@alumni/ui";
+import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { GlobalSearch } from "@/components/member/global-search";
 import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
@@ -123,6 +123,21 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/business-directory": "BusinessDirectory",
 };
 
+// Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
+const EXTRA_ROUTE_FEATURES: Record<string, string> = {
+  "/communities": "Communities",
+  "/membership-certificate": "Contributions",
+};
+
+/** The feature that owns a portal path (or null if it isn't feature-gated), so a switched-off feature's pages can be kept from mounting at all. */
+function featureForPath(pathname: string): string | null {
+  const routes = { ...NAV_FEATURE_KEYS, ...EXTRA_ROUTE_FEATURES };
+  const match = Object.keys(routes)
+    .filter((href) => pathname === href || pathname.startsWith(href + "/"))
+    .sort((a, b) => b.length - a.length)[0];
+  return match ? routes[match] : null;
+}
+
 interface NavThemeData {
   disabledFeatures: string[];
   displayName?: string | null;
@@ -164,9 +179,11 @@ export function useDisabledFeatures(): Set<string> {
  * own per-section error handling instead of going blank.
  */
 export function useFeatures() {
-  const { isLoading } = useNavTheme();
+  const { isSuccess, isError } = useNavTheme();
   const disabled = useDisabledFeatures();
-  const ready = !isLoading;
+  // "Arrived or failed", not "!isLoading": while the persisted query cache is still being restored on page
+  // load, a pending query reports isLoading=false, which would read as ready with nothing disabled.
+  const ready = isSuccess || isError;
   return useMemo(
     () => ({ ready, disabled, enabled: (key: string) => ready && !disabled.has(key) }),
     [ready, disabled],
@@ -388,11 +405,23 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
 
+  // A page owned by a feature mounts only once we know the feature is on. Mounting earlier would fire
+  // its requests (which the API refuses with 403 when the feature is off); a switched-off feature's
+  // page — reached by a bookmark, a shared link or an old notification — sends the member home instead.
+  const features = useFeatures();
+  const routeFeature = featureForPath(pathname);
+  const featureOff = !!routeFeature && features.ready && features.disabled.has(routeFeature);
+  const holdPage = !!routeFeature && (!features.ready || featureOff);
+
   // Client pages can't export metadata, so the browser tab and history show the page name here.
   useEffect(() => {
     if (!pageTitle) return;
     document.title = `${pageTitle} · ${brandName}`;
   }, [pageTitle, brandName]);
+
+  useEffect(() => {
+    if (featureOff) router.replace("/dashboard");
+  }, [featureOff, router]);
 
   useEffect(() => {
     if (!isLoading && !isMember && pathname !== "/login") {
@@ -482,7 +511,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
               <PortalNudge />
-              {children}
+              {holdPage ? <div className="p-4 sm:p-6 space-y-4" aria-busy="true"><Skeleton className="h-8 w-56" /><Skeleton className="h-40 w-full" /></div> : children}
             </div>
           </div>
         </main>

@@ -39,9 +39,11 @@ export function useFeatureEnabled(key: string): boolean {
  * its own error handling.
  */
 export function useFeatures() {
-  const { isLoading } = useFeatureTheme();
+  const { isSuccess, isError } = useFeatureTheme();
   const disabled = useDisabledFeatures();
-  const ready = !isLoading;
+  // "Arrived or failed", not "!isLoading": while the persisted query cache is still being restored on page
+  // load, a pending query reports isLoading=false, which would read as ready with nothing disabled.
+  const ready = isSuccess || isError;
   return useMemo(
     () => ({ ready, disabled, enabled: (key: string) => ready && !disabled.has(key) }),
     [ready, disabled],

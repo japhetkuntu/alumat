@@ -402,7 +402,7 @@ function RegisterForm() {
       const res = await publicMemberClient.get<{ data: {
         requireStudentId: boolean; promptMembershipActivationAtSignup: boolean;
         programOfStudyEnabled: boolean; programsOfStudy: string[];
-        organizationType: "Alumni" | "Community";
+        organizationType: "Alumni" | "Community"; disabledFeatures?: string[];
       } }>("/public/institution/theme");
       return res.data.data;
     },
@@ -439,7 +439,8 @@ function RegisterForm() {
   // Opt-in per institution (default off) — most institutions don't want a
   // payment ask on the registration success screen before a member is even
   // approved. Defaults to false (not shown) until the real value loads.
-  const promptMembershipActivation = theme?.promptMembershipActivationAtSignup ?? false;
+  // Activation is a payment, so there's nothing to ask for when the institution has Contributions switched off.
+  const promptMembershipActivation = (theme?.promptMembershipActivationAtSignup ?? false) && !theme?.disabledFeatures?.includes("Contributions");
   const schema = useMemo(
     () => buildSchema(requireStudentId, !!googleIdToken, !isCommunity),
     [requireStudentId, googleIdToken, isCommunity],

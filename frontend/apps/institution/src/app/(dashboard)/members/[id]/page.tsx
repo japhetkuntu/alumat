@@ -12,6 +12,7 @@ import { UserAvatar } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
+import { useFeatures } from "@/hooks/use-institution-features";
 import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
@@ -91,9 +92,12 @@ export default function MemberDetailPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  // Dues campaigns only exist (and the API only answers) when Contributions is on.
+  const features = useFeatures();
   const { data: campaignsData } = useQuery({
     queryKey: ["admin-campaigns-membership"],
     queryFn: () => getCampaigns(1, 100),
+    enabled: features.enabled("Contributions"),
   });
   const membershipCampaigns = (campaignsData?.results ?? []).filter((c) => c.isMembershipCampaign && c.membershipYear);
 

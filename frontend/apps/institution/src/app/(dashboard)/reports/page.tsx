@@ -13,6 +13,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
+import { useFeatures } from "@/hooks/use-institution-features";
 import { getCampaigns, getReportSummary, exportReportCsv, type MemberReportExportFilters } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -48,9 +49,16 @@ export default function AdminReportsPage() {
     queryFn: () => getReportSummary(),
   });
 
+  // Every section here belongs to a feature that can be switched off; the API refuses a disabled one,
+  // so its data isn't requested and its cards and export buttons aren't shown.
+  const features = useFeatures();
+  const contributionsOn = features.enabled("Contributions");
+  const eventsOn = features.enabled("Events");
+  const jobsOn = features.enabled("Jobs");
   const campaignsQuery = useQuery({
     queryKey: ["report-campaigns"],
     queryFn: () => getCampaigns(1, 100),
+    enabled: contributionsOn,
   });
 
   useEffect(() => {
@@ -66,7 +74,7 @@ export default function AdminReportsPage() {
   const totalContributions = summaryQuery.data?.totalContributions ?? 0;
   const totalCollected = summaryQuery.data?.totalCollected ?? 0;
   const totalEvents = summaryQuery.data?.totalEvents ?? 0;
-  const isLoading = summaryQuery.isLoading || campaignsQuery.isLoading;
+  const isLoading = !features.ready || summaryQuery.isLoading || campaignsQuery.isLoading;
 
   // Downloads straight from the backend's own scoped CSV builder (see
   // ReportService.ExportEntityCsvAsync) — server-side, not capped at any
@@ -99,29 +107,37 @@ export default function AdminReportsPage() {
         <p className="text-muted-foreground text-[13px] mt-1.5">Evidence for community health, fundraising, and operational follow-up.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <StatSkeleton key={i} />)
-        ) : [
+      {(() => {
+        const stats = [
           { label: "Total Members", value: totalMembers.toLocaleString(), icon: Users, color: "text-blue-600" },
-          { label: "Total Contributions", value: totalContributions.toLocaleString(), icon: Activity, color: "text-teal-500" },
-          { label: "Total Collected", value: formatCurrency(totalCollected), icon: DollarSign, color: "text-success" },
-          { label: "Fundraisers", value: totalCampaigns.toLocaleString(), icon: Layers, color: "text-purple-600" },
-          { label: "Events", value: totalEvents.toLocaleString(), icon: Calendar, color: "text-indigo-600" },
-        ].map((s, i) => (
-          <Card key={s.label} className="stagger-item hover:shadow-md transition-shadow" style={{ animationDelay: `${i * 50}ms` }}>
-            <CardContent className="p-5 flex items-center gap-3">
-              <div className={`${s.color} rounded-xl bg-muted/50 p-2.5`}><s.icon size={20} /></div>
-              <div>
-                <p className="text-lg font-bold tracking-tight">{s.value}</p>
-                <p className="text-[13px] text-muted-foreground">{s.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+          ...(contributionsOn ? [
+            { label: "Total Contributions", value: totalContributions.toLocaleString(), icon: Activity, color: "text-teal-500" },
+            { label: "Total Collected", value: formatCurrency(totalCollected), icon: DollarSign, color: "text-success" },
+            { label: "Fundraisers", value: totalCampaigns.toLocaleString(), icon: Layers, color: "text-purple-600" },
+          ] : []),
+          ...(eventsOn ? [{ label: "Events", value: totalEvents.toLocaleString(), icon: Calendar, color: "text-indigo-600" }] : []),
+        ];
+        const cols = ["", "sm:grid-cols-1", "sm:grid-cols-2", "sm:grid-cols-3", "sm:grid-cols-4", "sm:grid-cols-5"][Math.min(stats.length, 5)];
+        return (
+          <div className={`grid grid-cols-2 gap-4 ${cols} [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1`}>
+            {isLoading ? (
+              Array.from({ length: features.ready ? stats.length : 5 }).map((_, i) => <StatSkeleton key={i} />)
+            ) : stats.map((s, i) => (
+              <Card key={s.label} className="stagger-item hover:shadow-md transition-shadow" style={{ animationDelay: `${i * 50}ms` }}>
+                <CardContent className="p-5 flex items-center gap-3">
+                  <div className={`${s.color} rounded-xl bg-muted/50 p-2.5`}><s.icon size={20} /></div>
+                  <div>
+                    <p className="text-lg font-bold tracking-tight">{s.value}</p>
+                    <p className="text-[13px] text-muted-foreground">{s.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        );
+      })()}
 
-      <Card>
+      {contributionsOn && <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">Fundraiser &amp; Dues Performance</CardTitle>
           <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5 w-full sm:w-auto" onClick={() => handleExport("campaigns")} disabled={exporting === "campaigns"}>
@@ -152,16 +168,16 @@ export default function AdminReportsPage() {
             })
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card>
+      {contributionsOn && <Card>
         <CardHeader><CardTitle className="text-base">Fundraiser &amp; Dues Status Breakdown</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           <p className="text-sm">Active: <strong>{activeCampaigns}</strong> · Closed: <strong>{closedCampaigns}</strong> · Total: <strong>{totalCampaigns}</strong></p>
           <Progress value={totalCampaigns > 0 ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0} tone="accent" />
           <p className="text-xs text-muted-foreground">Active share: {totalCampaigns ? Math.round((activeCampaigns / totalCampaigns) * 100) : 0}%</p>
         </CardContent>
-      </Card>
+      </Card>}
 
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -205,20 +221,20 @@ export default function AdminReportsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      {(contributionsOn || eventsOn || jobsOn) && <Card>
         <CardHeader><CardTitle className="text-base">More Exports</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap gap-2.5">
-          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("contributions")} disabled={exporting === "contributions"}>
+          {contributionsOn && <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("contributions")} disabled={exporting === "contributions"}>
             {exporting === "contributions" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Contributions CSV</>}
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("events")} disabled={exporting === "events"}>
+          </Button>}
+          {eventsOn && <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("events")} disabled={exporting === "events"}>
             {exporting === "events" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Events CSV</>}
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("jobs")} disabled={exporting === "jobs"}>
+          </Button>}
+          {jobsOn && <Button size="sm" variant="outline" className="gap-1 h-9 px-3.5" onClick={() => handleExport("jobs")} disabled={exporting === "jobs"}>
             {exporting === "jobs" ? <><Loader2 size={13} className="animate-spin" />Exporting…</> : <><Download size={13} />Jobs CSV</>}
-          </Button>
+          </Button>}
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }
