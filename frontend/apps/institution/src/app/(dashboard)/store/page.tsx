@@ -46,11 +46,11 @@ const NOT_STARTED = "__not_started__";
 
 interface RowValues {
   sku: string;
-  priceOverride: string;
+  priceAdjustment: string;
   quantityAvailable: string;
 }
 
-const defaultRowValues: RowValues = { sku: "", priceOverride: "", quantityAvailable: "0" };
+const defaultRowValues: RowValues = { sku: "", priceAdjustment: "", quantityAvailable: "0" };
 
 interface FormState {
   name: string;
@@ -156,8 +156,11 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
                   { value: "Draft", label: "Draft, hidden" },
                   { value: "Archived", label: "Archived" },
                 ]} /></div>
-            <div className="space-y-2"><Label>Price (GHS)</Label>
-              <Input type="number" min="0" step="0.01" placeholder="150" value={form.price} onChange={(e) => f("price", e.target.value)} required /></div>
+            <div className="space-y-2"><Label>{form.optionTypes.length > 0 ? "Base price (GHS)" : "Price (GHS)"}</Label>
+              <Input type="number" min="0" step="0.01" placeholder="150" value={form.price} onChange={(e) => f("price", e.target.value)} required />
+              {form.optionTypes.length > 0 && (
+                <p className="text-[12px] text-muted-foreground">Each option below adds its extra amount to this price. Leave an option at 0 to sell it at the base price.</p>
+              )}</div>
             {form.config.trackStock && (
               <div className="space-y-2"><Label>Quantity available</Label>
                 <Input type="number" min="0" placeholder="50" value={form.quantityAvailable} onChange={(e) => f("quantityAvailable", e.target.value)} required /></div>
@@ -241,7 +244,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
                     <TableRow>
                       {form.optionTypes.map((t) => <TableHead key={t}>{t}</TableHead>)}
                       <TableHead>SKU</TableHead>
-                      <TableHead>Price override</TableHead>
+                      <TableHead>Extra price (added to base)</TableHead>
                       <TableHead>Qty available</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -256,8 +259,11 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
                             <Input value={row.sku} onChange={(e) => updateRow(key, { sku: e.target.value })} placeholder="Optional" className="h-9 min-w-[7rem]" />
                           </TableCell>
                           <TableCell>
-                            <Input type="number" min="0" step="0.01" value={row.priceOverride} onChange={(e) => updateRow(key, { priceOverride: e.target.value })}
-                              placeholder="Defaults to product price" className="h-9 min-w-[10rem]" />
+                            <Input type="number" step="0.01" value={row.priceAdjustment} onChange={(e) => updateRow(key, { priceAdjustment: e.target.value })}
+                              placeholder="0" className="h-9 min-w-[8rem]" />
+                            <p className="mt-1 text-[12px] text-muted-foreground whitespace-nowrap">
+                              Sells at {formatCurrency((Number(form.price) || 0) + (Number(row.priceAdjustment) || 0))}
+                            </p>
                           </TableCell>
                           <TableCell>
                             <Input type="number" min="0" value={row.quantityAvailable} onChange={(e) => updateRow(key, { quantityAvailable: e.target.value })}
@@ -418,7 +424,7 @@ export default function AdminStorePage() {
             return {
               options,
               sku: row.sku.trim() || undefined,
-              priceOverride: row.priceOverride.trim() !== "" ? Number(row.priceOverride) : undefined,
+              priceAdjustment: row.priceAdjustment.trim() !== "" ? Number(row.priceAdjustment) : 0,
               quantityAvailable: Number(row.quantityAvailable) || 0,
             };
           })
@@ -590,7 +596,7 @@ export default function AdminStorePage() {
                     comboKey(editProduct.variantOptionTypes ?? [], v.options),
                     {
                       sku: v.sku ?? "",
-                      priceOverride: v.price !== editProduct.price ? String(v.price) : "",
+                      priceAdjustment: v.priceAdjustment ? String(v.priceAdjustment) : "",
                       quantityAvailable: String(v.quantityAvailable),
                     },
                   ])
@@ -642,7 +648,7 @@ export default function AdminStorePage() {
                       <Badge variant={statusVariant[p.status] ?? "secondary"} size="sm">{p.status}</Badge>
                     </div>
                     <p className="text-[15px] font-bold text-primary">
-                      {formatCurrency(p.price)}{p.priceLabel && <span className="text-[12px] font-normal text-muted-foreground"> {p.priceLabel}</span>}
+                      {p.variants && p.variants.length > 0 && Math.min(...p.variants.map((v) => v.price)) !== Math.max(...p.variants.map((v) => v.price)) ? "From " : ""}{formatCurrency(p.variants && p.variants.length > 0 ? Math.min(...p.variants.map((v) => v.price)) : p.price)}{p.priceLabel && <span className="text-[12px] font-normal text-muted-foreground"> {p.priceLabel}</span>}
                     </p>
                     <p className="text-[12px] text-muted-foreground">
                       {p.trackStock === false ? "Unlimited availability" : `${p.quantityAvailable} in stock`}

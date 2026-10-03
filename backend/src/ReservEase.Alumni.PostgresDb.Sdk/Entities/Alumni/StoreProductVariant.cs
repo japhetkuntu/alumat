@@ -21,8 +21,11 @@ public class StoreProductVariant : BaseEntity, ITenantScoped
 
     public string? Sku { get; set; }
 
-    /// <summary>Null falls back to the parent StoreProduct.Price for this variant's effective price.</summary>
-    public decimal? PriceOverride { get; set; }
+    /// <summary>
+    /// Amount added to the parent StoreProduct.Price to get this variant's price (0 = the base price,
+    /// e.g. base 1000 with adjustments 0 / 1000 / 1400 sells at 1000 / 2000 / 2400).
+    /// </summary>
+    public decimal PriceAdjustment { get; set; }
 
     public int QuantityAvailable { get; set; }
 

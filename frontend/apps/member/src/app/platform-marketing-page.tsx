@@ -488,7 +488,7 @@ export default function PlatformMarketingPage() {
           </div>
         </section>
         <section id="product" className="mk-wrap mk-product-section">
-          <div className="mk-product-heading"><div><p className="mk-eyebrow">The member experience</p><h2>See what your community actually gets.</h2></div><span className="mk-demo-label">Interactive preview · example data</span></div>
+          <div className="mk-product-heading"><div><p className="mk-eyebrow">The member experience</p><h2>See what your community actually gets.</h2></div></div>
           <div className="mk-product-frame"><ProductTour /></div>
         </section>
         <section id="problems" className="mk-section mk-problems">

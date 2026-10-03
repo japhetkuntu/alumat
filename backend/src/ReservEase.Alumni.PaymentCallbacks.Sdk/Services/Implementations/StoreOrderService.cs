@@ -236,7 +236,7 @@ public class StoreOrderService(
                     if (product.TrackStock && variant.QuantityAvailable < line.Quantity)
                         return ApiResponseExtensions.ToBadRequestApiResponse<StoreCheckoutResponse>($"Only {variant.QuantityAvailable} of \"{product.Name}\" left in stock.");
 
-                    var variantPrice = variant.PriceOverride ?? product.Price;
+                    var variantPrice = product.Price + variant.PriceAdjustment;
                     items.Add(new StoreOrderItem
                     {
                         ProductId = product.Id,

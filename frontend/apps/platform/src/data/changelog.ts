@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-03",
+    title: "Store variants now add to the base price instead of replacing it",
+    body: "A product with options (size, tier, session and so on) now has one base price, and each option carries only the extra amount on top of it. A product at GH₵1,000 with options adding 0, 1,000 and 1,400 sells at 1,000, 2,000 and 2,400, and changing the base price moves every option with it. The editor labels the field \"Base price\", shows each option's final price as you type, and rejects an option that would end up free or negative; a negative extra can be used for a discounted option. Product cards show \"From\" the lowest price. Existing products were converted automatically so every option keeps selling at exactly its current price.",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-03",
     title: "Institution portal polished for phones",
     body: "Dashboard figures now sit two to a row instead of one tall card each, text under 12px was raised to 12px across the portal, filter chips on the forum, mentorship and notification pages are a comfortable touch height, the Mentorship view toggle no longer runs off a 320px screen, and the dashboard's \"Full report\" and \"View queue\" links have larger tap areas. Combined with the shared fixes for badges, page headers and the floating get-started button, every institution page was checked at four widths from 320 to 768 pixels with no horizontal overflow.",
     scopes: ["Institution"],

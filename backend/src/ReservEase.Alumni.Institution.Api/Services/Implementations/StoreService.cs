@@ -32,9 +32,9 @@ public class StoreService(
     /// Replaces the full variant set for a product (delete-existing-and-recreate,
     /// matching the "admin submits the whole variant table each edit" UX — no
     /// per-variant diffing/ID preservation across an edit) and rolls the
-    /// parent product's Price/QuantityAvailable up from the submitted variants:
-    /// Price becomes the lowest effective price (PriceOverride ?? submitted
-    /// product Price), QuantityAvailable becomes the sum of variant quantities.
+    /// parent product's QuantityAvailable up from the submitted variants
+    /// (the sum of variant quantities). The product's Price stays the base price
+    /// the admin entered; each variant adds its PriceAdjustment to it.
     /// When <paramref name="variantRequests"/> is empty, the product stays (or
     /// becomes) a simple product and its Price/QuantityAvailable are left as
     /// already set by the caller.
@@ -60,17 +60,25 @@ public class StoreService(
             ProductId = product.Id,
             Options = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(r.OptionsJson) ?? new(),
             Sku = r.Sku,
-            PriceOverride = r.PriceOverride,
+            PriceAdjustment = r.PriceAdjustment,
             QuantityAvailable = r.QuantityAvailable,
             CreatedBy = adminId,
         }).ToList();
 
         await variantRepo.AddRangeAsync(newVariants);
 
-        product.Price = newVariants.Min(v => v.PriceOverride ?? product.Price);
         product.QuantityAvailable = newVariants.Sum(v => v.QuantityAvailable);
 
         return newVariants;
+    }
+
+    /// <summary>Returns an error when any variant would end up free or negative once its adjustment is added to the base price.</summary>
+    private static string? ValidateVariantPrices(decimal basePrice, List<VariantRequest>? variants)
+    {
+        if (variants is not { Count: > 0 }) return null;
+        return variants.Any(v => basePrice + v.PriceAdjustment <= 0)
+            ? "Every option's price (the base price plus its extra amount) must be greater than zero."
+            : null;
     }
 
     /// <summary>
@@ -205,6 +213,10 @@ public class StoreService(
             if (configError is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(configError);
 
+            var priceError = ValidateVariantPrices(product.Price, request.VariantOptionTypes is { Count: > 0 } ? request.Variants : null);
+            if (priceError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(priceError);
+
             if (request.Images is { Count: > 0 })
                 product.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
@@ -251,6 +263,10 @@ public class StoreService(
             var configError = ApplyProductConfig(product, request.PriceLabel, request.TrackStock, request.DetailsJson, request.FieldsJson, request.DeliveryFieldsJson, request.StagesJson);
             if (configError is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(configError);
+
+            var priceError = ValidateVariantPrices(product.Price, request.VariantOptionTypes is { Count: > 0 } ? request.Variants : null);
+            if (priceError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(priceError);
 
             var imageUrls = new List<string>();
             if (request.ExistingImageUrls is { Count: > 0 })

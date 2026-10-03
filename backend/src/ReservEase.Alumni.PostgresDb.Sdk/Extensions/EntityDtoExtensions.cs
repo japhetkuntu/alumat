@@ -228,7 +228,8 @@ public static class EntityDtoExtensions
         Id = v.Id,
         Options = v.Options,
         Sku = v.Sku,
-        Price = v.PriceOverride ?? parentProduct.Price,
+        Price = parentProduct.Price + v.PriceAdjustment,
+        PriceAdjustment = v.PriceAdjustment,
         QuantityAvailable = v.QuantityAvailable,
         ImageUrl = v.ImageUrl,
     };

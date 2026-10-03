@@ -218,8 +218,10 @@ public class StoreProductVariantDto
     public string Id { get; set; } = string.Empty;
     public Dictionary<string, string> Options { get; set; } = new();
     public string? Sku { get; set; }
-    /// <summary>Effective price — PriceOverride if set, otherwise the parent product's Price.</summary>
+    /// <summary>Effective price — the parent product's Price plus PriceAdjustment.</summary>
     public decimal Price { get; set; }
+    /// <summary>Amount this option adds to the product's base price (0 for the base option).</summary>
+    public decimal PriceAdjustment { get; set; }
     public int QuantityAvailable { get; set; }
     public string? ImageUrl { get; set; }
 }

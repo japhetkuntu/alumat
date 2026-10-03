@@ -38,8 +38,8 @@ export function ProductTour() {
   return (
     <div className="border border-border bg-background rounded-2xl overflow-hidden">
       <div className="mk-tour-header flex items-center justify-between gap-3 border-b border-border px-4 sm:px-5 py-3 sm:py-4 bg-muted/40">
-        <div className="flex items-center gap-2"><img src="/alumunion-mark.svg" alt="" width={24} height={24} /><span className="text-sm font-semibold">Member portal</span></div>
-        <span className="text-xs text-muted-foreground"><span className="hidden sm:inline">Interactive preview · </span>Example data</span>
+        <div className="flex items-center gap-2"><img src="/alumunion-mark.svg" alt="" width={24} height={24} /><span className="text-sm font-semibold whitespace-nowrap">Member portal</span></div>
+        <span className="text-xs text-muted-foreground whitespace-nowrap"><span className="hidden sm:inline">Interactive preview · </span>Example data</span>
       </div>
       <div className="grid md:grid-cols-[190px_1fr]">
         <nav ref={navRef} aria-label="Product preview" className="mk-preview-nav flex md:flex-col gap-1 p-2 md:p-3 border-b md:border-b-0 md:border-r border-border bg-muted/20">
@@ -80,7 +80,7 @@ export function ProductTour() {
           </> : view === "fundraising" ? <FundraisingPreview /> : view === "jobs" ? <JobsPreview /> : view === "updates" ? <UpdatesPreview /> : <MentorshipPreview />}
         </div>
       </div>
-      <p className="px-4 sm:px-5 py-3 border-t border-border text-xs text-muted-foreground">Seven member-facing experiences with fictional example data. Nothing here sends a payment, application or request.</p>
+      <p className="px-4 sm:px-5 py-3 border-t border-border text-xs text-muted-foreground">Seven member-facing experiences. Nothing here sends a payment, application or request.</p>
     </div>
   );
 }

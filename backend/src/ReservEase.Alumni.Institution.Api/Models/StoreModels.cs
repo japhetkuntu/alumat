@@ -6,7 +6,8 @@ public class VariantRequest
     /// <summary>JSON-encoded { "Size": "Medium", ... } — sent as a raw string rather than bound as Dictionary&lt;string,string&gt; because ASP.NET Core's form-data dictionary binder lowercases bracket-indexed keys (e.g. "Size" -> "size"), silently breaking case-sensitive option-type matching. Parsed explicitly in StoreService.</summary>
     public string OptionsJson { get; set; } = "{}";
     public string? Sku { get; set; }
-    public decimal? PriceOverride { get; set; }
+    /// <summary>Added to the product's base price (0 or blank = the base price).</summary>
+    public decimal PriceAdjustment { get; set; }
     public int QuantityAvailable { get; set; }
 }
 

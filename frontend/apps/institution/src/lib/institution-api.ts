@@ -1107,7 +1107,8 @@ export async function updateResource(id: string, body: UpdateResourceBody) {
 export interface StoreVariantBody {
   options: Record<string, string>;
   sku?: string;
-  priceOverride?: number;
+  /** Added to the product's base price; 0 or omitted = the base price. */
+  priceAdjustment?: number;
   quantityAvailable: number;
 }
 
@@ -1164,9 +1165,7 @@ function appendStoreVariantFields(fd: FormData, variantOptionTypes?: string[], v
   (variants ?? []).forEach((v, i) => {
     fd.append(`variants[${i}].optionsJson`, JSON.stringify(v.options));
     if (v.sku) fd.append(`variants[${i}].sku`, v.sku);
-    if (v.priceOverride !== undefined && v.priceOverride !== null) {
-      fd.append(`variants[${i}].priceOverride`, String(v.priceOverride));
-    }
+    fd.append(`variants[${i}].priceAdjustment`, String(v.priceAdjustment ?? 0));
     fd.append(`variants[${i}].quantityAvailable`, String(v.quantityAvailable));
   });
 }

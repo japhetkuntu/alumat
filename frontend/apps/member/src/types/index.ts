@@ -598,7 +598,7 @@ export interface StoreProductVariant {
   id: string;
   options: Record<string, string>;
   sku?: string;
-  /** Effective price — PriceOverride if set, otherwise the parent product's price. */
+  /** Effective price: the product's base price plus this option's extra amount. */
   price: number;
   quantityAvailable: number;
   imageUrl?: string;
