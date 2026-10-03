@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-03",
+    title: "Marketing site is flatter, calmer and easier to read",
+    body: "Removed the decorative rings, ghost numbers, label chips and stock enquiry photo, and replaced the pipeline chevrons with numbered steps. Corners now match the product's square style, hover lifts and shadows are gone, and the hero's assurances read as one plain line. Pricing says what is free once instead of repeating it, and the photo captions have a stronger backing so they stay legible.",
+    scopes: ["Marketing"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-03",
     title: "Store variants now add to the base price instead of replacing it",
     body: "A product with options (size, tier, session and so on) now has one base price, and each option carries only the extra amount on top of it. A product at GH₵1,000 with options adding 0, 1,000 and 1,400 sells at 1,000, 2,000 and 2,400, and changing the base price moves every option with it. The editor labels the field \"Base price\", shows each option's final price as you type, and rejects an option that would end up free or negative; a negative extra can be used for a discounted option. Product cards show \"From\" the lowest price. Existing products were converted automatically so every option keeps selling at exactly its current price.",
     scopes: ["Institution", "Member"],
