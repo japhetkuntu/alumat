@@ -74,7 +74,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
           />
           <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
           {featured && (
-            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10.5px] font-semibold"
+            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-semibold"
               style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)", color: "white" }}>
               <Star size={10} className="fill-white" /> Featured
             </div>
@@ -136,7 +136,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
                 )}
               </div>
               {spotlight.featuredMonth && (
-                <Badge variant="secondary" className="text-[10.5px] font-semibold shrink-0">
+                <Badge variant="secondary" className="text-[12px] font-semibold shrink-0">
                   {new Date(spotlight.featuredMonth).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                 </Badge>
               )}
@@ -146,7 +146,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
 
         {/* Title */}
         {!featured && (
-          <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--accent)" }}>
+          <p className="flex items-center gap-1.5 text-[12px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--accent)" }}>
             {spotlight.type === "Birthday" && <PartyPopper size={11} />}
             {spotlight.type === "Birthday" ? "Birthday" : "Spotlight"}
           </p>
@@ -177,7 +177,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
         )}
 
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
+          <p className="text-[12px]" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
             {formatDate(spotlight.createdAt)}
           </p>
           <ReportButton entityType="Spotlight" entityId={spotlight.id} entityTitle={spotlight.title} />
@@ -438,7 +438,7 @@ export default function SpotlightsPage() {
                         <h3 className="text-[14.5px] font-semibold leading-snug" style={{ color: "var(--foreground)" }}>
                           {s.title}
                         </h3>
-                        <Badge variant={meta.variant} className="text-[11px] font-semibold shrink-0">
+                        <Badge variant={meta.variant} className="text-[12px] font-semibold shrink-0">
                           {meta.label}
                         </Badge>
                       </div>

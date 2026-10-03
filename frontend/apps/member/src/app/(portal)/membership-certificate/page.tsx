@@ -479,7 +479,7 @@ export default function MembershipCertificatePage() {
                 style={{ background: "var(--secondary)" }}
               >
                 <p
-                  className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+                  className="text-[12px] font-semibold uppercase tracking-wide mb-1"
                   style={{ color: "var(--muted-foreground)" }}
                 >
                   {item.label}
@@ -499,7 +499,7 @@ export default function MembershipCertificatePage() {
             style={{ borderColor: "var(--border)" }}>
             <div className="flex items-center gap-2">
               <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>Status</p>
-              <Badge variant="success" className="text-[11px] font-semibold">
+              <Badge variant="success" className="text-[12px] font-semibold">
                 {selected.contribution.status}
               </Badge>
             </div>

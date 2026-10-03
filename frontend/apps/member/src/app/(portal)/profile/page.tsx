@@ -61,7 +61,7 @@ function EmploymentOption({
       <span className="text-[13.5px] font-semibold" style={{ color: active ? "var(--primary)" : "var(--foreground)" }}>
         {label}
       </span>
-      <span className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+      <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
         {description}
       </span>
       {active && <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full" style={{ background: "var(--primary)" }} />}
@@ -472,15 +472,15 @@ export default function MemberProfilePage() {
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
                   {!isCommunity && (
-                    <Badge variant="outline" className="text-[11px] font-semibold">
+                    <Badge variant="outline" className="text-[12px] font-semibold">
                       Cohort {profile.graduationYear}
                     </Badge>
                   )}
-                  <Badge variant={profile.status === "Active" ? "success" : "warning"} className="text-[11px] font-semibold">
+                  <Badge variant={profile.status === "Active" ? "success" : "warning"} className="text-[12px] font-semibold">
                     {profile.status}
                   </Badge>
                   {badges?.map(b => (
-                    <Badge key={b.id} variant="secondary" className="gap-1 text-[11px] font-semibold">
+                    <Badge key={b.id} variant="secondary" className="gap-1 text-[12px] font-semibold">
                       🏅 {b.badgeType.replace(/([A-Z])/g, " $1").trim()}
                     </Badge>
                   ))}
@@ -545,7 +545,7 @@ export default function MemberProfilePage() {
                     onChange={e => setProfileForm(f => ({ ...f, dateOfBirth: e.target.value }))}
                     className="h-11 text-[14px]"
                   />
-                  <p className="text-[11.5px] text-muted-foreground">Optional — only the month and day are ever used, to celebrate your birthday with a spotlight.</p>
+                  <p className="text-[12px] text-muted-foreground">Optional — only the month and day are ever used, to celebrate your birthday with a spotlight.</p>
                 </div>
               </div>
 

@@ -159,7 +159,7 @@ export default function MyServiceRequestsPage() {
                                 ) : (
                                   <Circle size={18} className="text-border" fill="currentColor" fillOpacity={0.15} />
                                 )}
-                                <span className={cn("text-[10.5px] text-center leading-tight px-0.5", done ? "font-medium text-foreground" : "text-muted-foreground")}>
+                                <span className={cn("text-[12px] text-center leading-tight px-0.5", done ? "font-medium text-foreground" : "text-muted-foreground")}>
                                   {stage}
                                 </span>
                               </div>
@@ -191,7 +191,7 @@ export default function MyServiceRequestsPage() {
                                 <span className="absolute -left-[29px] top-0.5 w-3.5 h-3.5 rounded-full bg-accent/15 border-2 border-accent" />
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {u.stage && <span className="text-[13px] font-medium">{u.stage}</span>}
-                                  <span className="text-[11.5px] text-muted-foreground">{formatDate(u.changedAt)}</span>
+                                  <span className="text-[12px] text-muted-foreground">{formatDate(u.changedAt)}</span>
                                 </div>
                                 {u.note && <p className="text-[12.5px] text-muted-foreground mt-0.5 leading-relaxed">{u.note}</p>}
                                 {u.attachmentUrl && (

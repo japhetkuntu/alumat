@@ -22,7 +22,7 @@ import { SourceFilterChips } from "@/components/member/source-filter-chips";
 const CATEGORIES = ["All", "Announcement", "Achievement", "News", "Event", "Opportunity"];
 
 function CategoryPill({ category }: { category: string }) {
-  return <Badge className="text-[11px]">{category}</Badge>;
+  return <Badge className="text-[12px]">{category}</Badge>;
 }
 
 export default function MemberNewsPage() {
@@ -115,14 +115,14 @@ export default function MemberNewsPage() {
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
                   {p.isPinned && (
                     <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-[12px] font-semibold backdrop-blur-sm"
                       style={{ background: "var(--warning)", color: "var(--warning-foreground)" }}
                     >
                       <Pin size={9} /> Pinned
                     </span>
                   )}
                   <span
-                    className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold"
+                    className="inline-flex items-center px-2 py-0.5 text-[12px] font-semibold"
                     style={{
                       background: "rgba(0,0,0,0.35)",
                       backdropFilter: "blur(4px)",
@@ -134,7 +134,7 @@ export default function MemberNewsPage() {
                 </div>
 
                 {/* Date over image */}
-                <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5 text-white/80 text-[11.5px] font-medium">
+                <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5 text-white/80 text-[12px] font-medium">
                   <Calendar size={11} />
                   {p.publishedAt ? formatDate(p.publishedAt) : "Draft"}
                 </div>

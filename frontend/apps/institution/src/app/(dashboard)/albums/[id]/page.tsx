@@ -184,7 +184,7 @@ export default function AdminAlbumDetailPage() {
           <div className="min-w-0">
             <h1 className="text-[20px] sm:text-[25px] font-bold m-0 truncate">{album.title}</h1>
             {album.description && <p className="text-muted-foreground text-[13px] mt-1 max-w-xl">{album.description}</p>}
-            <p className="text-[11.5px] text-muted-foreground mt-1">
+            <p className="text-[12px] text-muted-foreground mt-1">
               {album.photoCount} photo{album.photoCount === 1 ? "" : "s"} &middot; Created {formatDate(album.createdAt)}
             </p>
           </div>
@@ -242,7 +242,7 @@ export default function AdminAlbumDetailPage() {
               <div key={p.id} className="relative group aspect-square overflow-hidden border border-border/40 bg-muted/30">
                 <img src={p.url} alt={p.caption ?? ""} className="w-full h-full object-cover" loading="lazy" />
                 {isCover && (
-                  <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-sm shadow">
+                  <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-primary text-primary-foreground text-[12px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-sm shadow">
                     <Star size={10} className="fill-current" />Cover
                   </div>
                 )}
@@ -252,7 +252,7 @@ export default function AdminAlbumDetailPage() {
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="h-7 px-2 text-[10.5px]"
+                      className="h-7 px-2 text-[12px]"
                       isLoading={setCoverMut.isPending && setCoverMut.variables === p.url}
                       onClick={() => setCoverMut.mutate(p.url)}
                       title="Set as cover"
@@ -264,7 +264,7 @@ export default function AdminAlbumDetailPage() {
                     type="button"
                     size="sm"
                     variant="destructive"
-                    className="h-7 px-2 text-[10.5px]"
+                    className="h-7 px-2 text-[12px]"
                     onClick={() => setDeletePhotoTarget(p)}
                     title="Delete photo"
                   >
@@ -280,7 +280,7 @@ export default function AdminAlbumDetailPage() {
               <img src={u.previewUrl} alt="" className="w-full h-full object-cover opacity-50" />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/25">
                 <Loader2 size={20} className="animate-spin text-white" />
-                <span className="text-[9.5px] font-bold text-white uppercase tracking-wide">Uploading</span>
+                <span className="text-[12px] font-bold text-white uppercase tracking-wide">Uploading</span>
               </div>
             </div>
           ))}
@@ -294,7 +294,7 @@ export default function AdminAlbumDetailPage() {
             )}
           >
             <Plus size={18} />
-            <span className="text-[10px] font-medium">Add photos</span>
+            <span className="text-[12px] font-medium">Add photos</span>
           </button>
         </div>
       )}
@@ -319,7 +319,7 @@ export default function AdminAlbumDetailPage() {
               <Label>Description</Label>
               <Textarea rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
-            <p className="text-[11.5px] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               Tip: hover any photo below and click the star to set it as this album&apos;s cover photo.
             </p>
           </div>

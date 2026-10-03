@@ -149,12 +149,12 @@ export default function StorePage() {
                       </Link>
                       <div className="flex-1 min-w-[9rem]">
                         <Link href={`/store/${l.productId}`} className="text-[13px] font-semibold block hover:underline">{l.product.name}</Link>
-                        {label && <p className="text-[11.5px] text-muted-foreground break-words">{label}</p>}
+                        {label && <p className="text-[12px] text-muted-foreground break-words">{label}</p>}
                         <p className="text-[12px] text-muted-foreground">
                           {formatCurrency(unitPrice)}{l.product.priceLabel ? ` ${l.product.priceLabel}` : " each"}
                         </p>
                         {tracked && stock - l.quantity <= 2 && (
-                          <p className="text-[11px] text-warning font-medium mt-0.5">Only {stock} left</p>
+                          <p className="text-[12px] text-warning font-medium mt-0.5">Only {stock} left</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 max-sm:ml-[60px]">
@@ -236,9 +236,9 @@ export default function StorePage() {
                   </Link>
                   <p className="text-[14px] font-bold text-primary">{priceLabel}</p>
                   {soldOut ? (
-                    <p className="text-[11px] text-destructive font-medium">Sold out</p>
+                    <p className="text-[12px] text-destructive font-medium">Sold out</p>
                   ) : !hasVariants && tracked ? (
-                    <p className="text-[11px] text-muted-foreground">{p.quantityAvailable} left</p>
+                    <p className="text-[12px] text-muted-foreground">{p.quantityAvailable} left</p>
                   ) : null}
                   {hasVariants ? (
                     <Link href={`/store/${p.id}`} className="mt-auto">

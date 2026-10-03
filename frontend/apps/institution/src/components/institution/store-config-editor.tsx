@@ -186,7 +186,7 @@ export function StoreConfigEditor({ value, onChange, deliveryInfo, onApplyTempla
               <div key={t.id} className="flex items-center justify-between gap-2 border border-border/60 px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold truncate">{t.name}</p>
-                  <p className="text-[11.5px] text-muted-foreground">
+                  <p className="text-[12px] text-muted-foreground">
                     {t.fields.length} question{t.fields.length === 1 ? "" : "s"} · {t.deliveryFields.length} delivery detail{t.deliveryFields.length === 1 ? "" : "s"} · {t.stages.length} stage{t.stages.length === 1 ? "" : "s"}
                   </p>
                 </div>

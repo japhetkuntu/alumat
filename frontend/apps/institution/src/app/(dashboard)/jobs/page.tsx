@@ -246,7 +246,7 @@ export default function AdminJobsPage() {
                         <p className="text-sm font-semibold truncate">{j.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{j.company} · {j.location}</p>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{j.status}</span>
+                      <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">{j.status}</span>
                     </div>
                   ))}
                   {jobs.length > 5 && (
@@ -315,7 +315,7 @@ export default function AdminJobsPage() {
                     <Briefcase size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <div className="flex gap-1.5 flex-wrap justify-end">
-                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${typeColors[j.type] ?? "bg-muted text-muted-foreground border-border"}`}>
+                    <span className={`px-2 py-0.5 text-[12px] font-black uppercase tracking-widest border ${typeColors[j.type] ?? "bg-muted text-muted-foreground border-border"}`}>
                       {j.type}
                     </span>
                     <Badge variant={statusVariant[j.status] ?? "neutral"} size="sm">{j.status}</Badge>
@@ -329,7 +329,7 @@ export default function AdminJobsPage() {
                 </div>
 
                 {/* Meta */}
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-3 text-[12px] text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1"><MapPin size={11} />{j.location}</span>
                   {j.deadline && <span className="flex items-center gap-1"><Clock size={11} />{formatDate(j.deadline)}</span>}
                 </div>
@@ -340,12 +340,12 @@ export default function AdminJobsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 pt-1 border-t border-border/40">
-                  <Button size="sm" variant="outline" className="flex-1 h-9 text-[11px] font-bold gap-1" onClick={() => setEditJob(j)}>
+                  <Button size="sm" variant="outline" className="flex-1 h-9 text-[12px] font-bold gap-1" onClick={() => setEditJob(j)}>
                     <Pencil size={12} />Edit
                   </Button>
                   {j.applyUrl && (
                     <a href={ensureAbsoluteUrl(j.applyUrl)} target="_blank" rel="noopener noreferrer" className="flex-1">
-                      <Button size="sm" variant="outline" className="w-full h-9 text-[11px] font-bold gap-1">
+                      <Button size="sm" variant="outline" className="w-full h-9 text-[12px] font-bold gap-1">
                         <ExternalLink size={12} />Preview
                       </Button>
                     </a>

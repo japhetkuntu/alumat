@@ -316,7 +316,7 @@ function OrderItemRow({ orderId, item, index, paid }: { orderId: string; item: S
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 bg-muted/30 px-3 py-2">
           {answers.map((a) => (
             <div key={`${a.section}:${a.key}`} className="min-w-0">
-              <dt className="text-[11px] text-muted-foreground">{a.section === "Delivery" ? "Delivery: " : ""}{a.label}</dt>
+              <dt className="text-[12px] text-muted-foreground">{a.section === "Delivery" ? "Delivery: " : ""}{a.label}</dt>
               <dd className="break-words">
                 {a.type === "File" ? <a href={a.value} target="_blank" rel="noreferrer" className="text-accent underline">Open file</a> : a.value}
               </dd>
@@ -338,7 +338,7 @@ function OrderItemRow({ orderId, item, index, paid }: { orderId: string; item: S
                 <Button type="button" size="sm" disabled={!canSubmit} isLoading={updateMut.isPending} onClick={() => updateMut.mutate()}>Update</Button>
               </div>
               {(item.updates ?? []).length > 0 && (
-                <ul className="space-y-1 text-[11.5px] text-muted-foreground">
+                <ul className="space-y-1 text-[12px] text-muted-foreground">
                   {[...(item.updates ?? [])].reverse().map((u, i) => (
                     <li key={i}>{formatDate(u.changedAt)}{u.stage ? ` · ${u.stage}` : ""}{u.note ? ` · ${u.note}` : ""}{u.changedByStaffName ? ` (${u.changedByStaffName})` : ""}</li>
                   ))}
@@ -523,7 +523,7 @@ export default function AdminStorePage() {
               <div className="space-y-2 pt-2 border-t border-border/40">
                 <div>
                   <p className="text-[12.5px] font-medium">Delivery stages</p>
-                  <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
                     Optional: define stages (e.g. Packed, Shipped, Delivered) to track each order&apos;s fulfillment progress. Leave empty to skip delivery tracking.
                   </p>
                 </div>
@@ -652,7 +652,7 @@ export default function AdminStorePage() {
                     </p>
                     {p.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{p.description}</p>}
                     <div className="flex items-center gap-2 pt-2 mt-auto border-t border-border/40">
-                      <Button size="sm" variant="outline" className="flex-1 h-9 text-[11px] font-bold gap-1" onClick={() => setEditProduct(p)}>
+                      <Button size="sm" variant="outline" className="flex-1 h-9 text-[12px] font-bold gap-1" onClick={() => setEditProduct(p)}>
                         <Pencil size={12} />Edit
                       </Button>
                       <Button size="sm" variant="ghost" className="h-9 px-2 text-destructive hover:bg-destructive/10" onClick={() => setDeleteTarget(p)} title="Delete">
@@ -684,7 +684,7 @@ export default function AdminStorePage() {
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div>
                         <p className="text-[13px] font-bold">Order #{o.orderNumber}</p>
-                        <p className="text-[11.5px] text-muted-foreground">{o.memberName ?? o.memberEmail ?? "Member"} · {formatDate(o.createdAt)}</p>
+                        <p className="text-[12px] text-muted-foreground">{o.memberName ?? o.memberEmail ?? "Member"} · {formatDate(o.createdAt)}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={orderStatusVariant[o.status] ?? "secondary"} size="sm">{o.status}</Badge>
@@ -694,7 +694,7 @@ export default function AdminStorePage() {
 
                     {deliveryStages.length > 0 && o.items.some((it) => (it.stages ?? []).length === 0) && (
                       <div className="flex items-center gap-2 flex-wrap pt-1">
-                        <span className="text-[11.5px] font-semibold text-muted-foreground">Delivery status:</span>
+                        <span className="text-[12px] font-semibold text-muted-foreground">Delivery status:</span>
                         <FormSelect
                           className="h-9 text-[12.5px] min-w-[9rem]"
                           value={o.deliveryStatus ?? NOT_STARTED}

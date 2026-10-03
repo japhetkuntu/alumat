@@ -72,6 +72,28 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
     };
   }, [open]);
 
+  // Phones: slide out of the way while the page scrolls down (it would otherwise sit on top of buttons
+  // like "Pay now"), and come back as soon as the person scrolls up. Never tucks away while open.
+  const [tucked, setTucked] = React.useState(false);
+  React.useEffect(() => {
+    const lastTop = new WeakMap<EventTarget, number>();
+    function onScroll(e: Event) {
+      const target = e.target as HTMLElement | Document;
+      const top = target instanceof Document ? window.scrollY : target.scrollTop;
+      const prev = lastTop.get(target);
+      if (prev === undefined) {
+        lastTop.set(target, top);
+        return;
+      }
+      const delta = top - prev;
+      if (Math.abs(delta) < 6) return;
+      lastTop.set(target, top);
+      setTucked(delta > 0 && top > 80);
+    }
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => document.removeEventListener("scroll", onScroll, true);
+  }, []);
+
   if (!hydrated || loading || dismissed || items.length === 0) return null;
 
   const doneCount = items.filter((i) => i.done).length;
@@ -93,7 +115,11 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
     <section
       ref={rootRef}
       aria-label={title}
-      className={cn("fixed right-4 bottom-4 z-40 flex flex-col items-end gap-3", className)}
+      className={cn(
+        "fixed right-4 bottom-4 z-40 flex flex-col items-end gap-3 transition-[transform,opacity] duration-200",
+        tucked && !open && "max-lg:pointer-events-none max-lg:translate-y-24 max-lg:opacity-0",
+        className
+      )}
     >
       {open && (
         <div
@@ -170,7 +196,7 @@ export function GetStartedChecklist({ title = "Get started", items, storageKey, 
         aria-expanded={open}
         aria-controls="get-started-panel"
         aria-label={`${title}: ${doneCount} of ${items.length} steps done`}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full border border-border/60 bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="relative flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-border/60 bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {open ? <X size={16} /> : <ClipboardList size={17} />}
         {!open && (

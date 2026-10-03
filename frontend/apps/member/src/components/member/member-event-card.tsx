@@ -48,11 +48,11 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
 
                   {/* Status badge */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                    <Badge variant={statusVariant[e.status]} className="text-[10px] font-semibold uppercase tracking-wide">
+                    <Badge variant={statusVariant[e.status]} className="text-[12px] font-semibold uppercase tracking-wide">
                       {e.status}
                     </Badge>
                     {isPast && e.status !== "Completed" && e.status !== "Cancelled" && (
-                      <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">
+                      <Badge variant="secondary" className="text-[12px] font-semibold uppercase tracking-wide">
                         Past
                       </Badge>
                     )}

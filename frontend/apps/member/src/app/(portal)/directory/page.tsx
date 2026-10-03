@@ -169,7 +169,7 @@ export default function MemberDirectoryPage() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <p
-                  className="text-[11px] font-semibold tracking-[0.1em] uppercase"
+                  className="text-[12px] font-semibold tracking-[0.1em] uppercase"
                   style={{ color: "var(--muted-foreground)" }}
                 >
                   {isCommunity ? "Member profile" : "Alumni profile"}
@@ -202,12 +202,12 @@ export default function MemberDirectoryPage() {
                   )}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {!isCommunity && (
-                      <Badge variant="secondary" className="text-[10.5px] font-semibold">
+                      <Badge variant="secondary" className="text-[12px] font-semibold">
                         Class of {selected.graduationYear}
                       </Badge>
                     )}
                     {selected.departmentName && (
-                      <Badge variant="outline" className="text-[10.5px] font-semibold">
+                      <Badge variant="outline" className="text-[12px] font-semibold">
                         {selected.departmentName}
                       </Badge>
                     )}

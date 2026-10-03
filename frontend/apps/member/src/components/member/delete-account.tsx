@@ -34,7 +34,7 @@ export function DeleteAccountLink({ institutionName }: { institutionName: string
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-[11.5px] underline-offset-2 hover:underline"
+        className="text-[12px] underline-offset-2 hover:underline"
         style={{ color: "var(--muted-foreground)", opacity: 0.7 }}
       >
         Close my account

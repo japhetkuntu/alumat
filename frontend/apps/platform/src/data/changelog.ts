@@ -20,6 +20,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-03",
+    title: "Institution portal polished for phones",
+    body: "Dashboard figures now sit two to a row instead of one tall card each, text under 12px was raised to 12px across the portal, filter chips on the forum, mentorship and notification pages are a comfortable touch height, the Mentorship view toggle no longer runs off a 320px screen, and the dashboard's \"Full report\" and \"View queue\" links have larger tap areas. Combined with the shared fixes for badges, page headers and the floating get-started button, every institution page was checked at four widths from 320 to 768 pixels with no horizontal overflow.",
+    scopes: ["Institution"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-02",
+    title: "Pages recover when a feature is switched off while someone is using the portal",
+    body: "Both portals keep a copy of the institution's enabled features in the browser. If an admin switched a feature off (for example Jobs) while a member or admin still had that page open, the page asked for data it was no longer allowed to see and showed \"We couldn't load this\". The portals now notice that refusal, refresh the feature list, and send the person to the dashboard instead of leaving them on an error.",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+  },
+  {
+    date: "2026-10-02",
+    title: "Marketing site hero and pricing sections have more room",
+    body: "The hero section (\"Give your community a home\") was cramped: the next section's heading started almost directly beneath it, and the headline, text, buttons and highlights sat too close together. Spacing now scales with screen size, the eyebrow line wraps evenly on phones, and the product preview heading has room above it. The \"Your institution pays GH₵0\" section now stacks below 1024px instead of pushing the price into a narrow right-hand column, and on tablets the big figure sits beside the checklist.",
+    scopes: ["Marketing"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-02",
+    title: "Member portal polished for phones",
+    body: "A global style forced every button to 16px on all screens, which overrode each button's designed size, made filter tabs and chips too wide to fit (the Events filter was cut off) and gave the portal a chunky look. It now applies only to form fields (where it prevents iOS from zooming in). Page titles no longer have a large gap before their description, text under 12px was raised to 12px across the portal, status badges are larger, empty cover images on event, contribution and job pages are a slim band on phones instead of a full screen, and the floating get-started button slides out of the way while scrolling down so it no longer covers actions like Pay now. Every member page was checked at four widths from 320 to 768 pixels with no horizontal overflow.",
+    scopes: ["Member", "Institution"],
+    type: "Improvement",
+  },
+  {
     date: "2026-10-02",
     title: "Platform portal works properly on phones",
     body: "Page headers no longer push their buttons off the edge of a phone screen (Institutions, Onboarding leads and others now stack the description above full-width, paired actions), cards use 20px instead of 28px padding on phones, dashboard and payment figures sit two to a row, the institution page's identity header, activation card and tabs fit, the new-institution wizard shows Step n of 5 with a progress bar instead of five cramped cells, the batch year fields no longer get cut off, status chips stop wrapping out of their borders, and small text and tap targets were enlarged. Every platform page was checked at six widths from 320 to 768 pixels with no horizontal overflow.",

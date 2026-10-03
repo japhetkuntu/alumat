@@ -244,7 +244,7 @@ export default function AdminNewsPage() {
                       <p className="text-sm font-semibold truncate">{p.title}</p>
                       <p className="text-xs text-muted-foreground truncate">{p.category} · {p.status}</p>
                     </div>
-                    {p.isPinned && <Badge variant="secondary" className="text-[10px] uppercase font-bold">Pinned</Badge>}
+                    {p.isPinned && <Badge variant="secondary" className="text-[12px] uppercase font-bold">Pinned</Badge>}
                   </div>
                 ))}
                 {posts.length > 5 && (
@@ -340,12 +340,12 @@ export default function AdminNewsPage() {
                       <Pin size={9} className="text-white" />
                     </div>
                   )}
-                  <span className="bg-white/90 dark:bg-black/60 backdrop-blur-sm text-[9px] font-black uppercase tracking-widest px-2.5 py-1 text-foreground">
+                  <span className="bg-white/90 dark:bg-black/60 backdrop-blur-sm text-[12px] font-black uppercase tracking-widest px-2.5 py-1 text-foreground">
                     {p.category}
                   </span>
                 </div>
                 <div className="absolute top-3 right-3">
-                  <Badge variant={p.status === "Published" ? "success" : p.status === "Archived" ? "warning" : "secondary"} className="text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">
+                  <Badge variant={p.status === "Published" ? "success" : p.status === "Archived" ? "warning" : "secondary"} className="text-[12px] font-black uppercase tracking-widest backdrop-blur-sm">
                     {p.status}
                   </Badge>
                 </div>
@@ -363,7 +363,7 @@ export default function AdminNewsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-medium">
+                <div className="flex items-center justify-between text-[12px] text-muted-foreground font-medium">
                   <span>{p.publishedAt ? formatDate(p.publishedAt) : "Not published"}</span>
                   {p.imageUrls && p.imageUrls.length > 1 && (
                     <span>{p.imageUrls.length} images</span>
@@ -372,13 +372,13 @@ export default function AdminNewsPage() {
 
                 <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
                   <Link href={`/news/${p.id}`} className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full h-8 text-[11px] font-bold"><Eye size={12} />View</Button>
+                    <Button size="sm" variant="outline" className="w-full h-8 text-[12px] font-bold"><Eye size={12} />View</Button>
                   </Link>
                   <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" title="Edit" onClick={() => setEditPost(p)}>
                     <Pencil size={13} />
                   </Button>
                   {p.status === "Draft" && (
-                    <Button size="sm" className="h-8 text-[11px] font-bold shrink-0 px-3" onClick={() => setPublishTarget(p)}>Publish</Button>
+                    <Button size="sm" className="h-8 text-[12px] font-bold shrink-0 px-3" onClick={() => setPublishTarget(p)}>Publish</Button>
                   )}
                   {p.status !== "Archived" && (
                     <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Archive" onClick={() => setArchiveTarget(p)}>

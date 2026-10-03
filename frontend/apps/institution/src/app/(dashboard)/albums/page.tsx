@@ -114,12 +114,12 @@ export default function AdminAlbumsPage() {
                   <h3 className="font-bold text-[14px] leading-snug line-clamp-2">{a.title}</h3>
                 </Link>
                 {a.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{a.description}</p>}
-                <p className="text-[11.5px] text-muted-foreground mt-auto pt-2">
+                <p className="text-[12px] text-muted-foreground mt-auto pt-2">
                   {a.photoCount} photo{a.photoCount === 1 ? "" : "s"} &middot; {formatDate(a.createdAt)}
                 </p>
                 <div className="flex items-center gap-2 pt-2 mt-1 border-t border-border/40">
                   <Link href={`/albums/${a.id}`} className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full h-9 text-[11px] font-bold">Manage</Button>
+                    <Button size="sm" variant="outline" className="w-full h-9 text-[12px] font-bold">Manage</Button>
                   </Link>
                   <Button size="sm" variant="ghost" className="h-9 px-2 text-destructive hover:bg-destructive/10" onClick={() => setDeleteTarget(a)} title="Delete">
                     <Trash2 size={13} />

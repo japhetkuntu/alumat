@@ -32,7 +32,7 @@ export function SourceBadge({ communityId, communityName, yearGroups, className 
     const hue = hueFor(communityId);
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-semibold ${className ?? ""}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[12px] font-semibold ${className ?? ""}`}
         style={{
           background: `hsl(${hue} 70% 95%)`,
           color: `hsl(${hue} 55% 32%)`,
@@ -47,7 +47,7 @@ export function SourceBadge({ communityId, communityName, yearGroups, className 
   if (yearGroups && yearGroups.length > 0) {
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-semibold bg-accent/10 text-accent ${className ?? ""}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 text-[12px] font-semibold bg-accent/10 text-accent ${className ?? ""}`}
       >
         <GraduationCap size={10} />
         {yearGroupsLabel(yearGroups)}
@@ -57,7 +57,7 @@ export function SourceBadge({ communityId, communityName, yearGroups, className 
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] font-semibold ${className ?? ""}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[12px] font-semibold ${className ?? ""}`}
       style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
     >
       <Building2 size={10} />

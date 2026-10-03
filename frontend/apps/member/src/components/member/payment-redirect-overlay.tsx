@@ -66,7 +66,7 @@ export function PaymentRedirectOverlay({
           style={{ borderColor: "var(--border)" }}
         >
           <ShieldCheck size={13} style={{ color: "var(--muted-foreground)" }} />
-          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>
+          <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>
             Secured checkout
           </span>
         </div>

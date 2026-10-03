@@ -100,7 +100,7 @@ export function ActivityCalendarGrid({
         {WEEKDAY_LABELS.map((d) => (
           <div
             key={d}
-            className="text-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wide py-1"
+            className="text-center text-[12px] sm:text-[12px] font-bold uppercase tracking-wide py-1"
             style={{ color: "var(--muted-foreground)" }}
           >
             {d}
@@ -162,7 +162,7 @@ export function ActivityCalendarGrid({
                     />
                   ))}
                   {overflow > 0 && (
-                    <span className="text-[9px] font-bold leading-none" style={{ color: "var(--muted-foreground)" }}>
+                    <span className="text-[12px] font-bold leading-none" style={{ color: "var(--muted-foreground)" }}>
                       +{overflow}
                     </span>
                   )}
@@ -175,7 +175,7 @@ export function ActivityCalendarGrid({
                   {items.slice(0, 2).map((item) => (
                     <span
                       key={item.id}
-                      className="w-full truncate text-left text-[9.5px] lg:text-[10.5px] font-medium rounded px-1 py-[1px] leading-tight"
+                      className="w-full truncate text-left text-[12px] lg:text-[12px] font-medium rounded px-1 py-[1px] leading-tight"
                       style={{
                         background: `color-mix(in srgb, ${dotColor(item, temporal)} 14%, transparent)`,
                         color: temporal === "past" ? "var(--muted-foreground)" : "var(--foreground)",
@@ -185,7 +185,7 @@ export function ActivityCalendarGrid({
                     </span>
                   ))}
                   {items.length > 2 && (
-                    <span className="text-[9px] font-semibold px-1" style={{ color: "var(--muted-foreground)" }}>
+                    <span className="text-[12px] font-semibold px-1" style={{ color: "var(--muted-foreground)" }}>
                       +{items.length - 2} more
                     </span>
                   )}
@@ -209,7 +209,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-      <span className="text-[11px] font-medium" style={{ color: "var(--muted-foreground)" }}>
+      <span className="text-[12px] font-medium" style={{ color: "var(--muted-foreground)" }}>
         {label}
       </span>
     </div>

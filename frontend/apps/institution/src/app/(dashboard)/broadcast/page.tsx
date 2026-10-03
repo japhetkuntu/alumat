@@ -132,7 +132,7 @@ export default function BroadcastPage() {
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write the announcement exactly as it should appear to members..."
             />
-            <p className="text-[11px] text-muted-foreground">{message.length} characters</p>
+            <p className="text-[12px] text-muted-foreground">{message.length} characters</p>
           </div>
 
           <div className="space-y-2">
@@ -184,11 +184,11 @@ export default function BroadcastPage() {
               </button>
             </div>
             {!smsNotificationsEnabled && (
-              <p className="text-[11px] text-warning">
+              <p className="text-[12px] text-warning">
                 SMS notifications are off for this institution (Settings &gt; Notifications &amp; costs). Turn them on to send this broadcast by SMS.
               </p>
             )}
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               SMS is sent to every matching member with a phone number on file, regardless of their individual SMS notification preference. This is intentional for urgent, time-sensitive announcements.
             </p>
           </div>
@@ -196,7 +196,7 @@ export default function BroadcastPage() {
           <div className="space-y-2">
             <Label>Image (optional)</Label>
             <ImageUpload file={image} onChange={setImage} label="Upload an image for this broadcast" />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               Shown in the in-app notification panel, and as a banner in the email if Email is selected.
             </p>
           </div>
@@ -205,17 +205,17 @@ export default function BroadcastPage() {
             <Label>Audience filter</Label>
             <div className={cn("grid grid-cols-1 gap-3", isCommunity ? "sm:grid-cols-1" : "sm:grid-cols-3")}>
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-muted-foreground font-normal">Status</Label>
+                <Label className="text-[12px] text-muted-foreground font-normal">Status</Label>
                 <FormSelect value={status} onValueChange={setStatus} options={STATUS_OPTIONS} placeholder="Any status" />
               </div>
               {!isCommunity && (
                 <>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground font-normal">Graduation year from</Label>
+                    <Label className="text-[12px] text-muted-foreground font-normal">Graduation year from</Label>
                     <Input type="number" value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} placeholder="e.g. 1980" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground font-normal">Graduation year to</Label>
+                    <Label className="text-[12px] text-muted-foreground font-normal">Graduation year to</Label>
                     <Input type="number" value={yearTo} onChange={(e) => setYearTo(e.target.value)} placeholder="e.g. 1995" />
                   </div>
                 </>
@@ -243,7 +243,7 @@ export default function BroadcastPage() {
                   />
                   <span>
                     <span className="block text-[13px] font-semibold">{opt.label}</span>
-                    <span className="block text-[11.5px] text-muted-foreground mt-0.5">{opt.hint}</span>
+                    <span className="block text-[12px] text-muted-foreground mt-0.5">{opt.hint}</span>
                   </span>
                 </label>
               ))}

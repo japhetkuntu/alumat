@@ -182,7 +182,7 @@ export default function ThreadDetailPage() {
                       {authorName}
                     </span>
                     {isOriginal && (
-                      <Badge variant="secondary" className="text-[10px] font-semibold">OP</Badge>
+                      <Badge variant="secondary" className="text-[12px] font-semibold">OP</Badge>
                     )}
                     {postedAt && (
                       <span className="text-[12px] ml-auto" style={{ color: "var(--muted-foreground)" }}>

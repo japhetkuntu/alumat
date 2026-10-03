@@ -107,7 +107,7 @@ export default function MemberResourcesPage() {
                       <p className="text-sm font-semibold truncate">{r.title}</p>
                       <p className="text-xs text-muted-foreground truncate">{r.category} · {r.type}</p>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{formatDate(r.createdAt)}</span>
+                    <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">{formatDate(r.createdAt)}</span>
                   </div>
                 ))}
                 {resources.length > 5 && (
@@ -134,11 +134,11 @@ export default function MemberResourcesPage() {
             ]}
           /></div>
           <div className="min-w-0 space-y-1">
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Added after</label>
+            <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Added after</label>
             <Input type="date" value={addedAfter} onChange={(e) => { setAddedAfter(e.target.value); setPage(1); }} />
           </div>
           <div className="min-w-0 space-y-1">
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Added before</label>
+            <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Added before</label>
             <Input type="date" value={addedBefore} onChange={(e) => { setAddedBefore(e.target.value); setPage(1); }} />
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function MemberResourcesPage() {
           {(search || categoryFilter || typeFilter || addedAfter || addedBefore) && (
             <button
               onClick={() => { setSearch(""); setCategoryFilter(""); setTypeFilter(""); setAddedAfter(""); setAddedBefore(""); setPage(1); }}
-              className="ml-2 flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide border border-destructive/40 text-destructive hover:bg-destructive/10 transition-all"
+              className="ml-2 flex items-center gap-1 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-wide border border-destructive/40 text-destructive hover:bg-destructive/10 transition-all"
             >
               <X size={11} /> Clear filters
             </button>
@@ -210,10 +210,10 @@ export default function MemberResourcesPage() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                   <div className="absolute top-3 left-3 flex gap-1.5">
-                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${colorCls}`}>
+                    <span className={`px-2 py-0.5 text-[12px] font-black uppercase tracking-widest ${colorCls}`}>
                       {r.category}
                     </span>
-                    <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-sm text-white border border-white/10">
+                    <span className="px-2 py-0.5 text-[12px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-sm text-white border border-white/10">
                       {r.type}
                     </span>
                   </div>
@@ -228,7 +228,7 @@ export default function MemberResourcesPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between text-[12px] text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Download size={11} />
                       {r.downloadCount ?? 0} downloads

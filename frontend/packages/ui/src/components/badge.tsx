@@ -20,7 +20,7 @@ const badgeVariants = cva(
         neutral: "border-border text-muted-foreground hover:bg-muted/40",
       },
       size: {
-        sm: "px-1.5 py-0 text-[9px] h-[18px]",
+        sm: "px-2 py-0 text-[11px] h-[22px]",
         default: "px-2 py-1 text-[11px] h-[24px]",
       },
     },

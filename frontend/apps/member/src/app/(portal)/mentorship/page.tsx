@@ -285,7 +285,7 @@ export default function MemberMentorshipPage() {
               {myProfile.area} · {myProfile.currentMenteeCount}/{myProfile.maxMentees} mentees
             </p>
           </div>
-          <Badge variant={profileStatusVariant[myProfile.status]} className="text-[11px] font-semibold shrink-0">
+          <Badge variant={profileStatusVariant[myProfile.status]} className="text-[12px] font-semibold shrink-0">
             {myProfile.status}
           </Badge>
         </div>
@@ -350,11 +350,11 @@ export default function MemberMentorshipPage() {
                         <div className="flex items-center gap-1.5 mt-1.5">
                           <Badge
                             variant={isFull ? "secondary" : "success"}
-                            className="text-[10.5px] font-semibold"
+                            className="text-[12px] font-semibold"
                           >
                             {isFull ? "Full" : "Available"}
                           </Badge>
-                          <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                          <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                             {m.currentMenteeCount}/{m.maxMentees} mentees
                           </span>
                         </div>
@@ -446,7 +446,7 @@ export default function MemberMentorshipPage() {
                         {formatDate(r.createdAt)}
                       </p>
                     </div>
-                    <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold shrink-0">
+                    <Badge variant={reqStatusVariant[r.status]} className="text-[12px] font-semibold shrink-0">
                       {r.status}
                     </Badge>
                   </div>
@@ -536,7 +536,7 @@ export default function MemberMentorshipPage() {
                           {r.menteeName ?? "Unknown member"}
                         </p>
                         {r.status !== "Pending" && (
-                          <Badge variant={reqStatusVariant[r.status]} className="text-[11px] font-semibold shrink-0">
+                          <Badge variant={reqStatusVariant[r.status]} className="text-[12px] font-semibold shrink-0">
                             {r.status}
                           </Badge>
                         )}
@@ -599,7 +599,7 @@ export default function MemberMentorshipPage() {
               <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
                 You already have a mentor profile.
               </p>
-              <Badge variant={profileStatusVariant[myProfile.status]} className="text-[11px] font-semibold">
+              <Badge variant={profileStatusVariant[myProfile.status]} className="text-[12px] font-semibold">
                 {myProfile.status}
               </Badge>
               {myProfile.status === "Pending" && (

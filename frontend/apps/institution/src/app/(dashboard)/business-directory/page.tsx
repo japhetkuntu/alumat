@@ -105,7 +105,7 @@ function PendingEditDiff({ listing }: { listing: BusinessListing }) {
   if (changedKeys.length === 0) return null;
   return (
     <div className="space-y-2 rounded-md border border-warning/30 bg-warning/5 p-3">
-      <p className="text-[11.5px] font-bold text-warning uppercase tracking-wide flex items-center gap-1.5">
+      <p className="text-[12px] font-bold text-warning uppercase tracking-wide flex items-center gap-1.5">
         <AlertCircle size={12} />Pending edit: proposed changes
       </p>
       <div className="space-y-1.5">
@@ -364,35 +364,35 @@ export default function AdminBusinessDirectoryPage() {
                   <div className="flex items-center gap-1.5 flex-wrap justify-end">
                     {l.status === "Pending" && (
                       <>
-                        <Button size="sm" className="h-8 text-[11px] font-bold" onClick={() => approveMut.mutate(l.id)} isLoading={approveMut.isPending && approveMut.variables === l.id}>
+                        <Button size="sm" className="h-8 text-[12px] font-bold" onClick={() => approveMut.mutate(l.id)} isLoading={approveMut.isPending && approveMut.variables === l.id}>
                           <CheckCircle size={12} className="mr-1" />Approve
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold text-destructive hover:text-destructive" onClick={() => setRejectTarget(l)}>
+                        <Button size="sm" variant="outline" className="h-8 text-[12px] font-bold text-destructive hover:text-destructive" onClick={() => setRejectTarget(l)}>
                           <XCircle size={12} className="mr-1" />Reject
                         </Button>
                       </>
                     )}
                     {l.hasPendingEdit && (
                       <>
-                        <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold" onClick={() => setApproveEditTarget(l)}>
+                        <Button size="sm" variant="outline" className="h-8 text-[12px] font-bold" onClick={() => setApproveEditTarget(l)}>
                           <CheckCircle size={12} className="mr-1" />Approve edit
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold text-destructive hover:text-destructive" onClick={() => setRejectEditTarget(l)}>
+                        <Button size="sm" variant="outline" className="h-8 text-[12px] font-bold text-destructive hover:text-destructive" onClick={() => setRejectEditTarget(l)}>
                           <XCircle size={12} className="mr-1" />Reject edit
                         </Button>
                       </>
                     )}
                     {l.status === "Blacklisted" ? (
-                      <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold" onClick={() => unblacklistMut.mutate(l.id)} isLoading={unblacklistMut.isPending && unblacklistMut.variables === l.id}>
+                      <Button size="sm" variant="outline" className="h-8 text-[12px] font-bold" onClick={() => unblacklistMut.mutate(l.id)} isLoading={unblacklistMut.isPending && unblacklistMut.variables === l.id}>
                         <ShieldCheck size={12} className="mr-1" />Unblacklist
                       </Button>
                     ) : (
-                      <Button size="sm" variant="ghost" className="h-8 text-[11px] font-bold text-destructive hover:bg-destructive/10" onClick={() => blacklistMut.mutate(l.id)} isLoading={blacklistMut.isPending && blacklistMut.variables === l.id}>
+                      <Button size="sm" variant="ghost" className="h-8 text-[12px] font-bold text-destructive hover:bg-destructive/10" onClick={() => blacklistMut.mutate(l.id)} isLoading={blacklistMut.isPending && blacklistMut.variables === l.id}>
                         <Ban size={12} className="mr-1" />Blacklist
                       </Button>
                     )}
                     {l.status === "Approved" && (
-                      <MemberShareButton memberPath={`/business-directory/${l.id}`} title={l.businessName} className="h-8 text-[11px] font-bold" />
+                      <MemberShareButton memberPath={`/business-directory/${l.id}`} title={l.businessName} className="h-8 text-[12px] font-bold" />
                     )}
                     <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setEditTarget(l)} title="Edit">
                       <Pencil size={13} />
@@ -405,7 +405,7 @@ export default function AdminBusinessDirectoryPage() {
 
                 {l.description && <p className="text-[12.5px] text-muted-foreground line-clamp-2">{l.description}</p>}
 
-                <div className="flex flex-wrap gap-3 text-[11.5px] text-muted-foreground">
+                <div className="flex flex-wrap gap-3 text-[12px] text-muted-foreground">
                   {l.phoneNumber && <span className="flex items-center gap-1"><Phone size={11} />{l.phoneNumber}</span>}
                   {l.email && <span className="flex items-center gap-1"><Mail size={11} />{l.email}</span>}
                   {l.websiteUrl && <span className="flex items-center gap-1"><Globe size={11} />{l.websiteUrl}</span>}
@@ -413,7 +413,7 @@ export default function AdminBusinessDirectoryPage() {
                 </div>
 
                 {l.adminNotes && (
-                  <p className="text-[11.5px] text-muted-foreground italic border-l-2 border-border pl-2">Admin notes: {l.adminNotes}</p>
+                  <p className="text-[12px] text-muted-foreground italic border-l-2 border-border pl-2">Admin notes: {l.adminNotes}</p>
                 )}
 
                 {l.hasPendingEdit && <PendingEditDiff listing={l} />}

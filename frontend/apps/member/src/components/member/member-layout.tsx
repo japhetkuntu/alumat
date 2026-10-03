@@ -223,7 +223,7 @@ function NavBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
     <span
-      className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-white"
+      className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[12px] font-bold leading-none text-white"
       style={{ background: "var(--accent)" }}
     >
       {count > 99 ? "99+" : count}
@@ -258,7 +258,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
               <img src={brandMark} alt={brandName} className="w-8 h-8 rounded-lg object-cover shrink-0 shadow-md shadow-primary/15 border border-border/40" />
             ) : (
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-md shadow-primary/15" style={{ background: "var(--primary)" }}>
-                <span className="text-[11px] font-bold text-white">{getInitials(brandName)}</span>
+                <span className="text-[12px] font-bold text-white">{getInitials(brandName)}</span>
               </div>
             )}
             <div className="overflow-hidden">
@@ -277,7 +277,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         {visibleGroups.map((group, gi) => (
           <div key={group.section ?? `_root-${gi}`}>
             {group.section && (
-              <p className="px-3 mb-1 text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground/60">
+              <p className="px-3 mb-1 text-[12px] font-bold uppercase tracking-[0.08em] text-muted-foreground/60">
                 {group.section}
               </p>
             )}
@@ -367,7 +367,7 @@ function MobileBottomNav() {
                   />
                 )}
               </div>
-              <span className={cn("text-[10.5px] leading-none", active ? "font-bold" : "font-medium")}>
+              <span className={cn("text-[12px] leading-none", active ? "font-bold" : "font-medium")}>
                 {item.label}
               </span>
               {active && (

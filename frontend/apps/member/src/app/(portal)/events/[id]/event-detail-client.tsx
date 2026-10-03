@@ -135,7 +135,7 @@ export default function EventDetailPage() {
           />
           <Badge
             variant={statusVariant[event.status] ?? "secondary"}
-            className="text-[11px] font-semibold uppercase tracking-wide"
+            className="text-[12px] font-semibold uppercase tracking-wide"
           >
             {event.status}
           </Badge>
@@ -183,7 +183,7 @@ export default function EventDetailPage() {
               />
             ) : (
               <div
-                className="flex items-center justify-center py-16"
+                className="flex items-center justify-center py-7 sm:py-16"
                 style={{ background: "var(--secondary)" }}
               >
                 <Calendar size={48} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
@@ -312,7 +312,7 @@ function RsvpBlock({
       {/* Ticket / price */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+          <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
             Registration
           </p>
           <p

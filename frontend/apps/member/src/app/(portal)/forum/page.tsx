@@ -91,7 +91,7 @@ export default function MemberForumPage() {
       {/* ── Header — title and action stay on one row even on a phone ── */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="tracking-tight" style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}>
+          <h1 className="mb-0 tracking-tight" style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 700, color: "var(--foreground)" }}>
             Forum
           </h1>
           <Button

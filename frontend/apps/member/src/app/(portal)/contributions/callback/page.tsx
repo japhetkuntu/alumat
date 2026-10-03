@@ -114,7 +114,7 @@ export default function PaystackCallbackPage() {
           </div>
           <Badge
             variant={status === "success" ? "success" : status === "error" ? "destructive" : "warning"}
-            className="text-[11px] font-bold uppercase tracking-wide"
+            className="text-[12px] font-bold uppercase tracking-wide"
           >
             {statusLabel}
           </Badge>

@@ -261,7 +261,7 @@ function CampaignCard({
           <div className="absolute bottom-3 left-4 flex items-center gap-2">
             {isMembership && (
               <span
-                className="inline-flex items-center px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white"
+                className="inline-flex items-center px-2.5 py-1 text-[12px] font-bold uppercase tracking-wide text-white"
                 style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)" }}
               >
                 Membership
@@ -279,7 +279,7 @@ function CampaignCard({
           <div className="min-w-0 flex-1">
             <SourceBadge communityId={c.communityId} communityName={c.communityName} yearGroups={c.yearGroups} className="mb-1.5" />
             {!c.bannerImageUrl && isMembership && (
-              <p className="text-[10.5px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
+              <p className="text-[12px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
                 Membership dues
               </p>
             )}
@@ -296,7 +296,7 @@ function CampaignCard({
             )}
           </div>
           {myPayment && (
-            <Badge variant={statusVariant[myPayment.status]} className="text-[11px] font-bold shrink-0">
+            <Badge variant={statusVariant[myPayment.status]} className="text-[12px] font-bold shrink-0">
               {myPayment.status}
             </Badge>
           )}
@@ -324,20 +324,20 @@ function CampaignCard({
         <div className="rounded-xl overflow-hidden" style={{ background: "var(--secondary)" }}>
           <div className="flex items-start justify-between gap-3 py-3 px-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
                 {isMembership ? "Your amount" : "Suggested"}
               </p>
               <p className="text-[17px] font-bold tabular-nums" style={{ color: isBumped ? "var(--primary)" : "var(--foreground)" }}>
                 {formatCurrency(payAmount)}
                 {isPensioner && isMembership && (
-                  <span className="text-[11px] font-normal ml-1.5" style={{ color: "var(--muted-foreground)" }}>
+                  <span className="text-[12px] font-normal ml-1.5" style={{ color: "var(--muted-foreground)" }}>
                     pensioner rate
                   </span>
                 )}
               </p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
                 Due
               </p>
               <p className="text-[14px] font-semibold whitespace-nowrap" style={{ color: "var(--foreground)" }}>
@@ -390,7 +390,7 @@ function CampaignCard({
                 <button
                   type="button"
                   onClick={() => { setCustomAmount(""); setAdjusting(false); }}
-                  className="text-[11.5px] font-semibold underline underline-offset-2"
+                  className="text-[12px] font-semibold underline underline-offset-2"
                   style={{ color: "var(--muted-foreground)" }}
                 >
                   Reset
@@ -413,7 +413,7 @@ function CampaignCard({
             />
             <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
               Make this monthly
-              <span className="block text-[11px] mt-0.5 opacity-75">
+              <span className="block text-[12px] mt-0.5 opacity-75">
                 Automatically give {formatCurrency(payAmount)} every month. Cancel anytime from your contributions.
               </span>
             </span>
@@ -710,7 +710,7 @@ export default function MemberContributionsPage() {
                     {formatCurrency(r.amount)}/month
                     {r.cardLast4 && ` · ${r.cardType ?? "card"} •••• ${r.cardLast4}`}
                   </p>
-                  <p className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
+                  <p className="text-[12px] mt-1" style={{ color: "var(--muted-foreground)" }}>
                     {r.status === "Paused" ? "Paused: fundraiser is no longer active" : `Next charge ${formatDate(r.nextChargeDate)}`}
                   </p>
                 </div>
@@ -742,7 +742,7 @@ export default function MemberContributionsPage() {
           </div>
           {totalPaid > 0 && (
             <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
                 Total confirmed
               </p>
               <p
@@ -767,7 +767,7 @@ export default function MemberContributionsPage() {
                   {["Fundraiser / Dues", "Amount", "Method", "Status", "Date"].map((h) => (
                     <th
                       key={h}
-                      className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-[0.08em]"
+                      className="text-left px-5 py-3.5 text-[12px] font-bold uppercase tracking-[0.08em]"
                       style={{ color: "var(--muted-foreground)" }}
                     >
                       {h}
@@ -812,7 +812,7 @@ export default function MemberContributionsPage() {
                       <p className="text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>
                         {c.campaignTitle ?? "Contribution"}
                       </p>
-                      <p className="text-[11.5px] mt-0.5 font-mono" style={{ color: "var(--muted-foreground)" }}>
+                      <p className="text-[12px] mt-0.5 font-mono" style={{ color: "var(--muted-foreground)" }}>
                         #{c.id.slice(0, 8)}
                       </p>
                     </td>
@@ -822,12 +822,12 @@ export default function MemberContributionsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <Badge variant="secondary" className="text-[11px] font-semibold">
+                      <Badge variant="secondary" className="text-[12px] font-semibold">
                         {contributionMethodLabel(c.paymentMethod)}
                       </Badge>
                     </td>
                     <td className="px-5 py-4">
-                      <Badge variant={statusVariant[c.status]} className="text-[11px] font-semibold">
+                      <Badge variant={statusVariant[c.status]} className="text-[12px] font-semibold">
                         {c.status}
                       </Badge>
                     </td>
@@ -897,7 +897,7 @@ export default function MemberContributionsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <Badge variant={statusVariant[c.status]} className="text-[10px] font-semibold">
+                  <Badge variant={statusVariant[c.status]} className="text-[12px] font-semibold">
                     {c.status}
                   </Badge>
                   <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>

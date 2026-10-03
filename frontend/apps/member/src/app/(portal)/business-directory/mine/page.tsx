@@ -183,7 +183,7 @@ export default function MyBusinessListingPage() {
       <div className="p-4 sm:p-8 lg:p-12 max-w-3xl mx-auto space-y-6">
         {backLink}
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">List your business</h1>
+          <h1 className="mb-0 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">List your business</h1>
           <p className="text-muted-foreground text-sm mt-1">Submit your business for admin review. Once approved, it&apos;ll appear in the public directory.</p>
         </div>
         <Card>
@@ -212,10 +212,10 @@ export default function MyBusinessListingPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">My Business Listing</h1>
+          <h1 className="mb-0 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">My Business Listing</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage your listing in the alumni business directory.</p>
         </div>
-        <Badge variant={meta.variant} className="gap-1 text-[11px] px-3 py-1.5">
+        <Badge variant={meta.variant} className="gap-1 text-[12px] px-3 py-1.5">
           <meta.icon size={12} />{meta.label}
         </Badge>
       </div>
@@ -244,12 +244,12 @@ export default function MyBusinessListingPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div className="rounded-lg border border-border/40 bg-background p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/60 mb-1.5">Currently live</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-muted-foreground/60 mb-1.5">Currently live</p>
               <p className="text-[13px] font-semibold">{listing.businessName}</p>
               <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">{listing.description}</p>
             </div>
             <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-warning/80 mb-1.5">Proposed</p>
+              <p className="text-[12px] font-bold uppercase tracking-wide text-warning/80 mb-1.5">Proposed</p>
               <p className="text-[13px] font-semibold">{listing.pendingChanges.businessName ?? listing.businessName}</p>
               <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">{listing.pendingChanges.description ?? listing.description}</p>
             </div>

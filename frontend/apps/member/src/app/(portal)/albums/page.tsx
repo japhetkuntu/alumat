@@ -62,7 +62,7 @@ export default function MemberAlbumsPage() {
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/40 backdrop-blur-sm text-white text-[11px] font-bold">
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/40 backdrop-blur-sm text-white text-[12px] font-bold">
                     <Images size={12} />
                     {album.photoCount} {album.photoCount === 1 ? "photo" : "photos"}
                   </div>
@@ -75,7 +75,7 @@ export default function MemberAlbumsPage() {
                   {album.description && (
                     <p className="text-[12px] text-muted-foreground line-clamp-2">{album.description}</p>
                   )}
-                  <p className="text-[11px] text-muted-foreground/70 pt-1">Added {formatDate(album.createdAt)}</p>
+                  <p className="text-[12px] text-muted-foreground/70 pt-1">Added {formatDate(album.createdAt)}</p>
                 </CardContent>
               </Card>
             </Link>

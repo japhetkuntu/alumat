@@ -76,7 +76,7 @@ function PayoutPanel() {
           Expected {formatDate(data.nextPayout.date)} morning &middot; still accumulating &middot; {data.nextPayout.transactionCount} transaction{data.nextPayout.transactionCount === 1 ? "" : "s"}
         </p>
       </div>
-      <p className="sm:col-span-2 text-[11px] text-muted-foreground -mt-2">Estimated from your confirmed transactions, not a bank-confirmed figure.</p>
+      <p className="sm:col-span-2 text-[12px] text-muted-foreground -mt-2">Estimated from your confirmed transactions, not a bank-confirmed figure.</p>
     </div>
   );
 }
@@ -227,7 +227,7 @@ export default function AdminDashboardPage() {
           return (
             <div className={`grid grid-cols-1 ${moneyOn || !features.ready ? "lg:grid-cols-[minmax(280px,1.3fr)_2fr]" : ""} gap-3.5 items-stretch`}>
               {(moneyOn || !features.ready) && <StatCardSkeleton variant="hero" />}
-              <div className={`grid grid-cols-1 ${["", "sm:grid-cols-1", "sm:grid-cols-2", "sm:grid-cols-3"][Math.min(features.ready ? expectedSupporting : 3, 3)]} gap-3`}>
+              <div className={`grid grid-cols-2 ${["", "sm:grid-cols-1", "sm:grid-cols-2", "sm:grid-cols-3"][Math.min(features.ready ? expectedSupporting : 3, 3)]} gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 [&>a>*]:h-full`}>
                 {Array.from({ length: features.ready ? expectedSupporting : 3 }).map((_, i) => <StatCardSkeleton key={i} />)}
               </div>
             </div>
@@ -248,7 +248,7 @@ export default function AdminDashboardPage() {
                 />
               </Link>
             )}
-            <div className={`grid grid-cols-1 ${cols} gap-3`}>{supporting}</div>
+            <div className={`grid grid-cols-2 ${cols} gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 [&>a>*]:h-full`}>{supporting}</div>
           </div>
         );
       })()}
@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
             <span>
               Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, {trendSources}</span>
             </span>
-            <Link href="/reports" className="shrink-0 text-[12px] font-normal text-muted-foreground hover:text-accent">Full report &rarr;</Link>
+            <Link href="/reports" className="inline-block -my-2.5 shrink-0 py-2.5 text-[13px] font-normal text-muted-foreground hover:text-accent">Full report &rarr;</Link>
           </h2>
           <TrendChart
             data={trendMonths}
@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
         <section className="card p-[18px]" style={{ borderColor: pendingApprovals > 0 ? "var(--border-emphasis)" : undefined }}>
           <h2 className="text-[15px] font-semibold m-0 mb-3.5 flex items-center justify-between">
             Pending approvals
-            <Link href="/members" className="text-[12px] font-normal text-muted-foreground hover:text-accent">View queue &rarr;</Link>
+            <Link href="/members" className="inline-block -my-2.5 py-2.5 text-[13px] font-normal text-muted-foreground hover:text-accent">View queue &rarr;</Link>
           </h2>
           {isLoading ? (
             <div className="space-y-3 py-1">
@@ -372,9 +372,9 @@ export default function AdminDashboardPage() {
             <table className="w-full text-[13px] mt-2">
               <thead>
                 <tr>
-                  <th className="text-left text-[11px] uppercase text-muted-foreground font-semibold px-[18px] py-2.5 border-t border-border">Member</th>
-                  <th className="text-left text-[11px] uppercase text-muted-foreground font-semibold px-2 py-2.5 border-t border-border">Amount</th>
-                  <th className="text-left text-[11px] uppercase text-muted-foreground font-semibold px-[18px] py-2.5 border-t border-border">State</th>
+                  <th className="text-left text-[12px] uppercase text-muted-foreground font-semibold px-[18px] py-2.5 border-t border-border">Member</th>
+                  <th className="text-left text-[12px] uppercase text-muted-foreground font-semibold px-2 py-2.5 border-t border-border">Amount</th>
+                  <th className="text-left text-[12px] uppercase text-muted-foreground font-semibold px-[18px] py-2.5 border-t border-border">State</th>
                 </tr>
               </thead>
               <tbody>

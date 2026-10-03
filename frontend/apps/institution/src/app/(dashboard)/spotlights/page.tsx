@@ -213,7 +213,7 @@ export default function AdminSpotlightsPage() {
                   <div className={`relative h-20 sm:h-24 bg-gradient-to-br ${grad} px-5 sm:px-6 flex items-end pb-3`}>
                     <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/4" />
                     <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-2.5 py-0.5 self-start mt-3">
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{s.status}</span>
+                      <span className="text-[12px] font-black text-white uppercase tracking-widest">{s.status}</span>
                     </div>
                     {/* Avatar overlapping */}
                     <div className="absolute -bottom-5 left-5 sm:left-6 p-0.5 rounded-full bg-background shadow-lg ring-2 ring-background">
@@ -237,12 +237,12 @@ export default function AdminSpotlightsPage() {
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         {s.isFeatured && (
-                          <Badge variant="default" className="text-[10px] font-bold uppercase gap-1">
+                          <Badge variant="default" className="text-[12px] font-bold uppercase gap-1">
                             <Sparkles size={10} />Featured on site
                           </Badge>
                         )}
                         {s.featuredMonth && (
-                          <Badge variant="secondary" className="text-[10px] font-bold uppercase">
+                          <Badge variant="secondary" className="text-[12px] font-bold uppercase">
                             {new Date(s.featuredMonth).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                           </Badge>
                         )}
@@ -454,7 +454,7 @@ export default function AdminSpotlightsPage() {
                       >
                         <Avatar className="h-8 w-8 shrink-0">
                           {m.profilePictureUrl && <AvatarImage src={m.profilePictureUrl} />}
-                          <AvatarFallback className="text-[10px] font-bold">{getInitials(`${m.firstName} ${m.lastName}`)}</AvatarFallback>
+                          <AvatarFallback className="text-[12px] font-bold">{getInitials(`${m.firstName} ${m.lastName}`)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold truncate">{m.firstName} {m.lastName}</p>

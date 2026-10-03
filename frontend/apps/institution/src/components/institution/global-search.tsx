@@ -149,7 +149,7 @@ export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; h
               <div className="py-2" aria-live="polite">
                 {shown.map((g) => (
                   <section key={g.label} className="py-1">
-                    <p className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[.08em] text-muted-foreground">
+                    <p className="flex items-center gap-2 px-4 py-1.5 text-[12px] font-bold uppercase tracking-[.08em] text-muted-foreground">
                       <g.icon size={12} />
                       {g.label}
                     </p>

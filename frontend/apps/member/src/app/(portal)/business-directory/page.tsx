@@ -103,7 +103,7 @@ export default function BusinessDirectoryPage() {
                     {biz.businessName}
                   </h3>
                   <p className="text-[12px] text-muted-foreground line-clamp-2 flex-1">{biz.description}</p>
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground pt-1">
+                  <div className="flex items-center gap-1 text-[12px] text-muted-foreground pt-1">
                     <MapPin size={11} className="shrink-0" />
                     <span className="truncate">{biz.location}</span>
                   </div>

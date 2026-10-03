@@ -100,7 +100,7 @@ export default function MemberJobDetailPage() {
             onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Job link copied")}
             onError={(message) => toast.error(message)}
           />
-          <Badge variant={typeVariant[job.type] ?? "secondary"} className="text-[11px] font-semibold uppercase tracking-wide">
+          <Badge variant={typeVariant[job.type] ?? "secondary"} className="text-[12px] font-semibold uppercase tracking-wide">
             {job.type}
           </Badge>
         </div>
@@ -124,11 +124,11 @@ export default function MemberJobDetailPage() {
               />
             ) : (
               <div
-                className="flex flex-col items-center justify-center gap-3 py-14"
+                className="flex flex-col items-center justify-center gap-2.5 py-6 sm:gap-3 sm:py-14"
                 style={{ background: "var(--secondary)" }}
               >
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                  className="h-12 w-12 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center"
                   style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
                 >
                   <Briefcase size={28} style={{ color: "var(--primary)" }} />

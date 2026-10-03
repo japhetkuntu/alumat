@@ -212,7 +212,7 @@ export default function AdminResourcesPage() {
                       <p className="text-sm font-semibold truncate">{r.title}</p>
                       <p className="text-xs text-muted-foreground truncate">{r.category} · {r.type}</p>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{formatDate(r.createdAt)}</span>
+                    <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">{formatDate(r.createdAt)}</span>
                   </div>
                 ))}
                 {resources.length > 5 && (
@@ -284,8 +284,8 @@ export default function AdminResourcesPage() {
                   </div>
                 )}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${typeColor[r.type] ?? "bg-primary text-primary-foreground"}`}>{r.type}</span>
-                  <Badge variant="outline" className="bg-background/80 backdrop-blur-sm text-[10px]">{r.category}</Badge>
+                  <span className={`px-2 py-0.5 text-[12px] font-black uppercase tracking-wider ${typeColor[r.type] ?? "bg-primary text-primary-foreground"}`}>{r.type}</span>
+                  <Badge variant="outline" className="bg-background/80 backdrop-blur-sm text-[12px]">{r.category}</Badge>
                 </div>
               </div>
               <CardContent className="p-4 flex-1 flex flex-col gap-3">

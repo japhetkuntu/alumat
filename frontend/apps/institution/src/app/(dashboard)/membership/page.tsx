@@ -142,7 +142,7 @@ export default function AdminMembershipPage() {
           <span className="text-[12px] text-muted-foreground">Unpaid this period</span>
           <b className="block text-[24px] mt-1 tabular-nums">{currentYearActive ? Math.max(0, currentYearEligible - currentYearPaidCount) : 0}</b>
           {!currentYearActive && (
-            <small className="block text-[11px] text-muted-foreground mt-1" title={`No membership dues for ${currentYear} yet, so there's nothing to be unpaid on.`}>
+            <small className="block text-[12px] text-muted-foreground mt-1" title={`No membership dues for ${currentYear} yet, so there's nothing to be unpaid on.`}>
               No {currentYear} dues yet
             </small>
           )}
@@ -332,7 +332,7 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-bold text-sm">{c.title}</h3>
-            <Badge variant={c.status === "Active" ? "success" : "secondary"} className="text-[9px] font-bold uppercase">{c.status}</Badge>
+            <Badge variant={c.status === "Active" ? "success" : "secondary"} className="text-[12px] font-bold uppercase">{c.status}</Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
             <span>Year: {c.membershipYear ?? "?"}</span>
@@ -357,8 +357,8 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
             {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>}
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <Badge variant={c.status === "Active" ? "success" : "secondary"} className="font-bold uppercase tracking-widest text-[9px]">{c.status}</Badge>
-            <Badge variant={isCurrent ? "success" : "info"} className="font-bold text-[10px]">
+            <Badge variant={c.status === "Active" ? "success" : "secondary"} className="font-bold uppercase tracking-widest text-[12px]">{c.status}</Badge>
+            <Badge variant={isCurrent ? "success" : "info"} className="font-bold text-[12px]">
               {c.membershipYear ?? "?"}
             </Badge>
           </div>
@@ -367,15 +367,15 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
         {/* Key Stats */}
         <div className="grid grid-cols-3 gap-4 py-4 border-y border-border/40">
           <div className="text-center">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Paid</p>
+            <p className="text-[12px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Paid</p>
             <p className="text-2xl font-black text-success tabular-nums">{c.paidCount}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Unpaid</p>
+            <p className="text-[12px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Unpaid</p>
             <p className="text-2xl font-black text-warning tabular-nums">{unpaid}</p>
           </div>
           <div className="text-center">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total</p>
+            <p className="text-[12px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total</p>
             <p className="text-2xl font-black tabular-nums">{totalMembers}</p>
           </div>
         </div>

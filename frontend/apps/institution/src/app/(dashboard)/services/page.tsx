@@ -520,7 +520,7 @@ export default function ServicesPage() {
                         const field = serviceTypeForRequest?.fields.find((f) => f.key === key);
                         return (
                           <div key={key} className="px-3 py-2 text-[13px]">
-                            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{field?.label ?? key}</div>
+                            <div className="text-[12px] uppercase tracking-wide text-muted-foreground">{field?.label ?? key}</div>
                             <div>{value || "—"}</div>
                           </div>
                         );
@@ -547,7 +547,7 @@ export default function ServicesPage() {
                       <li key={i} className="border-l-2 border-border/60 pl-3 py-0.5 text-[13px]">
                         <div className="flex items-center gap-2 flex-wrap">
                           {u.stage && <span className="font-medium">{u.stage}</span>}
-                          <span className="text-[11.5px] text-muted-foreground">{formatDate(u.changedAt)}{u.changedByStaffName ? ` · ${u.changedByStaffName}` : ""}</span>
+                          <span className="text-[12px] text-muted-foreground">{formatDate(u.changedAt)}{u.changedByStaffName ? ` · ${u.changedByStaffName}` : ""}</span>
                         </div>
                         {u.note && <p className="text-muted-foreground mt-0.5">{u.note}</p>}
                         {u.attachmentUrl && (

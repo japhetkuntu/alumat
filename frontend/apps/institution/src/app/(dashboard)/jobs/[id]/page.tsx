@@ -204,7 +204,7 @@ export default function AdminJobDetailPage() {
               toast.error(message);
             }}
           />
-          <Badge variant={sc.variant} className="flex items-center gap-1.5 h-7 px-3 font-black uppercase tracking-widest text-[10px]">
+          <Badge variant={sc.variant} className="flex items-center gap-1.5 h-7 px-3 font-black uppercase tracking-widest text-[12px]">
             {sc.icon}
             {sc.label}
           </Badge>
@@ -321,7 +321,7 @@ export default function AdminJobDetailPage() {
             {/* Title & Meta */}
             <header className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={typeColors[job.type] ?? "secondary"} className="font-bold uppercase tracking-widest text-[10px] px-3 h-6">
+                <Badge variant={typeColors[job.type] ?? "secondary"} className="font-bold uppercase tracking-widest text-[12px] px-3 h-6">
                   {job.type}
                 </Badge>
               </div>
@@ -368,14 +368,14 @@ export default function AdminJobDetailPage() {
               <CardContent className="p-8 space-y-8 pt-10">
                 {/* Status */}
                 <div>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">Status</p>
+                  <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">Status</p>
                   <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-border/40">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${job.status === "Active" ? "bg-success/100/10 text-success" : job.status === "Draft" ? "bg-yellow-500/10 text-yellow-600" : "bg-muted text-muted-foreground"}`}>
                       {sc.icon}
                     </div>
                     <div>
                       <p className="text-sm font-black">{sc.label}</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">
+                      <p className="text-[12px] text-muted-foreground font-medium">
                         {job.status === "Active" ? "Visible to members" : job.status === "Draft" ? "Not yet published" : "No longer accepting applications"}
                       </p>
                     </div>
@@ -385,7 +385,7 @@ export default function AdminJobDetailPage() {
                 {/* Apply */}
                 {job.applyUrl && (
                   <div>
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">Application Link</p>
+                    <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-3">Application Link</p>
                     <a href={ensureAbsoluteUrl(job.applyUrl)} target="_blank" rel="noopener noreferrer">
                       <Button className="w-full h-14 rounded-2xl font-black text-base shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98]">
                         <Globe size={20} className="mr-3" />
@@ -398,7 +398,7 @@ export default function AdminJobDetailPage() {
 
                 {/* Actions */}
                 <div className="space-y-3 pt-4 border-t border-border/40">
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Actions</p>
+                  <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Actions</p>
                   <Button
                     variant="outline"
                     className="w-full justify-start h-11 rounded-xl font-bold"
@@ -432,14 +432,14 @@ export default function AdminJobDetailPage() {
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/40">
                     <Building2 size={16} className="text-primary/60 shrink-0" />
                     <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Company</p>
+                      <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">Company</p>
                       <p className="text-sm font-black">{job.company}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/40">
                     <MapPin size={16} className="text-primary/60 shrink-0" />
                     <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Location</p>
+                      <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">Location</p>
                       <p className="text-sm font-black">{job.location}</p>
                     </div>
                   </div>
@@ -447,7 +447,7 @@ export default function AdminJobDetailPage() {
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/40">
                       <Clock size={16} className="text-primary/60 shrink-0" />
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Application Deadline</p>
+                        <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">Application Deadline</p>
                         <p className="text-sm font-black">{formatDate(job.deadline)}</p>
                       </div>
                     </div>

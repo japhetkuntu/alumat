@@ -220,7 +220,7 @@ export default function AdminContributionsPage() {
                           {c.transactionRef ?? "No ref"} • {formatCurrency(c.amount)}
                         </p>
                       </div>
-                      <Badge variant={statusVariant[c.status]} className="text-[10px] font-bold uppercase">
+                      <Badge variant={statusVariant[c.status]} className="text-[12px] font-bold uppercase">
                         {c.status}
                       </Badge>
                     </div>

@@ -221,7 +221,7 @@ export default function MemberDetailPage() {
               </Badge>
             </div>
             {!duesRequired && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[12px] text-muted-foreground">
                 This institution&apos;s active-member policy doesn&apos;t require dues — approved members are active regardless of payment.
               </p>
             )}
@@ -236,7 +236,7 @@ export default function MemberDetailPage() {
                 <Button size="sm" className="w-full" onClick={() => { setSelectedYears([]); setModal({ type: "activate-membership" }); }}>
                   <CreditCard size={13} />Activate membership
                 </Button>
-                <p className="text-[11px] text-muted-foreground">Use for offline payments or migration backfill.</p>
+                <p className="text-[12px] text-muted-foreground">Use for offline payments or migration backfill.</p>
               </>
             )}
           </CardContent>

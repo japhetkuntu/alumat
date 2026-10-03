@@ -145,7 +145,7 @@ export default function MemberResourceDetailPage() {
         <div className={`rounded-2xl h-44 flex items-center justify-center ${colorCls} animate-in fade-in duration-700`}>
           <div className="flex flex-col items-center gap-3">
             {isFile ? <FileText size={48} className="opacity-60" /> : <Link2 size={48} className="opacity-60" />}
-            <span className="text-[11px] font-semibold uppercase tracking-wide opacity-60">{resource.type}</span>
+            <span className="text-[12px] font-semibold uppercase tracking-wide opacity-60">{resource.type}</span>
           </div>
         </div>
       )}
@@ -153,10 +153,10 @@ export default function MemberResourceDetailPage() {
       {/* Title + Meta */}
       <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wide ${colorCls}`}>
+          <span className={`px-3 py-1 text-[12px] font-semibold uppercase tracking-wide ${colorCls}`}>
             {resource.category}
           </span>
-          <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">{resource.type}</Badge>
+          <Badge variant="secondary" className="text-[12px] font-semibold uppercase tracking-wide">{resource.type}</Badge>
         </div>
         <h1
           className="font-[family-name:var(--font-display)] leading-tight"
@@ -191,7 +191,7 @@ export default function MemberResourceDetailPage() {
 
           {href && (
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50">Preview</p>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50">Preview</p>
               <div className="rounded-xl border border-border/40 overflow-hidden bg-muted/20">
                 {isYouTube ? (
                   <YouTubeEmbed url={href} />
@@ -203,7 +203,7 @@ export default function MemberResourceDetailPage() {
                   <div className="p-4 space-y-1">
                     <p className="text-sm font-semibold line-clamp-1">{resource.title}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2">{resource.description ?? "External resource link"}</p>
-                    {hostName && <p className="text-[11px] text-primary font-semibold">{hostName}</p>}
+                    {hostName && <p className="text-[12px] text-primary font-semibold">{hostName}</p>}
                   </div>
                 ) : (
                   <div className="p-4 text-sm text-muted-foreground">Preview unavailable for this resource type.</div>
@@ -214,7 +214,7 @@ export default function MemberResourceDetailPage() {
 
           {resource.description && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-3">About</p>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-3">About</p>
               <p className="text-[15px] leading-relaxed text-foreground/90">{resource.description}</p>
             </div>
           )}
@@ -222,11 +222,11 @@ export default function MemberResourceDetailPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/40">
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">Downloads</p>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">Downloads</p>
               <p className="text-2xl font-bold">{resource.downloadCount ?? 0}</p>
             </div>
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">Published</p>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-1">Published</p>
               <p className="text-sm font-semibold">{formatDate(resource.createdAt)}</p>
             </div>
           </div>
@@ -252,13 +252,13 @@ export default function MemberResourceDetailPage() {
       {related.length > 0 && (
         <Card className="">
           <CardContent className="p-6 space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50">Related Resources</p>
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50">Related Resources</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {related.map((item) => (
                 <Link key={item.id} href={`/resources/${item.id}`}>
                   <div className="rounded-xl border border-border/40 p-3 hover:border-primary/30 transition-colors">
                     <p className="text-sm font-semibold line-clamp-2">{item.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{item.category} · {item.type}</p>
+                    <p className="text-[12px] text-muted-foreground mt-1">{item.category} · {item.type}</p>
                   </div>
                 </Link>
               ))}

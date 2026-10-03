@@ -173,7 +173,7 @@ export default function CampaignDetailPage() {
         >
           <ArrowLeft size={15} /> Back
         </button>
-        <Badge variant={isActive ? "success" : "secondary"} className="text-[11px] font-bold uppercase tracking-wide">
+        <Badge variant={isActive ? "success" : "secondary"} className="text-[12px] font-bold uppercase tracking-wide">
           {campaign.status}
         </Badge>
       </div>
@@ -188,7 +188,7 @@ export default function CampaignDetailPage() {
           {/* Title + meta */}
           <div>
             {isMembership && (
-              <p className="text-[11px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
+              <p className="text-[12px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: "var(--primary)" }}>
                 Membership dues
               </p>
             )}
@@ -226,8 +226,8 @@ export default function CampaignDetailPage() {
               />
             ) : (
               <div
-                className="flex items-center justify-center"
-                style={{ height: 240, background: "var(--secondary)" }}
+                className="flex h-24 items-center justify-center sm:h-60"
+                style={{ background: "var(--secondary)" }}
               >
                 <CreditCard size={48} style={{ color: "var(--muted-foreground)", opacity: 0.25 }} />
               </div>
@@ -339,7 +339,7 @@ export default function CampaignDetailPage() {
                 style={{ background: "var(--background)", borderColor: "var(--border)" }}
               >
                 <ExternalLink size={11} style={{ color: "var(--muted-foreground)" }} className="shrink-0" />
-                <span className="text-[11.5px] font-mono truncate" style={{ color: "var(--muted-foreground)" }}>
+                <span className="text-[12px] font-mono truncate" style={{ color: "var(--muted-foreground)" }}>
                   {publicLink}
                 </span>
               </div>
@@ -387,7 +387,7 @@ export default function CampaignDetailPage() {
                 style={{ background: "var(--secondary)", borderColor: "var(--border)", border: "1px solid var(--border)" }}
               >
                 <div className="p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--muted-foreground)" }}>
+                  <p className="text-[12px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--muted-foreground)" }}>
                     {isMembership ? "Your amount" : "Per member"}
                   </p>
                   <p
@@ -397,11 +397,11 @@ export default function CampaignDetailPage() {
                     {formatCurrency(memberAmount)}
                   </p>
                   {isPensioner && isMembership && (
-                    <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Pensioner rate</p>
+                    <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Pensioner rate</p>
                   )}
                 </div>
                 <div className="p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--muted-foreground)" }}>
+                  <p className="text-[12px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--muted-foreground)" }}>
                     Deadline
                   </p>
                   <p className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>
@@ -473,7 +473,7 @@ export default function CampaignDetailPage() {
                             color: active ? "white" : "var(--foreground)",
                           }}
                         >
-                          <span className="block text-[10px] mb-0.5 font-bold opacity-60">
+                          <span className="block text-[12px] mb-0.5 font-bold opacity-60">
                             {multiplier}×
                           </span>
                           {formatCurrency(val)}
@@ -508,7 +508,7 @@ export default function CampaignDetailPage() {
                   />
                   <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
                     Make this monthly
-                    <span className="block text-[11px] mt-0.5 opacity-75">
+                    <span className="block text-[12px] mt-0.5 opacity-75">
                       Automatically give {formatCurrency(numericAmount || campaign.amountPerMember)} every month. Cancel anytime from your contributions.
                     </span>
                   </span>
@@ -526,7 +526,7 @@ export default function CampaignDetailPage() {
                   />
                   <span className="text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
                     Show my name on this fundraiser&apos;s wall of support
-                    <span className="block text-[11px] mt-0.5 opacity-75">Only your name, never the amount you gave.</span>
+                    <span className="block text-[12px] mt-0.5 opacity-75">Only your name, never the amount you gave.</span>
                   </span>
                 </label>
               )}
@@ -689,8 +689,8 @@ function ProgressBlock({ campaign, isMembership, pct }: {
 function DaysLeft({ deadline }: { deadline: string }) {
   const [now] = useState(() => Date.now());
   const days = Math.ceil((new Date(deadline).getTime() - now) / 86_400_000);
-  if (days < 0) return <p className="text-[11.5px] text-destructive mt-0.5 font-medium">Closed</p>;
-  if (days === 0) return <p className="text-[11.5px] text-destructive mt-0.5 font-medium">Closes today</p>;
-  if (days <= 7)  return <p className="text-[11.5px] mt-0.5 font-medium text-warning">{days} day{days !== 1 ? "s" : ""} left</p>;
-  return <p className="text-[11.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{days} days left</p>;
+  if (days < 0) return <p className="text-[12px] text-destructive mt-0.5 font-medium">Closed</p>;
+  if (days === 0) return <p className="text-[12px] text-destructive mt-0.5 font-medium">Closes today</p>;
+  if (days <= 7)  return <p className="text-[12px] mt-0.5 font-medium text-warning">{days} day{days !== 1 ? "s" : ""} left</p>;
+  return <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>{days} days left</p>;
 }

@@ -101,10 +101,10 @@ export default function AdminNewsDetailPage() {
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1">
               {post.isPinned && <Pin size={14} className="text-orange-500" />}
-              <Badge variant="accent" className="text-[10px] font-black uppercase tracking-widest">{post.category}</Badge>
+              <Badge variant="accent" className="text-[12px] font-black uppercase tracking-widest">{post.category}</Badge>
               <Badge
                 variant={post.status === "Published" ? "success" : post.status === "Archived" ? "warning" : "secondary"}
-                className="text-[10px] font-black uppercase tracking-widest"
+                className="text-[12px] font-black uppercase tracking-widest"
               >
                 {post.status}
               </Badge>

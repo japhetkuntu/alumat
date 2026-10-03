@@ -324,7 +324,7 @@ export default function AdminsPage() {
                         <p className="text-sm font-semibold truncate">{a.firstName} {a.lastName}</p>
                         <p className="text-xs text-muted-foreground truncate">{a.email}</p>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] uppercase font-bold">{a.role}</Badge>
+                      <Badge variant="secondary" className="text-[12px] uppercase font-bold">{a.role}</Badge>
                     </div>
                   ))}
                 </div>

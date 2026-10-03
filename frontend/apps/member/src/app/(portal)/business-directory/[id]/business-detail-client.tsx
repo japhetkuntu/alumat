@@ -112,14 +112,14 @@ export default function BusinessListingDetailPage() {
         <CardContent className="p-6 lg:p-8 space-y-6">
           {biz.description && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-3">About</p>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-3">About</p>
               <p className="text-[15px] leading-relaxed text-foreground/90 whitespace-pre-line">{biz.description}</p>
             </div>
           )}
 
           {contactMethods.length > 0 && (
             <div className="space-y-3 pt-2 border-t border-border/40">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/50 pt-4">Contact</p>
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50 pt-4">Contact</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {contactMethods.map((method, i) => (
                   <a

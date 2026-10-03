@@ -228,7 +228,7 @@ export default function AdminForumPage() {
                           {t.categoryName || "Uncategorized"} • {formatDate(t.createdAt)}
                         </p>
                       </div>
-                      {t.isPinned && <Badge variant="secondary" className="text-[10px] uppercase font-bold">Pinned</Badge>}
+                      {t.isPinned && <Badge variant="secondary" className="text-[12px] uppercase font-bold">Pinned</Badge>}
                     </div>
                   ))}
                   {threads.length > 5 && (
@@ -254,7 +254,7 @@ export default function AdminForumPage() {
                   key={f}
                   aria-pressed={threadFilter === f}
                   onClick={() => { setThreadFilter(f); setThreadPage(1); }}
-                  className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all ${
+                  className={`px-4 py-2.5 sm:py-1.5 text-[12px] font-black uppercase tracking-widest transition-all ${
                     threadFilter === f ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   }`}
                 >
@@ -288,23 +288,23 @@ export default function AdminForumPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {t.categoryName && (
-                            <span className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] font-black uppercase tracking-wider">
+                            <span className="px-2 py-0.5 bg-accent/10 text-accent text-[12px] font-black uppercase tracking-wider">
                               {t.categoryName}
                             </span>
                           )}
                           {t.isPinned && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-600 text-[10px] font-black">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 text-orange-600 text-[12px] font-black">
                               <Pin size={9} />Pinned
                             </span>
                           )}
                           {t.isClosed && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground text-[10px] font-black">
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground text-[12px] font-black">
                               <Lock size={9} />Closed
                             </span>
                           )}
                         </div>
                         <p className="font-bold text-[14px] leading-snug group-hover:text-primary transition-colors">{t.title}</p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-[11px] text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-[12px] text-muted-foreground">
                           <span className="whitespace-nowrap">{formatDate(t.createdAt)}</span>
                           <span className="flex items-center gap-1 whitespace-nowrap"><MessageSquare size={10} /> {t.replyCount} {t.replyCount === 1 ? "reply" : "replies"}</span>
                         </div>
@@ -313,7 +313,7 @@ export default function AdminForumPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={`h-9 sm:h-8 text-[11px] font-bold px-3 ${t.isPinned ? "text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800" : ""}`}
+                          className={`h-9 sm:h-8 text-[12px] font-bold px-3 ${t.isPinned ? "text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800" : ""}`}
                           disabled={pinMut.isPending}
                           onClick={() => pinMut.mutate(t.id)}
                         >
@@ -322,7 +322,7 @@ export default function AdminForumPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={`h-9 sm:h-8 text-[11px] font-bold px-3 ${t.isClosed ? "text-success border-success/30 hover:bg-success/10 dark:border-success/40" : ""}`}
+                          className={`h-9 sm:h-8 text-[12px] font-bold px-3 ${t.isClosed ? "text-success border-success/30 hover:bg-success/10 dark:border-success/40" : ""}`}
                           disabled={closeMut.isPending}
                           onClick={() => setCloseTarget({ id: t.id, title: t.title, isClosed: t.isClosed })}
                         >

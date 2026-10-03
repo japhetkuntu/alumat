@@ -194,27 +194,27 @@ export default function AdminReportsPage() {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[11px] text-muted-foreground font-normal">Status</Label>
+              <Label className="text-[12px] text-muted-foreground font-normal">Status</Label>
               <FormSelect value={memberStatusFilter} onValueChange={setMemberStatusFilter} options={MEMBER_STATUS_OPTIONS} placeholder="Any status" />
             </div>
             {!isCommunity && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] text-muted-foreground font-normal">Year from</Label>
+                  <Label className="text-[12px] text-muted-foreground font-normal">Year from</Label>
                   <Input type="number" value={memberYearFrom} onChange={(e) => setMemberYearFrom(e.target.value)} placeholder="e.g. 1980" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] text-muted-foreground font-normal">Year to</Label>
+                  <Label className="text-[12px] text-muted-foreground font-normal">Year to</Label>
                   <Input type="number" value={memberYearTo} onChange={(e) => setMemberYearTo(e.target.value)} placeholder="e.g. 1995" />
                 </div>
               </>
             )}
             <div className="space-y-1.5">
-              <Label className="text-[11px] text-muted-foreground font-normal">Profession contains</Label>
+              <Label className="text-[12px] text-muted-foreground font-normal">Profession contains</Label>
               <Input value={memberProfession} onChange={(e) => setMemberProfession(e.target.value)} placeholder="e.g. Healthcare" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] text-muted-foreground font-normal">Location contains</Label>
+              <Label className="text-[12px] text-muted-foreground font-normal">Location contains</Label>
               <Input value={memberLocation} onChange={(e) => setMemberLocation(e.target.value)} placeholder="e.g. Kumasi" />
             </div>
           </div>

@@ -62,7 +62,7 @@ function FieldInput({
       ) : field.type === "File" ? (
         <div className="flex items-center gap-2">
           <input type="file" className="text-[13px]" onChange={(e) => onFile(e.target.files?.[0])} />
-          {file && <span className="text-[11.5px] text-muted-foreground truncate">{file.name}</span>}
+          {file && <span className="text-[12px] text-muted-foreground truncate">{file.name}</span>}
         </div>
       ) : (
         <Input

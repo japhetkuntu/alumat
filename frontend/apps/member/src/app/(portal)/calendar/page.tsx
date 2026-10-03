@@ -85,7 +85,7 @@ function ItemRow({ item }: { item: CalendarItem }) {
       style={{ borderColor: "var(--border)" }}
     >
       <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex flex-col items-center justify-center shrink-0" style={{ background: "var(--muted)" }}>
-        <p className="text-[9px] sm:text-[10px] font-bold uppercase leading-none" style={{ color: "var(--muted-foreground)" }}>
+        <p className="text-[12px] sm:text-[12px] font-bold uppercase leading-none" style={{ color: "var(--muted-foreground)" }}>
           {format(date, "MMM")}
         </p>
         <p className="text-[14px] sm:text-[16px] font-bold leading-none mt-1" style={{ color: "var(--foreground)" }}>
@@ -106,7 +106,7 @@ function ItemRow({ item }: { item: CalendarItem }) {
 
       <Badge
         variant={item.done ? "success" : isPast ? "neutral" : "secondary"}
-        className="shrink-0 gap-1 text-[10.5px] sm:text-[11px] whitespace-nowrap"
+        className="shrink-0 gap-1 text-[12px] sm:text-[12px] whitespace-nowrap"
       >
         {item.done ? <CheckCircle2 size={11} /> : <Clock size={11} />}
         {badgeLabel}

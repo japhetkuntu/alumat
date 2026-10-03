@@ -638,17 +638,17 @@ export default function BrandingSettingsPage() {
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Display name</Label>
                   <Input value={brandingForm.portalName} onChange={(e) => setBrandingForm((f) => ({ ...f!, portalName: e.target.value }))} />
-                  <p className="text-[11.5px] text-muted-foreground">Shown in the navigation bar, browser tab, and outbound email of both the Institution Portal and Member Portal.</p>
+                  <p className="text-[12px] text-muted-foreground">Shown in the navigation bar, browser tab, and outbound email of both the Institution Portal and Member Portal.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold">Tagline</Label>
                   <Input value={brandingForm.tagline} onChange={(e) => setBrandingForm((f) => ({ ...f!, tagline: e.target.value }))} placeholder="One community. One purpose." />
-                  <p className="text-[11.5px] text-muted-foreground">Shown under your name on the Member Portal&apos;s landing and sign-in pages.</p>
+                  <p className="text-[12px] text-muted-foreground">Shown under your name on the Member Portal&apos;s landing and sign-in pages.</p>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-[13px] font-semibold">Support email</Label>
                   <Input type="email" value={brandingForm.supportEmail} onChange={(e) => setBrandingForm((f) => ({ ...f!, supportEmail: e.target.value }))} placeholder="support@yourinstitution.edu" />
-                  <p className="text-[11.5px] text-muted-foreground">Where members are told to reach you for help — shown on support/contact links in both portals.</p>
+                  <p className="text-[12px] text-muted-foreground">Where members are told to reach you for help — shown on support/contact links in both portals.</p>
                 </div>
               </div>
 
@@ -697,17 +697,17 @@ export default function BrandingSettingsPage() {
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Portal title</Label>
                     <Input value={brandingForm.institutionPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionPortalTitle: e.target.value }))} placeholder="Staff Portal" />
-                    <p className="text-[11.5px] text-muted-foreground">Browser tab title staff see across every page of the Institution Portal.</p>
+                    <p className="text-[12px] text-muted-foreground">Browser tab title staff see across every page of the Institution Portal.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Sign-in headline</Label>
                     <Input value={brandingForm.institutionAuthHeadline} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthHeadline: e.target.value }))} placeholder="Welcome back" />
-                    <p className="text-[11.5px] text-muted-foreground">Large heading on the Institution Portal&apos;s sign-in page.</p>
+                    <p className="text-[12px] text-muted-foreground">Large heading on the Institution Portal&apos;s sign-in page.</p>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
                     <Textarea rows={2} value={brandingForm.institutionAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, institutionAuthSubtext: e.target.value }))} placeholder="Sign in to manage your community." />
-                    <p className="text-[11.5px] text-muted-foreground">The supporting line right under that headline, same sign-in page.</p>
+                    <p className="text-[12px] text-muted-foreground">The supporting line right under that headline, same sign-in page.</p>
                   </div>
                 </div>
               </div>
@@ -722,17 +722,17 @@ export default function BrandingSettingsPage() {
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Portal title</Label>
                     <Input value={brandingForm.memberPortalTitle} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberPortalTitle: e.target.value }))} placeholder="Member Portal" />
-                    <p className="text-[11.5px] text-muted-foreground">Browser tab title members see across every page of the Member Portal.</p>
+                    <p className="text-[12px] text-muted-foreground">Browser tab title members see across every page of the Member Portal.</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold">Sign-in headline</Label>
                     <Input value={brandingForm.memberAuthHeadline} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthHeadline: e.target.value }))} placeholder="Welcome home" />
-                    <p className="text-[11.5px] text-muted-foreground">Large heading on the Member Portal&apos;s sign-in and landing pages.</p>
+                    <p className="text-[12px] text-muted-foreground">Large heading on the Member Portal&apos;s sign-in and landing pages.</p>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-[13px] font-semibold">Sign-in subtext</Label>
                     <Textarea rows={2} value={brandingForm.memberAuthSubtext} onChange={(e) => setBrandingForm((f) => ({ ...f!, memberAuthSubtext: e.target.value }))} placeholder="Stay connected to your community and make an impact." />
-                    <p className="text-[11.5px] text-muted-foreground">The supporting line right under that headline, same pages.</p>
+                    <p className="text-[12px] text-muted-foreground">The supporting line right under that headline, same pages.</p>
                   </div>
                 </div>
               </div>
@@ -881,7 +881,7 @@ export default function BrandingSettingsPage() {
                   <div className="flex items-center gap-2">
                     <Label className="inline-flex items-center gap-1.5">Programs<InfoTip text="The options members choose from when they register." /></Label>
                     {programsDirty && (
-                      <Badge variant="outline" className="text-[10.5px] font-medium text-amber-600 border-amber-300 bg-amber-50">
+                      <Badge variant="outline" className="text-[12px] font-medium text-amber-600 border-amber-300 bg-amber-50">
                         Unsaved changes
                       </Badge>
                     )}
@@ -948,7 +948,7 @@ export default function BrandingSettingsPage() {
                   <Globe size={16} className="text-primary" />
                   <p className="font-semibold text-[15px]">Social links</p>
                   {socialLinksDirty && (
-                    <Badge variant="outline" className="text-[10.5px] font-medium text-amber-600 border-amber-300 bg-amber-50">
+                    <Badge variant="outline" className="text-[12px] font-medium text-amber-600 border-amber-300 bg-amber-50">
                       Unsaved changes
                     </Badge>
                   )}
@@ -1277,12 +1277,12 @@ export default function BrandingSettingsPage() {
               <Bell size={16} className="text-primary" />
               <p className="font-semibold text-[15px]">Notifications</p>
               {notifMutation.isPending && (
-                <span className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                <span className="ml-auto flex items-center gap-1 text-[12px] text-muted-foreground font-medium">
                   <Loader2 size={13} className="animate-spin" /> Saving…
                 </span>
               )}
               {!notifMutation.isPending && notifSaved && (
-                <span className="ml-auto flex items-center gap-1 text-[11px] text-success font-bold animate-in fade-in duration-300">
+                <span className="ml-auto flex items-center gap-1 text-[12px] text-success font-bold animate-in fade-in duration-300">
                   <CheckCircle2 size={13} /> Saved
                 </span>
               )}
@@ -1417,8 +1417,8 @@ export default function BrandingSettingsPage() {
                 <p className="text-[15px] font-bold truncate">{fullName}</p>
                 <p className="text-[12.5px] text-muted-foreground truncate">{profile?.email ?? user?.email ?? "—"}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="info" className="text-[10px]">{roleLabel}</Badge>
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="info" className="text-[12px]">{roleLabel}</Badge>
+                  <Badge variant="secondary" className="text-[12px]">
                     <Shield size={10} className="mr-1" />
                     Institution Portal
                   </Badge>

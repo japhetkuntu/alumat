@@ -126,7 +126,7 @@ export default function ReferralsPage() {
         ].map((s) => (
           <div key={s.label} className="card p-4 text-center">
             <p className="text-[22px] font-bold" style={{ color: "var(--primary)" }}>{s.value}</p>
-            <p className="text-[11.5px] text-muted-foreground mt-0.5">{s.label}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -198,7 +198,7 @@ export default function ReferralsPage() {
               <div key={r.id} className="flex items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium truncate">{r.referredMemberName || r.referredEmail}</p>
-                  <p className="text-[11.5px] text-muted-foreground">{new Date(r.createdAt).toLocaleDateString()}</p>
+                  <p className="text-[12px] text-muted-foreground">{new Date(r.createdAt).toLocaleDateString()}</p>
                 </div>
                 <Badge variant={r.status === "MembershipPaid" ? "success" : r.status === "Registered" ? "default" : "outline"}>
                   {r.status === "MembershipPaid" ? "Paying member" : r.status === "Registered" ? "Registered" : "Invited"}
@@ -238,7 +238,7 @@ export default function ReferralsPage() {
                   <p className="text-[13px] font-semibold truncate">
                     {entry.name}{entry.memberId === user?.id && <span className="text-muted-foreground font-normal"> (you)</span>}
                   </p>
-                  <p className="text-[11.5px] text-muted-foreground">
+                  <p className="text-[12px] text-muted-foreground">
                     {entry.totalReferrals} referral{entry.totalReferrals === 1 ? "" : "s"}
                     {entry.membershipPaidReferrals > 0 && ` · ${entry.membershipPaidReferrals} paying`}
                   </p>

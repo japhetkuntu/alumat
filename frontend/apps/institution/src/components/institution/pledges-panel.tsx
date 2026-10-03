@@ -22,7 +22,7 @@ function Figure({ label, value, hint }: { label: string; value: string; hint?: s
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="font-bold text-lg tabular-nums">{value}</p>
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-[12px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -94,7 +94,7 @@ export function PledgesPanel({ campaignId, canManage }: { campaignId: string; ca
                 <TableCell>{formatDate(p.dueDate)}</TableCell>
                 <TableCell>
                   <Badge variant={STATE_VARIANT[p.state]}>{STATE_LABEL[p.state]}</Badge>
-                  {p.note && <p className="text-[11px] text-muted-foreground mt-0.5">{p.note}</p>}
+                  {p.note && <p className="text-[12px] text-muted-foreground mt-0.5">{p.note}</p>}
                 </TableCell>
                 {canManage && (
                   <TableCell className="text-right whitespace-nowrap">

@@ -722,7 +722,7 @@ function CampaignUpdatesSection({ campaignId }: { campaignId: string }) {
               <div className="p-3.5 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[13.5px] whitespace-pre-wrap leading-relaxed">{u.body}</p>
-                  <p className="text-[11.5px] text-muted-foreground mt-1.5">
+                  <p className="text-[12px] text-muted-foreground mt-1.5">
                     {u.postedByName ? `${u.postedByName} · ` : ""}{formatDate(u.createdAt)}
                   </p>
                 </div>

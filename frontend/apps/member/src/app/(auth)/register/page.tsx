@@ -105,7 +105,7 @@ function StepIndicator({ step }: { step: Step }) {
             <div className="flex flex-col items-center gap-1.5 shrink-0">
               <div
                 className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border-2 transition-all duration-300",
+                  "w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold border-2 transition-all duration-300",
                   done   && "bg-primary border-primary text-white",
                   active && "border-accent bg-accent/10 text-accent",
                   !done && !active && "border-border bg-background text-muted-foreground",

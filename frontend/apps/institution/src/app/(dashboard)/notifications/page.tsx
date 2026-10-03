@@ -76,14 +76,14 @@ function NotifRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            <span className="text-[12px] font-black uppercase tracking-widest text-muted-foreground/60">
               {meta.label}
             </span>
             {!notif.isRead && (
               <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
             )}
           </div>
-          <span className="text-[11px] text-muted-foreground/50 shrink-0 leading-none mt-0.5">
+          <span className="text-[12px] text-muted-foreground/50 shrink-0 leading-none mt-0.5">
             {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
           </span>
         </div>
@@ -205,7 +205,7 @@ export default function AdminNotificationsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all",
+              "px-4 py-2.5 sm:py-1.5 text-[12px] font-black uppercase tracking-widest transition-all",
               tab === t
                 ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted",
@@ -213,7 +213,7 @@ export default function AdminNotificationsPage() {
           >
             {t}
             {t === "Unread" && unreadCount > 0 && (
-              <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 text-[10px]">
+              <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 text-[12px]">
                 {unreadCount}
               </span>
             )}

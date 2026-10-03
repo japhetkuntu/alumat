@@ -70,7 +70,7 @@ function NotifRow({
         {/* Label row */}
         <div className="flex items-center justify-between gap-2 mb-0.5">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
+            <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)", opacity: 0.6 }}>
               {meta.label}
             </span>
             {!notif.isRead && (
@@ -78,7 +78,7 @@ function NotifRow({
             )}
           </div>
           {time && (
-            <span className="text-[11px] shrink-0" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
+            <span className="text-[12px] shrink-0" style={{ color: "var(--muted-foreground)", opacity: 0.5 }}>
               {time}
             </span>
           )}
@@ -253,7 +253,7 @@ export default function NotificationsPage() {
             {t}
             {t === "Unread" && unreadCount > 0 && (
               <span
-                className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold"
+                className="ml-1.5 px-1.5 py-0.5 text-[12px] font-bold"
                 style={{
                   background: tab === "Unread" ? "rgba(255,255,255,0.2)" : "var(--brand-primary-100, var(--color-background-info))",
                   color:      tab === "Unread" ? "white" : "var(--primary)",

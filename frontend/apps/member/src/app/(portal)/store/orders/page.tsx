@@ -143,7 +143,7 @@ export default function MyStoreOrdersPage() {
                               Qty {item.quantity} &middot; {formatCurrency(item.unitPrice)} each
                             </p>
                             {o.status === "Successful" && item.deliveryInfo && (
-                              <p className="text-[11.5px] text-muted-foreground leading-relaxed mt-1">{item.deliveryInfo}</p>
+                              <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">{item.deliveryInfo}</p>
                             )}
                           </div>
                           <span className="text-[13px] font-semibold tabular-nums shrink-0">
@@ -154,7 +154,7 @@ export default function MyStoreOrdersPage() {
                           <dl className="sm:ml-[68px] grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
                             {item.answers.map((a) => (
                               <div key={`${a.section}:${a.key}`} className="min-w-0">
-                                <dt className="text-[11.5px] text-muted-foreground">{a.label}</dt>
+                                <dt className="text-[12px] text-muted-foreground">{a.label}</dt>
                                 <dd className="text-[12.5px] font-medium break-words">
                                   {a.type === "File" ? (
                                     <a href={a.value} target="_blank" rel="noreferrer" className="underline">View file</a>
@@ -181,7 +181,7 @@ export default function MyStoreOrdersPage() {
                                     {u.attachmentUrl && (
                                       <a href={u.attachmentUrl} target="_blank" rel="noreferrer" className="text-[12px] underline text-muted-foreground">Attachment</a>
                                     )}
-                                    <p className="text-[11px] text-muted-foreground">{formatDate(u.changedAt)}</p>
+                                    <p className="text-[12px] text-muted-foreground">{formatDate(u.changedAt)}</p>
                                   </li>
                                 ))}
                               </ol>
@@ -217,7 +217,7 @@ export default function MyStoreOrdersPage() {
                                 </div>
                                 <div className="pb-1">
                                   <p className="text-[12px] font-medium text-foreground leading-tight">{event.status}</p>
-                                  <p className="text-[11px] text-muted-foreground">{formatDate(event.changedAt)}</p>
+                                  <p className="text-[12px] text-muted-foreground">{formatDate(event.changedAt)}</p>
                                 </div>
                               </li>
                             );

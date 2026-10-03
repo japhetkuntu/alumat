@@ -420,7 +420,7 @@ export default function AdminMembersPage() {
                         <p className="font-medium text-sm leading-tight truncate max-w-[220px]">{m.firstName} {m.lastName}</p>
                         <p className="text-xs text-muted-foreground truncate max-w-[220px]">{m.email}</p>
                         {m.rejectionCount != null && m.rejectionCount > 0 && (
-                          <p className="text-[10px] text-orange-500 leading-tight">Rejected {m.rejectionCount}×</p>
+                          <p className="text-[12px] text-orange-500 leading-tight">Rejected {m.rejectionCount}×</p>
                         )}
                       </div>
                     </div>
@@ -621,7 +621,7 @@ export default function AdminMembersPage() {
             <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/5 px-3.5 py-3">
               <div>
                 <p className="text-[13px] font-semibold">Not sure how to format your file?</p>
-                <p className="text-[11.5px] text-muted-foreground mt-0.5">Start from our template — it opens fine in Excel, Numbers, or Google Sheets. Fill it in and save as CSV.</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">Start from our template — it opens fine in Excel, Numbers, or Google Sheets. Fill it in and save as CSV.</p>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={() => downloadCsvTemplate(isCommunity)} className="shrink-0">
                 <Download size={13} />
@@ -637,7 +637,7 @@ export default function AdminMembersPage() {
             >
               <Upload size={20} className="text-muted-foreground" />
               <p className="text-[13px] font-semibold">{csvFileName ?? "Click to choose a CSV file"}</p>
-              <p className="text-[11.5px] text-muted-foreground">
+              <p className="text-[12px] text-muted-foreground">
                 Required columns: {(isCommunity ? ["firstName", "lastName", "email"] : ["firstName", "lastName", "email", "graduationYear"]).join(", ")}. Optional: phone, studentId.
               </p>
               <input

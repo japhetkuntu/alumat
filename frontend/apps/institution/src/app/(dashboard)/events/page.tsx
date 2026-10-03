@@ -293,13 +293,13 @@ export default function AdminEventsPage() {
                   )}
                   <div className="flex items-center gap-2">
                     {e.yearGroups && e.yearGroups.length > 0 ? (
-                      <Badge variant="secondary" className="text-[9px] font-bold uppercase tracking-widest">
+                      <Badge variant="secondary" className="text-[12px] font-bold uppercase tracking-widest">
                         {e.yearGroups.length === 1
                           ? `Cohort ${e.yearGroups[0]}`
                           : `Cohorts ${e.yearGroups.slice(0, 2).join(", ")}${e.yearGroups.length > 2 ? "…" : ""}`}
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest">
+                      <Badge variant="outline" className="text-[12px] font-bold uppercase tracking-widest">
                         All years
                       </Badge>
                     )}

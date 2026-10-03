@@ -112,7 +112,7 @@ export function InviteKitCard({
           <div className="flex flex-col items-center gap-1.5 shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qrUrl} alt="QR code to the member portal" width={100} height={100} className="border border-border" />
-            <p className="text-[10.5px] text-muted-foreground text-center max-w-[100px]">For posters or events</p>
+            <p className="text-[12px] text-muted-foreground text-center max-w-[100px]">For posters or events</p>
           </div>
         )}
       </div>

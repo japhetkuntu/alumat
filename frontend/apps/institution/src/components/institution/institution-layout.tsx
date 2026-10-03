@@ -230,7 +230,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             </Button>
           )}
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-[11px]">
+        <div className="mt-3 flex items-center gap-1.5 text-[12px]">
           {tenantHost && (
             <span className="font-mono text-blue-300/90 truncate" title={tenantHost}>{tenantHost}</span>
           )}
@@ -245,7 +245,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             return (
               <div key={i} className="flex items-center gap-2 px-3 pt-6 pb-1.5 first:pt-1">
                 <span className="h-px w-2.5 bg-white/15 shrink-0" />
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.14em]">{item.label}</p>
+                <p className="text-[12px] font-bold text-slate-500 uppercase tracking-[0.14em]">{item.label}</p>
               </div>
             );
           }
@@ -396,7 +396,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
             <GlobalSearch pages={searchPages} />
             <NotificationPanel />
             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
-              <span className="text-[10px] font-bold text-accent">AD</span>
+              <span className="text-[12px] font-bold text-accent">AD</span>
             </div>
           </div>
         </div>

@@ -101,7 +101,7 @@ export default function LeaderboardPage() {
                         Class of {entry.yearGroup}
                       </h3>
                       {isMyYear && (
-                        <Badge variant="info" className="text-[10.5px] font-semibold">
+                        <Badge variant="info" className="text-[12px] font-semibold">
                           Your class
                         </Badge>
                       )}
@@ -126,7 +126,7 @@ export default function LeaderboardPage() {
                             {value}
                           </p>
                         </div>
-                        <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
+                        <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
                       </div>
                     ))}
                   </div>
@@ -139,7 +139,7 @@ export default function LeaderboardPage() {
                     >
                       {Math.round(entry.membershipRate)}%
                     </p>
-                    <p className="text-[11.5px] font-medium tabular-nums" style={{ color: "var(--muted-foreground)" }}>
+                    <p className="text-[12px] font-medium tabular-nums" style={{ color: "var(--muted-foreground)" }}>
                       {formatCurrency(entry.totalContributed)}
                     </p>
                   </div>
@@ -160,7 +160,7 @@ export default function LeaderboardPage() {
                       <p className="text-[13px] font-bold tabular-nums" style={{ color: "var(--foreground)" }}>
                         {value}
                       </p>
-                      <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
+                      <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>{label}</p>
                     </div>
                   ))}
                 </div>

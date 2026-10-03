@@ -114,7 +114,7 @@ function NotificationRow({
         <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
-        <p className="text-[10px] text-muted-foreground/60 mt-1">
+        <p className="text-[12px] text-muted-foreground/60 mt-1">
           {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
         </p>
       </div>
@@ -164,7 +164,7 @@ export function NotificationPanel() {
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 min-w-[15px] h-[15px] rounded-full bg-accent text-accent-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+          <span className="absolute top-1 right-1 min-w-[15px] h-[15px] rounded-full bg-accent text-accent-foreground text-[12px] font-bold flex items-center justify-center px-0.5 leading-none">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -184,7 +184,7 @@ export function NotificationPanel() {
               <Bell size={14} className="text-muted-foreground" />
               <span className="font-semibold text-[13px]">Notifications</span>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold bg-accent text-accent-foreground px-1.5 py-0.5 leading-none">
+                <span className="text-[12px] font-bold bg-accent text-accent-foreground px-1.5 py-0.5 leading-none">
                   {unreadCount}
                 </span>
               )}
@@ -194,7 +194,7 @@ export function NotificationPanel() {
                 <button
                   onClick={() => markAll.mutate()}
                   disabled={markAll.isPending}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-accent hover:text-accent/80 transition-colors px-2 py-1 rounded-lg hover:bg-accent/10 disabled:opacity-50"
+                  className="flex items-center gap-1 text-[12px] font-semibold text-accent hover:text-accent/80 transition-colors px-2 py-1 rounded-lg hover:bg-accent/10 disabled:opacity-50"
                 >
                   {markAll.isPending ? (
                     <Loader2 size={11} className="animate-spin" />
@@ -224,7 +224,7 @@ export function NotificationPanel() {
               <div className="text-center py-10">
                 <Bell size={28} className="mx-auto mb-2 text-muted-foreground/30" />
                 <p className="text-[13px] font-semibold text-muted-foreground">No notifications yet</p>
-                <p className="text-[11px] text-muted-foreground/60">
+                <p className="text-[12px] text-muted-foreground/60">
                   You&apos;ll be notified about payments and activity.
                 </p>
               </div>

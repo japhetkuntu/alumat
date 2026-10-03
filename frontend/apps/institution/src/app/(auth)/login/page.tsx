@@ -285,7 +285,7 @@ export default function AdminLoginPage() {
 
         <div className="flex items-center gap-3 mt-7">
           <div className="h-px flex-1" style={{ background: "var(--border)" }} />
-          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
+          <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>or</span>
           <div className="h-px flex-1" style={{ background: "var(--border)" }} />
         </div>
 

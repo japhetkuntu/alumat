@@ -125,7 +125,7 @@ export default function FlaggedContentPage() {
               <CardContent className="space-y-3 p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">{TYPE_LABELS[r.entityType]}</p>
+                    <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-muted-foreground">{TYPE_LABELS[r.entityType]}</p>
                     <p className="mt-1 text-[15px] font-semibold leading-snug">{r.entityTitle || "Untitled"}</p>
                   </div>
                   <Badge variant={STATUS_BADGE[r.status].variant}>{STATUS_BADGE[r.status].label}</Badge>

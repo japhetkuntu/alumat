@@ -107,7 +107,7 @@ export default function AdminMentorshipPage() {
             <p className="text-xs text-muted-foreground mt-1">You're scoped to your assigned batch and communities, and can't approve or decline mentors; a Super Admin handles that.</p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 max-sm:[&>*]:flex-1">
           <Button variant={view === "mentors" ? "default" : "outline"} onClick={() => setView("mentors")}>Mentor applications</Button>
           <Button variant={view === "requests" ? "default" : "outline"} onClick={() => setView("requests")}>Pairing requests</Button>
         </div>
@@ -136,7 +136,7 @@ export default function AdminMentorshipPage() {
                         <p className="text-sm font-semibold truncate">{m.memberName ?? "Unknown"}</p>
                         <p className="text-xs text-muted-foreground truncate">{m.area}</p>
                       </div>
-                      <Badge variant={profileStatusVariant[m.status]} className="text-[10px] font-bold uppercase tracking-widest">
+                      <Badge variant={profileStatusVariant[m.status]} className="text-[12px] font-bold uppercase tracking-widest">
                         {m.status}
                       </Badge>
                     </div>
@@ -154,7 +154,7 @@ export default function AdminMentorshipPage() {
                   key={s}
                   aria-pressed={mentorStatusFilter === s}
                   onClick={() => { setMentorStatusFilter(s); setMentorPage(1); }}
-                  className={`px-4 py-1.5 text-[11px] font-black uppercase tracking-widest transition-all ${
+                  className={`px-4 py-2.5 sm:py-1.5 text-[12px] font-black uppercase tracking-widest transition-all ${
                     mentorStatusFilter === s ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   }`}
                 >
@@ -196,7 +196,7 @@ export default function AdminMentorshipPage() {
                           <p className="font-bold text-[14px] leading-tight group-hover:text-primary transition-colors">{name}</p>
                           <p className="text-[12px] text-muted-foreground font-medium mt-0.5">{m.area}</p>
                           <div className="mt-1.5">
-                            <Badge variant={profileStatusVariant[m.status]} className="text-[9px] font-black uppercase tracking-widest">{m.status}</Badge>
+                            <Badge variant={profileStatusVariant[m.status]} className="text-[12px] font-black uppercase tracking-widest">{m.status}</Badge>
                           </div>
                         </div>
                       </div>
@@ -206,7 +206,7 @@ export default function AdminMentorshipPage() {
                       )}
 
                       {m.status === "Approved" && (
-                        <div className="flex items-center gap-1.5 mb-3 text-[11px]">
+                        <div className="flex items-center gap-1.5 mb-3 text-[12px]">
                           <UserCheck size={11} className="text-primary" />
                           <span className="font-bold text-primary">{m.currentMenteeCount}</span>
                           <span className="text-muted-foreground">/ {m.maxMentees} mentees</span>
@@ -273,7 +273,7 @@ export default function AdminMentorshipPage() {
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <Badge variant={requestStatusVariant[r.status]}>{r.status}</Badge>
-                  <Button size="sm" variant="outline" className="h-7 text-[11px] font-bold" onClick={() => setViewRequest(r)}>
+                  <Button size="sm" variant="outline" className="h-7 text-[12px] font-bold" onClick={() => setViewRequest(r)}>
                     <Eye size={12} />View details
                   </Button>
                 </div>
@@ -318,7 +318,7 @@ export default function AdminMentorshipPage() {
                     <DialogTitle>{viewMentor.memberName ?? "Unknown Member"}</DialogTitle>
                     <DialogDescription>{viewMentor.area}</DialogDescription>
                     <div className="mt-1.5">
-                      <Badge variant={profileStatusVariant[viewMentor.status]} className="text-[9px] font-black uppercase tracking-widest">
+                      <Badge variant={profileStatusVariant[viewMentor.status]} className="text-[12px] font-black uppercase tracking-widest">
                         {viewMentor.status}
                       </Badge>
                     </div>
@@ -329,24 +329,24 @@ export default function AdminMentorshipPage() {
               <div className="space-y-4 mt-4">
                 {viewMentor.bio && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Bio</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Bio</p>
                     <p className="text-[13px] leading-relaxed">{viewMentor.bio}</p>
                   </div>
                 )}
 
                 {viewMentor.yearGroups && viewMentor.yearGroups.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Year groups</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Year groups</p>
                     <div className="flex flex-wrap gap-1.5">
                       {viewMentor.yearGroups.map((yg) => (
-                        <Badge key={yg} variant="secondary" className="text-[11px]">{yg}</Badge>
+                        <Badge key={yg} variant="secondary" className="text-[12px]">{yg}</Badge>
                       ))}
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Mentee capacity</p>
+                  <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Mentee capacity</p>
                   <div className="flex items-center gap-1.5 text-[13px]">
                     <UserCheck size={13} className="text-primary" />
                     <span className="font-bold text-primary">{viewMentor.currentMenteeCount}</span>
@@ -359,7 +359,7 @@ export default function AdminMentorshipPage() {
 
                 {(viewMentor.contactLinkedInUrl || viewMentor.contactWhatsAppNumber || viewMentor.contactPhoneNumber) && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Contact</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Contact</p>
                     <div className="flex flex-wrap gap-2">
                       {viewMentor.contactLinkedInUrl && (
                         <a href={viewMentor.contactLinkedInUrl} target="_blank" rel="noopener noreferrer"
@@ -383,7 +383,7 @@ export default function AdminMentorshipPage() {
                   </div>
                 )}
 
-                <p className="text-[11px] text-muted-foreground">Applied {formatDate(viewMentor.createdAt)}</p>
+                <p className="text-[12px] text-muted-foreground">Applied {formatDate(viewMentor.createdAt)}</p>
               </div>
 
               {viewMentor.status === "Pending" && isSuperAdmin && (
@@ -432,14 +432,14 @@ export default function AdminMentorshipPage() {
               <div className="space-y-4 mt-4">
                 {viewRequest.message && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Message</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Message</p>
                     <p className="text-[13px] leading-relaxed italic">&quot;{viewRequest.message}&quot;</p>
                   </div>
                 )}
 
                 {viewRequest.status === "Accepted" && (viewRequest.contactLinkedInUrl || viewRequest.contactWhatsAppNumber || viewRequest.contactPhoneNumber) && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Mentor contact</p>
+                    <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Mentor contact</p>
                     <div className="flex flex-wrap gap-2">
                       {viewRequest.contactLinkedInUrl && (
                         <a href={viewRequest.contactLinkedInUrl} target="_blank" rel="noopener noreferrer"
@@ -463,7 +463,7 @@ export default function AdminMentorshipPage() {
                   </div>
                 )}
 
-                <p className="text-[11px] text-muted-foreground">Submitted {formatDate(viewRequest.createdAt)}</p>
+                <p className="text-[12px] text-muted-foreground">Submitted {formatDate(viewRequest.createdAt)}</p>
               </div>
             </>
           )}

@@ -87,7 +87,7 @@ function MembershipCard({
 
         {/* Left — identity */}
         <div className="space-y-0.5 sm:space-y-1">
-          <p className="text-white/60 text-[11px] sm:text-[12px] font-semibold tracking-[0.1em] uppercase">
+          <p className="text-white/60 text-[12px] sm:text-[12px] font-semibold tracking-[0.1em] uppercase">
             Member card
           </p>
           <p className="text-[18px] sm:text-[26px] font-bold leading-tight">
@@ -119,14 +119,14 @@ function MembershipCard({
           </div>
           <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
             {isActive && expiry && (
-              <p className="text-white/60 text-[11px] sm:text-[12px]">
+              <p className="text-white/60 text-[12px] sm:text-[12px]">
                 Valid until {formatDate(expiry)}
               </p>
             )}
             {/* Certificate link — only when active */}
             {isActive && (
               <Link href="/membership-certificate">
-                <button className="flex items-center gap-1.5 text-[11px] sm:text-[12px] text-white/70 hover:text-white transition-colors whitespace-nowrap">
+                <button className="flex items-center gap-1.5 text-[12px] sm:text-[12px] text-white/70 hover:text-white transition-colors whitespace-nowrap">
                   <Award size={12} /> Certificate
                 </button>
               </Link>
@@ -149,7 +149,7 @@ function MembershipCard({
                   <span className="text-white/60 text-[12px] font-normal ml-1.5">pensioner rate</span>
                 ) : null}
               </p>
-              <p className="text-white/60 text-[11px] sm:text-[12px]">
+              <p className="text-white/60 text-[12px] sm:text-[12px]">
                 Due {formatDate(membershipCampaign.deadline)}
               </p>
             </div>
@@ -414,7 +414,7 @@ function JobsPulse() {
               <p className="text-[13px] font-semibold leading-snug truncate group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
                 {j.title}
               </p>
-              <p className="text-[11.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
                 {j.company}{j.location ? ` · ${j.location}` : ""}
               </p>
             </div>
@@ -449,7 +449,7 @@ function SpotlightPulse() {
                 {spotlight.memberName ?? "Member"}
               </p>
               {spotlight.memberGraduationYear && (
-                <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>Class of {spotlight.memberGraduationYear}</p>
+                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Class of {spotlight.memberGraduationYear}</p>
               )}
             </div>
           </div>
@@ -655,7 +655,7 @@ export default function MemberDashboardPage() {
               </p>
             </div>
             <span
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-destructive"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold text-destructive"
               style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
             >
               {unpaidCurrentMembershipCampaigns.length}
@@ -734,7 +734,7 @@ export default function MemberDashboardPage() {
                         <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
                           {formatCurrency(c.amountPerMember)}
                         </p>
-                        <p className="text-[10px] font-normal" style={{ color: "var(--muted-foreground)" }}>
+                        <p className="text-[12px] font-normal" style={{ color: "var(--muted-foreground)" }}>
                           Per member
                         </p>
                       </div>
@@ -784,7 +784,7 @@ export default function MemberDashboardPage() {
                     <Link key={c.id} href={`/contributions/${c.id}`} className="block group">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10.5px] font-bold uppercase tracking-wide truncate" style={{ color: "var(--primary)" }}>
+                          <p className="text-[12px] font-bold uppercase tracking-wide truncate" style={{ color: "var(--primary)" }}>
                             {community.name}
                           </p>
                           <p className="text-[14px] font-semibold leading-snug group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
@@ -795,7 +795,7 @@ export default function MemberDashboardPage() {
                           <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
                             {formatCurrency(c.amountPerMember)}
                           </p>
-                          <p className="text-[10px] font-normal" style={{ color: "var(--muted-foreground)" }}>
+                          <p className="text-[12px] font-normal" style={{ color: "var(--muted-foreground)" }}>
                             Per member
                           </p>
                         </div>
@@ -870,8 +870,8 @@ export default function MemberDashboardPage() {
                   </p>
                 </div>
                 {myRsvpIds.has(e.id)
-                  ? <Badge variant="success" className="text-[11px] font-bold shrink-0">Going</Badge>
-                  : <Badge variant="outline" className="text-[11px] font-bold shrink-0">Open</Badge>}
+                  ? <Badge variant="success" className="text-[12px] font-bold shrink-0">Going</Badge>
+                  : <Badge variant="outline" className="text-[12px] font-bold shrink-0">Open</Badge>}
               </Link>
             ))}
             {events.isError && !events.data && <LoadError title="Events couldn’t load" onRetry={() => void events.refetch()} />}
@@ -934,7 +934,7 @@ export default function MemberDashboardPage() {
                   </p>
                   <Badge
                     variant={c.status === "Successful" ? "success" : c.status === "Pending" ? "warning" : "destructive"}
-                    className="text-[10px] font-bold uppercase tracking-wide mt-0.5"
+                    className="text-[12px] font-bold uppercase tracking-wide mt-0.5"
                   >
                     {c.status}
                   </Badge>

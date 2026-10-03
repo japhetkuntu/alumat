@@ -370,7 +370,7 @@ export default function CommunityDetailPage() {
                       <div className="card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm h-full">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-[14px] font-semibold group-hover:text-primary transition-colors">{c.title}</p>
-                          <Badge variant="info" className="shrink-0 text-[10px]">{c.status}</Badge>
+                          <Badge variant="info" className="shrink-0 text-[12px]">{c.status}</Badge>
                         </div>
                         <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--secondary)" }}>
                           <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "var(--primary)" }} />
@@ -403,7 +403,7 @@ export default function CommunityDetailPage() {
                         <Link href={`/events/${e.id}`} className="min-w-0">
                           <p className="text-[14px] font-semibold hover:text-primary transition-colors truncate">{e.title}</p>
                         </Link>
-                        <Badge variant="info" className="shrink-0 text-[10px]">{e.status}</Badge>
+                        <Badge variant="info" className="shrink-0 text-[12px]">{e.status}</Badge>
                       </div>
                       <div className="flex flex-col gap-1.5 mt-2.5">
                         {safeDate(e.startDate) && <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground"><Clock size={11} /> {safeDate(e.startDate)}</span>}
@@ -514,7 +514,7 @@ export default function CommunityDetailPage() {
                   <UserAvatar name={m.name} size="sm" />
                   <div className="min-w-0">
                     <p className="text-[13.5px] font-semibold truncate">{m.name}</p>
-                    {m.role === "Leader" && <Badge variant="info" className="text-[10px] gap-1 mt-0.5"><Crown size={9} /> Leader</Badge>}
+                    {m.role === "Leader" && <Badge variant="info" className="text-[12px] gap-1 mt-0.5"><Crown size={9} /> Leader</Badge>}
                   </div>
                 </div>
                 {isLeader && m.role !== "Leader" && (
@@ -544,7 +544,7 @@ export default function CommunityDetailPage() {
                     <UserAvatar name={r.memberName} size="sm" />
                     <div className="min-w-0">
                       <p className="text-[13.5px] font-semibold truncate">{r.memberName}</p>
-                      <p className="text-[11.5px] text-muted-foreground">{safeDate(r.requestedAt)}</p>
+                      <p className="text-[12px] text-muted-foreground">{safeDate(r.requestedAt)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
