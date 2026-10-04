@@ -70,7 +70,7 @@ public class BirthdaySpotlightDispatchWorkflow
 
         var fullNames = celebrants.Select(m => $"{m.FirstName} {m.LastName}").ToList();
         var listed = string.Join(", ", fullNames[..^1]) + $", and {fullNames[^1]}";
-        return ($"Happy Birthday to {celebrants.Count} of our alumni today!",
+        return ($"Happy Birthday to {celebrants.Count} of our members today!",
             $"It's a big day for {celebrants.Count} members of our community: {listed}. Join us in wishing them all a very happy birthday!");
     }
 }

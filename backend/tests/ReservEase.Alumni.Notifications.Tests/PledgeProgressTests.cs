@@ -2,7 +2,7 @@ using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using Xunit;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.Notifications.Tests;
 
 public class PledgeProgressTests
 {

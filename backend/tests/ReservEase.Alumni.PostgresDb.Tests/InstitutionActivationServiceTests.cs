@@ -14,7 +14,7 @@ using Xunit;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.PostgresDb.Tests;
 
 public class InstitutionActivationServiceTests
 {

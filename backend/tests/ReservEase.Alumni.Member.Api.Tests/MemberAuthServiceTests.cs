@@ -18,7 +18,7 @@ using ReservEase.Alumni.Storage.Sdk.Services;
 using ReservEase.Alumni.Temporal.Sdk;
 using Xunit;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.Member.Api.Tests;
 
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using Referral = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Referral;

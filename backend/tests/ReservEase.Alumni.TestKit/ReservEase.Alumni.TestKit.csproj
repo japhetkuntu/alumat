@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.6" />
+    <PackageReference Include="Moq" Version="4.20.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.PostgresDb.Sdk/ReservEase.Alumni.PostgresDb.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.Redis.Sdk/ReservEase.Alumni.Redis.Sdk.csproj" />
+  </ItemGroup>
+</Project>

@@ -25,6 +25,11 @@ public class MemberAccountDeletionService(
     IAlumniPgRepository<PaymentTransaction> transactionRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
     IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
+    IAlumniPgRepository<ForumThread> forumThreadRepo,
+    IAlumniPgRepository<ForumPost> forumPostRepo,
+    IAlumniPgRepository<ClassNote> classNoteRepo,
+    IAlumniPgRepository<ClassNoteLike> classNoteLikeRepo,
+    IAlumniPgRepository<Referral> referralRepo,
     ILogger<MemberAccountDeletionService> logger) : IMemberAccountDeletionService
 {
     public const string ConfirmationWord = "DELETE";
@@ -83,6 +88,46 @@ public class MemberAccountDeletionService(
             var requests = (await serviceRequestRepo.GetAllAsync(r => r.MemberId == id)).ToList();
             foreach (var r in requests) r.Member = Former(r.Member);
             if (requests.Count > 0) await serviceRequestRepo.UpdateRangeAsync(requests);
+
+            // ── Things the member wrote or took part in: kept for everyone else, identity removed ──
+            // Forum threads and posts and class notes stay (other people's replies depend on them) but show "Former member".
+            var threads = (await forumThreadRepo.GetAllAsync(t => t.AuthorId == id)).ToList();
+            foreach (var t in threads) t.Author = Former(t.Author);
+            if (threads.Count > 0) await forumThreadRepo.UpdateRangeAsync(threads);
+
+            var posts = (await forumPostRepo.GetAllAsync(p => p.AuthorId == id)).ToList();
+            foreach (var p in posts) p.Author = Former(p.Author);
+            if (posts.Count > 0) await forumPostRepo.UpdateRangeAsync(posts);
+
+            var notes = (await classNoteRepo.GetAllAsync(n => n.AuthorId == id)).ToList();
+            foreach (var n in notes) n.Author = Former(n.Author);
+            if (notes.Count > 0) await classNoteRepo.UpdateRangeAsync(notes);
+
+            // Likes this member gave are personal activity: removed, and the notes' counts brought back down.
+            var likes = (await classNoteLikeRepo.GetAllAsync(l => l.MemberId == id)).ToList();
+            if (likes.Count > 0)
+            {
+                var likedNoteIds = likes.Select(l => l.ClassNoteId).Distinct().ToList();
+                var likedNotes = (await classNoteRepo.GetAllAsync(n => likedNoteIds.Contains(n.Id))).ToList();
+                foreach (var note in likedNotes)
+                    note.LikeCount = Math.Max(0, note.LikeCount - likes.Count(l => l.ClassNoteId == note.Id));
+                if (likedNotes.Count > 0) await classNoteRepo.UpdateRangeAsync(likedNotes);
+                foreach (var like in likes) await classNoteLikeRepo.RemoveAsync(like);
+            }
+
+            // Referrals: as the referrer the member's name goes (the invited person's own address belongs to them and stays);
+            // as the referred person the member's email and name go.
+            var referrals = (await referralRepo.GetAllAsync(r => r.ReferrerId == id || r.ReferredMemberId == id)).ToList();
+            foreach (var r in referrals)
+            {
+                if (r.ReferrerId == id) r.Referrer = Former(r.Referrer);
+                if (r.ReferredMemberId == id)
+                {
+                    r.ReferredEmail = $"deleted-{id}@removed.invalid";
+                    r.ReferredMember = Former(r.ReferredMember);
+                }
+            }
+            if (referrals.Count > 0) await referralRepo.UpdateRangeAsync(referrals);
 
             // ── The member row itself: personal fields cleared, sign-in made impossible ─────────
             member.FirstName = "Former";

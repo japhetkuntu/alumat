@@ -151,20 +151,17 @@ public class ServiceRequestService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceRequestCheckoutResponse>("Could not read the submitted form answers.");
             }
 
-            var uploadedAttachments = new Dictionary<string, string>();
+            // Check every answer first and upload files only once the whole form is valid, so a
+            // rejected form never leaves stray uploads behind (same rule as the store checkout).
+            var pendingUploads = new List<(string Key, IFormFile File)>();
             foreach (var field in serviceType.Fields)
             {
                 if (field.Type == "File")
                 {
                     if (attachments.TryGetValue(field.Key, out var file) && file.Length > 0)
-                    {
-                        var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
-                        uploadedAttachments[field.Key] = await storageService.UploadFileAsync(file, objectName, AttachmentFolderName, currentTenant.InstitutionSlug ?? "");
-                    }
+                        pendingUploads.Add((field.Key, file));
                     else if (field.Required)
-                    {
                         return ApiResponseExtensions.ToBadRequestApiResponse<ServiceRequestCheckoutResponse>($"\"{field.Label}\" is required.");
-                    }
                 }
                 else if (field.Required && string.IsNullOrWhiteSpace(answers.GetValueOrDefault(field.Key)))
                 {
@@ -176,6 +173,13 @@ public class ServiceRequestService(
             // both reject Price <= 0, so this only guards against stale data.
             if (serviceType.Price <= 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceRequestCheckoutResponse>("This service isn't properly configured. Please contact the institution.");
+
+            var uploadedAttachments = new Dictionary<string, string>();
+            foreach (var (key, file) in pendingUploads)
+            {
+                var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
+                uploadedAttachments[key] = await storageService.UploadFileAsync(file, objectName, AttachmentFolderName, currentTenant.InstitutionSlug ?? "");
+            }
 
             var memberSnapshot = new MemberSnapshot
             {

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.Whatsapp.Sdk/ReservEase.Alumni.Whatsapp.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

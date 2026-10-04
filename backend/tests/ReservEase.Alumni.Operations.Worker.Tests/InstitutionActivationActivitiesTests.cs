@@ -23,7 +23,7 @@ using Xunit;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.Operations.Worker.Tests;
 
 /// <summary>
 /// The Operations Worker's activation activities against an in-memory database.

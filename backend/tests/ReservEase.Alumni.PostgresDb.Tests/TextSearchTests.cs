@@ -1,7 +1,7 @@
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Xunit;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.PostgresDb.Tests;
 
 public class TextSearchTests
 {

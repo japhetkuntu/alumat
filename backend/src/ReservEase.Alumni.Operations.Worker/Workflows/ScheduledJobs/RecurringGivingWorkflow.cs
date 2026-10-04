@@ -136,7 +136,10 @@ public class RecurringGivingWorkflow
                 CreatedBy = "system",
                 PlatformFeeAmount = 0m,
                 NetAmountToInstitution = gift.Amount,
-                PlatformRevenueAmount = charge.transactionChargeAmount - actualFee,
+                // No split (no subaccount) means no platform revenue — see ProcessContributionCallbackWorkflow.
+                PlatformRevenueAmount = Workflow.Patched("platform-revenue-zero-when-unsplit") && charge.transactionChargeAmount <= 0
+                    ? 0m
+                    : charge.transactionChargeAmount - actualFee,
                 GatewayFeeAmount = actualFee,
                 GrossChargeAmount = (response.Data?.Amount ?? charge.amountSubunit) / 100m,
                 RecurringContributionId = gift.Id,

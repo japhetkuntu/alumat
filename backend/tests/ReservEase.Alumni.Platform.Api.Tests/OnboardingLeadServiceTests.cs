@@ -18,7 +18,7 @@ using Xunit;
 
 using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.Platform.Api.Tests;
 
 public class OnboardingLeadServiceTests
 {

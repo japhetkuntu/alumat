@@ -17,7 +17,7 @@ using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Temporal.Sdk;
 using Xunit;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.Platform.Api.Tests;
 
 /// <summary>Google-auth paths on PlatformAuthService — no coverage existed for this service at all before.</summary>
 public class PlatformAuthServiceTests

@@ -205,7 +205,12 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
                 CreatedBy = transaction.MemberId,
                 PlatformFeeAmount = transaction.PlatformFeeAmount,
                 NetAmountToInstitution = transaction.Amount,
-                PlatformRevenueAmount = transaction.TransactionChargeAmount - transaction.GatewayFeeAmount,
+                // Revenue only exists when the charge was split (a transaction charge was routed to us). With no
+                // subaccount the whole payment is unsplit, so there is nothing to earn and nothing to subtract the fee from.
+                // The patch marker keeps workflows already running at deploy time replaying the old way.
+                PlatformRevenueAmount = Workflow.Patched("platform-revenue-zero-when-unsplit") && transaction.TransactionChargeAmount <= 0
+                    ? 0m
+                    : transaction.TransactionChargeAmount - transaction.GatewayFeeAmount,
                 GatewayFeeAmount = transaction.GatewayFeeAmount,
                 GrossChargeAmount = transaction.GrossChargeAmount,
                 IsGuestPayment = transaction.IsGuestPayment,

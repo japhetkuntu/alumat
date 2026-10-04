@@ -84,17 +84,17 @@ public class BadgeService(
             // Referrer (1+ successful referral)
             if (!existingBadges.Contains("Referrer"))
             {
-                var referralCount = await referralRepo.CountAsync(r => r.ReferrerId == memberId && r.Status == "Registered");
+                var referralCount = await referralRepo.CountAsync(r => r.ReferrerId == memberId && (r.Status == "Registered" || r.Status == "MembershipPaid"));
                 if (referralCount >= 1)
-                    newBadges.Add(CreateBadge(memberId, snapshot, "Referrer", "Referred a fellow alumnus"));
+                    newBadges.Add(CreateBadge(memberId, snapshot, "Referrer", "Referred a new member"));
             }
 
             // Super Referrer (5+ successful referrals)
             if (!existingBadges.Contains("SuperReferrer"))
             {
-                var referralCount = await referralRepo.CountAsync(r => r.ReferrerId == memberId && r.Status == "Registered");
+                var referralCount = await referralRepo.CountAsync(r => r.ReferrerId == memberId && (r.Status == "Registered" || r.Status == "MembershipPaid"));
                 if (referralCount >= 5)
-                    newBadges.Add(CreateBadge(memberId, snapshot, "SuperReferrer", "Referred 5 or more alumni"));
+                    newBadges.Add(CreateBadge(memberId, snapshot, "SuperReferrer", "Referred 5 or more members"));
             }
 
             // Membership streak badges
@@ -127,27 +127,25 @@ public class BadgeService(
         }
     }
 
-    private static int CalculateStreak(List<int> sortedYears)
+    /// <summary>
+    /// Length of the run of consecutive paid years ending at the most recent paid year, counted only
+    /// when that run reaches this year or last year (a streak that lapsed earlier no longer counts).
+    /// <paramref name="yearsNewestFirst"/> must be sorted newest first.
+    /// </summary>
+    private static int CalculateStreak(List<int> yearsNewestFirst)
     {
-        if (sortedYears.Count == 0) return 0;
+        if (yearsNewestFirst.Count == 0) return 0;
 
         var currentYear = DateTime.UtcNow.Year;
-        var maxStreak = 0;
+        if (yearsNewestFirst[0] < currentYear - 1) return 0;
+
         var streak = 1;
-
-        for (var i = sortedYears.Count - 1; i > 0; i--)
+        for (var i = 1; i < yearsNewestFirst.Count; i++)
         {
-            if (sortedYears[i] - sortedYears[i - 1] == 1)
-                streak++;
-            else
-                break;
+            if (yearsNewestFirst[i - 1] - yearsNewestFirst[i] != 1) break;
+            streak++;
         }
-
-        // Only count if streak reaches current year or last year
-        if (sortedYears.Count > 0 && sortedYears[^1] >= currentYear - 1)
-            maxStreak = streak;
-
-        return maxStreak;
+        return streak;
     }
 
     private static MemberBadge CreateBadge(string memberId, MemberSnapshot snapshot, string type, string description) => new()

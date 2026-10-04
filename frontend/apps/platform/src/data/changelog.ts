@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-04",
+    title: "Fixes found while adding backend tests",
+    body: "Members who are banned, blocked, suspended or deleted can no longer keep their signed-in session alive by refreshing it. Membership streak badges can now actually be earned, and referrals that go on to pay dues keep counting towards the Referrer and Super Referrer badges. Events with a capacity now stop taking RSVPs when full, and cancelled or completed events take none. Signing in with a malformed Google token now gives a clean error instead of a server error. Files attached to a service request are only uploaded once the whole form is valid. Payments from institutions without a Paystack subaccount no longer record a negative platform revenue. Deleting an account now also removes the member's name and email from forum threads and posts, class notes and referrals, and takes back their class note likes. Welcome and notification emails, spotlight alerts and badge descriptions no longer say \"alumni\" where the organisation is a general community.",
+    scopes: ["Member", "Institution"],
+    type: "Fix",
+  },
+  {
     date: "2026-10-03",
     title: "Marketing site is flatter, calmer and easier to read",
     body: "Removed the decorative rings, ghost numbers, label chips and stock enquiry photo, and replaced the pipeline chevrons with numbered steps. Corners now match the product's square style, hover lifts and shadows are gone, and the hero's assurances read as one plain line. Pricing says what is free once instead of repeating it, and the photo captions have a stronger backing so they stay legible.",

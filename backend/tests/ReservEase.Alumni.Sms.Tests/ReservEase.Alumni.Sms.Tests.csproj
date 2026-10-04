@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.Sms.Sdk/ReservEase.Alumni.Sms.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

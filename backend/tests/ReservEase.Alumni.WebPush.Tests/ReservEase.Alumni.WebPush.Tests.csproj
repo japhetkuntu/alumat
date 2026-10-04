@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.WebPush.Sdk/ReservEase.Alumni.WebPush.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

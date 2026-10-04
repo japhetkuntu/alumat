@@ -141,10 +141,17 @@ public class MemberEventService(
                 return ApiResponseExtensions.ToForbiddenApiResponse<object>("You must be an approved member of this community to RSVP");
 
             var existing = await rsvpRepo.GetOneAsync(r => r.EventId == request.EventId && r.MemberId == member.Id);
+            if (existing is { Status: "Confirmed" })
+                return ApiResponseExtensions.ToConflictApiResponse<object>("Already RSVP'd for this event");
+
+            // A cancelled or finished event takes no new RSVPs, and an event with a capacity stops at it.
+            if (ev.Status is "Cancelled" or "Completed")
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event is no longer open for RSVPs");
+            if (ev.Capacity.HasValue && await rsvpRepo.CountAsync(r => r.EventId == request.EventId && r.Status == "Confirmed") >= ev.Capacity.Value)
+                return ApiResponseExtensions.ToConflictApiResponse<object>("This event is full");
+
             if (existing is not null)
             {
-                if (existing.Status == "Confirmed")
-                    return ApiResponseExtensions.ToConflictApiResponse<object>("Already RSVP'd for this event");
 
                 // Re-confirming a previously cancelled RSVP should count again.
                 existing.Status = "Confirmed";

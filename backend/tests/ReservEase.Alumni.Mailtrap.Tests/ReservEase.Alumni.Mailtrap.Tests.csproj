@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.Mailtrap.Sdk/ReservEase.Alumni.Mailtrap.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

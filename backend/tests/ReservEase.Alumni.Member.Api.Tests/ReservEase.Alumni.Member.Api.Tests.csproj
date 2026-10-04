@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.Member.Api/ReservEase.Alumni.Member.Api.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.PostgresDb.Sdk/ReservEase.Alumni.PostgresDb.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.Common.Sdk/ReservEase.Alumni.Common.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.Redis.Sdk/ReservEase.Alumni.Redis.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.Mailtrap.Sdk/ReservEase.Alumni.Mailtrap.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.Temporal.Sdk/ReservEase.Alumni.Temporal.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.Storage.Sdk/ReservEase.Alumni.Storage.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.PaymentCallbacks.Sdk/ReservEase.Alumni.PaymentCallbacks.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

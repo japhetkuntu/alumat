@@ -224,13 +224,13 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 
         var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
         var actionUrl = MemberUrl(institution, "/spotlights");
-        var memberName = !string.IsNullOrWhiteSpace(spotlight.MemberFirstName) ? $"{spotlight.MemberFirstName} {spotlight.MemberLastName}" : "An alumnus";
+        var memberName = !string.IsNullOrWhiteSpace(spotlight.MemberFirstName) ? $"{spotlight.MemberFirstName} {spotlight.MemberLastName}" : "A member";
 
         var notifications = recipients.Select(r => new Notification
         {
             RecipientId = r.MemberId,
             RecipientType = "Member",
-            Title = "New Alumni Spotlight",
+            Title = "New Spotlight",
             Body = $"{memberName} — {spotlight.Title}",
             Type = "SpotlightUpdate",
             RelatedEntityId = request.SpotlightId,
@@ -241,7 +241,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
 
         foreach (var r in recipients)
-            await SendPushIfEligibleAsync(r.MemberId, "Member", "New Alumni Spotlight", $"{memberName} — {spotlight.Title}", actionUrl);
+            await SendPushIfEligibleAsync(r.MemberId, "Member", "New Spotlight", $"{memberName} — {spotlight.Title}", actionUrl);
     }
 
     private async Task ProcessPaymentReceivedToAdminsAsync(NotificationRequest request)

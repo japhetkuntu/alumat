@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.Notifications.Sdk/ReservEase.Alumni.Notifications.Sdk.csproj" />
+    <ProjectReference Include="../../src/ReservEase.Alumni.PostgresDb.Sdk/ReservEase.Alumni.PostgresDb.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

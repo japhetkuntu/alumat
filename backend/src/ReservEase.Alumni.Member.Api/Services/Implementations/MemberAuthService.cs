@@ -637,6 +637,14 @@ public class MemberAuthService(
             if (member is null)
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Invalid or expired refresh token");
 
+            // Sign-in refuses anyone who is not Active (pending, suspended, banned, blocked, deleted), so a refresh
+            // must too — otherwise a member banned mid-session could keep minting access tokens indefinitely.
+            if (member.Status != "Active")
+            {
+                await redis.RemoveAsync($"member:refresh:{memberId}");
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("Invalid or expired refresh token");
+            }
+
             // A refresh is a returning session — stamp it so members who stay signed in
             // still count toward the platform's weekly activity tracking. Throttled hourly.
             var now = DateTime.UtcNow;

@@ -45,5 +45,12 @@ public class GoogleTokenVerifier(IOptions<GoogleAuthConfig> configOptions, ILogg
             logger.LogWarning(e, "Google ID token failed verification");
             return null;
         }
+        catch (Exception e) when (e is ArgumentException or FormatException)
+        {
+            // An empty token or one whose segments aren't valid base64 is rejected by the
+            // library with these instead of InvalidJwtException — still just a bad token, not a 500.
+            logger.LogWarning(e, "Google ID token was malformed");
+            return null;
+        }
     }
 }

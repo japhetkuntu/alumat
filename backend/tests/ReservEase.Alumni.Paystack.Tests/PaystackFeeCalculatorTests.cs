@@ -1,7 +1,7 @@
 using ReservEase.Alumni.Paystack.Sdk.Services;
 using Xunit;
 
-namespace ReservEase.Alumni.Institution.Api.Tests;
+namespace ReservEase.Alumni.Paystack.Tests;
 
 public class PaystackFeeCalculatorTests
 {
