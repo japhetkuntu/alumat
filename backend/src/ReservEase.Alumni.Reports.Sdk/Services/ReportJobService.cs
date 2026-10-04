@@ -139,7 +139,24 @@ public class ReportJobService(
         if (job.ExpiresAt is not null && job.ExpiresAt <= DateTime.UtcNow)
             return null;
 
-        var content = await storage.OpenPrivateFileAsync(job.FileKey);
+        Stream content;
+        try
+        {
+            content = await storage.OpenPrivateFileAsync(job.FileKey);
+        }
+        catch (Amazon.S3.AmazonS3Exception e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound || e.ErrorCode is "NoSuchKey" or "NoSuchBucket")
+        {
+            // Marked ready, but the file is not where this process looks: it was cleaned up, or the worker that wrote it
+            // and this API are not using the same bucket. Either way the person is told to ask again, and the log says why.
+            logger.LogWarning(e, "Report job {ReportJobId} is ready but its file {FileKey} was not found in storage", job.Id, job.FileKey);
+            return null;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Could not read the file {FileKey} for report job {ReportJobId} from storage", job.FileKey, job.Id);
+            throw new ReportFileUnavailableException("The report file couldn't be read from storage right now.", e);
+        }
+
         return new ReportDownload(content, job.FileName ?? $"report.{job.Format}", ReportContentTypes.For(job.Format));
     }
 

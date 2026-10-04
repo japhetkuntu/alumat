@@ -95,7 +95,15 @@ public class ReportsController(
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> DownloadReport(string id)
     {
-        var download = await reportJobs.OpenDownloadAsync(Requester(), id);
+        ReportDownload? download;
+        try
+        {
+            download = await reportJobs.OpenDownloadAsync(Requester(), id);
+        }
+        catch (ReportFileUnavailableException e)
+        {
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>($"{e.Message} Please try again in a few minutes.").ToActionResult();
+        }
         if (download is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("This report isn't available to download. It may have expired; request it again.").ToActionResult();
         return File(download.Content, download.ContentType, download.FileName);

@@ -208,7 +208,7 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
     try {
       await api.download(job);
     } catch (error) {
-      setNotice({ kind: "error", text: errorMessage(error) });
+      setNotice({ kind: "error", text: await downloadErrorText(error, errorMessage) });
       // Most likely it expired while the page sat open; the list will now say so.
       void queryClient.invalidateQueries({ queryKey: ["report-jobs"] });
     } finally {
@@ -359,6 +359,23 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
 }
 
 /** Saves a fetched file through the browser, named by the server's Content-Disposition when it gives one. */
+/**
+ * A download asks for a blob, so when it fails the server's JSON error arrives as a blob too and the
+ * app's usual error reader finds no message in it. Read the blob's text and hand that back as a normal error.
+ */
+async function downloadErrorText(error: unknown, errorMessage: (error: unknown) => string): Promise<string> {
+  const data = (error as { response?: { data?: unknown } })?.response?.data;
+  if (data instanceof Blob) {
+    try {
+      const body = JSON.parse(await data.text()) as { message?: string };
+      if (body.message) return body.message;
+    } catch {
+      // not JSON: fall through to the app's own reader
+    }
+  }
+  return errorMessage(error);
+}
+
 export function saveBlob(blob: Blob, contentDisposition: string | undefined, fallbackName: string) {
   const fileName = contentDisposition?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i)?.[1] ?? fallbackName;
   const link = document.createElement("a");

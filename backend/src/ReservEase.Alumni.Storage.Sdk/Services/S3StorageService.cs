@@ -1,3 +1,4 @@
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using Microsoft.AspNetCore.Http;
@@ -22,6 +23,11 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
         {
             ServiceURL = _settings.Endpoint,
             ForcePathStyle = true,
+            // Version 4 of the AWS library adds checksum headers to every request by default. Real S3 accepts them, but
+            // S3-compatible stores (DigitalOcean Spaces, MinIO of some versions) can answer with an empty-bodied error.
+            // Only send them where the protocol requires one.
+            RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
+            ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
         };
         return new AmazonS3Client(_settings.AccessKey, _settings.SecretKey, config);
     }

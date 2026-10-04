@@ -75,6 +75,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.TestKit",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.Reports.Sdk", "src\ReservEase.Alumni.Reports.Sdk\ReservEase.Alumni.Reports.Sdk.csproj", "{1536AF80-A372-433D-83B7-36F0203C06C6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReservEase.Alumni.Reports.Tests", "tests\ReservEase.Alumni.Reports.Tests\ReservEase.Alumni.Reports.Tests.csproj", "{B8378697-C5B2-4090-A416-CB5608F74780}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -220,6 +222,10 @@ Global
 		{1536AF80-A372-433D-83B7-36F0203C06C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1536AF80-A372-433D-83B7-36F0203C06C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1536AF80-A372-433D-83B7-36F0203C06C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8378697-C5B2-4090-A416-CB5608F74780}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8378697-C5B2-4090-A416-CB5608F74780}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8378697-C5B2-4090-A416-CB5608F74780}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8378697-C5B2-4090-A416-CB5608F74780}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5DBF1CC1-4609-4D52-8EBC-940BC92C6926} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
@@ -256,5 +262,6 @@ Global
 		{6B02F31D-84D4-4093-8B98-F49BA581519F} = {29533728-ED58-40A2-8CF6-0B8E5A33E8B7}
 		{6330688A-CCDB-4101-AF46-962869D438AE} = {29533728-ED58-40A2-8CF6-0B8E5A33E8B7}
 		{1536AF80-A372-433D-83B7-36F0203C06C6} = {15FFD7D7-FC00-4081-AD91-B950EEF07AA6}
+		{B8378697-C5B2-4090-A416-CB5608F74780} = {29533728-ED58-40A2-8CF6-0B8E5A33E8B7}
 	EndGlobalSection
 EndGlobal

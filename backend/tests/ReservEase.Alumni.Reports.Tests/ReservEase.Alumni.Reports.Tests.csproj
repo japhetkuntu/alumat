@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReservEase.Alumni.Reports.Sdk/ReservEase.Alumni.Reports.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

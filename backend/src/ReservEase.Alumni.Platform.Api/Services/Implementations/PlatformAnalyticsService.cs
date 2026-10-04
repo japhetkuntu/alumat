@@ -63,7 +63,7 @@ public class PlatformAnalyticsService(
             var payments = new List<Payments>();
             payments.AddRange((await contributionRepo.GetQueryable(c => c.Status == "Successful", ignoreQueryFilters: true)
                 .GroupBy(c => new { c.InstitutionId, (c.ConfirmedAt ?? c.CreatedAt).Year, (c.ConfirmedAt ?? c.CreatedAt).Month })
-                .Select(g => new { g.Key.InstitutionId, g.Key.Year, g.Key.Month, Collected = g.Sum(c => c.Amount), Earned = g.Sum(c => c.PlatformFeeAmount + c.PlatformRevenueAmount), Latest = g.Max(c => c.ConfirmedAt ?? c.CreatedAt) })
+                .Select(g => new { g.Key.InstitutionId, g.Key.Year, g.Key.Month, Collected = g.Sum(c => c.Amount), Earned = g.Sum(c => c.PlatformRevenueAmount), Latest = g.Max(c => c.ConfirmedAt ?? c.CreatedAt) })
                 .ToListAsync()).Select(x => new Payments(x.InstitutionId, x.Year, x.Month, x.Collected, x.Earned, x.Latest)));
             payments.AddRange((await storeOrderRepo.GetQueryable(o => o.Status == "Successful", ignoreQueryFilters: true)
                 .GroupBy(o => new { o.InstitutionId, (o.ConfirmedAt ?? o.CreatedAt).Year, (o.ConfirmedAt ?? o.CreatedAt).Month })
@@ -86,7 +86,7 @@ public class PlatformAnalyticsService(
                 }
             }
             AddRecent((await contributionRepo.GetQueryable(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= last90, ignoreQueryFilters: true)
-                .GroupBy(c => c.InstitutionId).Select(g => new { g.Key, Collected = g.Sum(c => c.Amount), Earned = g.Sum(c => c.PlatformFeeAmount + c.PlatformRevenueAmount) })
+                .GroupBy(c => c.InstitutionId).Select(g => new { g.Key, Collected = g.Sum(c => c.Amount), Earned = g.Sum(c => c.PlatformRevenueAmount) })
                 .ToListAsync()).Select(x => (x.Key, x.Collected, x.Earned)));
             AddRecent((await storeOrderRepo.GetQueryable(o => o.Status == "Successful" && (o.ConfirmedAt ?? o.CreatedAt) >= last90, ignoreQueryFilters: true)
                 .GroupBy(o => o.InstitutionId).Select(g => new { g.Key, Collected = g.Sum(o => o.TotalAmount), Earned = g.Sum(o => o.PlatformFeeAmount) })
@@ -157,7 +157,7 @@ public class PlatformAnalyticsService(
     private async Task<(decimal Collected, decimal Earned)> SumBetweenAsync(DateTime from, DateTime to)
     {
         var contributions = await contributionRepo.GetQueryable(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= from && (c.ConfirmedAt ?? c.CreatedAt) <= to, ignoreQueryFilters: true)
-            .GroupBy(c => 1).Select(g => new { Collected = g.Sum(c => c.Amount), Earned = g.Sum(c => c.PlatformFeeAmount + c.PlatformRevenueAmount) }).FirstOrDefaultAsync();
+            .GroupBy(c => 1).Select(g => new { Collected = g.Sum(c => c.Amount), Earned = g.Sum(c => c.PlatformRevenueAmount) }).FirstOrDefaultAsync();
         var orders = await storeOrderRepo.GetQueryable(o => o.Status == "Successful" && (o.ConfirmedAt ?? o.CreatedAt) >= from && (o.ConfirmedAt ?? o.CreatedAt) <= to, ignoreQueryFilters: true)
             .GroupBy(o => 1).Select(g => new { Collected = g.Sum(o => o.TotalAmount), Earned = g.Sum(o => o.PlatformFeeAmount) }).FirstOrDefaultAsync();
         var requests = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && (r.ConfirmedAt ?? r.CreatedAt) >= from && (r.ConfirmedAt ?? r.CreatedAt) <= to, ignoreQueryFilters: true)
