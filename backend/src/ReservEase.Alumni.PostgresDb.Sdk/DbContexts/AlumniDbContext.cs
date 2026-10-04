@@ -38,6 +38,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<InstitutionActivitySnapshot> InstitutionActivitySnapshots => Set<InstitutionActivitySnapshot>();
     public DbSet<StaffActivityWeek> StaffActivityWeeks => Set<StaffActivityWeek>();
     public DbSet<PlatformNotification> PlatformNotifications => Set<PlatformNotification>();
+    public DbSet<ReportJob> ReportJobs => Set<ReportJob>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
     public DbSet<InstitutionAuditLogEntry> InstitutionAuditLogEntries => Set<InstitutionAuditLogEntry>();
@@ -173,6 +174,16 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<StoreProductVariant>().Property(v => v.Options).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
         // Note: VariantOptions on StoreOrderItem is nested inside StoreOrder.Items' jsonb blob above — no separate column needed.
+
+        modelBuilder.Entity<ReportJob>().Property(j => j.Parameters).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
+        modelBuilder.Entity<ReportJob>().Property(j => j.ScopeYearGroups).HasColumnType("integer[]");
+        modelBuilder.Entity<ReportJob>().Property(j => j.ScopeCommunityIds).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        // "My reports", newest first — the only way report jobs are ever listed.
+        modelBuilder.Entity<ReportJob>().HasIndex(j => new { j.RequestedById, j.CreatedAt });
+        // The daily clean-up's scan for files past their retention.
+        modelBuilder.Entity<ReportJob>().HasIndex(j => new { j.Status, j.ExpiresAt });
 
         modelBuilder.Entity<StoreProductVariant>().HasIndex(v => v.ProductId);
 

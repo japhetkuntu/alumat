@@ -8,13 +8,16 @@ using ReservEase.Alumni.Notifications.Sdk.Workflows;
 using ReservEase.Alumni.Operations.Worker;
 using ReservEase.Alumni.Operations.Worker.Workflows.Contributions;
 using ReservEase.Alumni.Operations.Worker.Workflows.Notifications;
+using ReservEase.Alumni.Operations.Worker.Workflows.Reports;
 using ReservEase.Alumni.Operations.Worker.Workflows.ScheduledJobs;
 using ReservEase.Alumni.Operations.Worker.Workflows.ServiceRequests;
 using ReservEase.Alumni.Operations.Worker.Workflows.StoreOrders;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
+using ReservEase.Alumni.Reports.Sdk.Workflows;
 using ReservEase.Alumni.Sms.Sdk.Extensions;
+using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.WebPush.Sdk.Extensions;
 using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
@@ -43,6 +46,7 @@ builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddWebPushService(builder.Configuration);
+builder.Services.AddStorageService(builder.Configuration);
 
 builder.Services
     .AddTemporalClient(opts =>
@@ -81,6 +85,17 @@ builder.Services
     .AddWorkflow<InstitutionActivationDispatchWorkflow>()
     .AddScopedActivities<ScheduledJobsActivities>()
     .AddScopedActivities<InstitutionActivationActivities>();
+
+// Report generation on its own queue with its own, low, concurrency: a report reads a lot of rows and
+// builds a file, and two at a time is enough to keep requests moving without one busy afternoon of
+// exports competing with payment callbacks for the database or filling the worker's memory.
+builder.Services.AddScoped<ReportDataBuilder>();
+builder.Services
+    .AddHostedTemporalWorker(ReportTaskQueues.Generation)
+    .ConfigureOptions(options => options.MaxConcurrentActivities = 2)
+    .AddWorkflow<GenerateReportWorkflow>()
+    .AddWorkflow<ReportCleanupWorkflow>()
+    .AddScopedActivities<ReportActivities>();
 
 // ContributionCallbackActivities/ScheduledJobsActivities enqueue notifications via
 // ITemporalClientProvider.EnqueueNotificationAsync — reuse the lazy ITemporalClient

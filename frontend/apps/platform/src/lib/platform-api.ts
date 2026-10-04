@@ -1,4 +1,5 @@
 import { platformClient } from "./api-client";
+import { saveBlob, type ReportCenterApi, type ReportDefinitionItem, type ReportJobItem } from "@alumni/ui";
 import {
   ApiResponse,
   AuthData,
@@ -1187,3 +1188,40 @@ export async function addWorkTaskNote(id: string, text: string) {
   return res.data.data!;
 }
 
+// ─── Analytics ─────────────────────────────────────────────────────────────
+
+export interface PlatformMonthCount { year: number; month: number; count: number; total: number }
+/** The Analytics page in one response. `money` is null and `leaders` empty for roles that don't see revenue. */
+export interface PlatformAnalytics {
+  institutions: { total: number; activated: number; collecting: number; withRecentSignIns: number };
+  members: { total: number; approved: number; signedInLast30Days: number };
+  institutionGrowth: PlatformMonthCount[];
+  memberGrowth: PlatformMonthCount[];
+  money: {
+    thisYearCollected: number; lastYearToDateCollected: number; thisYearEarned: number; lastYearToDateEarned: number;
+    months: { year: number; month: number; collected: number; earned: number }[];
+  } | null;
+  leaders: { institutionId: string; name: string; collected: number; earned: number; members: number }[];
+  quiet: { institutionId: string; name: string; members: number; lastSignIn?: string | null; lastPayment?: string | null }[];
+}
+
+export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
+  const res = await platformClient.get<ApiResponse<PlatformAnalytics>>("/dashboard/analytics");
+  return res.data.data!;
+}
+
+// ─── Reports ───────────────────────────────────────────────────────────────
+
+/**
+ * Downloadable reports. Requesting one queues it; Operations.Worker prepares it
+ * (GenerateReportWorkflow) and it is downloaded from the list once ready.
+ */
+export const reportCenterApi: ReportCenterApi = {
+  getCatalog: async () => (await platformClient.get<ApiResponse<ReportDefinitionItem[]>>("/reports/catalog")).data.data!,
+  getJobs: async () => (await platformClient.get<ApiResponse<PagedResult<ReportJobItem>>>("/reports/jobs", { params: { pageSize: 30 } })).data.data!.results,
+  request: async (body) => (await platformClient.post<ApiResponse<ReportJobItem>>("/reports/jobs", body)).data.data!,
+  download: async (job) => {
+    const res = await platformClient.get(`/reports/jobs/${job.id}/download`, { responseType: "blob" });
+    saveBlob(res.data as Blob, res.headers["content-disposition"] as string | undefined, job.fileName ?? `report.${job.format}`);
+  },
+};

@@ -265,7 +265,7 @@ export default function AdminDashboardPage() {
             <span>
               Revenue trend <span className="text-muted-foreground font-normal text-[13px]">Last 6 months, {trendSources}</span>
             </span>
-            <Link href="/reports" className="inline-block -my-2.5 shrink-0 py-2.5 text-[13px] font-normal text-muted-foreground hover:text-accent">Full report &rarr;</Link>
+            <Link href="/analytics" className="inline-block -my-2.5 shrink-0 py-2.5 text-[13px] font-normal text-muted-foreground hover:text-accent">Full analytics &rarr;</Link>
           </h2>
           <TrendChart
             data={trendMonths}

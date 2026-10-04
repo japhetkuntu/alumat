@@ -11,6 +11,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Redis.Sdk.Extensions;
+using ReservEase.Alumni.Reports.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Temporal.Sdk;
 
@@ -73,6 +74,8 @@ builder.Services.AddScoped<IActivationWorkService, ActivationWorkService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IPlatformSettingsService, PlatformSettingsService>();
 builder.Services.AddScoped<IUploadService, UploadService>();
+builder.Services.AddScoped<IPlatformAnalyticsService, PlatformAnalyticsService>();
+builder.Services.AddReportJobs();
 
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 50 * 1024 * 1024);
 

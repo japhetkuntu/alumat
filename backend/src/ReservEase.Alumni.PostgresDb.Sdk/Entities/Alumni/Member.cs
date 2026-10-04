@@ -43,6 +43,8 @@ public class Member : BaseEntity, ITenantScoped
     public string? ProfilePictureUrl { get; set; }
     public string Status { get; set; } = "Pending";  // Pending, Active, Suspended, Banned, Blocked
     public DateTime? LastLoginAt { get; set; }
+    /// <summary>When the member last opened the portal home. The home feed marks anything newer than this as new since their last visit — LastLoginAt can't serve, since it is refreshed on the way in.</summary>
+    public DateTime? HomeSeenAt { get; set; }
     // Email verification
     public bool IsEmailVerified { get; set; }
     public string? EmailVerificationToken { get; set; }

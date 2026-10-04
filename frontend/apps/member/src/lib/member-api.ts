@@ -346,6 +346,50 @@ export async function getMyRsvps(status: "Confirmed" | "Cancelled" | "All" = "Co
   return res.data.data!;
 }
 
+// ── Home ─────────────────────────────────────────────────────────────────────
+
+export type HomeFeedKind = "MemberJoined" | "Spotlight" | "Birthday" | "ForumThread" | "MentorJoined" | "BusinessListed";
+
+export interface HomeFeedItem {
+  kind: HomeFeedKind;
+  /** The thing to open (a forum thread, a business listing). Null where the kind links to a list page. */
+  entityId?: string | null;
+  personId: string;
+  personName: string;
+  personPhotoUrl?: string | null;
+  personGraduationYear?: number | null;
+  sameYearGroup: boolean;
+  sameDepartment: boolean;
+  title?: string | null;
+  occurredAt: string;
+}
+
+export interface HomeFeed {
+  /** When the member last opened home, before this visit. Null on their first visit. */
+  lastSeenAt?: string | null;
+  items: HomeFeedItem[];
+}
+
+export interface HomeModules {
+  /** Feature keys that are switched on but have nothing in them for this member yet. */
+  empty: string[];
+  hasStoreOrders: boolean;
+}
+
+export async function getHomeFeed(): Promise<HomeFeed> {
+  const res = await memberClient.get("/home/feed");
+  return res.data.data!;
+}
+
+export async function getHomeModules(): Promise<HomeModules> {
+  const res = await memberClient.get("/home/modules");
+  return res.data.data!;
+}
+
+export async function markHomeSeen(): Promise<void> {
+  await memberClient.post("/home/seen");
+}
+
 // ── Jobs ─────────────────────────────────────────────────────────────────────
 
 export async function getJobs(

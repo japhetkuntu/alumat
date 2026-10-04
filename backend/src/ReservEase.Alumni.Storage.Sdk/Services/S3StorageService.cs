@@ -103,6 +103,40 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
 
         return prefixedObjectName;
     }
+
+    private string PrivateKey(string key) =>
+        string.IsNullOrEmpty(_settings.RootFolder) ? key : $"{_settings.RootFolder}/{key}";
+
+    public async Task UploadPrivateFileAsync(Stream fileStream, string key, string contentType)
+    {
+        using var client = CreateClient();
+        await new TransferUtility(client).UploadAsync(new TransferUtilityUploadRequest
+        {
+            InputStream = fileStream,
+            Key = PrivateKey(key),
+            BucketName = _settings.BucketName,
+            ContentType = contentType,
+            CannedACL = S3CannedACL.Private,
+        });
+    }
+
+    public async Task<Stream> OpenPrivateFileAsync(string key)
+    {
+        using var client = CreateClient();
+        using var response = await client.GetObjectAsync(_settings.BucketName, PrivateKey(key));
+        // Spooled to a self-deleting temp file: the S3 response stream dies with the client above,
+        // and a report can be too large to hold in memory for the length of a slow download.
+        var spool = new FileStream(Path.GetTempFileName(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+        await response.ResponseStream.CopyToAsync(spool);
+        spool.Position = 0;
+        return spool;
+    }
+
+    public async Task DeletePrivateFileAsync(string key)
+    {
+        using var client = CreateClient();
+        await client.DeleteObjectAsync(_settings.BucketName, PrivateKey(key));
+    }
 }
 
 }

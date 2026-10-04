@@ -11,7 +11,7 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 
 [Authorize]
 [Route("api/v{version:apiVersion}/dashboard")]
-public class DashboardController(IInstitutionManagementService institutionService) : DefaultController
+public class DashboardController(IInstitutionManagementService institutionService, IPlatformAnalyticsService analyticsService) : DefaultController
 {
     [HttpGet("summary")]
     [SwaggerOperation(Summary = "Platform-wide aggregate stats")]
@@ -41,6 +41,17 @@ public class DashboardController(IInstitutionManagementService institutionServic
     public async Task<IActionResult> GetRevenueTrend([FromQuery] int months = 6)
     {
         var result = await institutionService.GetRevenueTrendAsync(months);
+        return result.ToActionResult();
+    }
+
+    /// <summary>Growth, participation, money and the institutions that lead or have gone quiet. Revenue is included only for roles that already see the payments list.</summary>
+    [HttpGet("analytics")]
+    [SwaggerOperation(Summary = "Platform analytics")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformAnalyticsDto>))]
+    public async Task<IActionResult> GetAnalytics()
+    {
+        var includeMoney = User.IsInRole("SuperAdmin") || User.IsInRole("Billing") || User.IsInRole("Support");
+        var result = await analyticsService.GetAnalyticsAsync(includeMoney);
         return result.ToActionResult();
     }
 }

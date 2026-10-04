@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Temporalio" Version="1.*" />
     <PackageReference Include="Temporalio.Extensions.Hosting" Version="1.*" />
   </ItemGroup>
@@ -33,6 +34,8 @@
     <ProjectReference Include="..\ReservEase.Alumni.Mailtrap.Sdk\ReservEase.Alumni.Mailtrap.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.Notifications.Sdk\ReservEase.Alumni.Notifications.Sdk.csproj" />
     <ProjectReference Include="..\ReservEase.Alumni.WebPush.Sdk\ReservEase.Alumni.WebPush.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Reports.Sdk\ReservEase.Alumni.Reports.Sdk.csproj" />
+    <ProjectReference Include="..\ReservEase.Alumni.Storage.Sdk\ReservEase.Alumni.Storage.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

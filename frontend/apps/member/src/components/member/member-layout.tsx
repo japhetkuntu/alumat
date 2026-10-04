@@ -14,7 +14,8 @@ import { PushNotificationPrompt } from "@/components/member/push-notification-pr
 import { InstallPromptBanner, useInstallPrompt } from "@/components/member/install-prompt";
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
 import { memberClient } from "@/lib/api-client";
-import { getUnreadNotificationsByCategory } from "@/lib/member-api";
+import { getHomeModules, getUnreadNotificationsByCategory } from "@/lib/member-api";
+import type { HomeModules } from "@/lib/member-api";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   LayoutDashboard,
@@ -194,6 +195,32 @@ export function useFeatures() {
   );
 }
 
+/**
+ * Which switched-on modules have nothing in them yet for this member. An empty module stays out of
+ * the navigation — a forum with no threads makes the whole portal feel deserted — but its page still
+ * opens by link, and Home invites the member to be the first to post where they can.
+ */
+export function useModuleActivity() {
+  const { isMember } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["m-home-modules"],
+    queryFn: getHomeModules,
+    enabled: isMember,
+    staleTime: 60_000,
+  });
+  return data;
+}
+
+/** Until the answer arrives nothing counts as empty, the same way nothing counts as disabled while the feature list loads. */
+function isEmptyModule(href: string, modules: HomeModules | undefined): boolean {
+  if (!modules) return false;
+  const feature = featureForPath(href);
+  if (!feature || !modules.empty.includes(feature)) return false;
+  // A member's past orders outlive the products they bought.
+  if (href === "/store/orders") return !modules.hasStoreOrders;
+  return true;
+}
+
 /** Shared across Sidebar and MobileBottomNav for the jobs/events/forum unread badges — 30s poll matches the notification-bell badge's cadence. */
 function useUnreadByCategory() {
   const { isMember } = useAuth();
@@ -236,6 +263,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
   const unreadByCategory = useUnreadByCategory();
+  const modules = useModuleActivity();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const visibleGroups = navGroups
@@ -243,7 +271,11 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       ...g,
       items: g.items.filter((item) => {
         const featureKey = NAV_FEATURE_KEYS[item.href];
-        return !featureKey || !disabledFeatures.has(featureKey);
+        if (featureKey && disabledFeatures.has(featureKey)) return false;
+        // The page you are on keeps its entry: someone who has just opened an empty forum to
+        // start its first thread shouldn't watch the menu forget where they are.
+        const onThisPage = pathname === item.href || pathname.startsWith(item.href + "/");
+        return onThisPage || !isEmptyModule(item.href, modules);
       }),
     }))
     .filter((g) => g.items.length > 0);
@@ -323,17 +355,24 @@ function MobileBottomNav() {
   const pathname = usePathname();
   const disabledFeatures = useDisabledFeatures();
   const unreadByCategory = useUnreadByCategory();
+  const modules = useModuleActivity();
 
+  // In order of preference: Home and Profile always, and the first three of the rest that are
+  // switched on and have something in them — so an empty Jobs board gives its slot to the directory.
   const bottomNavItems = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/contributions", label: "Give", icon: CreditCard },
-    { href: "/jobs", label: "Jobs", icon: Briefcase },
-    { href: "/events", label: "Events", icon: Calendar },
+    ...[
+      { href: "/contributions", label: "Give", icon: CreditCard },
+      { href: "/jobs", label: "Jobs", icon: Briefcase },
+      { href: "/events", label: "Events", icon: Calendar },
+      { href: "/directory", label: "Directory", icon: Users },
+      { href: "/forum", label: "Forum", icon: MessageSquare },
+    ].filter((item) => {
+      const featureKey = NAV_FEATURE_KEYS[item.href];
+      return (!featureKey || !disabledFeatures.has(featureKey)) && !isEmptyModule(item.href, modules);
+    }).slice(0, 3),
     { href: "/profile", label: "Profile", icon: UserCircle },
-  ].filter((item) => {
-    const featureKey = NAV_FEATURE_KEYS[item.href];
-    return !featureKey || !disabledFeatures.has(featureKey);
-  });
+  ];
 
   return (
     <div

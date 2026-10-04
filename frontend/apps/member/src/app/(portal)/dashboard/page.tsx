@@ -1,14 +1,15 @@
 "use client";
 
-import { useFeatures } from "@/components/member/member-layout";
+import { useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
 import { isFeatureDisabledError } from "@/lib/feature-errors";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LoadError } from "@alumni/ui";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import {
   CreditCard, Calendar, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
-  Briefcase, Star, UsersRound,
+  Briefcase, UsersRound,
 } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -30,10 +31,11 @@ import {
   getMyCurrentYearUnpaidMembershipCampaigns,
   getMyProfile,
   getJobs,
-  getSpotlights,
   getMyCommunities,
+  getHomeFeed,
+  markHomeSeen,
 } from "@/lib/member-api";
-import type { Community } from "@/lib/member-api";
+import type { Community, HomeFeed, HomeFeedItem, HomeFeedKind } from "@/lib/member-api";
 import type { Campaign } from "@/types";
 import type { MemberProfileResponse, MembershipStatusResponse } from "@/lib/member-api";
 
@@ -341,124 +343,223 @@ function CampaignRow({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   WHAT'S NEW — the daily-return hook. A quick pulse of what's happened
-   since the last visit, so there's a reason to open this beyond dues season.
+   PEOPLE FEED — the reason to come back. What named members have done,
+   split at the moment this member last opened home, so the first thing
+   they read is who did what while they were away.
    ───────────────────────────────────────────────────────────────────────── */
-function PulseCard({
-  icon: Icon, title, href, seeAllLabel = "See all", tone = "neutral", children,
+const FEED_SENTENCE: Record<HomeFeedKind, string> = {
+  MemberJoined: "joined",
+  Spotlight: "was featured in Spotlight",
+  Birthday: "celebrated a birthday",
+  ForumThread: "started a conversation",
+  MentorJoined: "is offering mentorship",
+  BusinessListed: "listed a business",
+};
+
+function feedHref(item: HomeFeedItem): string {
+  switch (item.kind) {
+    case "ForumThread": return `/forum/${item.entityId}`;
+    case "BusinessListed": return `/business-directory/${item.entityId}`;
+    case "MentorJoined": return "/mentorship";
+    case "Spotlight":
+    case "Birthday": return "/spotlights";
+    // The directory has no page per member; its search box, pre-filled, is the closest thing.
+    case "MemberJoined": return `/directory?search=${encodeURIComponent(item.personName)}`;
+  }
+}
+
+/** How many older items to keep under the new ones — enough to show the place is alive, not enough to bury what's new. */
+const EARLIER_SHOWN = 6;
+
+function FeedRow({ item, isNew, showCohort }: { item: HomeFeedItem; isNew: boolean; showCohort: boolean }) {
+  const cohort = !showCohort ? null
+    : item.sameYearGroup ? "Your year group"
+    : item.personGraduationYear ? `Class of ${item.personGraduationYear}`
+    : null;
+  const meta = [cohort, showCohort && item.sameDepartment ? "Your department" : null].filter(Boolean).join(" · ");
+
+  return (
+    <Link href={feedHref(item)} className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl transition-colors hover:bg-secondary">
+      <UserAvatar name={item.personName} src={item.personPhotoUrl ?? undefined} size="default" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] leading-snug text-foreground">
+          <span className="font-semibold">{item.personName}</span>{" "}
+          <span className="text-muted-foreground">{FEED_SENTENCE[item.kind]}</span>
+        </p>
+        {item.title && (
+          <p className="text-[13.5px] mt-0.5 leading-snug line-clamp-2 text-foreground">{item.title}</p>
+        )}
+        <p className="text-[12.5px] mt-0.5 text-muted-foreground">
+          {meta && <span className={cn(item.sameYearGroup && "font-semibold text-foreground")}>{meta} · </span>}
+          {formatDistanceToNow(new Date(item.occurredAt), { addSuffix: true })}
+        </p>
+      </div>
+      {isNew && <span className="shrink-0 text-[12px] font-bold text-primary">New</span>}
+    </Link>
+  );
+}
+
+function PeopleFeed({
+  feed, isLoading, isError, onRetry, showCohort,
 }: {
-  icon: React.ElementType; title: string; href: string; seeAllLabel?: string;
-  /** "neutral" (default) for a plain listing; "accent" for recognition/celebration content (e.g. Spotlight) — not every pulse card needs to be primary-branded. */
-  tone?: "neutral" | "accent";
-  children: React.ReactNode;
+  feed: HomeFeed | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  showCohort: boolean;
 }) {
-  const iconColor = tone === "accent" ? "var(--brand-accent-dark, var(--brand-accent, var(--primary)))" : "var(--muted-foreground)";
+  // The marker this visit opened with. Loading the feed moves the member's marker to now, so
+  // without holding on to the first one, a background refetch would quietly un-mark everything new.
+  const [opened, setOpened] = useState<{ lastSeenAt: string | null } | null>(null);
+  if (feed && opened === null) setOpened({ lastSeenAt: feed.lastSeenAt ?? null });
+
+  const queryClient = useQueryClient();
+  const marked = useRef(false);
+  useEffect(() => {
+    if (!feed || marked.current) return;
+    marked.current = true;
+    const now = new Date().toISOString();
+    markHomeSeen()
+      // Keeps the cached feed honest for the next time this page mounts, before its own refetch lands.
+      .then(() => queryClient.setQueryData<HomeFeed>(["m-home-feed"], (cached) => cached && { ...cached, lastSeenAt: now }))
+      .catch(() => { marked.current = false; });
+  }, [feed, queryClient]);
+
+  const since = opened?.lastSeenAt ?? null;
+  const items = feed?.items ?? [];
+  const fresh = since ? items.filter((i) => i.occurredAt > since) : [];
+  const earlier = (since ? items.filter((i) => i.occurredAt <= since) : items).slice(0, fresh.length > 0 ? EARLIER_SHOWN : undefined);
+  const freshFromMyYear = showCohort ? fresh.filter((i) => i.sameYearGroup).length : 0;
+
+  const away = since ? formatDistanceToNow(new Date(since)) : null;
+  const heading = fresh.length > 0 ? "Since your last visit" : "Recently in your community";
+  const sub = fresh.length > 0
+    ? `${fresh.length} new in the last ${away}${freshFromMyYear > 0 ? `, ${freshFromMyYear} from your year group` : ""}`
+    : away && items.length > 0
+      ? `Nothing new since you were here ${away} ago`
+      : "What other members have been doing";
+
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2">
-          <Icon size={15} style={{ color: iconColor }} />
-          <CardTitle className="text-[14.5px] font-bold">{title}</CardTitle>
-        </div>
-        <Link href={href}>
-          <Button size="sm" variant="ghost" className="text-[12.5px] gap-1 font-semibold">
-            {seeAllLabel} <ChevronRight size={12} />
-          </Button>
-        </Link>
-      </CardHeader>
-      <CardContent className="pt-3 space-y-1 flex-1">
-        {children}
-      </CardContent>
-    </Card>
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-[15px] font-bold text-foreground">{heading}</h2>
+        <p className="text-[13px] text-muted-foreground">{sub}</p>
+      </div>
+      <Card>
+        <CardContent className="p-2 sm:p-3">
+          {isLoading ? (
+            <div className="space-y-1" aria-busy="true">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-2.5 sm:p-3">
+                  <div className="skeleton h-10 w-10 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="skeleton h-3.5 w-2/3 rounded-none" />
+                    <div className="skeleton h-3 w-1/3 rounded-none" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isError && !feed ? (
+            <LoadError title="Your feed couldn’t load" onRetry={onRetry} />
+          ) : items.length === 0 ? (
+            <p className="p-3 text-[13.5px] leading-relaxed text-muted-foreground">
+              Nothing from other members in the last while. When someone joins, starts a conversation or lists a business, you’ll see them here by name.
+            </p>
+          ) : (
+            <>
+              {fresh.map((item) => <FeedRow key={`${item.kind}-${item.entityId}-${item.personId}`} item={item} isNew showCohort={showCohort} />)}
+              {fresh.length > 0 && earlier.length > 0 && (
+                <p className="px-2.5 sm:px-3 pt-4 pb-1 text-[12px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Earlier</p>
+              )}
+              {earlier.map((item) => <FeedRow key={`${item.kind}-${item.entityId}-${item.personId}`} item={item} isNew={false} showCohort={showCohort} />)}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
-function PulseEmpty({ label, action }: { label: string; action?: { label: string; href: string } }) {
+/* ─────────────────────────────────────────────────────────────────────────
+   BE THE FIRST — modules that are empty stay out of the menu, which would
+   leave them empty forever if nobody could find the way in. The ones a
+   member can fill themselves are offered here instead, as an invitation.
+   ───────────────────────────────────────────────────────────────────────── */
+const INVITATIONS: { feature: string; text: string; action: string; href: string }[] = [
+  { feature: "Forum", text: "Nobody has started a conversation yet.", action: "Start the first one", href: "/forum" },
+  { feature: "BusinessDirectory", text: "No member has listed a business yet.", action: "List yours", href: "/business-directory/mine" },
+  { feature: "Mentorship", text: "Nobody is offering mentorship yet.", action: "Offer to mentor", href: "/mentorship" },
+  { feature: "Spotlights", text: "No member stories have been shared yet.", action: "Share yours", href: "/spotlights" },
+];
+
+function BeTheFirst({ emptyModules }: { emptyModules: string[] }) {
+  const features = useFeatures();
+  const open = INVITATIONS.filter((i) => features.enabled(i.feature) && emptyModules.includes(i.feature));
+  if (open.length === 0) return null;
   return (
-    <div className="py-6 text-center">
-      <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-        {label}
-      </p>
-      {action && (
-        <Link href={action.href} className="mt-2 inline-block text-[12.5px] font-semibold text-primary hover:underline">
-          {action.label}
-        </Link>
-      )}
-    </div>
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-[15px] font-bold text-foreground">Be the first</h2>
+        <p className="text-[13px] text-muted-foreground">These open up for everyone once one person goes first</p>
+      </div>
+      <Card>
+        <CardContent className="p-0 divide-y divide-border">
+          {open.map((i) => (
+            <div key={i.feature} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3.5 sm:px-5">
+              <p className="text-[14px] text-foreground">{i.text}</p>
+              <Link href={i.href} className="text-[13.5px] font-semibold text-primary underline underline-offset-4">{i.action}</Link>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
-
-function JobsPulse() {
-  const { data, isLoading, isError, refetch } = useQuery({
+/* ─────────────────────────────────────────────────────────────────────────
+   NEW JOBS — rendered only once there are jobs; an empty board says nothing.
+   ───────────────────────────────────────────────────────────────────────── */
+function JobsCard() {
+  const { data } = useQuery({
     queryKey: ["m-dash-jobs"],
     queryFn: () => getJobs(1, 3),
   });
   const jobs = data?.results ?? [];
+  if (jobs.length === 0) return null;
 
   return (
-    <PulseCard icon={Briefcase} title="New jobs" href="/jobs">
-      {isLoading ? (
-        <div className="space-y-3 py-1">{Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-10 rounded-lg animate-pulse bg-secondary" />)}</div>
-      ) : isError ? (
-        <LoadError title="Jobs couldn’t load" onRetry={() => void refetch()} />
-      ) : jobs.length === 0 ? (
-        <PulseEmpty label="Opportunities will appear as your community shares them. Add your skills so your profile is ready." action={{ label: "Update your profile", href: "/profile" }} />
-      ) : (
-        jobs.map((j) => (
-          <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-start gap-3 p-2.5 rounded-xl transition-colors hover:bg-secondary group">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
-              <Briefcase size={14} style={{ color: "var(--muted-foreground)" }} />
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div>
+          <CardTitle className="text-[15px] font-bold">New jobs</CardTitle>
+          <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+            Shared with your community
+          </p>
+        </div>
+        <Link href="/jobs">
+          <Button size="sm" variant="ghost" className="text-[13px] gap-1 font-semibold">
+            All <ChevronRight size={13} />
+          </Button>
+        </Link>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-1">
+        {jobs.map((j) => (
+          <Link key={j.id} href={`/jobs/${j.id}`} className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-secondary group">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+              <Briefcase size={17} style={{ color: "var(--muted-foreground)" }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold leading-snug truncate group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
+              <p className="text-[14px] font-semibold leading-snug truncate" style={{ color: "var(--foreground)" }}>
                 {j.title}
               </p>
-              <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
+              <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>
                 {j.company}{j.location ? ` · ${j.location}` : ""}
               </p>
             </div>
           </Link>
-        ))
-      )}
-    </PulseCard>
-  );
-}
-
-function SpotlightPulse() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["m-dash-spotlight"],
-    queryFn: () => getSpotlights(1, 1),
-  });
-  const spotlight = data?.results?.[0];
-
-  return (
-    <PulseCard icon={Star} title="Spotlight" href="/spotlights" tone="accent">
-      {isLoading ? (
-        <div className="h-24 rounded-lg animate-pulse bg-secondary" />
-      ) : isError ? (
-        <LoadError title="Member stories couldn’t load" onRetry={() => void refetch()} />
-      ) : !spotlight ? (
-        <PulseEmpty label="No spotlights yet." action={{ label: "Share your story", href: "/spotlights" }} />
-      ) : (
-        <Link href="/spotlights" className="block p-2.5 rounded-xl transition-colors hover:bg-secondary group">
-          <div className="flex items-center gap-3">
-            <UserAvatar name={spotlight.memberName ?? "Member"} src={spotlight.imageUrl} size="default" />
-            <div className="min-w-0">
-              <p className="text-[13.5px] font-semibold leading-snug group-hover:text-primary transition-colors" style={{ color: "var(--foreground)" }}>
-                {spotlight.memberName ?? "Member"}
-              </p>
-              {spotlight.memberGraduationYear && (
-                <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Class of {spotlight.memberGraduationYear}</p>
-              )}
-            </div>
-          </div>
-          <p className="text-[13px] mt-2.5 leading-relaxed line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
-            {spotlight.title}
-          </p>
-        </Link>
-      )}
-    </PulseCard>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -470,7 +571,6 @@ export default function MemberDashboardPage() {
   const contributionsEnabled = features.enabled("Contributions");
   const eventsEnabled = features.enabled("Events");
   const jobsEnabled = features.enabled("Jobs");
-  const spotlightsEnabled = features.enabled("Spotlights");
   const directoryEnabled = features.enabled("Directory");
   const communitiesEnabled = features.enabled("Communities");
   const results = useQueries({
@@ -508,6 +608,11 @@ export default function MemberDashboardPage() {
   });
 
   const profile = profileQuery.data;
+
+  const feed = useQuery({ queryKey: ["m-home-feed"], queryFn: getHomeFeed });
+  const emptyModules = useModuleActivity()?.empty ?? [];
+  // Community-type institutions don't collect graduation years, so there is no year group to point at.
+  const showCohort = useNavTheme().data?.organizationType !== "Community";
 
   // Community campaigns are scoped per-community on the backend (never
   // returned by the general /campaigns call), so pulling them onto the
@@ -563,7 +668,7 @@ export default function MemberDashboardPage() {
 
   const nonMembershipActiveCampaigns = activeCampaigns.filter((c) => !c.isMembershipCampaign);
   const failedQueries = [...results, membershipStatus, unpaidMembershipCampaignsQuery, profileQuery, ...communityCampaignResults].filter(query => query.isError && !isFeatureDisabledError(query.error));
-  const hasNoActivity = features.ready && (!contributionsEnabled || campaigns.isSuccess) && (!eventsEnabled || events.isSuccess) && activeCampaigns.length === 0 && upcomingEvents.length === 0;
+  const hasNoActivity = features.ready && (!contributionsEnabled || campaigns.isSuccess) && (!eventsEnabled || events.isSuccess) && activeCampaigns.length === 0 && upcomingEvents.length === 0 && feed.isSuccess && feed.data.items.length === 0;
   const hasActivityFeatures = contributionsEnabled || eventsEnabled;
 
   return (
@@ -605,6 +710,13 @@ export default function MemberDashboardPage() {
       {/* ── Arrears banner ── */}
       {membershipStatus.isSuccess && (
         <ArrearsBanner membershipStatus={membershipStatus.data} />
+      )}
+
+      {/* ── People feed — skipped only when the whole portal is empty and the welcome below speaks for it ── */}
+      {!hasNoActivity && (
+        <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
+          <PeopleFeed feed={feed.data} isLoading={feed.isLoading} isError={feed.isError} onRetry={() => void feed.refetch()} showCohort={showCohort} />
+        </div>
       )}
 
       {hasNoActivity && (
@@ -814,27 +926,13 @@ export default function MemberDashboardPage() {
         </section>
       )}
 
-      {/* ── What's new — the reason to open this outside of dues season ── */}
-      {(jobsEnabled || spotlightsEnabled) && <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
-        <div>
-          <h2 className="text-[15px] font-bold" style={{ color: "var(--foreground)" }}>
-            What&apos;s new
-          </h2>
-          <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-            From your community
-          </p>
-        </div>
-        <div className={`grid grid-cols-1 ${jobsEnabled && spotlightsEnabled ? "lg:grid-cols-2" : ""} gap-4 sm:gap-6`}>
-          {jobsEnabled && <JobsPulse />}
-          {spotlightsEnabled && <SpotlightPulse />}
-        </div>
-      </section>}
+      <BeTheFirst emptyModules={emptyModules} />
 
-      {/* ── Events + Recent activity ── */}
-      {(eventsEnabled || contributionsEnabled) && <div className={`grid grid-cols-1 ${eventsEnabled && contributionsEnabled ? "lg:grid-cols-2" : ""} gap-4 sm:gap-6`}>
+      {/* ── Events, jobs, recent payments — each only when it has something to show; a card left alone takes the full row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:[&>*:only-child]:col-span-2 empty:hidden">
 
         {/* Events */}
-        {eventsEnabled && <Card>
+        {eventsEnabled && (upcomingEvents.length > 0 || events.isLoading || events.isError) && <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
             <div>
               <CardTitle className="text-[15px] font-bold">Upcoming events</CardTitle>
@@ -876,24 +974,13 @@ export default function MemberDashboardPage() {
             ))}
             {events.isError && !events.data && <LoadError title="Events couldn’t load" onRetry={() => void events.refetch()} />}
             {events.isLoading && <p className="text-sm text-muted-foreground py-5">Loading events…</p>}
-            {upcomingEvents.length === 0 && events.isSuccess && (
-              <div className="py-10 text-center space-y-2">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
-                  style={{ background: "var(--secondary)" }}
-                >
-                  <Calendar size={20} style={{ color: "var(--muted-foreground)" }} />
-                </div>
-                <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-                  Your institution will announce upcoming events here.
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>}
 
+        {jobsEnabled && !emptyModules.includes("Jobs") && <JobsCard />}
+
         {/* Recent contributions */}
-        {contributionsEnabled && <Card>
+        {contributionsEnabled && (contributionsList.length > 0 || contributions.isLoading || contributions.isError) && <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
             <div>
               <CardTitle className="text-[15px] font-bold">Recent payments</CardTitle>
@@ -943,24 +1030,10 @@ export default function MemberDashboardPage() {
             ))}
             {contributions.isError && !contributions.data && <LoadError title="Payments couldn’t load" onRetry={() => void contributions.refetch()} />}
             {contributions.isLoading && <p className="text-sm text-muted-foreground py-5">Loading your payments…</p>}
-            {contributionsList.length === 0 && contributions.isSuccess && (
-              <div className="py-10 text-center space-y-2">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
-                  style={{ background: "var(--secondary)" }}
-                >
-                  <CreditCard size={20} style={{ color: "var(--muted-foreground)" }} />
-                </div>
-                <p className="text-[14px]" style={{ color: "var(--muted-foreground)" }}>
-                  No contributions yet
-                </p>
-                {activeCampaigns.length > 0 ? <Link href="/contributions"><Button size="sm" variant="outline" className="mt-1 font-semibold">Explore open campaigns</Button></Link> : <p className="text-xs text-muted-foreground">Your payment history will appear here when you make a contribution.</p>}
-              </div>
-            )}
           </CardContent>
         </Card>}
 
-      </div>}
+      </div>
     </div>
   );
 }

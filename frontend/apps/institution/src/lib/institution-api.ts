@@ -1,4 +1,5 @@
 import { institutionClient } from "./api-client";
+import { saveBlob, type ReportCenterApi, type ReportDefinitionItem, type ReportJobItem } from "@alumni/ui";
 import type {
   ApiResponse,
   PagedResult,
@@ -717,36 +718,37 @@ export async function getRevenueTrend(months = 6): Promise<RevenueTrend> {
   return res.data.data!;
 }
 
-export interface MemberReportExportFilters {
-  status?: string;
-  graduationYearFrom?: number;
-  graduationYearTo?: number;
-  jobTitleContains?: string;
-  locationContains?: string;
+export interface AnalyticsMonthCount { year: number; month: number; count: number; total: number }
+export interface AnalyticsSlice { label: string; count: number }
+export interface AnalyticsChange { last30Days: number; previous30Days: number }
+/** Everything the Analytics page shows, cut to the signed-in admin's scope. `dues` and `money` are null when there is nothing to say about them. */
+export interface InstitutionAnalytics {
+  members: { total: number; approved: number; pending: number; signedInEver: number; signedInLast30Days: number };
+  growth: AnalyticsMonthCount[];
+  dues: { year: number; eligible: number; paid: number; collected: number; byYearGroup: { yearGroup: number; eligible: number; paid: number }[] } | null;
+  money: { thisYear: number; lastYearToDate: number; payersThisYear: number; months: RevenueTrendMonth[] } | null;
+  composition: { byYearGroup: AnalyticsSlice[]; byDepartment: AnalyticsSlice[]; byLocation: AnalyticsSlice[]; withoutLocation: number };
+  activity: { newMembers: AnalyticsChange; payments: AnalyticsChange; eventSignUps: AnalyticsChange; forumPosts: AnalyticsChange };
+}
+
+export async function getAnalytics(): Promise<InstitutionAnalytics> {
+  const res = await institutionClient.get<ApiResponse<InstitutionAnalytics>>('/reports/analytics');
+  return res.data.data!;
 }
 
 /**
- * Downloads a report export straight from the backend's already-scoped,
- * DB-side CSV builder (see ReportService.ExportEntityCsvAsync) — the entire
- * scoped dataset, not capped at a fixed page size like a client-rebuilt CSV
- * from a paginated list endpoint would be.
+ * Downloadable reports. Nothing here builds a file while the page waits: requesting one queues it,
+ * Operations.Worker prepares it (GenerateReportWorkflow), and it is downloaded from the list once ready.
  */
-export async function exportReportCsv(entity: "campaigns" | "members" | "contributions" | "events" | "jobs", filters?: MemberReportExportFilters) {
-  const res = await institutionClient.get(`/reports/export/${entity}`, {
-    params: entity === "members" ? filters : undefined,
-    responseType: "blob",
-  });
-  const disposition = res.headers["content-disposition"] as string | undefined;
-  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-  const filename = filenameMatch?.[1] ?? `${entity}-export.csv`;
-
-  const blob = res.data as Blob;
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
+export const reportCenterApi: ReportCenterApi = {
+  getCatalog: async () => (await institutionClient.get<ApiResponse<ReportDefinitionItem[]>>('/reports/catalog')).data.data!,
+  getJobs: async () => (await institutionClient.get<ApiResponse<PagedResult<ReportJobItem>>>('/reports/jobs', { params: { pageSize: 30 } })).data.data!.results,
+  request: async (body) => (await institutionClient.post<ApiResponse<ReportJobItem>>('/reports/jobs', body)).data.data!,
+  download: async (job) => {
+    const res = await institutionClient.get(`/reports/jobs/${job.id}/download`, { responseType: "blob" });
+    saveBlob(res.data as Blob, res.headers["content-disposition"] as string | undefined, job.fileName ?? `report.${job.format}`);
+  },
+};
 
 // ─── Jobs ─────────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ReservEase.Alumni.Operations.Worker.Workflows.Reports;
 using ReservEase.Alumni.Operations.Worker.Workflows.ScheduledJobs;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Workflows;
+using ReservEase.Alumni.Reports.Sdk.Workflows;
 using Temporalio.Client;
 using Temporalio.Client.Schedules;
 using Temporalio.Exceptions;
@@ -73,6 +75,14 @@ public static class ScheduledJobsRegistration
             ScheduleActionStartWorkflow.Create<InstitutionActivationDispatchWorkflow>(
                 wf => wf.RunAsync(),
                 new WorkflowOptions { Id = "institution-activation-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(24));
+
+        // Daily: deletes report files past their 7-day retention and fails any report job left unfinished.
+        // On the report queue, where its activities are registered.
+        await EnsureScheduleAsync(client, logger, "report-cleanup-schedule",
+            ScheduleActionStartWorkflow.Create<ReportCleanupWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "report-cleanup", TaskQueue = ReportTaskQueues.Generation }),
             TimeSpan.FromHours(24));
     }
 

@@ -1641,6 +1641,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<int>("GraduationYear")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("HomeSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("House")
                         .HasColumnType("text");
 
@@ -4077,6 +4080,107 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsUnique();
 
                     b.ToTable("PlatformStaff", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.ReportJob", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Parameters")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ReportType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RequestedByEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RequestedById")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RequestedByName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("RequesterIsScoped")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ScopeCommunityIds")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<List<int>>("ScopeYearGroups")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestedById", "CreatedAt");
+
+                    b.HasIndex("Status", "ExpiresAt");
+
+                    b.ToTable("ReportJobs", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.StaffActivityWeek", b =>
