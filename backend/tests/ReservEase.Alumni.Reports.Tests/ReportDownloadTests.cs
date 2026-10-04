@@ -104,12 +104,16 @@ public class ReportDownloadTests
     }
 
     [Fact]
-    public async Task A_ready_report_past_its_expiry_or_without_a_file_key_is_not_downloadable_even_before_the_cleanup_runs()
+    public async Task A_ready_report_past_an_old_expiry_date_is_still_downloadable_because_reports_never_expire()
     {
-        var (expired, storage1, _) = await Create(j => j.ExpiresAt = DateTime.UtcNow.AddMinutes(-1));
-        Assert.Null(await expired.OpenDownloadAsync(Me, "j1"));
-        storage1.Verify(s => s.OpenPrivateFileAsync(It.IsAny<string>()), Times.Never);
+        var (service, storage, _) = await Create(j => j.ExpiresAt = DateTime.UtcNow.AddDays(-30));
+        storage.Setup(s => s.OpenPrivateFileAsync(It.IsAny<string>())).ReturnsAsync(new MemoryStream([1]));
+        Assert.NotNull(await service.OpenDownloadAsync(Me, "j1"));
+    }
 
+    [Fact]
+    public async Task A_report_without_a_file_key_is_not_downloadable()
+    {
         var (noKey, _, _) = await Create(j => j.FileKey = null);
         Assert.Null(await noKey.OpenDownloadAsync(Me, "j1"));
     }

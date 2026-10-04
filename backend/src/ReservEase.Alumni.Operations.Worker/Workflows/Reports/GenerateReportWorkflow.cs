@@ -54,15 +54,15 @@ public class GenerateReportWorkflow : IGenerateReportWorkflow
     }
 }
 
-/// <summary>Daily: deletes report files past their retention and fails any job that has been stuck unfinished. Started by a Temporal Schedule (see ScheduledJobsRegistration).</summary>
+/// <summary>Daily: fails any job that has been stuck unfinished. Finished reports are kept for good. Started by a Temporal Schedule (see ScheduledJobsRegistration).</summary>
 [Workflow("ReportCleanup")]
 public class ReportCleanupWorkflow
 {
     [WorkflowRun]
     public async Task RunAsync()
     {
-        var expired = await Workflow.ExecuteActivityAsync((ReportActivities a) => a.ExpireOldReportsAsync(), ReportActivityOptions.Generation);
-        Workflow.Logger.LogInformation("[ReportCleanup] Cleaned up {Count} report jobs", expired);
+        var failed = await Workflow.ExecuteActivityAsync((ReportActivities a) => a.ExpireOldReportsAsync(), ReportActivityOptions.Generation);
+        Workflow.Logger.LogInformation("[ReportCleanup] Failed {Count} stuck report jobs", failed);
     }
 }
 

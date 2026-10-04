@@ -256,14 +256,24 @@ public class ReportJobServiceTests(TemporalFixture temporal)
     }
 
     [Fact]
-    public async Task A_report_that_is_not_ready_or_has_expired_cannot_be_downloaded()
+    public async Task A_report_that_is_not_ready_cannot_be_downloaded()
     {
         var rig = Create(Unavailable());
-        await rig.Seed(
-            Finished("running", status: ReportJobStatuses.Running), Finished("failed", status: ReportJobStatuses.Failed),
-            Finished("past-expiry", expires: DateTime.UtcNow.AddMinutes(-1)));
+        await rig.Seed(Finished("running", status: ReportJobStatuses.Running), Finished("failed", status: ReportJobStatuses.Failed));
 
-        foreach (var id in new[] { "running", "failed", "past-expiry", "no-such-id" })
+        foreach (var id in new[] { "running", "failed", "no-such-id" })
             Assert.Null(await rig.Service.OpenDownloadAsync(Admin(), id));
+    }
+
+    [Fact]
+    public async Task Finished_reports_never_expire_so_even_an_old_expiry_date_does_not_block_the_download()
+    {
+        var rig = Create(Unavailable());
+        await rig.Seed(Finished("old", expires: DateTime.UtcNow.AddDays(-30)), Finished("none"));
+        rig.Storage.Files["reports/old.csv"] = ("a,b"u8.ToArray(), "text/csv");
+        rig.Storage.Files["reports/none.csv"] = ("c,d"u8.ToArray(), "text/csv");
+
+        Assert.NotNull(await rig.Service.OpenDownloadAsync(Admin(), "old"));
+        Assert.NotNull(await rig.Service.OpenDownloadAsync(Admin(), "none"));
     }
 }

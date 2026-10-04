@@ -31,9 +31,6 @@ public class ReportActivities(
     IConfiguration configuration,
     ILogger<ReportActivities> logger)
 {
-    /// <summary>How long a finished report can be downloaded. Long enough to come back to after a weekend; short enough that a file of personal data isn't kept around indefinitely.</summary>
-    public static readonly TimeSpan Retention = TimeSpan.FromDays(7);
-
     /// <summary>A job still unfinished after this long has lost its workflow (a worker outage beyond the retries); it is failed so the requester can ask again.</summary>
     public static readonly TimeSpan StuckAfter = TimeSpan.FromHours(6);
 
@@ -88,11 +85,9 @@ public class ReportActivities(
     public virtual async Task MarkReadyAsync(string reportJobId, ReportFileResult file)
     {
         var now = DateTime.UtcNow;
-        var expires = now + Retention;
         await jobRepo.ExecuteUpdateAsync(j => j.Id == reportJobId, s => s
             .SetProperty(j => j.Status, ReportJobStatuses.Ready)
             .SetProperty(j => j.CompletedAt, now)
-            .SetProperty(j => j.ExpiresAt, expires)
             .SetProperty(j => j.RowCount, file.RowCount)
             .SetProperty(j => j.FileKey, file.FileKey)
             .SetProperty(j => j.FileName, file.FileName)
@@ -121,7 +116,7 @@ public class ReportActivities(
         var title = ready ? $"Your {job.Title.ToLowerInvariant()} report is ready" : $"Your {job.Title.ToLowerInvariant()} report couldn't be prepared";
         var rows = job.RowCount.ToString("N0", CultureInfo.InvariantCulture);
         var body = ready
-            ? $"{job.Title}: {rows} {(job.RowCount == 1 ? "row" : "rows")}. Download it from Reports before {job.ExpiresAt:d MMM yyyy}; after that the file is deleted."
+            ? $"{job.Title}: {rows} {(job.RowCount == 1 ? "row" : "rows")}. Download it from Reports."
             : $"{job.FailureReason} Nothing was produced, so there is nothing to download.";
 
         string portalUrl;
@@ -194,42 +189,21 @@ public class ReportActivities(
             $"report {job.Id} {(ready ? "ready" : "failed")} to {job.RequestedByEmail}"), logger);
     }
 
-    /// <summary>Deletes files past their retention and fails jobs stuck unfinished. Returns how many jobs it touched.</summary>
+    /// <summary>
+    /// Fails jobs stuck unfinished, so the requester can ask again. Finished reports are never deleted or expired:
+    /// the file and its download stay available. (The name is kept so already-scheduled runs still find it.)
+    /// Returns how many jobs it touched.
+    /// </summary>
     [Activity("Report.ExpireOldReports")]
     public virtual async Task<int> ExpireOldReportsAsync()
     {
         var now = DateTime.UtcNow;
-        var touched = 0;
-
-        var expired = await jobRepo.GetQueryable(j => j.Status == ReportJobStatuses.Ready && j.ExpiresAt <= now).ToListAsync();
-        foreach (var job in expired)
-        {
-            if (ActivityExecutionContext.HasCurrent) ActivityExecutionContext.Current.Heartbeat(touched);
-            try
-            {
-                if (!string.IsNullOrEmpty(job.FileKey)) await storage.DeletePrivateFileAsync(job.FileKey);
-            }
-            catch (Exception e)
-            {
-                // Left as Ready-but-expired (already undownloadable) and picked up again tomorrow, rather than
-                // marked Expired with its file still sitting in storage.
-                logger.LogWarning(e, "Could not delete expired report file for job {ReportJobId}", job.Id);
-                continue;
-            }
-            await jobRepo.ExecuteUpdateAsync(j => j.Id == job.Id, s => s
-                .SetProperty(j => j.Status, ReportJobStatuses.Expired)
-                .SetProperty(j => j.FileKey, (string?)null));
-            touched++;
-        }
-
         var stuckBefore = now - StuckAfter;
-        touched += await jobRepo.ExecuteUpdateAsync(
+        return await jobRepo.ExecuteUpdateAsync(
             j => (j.Status == ReportJobStatuses.Queued || j.Status == ReportJobStatuses.Running) && j.CreatedAt < stuckBefore,
             s => s.SetProperty(j => j.Status, ReportJobStatuses.Failed)
                 .SetProperty(j => j.CompletedAt, now)
                 .SetProperty(j => j.FailureReason, "This report took too long and was stopped. Please request it again."));
-
-        return touched;
     }
 
     private static string Slug(string title) => Regex.Replace(title.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');

@@ -144,14 +144,13 @@ function JobRow({ job, onDownload, downloading }: { job: ReportJobItem; onDownlo
         {job.status === "Ready" && (
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             {job.rowCount.toLocaleString()} {job.rowCount === 1 ? "row" : "rows"} · {fileSize(job.fileSizeBytes)}
-            {job.expiresAt ? ` · Available until ${formatDate(job.expiresAt)}` : ""}
           </p>
         )}
         {job.status === "Failed" && job.failureReason && (
           <p className="mt-0.5 text-[13px] text-destructive">{job.failureReason}</p>
         )}
         {job.status === "Expired" && (
-          <p className="mt-0.5 text-[13px] text-muted-foreground">The file was deleted after 7 days. Request the report again for a fresh copy.</p>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">This file is no longer stored. Request the report again for a fresh copy.</p>
         )}
         {inProgress(job) && (
           <p className="mt-0.5 text-[13px] text-muted-foreground">You can leave this page. We’ll notify you here and by email when it’s ready.</p>
@@ -209,7 +208,7 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
       await api.download(job);
     } catch (error) {
       setNotice({ kind: "error", text: await downloadErrorText(error, errorMessage) });
-      // Most likely it expired while the page sat open; the list will now say so.
+      // The list may have changed while the page sat open, so refresh it.
       void queryClient.invalidateQueries({ queryKey: ["report-jobs"] });
     } finally {
       setDownloadingId(null);
@@ -331,7 +330,7 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
         <CardHeader>
           <CardTitle className="text-base">Your reports</CardTitle>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Only you can see and download these. Each file is kept for 7 days, then deleted.
+            Only you can see and download these. Your reports are kept, so you can come back to them any time.
           </p>
         </CardHeader>
         <CardContent className="p-0">

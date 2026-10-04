@@ -13,7 +13,7 @@ export default function AdminReportsPage() {
       <div>
         <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Reports</h1>
         <p className="text-muted-foreground text-[13px] mt-1.5">
-          Spreadsheets of your members, dues and payments, prepared in the background and kept for 7 days.
+          Spreadsheets of your members, dues and payments, prepared in the background and kept for you to download any time.
         </p>
       </div>
       <ReportCenter api={reportCenterApi} errorMessage={handleApiError} hideYearFilters={navTheme?.organizationType === "Community"} />

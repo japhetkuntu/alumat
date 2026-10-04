@@ -15,6 +15,6 @@ public interface IReportJobService
     /// <summary>The requester's own reports, newest first.</summary>
     Task<IApiResponse<PgPagedResult<ReportJobDto>>> ListAsync(ReportRequester requester, int page, int pageSize);
 
-    /// <summary>Opens the requester's own finished report. Null when there is nothing they may download: not theirs, not ready, or expired.</summary>
+    /// <summary>Opens the requester's own finished report. Null when there is nothing they may download: not theirs or not ready. Finished reports do not expire.</summary>
     Task<ReportDownload?> OpenDownloadAsync(ReportRequester requester, string reportJobId);
 }

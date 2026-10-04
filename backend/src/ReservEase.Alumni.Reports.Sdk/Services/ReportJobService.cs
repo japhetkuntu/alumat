@@ -132,13 +132,9 @@ public class ReportJobService(
     {
         var job = await jobRepo.GetOneAsync(j => j.Id == reportJobId
             && j.RequestedById == requester.Id && j.Audience == requester.Audience && j.InstitutionId == requester.InstitutionId);
+        // Finished reports do not expire: any report that is ready and still has its file can be downloaded.
         if (job is null || job.Status != ReportJobStatuses.Ready || string.IsNullOrEmpty(job.FileKey))
             return null;
-        // The clean-up runs once a day, so a file can outlive its expiry by some hours. The promise made
-        // to the requester was the expiry time, so that is what is honoured.
-        if (job.ExpiresAt is not null && job.ExpiresAt <= DateTime.UtcNow)
-            return null;
-
         Stream content;
         try
         {

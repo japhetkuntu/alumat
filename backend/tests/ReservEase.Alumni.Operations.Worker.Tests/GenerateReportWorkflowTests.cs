@@ -96,7 +96,7 @@ public class GenerateReportWorkflowTests(TemporalFixture temporal)
         Assert.Equal((ReportJobStatuses.Ready, 2), (job.Status, job.RowCount));
         Assert.NotNull(job.StartedAt);
         Assert.NotNull(job.CompletedAt);
-        Assert.InRange(job.ExpiresAt!.Value, DateTime.UtcNow.AddDays(6.9), DateTime.UtcNow.AddDays(7.1));
+        Assert.Null(job.ExpiresAt);   // finished reports never expire
         Assert.StartsWith("member-roster-", job.FileName);
         Assert.EndsWith(".csv", job.FileName);
 
@@ -143,7 +143,6 @@ public class GenerateReportWorkflowTests(TemporalFixture temporal)
         request.RequestedById = "staff-1";
         request.Status = ReportJobStatuses.Ready;
         request.RowCount = 1;
-        request.ExpiresAt = DateTime.UtcNow.AddDays(7);
         await rig.Seed(request);
 
         await rig.Activities.NotifyRequesterAsync("job-1");
@@ -200,21 +199,25 @@ public class GenerateReportWorkflowTests(TemporalFixture temporal)
     // ── Clean-up ────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Clean_up_deletes_files_past_their_retention_and_keeps_the_record_that_the_report_ran()
+    public async Task Clean_up_never_deletes_or_expires_a_finished_report_however_old()
     {
         using var rig = new Rig();
-        ReportJob Ready(string id, double expiresInDays) { var j = Request(id); j.Status = ReportJobStatuses.Ready; j.FileKey = $"reports/{id}.csv"; j.ExpiresAt = DateTime.UtcNow.AddDays(expiresInDays); return j; }
-        await rig.Seed(Ready("old", -1), Ready("fresh", 3));
-        rig.Storage.Files["reports/old.csv"] = ([1], "text/csv");
-        rig.Storage.Files["reports/fresh.csv"] = ([1], "text/csv");
+        ReportJob Ready(string id, double daysOld) { var j = Request(id); j.Status = ReportJobStatuses.Ready; j.FileKey = $"reports/{id}.csv"; j.CreatedAt = DateTime.UtcNow.AddDays(-daysOld); j.ExpiresAt = null; return j; }
+        await rig.Seed(Ready("ancient", 400), Ready("fresh", 1));
+        // A report that still carries an old expiry date from before reports stopped expiring.
+        var legacy = Ready("legacy", 30); legacy.ExpiresAt = DateTime.UtcNow.AddDays(-23);
+        await rig.Seed(legacy);
+        foreach (var id in new[] { "ancient", "fresh", "legacy" }) rig.Storage.Files[$"reports/{id}.csv"] = ([1], "text/csv");
 
         var touched = await rig.Activities.ExpireOldReportsAsync();
 
-        Assert.Equal(1, touched);
-        Assert.Equal(["reports/fresh.csv"], rig.Storage.Files.Keys);
-        var old = await rig.Job("old");
-        Assert.Equal((ReportJobStatuses.Expired, (string?)null), (old.Status, old.FileKey));
-        Assert.Equal(ReportJobStatuses.Ready, (await rig.Job("fresh")).Status);
+        Assert.Equal(0, touched);
+        Assert.Equal(3, rig.Storage.Files.Count);
+        foreach (var id in new[] { "ancient", "fresh", "legacy" })
+        {
+            var job = await rig.Job(id);
+            Assert.Equal((ReportJobStatuses.Ready, true), (job.Status, job.FileKey is not null));
+        }
     }
 
     [Fact]

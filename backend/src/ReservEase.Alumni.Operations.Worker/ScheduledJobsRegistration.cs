@@ -77,7 +77,7 @@ public static class ScheduledJobsRegistration
                 new WorkflowOptions { Id = "institution-activation-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(24));
 
-        // Daily: deletes report files past their 7-day retention and fails any report job left unfinished.
+        // Daily: fails any report job left unfinished. Finished reports never expire.
         // On the report queue, where its activities are registered.
         await EnsureScheduleAsync(client, logger, "report-cleanup-schedule",
             ScheduleActionStartWorkflow.Create<ReportCleanupWorkflow>(

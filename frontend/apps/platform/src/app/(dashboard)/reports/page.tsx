@@ -10,7 +10,7 @@ export default function PlatformReportsPage() {
     <div className="p-4 sm:p-7 max-w-[1240px]">
       <PageHeading
         title="Reports"
-        description="Spreadsheets of institutions, payments and revenue across the platform, prepared in the background and kept for 7 days."
+        description="Spreadsheets of institutions, payments and revenue across the platform, prepared in the background and kept for you to download any time."
       />
       <ReportCenter api={reportCenterApi} errorMessage={handleApiError} />
     </div>
