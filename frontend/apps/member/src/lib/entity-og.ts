@@ -5,7 +5,7 @@ import { getRequestOrigin, SITE_NAME } from "@/lib/seo";
 
 const API_URL = process.env.MEMBER_API_INTERNAL_URL || "http://localhost:5200/api/v1";
 
-export type PreviewEntityType = "event" | "job" | "news" | "resource" | "business" | "community" | "album" | "service" | "campaign";
+export type PreviewEntityType = "event" | "job" | "news" | "resource" | "business" | "community" | "album" | "service" | "campaign" | "invite";
 
 interface EntityPreview {
   title: string;

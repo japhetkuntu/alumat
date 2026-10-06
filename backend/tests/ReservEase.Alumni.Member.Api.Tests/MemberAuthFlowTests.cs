@@ -61,7 +61,7 @@ public class MemberAuthFlowTests : IDisposable
         var provider = new Mock<ITemporalClientProvider>();
         provider.SetupGet(p => p.IsAvailable).Returns(false);
         return service = new MemberAuthService(
-            new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Referral>(db), new AlumniPgRepository<Institution>(db), tenant,
+            new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Referral>(db), new AlumniPgRepository<Community>(db), new AlumniPgRepository<CommunityMembership>(db), new AlumniPgRepository<Institution>(db), tenant,
             Mock.Of<IHttpContextAccessor>(a => a.HttpContext == http), redis, Options.Create(tokens), Options.Create(new MailtrapConfig()),
             provider.Object, storage.Object, google.Object, log);
     }
@@ -91,8 +91,8 @@ public class MemberAuthFlowTests : IDisposable
         Id = id, FirstName = "Ama", LastName = "Mensah", Email = email, Status = status, GraduationYear = 2015, Password = BCrypt.Net.BCrypt.HashPassword(password),
     };
 
-    private static RegisterRequest Register(string email = "  New.User@Example.COM ", bool terms = true, string? referral = null) =>
-        new("  Kofi ", " Boateng ", email, "Secret#123", "0241", "S1", 2018, "dept1", referral, " Mining ", terms);
+    private static RegisterRequest Register(string email = "  New.User@Example.COM ", bool terms = true, string? referral = null, string? community = null, string? channel = null) =>
+        new("  Kofi ", " Boateng ", email, "Secret#123", "0241", "S1", 2018, "dept1", referral, " Mining ", terms, community, channel);
 
     private CachedRegistration? Staged(string email = "new.user@example.com") => redis.GetAsync<CachedRegistration>($"reg:otp:{email}").GetAwaiter().GetResult();
 
@@ -246,6 +246,93 @@ public class MemberAuthFlowTests : IDisposable
 
         var referral = await Db().Referrals.IgnoreQueryFilters().SingleAsync();
         Assert.Equal(("inv", "Registered"), (referral.Id, referral.Status));
+    }
+
+    // ── Community invitations ───────────────────────────────────────────
+
+    private static Community Group(string id = "c1", bool active = true) => new() { Id = id, Name = "Mining 2018", IsActive = active };
+
+    private async Task<(CommunityMembership? Membership, Referral Referral)> RegisterViaInvite(string? community, string? channel = "whatsapp")
+    {
+        await service.RegisterAsync(Register(referral: "REF-ABC", community: community, channel: channel));
+        await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp));
+        var newcomer = await Db().Members.IgnoreQueryFilters().SingleAsync(x => x.Email == "new.user@example.com");
+        return (await Db().CommunityMemberships.IgnoreQueryFilters().SingleOrDefaultAsync(m => m.MemberId == newcomer.Id),
+                await Db().Referrals.IgnoreQueryFilters().SingleAsync());
+    }
+
+    [Fact]
+    public async Task An_invitation_from_a_community_leader_approves_the_newcomer_into_that_community()
+    {
+        var leader = Person("Active", email: "ref@x.com", id: "ref1"); leader.ReferralCode = "REF-ABC";
+        await Seed(leader, Group(), new CommunityMembership { CommunityId = "c1", MemberId = "ref1", Status = "Approved", Role = "Leader" });
+
+        var (membership, referral) = await RegisterViaInvite("c1");
+
+        Assert.Equal(("Approved", "Member", "ref1"), (membership!.Status, membership.Role, membership.DecidedBy));
+        Assert.Equal(("c1", "whatsapp"), (referral.CommunityId, referral.Channel));
+    }
+
+    [Fact]
+    public async Task An_invitation_from_an_ordinary_member_only_asks_to_join_so_a_leader_decides()
+    {
+        var member = Person("Active", email: "ref@x.com", id: "ref1"); member.ReferralCode = "REF-ABC";
+        await Seed(member, Group(), new CommunityMembership { CommunityId = "c1", MemberId = "ref1", Status = "Approved", Role = "Member" });
+
+        var (membership, _) = await RegisterViaInvite("c1");
+
+        Assert.Equal("Pending", membership!.Status);
+    }
+
+    [Fact]
+    public async Task A_demoted_or_unapproved_leader_can_no_longer_vouch()
+    {
+        var leader = Person("Active", email: "ref@x.com", id: "ref1"); leader.ReferralCode = "REF-ABC";
+        await Seed(leader, Group(), new CommunityMembership { CommunityId = "c1", MemberId = "ref1", Status = "Pending", Role = "Leader" });
+
+        var (membership, _) = await RegisterViaInvite("c1");
+
+        Assert.Equal("Pending", membership!.Status);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("inactive")]
+    public async Task An_unknown_or_inactive_community_is_ignored_and_registration_still_works(string community)
+    {
+        var leader = Person("Active", email: "ref@x.com", id: "ref1"); leader.ReferralCode = "REF-ABC";
+        await Seed(leader, Group("inactive", active: false));
+
+        var (membership, referral) = await RegisterViaInvite(community);
+
+        Assert.Null(membership);
+        Assert.Null(referral.CommunityId);
+        Assert.Equal("Registered", referral.Status);
+    }
+
+    [Fact]
+    public async Task A_community_in_the_link_without_a_referral_code_changes_nothing()
+    {
+        await Seed(Group());
+        await service.RegisterAsync(Register(community: "c1", channel: "whatsapp"));
+        await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp));
+
+        Assert.Equal(0, await Db().CommunityMemberships.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(0, await Db().Referrals.IgnoreQueryFilters().CountAsync());
+    }
+
+    [Theory]
+    [InlineData("WhatsApp", "whatsapp")]
+    [InlineData("qr", "qr")]
+    [InlineData("<script>", null)]
+    public async Task The_sharing_channel_is_kept_only_when_it_is_a_known_one(string sent, string? stored)
+    {
+        var leader = Person("Active", email: "ref@x.com", id: "ref1"); leader.ReferralCode = "REF-ABC";
+        await Seed(leader, Group());
+
+        var (_, referral) = await RegisterViaInvite("c1", sent);
+
+        Assert.Equal(stored, referral.Channel);
     }
 
     [Fact]

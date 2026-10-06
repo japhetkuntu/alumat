@@ -444,6 +444,26 @@ export interface Community {
   memberCount: number;
   myStatus: "Pending" | "Approved" | "Rejected" | null;
   myRole: "Member" | "Leader" | null;
+  /** Connected external groups (e.g. WhatsApp). Only sent to approved members. */
+  channels?: CommunityChannel[] | null;
+}
+
+export interface CommunityChannel {
+  type: string;
+  displayName: string;
+  inviteUrl?: string | null;
+  connectedAt: string;
+}
+
+export interface CommunityInviteInfo {
+  communityId: string;
+  communityName: string;
+  referralCode: string;
+  approvedMembers: number;
+  pendingRequests: number;
+  joinedViaInvites: number;
+  joinedLast30Days: number;
+  channels: CommunityChannel[];
 }
 
 export interface CommunityMember {
@@ -474,6 +494,18 @@ export async function getMyCommunities(): Promise<Community[]> {
 export async function getCommunity(id: string): Promise<Community> {
   const res = await memberClient.get(`/communities/${id}`);
   return res.data.data!;
+}
+
+/** A community leader's own invite code and how the community is growing. Leaders only. */
+export async function getCommunityInvite(id: string): Promise<CommunityInviteInfo> {
+  const res = await memberClient.get(`/communities/${id}/invite`);
+  return res.data.data!;
+}
+
+/** Replaces the community's connected groups. An empty list disconnects them. Leaders only. */
+export async function updateCommunityChannels(id: string, channels: { type: string; displayName: string; inviteUrl?: string }[]): Promise<CommunityChannel[]> {
+  const res = await memberClient.put(`/communities/${id}/channels`, { channels });
+  return res.data.data ?? [];
 }
 
 export async function joinCommunity(id: string) {

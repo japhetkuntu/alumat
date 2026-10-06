@@ -51,7 +51,7 @@ public class MemberAuthServiceTests
         var storageService = new Mock<IStorageService>();
 
         return new MemberAuthService(
-            memberRepo.Object, referralRepo.Object, institutionRepo.Object, currentTenant.Object,
+            memberRepo.Object, referralRepo.Object, new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community>>().Object, new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership>>().Object, institutionRepo.Object, currentTenant.Object,
             httpContextAccessor.Object, redis.Object, tokenOptions, mailtrapOptions,
             temporalProvider, storageService.Object, googleTokenVerifier.Object,
             new NullLogger<MemberAuthService>());

@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -193,6 +194,7 @@ export default function AdminAlbumDetailPage() {
           <ShareLinkButton
             url={shareUrl}
             title={album.title}
+            message={shareMessages.album({ title: album.title, photoCount: album.photoCount })}
             variant="outline"
             size="sm"
             onSuccess={(result) => {

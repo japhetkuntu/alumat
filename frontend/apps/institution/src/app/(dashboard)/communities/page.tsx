@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
@@ -13,22 +14,81 @@ import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
-import { TableSkeleton } from "@alumni/ui";
+import { TableSkeleton, Skeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import {
-  getCommunities, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole,
+  getCommunities, getCommunityGrowth, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole,
   uploadImage, type CommunityListItem, type CommunityMemberItem,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { LinkOrUpload } from "@alumni/ui";
 import { MemberShareButton } from "@/components/institution/member-share-button";
 
+const SOURCE_LABEL: Record<string, string> = { whatsapp: "WhatsApp", link: "Shared link", qr: "QR code", sms: "SMS", email: "Email" };
+
+/** How members have been joining through leaders' invitations. Quiet when there is nothing yet. */
+function GrowthCard() {
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["community-growth"], queryFn: getCommunityGrowth });
+
+  if (isLoading) {
+    return (
+      <Card aria-busy="true" aria-label="Loading invitation growth"><CardContent className="space-y-4 p-5">
+        <div className="space-y-2"><Skeleton className="h-4 w-44" /><Skeleton className="h-3 w-72 max-w-full" /></div>
+        <div className="flex gap-10"><Skeleton className="h-9 w-16" /><Skeleton className="h-9 w-16" /></div>
+      </CardContent></Card>
+    );
+  }
+  if (isError || !data) return <Card><CardContent className="p-2"><LoadError title="We couldn't load invitation growth" onRetry={() => refetch()} /></CardContent></Card>;
+
+  return (
+    <Card>
+      <CardContent className="space-y-5 p-5">
+        <div>
+          <h2 className="text-[15px] font-semibold">Joining through invitations</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">When a community leader shares their invitation into a group chat, the people who join through it are counted here.</p>
+        </div>
+        {data.totalViaInvites === 0 ? (
+          <div className="border border-dashed border-border px-4 py-5 text-[13.5px] text-muted-foreground">
+            <p className="font-semibold text-foreground">No one has joined through an invitation yet.</p>
+            <p className="mt-1">Make someone a Leader of a community and ask them to open it. They will find an invitation to share into their WhatsApp group.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-[auto_1fr] md:gap-12">
+            <dl className="flex gap-10">
+              <div><dd className="text-[26px] font-bold tabular-nums leading-none">{data.totalViaInvites}</dd><dt className="mt-1.5 text-[12px] text-muted-foreground">Joined in total</dt></div>
+              <div><dd className="text-[26px] font-bold tabular-nums leading-none">{data.last30Days}</dd><dt className="mt-1.5 text-[12px] text-muted-foreground">Last 30 days</dt></div>
+            </dl>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Where they came from</p>
+                <ul className="mt-2 divide-y divide-border/60">
+                  {data.bySource.map((s) => (
+                    <li key={s.source} className="flex justify-between py-1.5 text-[13.5px]"><span>{SOURCE_LABEL[s.source] ?? s.source}</span><span className="tabular-nums font-semibold">{s.count}</span></li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">By community</p>
+                <ul className="mt-2 divide-y divide-border/60">
+                  {data.byCommunity.slice(0, 5).map((c) => (
+                    <li key={c.communityId} className="flex justify-between gap-3 py-1.5 text-[13.5px]"><span className="truncate">{c.name}</span><span className="tabular-nums font-semibold">{c.joined}</span></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function CommunityForm({
   initial, onSave, onCancel, saving,
 }: {
   initial?: CommunityListItem;
-  onSave: (data: { name: string; description?: string; coverImageUrl?: string }) => void;
+  onSave: (data: { name: string; description?: string; coverImageUrl?: string; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => void;
   onCancel: () => void;
   saving: boolean;
 }) {
@@ -37,6 +97,9 @@ function CommunityForm({
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? "");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const existingGroup = initial?.channels?.find((c) => c.type === "WhatsApp");
+  const [groupName, setGroupName] = useState(existingGroup?.displayName ?? "");
+  const [groupUrl, setGroupUrl] = useState(existingGroup?.inviteUrl ?? "");
 
   return (
     <Card>
@@ -59,7 +122,11 @@ function CommunityForm({
               }
               setUploading(false);
             }
-            onSave({ name: name.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined });
+            // A filled-in group connects it; clearing it disconnects one that was there; otherwise channels stay as they are.
+            const externalChannels = groupName.trim()
+              ? [{ type: "WhatsApp", displayName: groupName.trim(), inviteUrl: groupUrl.trim() || undefined }]
+              : existingGroup ? [] : undefined;
+            onSave({ name: name.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined, externalChannels });
           }}
         >
           <div className="space-y-2">
@@ -77,6 +144,16 @@ function CommunityForm({
             file={coverImageFile}
             onFileChange={setCoverImageFile}
           />
+          <div className="space-y-3 border-t border-border pt-4">
+            <div>
+              <Label>WhatsApp group <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <p className="mt-1 text-[12.5px] text-muted-foreground">Members of this community will see a link to the group. Clear the name to disconnect it.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Group name" maxLength={100} />
+              <Input type="url" inputMode="url" value={groupUrl} onChange={(e) => setGroupUrl(e.target.value)} placeholder="https://chat.whatsapp.com/…" />
+            </div>
+          </div>
           <div className="flex gap-3">
             <Button type="submit" size="sm" isLoading={saving || uploading} loadingText={uploading ? "Uploading" : "Saving"}>{initial ? "Save changes" : "Create community"}</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -216,8 +293,8 @@ export default function CommunitiesPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name: string; description?: string; coverImageUrl?: string; isActive: boolean }) => updateCommunity(id, body),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); setEditing(null); setDeactivateTarget(null); toast.success("Community updated"); },
+    mutationFn: ({ id, ...body }: { id: string; name: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => updateCommunity(id, body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); qc.invalidateQueries({ queryKey: ["community-growth"] }); setEditing(null); setDeactivateTarget(null); toast.success("Community updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -251,6 +328,8 @@ export default function CommunitiesPage() {
       )}
 
       {viewingMembers && <MembersPanel community={viewingMembers} onClose={() => setViewingMembers(null)} />}
+
+      <GrowthCard />
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
@@ -291,6 +370,13 @@ export default function CommunitiesPage() {
                       <div className="min-w-0">
                         <p className="font-medium truncate">{c.name}</p>
                         {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{c.description}</p>}
+                        {(c.channels?.length || (c.joinedViaInvites ?? 0) > 0) && (
+                          <p className="mt-0.5 text-[12px] text-muted-foreground">
+                            {c.channels?.length ? "WhatsApp group connected" : ""}
+                            {c.channels?.length && (c.joinedViaInvites ?? 0) > 0 ? " · " : ""}
+                            {(c.joinedViaInvites ?? 0) > 0 ? `${c.joinedViaInvites} joined by invitation` : ""}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -301,7 +387,7 @@ export default function CommunitiesPage() {
                   <TableCell>{formatDate(c.createdAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 justify-end">
-                      {c.isActive && <MemberShareButton memberPath={`/communities/${c.id}`} title={c.name} />}
+                      {c.isActive && <MemberShareButton memberPath={`/communities/${c.id}`} title={c.name} message={shareMessages.community({ name: c.name, description: c.description })} />}
                       <Button size="sm" variant="outline" onClick={() => setViewingMembers(c)}>Members</Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing(c)}>Edit</Button>
                       <Button

@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -366,10 +367,7 @@ public class InstitutionController(
     /// </summary>
     private InstitutionResponse ToDto(InstitutionEntity i)
     {
-        var memberBaseDomain = config["MemberPortalBaseDomain"];
-        var memberPortalUrl = string.IsNullOrWhiteSpace(memberBaseDomain)
-            ? null
-            : $"https://{i.Slug}.{memberBaseDomain}";
+        var memberPortalUrl = MemberPortalLinks.Url(i.Slug, i.CustomDomain, config["MemberPortalBaseDomain"]);
 
         return new(
             i.Id, i.Name, i.Slug, i.CustomDomain, i.PortalName, i.Tagline,

@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -328,7 +329,7 @@ export default function AdminEventsPage() {
                     <Button size="sm" variant="outline"><Users size={12} />View RSVPs</Button>
                   </Link>
                   {e.status !== "Cancelled" && (
-                    <MemberShareButton memberPath={`/events/${e.id}`} title={e.title} />
+                    <MemberShareButton memberPath={`/events/${e.id}`} title={e.title} message={shareMessages.event({ title: e.title, startDate: e.startDate, venue: e.venue, description: e.description })} />
                   )}
                   {e.status !== "Cancelled" && e.status !== "Completed" && (
                     <Button size="sm" variant="outline" onClick={() => setEditEvent(e)}><Pencil size={12} />Edit</Button>

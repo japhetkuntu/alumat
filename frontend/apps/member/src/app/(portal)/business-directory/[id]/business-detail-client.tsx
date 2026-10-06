@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Building2, ChevronRight, MapPin, Phone, Mail, Globe, ExternalLink } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { ShareLinkButton } from "@alumni/ui";
+import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -71,6 +71,7 @@ export default function BusinessListingDetailPage() {
           url={shareUrl}
           title={biz.businessName}
           variant="outline"
+          message={shareMessages.business({ name: biz.businessName, description: biz.description })}
           size="sm"
           onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Business link copied")}
           onError={(message) => toast.error(message)}

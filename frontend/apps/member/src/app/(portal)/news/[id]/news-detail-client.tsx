@@ -13,7 +13,7 @@ import { formatDate } from "@alumni/ui";
 import { getNewsPost } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
 import { Newspaper } from "@alumni/ui";
-import { ShareLinkButton } from "@alumni/ui";
+import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { toast } from "sonner";
 
 export default function NewsDetailPage() {
@@ -72,6 +72,7 @@ export default function NewsDetailPage() {
           url={shareUrl}
           title={post.title}
           variant="outline"
+          message={shareMessages.news({ title: post.title, excerpt: post.content.replace(/<[^>]*>/g, " ") })}
           size="sm"
           onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "News link copied")}
           onError={(message) => toast.error(message)}

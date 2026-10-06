@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
@@ -68,7 +69,7 @@ public class NotificationDispatchActivities(
                 LogoUrl = institution.LogoUrl,
                 SmsNotificationsEnabled = institution.SmsNotificationsEnabled,
                 EmailNotificationsEnabled = institution.EmailNotificationsEnabled,
-                MemberPortalUrl = string.IsNullOrWhiteSpace(memberDomain) ? string.Empty : $"https://{institution.Slug}.{memberDomain}",
+                MemberPortalUrl = MemberPortalLinks.UrlOrEmpty(institution.Slug, institution.CustomDomain, memberDomain),
                 AdminPortalUrl = string.IsNullOrWhiteSpace(adminDomain) ? string.Empty : $"https://{institution.Slug}.{adminDomain}",
             };
         }, "load institution", institutionId);

@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -120,6 +121,7 @@ export default function AdminNewsDetailPage() {
           <ShareLinkButton
             url={shareUrl}
             title={post.title}
+            message={shareMessages.news({ title: post.title, excerpt: post.content.replace(/<[^>]*>/g, " ") })}
             variant="outline"
             size="sm"
             onSuccess={(result) => {

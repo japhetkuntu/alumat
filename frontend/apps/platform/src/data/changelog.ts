@@ -21,6 +21,41 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Invitation links get a proper preview, and every link uses the right address",
+    body: "A community invitation link pasted into WhatsApp now shows a card (\"Join Mining Engineering 2018 on <institution>\", the community's description, and its cover picture, or the institution's logo if it has none) instead of the generic portal title. Unknown, inactive or malformed invitations keep the normal card. Separately, every link we build to an institution's member portal (share buttons, welcome and reminder emails, notifications, the onboarding message, the platform institution list) now comes from one place: an institution on its own domain is linked on that domain, otherwise on its subdomain. Before, several places always used the subdomain even for institutions that members actually reach on their own domain.",
+    scopes: ["Member", "Institution", "Platform"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-06",
+    title: "Three fixes found in end-to-end testing",
+    body: "Registration for a community-type organisation that also has \"require student ID\" switched on silently refused to submit, because the form demanded a student ID on a step community organisations never show. It now only asks for it where it is collected. Services that start while another is already running no longer wait on a leftover database migration lock: the lock is now released as soon as migrations finish, where before it could stay held on a pooled connection and stall (or fail) the next service's startup, for example a single-service deploy while the worker was running. In Onboarding leads, a Founding 20 application no longer says its agreement was \"logged by platform staff\"; it says it was not asked at application stage.",
+    scopes: ["Member", "Platform"],
+    type: "Fix",
+  },
+  {
+    date: "2026-10-06",
+    title: "Bring a WhatsApp group into its community",
+    body: "Community leaders now see a \"Bring your group in\" panel on their community: their own invitation link, a one-tap Share to WhatsApp with a ready message, a copy button, and live numbers (members, waiting for approval, joined by invitation, last 30 days). Someone who registers through that link is shown which community they are joining and lands in it already approved when the person who shared it is a leader there; otherwise it becomes a normal join request for a leader to decide. Leaders and administrators can connect the community's WhatsApp group (only official chat.whatsapp.com links are accepted) so approved members see an \"Our WhatsApp group\" link; nobody outside the community sees it. Administrators get a \"Joining through invitations\" summary on the Communities page showing joins by source and by community. On desktop, Share buttons that carry a message also offer a WhatsApp button. Nothing changes for sign-up by email, and AlumUnion never reads WhatsApp groups, numbers or messages.",
+    scopes: ["Member", "Institution"],
+    type: "Feature",
+  },
+  {
+    date: "2026-10-06",
+    title: "Share buttons now send a proper message",
+    body: "Share on events, jobs, news, albums, services, businesses, communities, fundraisers and dues used to send just a title and a link. It now sends a short, ready-to-read message above the link (for example the event's date and place, a fundraiser's goal and amount raised, or the job's company and location), so a post in a WhatsApp group makes sense on its own. This applies for members and for administrators sharing from the institution portal. The wording is neutral (\"our community\", \"members\") so it suits schools, churches and associations alike, and the link still opens the exact item.",
+    scopes: ["Member", "Institution"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-06",
+    title: "Shared links now open for people who aren't signed in",
+    body: "Opening a shared event, job or news link without signing in used to land on the login screen. It now shows a short read-only summary (title, date and place, or location and type, with the first part of the description) and a sign-in button that takes the person straight back to that item; \"Join\" for newcomers keeps the same destination through registration. Items that belong to a community show only their title. Drafts are never shown. Signed-in members see exactly what they saw before.",
+    scopes: ["Member"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-06",
     title: "Founding 20 page and application",
     body: "The website has a new /founding20 page for the AlumUnion Founding 20 programme: what the programme is, what an institution gets, how it works, and a short application (institution, type, contact, community size, biggest challenge, and whether they are authorised to represent it). Applications arrive in Onboarding leads tagged \"Founding 20\", with the challenge and authority recorded in the message, and the sales team is notified. Applying does not accept the Institution Agreement.",
     scopes: ["Marketing", "Platform"],

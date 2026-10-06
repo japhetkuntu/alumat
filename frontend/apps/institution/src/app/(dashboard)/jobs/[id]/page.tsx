@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -189,6 +190,7 @@ export default function AdminJobDetailPage() {
           <ShareLinkButton
             url={shareUrl}
             title={job.title}
+            message={shareMessages.job(job)}
             variant="outline"
             size="sm"
             onSuccess={(result) => {

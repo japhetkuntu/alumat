@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { ShareLinkButton } from "@alumni/ui";
+import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { MediaGallery } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
@@ -129,6 +129,7 @@ export default function EventDetailPage() {
             url={shareUrl}
             title={event.title}
             variant="outline"
+            message={shareMessages.event({ title: event.title, startDate: event.startDate, venue: event.venue, description: event.description })}
             size="sm"
             onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Event link copied")}
             onError={(message) => toast.error(message)}

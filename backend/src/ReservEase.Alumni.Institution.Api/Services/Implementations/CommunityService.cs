@@ -10,6 +10,7 @@ public class CommunityService(
     IAlumniPgRepository<Community> communityRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Member> memberRepo,
+    IAlumniPgRepository<Referral> referralRepo,
     ILogger<CommunityService> logger) : ICommunityService
 {
     public async Task<IApiResponse<List<CommunityListItem>>> GetCommunitiesAsync()
@@ -24,6 +25,9 @@ public class CommunityService(
             var membershipsByCommunity = (await membershipRepo.GetAllAsync(m => communityIds.Contains(m.CommunityId)))
                 .ToLookup(m => m.CommunityId);
 
+            var since = DateTime.UtcNow.AddDays(-30);
+            var invited = (await referralRepo.GetAllAsync(r => r.CommunityId != null && communityIds.Contains(r.CommunityId))).ToLookup(r => r.CommunityId!);
+
             var items = communities.OrderByDescending(c => c.CreatedAt).Select(c =>
             {
                 var memberships = membershipsByCommunity[c.Id];
@@ -32,7 +36,7 @@ public class CommunityService(
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                     memberships.Count(m => m.Status == "Pending"),
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                    c.CreatedAt);
+                    c.CreatedAt, ToChannelItems(c.ExternalChannels), invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since));
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -40,6 +44,30 @@ public class CommunityService(
         {
             logger.LogError(e, "Error retrieving communities");
             return ApiResponseExtensions.ToServerErrorApiResponse<List<CommunityListItem>>("Failed to retrieve communities");
+        }
+    }
+
+    private static List<CommunityChannelItem>? ToChannelItems(List<CommunityChannel>? channels) =>
+        channels is { Count: > 0 } ? channels.Select(c => new CommunityChannelItem(c.Type, c.DisplayName, c.InviteUrl, c.ConnectedAt)).ToList() : null;
+
+    public async Task<IApiResponse<CommunityGrowthSummary>> GetGrowthAsync()
+    {
+        try
+        {
+            var since = DateTime.UtcNow.AddDays(-30);
+            var invited = (await referralRepo.GetAllAsync(r => r.CommunityId != null)).ToList();
+            var names = (await communityRepo.GetAllAsync(_ => true)).ToDictionary(c => c.Id, c => c.Name);
+
+            var bySource = invited.GroupBy(r => r.Channel ?? "link").Select(g => new GrowthSourceItem(g.Key, g.Count())).OrderByDescending(x => x.Count).ToList();
+            var byCommunity = invited.GroupBy(r => r.CommunityId!)
+                .Select(g => new GrowthCommunityItem(g.Key, names.GetValueOrDefault(g.Key, "Removed community"), g.Count(), g.Count(r => r.CreatedAt >= since)))
+                .OrderByDescending(x => x.Joined).ToList();
+            return new CommunityGrowthSummary(invited.Count, invited.Count(r => r.CreatedAt >= since), bySource, byCommunity).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error building community growth summary");
+            return ApiResponseExtensions.ToServerErrorApiResponse<CommunityGrowthSummary>("Failed to load growth");
         }
     }
 
@@ -79,6 +107,13 @@ public class CommunityService(
             community.Description = request.Description;
             community.CoverImageUrl = request.CoverImageUrl;
             community.IsActive = request.IsActive;
+            if (request.ExternalChannels is not null)
+            {
+                var parsed = CommunityChannelRules.Parse(request.ExternalChannels.Select(c => (c.Type, c.DisplayName, c.InviteUrl)), community.ExternalChannels, updatedBy, out var channelError);
+                if (parsed is null)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<CommunityListItem>(channelError!);
+                community.ExternalChannels = parsed.Count == 0 ? null : parsed;
+            }
             community.UpdatedAt = DateTime.UtcNow;
             community.UpdatedBy = updatedBy;
             await communityRepo.UpdateAsync(community);
@@ -89,7 +124,7 @@ public class CommunityService(
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                 memberships.Count(m => m.Status == "Pending"),
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                community.CreatedAt).ToOkApiResponse("Community updated");
+                community.CreatedAt, ToChannelItems(community.ExternalChannels)).ToOkApiResponse("Community updated");
         }
         catch (Exception e)
         {

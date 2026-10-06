@@ -234,6 +234,13 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Campaign>().Property(c => c.YearGroups).HasColumnType("integer[]");
         modelBuilder.Entity<Campaign>().Property(c => c.BankAccount).HasColumnType("jsonb").HasConversion(new JsonbConverter<ManualPaymentBankAccount>(jsonOpts));
         modelBuilder.Entity<Campaign>().Property(c => c.MobileMoneyAccount).HasColumnType("jsonb").HasConversion(new JsonbConverter<ManualPaymentMobileMoneyAccount>(jsonOpts));
+        var communityChannelComparer = new ValueComparer<List<CommunityChannel>>(
+            (a, b) => JsonSerializer.Serialize(a, jsonOpts) == JsonSerializer.Serialize(b, jsonOpts),
+            v => JsonSerializer.Serialize(v, jsonOpts).GetHashCode(),
+            v => JsonSerializer.Deserialize<List<CommunityChannel>>(JsonSerializer.Serialize(v, jsonOpts), jsonOpts)!);
+        modelBuilder.Entity<Community>().Property(c => c.ExternalChannels).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<CommunityChannel>>(jsonOpts)).Metadata.SetValueComparer(communityChannelComparer);
+        modelBuilder.Entity<Referral>().HasIndex(r => r.CommunityId);
         modelBuilder.Entity<Campaign>().Property(c => c.PublicPage).HasColumnType("jsonb").HasConversion(new JsonbConverter<CampaignPublicPage>(jsonOpts));
 
         modelBuilder.Entity<AlumniEvent>().Property(e => e.YearGroups).HasColumnType("integer[]");

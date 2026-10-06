@@ -13,5 +13,7 @@ public interface ICommunityService
     Task<IApiResponse<List<CommunityMemberDto>>> GetMembersAsync(string id, string memberId);
     Task<IApiResponse<List<JoinRequestDto>>> GetJoinRequestsAsync(string id, string memberId);
     Task<IApiResponse<object>> DecideJoinRequestAsync(string id, string membershipId, bool approve, string actingMemberId);
+    Task<IApiResponse<CommunityInviteInfoDto>> GetInviteInfoAsync(string id, string memberId);
+    Task<IApiResponse<List<CommunityChannelDto>>> UpdateChannelsAsync(string id, UpdateCommunityChannelsRequest request, string memberId);
     Task<IApiResponse<object>> RemoveMemberAsync(string id, string targetMemberId, string actingMemberId);
 }

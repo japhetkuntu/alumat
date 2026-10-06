@@ -62,8 +62,7 @@ public class MemberManagementService(
         var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
         if (institution is null) return;
 
-        var memberBaseDomain = config["MemberPortalBaseDomain"];
-        var memberPortalUrl = string.IsNullOrWhiteSpace(memberBaseDomain) ? string.Empty : $"https://{institution.Slug}.{memberBaseDomain}";
+        var memberPortalUrl = MemberPortalLinks.UrlOrEmpty(institution.Slug, institution.CustomDomain, config["MemberPortalBaseDomain"]);
         var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
 
         await temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(
@@ -101,10 +100,8 @@ public class MemberManagementService(
     /// </summary>
     private async Task SendMemberWelcomeEmailAsync(Member member, InstitutionEntity institution)
     {
-        var memberBaseDomain = config["MemberPortalBaseDomain"];
-        if (string.IsNullOrWhiteSpace(memberBaseDomain)) return;
-
-        var memberPortalUrl = $"https://{institution.Slug}.{memberBaseDomain}";
+        var memberPortalUrl = MemberPortalLinks.Url(institution.Slug, institution.CustomDomain, config["MemberPortalBaseDomain"]);
+        if (memberPortalUrl is null) return;
         var link = $"{memberPortalUrl}/reset-password?token={member.EmailVerificationToken}&email={Uri.EscapeDataString(member.Email)}";
         var brandName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
 

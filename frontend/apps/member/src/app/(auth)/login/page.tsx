@@ -15,6 +15,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
+import { isSafeRedirectPath, withRedirect } from "@/lib/redirect";
 import { buildGoogleBridgeUrl, useGoogleBridgeTheme } from "@/lib/google-bridge-theme";
 
 const schema = z.object({
@@ -30,20 +31,6 @@ type FormData = z.infer<typeof schema>;
 // builds since real members reach their institution via its actual subdomain.
 const SHOW_WORKSPACE_FIELD = process.env.NODE_ENV === "development";
 
-/**
- * Guards the post-login `?redirect=` target (and its localStorage mirror,
- * set by api-client.ts's clearAuthAndRedirect) against open-redirect abuse.
- * `path.startsWith("/")` alone isn't enough — "//evil.com" also starts with
- * "/" but browsers treat a leading "//" as protocol-relative, i.e. an
- * absolute cross-origin URL, so router.push/window.location.assign would
- * actually navigate off-site. Browsers also normalize a leading backslash
- * to a forward slash before parsing ("/\evil.com" -> "//evil.com"), a known
- * bypass for a "//"-only check, so that's rejected too. Only a genuine
- * same-origin path is safe here.
- */
-function isSafeRedirectPath(path: string): boolean {
-  return path.startsWith("/") && path[1] !== "/" && path[1] !== "\\";
-}
 
 // Mirrors the slug into a cookie (not just localStorage) so the server-side
 // theme fetch in layout.tsx — which runs before any client JS and has no
@@ -280,7 +267,7 @@ function LoginForm() {
         <div className="text-center text-sm text-muted-foreground space-y-3">
           <p>
             New here?{' '}
-            <Link href="/register" className="text-primary hover:underline font-semibold">
+            <Link href={withRedirect("/register", searchParams.get("redirect") || (typeof window !== "undefined" ? localStorage.getItem("auth_redirect_after_login") : null))} className="text-primary hover:underline font-semibold">
               Create an account
             </Link>
           </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -423,7 +424,7 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
               <Pencil size={13} />Manage
             </Button>
           </Link>
-          {c.status === "Active" && <MemberShareButton memberPath={`/contributions/${c.id}`} title={c.title} className="font-bold" />}
+          {c.status === "Active" && <MemberShareButton memberPath={`/contributions/${c.id}`} title={c.title} message={shareMessages.dues({ title: c.title, amount: c.amountPerMember, deadline: c.deadline })} className="font-bold" />}
         </div>
       </CardContent>
     </Card>

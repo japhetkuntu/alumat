@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -26,6 +27,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 [RequireFeature(InstitutionFeatures.Contributions)]
 public class PledgesController(
     IAlumniPgRepository<Pledge> pledgeRepo,
+    IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution> institutionRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<MemberEntity> memberRepo,
@@ -86,10 +88,9 @@ public class PledgesController(
 
         var stage = progress.State == PledgeStates.Overdue ? PledgeReminderMessages.Overdue : PledgeReminderMessages.Upcoming;
         var (title, body, actionLabel) = PledgeReminderMessages.Build(stage, campaign!.Title, progress.Outstanding, pledge.DueDate);
-        var domain = configuration["MemberPortalBaseDomain"];
-        var actionUrl = string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(currentTenant.InstitutionSlug)
-            ? string.Empty
-            : $"https://{currentTenant.InstitutionSlug}.{domain}/payment-campaign/{campaign.Id}";
+        var institution = await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        var portalUrl = MemberPortalLinks.UrlOrEmpty(currentTenant.InstitutionSlug, institution?.CustomDomain, configuration["MemberPortalBaseDomain"]);
+        var actionUrl = string.IsNullOrEmpty(portalUrl) ? string.Empty : $"{portalUrl}/payment-campaign/{campaign.Id}";
 
         await notificationRepo.AddAsync(new Notification
         {

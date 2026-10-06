@@ -26,4 +26,5 @@ public record ReferralPreviewResponse(
     int TotalActiveMembers,
     string? OpenFundraiserTitle,
     decimal? OpenFundraiserCollected,
-    decimal? OpenFundraiserTarget);
+    decimal? OpenFundraiserTarget,
+    string? CommunityName = null);

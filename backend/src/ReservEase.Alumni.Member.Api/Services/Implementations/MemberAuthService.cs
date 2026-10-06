@@ -31,6 +31,8 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class MemberAuthService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Referral> referralRepo,
+    IAlumniPgRepository<Community> communityRepo,
+    IAlumniPgRepository<CommunityMembership> communityMembershipRepo,
     IAlumniPgRepository<Institution> institutionRepo,
     ICurrentTenantService currentTenant,
     IHttpContextAccessor httpContextAccessor,
@@ -75,7 +77,7 @@ public class MemberAuthService(
     /// which is indistinguishable from broken. So: update the existing row if the referrer
     /// happened to have explicitly invited this exact email, otherwise create one now.
     /// </summary>
-    private async Task LinkReferralAsync(MemberEntity member, string email)
+    private async Task LinkReferralAsync(MemberEntity member, string email, string? communityId = null, string? channel = null)
     {
         if (string.IsNullOrWhiteSpace(member.ReferredById)) return;
 
@@ -96,9 +98,56 @@ public class MemberAuthService(
 
         referral.ReferredMemberId = member.Id;
         referral.Status = "Registered";
+        var community = await ResolveInviteCommunityAsync(communityId);
+        if (community is not null)
+        {
+            referral.CommunityId = community.Id;
+            await JoinCommunityFromInviteAsync(member, referral.ReferrerId, community);
+        }
+        referral.Channel = NormalizeChannel(channel);
         await (isNew ? referralRepo.AddAsync(referral) : referralRepo.UpdateAsync(referral));
         await temporalProvider.EnqueueNotificationAsync(
             NotificationRequest.ReferralRegistered(currentTenant.InstitutionId, referral.ReferrerId, $"{member.FirstName} {member.LastName}"), logger);
+    }
+
+    private static readonly string[] InviteChannels = ["whatsapp", "link", "qr", "sms", "email"];
+
+    private static string? NormalizeChannel(string? channel)
+    {
+        var c = channel?.Trim().ToLowerInvariant();
+        return c is not null && InviteChannels.Contains(c) ? c : null;
+    }
+
+    /// <summary>An invitation's community counts only if it exists in this institution and is active; anything else is ignored, never an error.</summary>
+    private async Task<Community?> ResolveInviteCommunityAsync(string? communityId)
+    {
+        if (string.IsNullOrWhiteSpace(communityId)) return null;
+        var community = await communityRepo.GetByIdAsync(communityId.Trim());
+        return community is { IsActive: true } ? community : null;
+    }
+
+    /// <summary>
+    /// Joins the new member to the community they were invited to. A link alone proves nothing, so the
+    /// join is approved on the spot only when the person who shared it is, right now, an approved Leader
+    /// of that community; otherwise it becomes an ordinary request for a leader to decide.
+    /// </summary>
+    private async Task JoinCommunityFromInviteAsync(MemberEntity member, string referrerId, Community community)
+    {
+        var existing = await communityMembershipRepo.GetOneAsync(m => m.CommunityId == community.Id && m.MemberId == member.Id);
+        if (existing is not null) return;
+
+        var referrerMembership = await communityMembershipRepo.GetOneAsync(m => m.CommunityId == community.Id && m.MemberId == referrerId);
+        var vouched = referrerMembership is { Status: "Approved", Role: "Leader" };
+        await communityMembershipRepo.AddAsync(new CommunityMembership
+        {
+            CommunityId = community.Id,
+            MemberId = member.Id,
+            Status = vouched ? "Approved" : "Pending",
+            Role = "Member",
+            DecidedAt = vouched ? DateTime.UtcNow : null,
+            DecidedBy = vouched ? referrerId : null,
+            CreatedBy = "invite",
+        });
     }
 
     /// <summary>
@@ -176,6 +225,8 @@ public class MemberAuthService(
                 TermsAcceptedAt = DateTime.UtcNow,
                 ResendCount = 0,
                 ReferralCode = request.ReferralCode?.Trim(),
+                CommunityId = request.CommunityId?.Trim(),
+                Channel = request.Channel,
             };
 
             await redis.SetAsync($"reg:otp:{email}", cached, TimeSpan.FromMinutes(15));
@@ -264,7 +315,7 @@ public class MemberAuthService(
                 await memberRepo.UpdateAsync(member);
             }
 
-            await LinkReferralAsync(member, identity.Email);
+            await LinkReferralAsync(member, identity.Email, request.CommunityId, request.Channel);
 
             await temporalProvider.EnqueueNotificationAsync(
                 autoApprove
@@ -342,7 +393,7 @@ public class MemberAuthService(
                 await memberRepo.UpdateAsync(member);
             }
 
-            await LinkReferralAsync(member, cached.Email);
+            await LinkReferralAsync(member, cached.Email, cached.CommunityId, cached.Channel);
 
             await temporalProvider.EnqueueNotificationAsync(
                 autoApprove

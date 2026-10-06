@@ -32,6 +32,16 @@ public class CommunitiesController(ICommunityService communityService) : Default
         return result.ToActionResult();
     }
 
+    [HttpGet("growth")]
+    [Authorize(Roles = "SuperAdmin,ScopedAdmin")]
+    [SwaggerOperation(Summary = "How members have joined through community invitations")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<CommunityGrowthSummary>))]
+    public async Task<IActionResult> GetGrowth()
+    {
+        var result = await communityService.GetGrowthAsync();
+        return result.ToActionResult();
+    }
+
     [HttpPost]
     [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Create a community")]

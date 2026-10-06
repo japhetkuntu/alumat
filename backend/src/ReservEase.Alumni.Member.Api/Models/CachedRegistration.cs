@@ -15,4 +15,6 @@ public class CachedRegistration
     public string Otp { get; set; } = string.Empty;
     public int ResendCount { get; set; }
     public string? ReferralCode { get; set; }
+    public string? CommunityId { get; set; }
+    public string? Channel { get; set; }
 }

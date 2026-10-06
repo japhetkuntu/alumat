@@ -58,11 +58,8 @@ public class InstitutionManagementService(
     /// derived from each other, always explicit config, so a naming
     /// convention change on one side can't silently break the other.
     /// </summary>
-    private string MemberPortalUrl(string slug)
-    {
-        var domain = config["PlatformBaseDomain"];
-        return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{slug}.{domain}";
-    }
+    private string MemberPortalUrl(string slug, string? customDomain = null) =>
+        MemberPortalLinks.UrlOrEmpty(slug, customDomain, config["PlatformBaseDomain"]);
 
     private string InstitutionPortalUrl(string slug)
     {
@@ -132,7 +129,7 @@ public class InstitutionManagementService(
             i.LogoUrl, i.Status, memberCounts.GetValueOrDefault(i.Id), i.OnboardedAt,
             i.PlatformFeePercentage,
             contributionRevenues.GetValueOrDefault(i.Id) + storeRevenues.GetValueOrDefault(i.Id) + serviceRevenues.GetValueOrDefault(i.Id),
-            MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug))).ToList();
+            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug))).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var result = new PgPagedResult<InstitutionListItemResponse>
@@ -1219,7 +1216,7 @@ public class InstitutionManagementService(
                 first_name = admin.FirstName,
                 set_password_url = link,
                 institution_portal_url = portalUrl,
-                member_portal_url = MemberPortalUrl(institution.Slug),
+                member_portal_url = MemberPortalUrl(institution.Slug, institution.CustomDomain),
                 brand_name = brandName,
                 brand_color = institution.PrimaryColorHex,
                 brand_secondary_color = institution.SecondaryColorHex,
@@ -1274,6 +1271,6 @@ public class InstitutionManagementService(
             i.PlatformFeePercentage, i.PlatformFeeFlatThreshold, i.PlatformFeeFlatAmount, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
-            MemberPortalUrl(i.Slug), InstitutionPortalUrl(i.Slug));
+            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug));
     }
 }

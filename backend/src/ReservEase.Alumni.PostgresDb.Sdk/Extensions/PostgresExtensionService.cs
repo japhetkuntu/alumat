@@ -138,6 +138,20 @@ public static class PostgresExtensionService
                 }
                 finally
                 {
+                    // A session-level advisory lock lives as long as this physical connection. Closing the
+                    // connection only hands it back to Npgsql's pool, still holding the lock, so without an
+                    // explicit unlock every service that starts later blocks until the pool eventually drops
+                    // the idle connection (or fails startup after its retries). Release it first.
+                    try
+                    {
+                        await context.Database.ExecuteSqlRawAsync(
+                            $"SELECT pg_advisory_unlock({MigrationLockId});");
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Could not release the migration lock explicitly; it will be released when the connection closes.");
+                    }
+
                     await context.Database.CloseConnectionAsync();
                 }
 

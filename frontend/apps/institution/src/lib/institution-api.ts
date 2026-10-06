@@ -397,6 +397,30 @@ export interface CommunityListItem {
   pendingCount: number;
   leaderCount: number;
   createdAt: string;
+  /** Connected external groups (e.g. a WhatsApp group). */
+  channels?: CommunityChannelItem[] | null;
+  /** Members who joined this community through a leader's invitation. */
+  joinedViaInvites?: number;
+  joinedLast30Days?: number;
+}
+
+export interface CommunityChannelItem {
+  type: string;
+  displayName: string;
+  inviteUrl?: string | null;
+  connectedAt: string;
+}
+
+export interface CommunityGrowthSummary {
+  totalViaInvites: number;
+  last30Days: number;
+  bySource: { source: string; count: number }[];
+  byCommunity: { communityId: string; name: string; joined: number; last30Days: number }[];
+}
+
+export async function getCommunityGrowth(): Promise<CommunityGrowthSummary> {
+  const res = await institutionClient.get<ApiResponse<CommunityGrowthSummary>>("/communities/growth");
+  return res.data.data!;
 }
 
 export interface CommunityMemberItem {
@@ -419,7 +443,7 @@ export async function createCommunity(body: { name: string; description?: string
   return res.data.data!;
 }
 
-export async function updateCommunity(id: string, body: { name: string; description?: string; coverImageUrl?: string; isActive: boolean }): Promise<CommunityListItem> {
+export async function updateCommunity(id: string, body: { name: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }): Promise<CommunityListItem> {
   const res = await institutionClient.put<ApiResponse<CommunityListItem>>(`/communities/${id}`, body);
   return res.data.data!;
 }

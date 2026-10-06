@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, Images, ImageOff } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { ShareLinkButton } from "@alumni/ui";
+import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -102,6 +102,7 @@ export default function MemberAlbumDetailPage() {
           url={shareUrl}
           title={album.title}
           variant="outline"
+          message={shareMessages.album({ title: album.title, photoCount: album.photoCount })}
           size="sm"
           onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Album link copied")}
           onError={(message) => toast.error(message)}

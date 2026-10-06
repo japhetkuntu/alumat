@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -300,7 +301,7 @@ export default function ServicesPage() {
                         <TableCell className="text-[12.5px] text-muted-foreground">{s.stages.join(" → ")}</TableCell>
                         <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
                         <TableCell className="text-right">
-                          {s.status === "Active" && <MemberShareButton memberPath={`/services/${s.id}`} title={s.name} variant="ghost" />}
+                          {s.status === "Active" && <MemberShareButton memberPath={`/services/${s.id}`} title={s.name} message={shareMessages.service({ name: s.name, description: s.description })} variant="ghost" />}
                           <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil size={14} /></Button>
                           <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(s)}><Trash2 size={14} className="text-destructive" /></Button>
                         </TableCell>

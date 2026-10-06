@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -642,8 +643,7 @@ public class ScheduledJobsActivities(
 
     private string GetMemberPortalUrl(Institution institution)
     {
-        var domain = configuration["MemberPortalBaseDomain"];
-        return string.IsNullOrWhiteSpace(domain) ? string.Empty : $"https://{institution.Slug}.{domain}";
+        return MemberPortalLinks.UrlOrEmpty(institution.Slug, institution.CustomDomain, configuration["MemberPortalBaseDomain"]);
     }
 
     // ── Birthday spotlight ──────────────────────────────────────────────────

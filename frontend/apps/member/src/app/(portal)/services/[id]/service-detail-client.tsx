@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, CheckCircle2, ShieldCheck, Info } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { ShareLinkButton } from "@alumni/ui";
+import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -106,6 +106,7 @@ export default function ServiceDetailPage() {
           url={shareUrl}
           title={service.name}
           variant="outline"
+          message={shareMessages.service(service)}
           size="sm"
           onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Service link copied")}
           onError={(message) => toast.error(message)}

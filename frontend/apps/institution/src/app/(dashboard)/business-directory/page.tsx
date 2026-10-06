@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useMemo, useState } from "react";
@@ -392,7 +393,7 @@ export default function AdminBusinessDirectoryPage() {
                       </Button>
                     )}
                     {l.status === "Approved" && (
-                      <MemberShareButton memberPath={`/business-directory/${l.id}`} title={l.businessName} className="h-8 text-[12px] font-bold" />
+                      <MemberShareButton memberPath={`/business-directory/${l.id}`} title={l.businessName} message={shareMessages.business({ name: l.businessName, description: l.description })} className="h-8 text-[12px] font-bold" />
                     )}
                     <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setEditTarget(l)} title="Edit">
                       <Pencil size={13} />

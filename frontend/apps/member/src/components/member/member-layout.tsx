@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
+import { GuestEntityPreview, type GuestEntityType } from "@/components/member/guest-entity-preview";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { GlobalSearch } from "@/components/member/global-search";
 import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
@@ -474,11 +475,22 @@ export function MemberLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("feature-disabled", refresh);
   }, [queryClient]);
 
+  // A shared event, job or news link opened without a session shows a read-only summary with a way in,
+  // instead of bouncing straight to the login screen.
+  const guestMatch = /^\/(events|jobs|news)\/([^/]+)$/.exec(pathname);
+  const guestTarget = guestMatch
+    ? { type: ({ events: "event", jobs: "job", news: "news" } as const)[guestMatch[1] as "events" | "jobs" | "news"] as GuestEntityType, id: guestMatch[2] }
+    : null;
+
   useEffect(() => {
-    if (!isLoading && !isMember && pathname !== "/login") {
+    if (!isLoading && !isMember && !guestTarget && pathname !== "/login") {
       router.replace(`/login?redirect=${encodeURIComponent(pathname + window.location.search)}`);
     }
-  }, [isLoading, isMember, pathname, router]);
+  }, [isLoading, isMember, guestTarget, pathname, router]);
+
+  if (!isLoading && !isMember && guestTarget) {
+    return <GuestEntityPreview type={guestTarget.type} id={guestTarget.id} path={pathname} />;
+  }
 
   if (isLoading || !isMember) return <PortalShellSkeleton sidebarWidth={240} />;
 

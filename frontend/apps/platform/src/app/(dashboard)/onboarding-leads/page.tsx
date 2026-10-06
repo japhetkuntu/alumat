@@ -274,7 +274,7 @@ export default function OnboardingLeadsPage() {
               <CardContent className="p-5">
                 <h2 className="text-[17px] font-semibold">{active.institutionName}</h2>
                 <p className="text-[12.5px] text-muted-foreground mt-1">
-                  {active.source === "Website walkthrough" ? "Demo requested" : active.source === "Website" || !active.source ? "Submitted" : `Logged (${active.source})`}{" "}
+                  {active.source === "Website walkthrough" ? "Demo requested" : active.source === "Founding 20" ? "Applied to Founding 20" : active.source === "Website" || !active.source ? "Submitted" : `Logged (${active.source})`}{" "}
                   {active.ageHours < 48 ? `${active.ageHours}h ago` : `${Math.floor(active.ageHours / 24)} days ago`} &middot; {STATUS_LABELS[active.status] ?? active.status}
                 </p>
                 {(active.contactedAt || active.demoBookedAt || active.trialStartedAt || active.approvedAt) && (
@@ -325,6 +325,8 @@ export default function OnboardingLeadsPage() {
                     ? `accepted ${new Date(active.agreementAcceptedAt).toLocaleString()} by ${active.agreementAcceptedByName ?? "the contact"}${active.agreementAcceptedByTitle ? ` (${active.agreementAcceptedByTitle})` : ""}, version ${active.agreementVersion}${active.agreementAcceptedIp ? `, from ${active.agreementAcceptedIp}` : ""}`
                     : active.source === "Website walkthrough"
                       ? "not required for a demo enquiry"
+                      : active.source === "Founding 20"
+                      ? "not asked at application stage (applied through the Founding 20 page)"
                       : active.source && active.source !== "Website"
                       ? "not yet accepted (logged by platform staff)"
                       : "not recorded (request made before the agreement was introduced)"}

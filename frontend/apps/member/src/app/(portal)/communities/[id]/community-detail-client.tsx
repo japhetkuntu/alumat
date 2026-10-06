@@ -31,6 +31,7 @@ import {
   getMyCampaigns,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
+import { CommunityInvitePanel, CommunityGroupLink } from "@/components/member/community-invite-panel";
 
 function safeDate(value: string | null | undefined): string {
   if (!value) return "";
@@ -354,6 +355,12 @@ export default function CommunityDetailPage() {
         />
       ) : (
         <div className="space-y-8">
+          {isLeader ? (
+            <CommunityInvitePanel communityId={id} communityName={community.name} description={community.description} />
+          ) : (
+            <CommunityGroupLink channels={community.channels} />
+          )}
+
           {/* ── Fundraisers ── */}
           <section>
             <SectionHeader icon={HandCoins} title="Fundraisers" seeAllHref={`/contributions?communityId=${id}`} />

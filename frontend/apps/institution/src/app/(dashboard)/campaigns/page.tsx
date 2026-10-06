@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
@@ -406,7 +407,7 @@ export default function AdminCampaignsPage() {
                       </Button>
                     </Link>
                     {c.status === "Active" && (
-                      <MemberShareButton memberPath={c.isMembershipCampaign ? `/contributions/${c.id}` : `/payment-campaign/${c.id}`} title={c.title} />
+                      <MemberShareButton memberPath={c.isMembershipCampaign ? `/contributions/${c.id}` : `/payment-campaign/${c.id}`} title={c.title} message={c.isMembershipCampaign ? shareMessages.dues({ title: c.title, amount: c.amountPerMember, deadline: c.deadline }) : shareMessages.fundraiser({ title: c.title, target: c.targetAmount, raised: c.collectedAmount, contributors: c.paidCount, description: c.description })} />
                     )}
                     {c.status === "Active" && (
                       <Button size="sm" variant="outline" onClick={() => setEditCampaign(c)}>

@@ -353,7 +353,7 @@ public class PublicController(
     [HttpGet("referral-preview")]
     [SwaggerOperation(Summary = "Preview shown when opening a referral link, before signing up")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ReferralPreviewResponse?>))]
-    public async Task<IActionResult> GetReferralPreview([FromQuery] string code)
+    public async Task<IActionResult> GetReferralPreview([FromQuery] string code, [FromQuery] string? communityId = null)
     {
         if (string.IsNullOrWhiteSpace(code) || HttpContext.Items["Institution"] is not Institution)
             return Ok(new ApiResponse<ReferralPreviewResponse?> { Message = "Success", Code = 200, Data = null });
@@ -369,10 +369,13 @@ public class PublicController(
         var fundraiser = await campaignRepo.GetQueryable(c => !c.IsMembershipCampaign && c.Status == CampaignStatus.Active && c.Deadline >= DateTime.UtcNow)
             .OrderBy(c => c.Deadline).FirstOrDefaultAsync();
 
+        // Only the community's name is exposed, and only for an active community of this institution.
+        var community = string.IsNullOrWhiteSpace(communityId) ? null : await communityRepo.GetOneAsync(c => c.Id == communityId && c.IsActive);
+
         var preview = new ReferralPreviewResponse(
             referrer.FirstName, referrer.GraduationYear == 0 ? null : referrer.GraduationYear,
             sameBatch, totalMembers,
-            fundraiser?.Title, fundraiser?.CollectedAmount, fundraiser?.TargetAmount);
+            fundraiser?.Title, fundraiser?.CollectedAmount, fundraiser?.TargetAmount, community?.Name);
         return Ok(new ApiResponse<ReferralPreviewResponse> { Message = "Success", Code = 200, Data = preview });
     }
 
@@ -457,6 +460,7 @@ public class PublicController(
             "album" => await BuildAlbumPreviewAsync(id),
             "service" => await BuildServicePreviewAsync(id),
             "campaign" => await BuildCampaignPreviewAsync(id),
+            "invite" => await BuildInvitePreviewAsync(id),
             _ => null,
         };
 
@@ -469,19 +473,27 @@ public class PublicController(
     private async Task<PublicPreviewResponse?> BuildEventPreviewAsync(string id)
     {
         var e = await eventRepo.GetOneAsync(x => x.Id == id);
-        return e is null ? null : new PublicPreviewResponse(e.Title, e.Description, e.BannerImageUrl);
+        if (e is null) return null;
+        if (e.CommunityId is not null) return new PublicPreviewResponse(e.Title, null, e.BannerImageUrl, Restricted: true);
+        return new PublicPreviewResponse(e.Title, e.Description, e.BannerImageUrl,
+            Subtitle: e.Status == "Cancelled" ? "Cancelled" : null, Date: e.StartDate, Place: e.Venue);
     }
 
     private async Task<PublicPreviewResponse?> BuildJobPreviewAsync(string id)
     {
         var j = await jobRepo.GetOneAsync(x => x.Id == id);
-        return j is null ? null : new PublicPreviewResponse($"{j.Title} at {j.Company}", j.Description, j.BannerImageUrl);
+        if (j is null) return null;
+        if (j.CommunityId is not null) return new PublicPreviewResponse($"{j.Title} at {j.Company}", null, j.BannerImageUrl, Restricted: true);
+        return new PublicPreviewResponse($"{j.Title} at {j.Company}", j.Description, j.BannerImageUrl,
+            Subtitle: string.IsNullOrWhiteSpace(j.Type) ? null : j.Type, Date: j.Deadline, Place: j.Location);
     }
 
     private async Task<PublicPreviewResponse?> BuildNewsPreviewAsync(string id)
     {
         var n = await newsRepo.GetOneAsync(x => x.Id == id);
-        return n is null ? null : new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault());
+        if (n is null || n.Status != "Published") return null; // a draft must never unfurl or show to a guest
+        if (n.CommunityId is not null) return new PublicPreviewResponse(n.Title, null, n.ImageUrls?.FirstOrDefault(), Restricted: true);
+        return new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault(), Date: n.PublishedAt ?? n.CreatedAt);
     }
 
     private async Task<PublicPreviewResponse?> BuildResourcePreviewAsync(string id)
@@ -514,6 +526,23 @@ public class PublicController(
         return s is null ? null : new PublicPreviewResponse(s.Name, s.Description, null);
     }
 
+    /// <summary>
+    /// The card shown when a community invitation link is pasted into a chat. Only the community's own public
+    /// description is used (the same one every member can already list); who shared the link is never exposed here.
+    /// </summary>
+    private async Task<PublicPreviewResponse?> BuildInvitePreviewAsync(string communityId)
+    {
+        var c = await communityRepo.GetOneAsync(x => x.Id == communityId && x.IsActive);
+        if (c is null) return null;
+        var institutionName = HttpContext.Items["Institution"] is Institution i
+            ? (string.IsNullOrWhiteSpace(i.PortalName) ? i.Name : i.PortalName)
+            : null;
+        var title = institutionName is null ? $"Join {c.Name}" : $"Join {c.Name} on {institutionName}";
+        return new PublicPreviewResponse(title, string.IsNullOrWhiteSpace(c.Description)
+            ? "You've been invited to join this community. It only takes a minute."
+            : c.Description, c.CoverImageUrl ?? (HttpContext.Items["Institution"] as Institution)?.LogoUrl);
+    }
+
     private async Task<PublicPreviewResponse?> BuildCampaignPreviewAsync(string id)
     {
         var c = await campaignRepo.GetOneAsync(x => x.Id == id);
@@ -521,4 +550,9 @@ public class PublicController(
     }
 }
 
-public record PublicPreviewResponse(string Title, string? Description, string? ImageUrl);
+/// <summary>
+/// What an anonymous visitor may see of one shared item. <paramref name="Restricted"/> marks items scoped to a
+/// community: those carry only the title, so a guest gets a sign-in prompt rather than the content.
+/// </summary>
+public record PublicPreviewResponse(string Title, string? Description, string? ImageUrl,
+    string? Subtitle = null, DateTime? Date = null, string? Place = null, bool Restricted = false);

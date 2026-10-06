@@ -1,5 +1,6 @@
 "use client";
 
+import { shareMessages } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -181,6 +182,7 @@ export default function CampaignDetailPage() {
           <ShareLinkButton
             url={shareUrl}
             title={campaign.title}
+            message={campaign.isMembershipCampaign ? shareMessages.dues({ title: campaign.title, amount: campaign.amountPerMember, deadline: campaign.deadline }) : shareMessages.fundraiser({ title: campaign.title, target: campaign.targetAmount, raised: campaign.collectedAmount, contributors: campaign.paidCount, description: campaign.description })}
             variant="outline"
             size="sm"
             onSuccess={(result) => {
