@@ -53,3 +53,19 @@ public class CreateWalkthroughRequest
     [MaxLength(100)]
     public string? MainInterest { get; set; }
 }
+
+/// <summary>The short AlumUnion Founding 20 application. No agreement is accepted here; the team follows up personally.</summary>
+public class CreateFoundingApplicationRequest
+{
+    [MaxLength(32)] public string? MarketingShareId { get; set; }
+    [Required, MaxLength(200)] public string InstitutionName { get; set; } = string.Empty;
+    [MaxLength(100)] public string? OrganizationType { get; set; }
+    [Required, MaxLength(200)] public string ContactName { get; set; } = string.Empty;
+    [MaxLength(150)] public string? ContactRole { get; set; }
+    [Required, MaxLength(40)] public string ContactPhone { get; set; } = string.Empty;
+    [Required, EmailAddress, MaxLength(254)] public string ContactEmail { get; set; } = string.Empty;
+    [MaxLength(100)] public string? EstimatedMemberCount { get; set; }
+    [MaxLength(1500)] public string? Challenge { get; set; }
+    /// <summary>"Yes", "No" or "Part of leadership".</summary>
+    [Required, MaxLength(40)] public string Authority { get; set; } = string.Empty;
+}

@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       { url: `${origin}/`, changeFrequency: "weekly", priority: 1 },
       { url: `${origin}/why-not-whatsapp`, changeFrequency: "monthly", priority: 0.8 },
+      { url: `${origin}/founding20`, changeFrequency: "weekly", priority: 0.8 },
       { url: `${origin}/privacy`, changeFrequency: "yearly", priority: 0.3 },
       { url: `${origin}/terms`, changeFrequency: "yearly", priority: 0.3 },
       { url: `${origin}/institution-agreement`, changeFrequency: "yearly", priority: 0.3 },

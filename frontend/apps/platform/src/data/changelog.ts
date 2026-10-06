@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Founding 20 page and application",
+    body: "The website has a new /founding20 page for the AlumUnion Founding 20 programme: what the programme is, what an institution gets, how it works, and a short application (institution, type, contact, community size, biggest challenge, and whether they are authorised to represent it). Applications arrive in Onboarding leads tagged \"Founding 20\", with the challenge and authority recorded in the message, and the sales team is notified. Applying does not accept the Institution Agreement.",
+    scopes: ["Marketing", "Platform"],
+    type: "Feature",
+  },
+  {
+    date: "2026-10-06",
     title: "Public thank-you page for a fundraiser",
     body: "Administrators can publish a shareable page for any institution-wide fundraiser from its \"Public page\" section, and take it down at any time. It is branded with the institution's colours and logo, lists the people who gave, and never shows what any one person gave. Per fundraiser, administrators choose whether to list only givers who ticked \"show my name\" or everyone who gave, which totals appear (contributed, target, progress, number of contributors, closing date), and an optional thank-you note. While the fundraiser is open the page carries a quiet Give button and an invitation to join or sign in, with a short note about AlumUnion at the foot. Unpublished fundraisers, membership dues and community fundraisers return not-found.",
     scopes: ["Institution", "Member"],

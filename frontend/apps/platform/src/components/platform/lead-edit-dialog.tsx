@@ -26,7 +26,7 @@ import {
   type UpdateOnboardingLeadRequest,
 } from "@/lib/platform-api";
 
-export const LEAD_SOURCE_OPTIONS = ["Warm intro", "Outreach", "Referral", "Event", "Import", "Website", "Website walkthrough", "Other"];
+export const LEAD_SOURCE_OPTIONS = ["Warm intro", "Outreach", "Referral", "Event", "Import", "Website", "Website walkthrough", "Founding 20", "Other"];
 const UNASSIGNED = "__none";
 
 function toForm(lead: OnboardingLead): UpdateOnboardingLeadRequest {

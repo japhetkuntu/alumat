@@ -132,7 +132,35 @@ public class PublicController(
         }, recordAgreement: false);
     }
 
-    private async Task<IActionResult> SaveOnboardingLead(CreateOnboardingLeadRequest request, bool recordAgreement)
+    private static readonly string[] FoundingAuthorityChoices = ["Yes", "No", "Part of leadership"];
+
+    /// <summary>The Founding 20 programme's short application. Stored as an onboarding lead so it lands in the same pipeline.</summary>
+    [HttpPost("founding-20-applications")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Apply to the AlumUnion Founding 20 programme")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<OnboardingLeadResponse>))]
+    public async Task<IActionResult> CreateFoundingApplication([FromBody] CreateFoundingApplicationRequest request)
+    {
+        if (!FoundingAuthorityChoices.Contains(request.Authority))
+            return ApiResponseExtensions.ToBadRequestApiResponse<OnboardingLeadResponse>("Tell us whether you are authorised to represent the institution.").ToActionResult();
+
+        var challenge = string.IsNullOrWhiteSpace(request.Challenge) ? "(not given)" : request.Challenge.Trim();
+        return await SaveOnboardingLead(new CreateOnboardingLeadRequest
+        {
+            InstitutionName = request.InstitutionName.Trim(),
+            ContactName = request.ContactName.Trim(),
+            ContactEmail = request.ContactEmail.Trim(),
+            ContactPhone = request.ContactPhone.Trim(),
+            ContactRole = request.ContactRole?.Trim(),
+            OrganizationType = request.OrganizationType?.Trim(),
+            EstimatedMemberCount = request.EstimatedMemberCount?.Trim(),
+            MarketingShareId = request.MarketingShareId,
+            Message = $"Biggest challenge: {challenge}\nAuthorised to represent the institution: {request.Authority}",
+        }, recordAgreement: false, source: "Founding 20", enquiryLabel: "applied to the Founding 20", notificationTitle: "New Founding 20 application");
+    }
+
+    private async Task<IActionResult> SaveOnboardingLead(CreateOnboardingLeadRequest request, bool recordAgreement,
+        string? source = null, string? enquiryLabel = null, string? notificationTitle = null)
     {
         // Behind the reverse proxy the real address is the first entry of X-Forwarded-For.
         var forwarded = Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
@@ -145,7 +173,7 @@ public class PublicController(
             AgreementAcceptedByName = recordAgreement ? request.ContactName : null,
             AgreementAcceptedByTitle = recordAgreement ? request.ContactRole : null,
             AgreementAcceptedIp = recordAgreement ? ip : null,
-            Source = recordAgreement ? "Website" : "Website walkthrough",
+            Source = source ?? (recordAgreement ? "Website" : "Website walkthrough"),
             InstitutionName = request.InstitutionName,
             ContactName = request.ContactName,
             ContactEmail = request.ContactEmail,
@@ -185,8 +213,8 @@ public class PublicController(
             var notifications = staff.Select(s => new PlatformNotification
             {
                 RecipientStaffId = s.Id,
-                Title = recordAgreement ? "New onboarding lead" : "New walkthrough request",
-                Body = $"{lead.InstitutionName} — {lead.ContactName} ({lead.ContactEmail}) {(recordAgreement ? "wants to get onboarded" : "requested a walkthrough")}.",
+                Title = notificationTitle ?? (recordAgreement ? "New onboarding lead" : "New walkthrough request"),
+                Body = $"{lead.InstitutionName} — {lead.ContactName} ({lead.ContactEmail}) {enquiryLabel ?? (recordAgreement ? "wants to get onboarded" : "requested a walkthrough")}.",
                 Type = "OnboardingLeadSubmitted",
                 RelatedEntityId = lead.Id,
                 RelatedEntityType = "OnboardingLead",

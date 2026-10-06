@@ -254,7 +254,7 @@ export default function OnboardingLeadsPage() {
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <div><p className="font-semibold text-[13.5px]">{l.institutionName}</p>{l.source === "Website walkthrough" && <span className="inline-block mt-1 text-[12px] font-semibold text-primary">Demo request</span>}</div>
+                    <div><p className="font-semibold text-[13.5px]">{l.institutionName}</p>{l.source === "Website walkthrough" && <span className="inline-block mt-1 text-[12px] font-semibold text-primary">Demo request</span>}{l.source === "Founding 20" && <span className="inline-block mt-1 text-[12px] font-semibold text-primary">Founding 20</span>}</div>
                     <Badge variant={statusBadgeVariant(l.status)}>{STATUS_LABELS[l.status] ?? l.status}</Badge>
                   </div>
                   {followUpState(l.nextFollowUpAt) && followUpState(l.nextFollowUpAt) !== "upcoming" && (
