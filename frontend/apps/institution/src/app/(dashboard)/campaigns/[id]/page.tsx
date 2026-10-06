@@ -12,13 +12,14 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
+import { Card, CardContent, CardHeader, CardTitle, Checkbox } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { PledgesPanel } from "@/components/institution/pledges-panel";
+import { PublicPagePanel } from "@/components/institution/public-page-panel";
 import {
   getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel,
   getCampaignUpdates, createCampaignUpdate, deleteCampaignUpdate, getInstitutionProfile,
@@ -205,111 +206,69 @@ export default function CampaignDetailPage() {
 
       {editing && <CampaignEditForm campaign={campaign} isSuperAdmin={isSuperAdmin} saving={updateMut.isPending} onSave={(body) => updateMut.mutate(body)} onCancel={() => setEditing(false)} />}
 
-      {/* Fundraiser/dues summary */}
-      <Card>
-        <CardContent className="p-[18px] space-y-4">
-          <h2 className="text-[15px] font-semibold m-0">{campaign.isMembershipCampaign ? "Membership dues progress" : "Fundraiser progress"}</h2>
-          {campaign.description && <p className="text-[13px] text-muted-foreground">{campaign.description}</p>}
-          <Progress value={pct} className="h-2.5" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-            <div><p className="text-muted-foreground text-xs">Collected</p><p className="font-bold text-lg tabular-nums text-success">{formatCurrency(campaign.collectedAmount)}</p></div>
-            <div><p className="text-muted-foreground text-xs">Target</p><p className="font-semibold tabular-nums">{formatCurrency(campaign.targetAmount)}</p></div>
-            <div><p className="text-muted-foreground text-xs">Paid Members</p><p className="font-semibold tabular-nums">{campaign.paidCount}</p></div>
-            <div><p className="text-muted-foreground text-xs">Deadline</p><p className="font-semibold">{formatDate(campaign.deadline)}</p></div>
+      {/* Summary: the headline figure first, everything else quietly beneath it */}
+      <Card className="overflow-hidden">
+        {campaign.bannerImageUrl && (
+          <button
+            onClick={() => setLightboxOpen(true)}
+            className="group relative block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Click to expand"
+          >
+            <img src={campaign.bannerImageUrl} alt={campaign.title} className="h-44 w-full object-cover sm:h-56 cursor-zoom-in" loading="lazy" />
+            <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center bg-black/45 text-white opacity-0 transition-opacity group-hover:opacity-100"><Expand size={15} /></span>
+          </button>
+        )}
+        <CardContent className="space-y-7 p-5 sm:p-7">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{campaign.isMembershipCampaign ? "Dues collected" : "Collected"}</p>
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
+              <span className="text-4xl font-bold tabular-nums text-success">{formatCurrency(campaign.collectedAmount)}</span>
+              <span className="text-sm text-muted-foreground tabular-nums">of {formatCurrency(campaign.targetAmount)} · {pct}%</span>
+            </div>
+            <Progress value={pct} className="mt-4 h-1.5" />
+            {campaign.description && <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-muted-foreground whitespace-pre-line">{campaign.description}</p>}
           </div>
-          {pct > 0 && (
-            <p className="text-xs text-muted-foreground tabular-nums">{pct}% of target reached</p>
+
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border/60 pt-6 sm:grid-cols-4">
+            <Stat label="Paid members" value={String(campaign.paidCount)} />
+            <Stat label="Closes" value={formatDate(campaign.deadline)} hint={campaign.status === "Active" && daysUntilDeadline >= 0 ? (daysUntilDeadline === 0 ? "Today" : `${daysUntilDeadline} day${daysUntilDeadline === 1 ? "" : "s"} left`) : undefined} />
+            <Stat label="Successful payments" value={paystackSummary ? String(paystackSummary.confirmedCount) : "–"} />
+            <Stat label="Online, collected" value={paystackSummary ? formatCurrency(paystackSummary.totalPaidToPaystack) : "–"} />
+          </dl>
+
+          {paystackSummary && (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border/60 pt-6 sm:grid-cols-4">
+              <Stat label="Disbursed" value={formatCurrency(paystackSummary.totalDisbursed)} hint={`${paystackSummary.disbursedCount} payment${paystackSummary.disbursedCount === 1 ? "" : "s"}`} />
+              <Stat label="Outstanding" value={formatCurrency(paystackSummary.totalOutstanding)} hint="Yours to receive" />
+            </dl>
           )}
+          {!loadingPaystackSummary && !paystackSummary && <p className="text-sm text-muted-foreground">No online payment summary available.</p>}
+
+          {user?.role === "SuperAdmin" && campaign.status === "Closed" && paystackSummary && paystackSummary.totalOutstanding > 0 && (
+            <Button variant="destructive" onClick={() => setConfirmCampaignDisburseOpen(true)} isLoading={campaignDisburseMut.isPending}>
+              Mark online payments as disbursed
+            </Button>
+          )}
+
           {isSuperAdmin && showDeadlineReminder && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-border p-3">
-              <p className="flex items-center gap-2 text-[12.5px] text-foreground">
-                <Megaphone size={15} className="shrink-0 text-primary" />
-                {daysUntilDeadline === 0 ? "Deadline is today" : `${daysUntilDeadline} day${daysUntilDeadline === 1 ? "" : "s"} left`} — {campaign.paidCount > 0 ? "some members still haven't paid." : "no one has paid yet."}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-primary bg-muted/40 py-3 pl-4 pr-3">
+              <p className="text-[13px] text-foreground">
+                {daysUntilDeadline === 0 ? "Deadline is today" : `${daysUntilDeadline} day${daysUntilDeadline === 1 ? "" : "s"} left`}, {campaign.paidCount > 0 ? "some members still haven't paid." : "no one has paid yet."}
               </p>
               <Link href={reminderBroadcastHref}>
                 <Button size="sm" variant="outline" className="font-semibold">Send a reminder</Button>
               </Link>
             </div>
           )}
-          <div className="rounded-none p-3 text-[12.5px]" style={{ background: "var(--brand-accent-light)", color: "var(--brand-accent-dark)", border: "1px solid #FED7AA" }}>
-            Members may contribute any positive amount (including less than the suggested base amount). They can also contribute additional payments over time to reach their target.
-          </div>
 
-          <div className="mt-1 rounded-none border border-border p-4">
-            <h3 className="text-[13.5px] font-semibold">Online payment overview</h3>
-            <p className="text-xs text-muted-foreground mt-1">Online payments are processed securely; your institution receives the full amount members pay.</p>
-            {loadingPaystackSummary ? (
-              <p className="text-sm text-muted-foreground mt-2">Loading payment summary…</p>
-            ) : paystackSummary ? (
-              <>
-                <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                  <div><p className="text-muted-foreground">Collected online</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalPaidToPaystack)}</p></div>
-                </div>
-                <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                  <div><p className="text-muted-foreground">Total disbursed</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalDisbursed)}</p></div>
-                  <div><p className="text-muted-foreground">Outstanding</p><p className="font-semibold tabular-nums">{formatCurrency(paystackSummary.totalOutstanding)}</p></div>
-                  <div><p className="text-muted-foreground">Successful contributions</p><p className="font-semibold tabular-nums">{paystackSummary.confirmedCount}</p></div>
-                  <div><p className="text-muted-foreground">Disbursed count</p><p className="font-semibold tabular-nums">{paystackSummary.disbursedCount}</p></div>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-2">No online payment summary available.</p>
-            )}
+          {campaign.youtubeVideoUrl && (
+            <div className="max-w-2xl border-t border-border/60 pt-6"><YouTubeEmbed url={campaign.youtubeVideoUrl} /></div>
+          )}
 
-            {user?.role === "SuperAdmin" && campaign.status === "Closed" && paystackSummary && paystackSummary.totalOutstanding > 0 && (
-              <div className="mt-3">
-                <Button
-                  variant="destructive"
-                  onClick={() => setConfirmCampaignDisburseOpen(true)}
-                  isLoading={campaignDisburseMut.isPending}
-                >
-                  Mark online payment contributions as disbursed
-                </Button>
-              </div>
-            )}
-          </div>
+          <p className="text-[12.5px] text-muted-foreground">Members can give any amount, and give again over time. Online payments reach your institution in full.</p>
         </CardContent>
       </Card>
 
-      {/* Media */}
-      {(campaign.bannerImageUrl || campaign.youtubeVideoUrl) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{campaign.isMembershipCampaign ? "Membership Dues Media" : "Fundraiser Media"}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={campaign.bannerImageUrl && campaign.youtubeVideoUrl
-              ? "grid grid-cols-1 md:grid-cols-2 gap-4 items-start"
-              : "flex justify-center"}
-            >
-              {campaign.bannerImageUrl && (
-                <div className="relative overflow-hidden rounded-xl bg-muted/30 group">
-                  <button
-                    onClick={() => setLightboxOpen(true)}
-                    className="block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    title="Click to expand"
-                  >
-                    <img
-                      src={campaign.bannerImageUrl}
-                      alt={campaign.title}
-                      className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-[1.03] cursor-zoom-in"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <Expand size={22} className="text-white drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </button>
-                </div>
-              )}
-              {campaign.youtubeVideoUrl && (
-                <div className={!campaign.bannerImageUrl ? "max-w-2xl w-full" : ""}>
-                  <YouTubeEmbed url={campaign.youtubeVideoUrl} />
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Lightbox */}
       {lightboxOpen && campaign.bannerImageUrl && (
@@ -334,22 +293,6 @@ export default function CampaignDetailPage() {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-      )}
-
-      {/* Pledges — promises to give, shown apart from real money. Renders nothing until someone has pledged. */}
-      {!campaign.isMembershipCampaign && <PledgesPanel campaignId={id} canManage />}
-
-      {/* Updates — close the loop on what the money did, postable any time */}
-      {!campaign.isMembershipCampaign && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Megaphone size={16} className="text-primary" />Updates</CardTitle>
-            <p className="text-[12.5px] text-muted-foreground">Post progress here so givers see what their money did, not just at the end.</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <CampaignUpdatesSection campaignId={id} />
-          </CardContent>
-        </Card>
       )}
 
       <Card>
@@ -390,6 +333,32 @@ export default function CampaignDetailPage() {
       </Card>
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+
+      {/* Pledges — promises to give, shown apart from real money. Renders nothing until someone has pledged. */}
+      {!campaign.isMembershipCampaign && <PledgesPanel campaignId={id} canManage />}
+
+      {/* Updates — close the loop on what the money did, postable any time */}
+      {!campaign.isMembershipCampaign && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Megaphone size={16} className="text-primary" />Updates</CardTitle>
+            <p className="text-[12.5px] text-muted-foreground">Post progress here so givers see what their money did, not just at the end.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <CampaignUpdatesSection campaignId={id} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Public page — shareable thank-you page listing givers' names, never amounts. Institution-wide fundraisers only. */}
+      {!campaign.isMembershipCampaign && !campaign.communityId && (
+        <PublicPagePanel
+          key={JSON.stringify(campaign.publicPage ?? null)}
+          campaign={campaign}
+          pageUrl={buildMemberPortalShareUrl(`/fundraiser/${id}`, institution?.memberPortalUrl)}
+        />
+      )}
+
 
       <ConfirmModal
         open={!!confirmTarget}
@@ -447,6 +416,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
   const [existingBannerUrl, setExistingBannerUrl] = useState(campaign.bannerImageUrl ?? "");
   const [youtubeVideoUrl, setYoutubeVideoUrl] = useState(campaign.youtubeVideoUrl ?? "");
   const [allowManualPayments, setAllowManualPayments] = useState(campaign.allowManualPayments);
+  const [allowPledges, setAllowPledges] = useState(campaign.allowPledges ?? false);
   const [isMembershipCampaign, setIsMembershipCampaign] = useState(campaign.isMembershipCampaign ?? false);
   const [membershipYear, setMembershipYear] = useState(campaign.membershipYear ?? new Date().getFullYear());
   const [bankAccountNumber, setBankAccountNumber] = useState(campaign.bankAccount?.accountNumber ?? "");
@@ -466,6 +436,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
       yearGroups: isSuperAdmin ? (yearGroupsAll ? undefined : yearGroups) : undefined,
       bannerImage: bannerImage || undefined, youtubeVideoUrl: youtubeVideoUrl || undefined,
       allowManualPayments,
+      allowPledges: isMembershipCampaign ? false : allowPledges,
       isMembershipCampaign, membershipYear,
       bankAccountNumber: bankAccountNumber || undefined,
       bankAccountName: bankAccountName || undefined,
@@ -480,184 +451,208 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
   const currentYear = new Date().getFullYear();
 
   return (
-    <Card className="animate-in fade-in slide-in-from-top-4 duration-500 border-primary/30">
-      <CardHeader><CardTitle className="text-base">{isMembershipCampaign ? "Edit Membership Dues" : "Edit Fundraiser"}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+    <Card className="animate-in fade-in slide-in-from-top-4 duration-500">
+      <CardHeader className="border-b border-border/60 pb-4">
+        <CardTitle className="text-base">{isMembershipCampaign ? "Edit membership dues" : "Edit fundraiser"}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <form onSubmit={handleSubmit}>
           {isMembershipCampaign ? (
-            /* ── Membership dues layout (matches create form) ── */
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input placeholder="e.g. Dues 2026" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Dues Year</Label>
-                  <Input type="number" value={membershipYear} onChange={(e) => { const y = Number(e.target.value); setMembershipYear(y); setTitle(`Dues ${y}`); }} required />
-                  <p className="text-xs text-muted-foreground">
-                    {membershipYear === currentYear
-                      ? "Current year: members must pay this to stay active."
-                      : membershipYear > currentYear
-                        ? "Future year: optional early payment, does not affect active status."
-                        : "Past year: for members who haven't paid for previous years."}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description (optional)</Label>
-                <Textarea placeholder="Describe the purpose of this dues period..." rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Amount for employed members (GHS)</Label>
-                  <Input type="number" min={1} step="0.01" placeholder="e.g. 100" value={amountPerMember} onChange={(e) => setAmountPerMember(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Amount for pensioners (GHS)</Label>
-                  <Input type="number" min={1} step="0.01" placeholder="e.g. 50" value={pensionerAmountPerMember} onChange={(e) => setPensionerAmountPerMember(e.target.value)} />
-                  <p className="text-xs text-muted-foreground">Leave empty to use same amount as employed members.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Deadline</Label>
-                  <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Banner image (optional)</Label>
-                <ImageUpload file={bannerImage} existingUrl={existingBannerUrl} onChange={setBannerImage} onClearExisting={() => setExistingBannerUrl("")} label="Upload banner image" />
-              </div>
-
-              {manualPaymentsEnabled && (
-                <div className="space-y-2">
-                  <Label>Allow Manual Payments</Label>
-                  <div className="flex items-center gap-2">
-                    <input id="edit-manual-pay-membership" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="edit-manual-pay-membership" className="text-sm">Bank/Mobile money transfers</label>
+              <FormSection title="Details" hint="What members see when they open these dues.">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Title</Label>
+                    <Input placeholder="e.g. Dues 2026" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Dues year</Label>
+                    <Input type="number" value={membershipYear} onChange={(e) => { const y = Number(e.target.value); setMembershipYear(y); setTitle(`Dues ${y}`); }} required />
                   </div>
                 </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-2">
+                  {membershipYear === currentYear
+                    ? "Current year: members must pay this to stay active."
+                    : membershipYear > currentYear
+                      ? "Future year: optional early payment, does not affect active status."
+                      : "Past year: for members who haven't paid for previous years."}
+                </p>
+                <div className="space-y-2">
+                  <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                  <Textarea placeholder="Describe the purpose of this dues period..." rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+                </div>
+              </FormSection>
+
+              <FormSection title="Amounts and deadline">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Employed members (GHS)</Label>
+                    <Input type="number" min={1} step="0.01" placeholder="e.g. 100" value={amountPerMember} onChange={(e) => setAmountPerMember(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Pensioners (GHS)</Label>
+                    <Input type="number" min={1} step="0.01" placeholder="e.g. 50" value={pensionerAmountPerMember} onChange={(e) => setPensionerAmountPerMember(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Deadline</Label>
+                    <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
+                  </div>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground -mt-2">Leave the pensioner amount empty to charge everyone the same.</p>
+              </FormSection>
+
+              <FormSection title="Banner">
+                <ImageUpload file={bannerImage} existingUrl={existingBannerUrl} onChange={setBannerImage} onClearExisting={() => setExistingBannerUrl("")} label="Upload banner image" />
+              </FormSection>
+
+              {manualPaymentsEnabled && (
+                <FormSection title="Ways to pay">
+                  <OptionRow id="edit-manual-pay-membership" checked={allowManualPayments} onChange={setAllowManualPayments} title="Bank and mobile money transfers" hint="Members can pay offline and you confirm each payment." />
+                </FormSection>
               )}
             </>
           ) : (
-            /* ── Regular fundraiser layout ── */
             <>
-              <div className="space-y-2">
-                <Label>Fundraiser title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FormSection title="Details" hint="What members and visitors read first.">
                 <div className="space-y-2">
-                  <Label>Target amount (GHS)</Label>
-                  <Input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} required />
+                  <Label>Title</Label>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Minimum Contribution (GHS)</Label>
-                  <Input type="number" value={amountPerMember} onChange={(e) => setAmountPerMember(e.target.value)} required />
+                  <Label>Description</Label>
+                  <Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Deadline</Label>
-                  <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
-                </div>
-              </div>
+              </FormSection>
 
-              <div className="space-y-2">
+              <FormSection title="Goal and timing">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Target (GHS)</Label>
+                    <Input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Minimum gift (GHS)</Label>
+                    <Input type="number" value={amountPerMember} onChange={(e) => setAmountPerMember(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Deadline</Label>
+                    <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
+                  </div>
+                </div>
+              </FormSection>
+
+              <FormSection title="Who can see it" hint="Limit this fundraiser to certain year groups.">
                 {isSuperAdmin ? (
                   <>
-                    <div className="flex items-center justify-between">
-                      <Label>Target year groups</Label>
-                      <label className="flex items-center gap-2 text-sm font-medium">
-                        <input type="checkbox" checked={yearGroupsAll} onChange={(e) => setYearGroupsAll(e.target.checked)} className="h-4 w-4 rounded border border-muted-foreground" />
-                        All years
-                      </label>
-                    </div>
-                    {!yearGroupsAll ? (
-                      <YearGroupPicker value={yearGroups} onChange={setYearGroups} />
-                    ) : (
-                      <p className="text-xs text-muted-foreground">This fundraiser will be visible to members of all year groups.</p>
-                    )}
+                    <OptionRow id="edit-all-years" checked={yearGroupsAll} onChange={setYearGroupsAll} title="Everyone" hint="Members of every year group see this fundraiser." />
+                    {!yearGroupsAll && <YearGroupPicker value={yearGroups} onChange={setYearGroups} />}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Regular admins cannot choose year groups.</p>
+                  <p className="text-[13px] text-muted-foreground">Only super admins can choose year groups.</p>
                 )}
-              </div>
+              </FormSection>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Banner image (optional)</Label>
-                  <ImageUpload file={bannerImage} existingUrl={existingBannerUrl} onChange={setBannerImage} onClearExisting={() => setExistingBannerUrl("")} label="Upload banner image" />
-                </div>
-                <div className="space-y-2">
-                  <Label>YouTube video URL (optional)</Label>
-                  <Input type="url" placeholder="https://youtube.com/..." value={youtubeVideoUrl} onChange={(e) => setYoutubeVideoUrl(e.target.value)} />
-                  {youtubeVideoUrl && <YouTubePreview url={youtubeVideoUrl} />}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {manualPaymentsEnabled && (
+              <FormSection title="Media">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Allow Manual Payments</Label>
-                    <div className="flex items-center gap-2">
-                      <input id="edit-manual-pay-regular" type="checkbox" checked={allowManualPayments} onChange={(e) => setAllowManualPayments(e.target.checked)} className="h-4 w-4" />
-                      <label htmlFor="edit-manual-pay-regular" className="text-sm">Bank/mobile money transfers</label>
-                    </div>
+                    <Label>Banner image <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                    <ImageUpload file={bannerImage} existingUrl={existingBannerUrl} onChange={setBannerImage} onClearExisting={() => setExistingBannerUrl("")} label="Upload banner image" />
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label>Membership dues</Label>
-                  {isSuperAdmin ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <input id="edit-membership" type="checkbox" checked={isMembershipCampaign} onChange={(e) => setIsMembershipCampaign(e.target.checked)} className="h-4 w-4" />
-                        <label htmlFor="edit-membership" className="text-sm">Mark as membership dues</label>
-                      </div>
-                      {isMembershipCampaign && (
-                        <div className="flex items-center gap-2">
-                          <Label className="min-w-max">Dues Year</Label>
-                          <Input type="number" value={membershipYear} onChange={(e) => setMembershipYear(Number(e.target.value))} className="w-32" />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Only super admins can modify this.</p>
+                  <div className="space-y-2">
+                    <Label>YouTube video <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                    <Input type="url" placeholder="https://youtube.com/..." value={youtubeVideoUrl} onChange={(e) => setYoutubeVideoUrl(e.target.value)} />
+                    {youtubeVideoUrl && <YouTubePreview url={youtubeVideoUrl} />}
+                  </div>
+                </div>
+              </FormSection>
+
+              <FormSection title="Ways to give">
+                <div className="divide-y divide-border/50 -my-3">
+                  <OptionRow id="edit-allow-pledges" checked={allowPledges} onChange={setAllowPledges} title="Allow pledges" hint="Members can promise to give by a date. Pledges are not payments." />
+                  {manualPaymentsEnabled && (
+                    <OptionRow id="edit-manual-pay-regular" checked={allowManualPayments} onChange={setAllowManualPayments} title="Bank and mobile money transfers" hint="Members can pay offline and you confirm each payment." />
+                  )}
+                  {isSuperAdmin && (
+                    <OptionRow id="edit-membership" checked={isMembershipCampaign} onChange={setIsMembershipCampaign} title="Treat as membership dues" hint="Moves this to Dues, where payment keeps members active." />
                   )}
                 </div>
-              </div>
+                {isSuperAdmin && isMembershipCampaign && (
+                  <div className="flex items-center gap-3">
+                    <Label className="min-w-max">Dues year</Label>
+                    <Input type="number" value={membershipYear} onChange={(e) => setMembershipYear(Number(e.target.value))} className="w-32" />
+                  </div>
+                )}
+              </FormSection>
             </>
           )}
 
           {manualPaymentsEnabled && allowManualPayments && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="p-4 border border-border rounded-lg space-y-2">
-                <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
-                <div className="space-y-1.5"><Label>Account number</Label><Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Account name</Label><Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Bank name</Label><Input value={bankName} onChange={(e) => setBankName(e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Branch</Label><Input value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} /></div>
+            <FormSection title="Where transfers go" hint="Shown to members who choose to pay by transfer.">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <div className="space-y-3">
+                  <h4 className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Bank account</h4>
+                  <div className="space-y-1.5"><Label>Account number</Label><Input value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Account name</Label><Input value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5"><Label>Bank</Label><Input value={bankName} onChange={(e) => setBankName(e.target.value)} /></div>
+                    <div className="space-y-1.5"><Label>Branch</Label><Input value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} /></div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Mobile money</h4>
+                  <div className="space-y-1.5"><Label>Number</Label><Input type="tel" value={mobileMoneyNumber} onChange={(e) => setMobileMoneyNumber(e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Account name</Label><Input value={mobileMoneyName} onChange={(e) => setMobileMoneyName(e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={mobileMoneyProvider} onChange={(e) => setMobileMoneyProvider(e.target.value)} /></div>
+                </div>
               </div>
-              <div className="p-4 border border-border rounded-lg space-y-2">
-                <h4 className="text-sm font-black uppercase tracking-wider">Mobile Money</h4>
-                <div className="space-y-1.5"><Label>Mobile money number</Label><Input type="tel" value={mobileMoneyNumber} onChange={(e) => setMobileMoneyNumber(e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Account name</Label><Input value={mobileMoneyName} onChange={(e) => setMobileMoneyName(e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={mobileMoneyProvider} onChange={(e) => setMobileMoneyProvider(e.target.value)} /></div>
-              </div>
-            </div>
+            </FormSection>
           )}
 
-          <div className="flex gap-3 pt-2">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save fundraiser changes</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
+          <div className="flex justify-end gap-3 border-t border-border/60 pt-5">
+            <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+            <Button type="submit" isLoading={saving} loadingText="Saving">Save changes</Button>
           </div>
         </form>
       </CardContent>
     </Card>
   );
 }
+
+/** A settings group: a short label on the left, its fields on the right (stacked on phones). */
+function FormSection({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-4 border-b border-border/60 py-6 md:grid-cols-[190px_1fr] md:gap-10">
+      <div>
+        <h3 className="text-[13.5px] font-semibold">{title}</h3>
+        {hint && <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">{hint}</p>}
+      </div>
+      <div className="min-w-0 space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function OptionRow({ id, checked, onChange, title, hint }: { id: string; checked: boolean; onChange: (v: boolean) => void; title: string; hint?: string }) {
+  return (
+    <label htmlFor={id} className="flex cursor-pointer items-start gap-3 py-3">
+      <Checkbox id={id} checked={checked} onCheckedChange={(v) => onChange(v === true)} className="mt-0.5" />
+      <span>
+        <span className="block text-sm font-medium">{title}</span>
+        {hint && <span className="block text-[12.5px] leading-snug text-muted-foreground">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div>
+      <dt className="text-[12px] text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-lg font-semibold tabular-nums">{value}</dd>
+      {hint && <p className="text-[12px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
 
 function CampaignUpdatesSection({ campaignId }: { campaignId: string }) {
   const qc = useQueryClient();

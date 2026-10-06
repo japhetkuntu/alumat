@@ -15,6 +15,8 @@ public class CreateCampaignRequest
     public string? YoutubeVideoUrl { get; set; }
 
     public bool AllowManualPayments { get; set; } = false;
+    /// <summary>Lets members pledge to this fundraiser. Ignored for membership campaigns.</summary>
+    public bool AllowPledges { get; set; } = false;
     public bool IsMembershipCampaign { get; set; } = false;
     public int? MembershipYear { get; set; }
 
@@ -44,6 +46,8 @@ public class UpdateCampaignRequest
     public string? YoutubeVideoUrl { get; set; }
 
     public bool AllowManualPayments { get; set; } = false;
+    /// <summary>Lets members pledge to this fundraiser. Null leaves the current setting alone. Ignored for membership campaigns.</summary>
+    public bool? AllowPledges { get; set; }
     public bool IsMembershipCampaign { get; set; } = false;
     public int? MembershipYear { get; set; }
 
@@ -62,4 +66,17 @@ public class CreateCampaignUpdateRequest
 {
     public string Body { get; set; } = "";
     public IFormFile? Image { get; set; }
+}
+
+public class UpdateCampaignPublicPageRequest
+{
+    public bool IsPublished { get; set; }
+    /// <summary>"OptedIn" (only givers who ticked show-my-name) or "Everyone".</summary>
+    public string NamePolicy { get; set; } = "OptedIn";
+    public bool ShowTotalRaised { get; set; } = true;
+    public bool ShowTarget { get; set; } = true;
+    public bool ShowProgress { get; set; } = true;
+    public bool ShowContributorCount { get; set; } = true;
+    public bool ShowDeadline { get; set; } = true;
+    public string? Message { get; set; }
 }

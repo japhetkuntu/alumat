@@ -174,6 +174,8 @@ export interface Campaign {
   bannerImageUrl?: string;
   youtubeVideoUrl?: string;
   allowManualPayments: boolean;
+  /** Whether this fundraiser takes pledges; the pledge card is shown only when it does. */
+  allowPledges?: boolean;
   bankAccount?: {
     accountNumber: string;
     accountName: string;

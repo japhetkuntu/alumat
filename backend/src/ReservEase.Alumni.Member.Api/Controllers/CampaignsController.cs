@@ -60,6 +60,17 @@ public class CampaignsController(ICampaignService campaignService) : DefaultCont
     }
 
     [AllowAnonymous]
+    [HttpGet("{campaignId}/public-page")]
+    [SwaggerOperation(Summary = "Get a published fundraiser's public page", Description = "Names and admin-chosen totals only — 404 unless an admin has published it")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicFundraiserDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetPublicFundraiser(string campaignId)
+    {
+        var result = await campaignService.GetPublicFundraiserAsync(campaignId);
+        return result.ToActionResult();
+    }
+
+    [AllowAnonymous]
     [HttpGet("{campaignId}/wall-of-support")]
     [SwaggerOperation(Summary = "Get wall of support", Description = "Names of givers who opted in to be shown — never amounts")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<WallOfSupportEntryDto>>))]

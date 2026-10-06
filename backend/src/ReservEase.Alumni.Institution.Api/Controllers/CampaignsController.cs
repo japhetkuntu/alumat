@@ -121,6 +121,18 @@ public class CampaignsController(ICampaignService campaignService) : DefaultCont
         var result = await campaignService.ActivateCampaignAsync(campaignId, admin);
         return result.ToActionResult();
     }
+
+    [HttpPut("{campaignId}/public-page")]
+    [SwaggerOperation(Summary = "Publish, unpublish or configure the fundraiser's public page")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<CampaignDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdatePublicPage(string campaignId, [FromBody] UpdateCampaignPublicPageRequest request)
+    {
+        var admin = User.GetAccount();
+        var result = await campaignService.UpdatePublicPageAsync(campaignId, request, admin);
+        return result.ToActionResult();
+    }
+
     [HttpGet("{campaignId}/paystack-summary")]
     [SwaggerOperation(Summary = "Get campaign paystack contribution summary")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PaystackDisbursementSummaryDto>))]

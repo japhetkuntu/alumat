@@ -234,6 +234,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Campaign>().Property(c => c.YearGroups).HasColumnType("integer[]");
         modelBuilder.Entity<Campaign>().Property(c => c.BankAccount).HasColumnType("jsonb").HasConversion(new JsonbConverter<ManualPaymentBankAccount>(jsonOpts));
         modelBuilder.Entity<Campaign>().Property(c => c.MobileMoneyAccount).HasColumnType("jsonb").HasConversion(new JsonbConverter<ManualPaymentMobileMoneyAccount>(jsonOpts));
+        modelBuilder.Entity<Campaign>().Property(c => c.PublicPage).HasColumnType("jsonb").HasConversion(new JsonbConverter<CampaignPublicPage>(jsonOpts));
 
         modelBuilder.Entity<AlumniEvent>().Property(e => e.YearGroups).HasColumnType("integer[]");
         modelBuilder.Entity<InstitutionStaff>().Property(a => a.YearGroups).HasColumnType("integer[]");

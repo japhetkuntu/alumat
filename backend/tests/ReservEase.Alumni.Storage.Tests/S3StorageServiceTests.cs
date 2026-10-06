@@ -79,3 +79,60 @@ public class S3StorageServiceTests
         Assert.IsType<S3StorageService>(scope.ServiceProvider.GetRequiredService<IStorageService>());
     }
 }
+
+public class PrivateFileLookupTests
+{
+    private sealed class FakeBucket(Action<StorageConfig>? configure, params string[] keys) : S3StorageService(Build(configure))
+    {
+        public List<string> Asked { get; } = new();
+
+        private static IOptions<StorageConfig> Build(Action<StorageConfig>? configure)
+        {
+            var config = new StorageConfig { BucketName = "bucket" };
+            configure?.Invoke(config);
+            return Options.Create(config);
+        }
+
+        protected override Task<Stream> ReadObjectAsync(string fullKey)
+        {
+            Asked.Add(fullKey);
+            if (keys.Contains(fullKey)) return Task.FromResult<Stream>(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(fullKey)));
+            throw new Amazon.S3.AmazonS3Exception("missing", Amazon.Runtime.ErrorType.Sender, "NoSuchKey", "req", System.Net.HttpStatusCode.NotFound);
+        }
+    }
+
+    private static string Read(Stream s) => new StreamReader(s).ReadToEnd();
+
+    [Fact]
+    public async Task A_file_under_the_root_folder_is_found_there_first()
+    {
+        var bucket = new FakeBucket(c => c.RootFolder = "alumunion", "alumunion/reports/a.xlsx", "reports/a.xlsx");
+        Assert.Equal("alumunion/reports/a.xlsx", Read(await bucket.OpenPrivateFileAsync("reports/a.xlsx")));
+        Assert.Equal(new[] { "alumunion/reports/a.xlsx" }, bucket.Asked);
+    }
+
+    [Fact]
+    public async Task A_file_written_without_the_root_folder_is_still_found_at_the_bucket_root()
+    {
+        var bucket = new FakeBucket(c => c.RootFolder = "alumunion", "reports/a.xlsx");
+        Assert.Equal("reports/a.xlsx", Read(await bucket.OpenPrivateFileAsync("reports/a.xlsx")));
+        Assert.Equal(new[] { "alumunion/reports/a.xlsx", "reports/a.xlsx" }, bucket.Asked);
+    }
+
+    [Fact]
+    public async Task A_file_in_neither_place_is_reported_missing()
+    {
+        var bucket = new FakeBucket(c => c.RootFolder = "alumunion");
+        var ex = await Assert.ThrowsAsync<Amazon.S3.AmazonS3Exception>(() => bucket.OpenPrivateFileAsync("reports/a.xlsx"));
+        Assert.Equal("NoSuchKey", ex.ErrorCode);
+        Assert.Equal(2, bucket.Asked.Count);
+    }
+
+    [Fact]
+    public async Task Without_a_root_folder_there_is_only_one_place_to_look()
+    {
+        var bucket = new FakeBucket(null);
+        await Assert.ThrowsAsync<Amazon.S3.AmazonS3Exception>(() => bucket.OpenPrivateFileAsync("reports/a.xlsx"));
+        Assert.Equal(new[] { "reports/a.xlsx" }, bucket.Asked);
+    }
+}

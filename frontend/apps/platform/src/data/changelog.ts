@@ -20,6 +20,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-06",
+    title: "Public thank-you page for a fundraiser",
+    body: "Administrators can publish a shareable page for any institution-wide fundraiser from its \"Public page\" section, and take it down at any time. It is branded with the institution's colours and logo, lists the people who gave, and never shows what any one person gave. Per fundraiser, administrators choose whether to list only givers who ticked \"show my name\" or everyone who gave, which totals appear (contributed, target, progress, number of contributors, closing date), and an optional thank-you note. While the fundraiser is open the page carries a quiet Give button and an invitation to join or sign in, with a short note about AlumUnion at the foot. Unpublished fundraisers, membership dues and community fundraisers return not-found.",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+  },
+  {
+    date: "2026-10-06",
+    title: "Pledges are switched on per fundraiser",
+    body: "Pledging used to be open on every fundraiser. Administrators now choose, for each fundraiser, whether members can pledge, from \"Allow pledges\" when creating or editing it. It is off by default, and never applies to membership dues. Members only see \"Pledge for later\" on fundraisers that have it on. Fundraisers that already had pledges keep it on, and turning it off later never removes pledges members have already made: they can still see and cancel them, and reminders carry on.",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-06",
+    title: "Institution notifications open to show their full text",
+    body: "Clicking a notification in the institution portal's bell or on the Notifications page now opens its full text and marks it read, as in the member portal. Notifications that point to a page show a separate View link instead of taking you away before you can read them.",
+    scopes: ["Institution"],
+    type: "Fix",
+  },
+  {
     date: "2026-10-04",
     title: "Fixes found while adding backend tests",
     body: "Members who are banned, blocked, suspended or deleted can no longer keep their signed-in session alive by refreshing it. Membership streak badges can now actually be earned, and referrals that go on to pay dues keep counting towards the Referrer and Super Referrer badges. Events with a capacity now stop taking RSVPs when full, and cancelled or completed events take none. Signing in with a malformed Google token now gives a clean error instead of a server error. Files attached to a service request are only uploaded once the whole form is valid. Payments from institutions without a Paystack subaccount no longer record a negative platform revenue. Deleting an account now also removes the member's name and email from forum threads and posts, class notes and referrals, and takes back their class note likes. Welcome and notification emails, spotlight alerts and badge descriptions no longer say \"alumni\" where the organisation is a general community.",

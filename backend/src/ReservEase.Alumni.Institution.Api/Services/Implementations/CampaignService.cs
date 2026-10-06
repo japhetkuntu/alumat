@@ -150,6 +150,7 @@ public class CampaignService(
                 YearGroups = resolvedYearGroups,
                 YoutubeVideoUrl = request.YoutubeVideoUrl,
                 AllowManualPayments = request.AllowManualPayments,
+                AllowPledges = request.AllowPledges && !request.IsMembershipCampaign,
                 IsMembershipCampaign = request.IsMembershipCampaign,
                 MembershipYear = request.MembershipYear,
                 CreatedBy = admin.Id,
@@ -262,6 +263,8 @@ public class CampaignService(
             campaign.YearGroups = updatedYearGroups;
             campaign.YoutubeVideoUrl = request.YoutubeVideoUrl;
             campaign.AllowManualPayments = request.AllowManualPayments;
+            if (request.AllowPledges.HasValue || campaign.IsMembershipCampaign)
+                campaign.AllowPledges = request.AllowPledges == true && !campaign.IsMembershipCampaign;
 
             if (!string.IsNullOrWhiteSpace(request.BankAccountNumber) && !string.IsNullOrWhiteSpace(request.BankAccountName) && !string.IsNullOrWhiteSpace(request.BankName))
             {
@@ -453,6 +456,53 @@ public class CampaignService(
         {
             logger.LogError(e, "Error activating campaign {CampaignId}", campaignId);
             return ApiResponseExtensions.ToServerErrorApiResponse<CampaignDto>("Failed to activate campaign");
+        }
+    }
+
+    public async Task<IApiResponse<CampaignDto>> UpdatePublicPageAsync(string campaignId, UpdateCampaignPublicPageRequest request, AuthData admin)
+    {
+        try
+        {
+            logger.LogInformation("UpdatePublicPage request for campaignId: {CampaignId} (admin: {AdminId})", campaignId, admin.Id);
+
+            var campaign = await campaignRepo.GetByIdAsync(campaignId);
+            if (campaign is null || !admin.CanModifyScopedItem(campaign.YearGroups, campaign.CreatedBy, campaign.CommunityId))
+                return ApiResponseExtensions.ToNotFoundApiResponse<CampaignDto>("Campaign not found");
+
+            // Membership dues and community-private fundraisers are never public.
+            if (request.IsPublished && (campaign.IsMembershipCampaign || campaign.CommunityId is not null))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Only institution-wide fundraisers can have a public page.");
+
+            if (!PublicNamePolicy.IsValid(request.NamePolicy))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("Choose whether to show opted-in givers or everyone who gave.");
+
+            var message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim();
+            if (message is { Length: > 400 })
+                return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>("The note can be at most 400 characters.");
+
+            var wasPublished = campaign.PublicPage?.IsPublished ?? false;
+            campaign.PublicPage = new CampaignPublicPage
+            {
+                IsPublished = request.IsPublished,
+                // Keep the original date through edits; a fresh publish after an unpublish restarts it.
+                PublishedAt = request.IsPublished ? (wasPublished ? campaign.PublicPage!.PublishedAt : DateTime.UtcNow) : campaign.PublicPage?.PublishedAt,
+                NamePolicy = request.NamePolicy,
+                ShowTotalRaised = request.ShowTotalRaised,
+                ShowTarget = request.ShowTarget,
+                ShowProgress = request.ShowProgress,
+                ShowContributorCount = request.ShowContributorCount,
+                ShowDeadline = request.ShowDeadline,
+                Message = message,
+            };
+            campaign.UpdatedAt = DateTime.UtcNow;
+            await campaignRepo.UpdateAsync(campaign);
+
+            return campaign.ToDto().ToOkApiResponse(request.IsPublished ? "Public page published" : "Public page saved");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating public page for campaign {CampaignId}", campaignId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<CampaignDto>("Failed to update the public page");
         }
     }
 

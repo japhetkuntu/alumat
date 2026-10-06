@@ -171,6 +171,19 @@ export interface UpdateInstitutionStaffRequest {
 
 export type CampaignStatus = "Draft" | "Active" | "Closed" | "Completed" | "Archived";
 
+export interface CampaignPublicPage {
+  isPublished: boolean;
+  publishedAt?: string | null;
+  /** "OptedIn" = only givers who ticked show-my-name; "Everyone" = every confirmed giver. */
+  namePolicy: "OptedIn" | "Everyone";
+  showTotalRaised: boolean;
+  showTarget: boolean;
+  showProgress: boolean;
+  showContributorCount: boolean;
+  showDeadline: boolean;
+  message?: string | null;
+}
+
 export interface Campaign {
   id: string;
   communityId?: string | null;
@@ -193,6 +206,10 @@ export interface Campaign {
   bannerImageUrl?: string;
   youtubeVideoUrl?: string;
   allowManualPayments: boolean;
+  /** Members can pledge to this fundraiser. Off unless an administrator turns it on. */
+  allowPledges: boolean;
+  /** Settings for the fundraiser's public, shareable page. */
+  publicPage?: CampaignPublicPage;
   membershipYear?: number;
   bankAccount?: {
     accountNumber: string;

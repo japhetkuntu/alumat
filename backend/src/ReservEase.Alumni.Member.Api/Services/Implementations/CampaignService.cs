@@ -211,4 +211,65 @@ public class CampaignService(
             return ApiResponseExtensions.ToServerErrorApiResponse<List<WallOfSupportEntryDto>>("Failed to retrieve wall of support");
         }
     }
+
+    /// <summary>
+    /// The anonymous, shareable page for a fundraiser an admin has published. 404 whenever it isn't published
+    /// (or isn't an institution-wide fundraiser) so the existence of unpublished fundraisers never leaks.
+    /// Only names and the aggregates the admin chose to show leave this method — never any individual amount.
+    /// </summary>
+    public async Task<IApiResponse<PublicFundraiserDto>> GetPublicFundraiserAsync(string campaignId)
+    {
+        try
+        {
+            var campaign = await campaignRepo.GetOneAsync(c => c.Id == campaignId);
+            var page = campaign?.PublicPage;
+            if (campaign is null || page is not { IsPublished: true }
+                || campaign.IsMembershipCampaign || campaign.CommunityId is not null
+                || campaign.Status == CampaignStatus.Archived)
+                return ApiResponseExtensions.ToNotFoundApiResponse<PublicFundraiserDto>("This fundraiser page isn't available.");
+
+            var successful = (await contributionRepo.GetAllAsync(c => c.CampaignId == campaignId && c.Status == "Successful")).ToList();
+            var named = (page.NamePolicy == PublicNamePolicy.Everyone ? successful : successful.Where(c => c.ShowOnWallOfSupport))
+                .Where(c => c.Member is not null)
+                .ToList();
+
+            var ids = named.Select(c => c.MemberId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+            var live = (await memberRepo.GetAllAsync(m => ids.Contains(m.Id))).ToDictionary(m => m.Id);
+
+            // One entry per person, oldest giver first so the page reads as the order people showed up.
+            var names = named
+                .OrderBy(c => c.ConfirmedAt ?? c.CreatedAt)
+                .Select(c => (Key: string.IsNullOrEmpty(c.MemberId) ? $"{c.Member!.FirstName} {c.Member.LastName}" : c.MemberId,
+                              Name: (live.TryGetValue(c.MemberId, out var m) ? $"{m.FirstName} {m.LastName}" : $"{c.Member!.FirstName} {c.Member.LastName}").Trim()))
+                .Where(x => x.Name.Length > 0)
+                .DistinctBy(x => x.Key)
+                .Select(x => x.Name)
+                .ToList();
+
+            var raised = successful.Sum(c => c.Amount);
+            var dto = new PublicFundraiserDto
+            {
+                Id = campaign.Id,
+                Title = campaign.Title,
+                Description = campaign.Description,
+                BannerImageUrl = campaign.BannerImageUrl,
+                YoutubeVideoUrl = campaign.YoutubeVideoUrl,
+                Message = page.Message,
+                IsOpenForGiving = campaign.Status == CampaignStatus.Active && campaign.Deadline >= DateTime.UtcNow,
+                TotalRaised = page.ShowTotalRaised ? raised : null,
+                TargetAmount = page.ShowTarget ? campaign.TargetAmount : null,
+                ProgressPercent = page.ShowProgress && campaign.TargetAmount > 0
+                    ? (int)Math.Min(100, Math.Floor(raised / campaign.TargetAmount * 100)) : null,
+                ContributorCount = page.ShowContributorCount ? successful.Select(c => string.IsNullOrEmpty(c.MemberId) ? c.Id : c.MemberId).Distinct().Count() : null,
+                Deadline = page.ShowDeadline ? campaign.Deadline : null,
+                Contributors = names,
+            };
+            return dto.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving public fundraiser {CampaignId}", campaignId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<PublicFundraiserDto>("Failed to load this fundraiser page");
+        }
+    }
 }

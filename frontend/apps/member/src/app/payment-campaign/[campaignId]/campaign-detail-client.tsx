@@ -473,7 +473,7 @@ export default function PublicCampaignContributionPage() {
                     </Button>
 
                     {isMember && !isMembershipFixed && (
-                      <PledgeCard campaignId={campaign.id} campaignTitle={campaign.title} closesOn={campaign.deadline} />
+                      <PledgeCard campaignId={campaign.id} campaignTitle={campaign.title} closesOn={campaign.deadline} allowNew={!!campaign.allowPledges} />
                     )}
 
                     {/* Sign-in nudge */}

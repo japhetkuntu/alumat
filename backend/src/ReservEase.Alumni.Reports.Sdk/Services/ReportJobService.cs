@@ -144,7 +144,7 @@ public class ReportJobService(
         {
             // Marked ready, but the file is not where this process looks: it was cleaned up, or the worker that wrote it
             // and this API are not using the same bucket. Either way the person is told to ask again, and the log says why.
-            logger.LogWarning(e, "Report job {ReportJobId} is ready but its file {FileKey} was not found in storage", job.Id, job.FileKey);
+            logger.LogWarning(e, "Report job {ReportJobId} is ready but its file {FileKey} was not found in storage (S3 status {Status}, code {ErrorCode})", job.Id, job.FileKey, (int)e.StatusCode, e.ErrorCode ?? "none");
             return null;
         }
         catch (Exception e)

@@ -5,6 +5,7 @@ import type {
   PagedResult,
   Member,
   Campaign,
+  CampaignPublicPage,
   Contribution,
   PaystackDisbursementSummary,
   ReportSummary,
@@ -549,6 +550,7 @@ export interface CreateCampaignBody {
   bannerImage?: File;
   youtubeVideoUrl?: string;
   allowManualPayments?: boolean;
+  allowPledges?: boolean;
   bankAccountNumber?: string;
   bankAccountName?: string;
   bankName?: string;
@@ -580,6 +582,7 @@ export interface UpdateCampaignBody {
   bannerImage?: File;
   youtubeVideoUrl?: string;
   allowManualPayments?: boolean;
+  allowPledges?: boolean;
   bankAccountNumber?: string;
   bankAccountName?: string;
   bankName?: string;
@@ -615,6 +618,11 @@ export async function unarchiveCampaign(id: string) {
 
 export async function activateCampaign(id: string) {
   const res = await institutionClient.put<ApiResponse<Campaign>>(`/campaigns/${id}/activate`);
+  return res.data.data!;
+}
+
+export async function updateCampaignPublicPage(id: string, body: CampaignPublicPage) {
+  const res = await institutionClient.put<ApiResponse<Campaign>>(`/campaigns/${id}/public-page`, body);
   return res.data.data!;
 }
 

@@ -128,8 +128,26 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
 
     public async Task<Stream> OpenPrivateFileAsync(string key)
     {
+        try
+        {
+            return await ReadObjectAsync(PrivateKey(key));
+        }
+        catch (AmazonS3Exception e) when (IsMissing(e) && !string.IsNullOrEmpty(_settings.RootFolder))
+        {
+            // A process writing with no RootFolder (a worker whose env file lacks it) leaves the file at the bucket root, while
+            // the APIs look under the root folder. Look in the other place too, so a mismatch like that never strands a report.
+            return await ReadObjectAsync(key);
+        }
+    }
+
+    private static bool IsMissing(AmazonS3Exception e) =>
+        e.StatusCode == System.Net.HttpStatusCode.NotFound || e.ErrorCode is "NoSuchKey";
+
+    /// <summary>Reads one object by its full key into a self-deleting temp file. Separate so tests can stand in for the bucket.</summary>
+    protected virtual async Task<Stream> ReadObjectAsync(string fullKey)
+    {
         using var client = CreateClient();
-        using var response = await client.GetObjectAsync(_settings.BucketName, PrivateKey(key));
+        using var response = await client.GetObjectAsync(_settings.BucketName, fullKey);
         // Spooled to a self-deleting temp file: the S3 response stream dies with the client above,
         // and a report can be too large to hold in memory for the length of a slow download.
         var spool = new FileStream(Path.GetTempFileName(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.DeleteOnClose | FileOptions.Asynchronous);

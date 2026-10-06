@@ -51,6 +51,7 @@ interface FormState {
   existingBannerUrl: string;
   youtubeVideoUrl: string;
   allowManualPayments: boolean;
+  allowPledges: boolean;
   bankAccountNumber: string;
   bankAccountName: string;
   bankName: string;
@@ -65,6 +66,7 @@ const emptyForm: FormState = {
   audienceMode: "everyone", yearGroups: [],
   bannerImage: null, existingBannerUrl: "", youtubeVideoUrl: "",
   allowManualPayments: false,
+  allowPledges: false,
   bankAccountNumber: "",
   bankAccountName: "",
   bankName: "",
@@ -141,6 +143,14 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label className="inline-flex items-center gap-1.5">Allow pledges<InfoTip text="Let members promise to give by a date. A pledge moves no money and is never counted in the total raised. You see the pledges, and members get gentle reminders." /></Label>
+            <div className="flex items-center gap-2">
+              <input id="allow-pledges" type="checkbox" checked={form.allowPledges} onChange={(e) => f("allowPledges", e.target.checked)} className="h-4 w-4" />
+              <label htmlFor="allow-pledges" className="text-sm">Members can pledge to this fundraiser</label>
+            </div>
+          </div>
+
           {manualPaymentsEnabled && (
             <div className="space-y-2">
               <Label className="inline-flex items-center gap-1.5">Allow Manual Payments<InfoTip text="Let members pay by bank or mobile money outside the card checkout." /></Label>
@@ -210,6 +220,7 @@ export default function AdminCampaignsPage() {
       bannerImage: f.bannerImage || undefined,
       youtubeVideoUrl: f.youtubeVideoUrl || undefined,
       allowManualPayments: f.allowManualPayments,
+      allowPledges: f.allowPledges,
       bankAccountNumber: f.bankAccountNumber || undefined,
       bankAccountName: f.bankAccountName || undefined,
       bankName: f.bankName || undefined,
@@ -230,6 +241,7 @@ export default function AdminCampaignsPage() {
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined, youtubeVideoUrl: f.youtubeVideoUrl || undefined,
       allowManualPayments: f.allowManualPayments,
+      allowPledges: f.allowPledges,
       bankAccountNumber: f.bankAccountNumber || undefined,
       bankAccountName: f.bankAccountName || undefined,
       bankName: f.bankName || undefined,
@@ -307,6 +319,7 @@ export default function AdminCampaignsPage() {
             existingBannerUrl: editCampaign.bannerImageUrl ?? "",
             youtubeVideoUrl: editCampaign.youtubeVideoUrl ?? "",
             allowManualPayments: editCampaign.allowManualPayments,
+            allowPledges: editCampaign.allowPledges ?? false,
             bankAccountNumber: editCampaign.bankAccount?.accountNumber ?? "",
             bankAccountName: editCampaign.bankAccount?.accountName ?? "",
             bankName: editCampaign.bankAccount?.bankName ?? "",

@@ -10,4 +10,5 @@ public interface ICampaignService
     Task<IApiResponse<CampaignDto?>> GetCurrentMembershipCampaignAsync();
     Task<IApiResponse<List<CampaignUpdateDto>>> GetUpdatesAsync(string campaignId);
     Task<IApiResponse<List<WallOfSupportEntryDto>>> GetWallOfSupportAsync(string campaignId);
+    Task<IApiResponse<PublicFundraiserDto>> GetPublicFundraiserAsync(string campaignId);
 }

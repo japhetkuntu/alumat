@@ -94,6 +94,19 @@ public static class EntityDtoExtensions
         BannerImageUrl = c.BannerImageUrl,
         YoutubeVideoUrl = c.YoutubeVideoUrl,
         AllowManualPayments = c.AllowManualPayments,
+        AllowPledges = c.AllowPledges,
+        PublicPage = new CampaignPublicPageSettingsDto
+        {
+            IsPublished = c.PublicPage?.IsPublished ?? false,
+            PublishedAt = c.PublicPage?.PublishedAt,
+            NamePolicy = c.PublicPage?.NamePolicy ?? PublicNamePolicy.OptedIn,
+            ShowTotalRaised = c.PublicPage?.ShowTotalRaised ?? true,
+            ShowTarget = c.PublicPage?.ShowTarget ?? true,
+            ShowProgress = c.PublicPage?.ShowProgress ?? true,
+            ShowContributorCount = c.PublicPage?.ShowContributorCount ?? true,
+            ShowDeadline = c.PublicPage?.ShowDeadline ?? true,
+            Message = c.PublicPage?.Message,
+        },
         BankAccount = c.BankAccount != null ? new ManualPaymentBankAccountDto
         {
             AccountNumber = c.BankAccount.AccountNumber,

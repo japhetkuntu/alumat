@@ -98,6 +98,8 @@ public class CampaignDto
     public DateTime? PaystackDisbursedAt { get; set; }
     public string? PaystackDisbursedBy { get; set; }
     public bool AllowManualPayments { get; set; }
+    public bool AllowPledges { get; set; }
+    public CampaignPublicPageSettingsDto PublicPage { get; set; } = new();
     public bool IsMembershipCampaign { get; set; }
     public int? MembershipYear { get; set; }
     public int? TotalEligibleMembers { get; set; }
@@ -395,6 +397,41 @@ public class CampaignUpdateDto
     public string? ImageUrl { get; set; }
     public string? PostedByName { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>An institution admin's settings for a fundraiser's public page.</summary>
+public class CampaignPublicPageSettingsDto
+{
+    public bool IsPublished { get; set; }
+    public DateTime? PublishedAt { get; set; }
+    public string NamePolicy { get; set; } = "OptedIn";
+    public bool ShowTotalRaised { get; set; } = true;
+    public bool ShowTarget { get; set; } = true;
+    public bool ShowProgress { get; set; } = true;
+    public bool ShowContributorCount { get; set; } = true;
+    public bool ShowDeadline { get; set; } = true;
+    public string? Message { get; set; }
+}
+
+/// <summary>
+/// What an anonymous visitor sees on a published fundraiser page. Deliberately has no per-person amount
+/// and every aggregate is null unless the admin chose to show it.
+/// </summary>
+public class PublicFundraiserDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? BannerImageUrl { get; set; }
+    public string? YoutubeVideoUrl { get; set; }
+    public string? Message { get; set; }
+    public bool IsOpenForGiving { get; set; }
+    public decimal? TotalRaised { get; set; }
+    public decimal? TargetAmount { get; set; }
+    public int? ProgressPercent { get; set; }
+    public int? ContributorCount { get; set; }
+    public DateTime? Deadline { get; set; }
+    public List<string> Contributors { get; set; } = new();
 }
 
 /// <summary>One name-only entry on a campaign's public Wall of support — never carries an amount.</summary>

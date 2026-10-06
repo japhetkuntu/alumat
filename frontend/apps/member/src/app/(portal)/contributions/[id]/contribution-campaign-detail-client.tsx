@@ -556,7 +556,7 @@ export default function CampaignDetailPage() {
               )}
 
               {!isMembership && isActive && (
-                <PledgeCard campaignId={id} campaignTitle={campaign.title} closesOn={campaign.deadline} />
+                <PledgeCard campaignId={id} campaignTitle={campaign.title} closesOn={campaign.deadline} allowNew={!!campaign.allowPledges} />
               )}
 
               {!isActive && (

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, Loader2, X } from "@alumni/ui";
+import { Bell, Check, CheckCheck, ChevronRight, Loader2, X } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
@@ -76,24 +76,20 @@ function NotificationRow({
   const [expanded, setExpanded] = useState(false);
   const path = toNotificationPath(notif.actionUrl);
 
+  // Clicking a notification always opens its full text (and marks it read). A notification that points somewhere
+  // gets a separate "View" link once it is open, instead of the whole row jumping to another page.
   const toggle = () => {
-    if (path) return;
     setExpanded((v) => !v);
     if (!notif.isRead) onMarkRead(notif.id);
   };
 
-  const inner = (
+  return (
     <div
-      role={path ? undefined : "button"}
-      tabIndex={path ? undefined : 0}
-      onClick={() => {
-        toggle();
-        if (path) {
-          if (!notif.isRead) onMarkRead(notif.id);
-          onNavigate();
-        }
-      }}
-      onKeyDown={(e) => { if (!path && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      onClick={toggle}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       className={cn(
         "flex gap-3 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
         !notif.isRead && "bg-accent/5"
@@ -111,27 +107,35 @@ function NotificationRow({
         <p className={cn("text-[13px] leading-snug", !notif.isRead && "font-semibold")}>
           {notif.title}
         </p>
-        <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5", !expanded && "line-clamp-2")}>
+        <p className={cn("text-[12px] text-muted-foreground leading-snug mt-0.5 whitespace-pre-line break-words", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
-        <p className="text-[12px] text-muted-foreground/60 mt-1">
-          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
-        </p>
+        <div className="flex items-center gap-3 mt-1">
+          <p className="text-[12px] text-muted-foreground/60">
+            {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+          </p>
+          {expanded && path && (
+            <Link
+              href={path}
+              onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+              className="text-[12px] font-semibold text-accent hover:underline inline-flex items-center gap-0.5"
+            >
+              View <ChevronRight size={11} />
+            </Link>
+          )}
+        </div>
       </div>
       {!notif.isRead && (
         <button
           onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
-          className="opacity-0 group-hover:opacity-100 shrink-0 mt-1 p-1 rounded hover:bg-accent/10 text-accent transition-all"
+          className="shrink-0 mt-0.5 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-accent/10 text-accent transition-all sm:opacity-0 sm:group-hover:opacity-100"
           aria-label="Mark as read"
         >
-          <Check size={12} />
+          <Check size={13} />
         </button>
       )}
     </div>
   );
-
-  if (path) return <Link href={path}>{inner}</Link>;
-  return inner;
 }
 
 export function NotificationPanel() {

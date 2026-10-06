@@ -18,8 +18,11 @@ function toDateInput(d: Date) {
  * "Give later" for a fundraiser: promise an amount by a date, get gentle reminders, pay whenever ready. Shows the
  * member's own open pledge if they have one. Nothing here is visible to other members; only the institution's
  * administrators see pledges.
+ *
+ * Pledging is switched on per fundraiser by its administrators. When it is off ({@link allowNew} false) nobody can start
+ * a pledge, but a member who already has one still sees it here and can cancel it.
  */
-export function PledgeCard({ campaignId, campaignTitle, closesOn }: { campaignId: string; campaignTitle: string; closesOn?: string }) {
+export function PledgeCard({ campaignId, campaignTitle, closesOn, allowNew }: { campaignId: string; campaignTitle: string; closesOn?: string; allowNew: boolean }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -75,6 +78,8 @@ export function PledgeCard({ campaignId, campaignTitle, closesOn }: { campaignId
       </div>
     );
   }
+
+  if (!allowNew) return null;
 
   return (
     <>

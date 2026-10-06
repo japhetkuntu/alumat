@@ -76,6 +76,9 @@ public class PledgesController(
             return ApiResponseExtensions.ToNotFoundApiResponse<object>("Fundraiser not found").ToActionResult();
         if (campaign.Status != CampaignStatus.Active)
             return ApiResponseExtensions.ToBadRequestApiResponse<object>("This fundraiser is no longer accepting contributions.").ToActionResult();
+        // Pledging is something an administrator turns on for each fundraiser; it is off by default.
+        if (!campaign.AllowPledges)
+            return ApiResponseExtensions.ToBadRequestApiResponse<object>("This fundraiser isn't taking pledges.").ToActionResult();
 
         // One open pledge per fundraiser keeps the admin's list and the reminders unambiguous. Cancel it first to change it.
         var existing = await pledgeRepo.GetOneAsync(p => p.MemberId == member.Id && p.CampaignId == campaign.Id && p.Status == PledgeStatuses.Open);

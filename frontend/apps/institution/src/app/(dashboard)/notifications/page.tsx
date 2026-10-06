@@ -50,24 +50,22 @@ function NotifRow({
   const [expanded, setExpanded] = useState(false);
   const meta = TYPE_META[notif.type] ?? { label: "Notification" };
 
-  // A notification with a real destination navigates there on click; one
-  // without a destination expands its full body in place instead of being
-  // permanently clipped to two lines.
+  // Clicking a row always opens its full text (and marks it read). A notification with a destination gets a
+  // separate "View" link once open, rather than the whole row jumping to another page.
   const toggle = () => {
-    if (notif.actionUrl) return;
     setExpanded((v) => !v);
     if (!notif.isRead) onMarkRead(notif.id);
   };
 
-  const content = (
+  return (
     <div
-      role={notif.actionUrl ? undefined : "button"}
-      tabIndex={notif.actionUrl ? undefined : 0}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
       onClick={toggle}
-      onKeyDown={(e) => { if (!notif.actionUrl && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } }}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }}
       className={cn(
-        "group flex items-start gap-4 px-4 sm:px-6 py-4 transition-colors border-b border-border/30 last:border-0",
-        !notif.actionUrl && "cursor-pointer",
+        "group flex items-start gap-4 px-4 sm:px-6 py-4 transition-colors border-b border-border/30 last:border-0 cursor-pointer",
         !notif.isRead ? "bg-primary/[0.03] hover:bg-primary/[0.06]" : "hover:bg-muted/40",
       )}
     >
@@ -90,9 +88,18 @@ function NotifRow({
         <p className={cn("text-[14px] leading-snug mt-1", !notif.isRead && "font-semibold text-foreground")}>
           {notif.title}
         </p>
-        <p className={cn("text-[13px] text-muted-foreground leading-relaxed mt-0.5", !expanded && "line-clamp-2")}>
+        <p className={cn("text-[13px] text-muted-foreground leading-relaxed mt-0.5 whitespace-pre-line break-words", !expanded && "line-clamp-2")}>
           {notif.body}
         </p>
+        {expanded && notif.actionUrl && (
+          <Link
+            href={notif.actionUrl}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 inline-flex items-center gap-0.5 text-[13px] font-semibold text-primary hover:underline"
+          >
+            View <ChevronRight size={13} />
+          </Link>
+        )}
       </div>
 
       {!notif.isRead && (
@@ -105,16 +112,8 @@ function NotifRow({
           <Check size={14} />
         </button>
       )}
-      {notif.actionUrl && (
-        <ChevronRight size={16} className="shrink-0 text-muted-foreground/30 mt-0.5 group-hover:text-muted-foreground transition-colors" />
-      )}
     </div>
   );
-
-  if (notif.actionUrl) {
-    return <Link href={notif.actionUrl}>{content}</Link>;
-  }
-  return content;
 }
 
 const FILTER_TABS = ["All", "Unread", "Payments"];
