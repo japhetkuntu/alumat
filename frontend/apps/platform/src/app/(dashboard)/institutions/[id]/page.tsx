@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@alumni/ui";
 import { useRef, useState } from "react";
 import { EmptyState } from "@alumni/ui";
 import Link from "next/link";
@@ -80,7 +81,7 @@ function ImageUrlField({ label, hint, value, onChange, placeholder, institutionS
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) uploadMutation.mutate(file);
+            if (file) void compressImage(file).then((smaller) => uploadMutation.mutate(smaller));
             e.target.value = "";
           }}
         />
@@ -112,7 +113,7 @@ function HeroImagesField({ urls, onChange, institutionSlug }: {
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) uploadMutation.mutate(file);
+          if (file) void compressImage(file).then((smaller) => uploadMutation.mutate(smaller));
           e.target.value = "";
         }}
       />

@@ -51,12 +51,12 @@ public class ReportDownloadTests
     [Theory]
     [InlineData("NoSuchKey")]
     [InlineData("NoSuchBucket")]
-    public async Task A_file_missing_from_storage_is_treated_as_not_available_and_logged_not_a_server_error(string code)
+    public async Task A_file_missing_from_storage_is_reported_as_missing_and_logged_not_a_server_error(string code)
     {
         var (service, storage, log) = await Create();
         storage.Setup(s => s.OpenPrivateFileAsync(It.IsAny<string>())).ThrowsAsync(new AmazonS3Exception("gone", ErrorType.Sender, code, "req", HttpStatusCode.NotFound));
 
-        Assert.Null(await service.OpenDownloadAsync(Me, "j1"));
+        await Assert.ThrowsAsync<ReportFileMissingException>(() => service.OpenDownloadAsync(Me, "j1"));
         Assert.Contains(log.Entries, e => e.Level == Microsoft.Extensions.Logging.LogLevel.Warning && e.Message.Contains("reports/inst-1/j1/members.xlsx"));
     }
 

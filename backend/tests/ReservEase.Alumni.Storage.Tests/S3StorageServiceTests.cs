@@ -78,6 +78,82 @@ public class S3StorageServiceTests
         Assert.False(bound.CdnUrlIncludesBucket);
         Assert.IsType<S3StorageService>(scope.ServiceProvider.GetRequiredService<IStorageService>());
     }
+
+    [Fact]
+    public void The_storage_service_is_shared_by_every_request_so_the_s3_connection_is_reused()
+    {
+        var services = new ServiceCollection();
+        services.AddStorageService(new ConfigurationBuilder().Build());
+        using var provider = services.BuildServiceProvider();
+
+        IStorageService First() { using var scope = provider.CreateScope(); return scope.ServiceProvider.GetRequiredService<IStorageService>(); }
+
+        Assert.Same(First(), First());
+    }
+}
+
+public class BulkUploadTests
+{
+    /// <summary>Stands in for the bucket: each upload takes a moment, and the most that ever ran together is recorded.</summary>
+    private sealed class SlowBucket(int failOnIndex = -1) : S3StorageService(Options.Create(new StorageConfig { BucketName = "b" }))
+    {
+        private int running, peak, calls;
+        public int Peak => peak;
+        public int Calls => calls;
+
+        public override async Task<string> UploadFileAsync(Microsoft.AspNetCore.Http.IFormFile file, string objectName, string folderName = "", string institutionSlug = "")
+        {
+            var now = Interlocked.Increment(ref running);
+            InterlockedMax(ref peak, now);
+            var call = Interlocked.Increment(ref calls) - 1;
+            try
+            {
+                // Earlier files take longer, so a parallel run finishes out of order: the result order must not depend on that.
+                await Task.Delay(Math.Max(5, 60 - int.Parse(file.FileName.Split('.')[0]) * 5));
+                if (call == failOnIndex) throw new InvalidOperationException("bucket said no");
+                return $"url-for-{file.FileName}";
+            }
+            finally { Interlocked.Decrement(ref running); }
+        }
+
+        private static void InterlockedMax(ref int target, int value)
+        {
+            int current;
+            while (value > (current = Volatile.Read(ref target)) && Interlocked.CompareExchange(ref target, value, current) != current) { }
+        }
+    }
+
+    private static List<Microsoft.AspNetCore.Http.IFormFile> Files(int count) =>
+        Enumerable.Range(0, count)
+            .Select(i => (Microsoft.AspNetCore.Http.IFormFile)new Microsoft.AspNetCore.Http.FormFile(new MemoryStream([1]), 0, 1, "file", $"{i}.png"))
+            .ToList();
+
+    [Fact]
+    public async Task Urls_come_back_in_the_same_order_as_the_files_even_though_they_finish_out_of_order()
+    {
+        var urls = await new SlowBucket().BulkUploadFilesAsync(Files(10));
+
+        Assert.Equal(Enumerable.Range(0, 10).Select(i => $"url-for-{i}.png"), urls);
+    }
+
+    [Fact]
+    public async Task Several_files_go_up_at_once_but_never_more_than_the_limit()
+    {
+        var bucket = new SlowBucket();
+
+        await bucket.BulkUploadFilesAsync(Files(12));
+
+        Assert.Equal(12, bucket.Calls);
+        Assert.InRange(bucket.Peak, 2, S3StorageService.BulkUploadConcurrency);
+    }
+
+    [Fact]
+    public async Task An_empty_batch_uploads_nothing()
+        => Assert.Empty(await new SlowBucket().BulkUploadFilesAsync(new()));
+
+    [Fact]
+    public async Task One_failed_upload_fails_the_batch_instead_of_returning_a_half_empty_list()
+        => await Assert.ThrowsAsync<InvalidOperationException>(() => new SlowBucket(failOnIndex: 2).BulkUploadFilesAsync(Files(6)));
 }
 
 public class PrivateFileLookupTests
@@ -85,6 +161,15 @@ public class PrivateFileLookupTests
     private sealed class FakeBucket(Action<StorageConfig>? configure, params string[] keys) : S3StorageService(Build(configure))
     {
         public List<string> Asked { get; } = new();
+        /// <summary>The bucket's top-level folders, as a listing would return them (with a trailing slash).</summary>
+        public string[] Folders { get; init; } = [];
+        public int Listings { get; private set; }
+
+        protected override Task<IReadOnlyList<string>> ListTopLevelFoldersAsync()
+        {
+            Listings++;
+            return Task.FromResult<IReadOnlyList<string>>(Folders);
+        }
 
         private static IOptions<StorageConfig> Build(Action<StorageConfig>? configure)
         {
@@ -126,6 +211,37 @@ public class PrivateFileLookupTests
         var ex = await Assert.ThrowsAsync<Amazon.S3.AmazonS3Exception>(() => bucket.OpenPrivateFileAsync("reports/a.xlsx"));
         Assert.Equal("NoSuchKey", ex.ErrorCode);
         Assert.Equal(2, bucket.Asked.Count);
+        Assert.Equal(1, bucket.Listings);
+    }
+
+    [Fact]
+    public async Task A_file_the_worker_wrote_under_a_different_root_folder_is_still_found()
+    {
+        // The API has no root folder; the worker wrote under "alumunion".
+        var bucket = new FakeBucket(null, "alumunion/reports/a.xlsx") { Folders = ["other/", "alumunion/"] };
+
+        Assert.Equal("alumunion/reports/a.xlsx", Read(await bucket.OpenPrivateFileAsync("reports/a.xlsx")));
+        Assert.Equal(new[] { "reports/a.xlsx", "other/reports/a.xlsx", "alumunion/reports/a.xlsx" }, bucket.Asked);
+    }
+
+    [Fact]
+    public async Task A_folder_already_tried_is_not_asked_for_again()
+    {
+        var bucket = new FakeBucket(c => c.RootFolder = "alumunion") { Folders = ["alumunion/", "later/"] };
+
+        await Assert.ThrowsAsync<Amazon.S3.AmazonS3Exception>(() => bucket.OpenPrivateFileAsync("reports/a.xlsx"));
+
+        Assert.Equal(new[] { "alumunion/reports/a.xlsx", "reports/a.xlsx", "later/reports/a.xlsx" }, bucket.Asked);
+    }
+
+    [Fact]
+    public async Task The_bucket_is_only_listed_when_the_obvious_places_miss()
+    {
+        var bucket = new FakeBucket(c => c.RootFolder = "alumunion", "alumunion/reports/a.xlsx");
+
+        await bucket.OpenPrivateFileAsync("reports/a.xlsx");
+
+        Assert.Equal(0, bucket.Listings);
     }
 
     [Fact]
@@ -133,6 +249,6 @@ public class PrivateFileLookupTests
     {
         var bucket = new FakeBucket(null);
         await Assert.ThrowsAsync<Amazon.S3.AmazonS3Exception>(() => bucket.OpenPrivateFileAsync("reports/a.xlsx"));
-        Assert.Equal(new[] { "reports/a.xlsx" }, bucket.Asked);
+        Assert.Equal(new[] { "reports/a.xlsx" }, bucket.Asked); // and an empty folder list means nothing else to try
     }
 }

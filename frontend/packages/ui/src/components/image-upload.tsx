@@ -4,6 +4,7 @@ import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { Upload, X, FileIcon, ImageIcon } from "./icons";
 import { Button } from "./button";
 import { cn } from "../lib/utils";
+import { compressImage } from "../lib/compress-image";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -40,9 +41,15 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
   const imageUrl = previewUrl || (isImage && existingUrl ? existingUrl : null);
   const displayValue = file ? file.name : existingUrl;
 
+  // Photos are shrunk here, in the browser, before anything is uploaded: a camera original can be 10 MB.
+  const pick = useCallback(async (selected: File) => {
+    onChange(isImage ? await compressImage(selected) : selected);
+    setImgError(false);
+  }, [onChange, isImage]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
-    if (selected) { onChange(selected); setImgError(false); }
+    if (selected) void pick(selected);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -56,8 +63,8 @@ export function ImageUpload({ file, existingUrl, onChange, onClearExisting, labe
     e.preventDefault();
     setDragOver(false);
     const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile) { onChange(droppedFile); setImgError(false); }
-  }, [onChange]);
+    if (droppedFile) void pick(droppedFile);
+  }, [pick]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

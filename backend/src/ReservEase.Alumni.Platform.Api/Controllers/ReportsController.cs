@@ -61,12 +61,16 @@ public class ReportsController(IReportJobService reportJobs) : DefaultController
         {
             download = await reportJobs.OpenDownloadAsync(Requester(), id);
         }
+        catch (ReportFileMissingException)
+        {
+            return ApiResponseExtensions.ToNotFoundApiResponse<object>("This report's file can't be found in storage. Please request the report again.").ToActionResult();
+        }
         catch (ReportFileUnavailableException e)
         {
             return ApiResponseExtensions.ToServerErrorApiResponse<object>($"{e.Message} Please try again in a few minutes.").ToActionResult();
         }
         if (download is null)
-            return ApiResponseExtensions.ToNotFoundApiResponse<object>("This report isn't available to download. It may have expired; request it again.").ToActionResult();
+            return ApiResponseExtensions.ToNotFoundApiResponse<object>("We couldn't find that report.").ToActionResult();
         return File(download.Content, download.ContentType, download.FileName);
     }
 }

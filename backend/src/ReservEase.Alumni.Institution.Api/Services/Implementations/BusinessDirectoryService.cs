@@ -129,16 +129,20 @@ public class BusinessDirectoryService(
                 CreatedBy = admin.Id,
             };
 
+            // The logo and the banner go to storage together rather than one after the other.
+            Task<string>? logoUpload = null, bannerUpload = null;
             if (request.Logo is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.Logo.FileName)}";
-                listing.LogoUrl = await storageService.UploadFileAsync(request.Logo, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
+                logoUpload = storageService.UploadFileAsync(request.Logo, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
             if (request.Banner is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.Banner.FileName)}";
-                listing.BannerUrl = await storageService.UploadFileAsync(request.Banner, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
+                bannerUpload = storageService.UploadFileAsync(request.Banner, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+            if (logoUpload is not null) listing.LogoUrl = await logoUpload;
+            if (bannerUpload is not null) listing.BannerUrl = await bannerUpload;
 
             await listingRepo.AddAsync(listing);
             await InvalidatePublicBusinessesCacheAsync();
@@ -345,16 +349,20 @@ public class BusinessDirectoryService(
             listing.WebsiteUrl = request.WebsiteUrl;
             listing.ExternalLinkUrl = request.ExternalLinkUrl;
 
+            // The logo and the banner go to storage together rather than one after the other.
+            Task<string>? logoUpload = null, bannerUpload = null;
             if (request.Logo is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.Logo.FileName)}";
-                listing.LogoUrl = await storageService.UploadFileAsync(request.Logo, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
+                logoUpload = storageService.UploadFileAsync(request.Logo, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
             if (request.Banner is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.Banner.FileName)}";
-                listing.BannerUrl = await storageService.UploadFileAsync(request.Banner, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
+                bannerUpload = storageService.UploadFileAsync(request.Banner, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+            if (logoUpload is not null) listing.LogoUrl = await logoUpload;
+            if (bannerUpload is not null) listing.BannerUrl = await bannerUpload;
 
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = admin.Id;

@@ -142,10 +142,11 @@ public class ReportJobService(
         }
         catch (Amazon.S3.AmazonS3Exception e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound || e.ErrorCode is "NoSuchKey" or "NoSuchBucket")
         {
-            // Marked ready, but the file is not where this process looks: it was cleaned up, or the worker that wrote it
-            // and this API are not using the same bucket. Either way the person is told to ask again, and the log says why.
+            // Marked ready, but the file is nowhere this process can find it (the lookup already tried the other places a worker
+            // may have written it): it was removed, or the worker and this API are using different buckets. The person is told
+            // plainly to ask again, and the log says exactly which file was missing.
             logger.LogWarning(e, "Report job {ReportJobId} is ready but its file {FileKey} was not found in storage (S3 status {Status}, code {ErrorCode})", job.Id, job.FileKey, (int)e.StatusCode, e.ErrorCode ?? "none");
-            return null;
+            throw new ReportFileMissingException("The report's file could not be found in storage.", e);
         }
         catch (Exception e)
         {

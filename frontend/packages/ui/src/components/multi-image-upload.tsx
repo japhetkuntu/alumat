@@ -3,6 +3,7 @@
 import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { X, Plus, ImageIcon } from "./icons";
 import { cn } from "../lib/utils";
+import { compressImages } from "../lib/compress-image";
 
 interface MultiImageUploadProps {
   files: File[];
@@ -38,9 +39,14 @@ export function MultiImageUpload({
     return () => { filePreviews.forEach((url) => { if (url) URL.revokeObjectURL(url); }); };
   }, [filePreviews]);
 
+  // Photos are shrunk in the browser first (all at once, then added in the order they were picked).
+  const addAll = useCallback(async (list: FileList) => {
+    (await compressImages(Array.from(list))).forEach((f) => onAddFile(f));
+  }, [onAddFile]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
-    if (selected) Array.from(selected).forEach((f) => onAddFile(f));
+    if (selected) void addAll(selected);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -48,8 +54,8 @@ export function MultiImageUpload({
     e.preventDefault();
     setDragOver(false);
     const dropped = e.dataTransfer.files;
-    if (dropped) Array.from(dropped).forEach((f) => onAddFile(f));
-  }, [onAddFile]);
+    if (dropped) void addAll(dropped);
+  }, [addAll]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragOver(true); }, []);
   const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragOver(false); }, []);

@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImage } from "@alumni/ui";
 import { DeleteAccountLink } from "@/components/member/delete-account";
 import { useState, useRef } from "react";
 import { InfoTip } from "@alumni/ui";
@@ -435,7 +436,8 @@ export default function MemberProfilePage() {
                     if (!file) return;
                     setAvatarUploading(true);
                     try {
-                      await updateMyProfile({ profilePicture: file });
+                      // A profile picture is shown small, so it is shrunk hard before it is sent.
+                      await updateMyProfile({ profilePicture: await compressImage(file, { maxDimension: 800 }) });
                       qc.invalidateQueries({ queryKey: ["m-profile"] });
                       toast.success("Profile picture updated.");
                     } catch (err) {

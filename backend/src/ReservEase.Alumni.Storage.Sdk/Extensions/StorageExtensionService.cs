@@ -11,7 +11,8 @@ public static class StorageExtensionService
         this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<StorageConfig>(configuration.GetSection(nameof(StorageConfig)));
-        services.AddScoped<IStorageService, S3StorageService>();
+        // A singleton so the one S3 client (and its pooled connections) is shared by every request instead of being rebuilt per call.
+        services.AddSingleton<IStorageService, S3StorageService>();
 
         return services;
     }

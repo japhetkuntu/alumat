@@ -139,14 +139,18 @@ public class EventService(
                 CreatedBy = admin.Id,
             };
 
+            // The banner and the gallery go to storage together rather than one after the other.
+            Task<string>? bannerUpload = null;
+            Task<List<string>>? galleryUpload = null;
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                ev.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                bannerUpload = storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
-
             if (request.Images is { Count: > 0 })
-                ev.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                galleryUpload = storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
+            if (bannerUpload is not null) ev.BannerImageUrl = await bannerUpload;
+            if (galleryUpload is not null) ev.ImageUrls = await galleryUpload;
 
             await eventRepo.AddAsync(ev);
             await InvalidatePublicEventsCacheAsync();
@@ -202,17 +206,22 @@ public class EventService(
             ev.YearGroups = updatedYearGroups;
             ev.YoutubeVideoUrls = request.YoutubeVideoUrls;
 
+            Task<string>? bannerUpload = null;
+            Task<List<string>>? galleryUpload = null;
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                ev.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                bannerUpload = storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+            if (request.Images is { Count: > 0 })
+                galleryUpload = storageService.BulkUploadFilesAsync(request.Images);
+            if (bannerUpload is not null) ev.BannerImageUrl = await bannerUpload;
 
             var imageUrls = new List<string>();
             if (request.ExistingImageUrls is { Count: > 0 })
                 imageUrls.AddRange(request.ExistingImageUrls);
-            if (request.Images is { Count: > 0 })
-                imageUrls.AddRange(await storageService.BulkUploadFilesAsync(request.Images));
+            if (galleryUpload is not null)
+                imageUrls.AddRange(await galleryUpload);
             ev.ImageUrls = imageUrls.Count > 0 ? imageUrls : null;
 
             ev.UpdatedAt = DateTime.UtcNow;

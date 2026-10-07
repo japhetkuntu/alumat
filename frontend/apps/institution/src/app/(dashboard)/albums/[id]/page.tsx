@@ -1,5 +1,6 @@
 "use client";
 
+import { compressImages } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -136,7 +137,8 @@ export default function AdminAlbumDetailPage() {
       previewUrl: URL.createObjectURL(f),
     }));
     setUploading((prev) => [...prev, ...items]);
-    addPhotosMut.mutate(files);
+    // Shrunk in the browser first: camera originals are several MB each, and they all travel in one request.
+    void compressImages(files, { maxDimension: 2000 }).then((smaller) => addPhotosMut.mutate(smaller));
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 

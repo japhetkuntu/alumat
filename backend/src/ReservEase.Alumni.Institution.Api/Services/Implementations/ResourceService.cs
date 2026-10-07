@@ -102,17 +102,20 @@ public class ResourceService(
                 YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups),
             };
 
+            // The file and its banner go to storage together rather than one after the other.
+            Task<string>? fileUpload = null, bannerUpload = null;
             if (request.File is not null)
             {
                 var fileName = $"{Guid.NewGuid():N}{Path.GetExtension(request.File.FileName)}";
-                resource.FileUrl = await storageService.UploadFileAsync(request.File, fileName, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                fileUpload = storageService.UploadFileAsync(request.File, fileName, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
-
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                resource.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                bannerUpload = storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+            if (fileUpload is not null) resource.FileUrl = await fileUpload;
+            if (bannerUpload is not null) resource.BannerImageUrl = await bannerUpload;
 
             await resourceRepo.AddAsync(resource);
             logger.LogInformation("Resource {ResourceId} created by admin {AdminId}", resource.Id, admin.Id);
@@ -149,17 +152,20 @@ public class ResourceService(
             resource.ExternalUrl = request.ExternalUrl;
             resource.YearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
 
+            // The file and its banner go to storage together rather than one after the other.
+            Task<string>? fileUpload = null, bannerUpload = null;
             if (request.File is not null)
             {
                 var fileName = $"{Guid.NewGuid():N}{Path.GetExtension(request.File.FileName)}";
-                resource.FileUrl = await storageService.UploadFileAsync(request.File, fileName, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                fileUpload = storageService.UploadFileAsync(request.File, fileName, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
-
             if (request.BannerImage is not null)
             {
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
-                resource.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
+                bannerUpload = storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+            if (fileUpload is not null) resource.FileUrl = await fileUpload;
+            if (bannerUpload is not null) resource.BannerImageUrl = await bannerUpload;
 
             resource.UpdatedAt = DateTime.UtcNow;
             resource.UpdatedBy = admin.Id;

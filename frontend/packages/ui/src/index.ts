@@ -1,5 +1,6 @@
 export * from "./lib/utils";
 export * from "./lib/share-messages";
+export * from "./lib/compress-image";
 export * from "./lib/brand-palette";
 export * from "./lib/countries";
 export * from "./hooks/use-debounce";

@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-06",
+    title: "Faster image uploads, every feature in the member menu, and report downloads that find their file",
+    body: "Images: photos are now resized and recompressed in the browser before they upload (a 1.6 MB test photo became 330 KB; the file keeps its format and small images, GIFs and SVGs are left alone), so uploads leave the phone far sooner and the API spends less time receiving them. On the server, one storage connection is now shared instead of a new one being built for every upload, several files in a batch upload together (up to four at a time, results kept in order), an event, resource or business form uploads its banner and second file together, and stored images are marked as cacheable for a year so pages load them from the browser or CDN instead of fetching them again. Member menu: every feature the institution has switched on now shows in the sidebar and the phone's menu whether or not it has content yet; before, empty ones were hidden. Reports: a finished report is now found wherever the worker stored it (a mismatch between services' storage folder settings used to make every download fail), and when a file really is gone the message says so plainly instead of claiming the report \"may have expired\" (reports never expire). The env examples now note that the storage folder setting must be the same on all four services.",
+    scopes: ["Member", "Institution", "Platform"],
+    type: "Improvement",
+  },
+  {
+    date: "2026-10-06",
     title: "Invitation links get a proper preview, and every link uses the right address",
     body: "A community invitation link pasted into WhatsApp now shows a card (\"Join Mining Engineering 2018 on <institution>\", the community's description, and its cover picture, or the institution's logo if it has none) instead of the generic portal title. Unknown, inactive or malformed invitations keep the normal card. Separately, every link we build to an institution's member portal (share buttons, welcome and reminder emails, notifications, the onboarding message, the platform institution list) now comes from one place: an institution on its own domain is linked on that domain, otherwise on its subdomain. Before, several places always used the subdomain even for institutions that members actually reach on their own domain.",
     scopes: ["Member", "Institution", "Platform"],
