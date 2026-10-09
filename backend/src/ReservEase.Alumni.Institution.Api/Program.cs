@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Engagement;
 using Serilog;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Institution.Api.Extensions;
@@ -74,6 +75,10 @@ builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<EngagementEngine>();
+builder.Services.AddScoped<IEngagementService, EngagementService>();
+builder.Services.AddScoped<IPendingWorkService, PendingWorkService>();
+builder.Services.AddScoped<IOpportunitySuggestionService, OpportunitySuggestionService>();
 builder.Services.AddReportJobs();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<IEventService, EventService>();

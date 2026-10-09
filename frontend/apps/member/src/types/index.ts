@@ -573,6 +573,7 @@ export interface NotificationPreference {
   jobAlerts: boolean;
   classNoteAlerts: boolean;
   spotlightAlerts: boolean;
+  engagementMessages?: boolean;
   smsAlerts: boolean;
   whatsAppAlerts: boolean;
   digestFrequency: "None" | "Weekly" | "Monthly";

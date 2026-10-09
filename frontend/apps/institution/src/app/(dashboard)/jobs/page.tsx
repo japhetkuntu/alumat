@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
@@ -17,7 +18,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
-import { getJobs, createJob, updateJob, deleteJob, getCommunities } from "@/lib/institution-api";
+import { getJobs, createJob, updateJob, deleteJob, approveJob, declineJob, getCommunities } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
@@ -39,6 +40,7 @@ const typeColors: Record<string, string> = {
 };
 
 const statusVariant: Record<string, "success" | "secondary" | "warning"> = {
+  Pending: "warning",
   Active: "success",
   Closed: "secondary",
   Draft: "warning",
@@ -59,7 +61,7 @@ interface FormState {
   existingBannerUrl: string;
 }
 const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", yearGroups: [], communityId: "", bannerImage: null, existingBannerUrl: "" };
-const statusOptions = ["Active", "Closed", "Draft"];
+const statusOptions = ["Active", "Closed", "Draft", "Pending"];
 
 function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdmin }: {
   init: FormState & { status?: string }; onSave: (f: FormState & { status: string }) => void;
@@ -134,7 +136,8 @@ export default function AdminJobsPage() {
   const [editJob, setEditJob] = useState<Job | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const searchParams = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
   const [typeFilter, setTypeFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [postedAfter, setPostedAfter] = useState("");
@@ -186,6 +189,12 @@ export default function AdminJobsPage() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteJob(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-jobs"] }); setDeleteTarget(null); toast.success("Job deleted"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const review = useMutation({
+    mutationFn: (v: { id: string; approve: boolean }) => (v.approve ? approveJob(v.id) : declineJob(v.id)),
+    onSuccess: (_, v) => { qc.invalidateQueries({ queryKey: ["admin-jobs"] }); qc.invalidateQueries({ queryKey: ["engagement"] }); toast.success(v.approve ? "Approved and shared with members. The member who suggested it has been told." : "Declined. The member who suggested it has been told."); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -262,7 +271,7 @@ export default function AdminJobsPage() {
         </div>
         <ChipRow label="Filter" activeKey={String(statusFilter)}>
           {/* Status pills */}
-          {["", "Active", "Draft", "Closed"].map((s) => (
+          {["", "Pending", "Active", "Draft", "Closed"].map((s) => (
             <button
               key={s}
               aria-pressed={statusFilter === s}
@@ -298,6 +307,11 @@ export default function AdminJobsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
+      ) : jobs.length === 0 && (statusFilter || typeFilter || locationFilter || search) ? (
+        <EmptyState icon={<Briefcase size={40} />}
+          title={statusFilter === "Pending" && !typeFilter && !locationFilter && !search ? "Nothing is waiting for your review" : "No job postings match these filters"}
+          description={statusFilter === "Pending" && !typeFilter && !locationFilter && !search ? "When a member suggests an opportunity it appears here for you to approve or decline." : "Try clearing a filter."}
+          action={<Button variant="outline" onClick={() => { setStatusFilter(""); setTypeFilter(""); setLocationFilter(""); setSearch(""); setPage(1); }}>Show all postings</Button>} />
       ) : jobs.length === 0 ? (
         <EmptyState icon={<Briefcase size={40} />} title="Job listings help members find work" description="Post an opening with the role, the company and how to apply. Members see it on their job board and get notified." action={<Button onClick={() => setShowCreate(true)}><Plus size={14} />Post Job</Button>} />
       ) : (
@@ -336,6 +350,18 @@ export default function AdminJobsPage() {
 
                 {j.description && (
                   <p className="text-[12px] text-muted-foreground line-clamp-2">{j.description}</p>
+                )}
+
+                {j.status === "Pending" && (
+                  <div className="border border-border bg-muted/30 p-3 space-y-2.5">
+                    <p className="text-[12.5px] text-muted-foreground">
+                      Suggested by <span className="font-semibold text-foreground">{j.suggestedByName ?? "a member"}</span>. Members cannot see it until you approve it.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 h-9 text-[12px] font-bold" disabled={review.isPending} onClick={() => review.mutate({ id: j.id, approve: true })}>Approve and share</Button>
+                      <Button size="sm" variant="outline" className="flex-1 h-9 text-[12px] font-bold" disabled={review.isPending} onClick={() => review.mutate({ id: j.id, approve: false })}>Decline</Button>
+                    </div>
+                  </div>
                 )}
 
                 {/* Actions */}

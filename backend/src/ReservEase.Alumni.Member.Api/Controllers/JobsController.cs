@@ -26,6 +26,12 @@ public class JobsController(IMemberJobService jobService) : DefaultController
         return result.ToActionResult();
     }
 
+    [HttpPost("suggest")]
+    [SwaggerOperation(Summary = "Suggest an opportunity", Description = "Held for administrator review; nobody else sees it until it is approved. At most 3 may wait at once.")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<JobDto>))]
+    public async Task<IActionResult> Suggest([FromBody] SuggestOpportunityRequest request)
+        => (await jobService.SuggestAsync(User.GetAccount().Id, request)).ToActionResult();
+
     [HttpGet("{jobId}")]
     [SwaggerOperation(Summary = "Get job by ID", Description = "Get full details of a single job posting")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<JobDto>))]

@@ -856,6 +856,16 @@ export async function closeJob(id: string) {
   return res.data;
 }
 
+/** Reviewing an opportunity a member suggested: approving makes it live and tells them; declining closes it and tells them. */
+export async function approveJob(id: string) {
+  const res = await institutionClient.put<ApiResponse<unknown>>(`/jobs/${id}/approve`);
+  return res.data;
+}
+export async function declineJob(id: string) {
+  const res = await institutionClient.put<ApiResponse<unknown>>(`/jobs/${id}/decline`);
+  return res.data;
+}
+
 // ─── Events ──────────────────────────────────────────────────────────────────
 
 export interface CreateEventBody {
@@ -1888,4 +1898,99 @@ export async function remindPledge(id: string): Promise<void> {
 
 export async function updatePledge(id: string, body: { dueDate?: string; amount?: number; status?: "Open" | "Cancelled" | "WrittenOff"; note?: string }): Promise<void> {
   await institutionClient.patch(`/pledges/${id}`, body);
+}
+
+/** The engagement workspace: community health, what to do next, and this week's checklist. */
+export interface HealthFactor { key: string; label: string; configuredWeight: number; effectiveWeight: number; score?: number; detail: string }
+export interface EngagementRecommendation {
+  id: string; ruleId: string; title: string; explanation: string; priority: "High" | "Medium" | "Low"; actionLabel: string; actionUrl: string;
+  status: string; createdAt: string; expiresAt?: string; snoozedUntil?: string; resolvedAt?: string; resolvedByName?: string; assignedToId?: string; assignedToName?: string;
+}
+export interface EngagementChecklistItem { key: string; title: string; detail: string; actionUrl: string; done: boolean; automaticallyDone: boolean }
+export interface EngagementDashboard {
+  periodDays: number; generatedAt: string;
+  health: { score?: number; previousScore?: number; classification: string; summary: string; factors: HealthFactor[] };
+  activeMembers: number; pendingMembers: number;
+  newMembers: { current: number; previous: number };
+  activated: number; signedInLast7Days: number; signedInLast30Days: number;
+  participants: { current: number; previous: number };
+  retentionPercent?: number; dormant: number;
+  contributionVolume: number; previousContributionVolume: number; contributors: number;
+  upcomingEvents: number; activeCampaigns: number;
+  weekly: { weekStart: string; newMembers: number; meaningfulActions: number }[];
+  recommendations: EngagementRecommendation[]; checklist: EngagementChecklistItem[]; weekStart: string;
+}
+export interface HealthSnapshot { date: string; score?: number; classification: string; activeMembers: number; factors: HealthFactor[] }
+
+export interface PendingWorkItem { key: string; label: string; count: number; actionUrl: string }
+export async function getPendingWork(): Promise<PendingWorkItem[]> {
+  const res = await institutionClient.get<ApiResponse<PendingWorkItem[]>>('/pendingwork');
+  return res.data.data ?? [];
+}
+export async function getEngagementDashboard(days: number): Promise<EngagementDashboard> {
+  const res = await institutionClient.get<ApiResponse<EngagementDashboard>>('/engagement/dashboard', { params: { days } });
+  return res.data.data!;
+}
+export async function getHealthHistory(days: number): Promise<HealthSnapshot[]> {
+  const res = await institutionClient.get<ApiResponse<HealthSnapshot[]>>('/engagement/health/history', { params: { days, limit: 60 } });
+  return res.data.data ?? [];
+}
+export async function resolveRecommendation(id: string, action: "complete" | "dismiss" | "snooze", snoozeDays?: number) {
+  const res = await institutionClient.post<ApiResponse<EngagementRecommendation>>(`/engagement/recommendations/${id}/resolve`, { action, snoozeDays });
+  return res.data.data!;
+}
+export async function assignRecommendation(id: string, staffId: string | null) {
+  const res = await institutionClient.post<ApiResponse<EngagementRecommendation>>(`/engagement/recommendations/${id}/assign`, { staffId });
+  return res.data.data!;
+}
+export async function setChecklistItem(itemKey: string, done: boolean) {
+  await institutionClient.put(`/engagement/checklist/${itemKey}`, { done });
+}
+
+/** Year groups and the ambassadors (scoped administrators) who look after them. */
+export interface AmbassadorRef { staffId: string; name: string; active: boolean }
+export interface CohortRow {
+  year: number; activeMembers: number; pendingMembers: number; newMembers: number; activated: number; participants: number;
+  invitationsRegistered: number; incompleteProfiles: number; ambassadors: AmbassadorRef[];
+}
+export interface AmbassadorRow {
+  staffId: string; name: string; yearGroups: number[]; lastActiveAt?: string; daysSinceActive: number; active: boolean;
+  tasksOpen: number; tasksCompleted: number; membersInScope: number; newMembersInScope: number;
+}
+export interface CohortsData { periodDays: number; cohorts: CohortRow[]; ambassadors: AmbassadorRow[]; cohortsWithMembers: number; cohortsCovered: number }
+export interface AmbassadorWorkspace {
+  name: string; yearGroups: number[]; cohorts: CohortsData;
+  recentlyJoined: { name: string; year: number; joinedAt: string; profileIncomplete: boolean }[];
+  tasks: EngagementRecommendation[];
+}
+
+export async function getCohorts(days: number): Promise<CohortsData> {
+  const res = await institutionClient.get<ApiResponse<CohortsData>>('/engagement/cohorts', { params: { days } });
+  return res.data.data!;
+}
+export async function getAmbassadorWorkspace(days = 30): Promise<AmbassadorWorkspace> {
+  const res = await institutionClient.get<ApiResponse<AmbassadorWorkspace>>('/ambassador/workspace', { params: { days } });
+  return res.data.data!;
+}
+export async function updateMyTask(id: string, action: "complete" | "snooze") {
+  const res = await institutionClient.post<ApiResponse<EngagementRecommendation>>(`/ambassador/tasks/${id}/${action}`);
+  return res.data.data!;
+}
+
+/** One calendar month's engagement report. Activity (what was done) and outcomes (what members did) are kept apart. */
+export interface MonthFigures {
+  month: string; newMembers: number; participants: number; meaningfulActions: number;
+  contributionGross: number; feesDeducted: number; netToInstitution: number; contributors: number;
+  eventsHeld: number; eventSignUps: number; newsPublished: number; opportunitiesShared: number;
+  suggestionsRaised: number; suggestionsCompleted: number; suggestionsDismissed: number;
+  healthStart?: number; healthEnd?: number; healthReadings: number;
+}
+export interface MonthlyReport {
+  month: string; isCurrentMonth: boolean; current: MonthFigures; previous: MonthFigures;
+  healthNow: EngagementDashboard["health"]; needsAttention: HealthFactor[]; nextActions: EngagementRecommendation[];
+  cohorts: CohortRow[]; ambassadors: AmbassadorRow[];
+}
+export async function getMonthlyReport(month?: string): Promise<MonthlyReport> {
+  const res = await institutionClient.get<ApiResponse<MonthlyReport>>('/engagement/monthly', { params: { month } });
+  return res.data.data!;
 }

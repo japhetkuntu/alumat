@@ -29,4 +29,6 @@ public enum NotificationKind
     EventCancelled,
     EventDetailsChanged,
     EventRsvpCancelled,
+    /// <summary>A member submitted something an administrator must decide (a listing, a suggestion, a story, a mentor profile).</summary>
+    RequestAwaitingReview,
 }

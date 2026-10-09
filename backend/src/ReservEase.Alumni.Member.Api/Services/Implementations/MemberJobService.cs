@@ -1,3 +1,6 @@
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Temporal.Sdk;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -16,6 +19,8 @@ public class MemberJobService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Community> communityRepo,
+    ITemporalClientProvider temporalProvider,
+    ICurrentTenantService currentTenant,
     ILogger<MemberJobService> logger) : IMemberJobService
 {
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
@@ -59,11 +64,13 @@ public class MemberJobService(
             // plus every community I'm an approved member of — not institution-wide alone.
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
 
+            var today = DateTime.UtcNow.Date;
             var search = filter.Search?.ToLower();
             var location = filter.Location?.ToLower();
             var result = await jobRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
                 j => j.Status == "Active"
+                  && (j.Deadline == null || j.Deadline >= today)   // a closing date that has passed takes it out of discovery
                   && (string.IsNullOrEmpty(filter.CommunityId)
                       ? (j.CommunityId == null || approvedCommunityIds.Contains(j.CommunityId))
                       : j.CommunityId == filter.CommunityId)
@@ -91,6 +98,54 @@ public class MemberJobService(
         {
             logger.LogError(e, "Error retrieving jobs — filter: {Filter}", filter.Serialize());
             return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<JobDto>>("Failed to retrieve jobs");
+        }
+    }
+
+    private const int MaxPendingSuggestions = 3;
+    private static readonly string[] OpportunityTypes = ["Full-time", "Part-time", "Contract", "Internship", "Scholarship", "Mentorship", "Volunteering", "Business", "Partnership", "Other"];
+
+    public async Task<IApiResponse<JobDto>> SuggestAsync(string memberId, SuggestOpportunityRequest r)
+    {
+        try
+        {
+            var title = r.Title?.Trim() ?? "";
+            var company = r.Company?.Trim() ?? "";
+            if (title.Length < 3 || title.Length > 120) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("Give the opportunity a title of 3 to 120 characters");
+            if (company.Length < 2 || company.Length > 120) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("Say who is offering it");
+            var type = OpportunityTypes.FirstOrDefault(t => t.Equals(r.Type?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (type is null) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>($"Type must be one of: {string.Join(", ", OpportunityTypes)}");
+            if ((r.Description?.Length ?? 0) > 4000) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("The description is too long");
+            string? applyUrl = null;
+            if (!string.IsNullOrWhiteSpace(r.ApplyUrl))
+            {
+                // Only plain web links: no javascript:, data: or mailto: surprises on a page members click.
+                if (!Uri.TryCreate(r.ApplyUrl.Trim(), UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+                    return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("The link must start with http:// or https://");
+                applyUrl = uri.ToString();
+            }
+            var today = DateTime.UtcNow.Date;
+            if (r.Deadline is { } d && d.Date < today) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("The closing date has already passed");
+
+            var waiting = await jobRepo.CountAsync(j => j.PostedBy == memberId && j.Status == "Pending");
+            if (waiting >= MaxPendingSuggestions)
+                return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>($"You already have {MaxPendingSuggestions} suggestions waiting for review. Please wait for those first.");
+
+            var job = new Job
+            {
+                Title = title, Company = company, Location = r.Location?.Trim() ?? "", Type = type, Description = r.Description?.Trim(), ApplyUrl = applyUrl,
+                Deadline = r.Deadline is { } dl ? DateTime.SpecifyKind(dl.Date, DateTimeKind.Utc) : null,
+                Status = "Pending", PostedBy = memberId, CreatedBy = memberId,
+            };
+            await jobRepo.AddAsync(job);
+            var who = await memberRepo.GetByIdAsync(memberId);
+            await temporalProvider.EnqueueNotificationAsync(
+                ReviewAlerts.SuggestedOpportunity(currentTenant.InstitutionId!, job.Id, who is null ? "" : $"{who.FirstName} {who.LastName}", job.Title, DateTime.UtcNow), logger);
+            return job.ToDto().ToCreatedApiResponse("Thank you. An administrator will review your suggestion before it is shared.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error suggesting an opportunity for member {MemberId}", memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<JobDto>("Failed to submit your suggestion");
         }
     }
 

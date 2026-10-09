@@ -1,3 +1,5 @@
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
@@ -18,6 +20,7 @@ public class SpotlightService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<Institution> institutionRepo,
     ICurrentTenantService currentTenant,
+    ITemporalClientProvider temporalProvider,
     ILogger<SpotlightService> logger) : ISpotlightService
 {
     public async Task<IApiResponse<PgPagedResult<SpotlightDto>>> GetApprovedSpotlightsAsync(int page, int pageSize)
@@ -148,6 +151,8 @@ public class SpotlightService(
             };
 
             await spotlightRepo.AddAsync(spotlight);
+            await temporalProvider.EnqueueNotificationAsync(
+                ReviewAlerts.SpotlightSubmitted(currentTenant.InstitutionId!, spotlight.Id, $"{member.FirstName} {member.LastName}", spotlight.Title, DateTime.UtcNow), logger);
             return spotlight.ToDto().ToCreatedApiResponse("Spotlight submitted for review.");
         }
         catch (Exception e)

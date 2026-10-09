@@ -22,7 +22,7 @@ public class HomeServiceTests
         new AlumniPgRepository<BusinessListing>(ctx), new AlumniPgRepository<Job>(ctx), new AlumniPgRepository<AlumniEvent>(ctx),
         new AlumniPgRepository<NewsPost>(ctx), new AlumniPgRepository<Resource>(ctx), new AlumniPgRepository<PhotoAlbum>(ctx),
         new AlumniPgRepository<StoreProduct>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceType>(ctx),
-        NullLogger<HomeService>.Instance);
+        new AlumniPgRepository<EventRsvp>(ctx), NullLogger<HomeService>.Instance);
 
     /// <summary>Seeds the given rows plus the calling member ("me", class of 2014, Mining) unless the seed already has one.</summary>
     private static async Task<HomeService> Create(params object[] seed)

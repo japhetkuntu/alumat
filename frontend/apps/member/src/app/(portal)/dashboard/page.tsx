@@ -1,5 +1,6 @@
 "use client";
 
+import { NextSteps } from "@/components/member/next-steps";
 import { useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
 import { isFeatureDisabledError } from "@/lib/feature-errors";
 import { useEffect, useRef, useState } from "react";
@@ -711,6 +712,9 @@ export default function MemberDashboardPage() {
       {membershipStatus.isSuccess && (
         <ArrearsBanner membershipStatus={membershipStatus.data} />
       )}
+
+      {/* ── What to do next: right under the member card, before the feed, so it is seen ── */}
+      <NextSteps />
 
       {/* ── People feed — skipped only when the whole portal is empty and the welcome below speaks for it ── */}
       {!hasNoActivity && (

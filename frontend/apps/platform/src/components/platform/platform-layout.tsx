@@ -18,6 +18,7 @@ import {
   Inbox,
   GraduationCap,
   Target,
+  Activity,
   ScrollText,
 } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/institutions", label: "Institutions", icon: Building2 },
   { href: "/activation", label: "Activation", icon: Target },
+  { href: "/institution-health", label: "Institution health", icon: Activity },
   { href: "/members", label: "Members", icon: GraduationCap },
   { href: "/onboarding-leads", label: "Onboarding & Demos", icon: Inbox },
   { href: "/marketing-campaigns", label: "Marketing Campaigns", icon: Megaphone },
@@ -58,6 +60,7 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
     if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
     if (item.href === "/members" && !isSuperAdmin && !isSupport) return false;
     if (item.href === "/activation" && user?.role === "Billing") return false;
+    if (item.href === "/institution-health" && !isSuperAdmin && !isSupport) return false;
     return true;
   });
 

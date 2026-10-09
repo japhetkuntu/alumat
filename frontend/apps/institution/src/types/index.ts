@@ -316,7 +316,7 @@ export type ContributionFilter = BaseFilter & {
 // ─── Job ──────────────────────────────────────────────────────────────────────
 
 export type JobType = "Full-time" | "Part-time" | "Contract" | "Internship";
-export type JobStatus = "Active" | "Closed" | "Draft";
+export type JobStatus = "Active" | "Closed" | "Draft" | "Pending";
 
 export interface Job {
   id: string;
@@ -333,6 +333,8 @@ export interface Job {
   yearGroups?: number[];
   createdAt: string;
   bannerImageUrl?: string;
+  /** For a member's suggestion awaiting review: who suggested it. */
+  suggestedByName?: string;
 }
 
 export type JobFilter = BaseFilter & {

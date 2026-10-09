@@ -100,6 +100,8 @@ public class MemberMentorshipService(
                     existing.Member = new MemberSnapshot { Id = member.Id, FirstName = member.FirstName, LastName = member.LastName, Email = member.Email, ProfilePictureUrl = member.ProfilePictureUrl };
 
                     await profileRepo.UpdateAsync(existing);
+                    await temporalProvider.EnqueueNotificationAsync(
+                        ReviewAlerts.MentorProfileSubmitted(currentTenant.InstitutionId!, existing.Id, $"{member.FirstName} {member.LastName}", true, DateTime.UtcNow), logger);
 
                     logger.LogInformation("Rejected mentor profile {ProfileId} resubmitted for member {MemberId}", existing.Id, member.Id);
                     return new object().ToCreatedApiResponse("Mentor profile resubmitted for review");
@@ -122,6 +124,8 @@ public class MemberMentorshipService(
                 CreatedBy = member.Id,
             };
             await profileRepo.AddAsync(profile);
+            await temporalProvider.EnqueueNotificationAsync(
+                ReviewAlerts.MentorProfileSubmitted(currentTenant.InstitutionId!, profile.Id, $"{member.FirstName} {member.LastName}", false, DateTime.UtcNow), logger);
 
             logger.LogInformation("Mentor profile {ProfileId} created for member {MemberId}", profile.Id, member.Id);
             return new object().ToCreatedApiResponse("Mentor profile submitted for review");

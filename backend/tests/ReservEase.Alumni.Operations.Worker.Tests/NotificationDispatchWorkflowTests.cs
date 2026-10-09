@@ -213,6 +213,36 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
     }
 
     [WorkflowFact]
+    public async Task A_member_request_alerts_full_administrators_only_and_points_at_the_page_that_handles_it()
+    {
+        var rig = new Rig();
+        await rig.Seed(new StaffEntity { Id = "boss", InstitutionId = Inst, Role = "SuperAdmin" }, new StaffEntity { Id = "scoped", InstitutionId = Inst, Role = "ScopedAdmin" },
+            new StaffEntity { Id = "off", InstitutionId = Inst, Role = "SuperAdmin", IsDisabled = true }, Device("boss", "InstitutionStaff"));
+
+        await Send(rig, NotificationRequest.RequestAwaitingReview(Inst, "BusinessListingSubmitted", "Business listing to review", "Ama submitted \"Kofi Bakes\" on 9 Oct 2026.", "BusinessListing", "b1", "/business-directory?status=Pending"));
+
+        var n = Assert.Single(await rig.Notes());
+        Assert.Equal(("boss", "Admin", "Business listing to review", "BusinessListingSubmitted"), (n.RecipientId, n.RecipientType, n.Title, n.Type));
+        Assert.Equal(("b1", "BusinessListing", "https://umat.admin.test/business-directory?status=Pending"), (n.RelatedEntityId, n.RelatedEntityType, n.ActionUrl));
+        rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), "Business listing to review", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [WorkflowFact]
+    public async Task The_same_request_is_not_alerted_twice_but_a_later_one_about_the_same_item_is()
+    {
+        var rig = new Rig();
+        await rig.Seed(new StaffEntity { Id = "boss", InstitutionId = Inst, Role = "SuperAdmin" });
+        NotificationRequest Req(string day) => NotificationRequest.RequestAwaitingReview(Inst, "BusinessListingChanged", "Changes to review", $"Ama changed \"Kofi Bakes\" on {day}.", "BusinessListing", "b1", "/business-directory?status=Pending");
+
+        await Send(rig, Req("9 Oct 2026"));
+        await Send(rig, Req("9 Oct 2026"));
+        Assert.Single(await rig.Notes());
+
+        await Send(rig, Req("12 Oct 2026"));
+        Assert.Equal(2, (await rig.Notes()).Count);
+    }
+
+    [WorkflowFact]
     public async Task Admin_alerts_with_no_enabled_staff_do_nothing()
     {
         var rig = new Rig();

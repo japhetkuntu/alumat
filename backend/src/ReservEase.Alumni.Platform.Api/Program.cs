@@ -63,6 +63,7 @@ builder.Services.AddScoped<IPlatformMemberService, PlatformMemberService>();
 builder.Services.AddScoped<IPlatformBroadcastService, PlatformBroadcastService>();
 builder.Services.AddScoped<IMarketingCampaignService, MarketingCampaignService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
+builder.Services.AddScoped<IInstitutionHealthService, InstitutionHealthService>();
 builder.Services.AddScoped<IBatchPayoutService, BatchPayoutService>();
 builder.Services.AddScoped<IInstitutionPayoutService, InstitutionPayoutService>();
 builder.Services.AddScoped<IPlatformStaffService, PlatformStaffService>();

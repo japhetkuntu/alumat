@@ -858,6 +858,58 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.ToTable("Communities", "alumni");
                 });
 
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityHealthSnapshot", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ActiveMembers")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Classification")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Factors")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PeriodDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SnapshotDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("InstitutionId", "PeriodDays", "SnapshotDate")
+                        .IsUnique();
+
+                    b.ToTable("CommunityHealthSnapshots", "alumni");
+                });
+
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership", b =>
                 {
                     b.Property<string>("Id")
@@ -1135,6 +1187,191 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("InstitutionId");
 
                     b.ToTable("Departments", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EngagementChecklistEntry", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompletedById")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompletedByName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ItemKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("WeekStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("InstitutionId", "WeekStart", "ItemKey")
+                        .IsUnique();
+
+                    b.ToTable("EngagementChecklistEntries", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EngagementMessage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecipientId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecipientType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Subject")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("InstitutionId", "RecipientId", "Kind", "CreatedAt");
+
+                    b.ToTable("EngagementMessages", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EngagementRecommendation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActionLabel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActionUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AssignedToId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AssignedToName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DedupeKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Explanation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResolvedById")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResolvedByName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RuleId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SnoozedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("InstitutionId", "DedupeKey")
+                        .IsUnique()
+                        .HasFilter("\"Status\" IN ('Open', 'Snoozed')");
+
+                    b.HasIndex("InstitutionId", "Status", "CreatedAt");
+
+                    b.ToTable("EngagementRecommendations", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EventRsvp", b =>
@@ -2138,6 +2375,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("DigestFrequency")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("EngagementMessages")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("EventReminders")
                         .HasColumnType("boolean");

@@ -481,7 +481,8 @@ public class PublicController(
 
     private async Task<PublicPreviewResponse?> BuildJobPreviewAsync(string id)
     {
-        var j = await jobRepo.GetOneAsync(x => x.Id == id);
+        // Only live postings: a draft, closed, or member-suggested one still awaiting review is not shown to anyone signed out.
+        var j = await jobRepo.GetOneAsync(x => x.Id == id && x.Status == "Active");
         if (j is null) return null;
         if (j.CommunityId is not null) return new PublicPreviewResponse($"{j.Title} at {j.Company}", null, j.BannerImageUrl, Restricted: true);
         return new PublicPreviewResponse($"{j.Title} at {j.Company}", j.Description, j.BannerImageUrl,

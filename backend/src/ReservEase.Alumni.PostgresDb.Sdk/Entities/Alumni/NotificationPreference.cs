@@ -13,6 +13,8 @@ public class NotificationPreference : BaseEntity, ITenantScoped
     public bool JobAlerts { get; set; } = true;
     public bool ClassNoteAlerts { get; set; } = true;
     public bool SpotlightAlerts { get; set; } = true;
+    /// <summary>Occasional, content-backed notes from the community when a member has been away (see EngagementMessage). On by default; one switch turns them off.</summary>
+    public bool EngagementMessages { get; set; } = true;
 
     // Opt-in (default false), unlike the in-app/email alerts above — SMS and
     // WhatsApp cost money per message and are more intrusive, so a member has

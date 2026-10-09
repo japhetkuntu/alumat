@@ -17,7 +17,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// </summary>
 [Authorize(Roles = "SuperAdmin,ScopedAdmin")]
 [RequireFeature(InstitutionFeatures.Jobs)]
-public class JobsController(IJobService jobService) : DefaultController
+public class JobsController(IJobService jobService, IOpportunitySuggestionService suggestions) : DefaultController
 {
     /// <summary>
     /// Get a paginated list of job postings.
@@ -29,6 +29,7 @@ public class JobsController(IJobService jobService) : DefaultController
     {
         var admin = User.GetAccount();
         var result = await jobService.GetJobsAsync(filter, admin);
+        if (result.Data is { } page) await suggestions.NameSuggestersAsync(page.Results);
         return result.ToActionResult();
     }
 
@@ -49,6 +50,18 @@ public class JobsController(IJobService jobService) : DefaultController
     /// <summary>
     /// Close a job posting.
     /// </summary>
+    [HttpPut("{jobId}/approve")]
+    [SwaggerOperation(Summary = "Approve a member's suggested opportunity", Description = "Makes it live, alerts members, and tells the member who suggested it")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<JobDto>))]
+    public async Task<IActionResult> ApproveSuggestion(string jobId)
+        => (await suggestions.ApproveAsync(jobId, User.GetAccount())).ToActionResult();
+
+    [HttpPut("{jobId}/decline")]
+    [SwaggerOperation(Summary = "Decline a member's suggested opportunity", Description = "Closes it and tells the member who suggested it")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> DeclineSuggestion(string jobId)
+        => (await suggestions.DeclineAsync(jobId, User.GetAccount())).ToActionResult();
+
     [HttpPut("{jobId}/close")]
     [SwaggerOperation(Summary = "Close job")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]

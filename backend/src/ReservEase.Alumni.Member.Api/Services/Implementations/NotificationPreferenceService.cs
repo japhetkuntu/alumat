@@ -63,6 +63,7 @@ public class NotificationPreferenceService(
             pref.SmsAlerts = request.SmsAlerts;
             pref.WhatsAppAlerts = request.WhatsAppAlerts;
             pref.DigestFrequency = request.DigestFrequency;
+            if (request.EngagementMessages is { } engagement) pref.EngagementMessages = engagement;
             pref.UpdatedBy = memberId;
 
             await prefRepo.UpdateAsync(pref);

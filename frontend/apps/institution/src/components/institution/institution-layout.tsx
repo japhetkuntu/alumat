@@ -14,6 +14,7 @@ import {
   GraduationCap,
   FolderOpen,
   TrendingUp,
+  Activity,
   Settings,
   Menu,
   ShieldCheck,
@@ -88,6 +89,7 @@ function featureForPath(pathname: string): string | null {
 // see below the dashboard, not buried under people/community management.
 const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/engagement", label: "Community health", icon: Activity },
   { label: "Money", isHeader: true },
   { href: "/campaigns", label: "Fundraisers", icon: Megaphone },
   { href: "/membership", label: "Dues", icon: CreditCard },
@@ -110,6 +112,7 @@ const baseNavItems = [
   { href: "/business-directory", label: "Business Directory", icon: Store },
   { href: "/flagged-content", label: "Flagged Content", icon: ShieldAlert },
   { label: "Insights", isHeader: true },
+  { href: "/ambassador", label: "My year groups", icon: Users2 },
   { href: "/analytics", label: "Analytics", icon: TrendingUp },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/notifications", label: "Notifications", icon: Bell },
@@ -163,7 +166,7 @@ function useNavItems() {
       // place). Mentorship and Albums are partially available to a
       // ScopedAdmin too (scoped to their own batch/community) — see
       // MentorshipController/AlbumsController.
-      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content") {
+      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement") {
         if (user?.role !== "SuperAdmin") return false;
       }
       if (item.href === "/mentorship" || item.href === "/albums") {
@@ -173,6 +176,8 @@ function useNavItems() {
       // Community institutions have no graduation years — Batches has nothing
       // to manage for them (they organize via Communities instead).
       if (item.href === "/batches" && isCommunity) return false;
+      // The ambassador workspace is for scoped administrators only, and only where year groups exist.
+      if (item.href === "/ambassador" && (user?.role !== "ScopedAdmin" || isCommunity)) return false;
       const featureKey = item.href ? NAV_FEATURE_KEYS[item.href] : undefined;
       if (featureKey && disabledFeatures.has(featureKey)) return false;
       return true;

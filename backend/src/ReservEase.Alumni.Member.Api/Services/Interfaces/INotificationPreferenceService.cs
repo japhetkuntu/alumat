@@ -17,4 +17,6 @@ public record UpdateNotificationPreferenceRequest(
     bool SpotlightAlerts,
     bool SmsAlerts,
     bool WhatsAppAlerts,
-    string DigestFrequency = "Weekly");
+    string DigestFrequency = "Weekly",
+    // Optional so a client that predates the switch leaves it as it was, instead of silently turning it off.
+    bool? EngagementMessages = null);

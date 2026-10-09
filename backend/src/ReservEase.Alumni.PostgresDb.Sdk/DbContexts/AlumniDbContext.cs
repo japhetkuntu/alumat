@@ -39,6 +39,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<StaffActivityWeek> StaffActivityWeeks => Set<StaffActivityWeek>();
     public DbSet<PlatformNotification> PlatformNotifications => Set<PlatformNotification>();
     public DbSet<ReportJob> ReportJobs => Set<ReportJob>();
+    public DbSet<CommunityHealthSnapshot> CommunityHealthSnapshots => Set<CommunityHealthSnapshot>();
+    public DbSet<EngagementRecommendation> EngagementRecommendations => Set<EngagementRecommendation>();
+    public DbSet<EngagementChecklistEntry> EngagementChecklistEntries => Set<EngagementChecklistEntry>();
+    public DbSet<EngagementMessage> EngagementMessages => Set<EngagementMessage>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
     public DbSet<InstitutionAuditLogEntry> InstitutionAuditLogEntries => Set<InstitutionAuditLogEntry>();
@@ -182,6 +186,16 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
         // "My reports", newest first — the only way report jobs are ever listed.
         modelBuilder.Entity<ReportJob>().HasIndex(j => new { j.RequestedById, j.CreatedAt });
+
+        // Engagement: one health reading per institution, day and period; recommendations are listed by status.
+        modelBuilder.Entity<CommunityHealthSnapshot>().Property(x => x.Factors).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<HealthFactor>>(jsonOpts));
+        modelBuilder.Entity<CommunityHealthSnapshot>().HasIndex(x => new { x.InstitutionId, x.PeriodDays, x.SnapshotDate }).IsUnique();
+        modelBuilder.Entity<EngagementRecommendation>().HasIndex(x => new { x.InstitutionId, x.Status, x.CreatedAt });
+        // At most one live (open or snoozed) copy of the same situation per institution, whatever races to create it.
+        modelBuilder.Entity<EngagementRecommendation>().HasIndex(x => new { x.InstitutionId, x.DedupeKey }).IsUnique().HasFilter("\"Status\" IN ('Open', 'Snoozed')");
+        modelBuilder.Entity<EngagementMessage>().HasIndex(x => new { x.InstitutionId, x.RecipientId, x.Kind, x.CreatedAt });
+        modelBuilder.Entity<EngagementChecklistEntry>().HasIndex(x => new { x.InstitutionId, x.WeekStart, x.ItemKey }).IsUnique();
         // The daily clean-up's scan for files past their retention.
         modelBuilder.Entity<ReportJob>().HasIndex(j => new { j.Status, j.ExpiresAt });
 

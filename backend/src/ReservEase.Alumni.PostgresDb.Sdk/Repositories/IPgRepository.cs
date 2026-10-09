@@ -10,6 +10,8 @@ public interface IPgRepository<T, TContext>
     Task<T?> GetByIdAsync(string id, bool ignoreQueryFilters = false);
     Task<T?> GetOneAsync(Expression<Func<T, bool>> predicate, bool ignoreQueryFilters = false);
     Task<int> AddAsync(T entity);
+    /// <summary>Stops tracking an entity. Used after a failed save, so the rejected row is not retried by the next save on the same context.</summary>
+    void Detach(T entity);
     Task<int> AddRangeAsync(List<T> entities);
     Task<int> RemoveAsync(T entity);
     Task<int> UpdateAsync(T entity);

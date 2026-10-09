@@ -2,6 +2,7 @@
 
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle, Download, ShieldBan, ShieldCheck, MailCheck, MailX, Eye, Upload, Loader2 } from "@alumni/ui";
 import { Pagination, ChipRow } from "@alumni/ui";
@@ -168,7 +169,8 @@ type ModalState =
 export default function AdminMembersPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<MemberStatus | "">("");
+  const searchParams = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState<MemberStatus | "">(() => (searchParams.get("status") as MemberStatus | null) ?? "");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<ModalState>(null);
   const [reasonText, setReasonText] = useState("");

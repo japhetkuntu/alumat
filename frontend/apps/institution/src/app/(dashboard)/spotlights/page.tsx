@@ -3,6 +3,7 @@
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Star, CheckCircle, XCircle, Plus, Search, Loader2, Pencil, Lock, Archive, Sparkles } from "@alumni/ui";import { Pagination } from "@alumni/ui";
@@ -30,7 +31,8 @@ export default function AdminSpotlightsPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
 
-  const [statusFilter, setStatusFilter] = useState("");
+  const searchParams = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
   const [page, setPage] = useState(1);
   const [approveTarget, setApproveTarget] = useState<Spotlight | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Spotlight | null>(null);

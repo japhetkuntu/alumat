@@ -18,10 +18,11 @@ import { getJobs } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
+import { SuggestOpportunity } from "@/components/member/suggest-opportunity";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
 
-const JOB_TYPES = ["", "Full-time", "Part-time", "Contract", "Internship"];
+const JOB_TYPES = ["", "Full-time", "Part-time", "Contract", "Internship", "Scholarship", "Mentorship", "Volunteering", "Business", "Partnership"];
 
 export default function MemberJobsPage() {
   const searchParams = useSearchParams();
@@ -48,6 +49,7 @@ export default function MemberJobsPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
       <PageHeader title="Job board" description="Opportunities shared by the alumni network." />
+      <SuggestOpportunity initiallyOpen={searchParams.get("suggest") === "1"} />
 
       {/* ── Filters ── */}
       <div className="space-y-3">

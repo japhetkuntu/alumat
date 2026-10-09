@@ -2,6 +2,7 @@
 
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle, UserCheck, Lock, Eye, Linkedin, MessageCircle, Phone } from "@alumni/ui";
@@ -47,7 +48,8 @@ export default function AdminMentorshipPage() {
   const [viewRequest, setViewRequest] = useState<MentorshipRequest | null>(null);
   const [mentorPage, setMentorPage] = useState(1);
   const [requestPage, setRequestPage] = useState(1);
-  const [mentorStatusFilter, setMentorStatusFilter] = useState("");
+  const searchParams = useSearchParams();
+  const [mentorStatusFilter, setMentorStatusFilter] = useState(() => searchParams.get("status") ?? "");
   const [mentorSearch, setMentorSearch] = useState("");
   const mentorPageSize = 20;
   const requestPageSize = 20;

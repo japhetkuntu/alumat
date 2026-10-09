@@ -37,6 +37,15 @@ public class HomeController(IHomeService homeService) : DefaultController
         return result.ToActionResult();
     }
 
+    [HttpGet("next-steps")]
+    [SwaggerOperation(Summary = "Next steps", Description = "Up to three things worth doing next, chosen by fixed rules from what exists for this member. Never a request for money.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<NextStepDto>>))]
+    public async Task<IActionResult> GetNextSteps()
+    {
+        var result = await homeService.GetNextStepsAsync(User.GetAccount().Id, DisabledFeatures);
+        return result.ToActionResult();
+    }
+
     [HttpPost("seen")]
     [SwaggerOperation(Summary = "Mark home seen", Description = "Record that the member has seen their home feed up to now")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]

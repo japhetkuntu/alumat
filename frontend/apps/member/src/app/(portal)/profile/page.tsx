@@ -353,6 +353,7 @@ export default function MemberProfilePage() {
       smsAlerts: notifPrefs.smsAlerts,
       whatsAppAlerts: notifPrefs.whatsAppAlerts,
       digestFrequency: notifPrefs.digestFrequency,
+      engagementMessages: notifPrefs.engagementMessages ?? true,
       [key]: value,
     });
   }
@@ -369,6 +370,7 @@ export default function MemberProfilePage() {
       smsAlerts: notifPrefs.smsAlerts,
       whatsAppAlerts: notifPrefs.whatsAppAlerts,
       digestFrequency: frequency,
+      engagementMessages: notifPrefs.engagementMessages ?? true,
     });
   }
 
@@ -936,6 +938,12 @@ export default function MemberProfilePage() {
               description="Get notified about new member spotlights"
             />
             )}
+            <Toggle
+              checked={notifPrefs?.engagementMessages ?? true}
+              onChange={(v) => toggleNotif("engagementMessages", v)}
+              label="Community check-ins"
+              description="An occasional note, at most once a month, when you have been away and something is happening"
+            />
             {smsNotificationsEnabled && (
               <Toggle
                 checked={notifPrefs?.smsAlerts ?? false}

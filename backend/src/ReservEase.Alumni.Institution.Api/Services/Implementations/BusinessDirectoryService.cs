@@ -17,6 +17,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 public class BusinessDirectoryService(
     IAlumniPgRepository<BusinessListing> listingRepo,
     IAlumniPgRepository<Member> memberRepo,
+    IAlumniPgRepository<Notification> notificationRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
     IRedisService<PublicContentCacheConfig> publicCache,
@@ -26,6 +27,20 @@ public class BusinessDirectoryService(
         => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.Businesses(id)) : Task.CompletedTask;
 
 
+    /// <summary>Tells the member who owns a listing what the administrator decided. Admin-created listings have no owner and tell no one.</summary>
+    private async Task TellOwnerAsync(BusinessListing listing, string title, string body, string admin)
+    {
+        if (listing.MemberId is null) return;
+        await notificationRepo.AddAsync(new Notification
+        {
+            RecipientId = listing.MemberId, RecipientType = "Member", Title = title, Body = body, Type = "BusinessListingReview",
+            RelatedEntityId = listing.Id, RelatedEntityType = "BusinessListing", ActionUrl = "/business-directory", CreatedBy = admin,
+        });
+    }
+
+    private static string WithReason(string text, string? notes)
+        => string.IsNullOrWhiteSpace(notes) ? text : $"{text} Note from the administrator: {notes.Trim()}";
+
     public async Task<IApiResponse<PgPagedResult<BusinessListingDto>>> GetListingsAsync(BusinessListingFilter filter)
     {
         try
@@ -33,7 +48,9 @@ public class BusinessDirectoryService(
             logger.LogInformation("GetListings request — filter: {Filter}", filter.Serialize());
             var result = await listingRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "CreatedAt", filter.SortDir ?? "desc",
-                l => string.IsNullOrEmpty(filter.Status) || l.Status == filter.Status);
+                l => string.IsNullOrEmpty(filter.Status) || l.Status == filter.Status
+                    // "Pending" means "needs a decision": a live listing with changes waiting is part of that.
+                    || (filter.Status == "Pending" && l.HasPendingEdit));
 
             var dtoResult = new PgPagedResult<BusinessListingDto>
             {
@@ -175,7 +192,9 @@ public class BusinessDirectoryService(
             await listingRepo.UpdateAsync(listing);
             await InvalidatePublicBusinessesCacheAsync();
 
+            await TellOwnerAsync(listing, "Your business listing is live", $"\"{listing.BusinessName}\" has been approved and now appears in the business directory.", admin.Id);
             return listing.ToDto().ToOkApiResponse("Business listing approved.");
+
         }
         catch (Exception e)
         {
@@ -201,6 +220,7 @@ public class BusinessDirectoryService(
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
 
+            await TellOwnerAsync(listing, "About your business listing", WithReason($"\"{listing.BusinessName}\" was not approved for the business directory.", adminNotes), admin.Id);
             return listing.ToDto().ToOkApiResponse("Business listing rejected.");
         }
         catch (Exception e)
@@ -239,6 +259,7 @@ public class BusinessDirectoryService(
             await listingRepo.UpdateAsync(listing);
             await InvalidatePublicBusinessesCacheAsync();
 
+            await TellOwnerAsync(listing, "Your listing changes are live", $"The changes to \"{listing.BusinessName}\" have been approved.", admin.Id);
             return listing.ToDto().ToOkApiResponse("Pending edit approved and applied.");
         }
         catch (Exception e)
@@ -266,6 +287,7 @@ public class BusinessDirectoryService(
             listing.UpdatedBy = admin.Id;
             await listingRepo.UpdateAsync(listing);
 
+            await TellOwnerAsync(listing, "About your listing changes", WithReason($"Your changes to \"{listing.BusinessName}\" were not approved, so the live listing is unchanged.", adminNotes), admin.Id);
             return listing.ToDto().ToOkApiResponse("Pending edit rejected — live listing unchanged.");
         }
         catch (Exception e)

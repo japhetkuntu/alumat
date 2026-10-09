@@ -17,6 +17,8 @@ public class JobDto
     public List<int>? YearGroups { get; set; }
     public string? BannerImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
+    /// <summary>For an opportunity a member suggested and an administrator has not yet reviewed: who suggested it. Admin portal only.</summary>
+    public string? SuggestedByName { get; set; }
 }
 
 public class AlumniEventDto
@@ -722,6 +724,7 @@ public class NotificationPreferenceDto
     public bool JobAlerts { get; set; }
     public bool ClassNoteAlerts { get; set; }
     public bool SpotlightAlerts { get; set; }
+    public bool EngagementMessages { get; set; } = true;
     public bool SmsAlerts { get; set; }
     public bool WhatsAppAlerts { get; set; }
     public string DigestFrequency { get; set; } = "Weekly";

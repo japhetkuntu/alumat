@@ -52,6 +52,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         NotificationKind.ForumReply => ProcessForumReplyAsync(request),
         NotificationKind.MemberStatusChanged => ProcessMemberStatusChangedAsync(request),
         NotificationKind.NewMemberPendingApproval => ProcessNewMemberPendingApprovalAsync(request),
+        NotificationKind.RequestAwaitingReview => ProcessRequestAwaitingReviewAsync(request),
         NotificationKind.ReferralRegistered => ProcessReferralRegisteredAsync(request),
         NotificationKind.EventRsvpConfirmed => ProcessEventRsvpConfirmedAsync(request),
         NotificationKind.SpotlightDecision => ProcessSpotlightDecisionAsync(request),
@@ -640,6 +641,36 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 
         foreach (var id in adminIds)
             await SendPushIfEligibleAsync(id, "InstitutionStaff", "New Member Awaiting Approval", $"{request.MemberName} ({request.MemberEmail}) registered and is waiting for approval.", actionUrl);
+    }
+
+    private async Task ProcessRequestAwaitingReviewAsync(NotificationRequest request)
+    {
+        var adminIds = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.ResolveReviewRequestAdminRecipientsAsync(request.InstitutionId),
+            NotificationActivityOptions.DatabaseRead);
+        if (adminIds.Count == 0) return;
+
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var title = request.NotificationTitle!;
+        var body = request.NotificationMessage!;
+        var actionUrl = AdminUrl(institution, request.ActionPath ?? "/dashboard");
+
+        var notifications = adminIds.Select(id => new Notification
+        {
+            RecipientId = id,
+            RecipientType = "Admin",
+            Title = title,
+            Body = body,
+            Type = request.NotificationType!,
+            RelatedEntityId = request.RequestId,
+            RelatedEntityType = request.RelatedEntityType,
+            ActionUrl = actionUrl,
+            CreatedBy = "system",
+        }).ToList();
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
+
+        foreach (var id in adminIds)
+            await SendPushIfEligibleAsync(id, "InstitutionStaff", title, body, actionUrl);
     }
 
     private async Task ProcessReferralRegisteredAsync(NotificationRequest request)

@@ -83,13 +83,16 @@ builder.Services
     .AddWorkflow<PledgeReminderDispatchWorkflow>()
     .AddWorkflow<WorkReminderDispatchWorkflow>()
     .AddWorkflow<InstitutionActivationDispatchWorkflow>()
+    .AddWorkflow<EngagementAutomationWorkflow>()
     .AddScopedActivities<ScheduledJobsActivities>()
+    .AddScopedActivities<EngagementActivities>()
     .AddScopedActivities<InstitutionActivationActivities>();
 
 // Report generation on its own queue with its own, low, concurrency: a report reads a lot of rows and
 // builds a file, and two at a time is enough to keep requests moving without one busy afternoon of
 // exports competing with payment callbacks for the database or filling the worker's memory.
 builder.Services.AddScoped<ReportDataBuilder>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Engagement.EngagementEngine>();
 builder.Services
     .AddHostedTemporalWorker(ReportTaskQueues.Generation)
     .ConfigureOptions(options => options.MaxConcurrentActivities = 2)

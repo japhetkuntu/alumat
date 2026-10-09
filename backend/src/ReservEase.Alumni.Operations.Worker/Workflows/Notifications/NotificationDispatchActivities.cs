@@ -197,6 +197,20 @@ public class NotificationDispatchActivities(
             return admins.Select(a => a.Id).ToList();
         }, "resolve pending approval admin recipients", institutionId);
 
+    /// <summary>
+    /// Full administrators who should hear that a member is waiting on a decision. Scoped administrators are left out: they cannot
+    /// open most of these pages. Honours the same "pending approval" alert switch as new-member requests.
+    /// </summary>
+    [Activity("NotificationDispatch.ResolveReviewRequestAdminRecipients")]
+    public virtual Task<List<string>> ResolveReviewRequestAdminRecipientsAsync(string institutionId) =>
+        Wrap(async () =>
+        {
+            var optedOut = await adminPrefRepo.GetAllAsync(p => p.InstitutionId == institutionId && !p.PendingApprovalAlerts, ignoreQueryFilters: true);
+            var optedOutIds = optedOut.Select(p => p.StaffId).ToHashSet();
+            var admins = await adminRepo.GetAllAsync(a => a.InstitutionId == institutionId && !a.IsDisabled && a.Role == "SuperAdmin" && !optedOutIds.Contains(a.Id), ignoreQueryFilters: true);
+            return admins.Select(a => a.Id).ToList();
+        }, "resolve review request admin recipients", institutionId);
+
     [Activity("NotificationDispatch.LoadMemberWithPreference")]
     public virtual Task<MemberWithPreference?> LoadMemberWithPreferenceAsync(string memberId) =>
         Wrap(async () =>

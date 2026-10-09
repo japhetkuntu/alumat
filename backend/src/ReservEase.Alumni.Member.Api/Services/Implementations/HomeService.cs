@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Member.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -32,6 +33,7 @@ public class HomeService(
     IAlumniPgRepository<StoreProduct> productRepo,
     IAlumniPgRepository<StoreOrder> orderRepo,
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
+    IAlumniPgRepository<EventRsvp> rsvpRepo,
     ILogger<HomeService> logger) : IHomeService
 {
     /// <summary>How far back the feed reaches. Older than this is history, not news.</summary>
@@ -205,6 +207,66 @@ public class HomeService(
         {
             logger.LogError(e, "Error checking module activity for member {MemberId}", memberId);
             return ApiResponseExtensions.ToServerErrorApiResponse<HomeModulesDto>("Failed to check module activity");
+        }
+    }
+
+    public async Task<IApiResponse<List<NextStepDto>>> GetNextStepsAsync(string memberId, IReadOnlyCollection<string> disabledFeatures)
+    {
+        try
+        {
+            var me = await memberRepo.GetByIdAsync(memberId);
+            if (me is null) return ApiResponseExtensions.ToNotFoundApiResponse<List<NextStepDto>>("Member not found");
+            var now = DateTime.UtcNow;
+            var year = me.GraduationYear;
+            var communityIds = await GetApprovedCommunityIdsAsync(memberId);
+            bool On(string f) => !disabledFeatures.Contains(f);
+
+            var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(me.ProfilePictureUrl)) missing.Add("photo");
+            if (string.IsNullOrWhiteSpace(me.JobTitle) && string.IsNullOrWhiteSpace(me.Company)) missing.Add("work");
+            if (string.IsNullOrWhiteSpace(me.Location)) missing.Add("location");
+            if (string.IsNullOrWhiteSpace(me.Bio)) missing.Add("short bio");
+
+            (string, string, DateTime)? nextEvent = null;
+            if (On(InstitutionFeatures.Events))
+            {
+                var mine = await rsvpRepo.GetQueryable(r => r.MemberId == memberId && r.Status == "Confirmed").Select(r => r.EventId).ToListAsync();
+                var e = await eventRepo.GetQueryable(x => x.Status == "Upcoming" && x.StartDate >= now && x.StartDate <= now.AddDays(30)
+                        && !mine.Contains(x.Id)
+                        && (x.CommunityId == null || communityIds.Contains(x.CommunityId))
+                        && (x.YearGroups == null || x.YearGroups.Count == 0 || x.YearGroups.Contains(year)))
+                    .OrderBy(x => x.StartDate).Select(x => new { x.Id, x.Title, x.StartDate }).FirstOrDefaultAsync();
+                if (e is not null) nextEvent = (e.Id, e.Title, e.StartDate);
+            }
+
+            var since = me.HomeSeenAt ?? now.AddDays(-14);
+            if (since < now.AddDays(-30)) since = now.AddDays(-30);
+            var newJobs = On(InstitutionFeatures.Jobs)
+                ? await jobRepo.GetQueryable(j => j.Status == "Active" && j.CreatedAt >= since && j.PostedBy != memberId
+                    && (j.Deadline == null || j.Deadline >= now.Date)
+                    && (j.CommunityId == null || communityIds.Contains(j.CommunityId))
+                    && (j.YearGroups == null || j.YearGroups.Count == 0 || j.YearGroups.Contains(year))).CountAsync()
+                : 0;
+
+            var recentThreads = On(InstitutionFeatures.Forum)
+                ? await threadRepo.GetQueryable(t => !t.IsClosed && t.CreatedAt >= now.AddDays(-14) && t.AuthorId != memberId
+                    && (t.CommunityId == null || communityIds.Contains(t.CommunityId))).CountAsync()
+                : 0;
+            var postedRecently = On(InstitutionFeatures.Forum)
+                && (await threadRepo.GetQueryable(t => t.AuthorId == memberId && t.CreatedAt >= now.AddDays(-60)).AnyAsync());
+
+            var facts = new NextStepFacts
+            {
+                MissingProfileParts = missing, NextEventNotSignedUpFor = nextEvent, NewOpportunities = newJobs,
+                RecentDiscussions = recentThreads, PostedInDiscussionsRecently = postedRecently,
+                JobsEnabled = On(InstitutionFeatures.Jobs), EventsEnabled = On(InstitutionFeatures.Events), ForumEnabled = On(InstitutionFeatures.Forum),
+            };
+            return NextStepRules.Evaluate(facts, now).ToList().ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error building next steps for member {MemberId}", memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<NextStepDto>>("Failed to load your next steps");
         }
     }
 

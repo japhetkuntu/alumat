@@ -77,6 +77,14 @@ public static class ScheduledJobsRegistration
                 new WorkflowOptions { Id = "institution-activation-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(24));
 
+        // Every 6h: refresh each institution's health reading and recommendations; messages go out only in the daytime window,
+        // and each person at most once per their cooldown, so the frequency does not mean more messages.
+        await EnsureScheduleAsync(client, logger, "engagement-automation-schedule",
+            ScheduleActionStartWorkflow.Create<EngagementAutomationWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "engagement-automation", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(6));
+
         // Daily: fails any report job left unfinished. Finished reports never expire.
         // On the report queue, where its activities are registered.
         await EnsureScheduleAsync(client, logger, "report-cleanup-schedule",

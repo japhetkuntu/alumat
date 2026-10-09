@@ -7,5 +7,6 @@ public interface IHomeService
 {
     Task<IApiResponse<HomeFeedDto>> GetFeedAsync(string memberId, IReadOnlyCollection<string> disabledFeatures);
     Task<IApiResponse<HomeModulesDto>> GetModulesAsync(string memberId, IReadOnlyCollection<string> disabledFeatures);
+    Task<IApiResponse<List<NextStepDto>>> GetNextStepsAsync(string memberId, IReadOnlyCollection<string> disabledFeatures);
     Task<IApiResponse<object>> MarkSeenAsync(string memberId);
 }

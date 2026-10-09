@@ -1119,3 +1119,15 @@ export async function createPledge(data: { campaignId: string; amount: number; d
 export async function cancelPledge(id: string): Promise<void> {
   await memberClient.delete(`/pledges/${id}`);
 }
+
+export interface NextStep { key: string; title: string; detail: string; actionLabel: string; actionUrl: string }
+export async function getNextSteps(): Promise<NextStep[]> {
+  const res = await memberClient.get("/home/next-steps");
+  return res.data.data ?? [];
+}
+
+export interface SuggestOpportunity { title: string; company: string; location: string; type: string; description?: string; applyUrl?: string; deadline?: string }
+export async function suggestOpportunity(body: SuggestOpportunity) {
+  const res = await memberClient.post("/jobs/suggest", { ...body, deadline: body.deadline || undefined, applyUrl: body.applyUrl || undefined });
+  return res.data;
+}

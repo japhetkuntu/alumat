@@ -575,6 +575,7 @@ public static class EntityDtoExtensions
         JobAlerts = np.JobAlerts,
         ClassNoteAlerts = np.ClassNoteAlerts,
         SpotlightAlerts = np.SpotlightAlerts,
+        EngagementMessages = np.EngagementMessages,
         SmsAlerts = np.SmsAlerts,
         WhatsAppAlerts = np.WhatsAppAlerts,
         DigestFrequency = np.DigestFrequency,

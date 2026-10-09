@@ -99,13 +99,13 @@ export function ShareBars({ items, color = "var(--brand-primary-500, var(--prima
 }
 
 /** One count for the last 30 days, with how it compares to the 30 days before, in words. */
-export function ChangeStat({ label, current, previous }: { label: string; current: number; previous: number }) {
+export function ChangeStat({ label, current, previous, period = "30 days" }: { label: string; current: number; previous: number; /** What the two numbers cover, e.g. "7 days": the comparison reads "…than the 7 days before". */ period?: string }) {
   const difference = current - previous;
   const comparison = previous === 0 && current === 0
-    ? "None in the 30 days before either"
+    ? `None in the ${period} before either`
     : difference === 0
-      ? "Same as the 30 days before"
-      : `${Math.abs(difference).toLocaleString()} ${difference > 0 ? "more" : "fewer"} than the 30 days before`;
+      ? `Same as the ${period} before`
+      : `${Math.abs(difference).toLocaleString()} ${difference > 0 ? "more" : "fewer"} than the ${period} before`;
   return (
     <div className="border-l-2 border-border pl-4">
       <p className="text-[26px] font-bold leading-none tabular-nums text-foreground">{current.toLocaleString()}</p>

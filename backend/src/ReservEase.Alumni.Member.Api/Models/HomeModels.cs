@@ -41,3 +41,30 @@ public class HomeModulesDto
     /// <summary>Whether the member has ever placed a store order — their orders page stays reachable even after the store itself empties out.</summary>
     public bool HasStoreOrders { get; set; }
 }
+
+/// <summary>One suggested thing for a member to do next, with where to do it.</summary>
+public record NextStepDto(string Key, string Title, string Detail, string ActionLabel, string ActionUrl);
+
+/// <summary>What the next-step rules look at. Plain facts, gathered once, so the rules themselves can be tested without a database.</summary>
+public record NextStepFacts
+{
+    public IReadOnlyList<string> MissingProfileParts { get; init; } = [];
+    public (string Id, string Title, DateTime StartsAt)? NextEventNotSignedUpFor { get; init; }
+    public int NewOpportunities { get; init; }
+    public int RecentDiscussions { get; init; }
+    public bool PostedInDiscussionsRecently { get; init; }
+    public bool JobsEnabled { get; init; }
+    public bool EventsEnabled { get; init; }
+    public bool ForumEnabled { get; init; }
+}
+
+public class SuggestOpportunityRequest
+{
+    public string Title { get; set; } = "";
+    public string Company { get; set; } = "";
+    public string Location { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string? Description { get; set; }
+    public string? ApplyUrl { get; set; }
+    public DateTime? Deadline { get; set; }
+}

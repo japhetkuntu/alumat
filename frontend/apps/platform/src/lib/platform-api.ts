@@ -1225,3 +1225,18 @@ export const reportCenterApi: ReportCenterApi = {
     saveBlob(res.data as Blob, res.headers["content-disposition"] as string | undefined, job.fileName ?? `report.${job.format}`);
   },
 };
+
+/** How institutions are doing: aggregates only, no member or payment detail. */
+export interface InstitutionHealthRow {
+  institutionId: string; name: string; slug: string; createdAt: string; status: "Onboarding" | "OnTrack" | "NeedsAttention"; reasons: string[];
+  classification?: string; score?: number; scoreChange?: number; activeMembers: number; daysSinceAdminActive?: number;
+  openSuggestions: number; ambassadors: number; openFollowUps: number; overdueFollowUps: number;
+}
+export interface InstitutionHealth {
+  summary: { institutions: number; needsAttention: number; onTrack: number; onboarding: number; healthy: number; atRiskOrInactive: number; noReading: number; withAmbassadors: number; averageScore?: number };
+  institutions: InstitutionHealthRow[];
+}
+export async function getInstitutionHealth(): Promise<InstitutionHealth> {
+  const res = await platformClient.get<ApiResponse<InstitutionHealth>>("/institution-health");
+  return res.data.data!;
+}

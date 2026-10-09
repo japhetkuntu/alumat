@@ -1,3 +1,5 @@
+using ReservEase.Alumni.Notifications.Sdk;
+using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
 using ReservEase.Alumni.Member.Api.Models;
@@ -17,6 +19,7 @@ public class BusinessDirectoryService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IStorageService storageService,
     ICurrentTenantService currentTenant,
+    ITemporalClientProvider temporalProvider,
     ILogger<BusinessDirectoryService> logger) : IBusinessDirectoryService
 {
     public async Task<IApiResponse<PgPagedResult<BusinessListingDto>>> GetListingsAsync(BusinessListingFilter filter)
@@ -180,6 +183,8 @@ public class BusinessDirectoryService(
             }
 
             await listingRepo.AddAsync(listing);
+            await temporalProvider.EnqueueNotificationAsync(
+                ReviewAlerts.BusinessSubmitted(currentTenant.InstitutionId!, listing.Id, $"{member.FirstName} {member.LastName}", listing.BusinessName, DateTime.UtcNow), logger);
             return listing.ToDto().ToCreatedApiResponse("Business listing submitted for review.");
         }
         catch (Exception e)
@@ -224,6 +229,7 @@ public class BusinessDirectoryService(
                 bannerUrl = await storageService.UploadFileAsync(request.Banner, name, folderName: "business-directory", institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
 
+            var resubmitted = false;
             if (listing.Status == "Approved")
             {
                 // Live listing stays untouched — proposed values wait for admin approval.
@@ -258,12 +264,17 @@ public class BusinessDirectoryService(
                 {
                     listing.Status = "Pending";
                     listing.AdminNotes = null;
+                    resubmitted = true;
                 }
             }
 
             listing.UpdatedAt = DateTime.UtcNow;
             listing.UpdatedBy = member.Id;
             await listingRepo.UpdateAsync(listing);
+            // Only a change an administrator has to decide on is worth an alert: a live listing's edit, or a rejected one sent back.
+            if (listing.HasPendingEdit || resubmitted)
+                await temporalProvider.EnqueueNotificationAsync(
+                    ReviewAlerts.BusinessChanged(currentTenant.InstitutionId!, listing.Id, $"{member.FirstName} {member.LastName}", listing.BusinessName, resubmitted, DateTime.UtcNow), logger);
 
             var message = listing.HasPendingEdit
                 ? "Edit submitted for admin approval — your live listing is unchanged until then."

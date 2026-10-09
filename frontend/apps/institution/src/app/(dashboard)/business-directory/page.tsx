@@ -4,6 +4,7 @@ import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Store, Trash2, Pencil, CheckCircle, XCircle, Ban, ShieldCheck, Loader2,
@@ -203,7 +204,8 @@ function ListingForm({ title, init, onSave, onCancel, saving }: {
 }
 
 export default function AdminBusinessDirectoryPage() {
-  const [statusFilter, setStatusFilter] = useState("");
+  const searchParams = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<BusinessListing | null>(null);

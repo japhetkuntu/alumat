@@ -59,6 +59,8 @@ public sealed class NotificationRequest
     public string? NotificationMessage { get; init; }
     public string? NotificationType { get; init; }
     public string? RelatedEntityType { get; init; }
+    /// <summary>Where, in the administrator portal, the request is reviewed (for example "/business-directory?status=Pending").</summary>
+    public string? ActionPath { get; init; }
 
     // Broadcast.
     public List<BroadcastRecipient>? Recipients { get; init; }
@@ -162,6 +164,18 @@ public sealed class NotificationRequest
     {
         Kind = NotificationKind.NewMemberPendingApproval, InstitutionId = institutionId,
         MemberId = memberId, MemberName = memberName, MemberEmail = memberEmail,
+    };
+
+    /// <summary>
+    /// Tells the institution's full administrators that a member's request is waiting for a decision. <paramref name="type"/> is the
+    /// stored notification type (one per kind of request), <paramref name="relatedId"/> the item to review, and the message should
+    /// already be the sentence the administrator reads; a date in it lets a later request about the same item be told apart.
+    /// </summary>
+    public static NotificationRequest RequestAwaitingReview(string institutionId, string type, string title, string message, string relatedEntityType, string relatedId, string actionPath) => new()
+    {
+        Kind = NotificationKind.RequestAwaitingReview, InstitutionId = institutionId,
+        NotificationType = type, NotificationTitle = title, NotificationMessage = message,
+        RelatedEntityType = relatedEntityType, RequestId = relatedId, ActionPath = actionPath,
     };
 
     public static NotificationRequest ReferralRegistered(string institutionId, string referrerId, string referredName) => new()

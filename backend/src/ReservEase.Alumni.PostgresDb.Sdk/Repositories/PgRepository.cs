@@ -51,6 +51,8 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
         return await _context.SaveChangesAsync();
     }
 
+    public void Detach(T entity) => _context.Entry(entity).State = EntityState.Detached;
+
     public async Task<int> AddRangeAsync(List<T> entities)
     {
         await _dbSet.AddRangeAsync(entities);
