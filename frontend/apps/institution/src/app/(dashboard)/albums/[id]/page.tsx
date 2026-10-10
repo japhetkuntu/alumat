@@ -1,6 +1,6 @@
 "use client";
 
-import { compressImages } from "@alumni/ui";
+import { compressImages, ZoomableImage } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import {
-  getAlbum, getAlbumPhotos, updateAlbum, deleteAlbum, addAlbumPhotos, deleteAlbumPhoto, getInstitutionProfile, type AlbumPhoto,
+  getAlbum, getAlbumPhotos, updateAlbum, deleteAlbum, addAlbumPhotos, deleteAlbumPhoto, getInstitutionProfile, getCommunities, type AlbumPhoto,
 } from "@/lib/institution-api";
 import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { handleApiError } from "@/lib/api-client";
@@ -23,6 +23,9 @@ import { toast } from "sonner";
 import { EmptyState } from "@alumni/ui";
 import { ShareLinkButton } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
+import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
+import { useAuth } from "@/hooks/use-auth";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
 interface UploadingItem {
   key: string;
@@ -36,7 +39,13 @@ export default function AdminAlbumDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ title: "", description: "" });
+  const [editForm, setEditForm] = useState<{ title: string; description: string; audienceMode: AudienceMode; communityId: string; yearGroups: number[] }>(
+    { title: "", description: "", audienceMode: "everyone", communityId: "", yearGroups: [] });
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SuperAdmin";
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
+  const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
   const [deletePhotoTarget, setDeletePhotoTarget] = useState<AlbumPhoto | null>(null);
   const [deleteAlbumOpen, setDeleteAlbumOpen] = useState(false);
   const [uploading, setUploading] = useState<UploadingItem[]>([]);
@@ -60,7 +69,11 @@ export default function AdminAlbumDetailPage() {
 
   useEffect(() => {
     if (editOpen && album) {
-      setEditForm({ title: album.title, description: album.description ?? "" });
+      setEditForm({
+        title: album.title, description: album.description ?? "",
+        audienceMode: inferAudienceMode(album.communityId, album.yearGroups),
+        communityId: album.communityId ?? "", yearGroups: album.yearGroups ?? [],
+      });
     }
   }, [editOpen, album]);
 
@@ -69,6 +82,9 @@ export default function AdminAlbumDetailPage() {
       title: editForm.title,
       description: editForm.description || undefined,
       coverImageUrl: album?.coverImageUrl ?? undefined,
+      // Who the album is for is saved with every update, so omitting it here would quietly make the album visible to everyone.
+      communityId: isSuperAdmin ? (editForm.audienceMode === "community" ? editForm.communityId || undefined : undefined) : album?.communityId ?? undefined,
+      yearGroups: isSuperAdmin ? (editForm.audienceMode === "yearGroups" && editForm.yearGroups.length > 0 ? editForm.yearGroups : undefined) : album?.yearGroups ?? undefined,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-album", id] });
@@ -94,6 +110,8 @@ export default function AdminAlbumDetailPage() {
       title: album?.title ?? "",
       description: album?.description ?? undefined,
       coverImageUrl: url,
+      communityId: album?.communityId ?? undefined,
+      yearGroups: album?.yearGroups ?? undefined,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-album", id] });
@@ -244,22 +262,24 @@ export default function AdminAlbumDetailPage() {
             const isCover = album.coverImageUrl === p.url;
             return (
               <div key={p.id} className="relative group aspect-square overflow-hidden border border-border/40 bg-muted/30">
-                <img src={p.url} alt={p.caption ?? ""} className="w-full h-full object-cover" loading="lazy" />
+                <ZoomableImage src={p.url} alt={p.caption ?? ""} wrapperClassName="h-full w-full" className="w-full h-full object-cover" />
                 {isCover && (
-                  <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-primary text-primary-foreground text-[12px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-sm shadow">
+                  <div className="pointer-events-none absolute top-1.5 left-1.5 flex items-center gap-1 bg-primary text-primary-foreground text-[12px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-sm shadow">
                     <Star size={10} className="fill-current" />Cover
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors duration-150 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100">
+                {/* Tapping the photo opens it full size; these controls sit in the corner, always visible on touch screens. */}
+                <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity duration-150">
                   {!isCover && (
                     <Button
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="h-7 px-2 text-[12px]"
+                      className="h-9 px-2.5 text-[12px] sm:h-7 sm:px-2"
                       isLoading={setCoverMut.isPending && setCoverMut.variables === p.url}
                       onClick={() => setCoverMut.mutate(p.url)}
                       title="Set as cover"
+                      aria-label="Set as cover"
                     >
                       <Star size={11} />
                     </Button>
@@ -268,9 +288,10 @@ export default function AdminAlbumDetailPage() {
                     type="button"
                     size="sm"
                     variant="destructive"
-                    className="h-7 px-2 text-[12px]"
+                    className="h-9 px-2.5 text-[12px] sm:h-7 sm:px-2"
                     onClick={() => setDeletePhotoTarget(p)}
                     title="Delete photo"
+                    aria-label="Delete photo"
                   >
                     <Trash2 size={11} />
                   </Button>
@@ -323,8 +344,20 @@ export default function AdminAlbumDetailPage() {
               <Label>Description</Label>
               <Textarea rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
+            <AudienceScopePicker
+              mode={editForm.audienceMode}
+              onModeChange={(mode) => setEditForm((f) => ({ ...f, audienceMode: mode }))}
+              communityId={editForm.communityId}
+              onCommunityChange={(v) => setEditForm((f) => ({ ...f, communityId: v }))}
+              communities={communities}
+              yearGroups={editForm.yearGroups}
+              onYearGroupsChange={(years) => setEditForm((f) => ({ ...f, yearGroups: years }))}
+              supportsCommunity={communities.length > 0}
+              hideYearGroups={isCommunity}
+              restricted={!isSuperAdmin ? { reason: "This album stays with your own batch or community." } : undefined}
+            />
             <p className="text-[12px] text-muted-foreground">
-              Tip: hover any photo below and click the star to set it as this album&apos;s cover photo.
+              Tip: tap a photo below to see it full size, and use the star to make it the cover.
             </p>
           </div>
           <DialogFooter>

@@ -224,7 +224,7 @@ export default function PublicCampaignContributionPage() {
   ];
 
   const shareGrid = (
-    <div className="grid grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
       {sharePlatforms.map(({ name, icon: Icon, href, hover }) => (
         <a
           key={name}
@@ -237,7 +237,7 @@ export default function PublicCampaignContributionPage() {
           )}
         >
           <Icon size={18} />
-          <span className="text-[10.5px] font-bold leading-none text-center">{name}</span>
+          <span className="text-[11.5px] font-bold leading-tight text-center">{name}</span>
         </a>
       ))}
       <button
@@ -249,7 +249,7 @@ export default function PublicCampaignContributionPage() {
         )}
       >
         {copied ? <Check size={18} /> : <Copy size={18} />}
-        <span className="text-[10.5px] font-bold leading-none text-center">{copied ? "Copied!" : "Copy link"}</span>
+        <span className="text-[11.5px] font-bold leading-tight text-center">{copied ? "Copied!" : "Copy link"}</span>
       </button>
     </div>
   );

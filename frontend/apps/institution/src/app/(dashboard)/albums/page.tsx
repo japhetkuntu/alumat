@@ -20,10 +20,22 @@ import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
-import { FormSelect } from "@alumni/ui";
+import { AudienceScopePicker, type AudienceMode } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
+import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
 
-const emptyForm = { title: "", description: "", communityId: "" };
+const emptyForm: { title: string; description: string; audienceMode: AudienceMode; communityId: string; yearGroups: number[] } =
+  { title: "", description: "", audienceMode: "everyone", communityId: "", yearGroups: [] };
+
+/** Who an album is for, in a few words, for the card. */
+function audienceLabel(a: PhotoAlbum, communityName?: string) {
+  if (a.communityId) return communityName ?? "A community";
+  if (a.yearGroups && a.yearGroups.length > 0) {
+    const years = [...a.yearGroups].sort((x, y) => y - x);
+    return `Batch${years.length === 1 ? "" : "es"} ${years.length > 3 ? `${years.slice(0, 3).join(", ")} +${years.length - 3}` : years.join(", ")}`;
+  }
+  return "Everyone";
+}
 
 export default function AdminAlbumsPage() {
   const { user } = useAuth();
@@ -42,11 +54,18 @@ export default function AdminAlbumsPage() {
   });
 
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
+  const { data: navTheme } = useInstitutionNavTheme();
+  const isCommunity = navTheme?.organizationType === "Community";
 
   const [formError, setFormError] = useState<string | null>(null);
   const createMut = useMutation({
     onMutate: () => setFormError(null),
-    mutationFn: () => createAlbum({ title: form.title, description: form.description || undefined, communityId: form.communityId || undefined }),
+    mutationFn: () => createAlbum({
+      title: form.title,
+      description: form.description || undefined,
+      communityId: isSuperAdmin && form.audienceMode === "community" ? form.communityId || undefined : undefined,
+      yearGroups: isSuperAdmin && form.audienceMode === "yearGroups" && form.yearGroups.length > 0 ? form.yearGroups : undefined,
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-albums"] });
       setShowCreate(false);
@@ -117,6 +136,7 @@ export default function AdminAlbumsPage() {
                 <p className="text-[12px] text-muted-foreground mt-auto pt-2">
                   {a.photoCount} photo{a.photoCount === 1 ? "" : "s"} &middot; {formatDate(a.createdAt)}
                 </p>
+                <p className="text-[12px] font-semibold text-foreground/80">For: {audienceLabel(a, communities.find((c) => c.id === a.communityId)?.name)}</p>
                 <div className="flex items-center gap-2 pt-2 mt-1 border-t border-border/40">
                   <Link href={`/albums/${a.id}`} className="flex-1">
                     <Button size="sm" variant="outline" className="w-full h-9 text-[12px] font-bold">Manage</Button>
@@ -157,21 +177,18 @@ export default function AdminAlbumsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
-            {communities.length > 0 && (
-              <div className="space-y-2">
-                <Label>Community (optional)</Label>
-                <FormSelect
-                  value={form.communityId}
-                  onValueChange={(v) => setForm((f) => ({ ...f, communityId: v }))}
-                  options={[{ value: "", label: "Institution-wide (all members)" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
-                />
-                {isSuperAdmin ? (
-                  <p className="text-xs text-muted-foreground">Restricts this album to one community's approved members instead of the whole institution.</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Leave as institution-wide to scope this album to your own batch instead, or pick one of your assigned communities.</p>
-                )}
-              </div>
-            )}
+            <AudienceScopePicker
+              mode={form.audienceMode}
+              onModeChange={(mode) => setForm((f) => ({ ...f, audienceMode: mode }))}
+              communityId={form.communityId}
+              onCommunityChange={(v) => setForm((f) => ({ ...f, communityId: v }))}
+              communities={communities}
+              yearGroups={form.yearGroups}
+              onYearGroupsChange={(years) => setForm((f) => ({ ...f, yearGroups: years }))}
+              supportsCommunity={communities.length > 0}
+              hideYearGroups={isCommunity}
+              restricted={!isSuperAdmin ? { reason: "This album will be shared with your own batch or community automatically." } : undefined}
+            />
           </div>
           <FormError message={formError} className="mt-3" />
           <DialogFooter>

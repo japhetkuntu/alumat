@@ -83,15 +83,15 @@ export default function MemberJobDetailPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
 
       {/* ── Nav row ── */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
+      <div className="flex flex-wrap items-center justify-between mb-6 sm:mb-8 gap-x-3 gap-y-2">
         <button
           onClick={() => router.push("/jobs")}
-          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[13.5px] font-semibold transition-colors hover:underline"
           style={{ color: "var(--muted-foreground)" }}
         >
           <ArrowLeft size={15} /> Back to jobs
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ShareLinkButton
             url={shareUrl}
             title={job.title}

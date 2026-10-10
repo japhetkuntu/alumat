@@ -198,7 +198,7 @@ export default function MemberResourceDetailPage() {
                 ) : isPdf ? (
                   <iframe src={href} className="w-full h-[360px]" title="PDF Preview" />
                 ) : isImageLink ? (
-                  <img src={href} alt={resource.title} className="w-full max-h-[420px] object-contain bg-background" loading="lazy" />
+                  <ZoomableImage src={href} alt={resource.title} className="w-full max-h-[420px] object-contain bg-background" />
                 ) : resource.externalUrl ? (
                   <div className="p-4 space-y-1">
                     <p className="text-sm font-semibold line-clamp-1">{resource.title}</p>

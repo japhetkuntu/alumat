@@ -1145,3 +1145,6 @@ html {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* A long unbroken word (a name, a title, a link) wraps instead of pushing the page sideways. Inherited by everything below body. */
+body { overflow-wrap: break-word; }

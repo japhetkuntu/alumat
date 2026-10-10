@@ -54,7 +54,7 @@ export default function AuditLogPage() {
                 <TableCell>{a.action}</TableCell>
                 <TableCell>{a.target}</TableCell>
                 <TableCell>{new Date(a.timestamp).toLocaleString()}</TableCell>
-                <TableCell className="font-mono text-[12px] text-muted-foreground">{a.id}</TableCell>
+                <TableCell className="min-w-0 break-all font-mono text-[12px] text-muted-foreground">{a.id}</TableCell>
               </TableRow>
             ))}
           </TableBody>

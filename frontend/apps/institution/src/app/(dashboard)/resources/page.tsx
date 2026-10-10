@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadError } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Download, Link2, FileText, Pencil, Eye } from "@alumni/ui";
@@ -277,13 +278,13 @@ export default function AdminResourcesPage() {
             <Card key={r.id} className="group flex flex-col overflow-hidden border-border/40 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10">
               <div className="relative h-40 overflow-hidden">
                 {r.bannerImageUrl ? (
-                  <img src={r.bannerImageUrl} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                  <ZoomableImage src={r.bannerImageUrl} alt={r.title} wrapperClassName="h-full w-full" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-muted/70 to-muted/30 flex items-center justify-center">
                     {r.type === "File" ? <FileText size={34} className="text-primary/40" /> : <Link2 size={34} className="text-primary/40" />}
                   </div>
                 )}
-                <div className="absolute top-3 left-3 flex gap-2">
+                <div className="pointer-events-none absolute top-3 left-3 flex gap-2">
                   <span className={`px-2 py-0.5 text-[12px] font-black uppercase tracking-wider ${typeColor[r.type] ?? "bg-primary text-primary-foreground"}`}>{r.type}</span>
                   <Badge variant="outline" className="bg-background/80 backdrop-blur-sm text-[12px]">{r.category}</Badge>
                 </div>

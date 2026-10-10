@@ -209,13 +209,17 @@ public class ReportDataBuilderTests
     }
 
     [Fact]
-    public async Task A_payment_that_did_not_succeed_shows_nothing_as_having_reached_the_institution()
+    public async Task The_payments_ledger_never_has_a_fee_or_net_column_because_institutions_receive_their_full_amount()
     {
-        var builder = await Create(new Campaign { Id = "fund", InstitutionId = Ours, Title = "Lab fund" }, Person("ama"), Paid("ama", "fund", status: "Pending"));
+        var builder = await Create(new Campaign { Id = "fund", InstitutionId = Ours, Title = "Lab fund" }, Person("ama"),
+            Paid("ama", "fund", 100), Paid("ama", "fund", status: "Pending"));
 
         var (data, rows) = await Run(builder, Job(ReportTypes.Payments));
 
-        Assert.Null(ReportRig.Column(data, rows, "Reached us").Single());
+        var headers = data.Columns.Select(c => c.Header).ToList();
+        Assert.Contains("Amount", headers);
+        Assert.DoesNotContain(headers, h => System.Text.RegularExpressions.Regex.IsMatch(h, "(?i)fee|net|reached|deduct|charge|commission"));
+        Assert.Equal(2, rows.Count);
     }
 
     // ── Platform ────────────────────────────────────────────────────────────

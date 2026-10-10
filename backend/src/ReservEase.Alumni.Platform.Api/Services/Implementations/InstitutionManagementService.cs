@@ -825,7 +825,8 @@ public class InstitutionManagementService(
                 c.Id, "Contribution", c.InstitutionId,
                 c.Member is null ? null : $"{c.Member.FirstName} {c.Member.LastName}", c.Member?.Email,
                 c.Campaign?.Title ?? "Contribution", c.Amount, c.Status, c.PaymentMethod, c.TransactionRef,
-                c.CreatedAt, c.ConfirmedAt, c.PlatformFeeAmount, c.GatewayFeeAmount)));
+                c.CreatedAt, c.ConfirmedAt, c.PlatformFeeAmount, c.GatewayFeeAmount,
+                c.Status == "Successful" ? c.PlatformRevenueAmount : 0m)));
         }
 
         if (string.IsNullOrEmpty(source) || source == "StoreOrder")
@@ -836,7 +837,8 @@ public class InstitutionManagementService(
                 o.Member is null ? null : $"{o.Member.FirstName} {o.Member.LastName}", o.Member?.Email,
                 o.Items.Count == 1 ? o.Items[0].ProductName : $"{o.Items.Count} items",
                 o.TotalAmount, o.Status, o.PaymentMethod, o.TransactionRef,
-                o.CreatedAt, o.ConfirmedAt, o.PlatformFeeAmount, o.GatewayFeeAmount)));
+                o.CreatedAt, o.ConfirmedAt, o.PlatformFeeAmount, o.GatewayFeeAmount,
+                o.Status == "Successful" ? o.PlatformFeeAmount : 0m)));
         }
 
         if (string.IsNullOrEmpty(source) || source == "ServiceRequest")
@@ -847,7 +849,8 @@ public class InstitutionManagementService(
                 r.Member is null ? null : $"{r.Member.FirstName} {r.Member.LastName}", r.Member?.Email,
                 r.ServiceTypeName,
                 r.Amount, r.PaymentStatus, r.PaymentMethod, r.TransactionRef,
-                r.CreatedAt, r.ConfirmedAt, r.PlatformFeeAmount, r.GatewayFeeAmount)));
+                r.CreatedAt, r.ConfirmedAt, r.PlatformFeeAmount, r.GatewayFeeAmount,
+                r.PaymentStatus == "Successful" ? r.PlatformFeeAmount : 0m)));
         }
 
         if (!string.IsNullOrEmpty(status))
@@ -909,7 +912,8 @@ public class InstitutionManagementService(
                     contribution.Amount, contribution.PlatformFeeAmount, contribution.GatewayFeeAmount,
                     transaction?.TransactionChargeAmount ?? 0m, contribution.GrossChargeAmount,
                     contribution.Status, contribution.CreatedAt, contribution.ConfirmedAt,
-                    contribution.PaymentMethod, transaction?.Channel, transaction?.GatewayResponse, contribution.TransactionRef)
+                    contribution.PaymentMethod, transaction?.Channel, transaction?.GatewayResponse, contribution.TransactionRef,
+                    contribution.Status == "Successful" ? contribution.PlatformRevenueAmount : 0m)
                     .ToOkApiResponse();
             }
 
@@ -934,7 +938,8 @@ public class InstitutionManagementService(
                     order.TotalAmount, order.PlatformFeeAmount, order.GatewayFeeAmount,
                     order.TransactionChargeAmount, order.GrossChargeAmount,
                     order.Status, order.CreatedAt, order.ConfirmedAt,
-                    order.PaymentMethod, order.Channel, order.GatewayResponse, order.TransactionRef)
+                    order.PaymentMethod, order.Channel, order.GatewayResponse, order.TransactionRef,
+                    order.Status == "Successful" ? order.PlatformFeeAmount : 0m)
                     .ToOkApiResponse();
             }
         }
@@ -952,7 +957,8 @@ public class InstitutionManagementService(
                     request.Amount, request.PlatformFeeAmount, request.GatewayFeeAmount,
                     request.TransactionChargeAmount, request.GrossChargeAmount,
                     request.PaymentStatus, request.CreatedAt, request.ConfirmedAt,
-                    request.PaymentMethod, request.Channel, request.GatewayResponse, request.TransactionRef)
+                    request.PaymentMethod, request.Channel, request.GatewayResponse, request.TransactionRef,
+                    request.PaymentStatus == "Successful" ? request.PlatformFeeAmount : 0m)
                     .ToOkApiResponse();
             }
         }

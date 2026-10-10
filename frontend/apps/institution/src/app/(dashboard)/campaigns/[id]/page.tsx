@@ -171,14 +171,14 @@ export default function CampaignDetailPage() {
         <ChevronRight size={14} className="text-muted-foreground/50" />
         <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{campaign.title}</span>
       </nav>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[26px] font-bold m-0 flex items-center gap-2">
-            {campaign.title}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[22px] font-bold leading-tight break-words sm:text-[26px]">
+            <span className="min-w-0 break-words">{campaign.title}</span>
             <Badge variant={campaign.status === "Active" ? "success" : "secondary"}>{campaign.status}</Badge>
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <ShareLinkButton
             url={shareUrl}
             title={campaign.title}

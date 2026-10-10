@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, MapPin, ArrowRight } from "@alumni/ui";
+import { CalendarDays, MapPin, ArrowRight, ZoomableImage } from "@alumni/ui";
 import { memberClient, publicMemberClient } from "@/lib/api-client";
 import { withRedirect } from "@/lib/redirect";
 
@@ -75,7 +75,7 @@ export function GuestEntityPreview({ type, id, path }: { type: GuestEntityType; 
           </div>
         ) : (
           <article>
-            {preview.imageUrl && <img src={preview.imageUrl} alt="" className="mb-6 aspect-[16/8] w-full object-cover bg-muted" />}
+            {preview.imageUrl && <ZoomableImage src={preview.imageUrl} alt="" wrapperClassName="mb-6 aspect-[16/8] w-full bg-muted" className="h-full w-full object-cover" />}
             {preview.subtitle && <p className="text-[12px] font-semibold uppercase tracking-wider text-primary">{preview.subtitle}</p>}
             <h1 className="mt-1 text-[28px] font-bold leading-tight tracking-tight text-balance sm:text-[34px]">{preview.title}</h1>
 

@@ -7,7 +7,7 @@ import { ArrowLeft, Calendar, Pin } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { RichTextViewer } from "@alumni/ui";
-import { MediaGallery } from "@alumni/ui";
+import { MediaGallery, ZoomableImage } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import { getNewsPost } from "@/lib/member-api";
@@ -60,10 +60,10 @@ export default function NewsDetailPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto pb-20">
 
       {/* ── Nav ── */}
-      <div className="flex items-center justify-between gap-3 mb-7">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-7">
         <button
           onClick={() => router.push("/news")}
-          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[13.5px] font-semibold transition-colors hover:underline"
           style={{ color: "var(--muted-foreground)" }}
         >
           <ArrowLeft size={15} /> Back to news
@@ -129,7 +129,7 @@ export default function NewsDetailPage() {
           className="rounded-2xl overflow-hidden border mb-8"
           style={{ borderColor: "var(--border)" }}
         >
-          <img
+          <ZoomableImage
             src={post.imageUrls[0]}
             alt={post.title}
             className="w-full object-cover"

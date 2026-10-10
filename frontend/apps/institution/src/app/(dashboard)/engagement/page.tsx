@@ -107,7 +107,7 @@ export default function EngagementPage() {
             <Stat label="Activated members" value={d.activated} note="Signed in and filled in part of their profile" />
             <Stat label="Came back to take part" value={d.retentionPercent === undefined ? "n/a" : `${d.retentionPercent}%`} note={d.retentionPercent === undefined ? "Too few members in the previous period to compare" : "Of those who took part before, took part again"} />
             <Stat label="Upcoming events" value={d.upcomingEvents} note="In the next 30 days" />
-            <Stat label="Contributions" value={formatCurrency(d.contributionVolume)} note={`Gross, from ${d.contributors.toLocaleString()} ${d.contributors === 1 ? "member" : "members"}. Before fees.`} />
+            <Stat label="Contributions" value={formatCurrency(d.contributionVolume)} note={`From ${d.contributors.toLocaleString()} ${d.contributors === 1 ? "member" : "members"}`} />
           </div>
         )}
       </InsightSection>

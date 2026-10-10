@@ -110,8 +110,10 @@ export function ShareLinkButton({
 
   const waHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
+  // One wrapper so the two buttons travel (and wrap) together wherever a page puts this: as bare siblings they
+  // overflowed any narrow header row that did not itself allow wrapping.
   return (
-    <>
+    <div className="inline-flex max-w-full flex-wrap items-center gap-2">
     <Button
       type={type}
       variant={variant}
@@ -143,6 +145,6 @@ export function ShareLinkButton({
         WhatsApp
       </a>
     )}
-    </>
+    </div>
   );
 }

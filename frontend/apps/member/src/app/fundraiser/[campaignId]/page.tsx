@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { formatCurrency, formatDate } from "@alumni/ui";
+import { formatCurrency, formatDate, ZoomableImage } from "@alumni/ui";
 import { getInstitutionTheme } from "@/lib/theme";
 import { getPublicFundraiser } from "@/lib/public-fundraiser";
 import { ContributorNames } from "./contributor-names";
@@ -55,7 +55,7 @@ export default async function FundraiserPublicPage({ params }: { params: Promise
 
       <main className="mx-auto max-w-3xl px-5 pb-16">
         {f.bannerImageUrl && (
-          <img src={f.bannerImageUrl} alt="" className="mt-6 w-full aspect-[16/7] object-cover bg-muted" />
+          <ZoomableImage src={f.bannerImageUrl} alt="" wrapperClassName="mt-6 aspect-[16/7] bg-muted" className="h-full w-full object-cover" />
         )}
 
         <div className="pt-10 pb-8 text-center">

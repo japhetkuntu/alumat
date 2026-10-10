@@ -87,7 +87,7 @@ public static class ReportCatalog
             Parameters: [ReportParameters.Year, ReportParameters.Status],
             StatusOptions: ["Paid", "Owing"]),
         new(ReportTypes.Payments, ReportAudiences.Institution, "Payments ledger",
-            "Every payment into a fundraiser or dues, with who paid, how, and what reached us.",
+            "Every payment into a fundraiser or dues, with who paid, how much, and how.",
             Feature: InstitutionFeatures.Contributions,
             Parameters: [.. DateRange, ReportParameters.Status], StatusOptions: PaymentStatuses),
         new(ReportTypes.Fundraisers, ReportAudiences.Institution, "Fundraiser performance",

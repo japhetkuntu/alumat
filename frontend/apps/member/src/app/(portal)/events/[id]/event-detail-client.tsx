@@ -12,7 +12,7 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { MediaGallery } from "@alumni/ui";
+import { MediaGallery, ZoomableImage } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
@@ -116,15 +116,15 @@ export default function EventDetailPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20">
 
       {/* ── Nav row ── */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
+      <div className="flex flex-wrap items-center justify-between mb-6 sm:mb-8 gap-x-3 gap-y-2">
         <button
           onClick={() => router.push("/events")}
-          className="flex items-center gap-1.5 text-[13.5px] font-semibold transition-colors hover:underline"
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[13.5px] font-semibold transition-colors hover:underline"
           style={{ color: "var(--muted-foreground)" }}
         >
           <ArrowLeft size={15} /> Back to events
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ShareLinkButton
             url={shareUrl}
             title={event.title}
@@ -176,7 +176,7 @@ export default function EventDetailPage() {
           {/* Banner */}
           <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
             {event.bannerImageUrl ? (
-              <img
+              <ZoomableImage
                 src={event.bannerImageUrl}
                 alt={event.title}
                 className="w-full object-cover"

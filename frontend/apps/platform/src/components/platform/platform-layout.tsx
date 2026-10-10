@@ -173,7 +173,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 h-14 border-b border-border bg-background/80 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg hover:bg-muted" onClick={() => setMobileOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </Button>

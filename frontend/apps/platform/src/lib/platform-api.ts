@@ -393,6 +393,8 @@ export interface PlatformPayment {
   confirmedAt?: string | null;
   platformFeeAmount: number;
   gatewayFeeAmount: number;
+  /** What the platform actually earned on this payment: the figure the dashboard and the institution totals add up. */
+  platformEarnedAmount: number;
 }
 
 export async function getInstitutionPayments(id: string, page = 1, pageSize = 20, status?: string, source?: string) {
@@ -423,6 +425,8 @@ export interface PaymentDetail {
   amount: number;
   platformFeeAmount: number;
   gatewayFeeAmount: number;
+  /** What the platform actually earned on this payment: the figure the dashboard and the institution totals add up. */
+  platformEarnedAmount: number;
   transactionChargeAmount: number;
   grossChargeAmount: number;
   status: string;

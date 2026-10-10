@@ -1,6 +1,6 @@
 "use client";
 
-import { ChipRow } from "@alumni/ui";
+import { ChipRow, ZoomableImage } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
@@ -636,7 +636,7 @@ export default function AdminStorePage() {
               {products.map((p) => (
                 <Card key={p.id} className="flex flex-col overflow-hidden">
                   {p.imageUrls && p.imageUrls.length > 0 ? (
-                    <img src={p.imageUrls[0]} alt={p.name} className="w-full h-40 object-cover" />
+                    <ZoomableImage src={p.imageUrls[0]} alt={p.name} wrapperClassName="h-40 w-full" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-40 bg-muted/40 flex items-center justify-center">
                       <Package size={28} className="text-muted-foreground" />

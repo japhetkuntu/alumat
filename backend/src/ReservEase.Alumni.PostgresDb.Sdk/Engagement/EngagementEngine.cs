@@ -9,7 +9,7 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Engagement;
 
 public sealed record MonthFigures(
     DateTime Month, int NewMembers, int Participants, int MeaningfulActions,
-    decimal ContributionGross, decimal FeesDeducted, decimal NetToInstitution, int Contributors,
+    decimal AmountCollected, int Contributors,
     int EventsHeld, int EventSignUps, int NewsPublished, int OpportunitiesShared,
     int SuggestionsRaised, int SuggestionsCompleted, int SuggestionsDismissed,
     int? HealthStart, int? HealthEnd, int HealthReadings);
@@ -52,8 +52,8 @@ public class EngagementEngine(
 
     /// <summary>
     /// What happened in one calendar month. Activity (things done) and outcomes (what members did in response) are kept apart:
-    /// ten announcements published says nothing about whether anyone benefited. Money is shown as gross volume with the platform
-    /// fee and the institution's net beside it, never as one number, and is not platform revenue.
+    /// ten announcements published says nothing about whether anyone benefited. Money is the amount members paid in. Fees are
+    /// deliberately never part of this: the institution receives its full amount, so there is nothing to deduct and nothing to show.
     /// </summary>
     public async Task<MonthFigures> ComputeMonthAsync(DateTime monthStart)
     {
@@ -71,9 +71,7 @@ public class EngagementEngine(
         var participants = await acts.Select(a => a.MemberId).Distinct().CountAsync();
 
         var paid = contributionRepo.GetQueryable(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= monthStart && (c.ConfirmedAt ?? c.CreatedAt) < end);
-        var gross = await paid.SumAsync(c => (decimal?)c.Amount) ?? 0;
-        var fees = await paid.SumAsync(c => (decimal?)c.PlatformFeeAmount) ?? 0;
-        var net = await paid.SumAsync(c => (decimal?)c.NetAmountToInstitution) ?? 0;
+        var collected = await paid.SumAsync(c => (decimal?)c.Amount) ?? 0;
 
         var snapshots = await snapshotRepo.GetQueryable(s => s.PeriodDays == 30 && s.SnapshotDate >= monthStart && s.SnapshotDate < end && s.Score != null)
             .OrderBy(s => s.SnapshotDate).Select(s => new { s.Score, s.SnapshotDate }).ToListAsync();
@@ -82,7 +80,7 @@ public class EngagementEngine(
             Month: monthStart,
             NewMembers: await memberRepo.CountAsync(m => m.CreatedAt >= monthStart && m.CreatedAt < end),
             Participants: participants, MeaningfulActions: actions,
-            ContributionGross: gross, FeesDeducted: fees, NetToInstitution: net, Contributors: await paid.Select(c => c.MemberId).Distinct().CountAsync(),
+            AmountCollected: collected, Contributors: await paid.Select(c => c.MemberId).Distinct().CountAsync(),
             EventsHeld: await eventRepo.CountAsync(e => e.StartDate >= monthStart && e.StartDate < end && e.Status != "Cancelled"),
             EventSignUps: await rsvpRepo.CountAsync(r => r.Status == "Confirmed" && r.CreatedAt >= monthStart && r.CreatedAt < end),
             NewsPublished: await newsRepo.CountAsync(n => n.Status == "Published" && n.CreatedAt >= monthStart && n.CreatedAt < end),

@@ -22,8 +22,7 @@ function csv(r: MonthlyReport) {
   const rows: [string, string, number | string, number | string][] = [
     ["Outcomes", "New members", c.newMembers, p.newMembers], ["Outcomes", "Members who took part", c.participants, p.participants],
     ["Outcomes", "Meaningful actions", c.meaningfulActions, p.meaningfulActions], ["Outcomes", "Event sign-ups", c.eventSignUps, p.eventSignUps],
-    ["Money", "Collected (gross)", c.contributionGross, p.contributionGross], ["Money", "Fees deducted", c.feesDeducted, p.feesDeducted],
-    ["Money", "Net to institution", c.netToInstitution, p.netToInstitution], ["Money", "Members who gave", c.contributors, p.contributors],
+    ["Money", "Collected", c.amountCollected, p.amountCollected], ["Money", "Members who gave", c.contributors, p.contributors],
     ["Activity", "Events held", c.eventsHeld, p.eventsHeld], ["Activity", "News published", c.newsPublished, p.newsPublished],
     ["Activity", "Opportunities shared", c.opportunitiesShared, p.opportunitiesShared], ["Activity", "Suggestions completed", c.suggestionsCompleted, p.suggestionsCompleted],
     ["Health", "Score at start of month", c.healthStart ?? "", p.healthStart ?? ""], ["Health", "Score at end of month", c.healthEnd ?? "", p.healthEnd ?? ""],
@@ -89,18 +88,16 @@ export default function MonthlyReportPage() {
       </InsightSection>
 
       <InsightSection question="Money" loading={isLoading}
-        answer={c && (c.contributionGross === 0 ? <>No payments were collected this month.</> : <>
-          <Figure>{formatCurrency(c.contributionGross)}</Figure> was collected from <Figure>{c.contributors.toLocaleString()}</Figure> {c.contributors === 1 ? "member" : "members"}; <Figure>{formatCurrency(c.netToInstitution)}</Figure> is yours after fees.
+        answer={c && (c.amountCollected === 0 ? <>No payments were collected this month.</> : <>
+          <Figure>{formatCurrency(c.amountCollected)}</Figure> was collected from <Figure>{c.contributors.toLocaleString()}</Figure> {c.contributors === 1 ? "member" : "members"}.
         </>)}>
         {c && p && (
           <>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-6 lg:grid-cols-4">
-              <Money label="Collected (gross)" now={c.contributionGross} before={p.contributionGross} />
-              <Money label="Fees deducted" now={c.feesDeducted} before={p.feesDeducted} />
-              <Money label="Net to institution" now={c.netToInstitution} before={p.netToInstitution} />
+            <div className="grid grid-cols-2 gap-x-6 gap-y-6">
+              <Money label="Collected" now={c.amountCollected} before={p.amountCollected} />
               <ChangeStat label="Members who gave" current={c.contributors} previous={p.contributors} period="month" />
             </div>
-            <p className="mt-4 text-[12.5px] text-muted-foreground">Successful payments only. Card and mobile money processing charges are paid by the payer on top, so they are not in these figures. Refunds are not netted off.</p>
+            <p className="mt-4 text-[12.5px] text-muted-foreground">Successful payments only.</p>
           </>
         )}
       </InsightSection>

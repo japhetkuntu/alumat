@@ -1980,7 +1980,7 @@ export async function updateMyTask(id: string, action: "complete" | "snooze") {
 /** One calendar month's engagement report. Activity (what was done) and outcomes (what members did) are kept apart. */
 export interface MonthFigures {
   month: string; newMembers: number; participants: number; meaningfulActions: number;
-  contributionGross: number; feesDeducted: number; netToInstitution: number; contributors: number;
+  amountCollected: number; contributors: number;
   eventsHeld: number; eventSignUps: number; newsPublished: number; opportunitiesShared: number;
   suggestionsRaised: number; suggestionsCompleted: number; suggestionsDismissed: number;
   healthStart?: number; healthEnd?: number; healthReadings: number;

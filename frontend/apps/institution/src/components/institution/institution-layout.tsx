@@ -392,13 +392,13 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14 border-b border-border bg-background/80 backdrop-blur-xl"
           style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg hover:bg-muted -ml-1" onClick={() => setMobileOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </Button>
             <span className="font-bold text-[15px] tracking-tight truncate">{pageTitle}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <GlobalSearch pages={searchPages} />
             <NotificationPanel />
             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">

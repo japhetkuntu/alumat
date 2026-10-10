@@ -143,7 +143,7 @@ public class ReportDataBuilder(
     private ReportData Payments(ReportJob job) => new(
         [
             new("Date", Timestamp), new("Paid by"), new("Email"), new("Paid towards"), new("Kind"),
-            new("Amount", Money), new("Reached us", Money), new("Method"), new("Status"), new("Reference"), new("Paid as guest"),
+            new("Amount", Money), new("Method"), new("Status"), new("Reference"), new("Paid as guest"),
         ],
         PaymentRows(job));
 
@@ -177,7 +177,7 @@ public class ReportDataBuilder(
                 [
                     c.ConfirmedAt ?? c.CreatedAt, name, email, campaign?.Title ?? c.Campaign?.Title,
                     campaign?.IsMembershipCampaign == true ? "Dues" : "Fundraiser",
-                    c.Amount, c.Status == "Successful" ? c.NetAmountToInstitution : null, c.PaymentMethod, c.Status, c.TransactionRef, c.IsGuestPayment,
+                    c.Amount, c.PaymentMethod, c.Status, c.TransactionRef, c.IsGuestPayment,
                 ];
             }
         }

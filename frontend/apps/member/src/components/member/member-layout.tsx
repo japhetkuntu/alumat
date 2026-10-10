@@ -525,7 +525,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 h-14 sm:h-16 border-b border-border/40 bg-background/80 backdrop-blur-xl"
           style={{ paddingTop: 'env(safe-area-inset-top)', ...GPU_LAYER_STYLE }}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
             {/* Menu button sits on the left, matching the drawer it opens —
                 the drawer itself slides in from the left, so the control for
                 it belongs on the same side rather than opposite it. */}
@@ -545,9 +545,9 @@ export function MemberLayout({ children }: { children: ReactNode }) {
                 <span className="text-[12px] font-bold text-white">{getInitials(brandName)}</span>
               </div>
             )}
-            <span className="font-bold text-[14.5px] leading-tight tracking-tight truncate max-w-[140px]">{brandName}</span>
+            <span className="min-w-0 font-bold text-[14.5px] leading-tight tracking-tight truncate sm:max-w-[240px]">{brandName}</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <GlobalSearch pages={searchPages} />
             <NotificationPanel />
           </div>

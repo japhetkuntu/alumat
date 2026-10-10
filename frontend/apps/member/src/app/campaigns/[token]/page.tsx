@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { CampaignArrival } from './tracking';
+import { ZoomableImage } from '@alumni/ui';
 
 interface PublicCampaign {id:string;title:string;content:string;caption:string;campaignTitle:string;channel:string;destinationPath:string;useLandingPage:boolean;assets:{id:string;url:string;name:string;contentType:string}[]}
 interface LandingPageStory {audience:string;problem:string;promisedValue:string;proof:string;nextAction:string}
@@ -92,7 +93,7 @@ export default async function Page({params}:{params:Promise<{token:string}>}){
                   {hero.contentType.startsWith('video/') ? (
                     <video src={hero.url} controls playsInline preload="metadata" className="absolute inset-0 h-full w-full object-contain" />
                   ) : (
-                    <img src={hero.url} alt={hero.name} className="absolute inset-0 h-full w-full object-contain" />
+                    <ZoomableImage src={hero.url} alt={hero.name} wrapperClassName="absolute inset-0" className="h-full w-full object-contain" />
                   )}
                 </div>
                 {rest.length > 0 && (
@@ -102,7 +103,7 @@ export default async function Page({params}:{params:Promise<{token:string}>}){
                         {a.contentType.startsWith('video/') ? (
                           <video src={a.url} playsInline preload="metadata" className="absolute inset-0 h-full w-full object-contain" />
                         ) : (
-                          <img src={a.url} alt={a.name} className="absolute inset-0 h-full w-full object-contain" />
+                          <ZoomableImage src={a.url} alt={a.name} wrapperClassName="absolute inset-0" className="h-full w-full object-contain" />
                         )}
                       </div>
                     ))}

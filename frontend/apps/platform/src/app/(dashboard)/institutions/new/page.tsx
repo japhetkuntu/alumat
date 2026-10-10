@@ -340,7 +340,7 @@ function NewInstitutionPageContent() {
                         type="number"
                         min={0}
                         max={100}
-                        step="0.1"
+                        step="any"
                         value={form.platformFeePercentage}
                         onChange={(e) => update("platformFeePercentage", e.target.value)}
                         className="w-[120px]"
@@ -358,7 +358,7 @@ function NewInstitutionPageContent() {
                       <Input
                         type="number"
                         min={0}
-                        step="1"
+                        step="any"
                         placeholder="200"
                         value={form.platformFeeFlatThreshold}
                         onChange={(e) => update("platformFeeFlatThreshold", e.target.value)}
@@ -368,7 +368,7 @@ function NewInstitutionPageContent() {
                       <Input
                         type="number"
                         min={0}
-                        step="1"
+                        step="any"
                         placeholder="15"
                         value={form.platformFeeFlatAmount}
                         onChange={(e) => update("platformFeeFlatAmount", e.target.value)}

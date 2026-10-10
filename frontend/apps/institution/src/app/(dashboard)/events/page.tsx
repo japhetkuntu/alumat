@@ -2,6 +2,7 @@
 
 import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Calendar, MapPin, Users, Pencil } from "@alumni/ui";
@@ -279,9 +280,7 @@ export default function AdminEventsPage() {
           {events.map((e) => (
             <Card key={e.id} className={cn("stagger-item hover:shadow-md transition-shadow overflow-hidden", isPastEvent(e) && "opacity-70")}>
               {e.bannerImageUrl && (
-                <div className="h-36 overflow-hidden">
-                  <img src={e.bannerImageUrl} alt={e.title} className="w-full h-full object-cover" loading="lazy" />
-                </div>
+                <ZoomableImage src={e.bannerImageUrl} alt={e.title} wrapperClassName="h-36" className="w-full h-full object-cover" />
               )}
               <CardContent className="p-5">
                 <div className="flex flex-wrap items-start justify-between mb-3 gap-2">

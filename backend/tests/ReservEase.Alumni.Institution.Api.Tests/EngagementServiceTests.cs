@@ -358,7 +358,7 @@ public class EngagementServiceTests
     }
 
     [Fact]
-    public async Task Money_is_shown_as_collected_fees_deducted_and_net_and_never_as_platform_revenue()
+    public async Task Money_is_shown_as_the_amount_collected_only_never_fees_net_or_platform_revenue()
     {
         var m = Classmate(2015);
         var (s, _) = Create(m,
@@ -369,8 +369,7 @@ public class EngagementServiceTests
         var r = (await s.GetMonthlyReportAsync(Super, null, [])).Data!;
 
         Assert.True(r.IsCurrentMonth);
-        Assert.Equal((100m, 5m, 95m, 1), (r.Current.ContributionGross, r.Current.FeesDeducted, r.Current.NetToInstitution, r.Current.Contributors));
-        Assert.DoesNotContain("Revenue", string.Join(",", typeof(MonthFigures).GetProperties().Select(p => p.Name)));
+        Assert.Equal((100m, 1), (r.Current.AmountCollected, r.Current.Contributors));
     }
 
     [Fact]
@@ -383,7 +382,7 @@ public class EngagementServiceTests
 
         var r = (await s.GetMonthlyReportAsync(Super, null, [])).Data!;
 
-        Assert.Equal((0, 0m, 0), (r.Current.MeaningfulActions, r.Current.ContributionGross, r.Current.NewsPublished));
+        Assert.Equal((0, 0m, 0), (r.Current.MeaningfulActions, r.Current.AmountCollected, r.Current.NewsPublished));
     }
 
     [Theory]

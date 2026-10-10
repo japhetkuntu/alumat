@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadError } from "@alumni/ui";
+import { ZoomableImage } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -320,11 +321,11 @@ export default function AdminNewsPage() {
               {/* Cover Image */}
               <div className="relative h-44 overflow-hidden shrink-0">
                 {p.imageUrls && p.imageUrls.length > 0 ? (
-                  <img
+                  <ZoomableImage
                     src={p.imageUrls[0]}
                     alt={p.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
+                    wrapperClassName="h-full w-full"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-primary/10 via-primary/5 to-muted/30 flex items-center justify-center">
@@ -333,8 +334,8 @@ export default function AdminNewsPage() {
                     </span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                <div className="pointer-events-none absolute top-3 left-3 flex items-center gap-1.5">
                   {p.isPinned && (
                     <div className="bg-orange-500/90 backdrop-blur-sm rounded-full p-1.5">
                       <Pin size={9} className="text-white" />

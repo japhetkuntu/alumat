@@ -274,7 +274,7 @@ export default function ServicesPage() {
           {typesLoading ? (
             <CardSkeleton />
           ) : !typesResult || typesResult.results.length === 0 ? (
-            <EmptyState icon={<FileText size={28} />} title="Let members request official services online" description="Create a service such as a transcript request or an attestation letter. Members fill in a form, pay any fee, and you move the request through its stages." action={<Button onClick={openCreate}><Plus size={15} className="mr-1.5" /> Create a service</Button>} />
+            <EmptyState icon={<FileText size={28} />} title="Let members request official services online" description="Create a service such as a transcript request or an attestation letter. Members fill in a form, pay online, and you move the request through its stages." action={<Button onClick={openCreate}><Plus size={15} className="mr-1.5" /> Create a service</Button>} />
           ) : (
             <Card className="border-border/40">
               <CardContent className="p-0">

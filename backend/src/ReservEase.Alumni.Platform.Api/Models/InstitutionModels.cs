@@ -242,7 +242,10 @@ public record PlatformPaymentDto(
     string? PayerName, string? PayerEmail, string Description,
     decimal Amount, string Status, string PaymentMethod, string? TransactionRef,
     DateTime CreatedAt, DateTime? ConfirmedAt,
-    decimal PlatformFeeAmount, decimal GatewayFeeAmount);
+    decimal PlatformFeeAmount, decimal GatewayFeeAmount,
+    // What the platform actually earned on this payment: the same figure the dashboard and the institution's revenue totals add
+    // up, so the rows in this list sum to those totals. PlatformFeeAmount above is only the fee quoted to the payer.
+    decimal PlatformEarnedAmount);
 
 /// <summary>One line item within a StoreOrder-sourced payment's detail view.</summary>
 public record PaymentDetailItemDto(
@@ -261,7 +264,8 @@ public record PaymentDetailDto(
     decimal Amount, decimal PlatformFeeAmount, decimal GatewayFeeAmount,
     decimal TransactionChargeAmount, decimal GrossChargeAmount,
     string Status, DateTime CreatedAt, DateTime? ConfirmedAt,
-    string PaymentMethod, string? Channel, string? GatewayResponse, string? TransactionRef);
+    string PaymentMethod, string? Channel, string? GatewayResponse, string? TransactionRef,
+    decimal PlatformEarnedAmount);
 
 public record FeatureCatalogItem(string Key, string Label, string Description);
 

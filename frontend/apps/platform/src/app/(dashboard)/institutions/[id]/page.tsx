@@ -1107,7 +1107,7 @@ export default function InstitutionDetailPage() {
                       type="number"
                       min={0}
                       max={100}
-                      step="0.1"
+                      step="any"
                       value={payments.platformFeePercentage}
                       onChange={(e) => setPayments((p) => ({ ...p!, platformFeePercentage: e.target.value }))}
                       className="w-[120px]"
@@ -1126,7 +1126,7 @@ export default function InstitutionDetailPage() {
                     <Input
                       type="number"
                       min={0}
-                      step="1"
+                      step="any"
                       placeholder="200"
                       value={payments.platformFeeFlatThreshold}
                       onChange={(e) => setPayments((p) => ({ ...p!, platformFeeFlatThreshold: e.target.value }))}
@@ -1137,7 +1137,7 @@ export default function InstitutionDetailPage() {
                     <Input
                       type="number"
                       min={0}
-                      step="1"
+                      step="any"
                       placeholder="15"
                       value={payments.platformFeeFlatAmount}
                       onChange={(e) => setPayments((p) => ({ ...p!, platformFeeFlatAmount: e.target.value }))}
@@ -1213,7 +1213,7 @@ export default function InstitutionDetailPage() {
                         <th className="px-5 py-2.5 font-semibold">Description</th>
                         <th className="px-5 py-2.5 font-semibold">Source</th>
                         <th className="px-5 py-2.5 font-semibold">Amount</th>
-                        <th className="px-5 py-2.5 font-semibold">Platform fee</th>
+                        <th className="px-5 py-2.5 font-semibold">Platform earned</th>
                         <th className="px-5 py-2.5 font-semibold">Provider fee</th>
                         <th className="px-5 py-2.5 font-semibold">Status</th>
                         <th className="px-5 py-2.5 font-semibold">Date</th>
@@ -1233,7 +1233,7 @@ export default function InstitutionDetailPage() {
                           <td className="px-5 py-3">{p.description}</td>
                           <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : p.source === "StoreOrder" ? "Store order" : "Service request"}</td>
                           <td className="px-5 py-3 font-semibold">{formatCurrency(p.amount, "GHS")}</td>
-                          <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.platformFeeAmount, "GHS")}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.platformEarnedAmount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.gatewayFeeAmount, "GHS")}</td>
                           <td className="px-5 py-3">
                             <Badge variant={p.status === "Successful" ? "success" : p.status === "Pending" ? "warning" : "destructive"} size="sm">{p.status}</Badge>
@@ -1465,7 +1465,7 @@ export default function InstitutionDetailPage() {
                     <span className="font-semibold">{formatCurrency(paymentDetail.amount, "GHS")}</span>
                   </div>
                   <div className="px-3 py-2 flex items-center justify-between">
-                    <span className="text-muted-foreground">Platform fee</span>
+                    <span className="text-muted-foreground">Platform fee quoted to payer</span>
                     <span>{formatCurrency(paymentDetail.platformFeeAmount, "GHS")}</span>
                   </div>
                   <div className="px-3 py-2 flex items-center justify-between">
@@ -1479,6 +1479,10 @@ export default function InstitutionDetailPage() {
                   <div className="px-3 py-2 flex items-center justify-between">
                     <span className="font-medium">Gross amount charged to payer</span>
                     <span className="font-semibold">{formatCurrency(paymentDetail.grossChargeAmount, "GHS")}</span>
+                  </div>
+                  <div className="px-3 py-2 flex items-center justify-between bg-muted/40">
+                    <span className="font-medium">Platform earned (what the totals add up)</span>
+                    <span className="font-semibold">{formatCurrency(paymentDetail.platformEarnedAmount, "GHS")}</span>
                   </div>
                 </div>
               </div>
