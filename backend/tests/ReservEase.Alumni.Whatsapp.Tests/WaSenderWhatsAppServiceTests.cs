@@ -13,8 +13,10 @@ namespace ReservEase.Alumni.Whatsapp.Tests;
 public class WaSenderWhatsAppServiceTests
 {
     private static WaSenderWhatsAppService Create(FakeHttpHandler handler, FakeHttpClientFactory? factory = null) =>
-        new(Options.Create(new WaSenderConfig { ApiKey = "secret", BaseUrl = "https://wa.test" }),
-            factory ?? new FakeHttpClientFactory(handler),
+        new(new WaSenderProvider(
+                Options.Create(new WaSenderConfig { ApiKey = "secret", BaseUrl = "https://wa.test" }),
+                factory ?? new FakeHttpClientFactory(handler),
+                NullLogger<WaSenderProvider>.Instance),
             NullLogger<WaSenderWhatsAppService>.Instance);
 
     [Fact]

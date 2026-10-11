@@ -38,7 +38,7 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
         public List<SendEmailRequest> EmailsSent { get; } = new();
         public NotificationDispatchActivities Activities { get; }
 
-        public Rig(Action<Institution>? institution = null)
+        public Rig(Action<Institution>? institution = null, bool whatsAppOn = false)
         {
             Sms.Setup(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .Callback<string, string, CancellationToken>((p, m, _) => SmsSent.Add($"{p}|{m}")).ReturnsAsync(true);
@@ -61,7 +61,11 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
                 new AlumniPgRepository<Job>(db), new AlumniPgRepository<Campaign>(db), new AlumniPgRepository<AlumniEvent>(db),
                 new AlumniPgRepository<Spotlight>(db), new AlumniPgRepository<ClassNote>(db), new AlumniPgRepository<PushSubscriptionEntity>(db),
                 tenant, Sms.Object, WhatsApp.Object, Email.Object, Push.Object,
-                new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["MemberPortalBaseDomain"] = "members.test", ["AdminPortalBaseDomain"] = "admin.test" }).Build(),
+                new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["MemberPortalBaseDomain"] = "members.test", ["AdminPortalBaseDomain"] = "admin.test",
+                    ["WaSenderConfig:Enabled"] = whatsAppOn ? "true" : "false",
+                }).Build(),
                 NullLogger<NotificationDispatchActivities>.Instance);
         }
 
@@ -302,6 +306,113 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
         await rig.Seed(Person("m1"), new NotificationPreference { InstitutionId = Inst, MemberId = "m1", SmsAlerts = true, WhatsAppAlerts = true });
         await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
         rig.WhatsApp.Verify(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── WhatsApp first, SMS as the fallback ───────────────────────────────
+
+    private static MemberEntity Verified(string id) { var m = Person(id); m.PhoneVerifiedAt = DateTime.UtcNow; return m; }
+    private static NotificationPreference Both(string id, bool whatsApp = true) =>
+        new() { InstitutionId = Inst, MemberId = id, SmsAlerts = true, WhatsAppAlerts = whatsApp };
+
+    [WorkflowFact]
+    public async Task A_verified_consenting_member_gets_whatsapp_with_the_link_and_no_sms()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        await rig.Seed(Verified("m1"), Both("m1"));
+
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync("0241000000",
+            It.Is<string>(t => t.StartsWith("*UMaT*\n") && t.Contains("Thank you, Ama") && t.EndsWith("https://umat.members.test/contributions")), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Empty(rig.SmsSent);
+    }
+
+    [WorkflowFact]
+    public async Task When_whatsapp_cannot_deliver_the_sms_still_goes_out()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        rig.WhatsApp.Setup(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        await rig.Seed(Verified("m1"), Both("m1"));
+
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Single(rig.SmsSent);
+    }
+
+    private static MessagingUsageMonth ThisMonth(Rig rig)
+    {
+        using var db = rig.Db();
+        db.Institutions.Single(i => i.Id == Inst).MessagingUsage.TryGetValue(MessagingUsageKeys.For(DateTime.UtcNow), out var m);
+        return m ?? new MessagingUsageMonth();
+    }
+
+    [WorkflowFact]
+    public async Task The_months_tally_counts_a_whatsapp_delivery_as_a_message_not_sent_by_sms()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        await rig.Seed(Verified("m1"), Both("m1"));
+
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+
+        var usage = ThisMonth(rig);
+        Assert.Equal((1, 0, 0), (usage.WhatsAppDelivered, usage.SmsSent, usage.SmsAfterWhatsAppFailure));
+    }
+
+    [WorkflowFact]
+    public async Task The_tally_separates_sms_that_went_only_because_whatsapp_failed()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        rig.WhatsApp.Setup(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        await rig.Seed(Verified("m1"), Both("m1"));
+
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+
+        var usage = ThisMonth(rig);
+        Assert.Equal((0, 1, 1), (usage.WhatsAppDelivered, usage.SmsSent, usage.SmsAfterWhatsAppFailure));
+    }
+
+    [WorkflowFact]
+    public async Task A_plain_sms_is_counted_as_sms_with_no_failure_attached()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        await rig.Seed(Person("m1"), Both("m1"));   // number never proved: SMS only
+
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+
+        var usage = ThisMonth(rig);
+        Assert.Equal((0, 1, 0), (usage.WhatsAppDelivered, usage.SmsSent, usage.SmsAfterWhatsAppFailure));
+    }
+
+    [WorkflowFact]
+    public async Task A_welcome_in_app_message_mentions_whatsapp_only_when_the_channel_is_open()
+    {
+        var on = new Rig(whatsAppOn: true);
+        await on.Seed(Person("m1"), Both("m1"));
+        await Send(on, NotificationRequest.MemberStatusChanged(Inst, "m1", "Ama", "Active", null));
+        using (var db = on.Db()) Assert.Contains("Connect WhatsApp", db.Set<Notification>().IgnoreQueryFilters().Single(n => n.RecipientId == "m1").Body);
+
+        var off = new Rig(whatsAppOn: false);
+        await off.Seed(Person("m1"), Both("m1"));
+        await Send(off, NotificationRequest.MemberStatusChanged(Inst, "m1", "Ama", "Active", null));
+        using (var db = off.Db()) Assert.DoesNotContain("WhatsApp", db.Set<Notification>().IgnoreQueryFilters().Single(n => n.RecipientId == "m1").Body);
+    }
+
+    [WorkflowTheory]
+    [InlineData("unverified-number")]
+    [InlineData("no-whatsapp-consent")]
+    [InlineData("institution-turned-it-off")]
+    [InlineData("platform-off")]
+    public async Task Whatsapp_is_not_used_unless_every_condition_holds_and_sms_carries_on_as_before(string scenario)
+    {
+        var rig = new Rig(i => { if (scenario == "institution-turned-it-off") i.DisabledFeatures = [InstitutionFeatures.WhatsApp]; }, whatsAppOn: scenario != "platform-off");
+        var member = scenario == "unverified-number" ? Person("m1") : Verified("m1");
+        await rig.Seed(member, Both("m1", whatsApp: scenario != "no-whatsapp-consent"));
+
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Single(rig.SmsSent);
     }
 
     [WorkflowFact]

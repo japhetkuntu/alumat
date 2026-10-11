@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-11",
+    title: "AlumUnion on WhatsApp: ask the assistant, connect your number, post to groups",
+    scopes: ["Institution", "Member", "Platform"],
+    type: "Feature",
+    body: "Members can now message one AlumUnion WhatsApp number and get a numbered menu: dues and fundraisers, events, jobs, community updates and their community. Anyone can ask about what is open to everyone; connecting an account (Profile, Connect WhatsApp) lets it show a member their own dues and the things meant for them, and nothing else. Connecting needs both a signed-in portal session and a one-time code sent from the WhatsApp number itself, so a forwarded link cannot connect somebody else's WhatsApp; the number can be disconnected from the portal or by sending unlink. Members who connect and switch on WhatsApp alerts get their notifications there first, with SMS only if WhatsApp cannot deliver. Institutions can connect their WhatsApp groups (Settings, WhatsApp: post a one-time code in the group, then confirm), let the group use !events, !campaigns, !jobs, !updates, !community and !help for public information, and post an event, opportunity, news article or fundraiser to a group from the portal after previewing the exact message. Ordinary group conversation is never read. Institutions can switch the whole thing off for themselves, and the platform team has a WhatsApp page showing the connection and adoption counts. It stays off until the WhatsApp channel is switched on for the platform.",
+  },
+  {
     date: "2026-10-10",
     title: "Requests from members: administrators are told, and members hear back",
     scopes: ["Institution", "Member"],

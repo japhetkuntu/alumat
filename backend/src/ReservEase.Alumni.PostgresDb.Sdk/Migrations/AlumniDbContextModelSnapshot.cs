@@ -1950,6 +1950,12 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
+                    b.Property<string>("PhoneNormalized")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PhoneVerifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PrefectStatus")
                         .HasColumnType("text");
 
@@ -2014,6 +2020,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("MemberNumber");
 
+                    b.HasIndex("PhoneNormalized");
+
                     b.HasIndex("Status");
 
                     b.HasIndex("DepartmentId", "GraduationYear");
@@ -2022,6 +2030,11 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("InstitutionId", "Email")
                         .IsUnique();
+
+                    b.HasIndex("InstitutionId", "PhoneNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Members_InstitutionId_PhoneNormalized_Verified")
+                        .HasFilter("\"PhoneVerifiedAt\" IS NOT NULL");
 
                     b.ToTable("Members", "alumni");
                 });
@@ -3648,6 +3661,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("MemberPortalTitle")
                         .HasColumnType("text");
 
+                    b.Property<string>("MessagingUsage")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3753,6 +3770,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
+
+                    b.Property<string>("WhatsAppGroups")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 

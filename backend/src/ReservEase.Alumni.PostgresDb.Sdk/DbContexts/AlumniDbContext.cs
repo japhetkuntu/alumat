@@ -301,6 +301,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Member>()
             .HasIndex(m => new { m.InstitutionId, m.Email }).IsUnique();
 
+        // Finding a member from a WhatsApp sender is a cross-institution lookup by number, so it needs its own index.
+        modelBuilder.Entity<Member>().HasIndex(m => m.PhoneNormalized);
+        // One verified number belongs to one member per institution. Unverified numbers may repeat (nothing proved them).
+        modelBuilder.Entity<Member>()
+            .HasIndex(m => new { m.InstitutionId, m.PhoneNormalized })
+            .IsUnique()
+            .HasFilter("\"PhoneVerifiedAt\" IS NOT NULL")
+            .HasDatabaseName("IX_Members_InstitutionId_PhoneNormalized_Verified");
+
         // Member.DateOfBirth is only ever used for its month/day (see the entity's
         // doc comment) — mapped as Postgres "date" rather than the default
         // "timestamp with time zone" so it also accepts DateTime.Kind=Unspecified.
@@ -561,6 +570,19 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             l => l == null ? null : new List<LandingPageStory>(l));
         modelBuilder.Entity<Institution>().Property(i => i.LandingPageStories).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<LandingPageStory>>(jsonOpts)).Metadata.SetValueComparer(landingStoryListComparer);
+        // Compared by serialized value: the list is replaced wholesale on update and WhatsAppGroupLink has no value equality.
+        var whatsAppGroupListComparer = new ValueComparer<List<WhatsAppGroupLink>>(
+            (l1, l2) => JsonSerializer.Serialize(l1, jsonOpts) == JsonSerializer.Serialize(l2, jsonOpts),
+            l => JsonSerializer.Serialize(l, jsonOpts).GetHashCode(),
+            l => JsonSerializer.Deserialize<List<WhatsAppGroupLink>>(JsonSerializer.Serialize(l, jsonOpts), jsonOpts)!);
+        modelBuilder.Entity<Institution>().Property(i => i.WhatsAppGroups).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<WhatsAppGroupLink>>(jsonOpts)).Metadata.SetValueComparer(whatsAppGroupListComparer);
+        var messagingUsageComparer = new ValueComparer<Dictionary<string, MessagingUsageMonth>>(
+            (d1, d2) => JsonSerializer.Serialize(d1, jsonOpts) == JsonSerializer.Serialize(d2, jsonOpts),
+            d => JsonSerializer.Serialize(d, jsonOpts).GetHashCode(),
+            d => JsonSerializer.Deserialize<Dictionary<string, MessagingUsageMonth>>(JsonSerializer.Serialize(d, jsonOpts), jsonOpts)!);
+        modelBuilder.Entity<Institution>().Property(i => i.MessagingUsage).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<Dictionary<string, MessagingUsageMonth>>(jsonOpts)).Metadata.SetValueComparer(messagingUsageComparer);
         modelBuilder.Entity<Institution>().Property(i => i.NewsBanner).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<NewsBanner>(jsonOpts));
 
@@ -639,15 +661,38 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         }
     }
 
+    /// <summary>
+    /// Keeps <see cref="Member.PhoneNormalized"/> in step with <see cref="Member.Phone"/> for every write path (registration,
+    /// Google sign-up, profile edit, admin import) without each one remembering to. Changing the number also clears
+    /// <see cref="Member.PhoneVerifiedAt"/>, because the proof was for the old number. Setting the verification in the same
+    /// save (the WhatsApp link flow does) is left alone.
+    /// </summary>
+    private void SyncMemberPhones()
+    {
+        foreach (var entry in ChangeTracker.Entries<Member>())
+        {
+            if (entry.State is not (EntityState.Added or EntityState.Modified)) continue;
+            var phone = entry.Entity.Phone;
+            var phoneChanged = entry.State == EntityState.Added || entry.Property(m => m.Phone).IsModified;
+            if (!phoneChanged) continue;
+
+            entry.Entity.PhoneNormalized = ReservEase.Alumni.Common.Sdk.Services.PhoneNumbers.Normalize(phone);
+            if (entry.State == EntityState.Modified && !entry.Property(m => m.PhoneVerifiedAt).IsModified)
+                entry.Entity.PhoneVerifiedAt = null;
+        }
+    }
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         StampTenantIds();
+        SyncMemberPhones();
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         StampTenantIds();
+        SyncMemberPhones();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 }

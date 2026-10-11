@@ -39,7 +39,8 @@ public class PublicController(
     IAlumniPgRepository<PhotoAlbum> albumRepo,
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
-    IRedisService<PublicContentCacheConfig> publicCache) : DefaultController
+    IRedisService<PublicContentCacheConfig> publicCache,
+    Microsoft.Extensions.Options.IOptions<ReservEase.Alumni.Whatsapp.Sdk.Options.WaSenderConfig> whatsApp) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
     private const int MaxCacheableItems = 12;
@@ -93,7 +94,9 @@ public class PublicController(
             institution.HeroHeadline,
             institution.OrganizationType,
             institution.CohortLabel,
-            institution.CohortLabelPlural);
+            institution.CohortLabelPlural,
+            whatsApp.Value.Enabled && !string.IsNullOrWhiteSpace(whatsApp.Value.AssistantNumber)
+                && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp));
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }

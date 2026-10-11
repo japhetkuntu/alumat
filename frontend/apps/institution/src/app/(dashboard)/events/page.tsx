@@ -3,6 +3,7 @@
 import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
+import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Calendar, MapPin, Users, Pencil } from "@alumni/ui";
@@ -324,6 +325,7 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4 flex-wrap">
+                  {e.status === "Upcoming" && <PostToWhatsAppButton type="event" contentId={e.id} />}
                   <Link href={`/events/${e.id}/rsvps`}>
                     <Button size="sm" variant="outline"><Users size={12} />View RSVPs</Button>
                   </Link>

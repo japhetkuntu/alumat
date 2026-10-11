@@ -141,6 +141,15 @@ public class Institution : BaseEntity
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
 
     /// <summary>
+    /// WhatsApp groups connected to the AlumUnion Assistant (see <see cref="WhatsAppGroupLink"/>). Empty by default.
+    /// Managed by this institution's SuperAdmins; the assistant fills in the group id when it hears the one-time code.
+    /// </summary>
+    public List<WhatsAppGroupLink> WhatsAppGroups { get; set; } = [];
+
+    /// <summary>Messages sent to members this institution's notifications reached, per month ("2026-10"), by channel. See <see cref="MessagingUsageMonth"/>.</summary>
+    public Dictionary<string, MessagingUsageMonth> MessagingUsage { get; set; } = [];
+
+    /// <summary>
     /// The dismissible announcement strip at the top of the Member Portal's
     /// landing page. Null/disabled by default — no banner shown until
     /// configured. Editable by both platform staff and this institution's

@@ -788,6 +788,65 @@ export async function updateNotificationPreferences(data: Omit<NotificationPrefe
   return res.data.data!;
 }
 
+// ── WhatsApp ────────────────────────────────────────────────────────────────
+
+export interface WhatsAppStatus {
+  /** The assistant is switched on and has a number members can message. */
+  available: boolean;
+  connected: boolean;
+  /** "+233 24 •••• 456": enough to recognise, never enough to dial. */
+  maskedNumber?: string | null;
+  verifiedAt?: string | null;
+  /** The AlumUnion Assistant's own number (digits with country code). */
+  assistantNumber?: string | null;
+  notificationsEnabled: boolean;
+  /** A number (masked) that sent this account's code but is not the number on the account; waits for the member's approval. */
+  pendingNumber?: string | null;
+}
+
+export interface WhatsAppLinkChallenge {
+  code: string;
+  /** wa.me link that opens the assistant with the code already typed. Null when the assistant has no number configured. */
+  deepLink?: string | null;
+  expiresInSeconds: number;
+  assistantNumber?: string | null;
+}
+
+export async function getWhatsAppStatus(): Promise<WhatsAppStatus> {
+  const res = await memberClient.get("/whatsapp");
+  return res.data.data!;
+}
+
+export async function startWhatsAppLink(): Promise<WhatsAppLinkChallenge> {
+  const res = await memberClient.post("/whatsapp/link");
+  return res.data.data!;
+}
+
+export interface JoinableWhatsAppGroup {
+  name: string;
+  communityId?: string | null;
+  communityName?: string | null;
+  inviteLink: string;
+}
+
+/** WhatsApp groups an administrator has connected and shared a join link for, limited to this member's own communities. */
+export async function getWhatsAppGroups(): Promise<JoinableWhatsAppGroup[]> {
+  const res = await memberClient.get("/whatsapp/groups");
+  return res.data.data ?? [];
+}
+
+export async function approveWhatsAppNumber(): Promise<void> {
+  await memberClient.post("/whatsapp/link/approve");
+}
+
+export async function refuseWhatsAppNumber(): Promise<void> {
+  await memberClient.delete("/whatsapp/link/pending");
+}
+
+export async function disconnectWhatsApp(): Promise<void> {
+  await memberClient.delete("/whatsapp");
+}
+
 // ── In-app Notifications ────────────────────────────────────────────────────
 
 export async function getNotifications(page = 1, pageSize = 20): Promise<PagedResult<NotificationItem>> {

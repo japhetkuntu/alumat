@@ -140,6 +140,8 @@ services:
       StorageConfig__Region: ${STORAGE_REGION}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT}
       StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT}
+      WaSenderConfig__Enabled: ${WASENDER_ENABLED:-false}
+      WaSenderConfig__AssistantNumber: ${WASENDER_ASSISTANT_NUMBER:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -196,6 +198,9 @@ services:
       ArkeselConfig__ApiKey: ${ARKESEL_API_KEY}
       ArkeselConfig__SenderId: ${ARKESEL_SENDER_ID}
       WaSenderConfig__ApiKey: ${WASENDER_API_KEY}
+      WaSenderConfig__WebhookSecret: ${WASENDER_WEBHOOK_SECRET:-}
+      WaSenderConfig__AssistantNumber: ${WASENDER_ASSISTANT_NUMBER:-}
+      WaSenderConfig__Enabled: ${WASENDER_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -240,6 +245,9 @@ services:
       StorageConfig__Region: ${STORAGE_REGION}
       StorageConfig__Endpoint: ${STORAGE_ENDPOINT}
       StorageConfig__CdnEndpoint: ${STORAGE_CDN_ENDPOINT}
+      WaSenderConfig__Enabled: ${WASENDER_ENABLED:-false}
+      WaSenderConfig__AssistantNumber: ${WASENDER_ASSISTANT_NUMBER:-}
+      WaSenderConfig__ApiKey: ${WASENDER_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

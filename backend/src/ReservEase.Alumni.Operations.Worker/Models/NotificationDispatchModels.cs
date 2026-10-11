@@ -8,6 +8,8 @@ public sealed class NotificationRecipient
     public string? Phone { get; init; }
     public bool SmsAlerts { get; init; }
     public bool WhatsAppAlerts { get; init; }
+    /// <summary>The number was proved by a WhatsApp message (Member.PhoneVerifiedAt). Only then is WhatsApp preferred over SMS.</summary>
+    public bool WhatsAppVerified { get; init; }
 }
 
 /// <summary>The common single-recipient case: a member's contact fields bundled with
@@ -20,6 +22,7 @@ public sealed class MemberWithPreference
     public string? Phone { get; init; }
     public bool SmsAlerts { get; init; }
     public bool WhatsAppAlerts { get; init; }
+    public bool WhatsAppVerified { get; init; }
     public bool EventReminders { get; init; } = true;
 }
 
@@ -28,6 +31,7 @@ public sealed class MemberWithPreference
 /// GetInstitutionAsync/GetMemberPortalUrlAsync/GetAdminPortalUrlAsync helpers.</summary>
 public sealed class InstitutionContactInfo
 {
+    public string? Id { get; init; }
     public string? Name { get; init; }
     /// <summary>PortalName if set, else Name — the institution's own display name for its members, used
     /// wherever brand_name would otherwise fall back to the legal/registered Name.</summary>
@@ -37,6 +41,8 @@ public sealed class InstitutionContactInfo
     public string? LogoUrl { get; init; }
     public bool SmsNotificationsEnabled { get; init; } = true;
     public bool EmailNotificationsEnabled { get; init; } = true;
+    /// <summary>The WhatsApp channel is switched on for the platform and not switched off by this institution.</summary>
+    public bool WhatsAppChannelOpen { get; init; }
 
     /// <summary>Fully-built "https://{slug}.{domain}" URLs, computed once in the activity
     /// (which alone may read IConfiguration — workflow code must stay deterministic).

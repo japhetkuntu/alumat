@@ -305,6 +305,7 @@ export async function updateSelfServiceFeatures(features: {
   emailNotificationsEnabled: boolean;
   smsNotificationsEnabled: boolean;
   birthdaySpotlightEnabled: boolean;
+  whatsAppEnabled?: boolean;
 }): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", features);
   const profile = res.data.data;
@@ -1993,4 +1994,85 @@ export interface MonthlyReport {
 export async function getMonthlyReport(month?: string): Promise<MonthlyReport> {
   const res = await institutionClient.get<ApiResponse<MonthlyReport>>('/engagement/monthly', { params: { month } });
   return res.data.data!;
+}
+
+
+// ─── WhatsApp assistant and groups ───────────────────────────────────────
+
+export interface WhatsAppGroup {
+  id: string;
+  name: string;
+  groupJid?: string | null;
+  /** AwaitingGroup (code made, not yet heard), Detected (heard, needs confirming) or Active. */
+  status: "AwaitingGroup" | "Detected" | "Active";
+  /** The one-time code to post as "!link CODE"; only present while it can still be used. */
+  code?: string | null;
+  codeExpiresAt?: string | null;
+  communityId?: string | null;
+  communityName?: string | null;
+  assistantEnabled: boolean;
+  allowedCommands: string[];
+  publishingEnabled: boolean;
+  createdAt: string;
+  linkedAt?: string | null;
+  /** The group's own invitation link, shown to members of its community so they can join. */
+  inviteLink?: string | null;
+}
+
+export interface WhatsAppUsageMonth { month: string; byWhatsApp: number; bySms: number; smsAfterWhatsAppFailure: number }
+export interface WhatsAppReferralChannel { channel: string; invited: number; registered: number }
+
+/** How far WhatsApp has reached among members. Counts only. */
+export interface WhatsAppAdoption {
+  activeMembers: number;
+  connected: number;
+  alertsOn: number;
+  connectedThisMonth: number;
+  months: WhatsAppUsageMonth[];
+  referralsLast90Days: WhatsAppReferralChannel[];
+}
+
+export interface WhatsAppOverview {
+  /** Switched on for the whole platform. Off means nothing is sent or answered. */
+  platformEnabled: boolean;
+  assistantNumber?: string | null;
+  /** A wa.me link that opens the assistant already pointed at this community. */
+  assistantLink?: string | null;
+  groups: WhatsAppGroup[];
+  commands: string[];
+}
+
+export interface WhatsAppPostPreview { title: string; text: string; link: string }
+export type WhatsAppContentType = "event" | "job" | "news" | "campaign";
+
+export async function getWhatsAppOverview(): Promise<WhatsAppOverview> {
+  const res = await institutionClient.get<ApiResponse<WhatsAppOverview>>("/whatsapp");
+  return res.data.data!;
+}
+export async function createWhatsAppGroup(body: { name: string; communityId?: string }): Promise<WhatsAppGroup> {
+  const res = await institutionClient.post<ApiResponse<WhatsAppGroup>>("/whatsapp/groups", body);
+  return res.data.data!;
+}
+export async function confirmWhatsAppGroup(id: string): Promise<WhatsAppGroup> {
+  const res = await institutionClient.post<ApiResponse<WhatsAppGroup>>(`/whatsapp/groups/${id}/confirm`);
+  return res.data.data!;
+}
+export async function getWhatsAppAdoption(): Promise<WhatsAppAdoption> {
+  const res = await institutionClient.get<ApiResponse<WhatsAppAdoption>>("/whatsapp/adoption");
+  return res.data.data!;
+}
+/** `inviteLink`: omit to leave as is, an empty string to remove. */
+export async function updateWhatsAppGroup(id: string, body: { name?: string; assistantEnabled: boolean; allowedCommands: string[]; publishingEnabled: boolean; inviteLink?: string }): Promise<WhatsAppGroup> {
+  const res = await institutionClient.put<ApiResponse<WhatsAppGroup>>(`/whatsapp/groups/${id}`, body);
+  return res.data.data!;
+}
+export async function deleteWhatsAppGroup(id: string): Promise<void> {
+  await institutionClient.delete(`/whatsapp/groups/${id}`);
+}
+export async function previewWhatsAppPost(body: { type: WhatsAppContentType; contentId: string; groupId: string }): Promise<WhatsAppPostPreview> {
+  const res = await institutionClient.post<ApiResponse<WhatsAppPostPreview>>("/whatsapp/publish/preview", body);
+  return res.data.data!;
+}
+export async function publishWhatsAppPost(body: { type: WhatsAppContentType; contentId: string; groupId: string; text?: string }): Promise<void> {
+  await institutionClient.post("/whatsapp/publish", body);
 }

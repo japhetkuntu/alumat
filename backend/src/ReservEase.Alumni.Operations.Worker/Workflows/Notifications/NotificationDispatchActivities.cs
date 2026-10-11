@@ -62,6 +62,7 @@ public class NotificationDispatchActivities(
             var adminDomain = configuration["AdminPortalBaseDomain"];
             return new InstitutionContactInfo
             {
+                Id = institution.Id,
                 Name = institution.Name,
                 PortalName = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName,
                 PrimaryColorHex = institution.PrimaryColorHex,
@@ -69,6 +70,8 @@ public class NotificationDispatchActivities(
                 LogoUrl = institution.LogoUrl,
                 SmsNotificationsEnabled = institution.SmsNotificationsEnabled,
                 EmailNotificationsEnabled = institution.EmailNotificationsEnabled,
+                WhatsAppChannelOpen = configuration.GetValue("WaSenderConfig:Enabled", false)
+                    && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp),
                 MemberPortalUrl = MemberPortalLinks.UrlOrEmpty(institution.Slug, institution.CustomDomain, memberDomain),
                 AdminPortalUrl = string.IsNullOrWhiteSpace(adminDomain) ? string.Empty : $"https://{institution.Slug}.{adminDomain}",
             };
@@ -172,6 +175,7 @@ public class NotificationDispatchActivities(
                     Phone = m.Phone,
                     SmsAlerts = pref?.SmsAlerts ?? false,
                     WhatsAppAlerts = pref?.WhatsAppAlerts ?? false,
+                    WhatsAppVerified = m.PhoneVerifiedAt.HasValue,
                 };
             }).ToList();
         }, "resolve member fan-out", institutionId);
@@ -227,6 +231,7 @@ public class NotificationDispatchActivities(
                 Phone = member.Phone,
                 SmsAlerts = pref?.SmsAlerts ?? false,
                 WhatsAppAlerts = pref?.WhatsAppAlerts ?? false,
+                WhatsAppVerified = member.PhoneVerifiedAt.HasValue,
                 EventReminders = pref?.EventReminders ?? true,
             };
         }, "load member with preference", memberId);
@@ -283,6 +288,38 @@ public class NotificationDispatchActivities(
     [Activity("NotificationDispatch.SendWhatsApp")]
     public virtual Task<bool> SendWhatsAppAsync(string phone, string message) =>
         Wrap(() => whatsAppService.SendMessageAsync(phone, message), "send WhatsApp message", phone);
+
+    /// <summary>
+    /// Adds to the institution's monthly count of messages by channel. Counts only. A failure here is logged and swallowed:
+    /// bookkeeping must never fail or retry a notification that has already been sent.
+    /// </summary>
+    [Activity("NotificationDispatch.RecordMessagingUsage")]
+    public virtual async Task RecordMessagingUsageAsync(string institutionId, int whatsAppDelivered, int smsSent, int smsAfterWhatsAppFailure)
+    {
+        if (string.IsNullOrEmpty(institutionId)) return;
+        try
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
+            if (institution is null) return;
+            var key = MessagingUsageKeys.For(DateTime.UtcNow);
+            var usage = new Dictionary<string, MessagingUsageMonth>(institution.MessagingUsage);
+            usage.TryGetValue(key, out var month);
+            usage[key] = new MessagingUsageMonth
+            {
+                WhatsAppDelivered = (month?.WhatsAppDelivered ?? 0) + whatsAppDelivered,
+                SmsSent = (month?.SmsSent ?? 0) + smsSent,
+                SmsAfterWhatsAppFailure = (month?.SmsAfterWhatsAppFailure ?? 0) + smsAfterWhatsAppFailure,
+            };
+            // Only the last two years are kept; the map would otherwise grow for ever.
+            var cutoff = MessagingUsageKeys.For(DateTime.UtcNow.AddMonths(-24));
+            institution.MessagingUsage = usage.Where(kv => string.CompareOrdinal(kv.Key, cutoff) >= 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+            await institutionRepo.UpdateAsync(institution);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not record messaging usage for {InstitutionId}", institutionId);
+        }
+    }
 
     [Activity("NotificationDispatch.SendEmail")]
     public virtual Task<bool> SendEmailAsync(SendEmailRequest request, string context) =>

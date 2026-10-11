@@ -70,6 +70,13 @@ builder.Services
     .AddWorkflow<NotificationDispatchWorkflow>()
     .AddScopedActivities<NotificationDispatchActivities>();
 
+// WhatsApp sends get their own queue with a single activity slot: one shared session must not be driven in parallel.
+builder.Services
+    .AddHostedTemporalWorker(WhatsAppTaskQueues.Send)
+    .ConfigureOptions(options => options.MaxConcurrentActivities = 1)
+    .AddWorkflow<WhatsAppSendWorkflow>()
+    .AddScopedActivities<WhatsAppSendActivities>();
+
 // Periodic jobs — digest emails, birthday spotlights, recurring giving charges —
 // driven by Temporal Schedules (see ScheduledJobsRegistration) instead of Member.Api's
 // old in-process PeriodicTimer BackgroundServices.

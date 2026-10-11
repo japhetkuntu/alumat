@@ -25,6 +25,7 @@ import { LinkOrUpload } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
+import { WhatsAppSettings } from "@/components/institution/whatsapp-settings";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers,
   updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateOrganizationType,
@@ -208,7 +209,7 @@ function PayoutSetupCard({ institution }: { institution: InstitutionProfileRespo
   );
 }
 
-const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "Security"] as const;
+const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "WhatsApp", "Security"] as const;
 
 export default function BrandingSettingsPage() {
   const { user, logout, isScopedAdmin } = useAuth();
@@ -472,6 +473,7 @@ export default function BrandingSettingsPage() {
       emailNotificationsEnabled: institution?.emailNotificationsEnabled ?? true,
       smsNotificationsEnabled: institution?.smsNotificationsEnabled ?? true,
       birthdaySpotlightEnabled: !institution?.disabledFeatures?.includes("BirthdaySpotlight"),
+      whatsAppEnabled: !institution?.disabledFeatures?.includes("WhatsApp"),
       ...patch,
     });
   }
@@ -538,7 +540,7 @@ export default function BrandingSettingsPage() {
       </header>
 
       <ChipRow label="Settings sections" activeKey={tab} className="gap-6 border-b border-border mb-6 pb-0 sm:gap-6">
-        {TABS.filter((t) => !(isScopedAdmin && t === "Landing content")).map((t) => (
+        {TABS.filter((t) => !(isScopedAdmin && (t === "Landing content" || t === "WhatsApp"))).map((t) => (
           <button
             key={t}
             aria-pressed={tab === t}
@@ -1332,6 +1334,14 @@ export default function BrandingSettingsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {tab === "WhatsApp" && !isScopedAdmin && (
+        <WhatsAppSettings
+          enabled={!institution?.disabledFeatures?.includes("WhatsApp")}
+          toggling={featuresMutation.isPending}
+          onToggleEnabled={(on) => patchFeatures({ whatsAppEnabled: on })}
+        />
       )}
 
       {tab === "Security" && (

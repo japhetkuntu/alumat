@@ -18,6 +18,7 @@ import { getInstitutionProfile, getNewsPost, publishNewsPost, updateNewsPost } f
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
 import { ShareLinkButton } from "@alumni/ui";
+import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
 import { toast } from "sonner";
 
 export default function AdminNewsDetailPage() {
@@ -117,7 +118,8 @@ export default function AdminNewsDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <PostToWhatsAppButton type="news" contentId={id} />
           <ShareLinkButton
             url={shareUrl}
             title={post.title}

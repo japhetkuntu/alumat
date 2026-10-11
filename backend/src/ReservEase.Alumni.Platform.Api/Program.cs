@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 using Serilog;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Options;
@@ -64,6 +65,8 @@ builder.Services.AddScoped<IPlatformBroadcastService, PlatformBroadcastService>(
 builder.Services.AddScoped<IMarketingCampaignService, MarketingCampaignService>();
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IInstitutionHealthService, InstitutionHealthService>();
+builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
+builder.Services.AddScoped<IWhatsAppHealthService, WhatsAppHealthService>();
 builder.Services.AddScoped<IBatchPayoutService, BatchPayoutService>();
 builder.Services.AddScoped<IInstitutionPayoutService, InstitutionPayoutService>();
 builder.Services.AddScoped<IPlatformStaffService, PlatformStaffService>();

@@ -21,6 +21,7 @@ public class ClassNoteService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
+    IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution> institutionRepo,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
     ILogger<ClassNoteService> logger) : IClassNoteService
@@ -31,7 +32,19 @@ public class ClassNoteService(
         return membership is not null && membership.Status == "Approved";
     }
 
+    /// <summary>
+    /// Whether this member counts as "active" for the year-group wall. Follows the institution's own policy: where dues are not
+    /// required (ApprovedOnly), an approved member is active whatever they have paid; otherwise the dues they owe must be paid.
+    /// </summary>
     private async Task<bool> IsMembershipActiveAsync(string memberId, int graduationYear)
+    {
+        var duesMet = await AreDuesMetAsync(memberId, graduationYear);
+        var member = await memberRepo.GetByIdAsync(memberId);
+        var institution = currentTenant.InstitutionId is null ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        return MembershipActivityCalculator.ResolveActive(institution?.MemberActivePolicy, member?.Status, duesMet);
+    }
+
+    private async Task<bool> AreDuesMetAsync(string memberId, int graduationYear)
     {
         var currentYear = DateTime.UtcNow.Year;
         var requiredCampaigns = await campaignRepo.GetAllAsync(c =>

@@ -102,7 +102,7 @@ public class MemberJobService(
     }
 
     private const int MaxPendingSuggestions = 3;
-    private static readonly string[] OpportunityTypes = ["Full-time", "Part-time", "Contract", "Internship", "Scholarship", "Mentorship", "Volunteering", "Business", "Partnership", "Other"];
+    internal static readonly string[] OpportunityTypeNames = ["Full-time", "Part-time", "Contract", "Internship", "Scholarship", "Mentorship", "Volunteering", "Business", "Partnership", "Other"];
 
     public async Task<IApiResponse<JobDto>> SuggestAsync(string memberId, SuggestOpportunityRequest r)
     {
@@ -112,8 +112,8 @@ public class MemberJobService(
             var company = r.Company?.Trim() ?? "";
             if (title.Length < 3 || title.Length > 120) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("Give the opportunity a title of 3 to 120 characters");
             if (company.Length < 2 || company.Length > 120) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("Say who is offering it");
-            var type = OpportunityTypes.FirstOrDefault(t => t.Equals(r.Type?.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (type is null) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>($"Type must be one of: {string.Join(", ", OpportunityTypes)}");
+            var type = OpportunityTypeNames.FirstOrDefault(t => t.Equals(r.Type?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (type is null) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>($"Type must be one of: {string.Join(", ", OpportunityTypeNames)}");
             if ((r.Description?.Length ?? 0) > 4000) return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>("The description is too long");
             string? applyUrl = null;
             if (!string.IsNullOrWhiteSpace(r.ApplyUrl))

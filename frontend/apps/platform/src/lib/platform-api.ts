@@ -1244,3 +1244,30 @@ export async function getInstitutionHealth(): Promise<InstitutionHealth> {
   const res = await platformClient.get<ApiResponse<InstitutionHealth>>("/institution-health");
   return res.data.data!;
 }
+
+export interface WhatsAppHealth {
+  enabled: boolean;
+  apiKeyConfigured: boolean;
+  webhookSecretConfigured: boolean;
+  assistantNumberConfigured: boolean;
+  connected: boolean;
+  sessionState: string;
+  institutionsWithGroups: number;
+  activeGroups: number;
+  verifiedMembers: number;
+  institutionsOptedOut: number;
+  adoption?: WhatsAppAdoption | null;
+}
+export interface WhatsAppAdoption {
+  activeMembers: number;
+  alertsOn: number;
+  months: { month: string; byWhatsApp: number; bySms: number }[];
+  /** The platform's configured cost of one SMS, when it has said. The saving below is only an estimate from it. */
+  smsUnitCost?: number | null;
+  estimatedSmsSaved?: number | null;
+  institutions: { name: string; activeMembers: number; connected: number; byWhatsAppThisMonth: number; bySmsThisMonth: number }[];
+}
+export async function getWhatsAppHealth(): Promise<WhatsAppHealth> {
+  const res = await platformClient.get<ApiResponse<WhatsAppHealth>>("/whatsapp-health");
+  return res.data.data!;
+}

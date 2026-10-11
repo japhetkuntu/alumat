@@ -12,6 +12,7 @@ public static class WaSenderExtensionService
     {
         services.Configure<WaSenderConfig>(configuration.GetSection(nameof(WaSenderConfig)));
         services.AddHttpClient("WaSender");
+        services.AddScoped<IWhatsAppProvider, WaSenderProvider>();
         services.AddScoped<IWhatsAppService, WaSenderWhatsAppService>();
 
         return services;

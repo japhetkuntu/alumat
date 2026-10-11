@@ -27,4 +27,6 @@ public record InstitutionThemeResponse(
     string? HeroHeadline,
     string OrganizationType,
     string? CohortLabel,
-    string? CohortLabelPlural);
+    string? CohortLabelPlural,
+    /// <summary>The WhatsApp assistant is on for the platform and this community. Lets signed-out pages (registration) mention it only when it is real.</summary>
+    bool WhatsAppAssistantAvailable = false);

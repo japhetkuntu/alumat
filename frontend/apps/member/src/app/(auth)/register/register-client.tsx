@@ -409,7 +409,7 @@ function RegisterForm() {
       const res = await publicMemberClient.get<{ data: {
         requireStudentId: boolean; promptMembershipActivationAtSignup: boolean;
         programOfStudyEnabled: boolean; programsOfStudy: string[];
-        organizationType: "Alumni" | "Community"; disabledFeatures?: string[];
+        organizationType: "Alumni" | "Community"; disabledFeatures?: string[]; whatsAppAssistantAvailable?: boolean;
       } }>("/public/institution/theme");
       return res.data.data;
     },
@@ -1068,6 +1068,14 @@ function RegisterForm() {
               </div>
             </div>
           </div>
+
+          {/* The assistant, only where it is really switched on. Connecting needs a signed-in session, so this just says where. */}
+          {theme?.whatsAppAssistantAvailable && (
+            <p className="text-[12.5px] leading-relaxed rounded-xl border p-4" style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
+              <span className="font-semibold" style={{ color: "var(--foreground)" }}>Tip: </span>
+              once you&apos;re in, connect WhatsApp from your profile to ask about dues, events and jobs, and get reminders there instead of by SMS.
+            </p>
+          )}
 
           {/* Membership activation — opt-in per institution, see Settings > Re-engagement & giving */}
           {promptMembershipActivation && (
