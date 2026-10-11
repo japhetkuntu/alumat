@@ -13,6 +13,16 @@
 # other systemd unit keeps running untouched, so e.g. adding operations-worker
 # for the first time (or picking up a later member-api-only fix) doesn't take
 # the whole site down for the build.
+#
+# Speed (see also the "build first, stop late" comment further down):
+#   - Everything is BUILT while the old version keeps serving; services are only
+#     stopped for the few seconds it takes to copy the finished build in and
+#     start it again.
+#   - bin/obj and the NuGet cache are kept between deploys, so builds are
+#     incremental. Wipe them only when needed:  CLEAN_BUILD=1 sudo -E bash deploy.sh
+#   - `all` only rebuilds what changed since the last successful deploy (backend vs
+#     frontend, from git). Force everything:   FORCE_ALL=1 sudo -E bash deploy.sh
+#   - Each step prints how long it took.
 set -euo pipefail
 
 SRC_DIR="/opt/alumunion-src"
@@ -21,6 +31,10 @@ FRONTEND_SRC="$SRC_DIR/frontend"
 OUT="/var/www/alumunion"
 
 TARGET="${1:-all}"
+STARTED_AT=$SECONDS
+step_start=$SECONDS
+# Prints how long the step that just finished took, then starts timing the next one.
+lap() { local now=$SECONDS; echo "   ($(( now - step_start ))s: $1)"; step_start=$now; }
 DO_INSTITUTION_API=0
 DO_MEMBER_API=0
 DO_PLATFORM_API=0
@@ -74,7 +88,9 @@ wait_healthy() {
 # as the unit leaving "active" during Restart=on-failure's backoff window,
 # same failure mode wait_healthy is catching for the HTTP services above.
 wait_active() {
-  local name="$1" tries=15
+  # A crash loop shows within a few seconds (Restart=on-failure backs off ~5s between tries), so
+  # three checks over six seconds is enough; this used to always take 30s.
+  local name="$1" tries=3
   echo "Waiting for $name to stay active ..."
   for ((i = 1; i <= tries; i++)); do
     sleep 2
@@ -124,19 +140,51 @@ if [[ -z "${ALUMNI_DEPLOY_REEXECED:-}" ]]; then
   exec bash "$SRC_DIR/deploy/deploy.sh" "$@"
 fi
 
-if [[ "$DO_ANY_DOTNET" == 1 ]]; then
-  # Every dotnet publish leaves bin/obj behind in the source tree (separate
-  # from the actual published output in $OUT) — across enough redeploys
-  # without this, these silently accumulate until a build fails with "No
-  # space left on device" mid-restore, same as the NuGet http cache below.
-  # Both are safe to wipe every time: publish always restores/rebuilds from
-  # scratch regardless.
-  echo "== clearing stale build artifacts =="
+lap "git pull"
+
+# `all` means "everything that changed": compare with the commit last deployed successfully and
+# leave out the backend or the frontends when nothing under them changed. A single named target,
+# FORCE_ALL=1, or no record of a previous deploy always builds what was asked for.
+REV_FILE="$OUT/.last-deployed-rev"
+if [[ "$TARGET" == "all" && -z "${FORCE_ALL:-}" && -f "$REV_FILE" ]]; then
+  PREV_REV="$(cat "$REV_FILE")"
+  if git -C "$SRC_DIR" cat-file -e "${PREV_REV}^{commit}" 2>/dev/null; then
+    CHANGED="$(git -C "$SRC_DIR" diff --name-only "$PREV_REV" HEAD)"
+    if ! grep -q '^backend/' <<<"$CHANGED"; then
+      DO_INSTITUTION_API=0; DO_MEMBER_API=0; DO_PLATFORM_API=0; DO_OPERATIONS_WORKER=0; DO_ANY_DOTNET=0
+      echo "No backend changes since ${PREV_REV:0:8}: skipping the .NET services."
+    fi
+    if ! grep -q '^frontend/' <<<"$CHANGED"; then
+      DO_FRONTEND_INSTITUTION=0; DO_FRONTEND_MEMBER=0; DO_FRONTEND_PLATFORM=0; DO_ANY_FRONTEND=0
+      echo "No frontend changes since ${PREV_REV:0:8}: skipping the frontends."
+    fi
+    if [[ "$DO_ANY_DOTNET$DO_ANY_FRONTEND" == "00" ]]; then
+      echo "Nothing to deploy (only deploy/docs files changed). FORCE_ALL=1 to rebuild everything anyway."
+      git -C "$SRC_DIR" rev-parse HEAD > "$REV_FILE"
+      exit 0
+    fi
+  fi
+fi
+
+# bin/obj and the NuGet cache are KEPT so builds are incremental. They were once wiped on every
+# deploy to stop the disk filling up; check_disk_space below still protects against that, and a
+# full clean is one variable away when a build misbehaves.
+if [[ "$DO_ANY_DOTNET" == 1 && -n "${CLEAN_BUILD:-}" ]]; then
+  echo "== CLEAN_BUILD: clearing build artifacts and NuGet http cache =="
   find "$BACKEND_SRC" -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
   dotnet nuget locals http-cache --clear
 fi
 
 check_disk_space
+# Disk is the one thing the kept caches can eat: when it is tight, clear them rather than fail the build.
+if [[ "$DO_ANY_DOTNET" == 1 ]]; then
+  free_gb=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+  if [[ "$free_gb" -lt $(( MIN_FREE_GB + 3 )) ]]; then
+    echo "== disk is getting tight (${free_gb}G free): clearing build artifacts before building =="
+    find "$BACKEND_SRC" -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
+    dotnet nuget locals http-cache --clear
+  fi
+fi
 
 # install.sh only renders nginx.conf once, at first provisioning — a later
 # change to the template never reaches already-provisioned droplets on its
@@ -197,13 +245,59 @@ if [[ -f "$NGINX_LIVE_CONF" ]] && ! grep -q "location @maintenance" "$NGINX_LIVE
   fi
 fi
 
-# Stop only what's about to be rebuilt, before touching its files — dotnet
-# publish and the frontend rsync both overwrite a running service's files in
-# place. Linux generally tolerates that (an already-running process keeps its
-# old file handles), but it's not guaranteed for every code path (lazy-loaded
-# assemblies, dynamic Next.js chunks), and a clean stop/start is simpler to
-# reason about than "maybe fine, maybe a transient 500". Everything not in
-# today's target list keeps running the whole time.
+# ---------------------------------------------------------------------------
+# BUILD FIRST, STOP LATE. Everything below builds into a staging area while the
+# current version keeps serving. Services are stopped only after every build has
+# succeeded, for just long enough to copy the finished output in and start them
+# again. A failed build therefore leaves the site untouched and running, and the
+# downtime is seconds instead of the whole build.
+# ---------------------------------------------------------------------------
+STAGE="$OUT/.staging"
+mkdir -p "$STAGE"
+
+if [[ "$DO_ANY_FRONTEND" == 1 ]]; then
+  echo "== installing workspace dependencies (pnpm) =="
+  cd "$FRONTEND_SRC"
+  pnpm install --frozen-lockfile
+  lap "pnpm install"
+fi
+
+# Publish into staging. After the first project, the shared libraries are already built
+# (obj is kept), so the later publishes only compile their own code.
+publish_dotnet() {
+  local name="$1" project="$2"
+  echo "== building ${name} =="
+  rm -rf "${STAGE:?}/${name:?}"
+  dotnet publish "$BACKEND_SRC/src/${project}/${project}.csproj" -c Release -o "$STAGE/${name}"
+  lap "build ${name}"
+}
+
+[[ "$DO_INSTITUTION_API" == 1 ]] && publish_dotnet institution-api ReservEase.Alumni.Institution.Api
+[[ "$DO_MEMBER_API" == 1 ]] && publish_dotnet member-api ReservEase.Alumni.Member.Api
+[[ "$DO_PLATFORM_API" == 1 ]] && publish_dotnet platform-api ReservEase.Alumni.Platform.Api
+[[ "$DO_OPERATIONS_WORKER" == 1 ]] && publish_dotnet operations-worker ReservEase.Alumni.Operations.Worker
+
+# ---------------------------------------------------------------------------
+# Frontends — each `next build` (output: "standalone") produces a self-contained server tree at
+# apps/<app>/.next/standalone/, mirroring the monorepo layout (apps/<app>/server.js) because of
+# outputFileTracingRoot — same three-directory copy as each app's own Dockerfile does.
+# ---------------------------------------------------------------------------
+# `next build` writes into the source tree (apps/<app>/.next), not into the live folder, so it is
+# safe to run while the old version serves. Copying into $OUT happens later, during the swap.
+build_frontend() {
+  local app="$1"
+  echo "== building frontend: ${app} =="
+  (cd "$FRONTEND_SRC" && pnpm --filter "@alumni/${app}" build)
+  lap "build frontend ${app}"
+}
+
+[[ "$DO_FRONTEND_INSTITUTION" == 1 ]] && build_frontend institution
+[[ "$DO_FRONTEND_MEMBER" == 1 ]] && build_frontend member
+[[ "$DO_FRONTEND_PLATFORM" == 1 ]] && build_frontend platform
+
+# ---------------------------------------------------------------------------
+# SWAP: stop what is about to change, copy the finished builds in, start again.
+# ---------------------------------------------------------------------------
 echo "== stopping services for this deploy (target: $TARGET) =="
 STOP_LIST=()
 [[ "$DO_INSTITUTION_API" == 1 ]] && STOP_LIST+=(alumni-institution-api)
@@ -214,103 +308,72 @@ STOP_LIST=()
 [[ "$DO_FRONTEND_MEMBER" == 1 ]] && STOP_LIST+=(alumni-frontend-member)
 [[ "$DO_FRONTEND_PLATFORM" == 1 ]] && STOP_LIST+=(alumni-frontend-platform)
 systemctl stop "${STOP_LIST[@]}" 2>/dev/null || true
+lap "stop"
 
-if [[ "$DO_ANY_FRONTEND" == 1 ]]; then
-  echo "== installing workspace dependencies (pnpm) =="
-  cd "$FRONTEND_SRC"
-  pnpm install --frozen-lockfile
-fi
+install_dotnet() {
+  local name="$1"
+  mkdir -p "$OUT/${name}"
+  rsync -a --delete "$STAGE/${name}/" "$OUT/${name}/"
+  chown -R www-data:www-data "$OUT/${name}"
+}
+[[ "$DO_INSTITUTION_API" == 1 ]] && install_dotnet institution-api
+[[ "$DO_MEMBER_API" == 1 ]] && install_dotnet member-api
+[[ "$DO_PLATFORM_API" == 1 ]] && install_dotnet platform-api
+[[ "$DO_OPERATIONS_WORKER" == 1 ]] && install_dotnet operations-worker
 
-if [[ "$DO_INSTITUTION_API" == 1 ]]; then
-  echo "== publishing institution-api =="
-  dotnet publish "$BACKEND_SRC/src/ReservEase.Alumni.Institution.Api/ReservEase.Alumni.Institution.Api.csproj" \
-    -c Release -o "$OUT/institution-api"
-  chown -R www-data:www-data "$OUT/institution-api"
-fi
-
-if [[ "$DO_MEMBER_API" == 1 ]]; then
-  echo "== publishing member-api =="
-  dotnet publish "$BACKEND_SRC/src/ReservEase.Alumni.Member.Api/ReservEase.Alumni.Member.Api.csproj" \
-    -c Release -o "$OUT/member-api"
-  chown -R www-data:www-data "$OUT/member-api"
-fi
-
-if [[ "$DO_PLATFORM_API" == 1 ]]; then
-  echo "== publishing platform-api =="
-  dotnet publish "$BACKEND_SRC/src/ReservEase.Alumni.Platform.Api/ReservEase.Alumni.Platform.Api.csproj" \
-    -c Release -o "$OUT/platform-api"
-  chown -R www-data:www-data "$OUT/platform-api"
-fi
-
-if [[ "$DO_OPERATIONS_WORKER" == 1 ]]; then
-  echo "== publishing operations-worker =="
-  dotnet publish "$BACKEND_SRC/src/ReservEase.Alumni.Operations.Worker/ReservEase.Alumni.Operations.Worker.csproj" \
-    -c Release -o "$OUT/operations-worker"
-  chown -R www-data:www-data "$OUT/operations-worker"
-fi
-
-# ---------------------------------------------------------------------------
-# Frontends — each `next build` (output: "standalone") produces a
-# self-contained server tree at apps/<app>/.next/standalone/, mirroring the
-# monorepo layout (apps/<app>/server.js) because of outputFileTracingRoot —
-# same three-directory copy as each app's own Dockerfile does.
-# ---------------------------------------------------------------------------
-publish_frontend() {
+install_frontend() {
   local app="$1"
   local out="$OUT/frontend-${app}"
-  echo "== building frontend: ${app} =="
-  (cd "$FRONTEND_SRC" && pnpm --filter "@alumni/${app}" build)
-
+  mkdir -p "$out"
   rsync -a --delete "$FRONTEND_SRC/apps/${app}/.next/standalone/" "$out/"
   rsync -a --delete "$FRONTEND_SRC/apps/${app}/.next/static/" "$out/apps/${app}/.next/static/"
   rsync -a --delete "$FRONTEND_SRC/apps/${app}/public/" "$out/apps/${app}/public/"
   chown -R www-data:www-data "$out"
 }
+[[ "$DO_FRONTEND_INSTITUTION" == 1 ]] && install_frontend institution
+[[ "$DO_FRONTEND_MEMBER" == 1 ]] && install_frontend member
+[[ "$DO_FRONTEND_PLATFORM" == 1 ]] && install_frontend platform
+lap "copy builds into place"
 
-[[ "$DO_FRONTEND_INSTITUTION" == 1 ]] && publish_frontend institution
-[[ "$DO_FRONTEND_MEMBER" == 1 ]] && publish_frontend member
-[[ "$DO_FRONTEND_PLATFORM" == 1 ]] && publish_frontend platform
+# Start everything together. The APIs apply EF migrations on boot behind an advisory lock, so
+# starting them at once is safe; only the health checks are sequential.
+echo "== starting: ${STOP_LIST[*]} =="
+systemctl start "${STOP_LIST[@]}"
 
 if [[ "$DO_INSTITUTION_API" == 1 ]]; then
-  echo "== starting institution-api (applies any new EF migrations on boot) =="
-  systemctl start alumni-institution-api
   wait_healthy "http://127.0.0.1:5001/health" alumni-institution-api
 fi
 
 if [[ "$DO_MEMBER_API" == 1 ]]; then
-  echo "== starting member-api =="
-  systemctl start alumni-member-api
   wait_healthy "http://127.0.0.1:5002/health" alumni-member-api
 fi
 
 if [[ "$DO_PLATFORM_API" == 1 ]]; then
-  echo "== starting platform-api =="
-  systemctl start alumni-platform-api
   wait_healthy "http://127.0.0.1:5003/health" alumni-platform-api
 fi
 
 if [[ "$DO_OPERATIONS_WORKER" == 1 ]]; then
-  echo "== starting operations-worker =="
-  systemctl start alumni-operations-worker
   wait_active alumni-operations-worker
 fi
 
 if [[ "$DO_FRONTEND_INSTITUTION" == 1 ]]; then
-  echo "== starting frontend-institution =="
-  systemctl start alumni-frontend-institution
   wait_healthy "http://127.0.0.1:3001/" alumni-frontend-institution
 fi
 
 if [[ "$DO_FRONTEND_MEMBER" == 1 ]]; then
-  echo "== starting frontend-member =="
-  systemctl start alumni-frontend-member
   wait_healthy "http://127.0.0.1:3002/" alumni-frontend-member
 fi
 
 if [[ "$DO_FRONTEND_PLATFORM" == 1 ]]; then
-  echo "== starting frontend-platform =="
-  systemctl start alumni-frontend-platform
   wait_healthy "http://127.0.0.1:3003/" alumni-frontend-platform
 fi
 
-echo "Deploy complete (target: $TARGET)."
+lap "services healthy"
+
+# Remember what is live, so the next `all` can skip whatever did not change. Only a full ("all")
+# deploy records it: a single-service deploy leaves the other parts as they were, so they must not be
+# marked as up to date.
+if [[ "$TARGET" == "all" ]]; then
+  git -C "$SRC_DIR" rev-parse HEAD > "$REV_FILE"
+fi
+echo "Deploy complete (target: $TARGET) in $(( SECONDS - STARTED_AT ))s."
