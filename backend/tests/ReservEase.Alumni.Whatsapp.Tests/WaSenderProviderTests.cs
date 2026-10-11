@@ -121,6 +121,34 @@ public class WaSenderWebhookParserTests
         => Assert.Equal(WhatsAppInboundKind.Ignored, WaSenderWebhookParser.Parse(body).Kind);
 
     [Theory]
+    [InlineData("1760221925000")]    // milliseconds, as WaSender really sends it
+    [InlineData("1760221925")]       // seconds, as its documentation says
+    [InlineData("\"1760221925000\"")] // a numeric string
+    public void The_timestamp_is_read_whether_it_is_seconds_or_milliseconds(string value)
+    {
+        var e = WaSenderWebhookParser.Parse(WithTimestamp(value));
+
+        Assert.Equal(WhatsAppInboundKind.PersonalMessage, e.Kind);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1760221925), e.SentAt);
+    }
+
+    [Theory]
+    [InlineData("99999999999999999")]
+    [InlineData("-5")]
+    [InlineData("\"soon\"")]
+    public void A_nonsense_timestamp_never_throws_and_just_means_no_time(string value)
+    {
+        var e = WaSenderWebhookParser.Parse(WithTimestamp(value));
+
+        Assert.Equal(WhatsAppInboundKind.PersonalMessage, e.Kind);
+        Assert.Null(e.SentAt);
+        Assert.Equal("hi", e.Text);
+    }
+
+    private static string WithTimestamp(string value)
+        => "{\"event\":\"messages-personal.received\",\"timestamp\":" + value + ",\"data\":{\"messages\":{\"key\":{\"id\":\"x\",\"remoteJid\":\"233244123456@s.whatsapp.net\",\"cleanedSenderPn\":\"233244123456\"},\"messageBody\":\"hi\"}}}";
+
+    [Theory]
     [InlineData("audioMessage", "voice")]
     [InlineData("imageMessage", "image")]
     [InlineData("locationMessage", "location")]

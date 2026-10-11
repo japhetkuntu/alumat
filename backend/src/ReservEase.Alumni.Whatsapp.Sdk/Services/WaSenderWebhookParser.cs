@@ -38,8 +38,7 @@ public static class WaSenderWebhookParser
             var text = Str(messages, "messageBody") ?? Str(Obj(messages, "message"), "conversation");
             var remoteJid = Str(key, "remoteJid");
             var fromMe = key is { ValueKind: JsonValueKind.Object } k && k.TryGetProperty("fromMe", out var f) && f.ValueKind == JsonValueKind.True;
-            DateTimeOffset? sentAt = root.TryGetProperty("timestamp", out var ts) && ts.ValueKind == JsonValueKind.Number && ts.TryGetInt64(out var secs)
-                ? DateTimeOffset.FromUnixTimeSeconds(secs) : null;
+            var sentAt = ReadTime(root, "timestamp") ?? ReadTime(messages, "messageTimestamp");
 
             string? phone, lid;
             if (kind == WhatsAppInboundKind.GroupMessage)
@@ -57,8 +56,9 @@ public static class WaSenderWebhookParser
             var media = string.IsNullOrWhiteSpace(text) ? MediaKindOf(messages) : null;
             return new WhatsAppInboundEvent(kind, Str(key, "id"), phone, lid, remoteJid, text, sentAt, fromMe, MediaKind: media);
         }
-        catch (JsonException)
+        catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException or FormatException)
         {
+            // Whatever the provider sends, a message we cannot read is one we ignore: never a 500 the provider will redeliver.
             return new WhatsAppInboundEvent(WhatsAppInboundKind.Ignored);
         }
     }
@@ -88,6 +88,23 @@ public static class WaSenderWebhookParser
             if (kind is not null) return kind;
         }
         return null;
+    }
+
+    /// <summary>
+    /// A Unix time as WaSender sends it. It is seconds in the documentation but milliseconds in live deliveries, and may arrive as a
+    /// number or a numeric string: anything above 10^11 is milliseconds (that is the year 5138 in seconds). Unreadable or
+    /// out-of-range values give null, which the webhook treats as "no timestamp" rather than failing.
+    /// </summary>
+    private static DateTimeOffset? ReadTime(JsonElement? parent, string name)
+    {
+        if (parent is not { ValueKind: JsonValueKind.Object } p || !p.TryGetProperty(name, out var v)) return null;
+        long raw;
+        if (v.ValueKind == JsonValueKind.Number && v.TryGetInt64(out var n)) raw = n;
+        else if (v.ValueKind == JsonValueKind.String && long.TryParse(v.GetString(), out var parsed)) raw = parsed;
+        else return null;
+        if (raw <= 0) return null;
+        try { return raw > 100_000_000_000 ? DateTimeOffset.FromUnixTimeMilliseconds(raw) : DateTimeOffset.FromUnixTimeSeconds(raw); }
+        catch (ArgumentOutOfRangeException) { return null; }
     }
 
     private static JsonElement? Obj(JsonElement? parent, string name)
