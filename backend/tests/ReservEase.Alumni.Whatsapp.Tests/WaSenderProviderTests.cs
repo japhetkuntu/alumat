@@ -149,6 +149,22 @@ public class WaSenderWebhookParserTests
         => "{\"event\":\"messages-personal.received\",\"timestamp\":" + value + ",\"data\":{\"messages\":{\"key\":{\"id\":\"x\",\"remoteJid\":\"233244123456@s.whatsapp.net\",\"cleanedSenderPn\":\"233244123456\"},\"messageBody\":\"hi\"}}}";
 
     [Theory]
+    [InlineData("{\"extendedTextMessage\":{\"text\":\"2\",\"contextInfo\":{\"quotedMessage\":{\"conversation\":\"menu\"}}}}", "2")]   // swiped "reply" to the menu
+    [InlineData("{\"conversation\":\"1\"}", "1")]
+    [InlineData("{\"imageMessage\":{\"caption\":\"3\"}}", "3")]
+    [InlineData("{\"buttonsResponseMessage\":{\"selectedButtonId\":\"4\"}}", "4")]
+    [InlineData("{\"listResponseMessage\":{\"singleSelectReply\":{\"selectedRowId\":\"5\"}}}", "5")]
+    public void The_typed_words_are_found_wherever_whatsapp_put_them(string message, string expected)
+    {
+        var json = "{\"event\":\"messages-personal.received\",\"data\":{\"messages\":{\"key\":{\"id\":\"x\",\"remoteJid\":\"233244123456@s.whatsapp.net\",\"cleanedSenderPn\":\"233244123456\"},\"message\":" + message + "}}}";
+
+        var e = WaSenderWebhookParser.Parse(json);
+
+        Assert.Equal(expected, e.Text);
+        Assert.Null(e.MediaKind);
+    }
+
+    [Theory]
     [InlineData("audioMessage", "voice")]
     [InlineData("imageMessage", "image")]
     [InlineData("locationMessage", "location")]

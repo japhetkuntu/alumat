@@ -23,7 +23,8 @@ public class AssistantEngine(
     IAssistantStateStore stateStore,
     IAssistantLinker linker,
     IAssistantActions actions,
-    IOptions<WaSenderConfig> whatsApp)
+    IOptions<WaSenderConfig> whatsApp,
+    ILogger<AssistantEngine>? logger = null)
 {
     private const int MaxListItems = 5;
     private static readonly Regex LinkCode = new(@"^link\s+([a-z2-9]{6,10})$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -61,8 +62,18 @@ public class AssistantEngine(
         }
 
         var text = Clean(message.Text);
-        var communities = await directory.FindMemberCommunitiesAsync(phone, ct);
-        var reply = await RouteAsync(text, (message.Text ?? "").Trim(), phone, state, communities, ct);
+        string reply;
+        try
+        {
+            var communities = await directory.FindMemberCommunitiesAsync(phone, ct);
+            reply = await RouteAsync(text, (message.Text ?? "").Trim(), phone, state, communities, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // Never leave someone talking to silence: say so, and keep where they were so "menu" still works.
+            logger?.LogError(e, "WhatsApp assistant failed answering a message (stage {Stage})", state.Stage);
+            reply = "Sorry, I couldn't get that just now. Please try again, or reply *menu*.";
+        }
 
         await stateStore.SetAsync(phone, state);
         return new AssistantReply(to, reply);
@@ -516,7 +527,25 @@ public class AssistantEngine(
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
+    private static readonly Regex ChoiceWords = new(
+        @"^(?:option|choice|number|no|num|item)?\.?\s*#?\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine)\s*[).:\-]*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly string[] NumberWords = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+
+    /// <summary>
+    /// Lower-cased, trimmed text, with the ways people answer a numbered menu folded to the digit: "1", "1.", "1)", "*1*", "1️⃣",
+    /// "option 2", "No. 3", "two". Anything else is left as typed.
+    /// </summary>
     private static string Clean(string? text)
-        => string.IsNullOrWhiteSpace(text) ? "" : text.Trim().Trim('.', '!', ',').ToLowerInvariant();
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        // Keycap emoji are the digit followed by U+FE0F and U+20E3; WhatsApp also lets people bold with *…*.
+        var t = text.Replace("\uFE0F", "").Replace("\u20E3", "").Replace("*", "").Replace("_", "").Trim().Trim('.', '!', ',', '"', '\'').ToLowerInvariant();
+        var m = ChoiceWords.Match(t);
+        if (!m.Success) return t;
+        var v = m.Groups[1].Value;
+        var word = Array.IndexOf(NumberWords, v);
+        return word >= 0 ? word.ToString() : v;
+    }
 
 }

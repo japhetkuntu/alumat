@@ -35,7 +35,7 @@ public static class WaSenderWebhookParser
             if (messages is null) return new WhatsAppInboundEvent(WhatsAppInboundKind.Ignored);
 
             var key = Obj(messages, "key");
-            var text = Str(messages, "messageBody") ?? Str(Obj(messages, "message"), "conversation");
+            var text = ReadText(messages);
             var remoteJid = Str(key, "remoteJid");
             var fromMe = key is { ValueKind: JsonValueKind.Object } k && k.TryGetProperty("fromMe", out var f) && f.ValueKind == JsonValueKind.True;
             var sentAt = ReadTime(root, "timestamp") ?? ReadTime(messages, "messageTimestamp");
@@ -88,6 +88,34 @@ public static class WaSenderWebhookParser
             if (kind is not null) return kind;
         }
         return null;
+    }
+
+    /// <summary>
+    /// The words a person typed, wherever WhatsApp put them. A plain message is "messageBody"/"conversation", but swiping to
+    /// *reply* to the assistant's menu (what most people do) wraps the text in "extendedTextMessage", a picture or file carries
+    /// its words as a "caption", and a tapped button or list row carries its choice. Missing these makes a menu reply look like
+    /// an unreadable message.
+    /// </summary>
+    private static string? ReadText(JsonElement? messages)
+    {
+        var direct = Str(messages, "messageBody");
+        if (!string.IsNullOrWhiteSpace(direct)) return direct;
+
+        var body = Obj(messages, "message");
+        var candidates = new[]
+        {
+            Str(body, "conversation"),
+            Str(Obj(body, "extendedTextMessage"), "text"),
+            Str(Obj(body, "imageMessage"), "caption"),
+            Str(Obj(body, "videoMessage"), "caption"),
+            Str(Obj(body, "documentMessage"), "caption"),
+            Str(Obj(body, "buttonsResponseMessage"), "selectedDisplayText"),
+            Str(Obj(body, "buttonsResponseMessage"), "selectedButtonId"),
+            Str(Obj(body, "listResponseMessage"), "title"),
+            Str(Obj(Obj(body, "listResponseMessage"), "singleSelectReply"), "selectedRowId"),
+            Str(Obj(body, "templateButtonReplyMessage"), "selectedDisplayText"),
+        };
+        return candidates.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c));
     }
 
     /// <summary>

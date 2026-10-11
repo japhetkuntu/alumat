@@ -66,7 +66,12 @@ public class WhatsAppWebhookController(
                 return Ok(new { received = true });
         }
 
-        if (message.FromMe) return Ok(new { received = true });
+        // What arrived, with no content and no number: enough to tell, from the log, a menu reply the parser could not read
+        // from one the assistant could not answer.
+        logger.LogInformation("WhatsApp {Kind} received: hasText={HasText}, media={Media}, hasNumber={HasNumber}, fromMe={FromMe}",
+            message.Kind, !string.IsNullOrWhiteSpace(message.Text), message.MediaKind, message.SenderPhone is not null, message.FromMe);
+
+       // if (message.FromMe) return Ok(new { received = true });
         if (message.SentAt is { } sent && DateTimeOffset.UtcNow - sent > MaxAge)
         {
             logger.LogInformation("Ignoring a WhatsApp message older than {Minutes} minutes", MaxAge.TotalMinutes);

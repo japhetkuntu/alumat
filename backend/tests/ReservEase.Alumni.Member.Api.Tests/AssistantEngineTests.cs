@@ -32,10 +32,12 @@ public class AssistantEngineTests
     {
         public List<string> Calls { get; } = [];
         public HashSet<string> Disabled { get; } = [];
+        public bool Throw { get; set; }
         public AssistantDues? Dues { get; set; } = new(CurrentYearPaid: false, HasArrears: false, UnpaidCount: 1, "https://umat.example.org/contributions");
 
         private Task<IReadOnlyList<AssistantItem>> Items(string call, string title)
         {
+            if (Throw) throw new InvalidOperationException("boom");
             Calls.Add(call);
             return Task.FromResult<IReadOnlyList<AssistantItem>>([new(title, "detail", $"https://umat.example.org/{call}/1")]);
         }
@@ -537,5 +539,40 @@ public class AssistantEngineTests
 
         var (memberEngine, _, _) = Create([Umat(member: true, verified: true)]);
         Assert.Contains("8. Share", (await memberEngine.HandleAsync(Say("menu")))!.Text);
+    }
+
+    [Theory]
+    [InlineData("2")]
+    [InlineData("2.")]
+    [InlineData("2)")]
+    [InlineData("*2*")]
+    [InlineData("2\uFE0F\u20E3")]
+    [InlineData("option 2")]
+    [InlineData("No. 2")]
+    [InlineData("two")]
+    [InlineData(" 2 ")]
+    public async Task Every_common_way_of_answering_with_a_number_picks_that_menu_item(string answer)
+    {
+        var (engine, content, _) = Create();
+        await engine.HandleAsync(Say("start umat"));
+
+        var reply = await engine.HandleAsync(Say(answer));
+
+        Assert.Contains("Upcoming events", reply!.Text);
+        Assert.Contains("public-events", content.Calls);
+    }
+
+    [Fact]
+    public async Task A_failure_while_answering_gets_a_plain_apology_and_the_conversation_survives()
+    {
+        var (engine, content, _) = Create();
+        await engine.HandleAsync(Say("start umat"));
+        content.Throw = true;
+
+        var reply = await engine.HandleAsync(Say("2"));
+        Assert.Contains("couldn't get that", reply!.Text);
+
+        content.Throw = false;
+        Assert.Contains("Upcoming events", (await engine.HandleAsync(Say("2")))!.Text);
     }
 }
