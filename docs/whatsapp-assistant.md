@@ -29,6 +29,30 @@ identity, conversation state lives in Redis for half an hour, and connected grou
 - **Joining a group.** An administrator can paste a group's own invite link (`https://chat.whatsapp.com/...`, nothing else is
   accepted); members of that community then see a "Join group" button on the Connect WhatsApp page and on the community page.
 
+## WhatsApp before email
+
+For a member who connected WhatsApp **and** switched WhatsApp alerts on, these go to WhatsApp and the email is not sent. Anything that
+stops WhatsApp (not connected, no consent, channel off, quiet hours, the daily limit, a failed send) leaves the email to go as before.
+
+| Message | Kind | Rules |
+|---|---|---|
+| Receipt, rejection, approval, RSVP changes, mentorship decision, store and service updates, spotlight decision | Receipt/decision | Always sent, any hour; SMS fallback only for the original receipts |
+| Dues reminder, pledge reminder, event reminder (day before) | Reminder | Quiet hours and daily limit apply; falls back to email |
+| New job, new fundraiser, upcoming-event alert, weekly/monthly digest, "we miss you", mentorship request, forum reply, referral joined | News | Same limits; WhatsApp only, never SMS |
+
+- **Quiet hours:** `WhatsAppAssistant__QuietFromHourUtc` to `QuietToHourUtc` (default 21 to 6 UTC, which is Ghana time). Only receipts
+  and decisions go in that window.
+- **Daily limit:** `WhatsAppAssistant__DailyLimit` (default 3) reminder/news messages per member per day; the rest go by email.
+- **Pace:** `WhatsAppAssistant__PaceMilliseconds` (default 1200) between sends from the worker, so a long list goes at a human pace.
+- Set these on **operations-worker**. Counts of what went by WhatsApp or SMS feed the adoption report.
+- **Not yet:** administrators are not messaged on WhatsApp (their number is not proved the way a member's is), and broadcasts
+  still use the channels the sender picks.
+
+## Shortcuts in the assistant
+
+`pay` (also `dues`, `give`, `donate`) opens dues and fundraisers; `invite` gives a message to forward with the member's own
+referral link, tagged `src=whatsapp` so the institution's referral report counts it.
+
 ## Reporting
 
 - **Institution administrators** (Settings, WhatsApp): members connected out of active members, how many have alerts on, connections
@@ -63,6 +87,11 @@ identity, conversation state lives in Redis for half an hour, and connected grou
 6. Pilot with one institution first: connect your own number, send `hi`.
 
 ## Switching it off
+
+- **From the platform portal, instantly (recommended):** WhatsApp page, "WhatsApp bot for every institution". Takes effect within
+  seconds on every API and the worker, with no restart and no deploy. The assistant and group commands go quiet, group posting is
+  refused, and every notification goes by SMS and email exactly as before the bot. Members stay connected; switch it back on at any
+  time. Only a super administrator can change it, and the change is written to the platform audit log.
 
 - Whole platform: `WaSenderConfig__Enabled=false` on member-api and operations-worker and restart. Replies stop, notifications go
   back to SMS exactly as before. Nothing else about AlumUnion changes.

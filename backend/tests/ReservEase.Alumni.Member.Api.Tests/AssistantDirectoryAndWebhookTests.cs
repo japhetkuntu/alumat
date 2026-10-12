@@ -93,7 +93,7 @@ public class WhatsAppWebhookControllerTests
         {"event":"messages-personal.received","timestamp":TS,"data":{"messages":{"key":{"id":"MSG1","fromMe":false,"remoteJid":"233244123456@s.whatsapp.net","cleanedSenderPn":"233244123456"},"messageBody":"hi"}}}
         """;
 
-    private static (WhatsAppWebhookController controller, Mock<IWhatsAppProvider> provider) Create(string body, string? secret = Secret, bool enabled = true)
+    private static (WhatsAppWebhookController controller, Mock<IWhatsAppProvider> provider) Create(string body, string? secret = Secret, bool enabled = true, bool botOn = true)
     {
         var provider = new Mock<IWhatsAppProvider>();
         provider.Setup(p => p.SendMessageAsync(It.IsAny<WhatsAppOutboundMessage>(), It.IsAny<CancellationToken>())).ReturnsAsync(WhatsAppSendResult.Sent());
@@ -108,7 +108,8 @@ public class WhatsAppWebhookControllerTests
 
         var controller = new WhatsAppWebhookController(
             Options.Create(new WaSenderConfig { Enabled = enabled, WebhookSecret = Secret }), engine, groups, provider.Object,
-            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), NullLogger<WhatsAppWebhookController>.Instance);
+            Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch>(x => x.IsOnAsync() == Task.FromResult(botOn)),
+            NullLogger<WhatsAppWebhookController>.Instance);
 
         var http = new DefaultHttpContext();
         http.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
@@ -118,6 +119,17 @@ public class WhatsAppWebhookControllerTests
     }
 
     private static string Fresh() => Hi.Replace("TS", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+
+    [Fact]
+    public async Task When_the_platform_administrator_switches_the_bot_off_the_webhook_acknowledges_and_stays_silent()
+    {
+        var (controller, provider) = Create(Fresh(), botOn: false);
+
+        var result = Assert.IsType<OkObjectResult>(await controller.Receive(CancellationToken.None));
+
+        Assert.Contains("handled = False", result.Value!.ToString());
+        provider.Verify(p => p.SendMessageAsync(It.IsAny<WhatsAppOutboundMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     [Fact]
     public async Task A_wrong_or_missing_secret_is_rejected_and_nothing_is_sent()

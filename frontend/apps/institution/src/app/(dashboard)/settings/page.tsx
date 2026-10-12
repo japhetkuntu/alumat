@@ -214,7 +214,12 @@ const TABS = ["Institution profile", "Landing content", "Domain", "Notifications
 export default function BrandingSettingsPage() {
   const { user, logout, isScopedAdmin } = useAuth();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<(typeof TABS)[number]>(() => (searchParams.get("tab") === "landing" ? "Landing content" : "Institution profile"));
+  const [tab, setTab] = useState<(typeof TABS)[number]>(() => {
+    // ?tab=landing, ?tab=whatsapp, ?tab=domain ... (a tab's name, case-insensitive; "landing" is short for Landing content).
+    const wanted = (searchParams.get("tab") ?? "").toLowerCase();
+    if (wanted === "landing") return "Landing content";
+    return TABS.find((t) => t.toLowerCase() === wanted) ?? "Institution profile";
+  });
   const queryClient = useQueryClient();
 
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });

@@ -37,6 +37,10 @@ public static class WaSenderWebhookParser
             var key = Obj(messages, "key");
             var text = ReadText(messages);
             var remoteJid = Str(key, "remoteJid");
+            // The chat's own address is the truth about where a message was posted: a group's ends "@g.us". Trust it over the
+            // event name, so a group message is never mistaken for a private one (where a group code would be refused).
+            if (remoteJid?.EndsWith("@g.us", StringComparison.OrdinalIgnoreCase) == true) kind = WhatsAppInboundKind.GroupMessage;
+            else if (kind == WhatsAppInboundKind.GroupMessage && remoteJid is not null) kind = WhatsAppInboundKind.PersonalMessage;
             var fromMe = key is { ValueKind: JsonValueKind.Object } k && k.TryGetProperty("fromMe", out var f) && f.ValueKind == JsonValueKind.True;
             var sentAt = ReadTime(root, "timestamp") ?? ReadTime(messages, "messageTimestamp");
 

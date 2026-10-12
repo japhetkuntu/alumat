@@ -26,6 +26,7 @@ public class WhatsAppWebhookController(
     GroupCommandHandler groups,
     IWhatsAppProvider provider,
     ITemporalClientProvider temporal,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch platformSwitch,
     ILogger<WhatsAppWebhookController> logger) : ControllerBase
 {
     /// <summary>A message the provider took longer than this to deliver is stale: answering it would only confuse.</summary>
@@ -48,7 +49,8 @@ public class WhatsAppWebhookController(
         }
 
         // Switched off: acknowledge so the provider does not keep retrying, and do nothing.
-        if (!config.Enabled) return Ok(new { received = true, handled = false });
+        // Off in configuration, or switched off by the platform administrator: acknowledge, do nothing.
+        if (!config.Enabled || !await platformSwitch.IsOnAsync()) return Ok(new { received = true, handled = false });
 
         var message = WaSenderWebhookParser.Parse(raw);
         switch (message.Kind)

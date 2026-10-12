@@ -31,7 +31,8 @@ public class WhatsAppLinkService(
     ICurrentTenantService tenant,
     IRedisService<MemberRedisConfig> redis,
     IOptions<WaSenderConfig> whatsApp,
-    ILogger<WhatsAppLinkService> logger) : IAssistantLinker
+    ILogger<WhatsAppLinkService> logger,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch? platformSwitch = null) : IAssistantLinker
 {
     private static readonly TimeSpan CodeLifetime = TimeSpan.FromMinutes(10);
     private const string Alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";   // no 0/O/1/I/L: read aloud or typed from a screen
@@ -75,7 +76,8 @@ public class WhatsAppLinkService(
         var config = whatsApp.Value;
         var member = await memberRepo.GetByIdAsync(memberId);
         var pref = await prefRepo.GetOneAsync(p => p.MemberId == memberId);
-        var available = config.Enabled && !string.IsNullOrWhiteSpace(config.AssistantNumber);
+        var available = config.Enabled && !string.IsNullOrWhiteSpace(config.AssistantNumber)
+            && (platformSwitch is null || await platformSwitch.IsOnAsync());
         var pending = await redis.GetAsync<PendingApproval>(PendingKey(memberId));
 
         if (member?.PhoneVerifiedAt is null)

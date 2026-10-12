@@ -6,7 +6,9 @@ namespace ReservEase.Alumni.Platform.Api.Services.Interfaces;
 public record WhatsAppHealthDto(
     bool Enabled, bool ApiKeyConfigured, bool WebhookSecretConfigured, bool AssistantNumberConfigured,
     bool Connected, string SessionState, int InstitutionsWithGroups, int ActiveGroups, int VerifiedMembers, int InstitutionsOptedOut,
-    WhatsAppAdoptionSummary? Adoption = null);
+    WhatsAppAdoptionSummary? Adoption = null,
+    /// <summary>The platform administrator's switch (Platform settings). When off, the bot is silent and notifications use SMS and email.</summary>
+    bool BotSwitchedOn = true);
 
 /// <summary>
 /// The case for the channel in numbers: how much of the alert traffic went by WhatsApp instead of SMS. Counts come from the

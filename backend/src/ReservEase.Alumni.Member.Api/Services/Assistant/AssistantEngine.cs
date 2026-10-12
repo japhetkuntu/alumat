@@ -62,6 +62,15 @@ public class AssistantEngine(
         }
 
         var text = Clean(message.Text);
+
+        // "!link CODE", "!events"... are for a group. Typed here they would otherwise be read as a personal "link" and refused
+        // with a message about expired codes, which sends people looking in the wrong place.
+        if (message.Text?.TrimStart().StartsWith('!') == true)
+        {
+            await stateStore.SetAsync(phone, state);
+            return new AssistantReply(to, GroupCommandInPrivate);
+        }
+
         string reply;
         try
         {
@@ -101,15 +110,15 @@ public class AssistantEngine(
             ClearFlow(state);
             var off = await linker.SetAlertsAsync(phone, false, ct);
             return off == 0
-                ? "No alerts are being sent to this number. Reply *menu* to see what I can do."
-                : "Done. I've stopped alerts on WhatsApp. You can still ask me things here, and you'll get alerts by SMS or email as your portal settings allow. Reply *alerts on* to turn WhatsApp alerts back on, or *unlink* to disconnect this number.";
+                ? "No alerts are being sent to this number."
+                : "Done. WhatsApp alerts are off.\n\nYou can still ask me things here, and you'll get alerts by SMS or email as your portal settings allow.\n\nReply *alerts on* to turn them back on, or *unlink* to disconnect this number.";
         }
         if (ResumeWords.Contains(text) && state.Flow is null)
         {
             var on = await linker.SetAlertsAsync(phone, true, ct);
             return on == 0
                 ? "To get alerts here, connect your account first: reply *link*."
-                : "Done. You'll get alerts on WhatsApp again. Reply *stop* any time to switch them off.";
+                : "Done. WhatsApp alerts are on again.\n\nReply *stop* any time to switch them off.";
         }
 
         if (text is "help" or "?") return Help(current);
@@ -144,6 +153,15 @@ public class AssistantEngine(
         if (text is "link" or "connect" or "link my account")
             return LinkInstructions(current ?? mine.FirstOrDefault());
 
+        // Two shortcuts people reach for without opening the menu.
+        if (current is not null && text is "pay" or "dues" or "give" or "donate" or "contribute")
+        {
+            if (!current.IsMember) state.Wanted = 1;
+            return await SectionAsync(1, current, state, ct);
+        }
+        if (current is not null && text is "invite" or "refer" or "share" or "invite a friend" or "invite friends")
+            return await InviteAsync(current, ct);
+
         // A numbered answer to the list the user was last shown.
         if (state.Stage == AssistantStages.PickCommunity && int.TryParse(text, out var pick) && pick >= 1 && pick <= state.Choices.Count)
         {
@@ -164,7 +182,7 @@ public class AssistantEngine(
             return await SectionAsync(option, current, state, ct);
         }
 
-        return $"I didn't understand that. Reply with a number from the menu, or *menu* to see it again.\n\n{Menu(current)}";
+        return $"I didn't catch that. Reply with a number from the menu, or *menu* to see it again.\n\n{Menu(current)}";
     }
 
     /// <summary>
@@ -206,7 +224,9 @@ public class AssistantEngine(
                     if (nowMine is not null)
                         return $"{connected}\n\nHere is what you asked for:\n\n{await SectionAsync(wanted, nowMine, state, ct)}";
                 }
-                return $"{connected}\n\nReply *menu* to see what I can do. To disconnect any time, reply *unlink*.";
+                // Land them on the menu: they have just connected, so show what is now possible rather than ask them to ask.
+                var landed = (await directory.FindMemberCommunitiesAsync(phone, ct)).FirstOrDefault(c => c.InstitutionId == outcome.InstitutionId && c.IsMember);
+                return landed is null ? connected : $"{connected}\n\n{Menu(landed)}";
             case LinkStatus.NeedsApproval:
                 // The code was right, but this is not the number on the account. Say what to do, and nothing about whose account it is.
                 return $"Almost done. For your safety, open the *Connect WhatsApp* page in your portal ({outcome.CommunityName}) and approve this number. It takes one tap.";
@@ -217,7 +237,7 @@ public class AssistantEngine(
             default:
                 state.LinkFailures++;
                 state.LinkFailureAt = DateTime.UtcNow;
-                return "That code didn't work. It may have expired or been used already. Open your portal's *Connect WhatsApp* page to get a new one.";
+                return "That code didn't work. It may have expired (codes last 10 minutes) or been used already. Open your portal's *Connect WhatsApp* page to get a new one.\n\nIf it's a code for a WhatsApp *group*, post it inside the group as *!link CODE* instead of sending it to me here.";
         }
     }
 
@@ -267,12 +287,12 @@ public class AssistantEngine(
         {
             state.Stage = AssistantStages.AskCommunity;
             state.Choices = [];
-            return "Welcome to the *AlumUnion Assistant*.\n\nWhich community would you like? Reply with its name (for example *UMaT Alumni*).";
+            return "Welcome to the *AlumUnion Assistant*.\n\nWhich community are you looking for? Reply with its name, for example *UMaT Alumni*.";
         }
 
         state.Stage = AssistantStages.PickCommunity;
         state.Choices = options.Select(o => o.InstitutionId).ToList();
-        var sb = new StringBuilder("Which community would you like?\n\n");
+        var sb = new StringBuilder("*Which community?*\n\n");
         for (var i = 0; i < options.Count; i++) sb.AppendLine($"{i + 1}. {options[i].Name}");
         sb.Append("\nReply with a number.");
         return sb.ToString();
@@ -293,7 +313,7 @@ public class AssistantEngine(
 
         state.Stage = AssistantStages.PickCommunity;
         state.Choices = found.Select(f => f.InstitutionId).ToList();
-        var sb = new StringBuilder("I found these. Which one?\n\n");
+        var sb = new StringBuilder("*I found these. Which one?*\n\n");
         for (var i = 0; i < found.Count; i++) sb.AppendLine($"{i + 1}. {found[i].Name}");
         sb.Append("\nReply with a number.");
         return sb.ToString();
@@ -311,13 +331,17 @@ public class AssistantEngine(
             case 2:
                 if (!await content.IsAvailableAsync(c, InstitutionFeatures.Events, ct)) return NotAvailable(c, "Events");
                 if (!c.IsMember)
-                    return List("Upcoming events", await content.PublicEventsAsync(c, ct), "No upcoming events right now.", c, "events");
+                {
+                    var open = await content.PublicEventsAsync(c, ct);
+                    var list = List("Upcoming events", open, "No upcoming events right now.", c, "events");
+                    return open.Count == 0 ? list : $"{list}\n\nTo book a place, connect your account: reply *link*.";
+                }
                 var events = await content.MemberEventsAsync(c, ct);
                 state.EventIds = events.Take(MaxListItems).Select(e => e.Id ?? "").ToList();
                 state.EventsInstitutionId = c.InstitutionId;
-                var shown = List("Upcoming events", events, "No upcoming events right now.", c, "events", footer: false);
-                return events.Count == 0 ? $"{shown}\n\nReply *menu* for the main menu."
-                    : $"{shown}\n\nTo book a place, reply *rsvp 1* (use the event's number). To cancel, reply *cancel rsvp 1*.\nReply *menu* for the main menu.";
+                var shown = List("Upcoming events", events, "No upcoming events right now.", c, "events");
+                return events.Count == 0 ? shown
+                    : $"{shown}\n\nTo book a place, reply *rsvp 1* (the event's number).";
             case 3:
                 if (!await content.IsAvailableAsync(c, InstitutionFeatures.Jobs, ct)) return NotAvailable(c, "Jobs");
                 return List("Jobs and opportunities", c.IsMember ? await content.MemberJobsAsync(c, ct) : await content.PublicJobsAsync(c, ct), "No open opportunities right now.", c, "jobs");
@@ -330,9 +354,9 @@ public class AssistantEngine(
                 return Help(c);
             case 8 when c.IsMember:
                 state.Stage = AssistantStages.Share;
-                return "*What would you like to share?*\n1. Suggest a job or opportunity (an administrator reviews it first)\n2. Post an update to your year group's wall\n\nReply with a number, or *menu* to go back.";
+                return "*What would you like to share?*\n\n1️⃣  A job or opportunity\n      _an administrator reviews it first_\n2️⃣  An update for your year group's wall\n\nReply with a number, or *menu* to go back.";
             default:
-                return $"Please choose a number from 1 to {(c.IsMember ? 8 : 7)}.\n\n{Menu(c)}";
+                return $"That's not one of the options. Please choose a number from 1 to {(c.IsMember ? 8 : 7)}.\n\n{Menu(c)}";
         }
     }
 
@@ -353,68 +377,102 @@ public class AssistantEngine(
                 if (!dues.CurrentYearPaid || dues.HasArrears) sb.AppendLine($"Pay here: {dues.Url}");
                 sb.AppendLine();
             }
-            sb.Append(List("Fundraisers you can support", await content.MemberCampaignsAsync(c, ct), "No active fundraisers right now.", c, "contributions", footer: false));
+            sb.Append(List("Fundraisers you can support", await content.MemberCampaignsAsync(c, ct), "No active fundraisers right now.", c, "contributions"));
         }
         else
         {
-            sb.Append(List("Fundraisers", await content.PublicCampaignsAsync(c, ct), "No public fundraisers right now.", c, "contributions", footer: false));
+            sb.Append(List("Fundraisers", await content.PublicCampaignsAsync(c, ct), "No public fundraisers right now.", c, "contributions"));
             sb.AppendLine();
-            sb.AppendLine("To see your own dues, connect your account: reply *link*.");
+            sb.AppendLine();
+            sb.Append("To see your own dues, connect your account: reply *link*.");
         }
-        sb.AppendLine();
-        sb.AppendLine();
-        sb.Append("Reply *menu* for the main menu.");
-        return sb.ToString();
+        return sb.ToString().TrimEnd();
     }
 
     private string MyCommunity(AssistantCommunity c)
     {
         if (!c.IsMember)
-            return $"*{c.Name}*\nYou're browsing as a guest. Visit the portal: {c.PortalUrl}\n\nTo see your own details here, connect your account: reply *link*.\n\nReply *menu* for the main menu.";
+            return $"*{c.Name}*\n\nYou're browsing as a guest.\nPortal: {c.PortalUrl}\n\nTo see your own details here, connect your account: reply *link*.";
         var name = string.IsNullOrWhiteSpace(c.MemberFirstName) ? "" : $", {c.MemberFirstName}";
-        return $"*{c.Name}*\nYou're connected{name}.\nYour portal: {c.PortalUrl}\nYour profile: {c.PortalUrl}/profile\n\nReply *menu* for the main menu.";
+        return $"*{c.Name}*\n\nYou're connected{name}.\nPortal: {c.PortalUrl}\nProfile: {c.PortalUrl}/profile";
     }
 
     // ── Text ─────────────────────────────────────────────────────────────
 
     private string Menu(AssistantCommunity c)
     {
-        var who = c.IsMember ? $"Welcome back{(string.IsNullOrWhiteSpace(c.MemberFirstName) ? "" : $", {c.MemberFirstName}")}." : "You're browsing as a guest.";
-        return $"*{c.Name}* · AlumUnion Assistant\n{who}\n\nReply with a number:\n1. Contributions & Dues\n2. Events\n3. Jobs & Opportunities\n4. Community Updates\n5. My Community\n6. Switch Community\n7. Help{(c.IsMember ? "\n8. Share a job or an update" : "")}";
+        var who = c.IsMember
+            ? $"Welcome back{(string.IsNullOrWhiteSpace(c.MemberFirstName) ? "" : $", {c.MemberFirstName}")}."
+            : "You're browsing as a guest.";
+        var sb = new StringBuilder();
+        sb.AppendLine($"*{c.Name}*");
+        sb.AppendLine("AlumUnion Assistant");
+        sb.AppendLine();
+        sb.AppendLine(who);
+        sb.AppendLine();
+        sb.AppendLine("1️⃣  Contributions & dues");
+        sb.AppendLine("2️⃣  Events");
+        sb.AppendLine("3️⃣  Jobs & opportunities");
+        sb.AppendLine("4️⃣  Community updates");
+        sb.AppendLine("5️⃣  My community");
+        sb.AppendLine("6️⃣  Switch community");
+        sb.AppendLine("7️⃣  Help");
+        if (c.IsMember) sb.AppendLine("8️⃣  Share a job or an update");
+        sb.AppendLine();
+        sb.Append("Reply with a number.");
+        return sb.ToString();
     }
 
     private string Help(AssistantCommunity? c)
     {
-        var sb = new StringBuilder("*How this works*\n");
-        sb.AppendLine("Reply with a number from the menu to look something up.");
-        sb.AppendLine("*menu*: show the menu\n*back*: go back\n*switch*: change community\n*link*: connect your AlumUnion account\n*stop*: stop alerts on WhatsApp\n*unlink*: disconnect this number");
-        sb.AppendLine("\nI only show what's open to everyone until your account is connected. I never ask for your password or any payment details here.");
-        if (c is not null) sb.Append($"\nYour portal: {c.PortalUrl}");
-        return sb.ToString().TrimEnd();
+        var sb = new StringBuilder("*How I can help*\n\n");
+        sb.AppendLine("*menu*  the main menu");
+        sb.AppendLine("*back*  go back");
+        sb.AppendLine("*switch*  change community");
+        if (c is { IsMember: true })
+        {
+            sb.AppendLine("*pay*  your dues and fundraisers");
+            sb.AppendLine("*invite*  invite a friend");
+            sb.AppendLine("*rsvp 1*  book an event you were shown");
+            sb.AppendLine("*suggest*  send a job or opportunity");
+            sb.AppendLine("*post update*  post to your year group");
+            sb.AppendLine("*stop*  pause WhatsApp alerts");
+            sb.AppendLine("*unlink*  disconnect this number");
+        }
+        else
+        {
+            sb.AppendLine("*link*  connect your account");
+        }
+        sb.AppendLine();
+        sb.Append(c is { IsMember: true }
+            ? "I never ask for your password or payment details here."
+            : "Until you connect your account I only show what's open to everyone. I never ask for your password or payment details here.");
+        if (c is not null) sb.Append($"\n\nYour portal: {c.PortalUrl}");
+        return sb.ToString();
     }
 
     private string LinkInstructions(AssistantCommunity? c)
     {
         if (c is null)
             return "To connect your account, first tell me your community: reply with its name.";
-        return $"To connect your WhatsApp to your {c.Name} account:\n1. Open {c.PortalUrl}/connect-whatsapp and sign in.\n2. Tap the button there. It opens this chat with a one-time code.\n3. Send the message as it is.\n\nThat proves this number is yours. The code works once and expires in 10 minutes.";
+        return $"*Connect your {c.Name} account*\n\n1. Open {c.PortalUrl}/connect-whatsapp and sign in.\n2. Tap *Open WhatsApp*. It brings you back here with a one-time code typed in.\n3. Send it as it is.\n\nThat proves this number is yours. The code works once and lasts 10 minutes.";
     }
 
-    private static string NotAvailable(AssistantCommunity c, string what)
-        => $"{what} isn't available for {c.Name}. Reply *menu* to go back.";
+    private string NotAvailable(AssistantCommunity c, string what)
+        => $"{what} isn't available for {c.Name} right now.\n\n{Menu(c)}";
 
-    private static string List(string title, IReadOnlyList<AssistantItem> items, string empty, AssistantCommunity c, string portalPath, bool footer = true)
+    private static string List(string title, IReadOnlyList<AssistantItem> items, string empty, AssistantCommunity c, string portalPath, bool footer = false)
     {
         var sb = new StringBuilder($"*{title}*\n");
-        if (items.Count == 0) sb.AppendLine(empty);
+        if (items.Count == 0) sb.AppendLine($"\n{empty}");
         for (var i = 0; i < Math.Min(items.Count, MaxListItems); i++)
         {
-            sb.AppendLine($"{i + 1}. {items[i].Title}");
-            if (!string.IsNullOrWhiteSpace(items[i].Detail)) sb.AppendLine($"   {items[i].Detail}");
-            sb.AppendLine($"   {items[i].Url}");
+            sb.AppendLine();
+            sb.AppendLine($"{i + 1}. *{items[i].Title}*");
+            if (!string.IsNullOrWhiteSpace(items[i].Detail)) sb.AppendLine($"    {items[i].Detail}");
+            sb.AppendLine($"    {items[i].Url}");
         }
-        if (items.Count > MaxListItems) sb.AppendLine($"…and more: {c.PortalUrl}/{portalPath}");
-        if (footer) { sb.AppendLine(); sb.Append("Reply *menu* for the main menu."); }
+        if (items.Count > MaxListItems) sb.AppendLine($"\nSee everything: {c.PortalUrl}/{portalPath}");
         return sb.ToString().TrimEnd();
     }
 
@@ -428,7 +486,22 @@ public class AssistantEngine(
 
         var id = state.EventIds[number - 1];
         var result = cancel ? await actions.CancelRsvpAsync(c, id, ct) : await actions.RsvpAsync(c, id, ct);
-        return $"{result.Message}\n\nReply *menu* for the main menu.";
+        return result.Message;
+    }
+
+    /// <summary>A message the member can forward as it is, carrying their own invitation link.</summary>
+    private async Task<string> InviteAsync(AssistantCommunity c, CancellationToken ct)
+    {
+        if (!c.IsMember)
+            return $"Inviting friends uses your own link, so I need to know it's you first. Reply *link* to connect your account.";
+
+        var link = await content.MemberInviteLinkAsync(c, ct);
+        if (link is null)
+            return $"I couldn't make your invitation link just now. You can find it on the Refer & Earn page: {c.PortalUrl}/referrals";
+
+        return $"*Invite a friend to {c.Name}*\n\nForward this message to them:\n\n" +
+               $"Join me on {c.Name} on AlumUnion: {link}\n\n" +
+               "When they join using your link it counts toward your referrals.";
     }
 
     private static void ClearFlow(AssistantState state)
@@ -465,7 +538,7 @@ public class AssistantEngine(
                 var content = state.FlowData.GetValueOrDefault("content") ?? "";
                 ClearFlow(state);
                 var res = await actions.PostUpdateAsync(c, content, ct);
-                return $"{res.Message}\n\nReply *menu* for the main menu.";
+                return res.Message;
             }
             return "Reply *yes* to post it, or *cancel* to drop it.";
         }
@@ -508,21 +581,25 @@ public class AssistantEngine(
                     var draft = new OpportunityDraft(d["title"], d["company"], d.GetValueOrDefault("location") ?? "", d["type"], d.GetValueOrDefault("url"));
                     ClearFlow(state);
                     var res = await actions.SuggestOpportunityAsync(c, draft, ct);
-                    return $"{res.Message}\n\nReply *menu* for the main menu.";
+                    return res.Message;
                 }
                 return "Reply *yes* to send it for review, or *cancel* to drop it.";
         }
     }
 
+    private const string GroupCommandInPrivate =
+        "Commands that start with ! are for groups. To connect a WhatsApp *group*, add me to the group and post the *!link CODE* message there, " +
+        "not here.\n\nTo connect your own account, open the *Connect WhatsApp* page in your portal and send me the *LINK* message it gives you. ";
+
     private static string MediaReply(string kind) => kind switch
     {
-        "voice" => "I can't listen to voice notes yet. Please type your message, or reply *menu* to see what I can do.",
-        "image" or "video" => "I can't open pictures or videos here. Please type your message, or reply *menu* to see what I can do.",
-        "document" => "I can't open files here. Please type your message, or reply *menu* to see what I can do.",
-        "location" => "Thanks, but I can't use locations. Reply *menu* to see what I can do.",
-        "contact" => "I can't use contact cards. Reply *menu* to see what I can do.",
-        "sticker" => "Reply *menu* to see what I can do.",
-        _ => "I can only read text messages. Reply *menu* to see what I can do.",
+        "voice" => "I can't listen to voice notes yet. Please type your message.",
+        "image" or "video" => "I can't open pictures or videos here. Please type your message.",
+        "document" => "I can't open files here. Please type your message.",
+        "location" => "Thanks, but I can't use locations. Please type your message.",
+        "contact" => "I can't use contact cards. Please type your message.",
+        "sticker" => "Say *hi* any time and I'll show you what I can do.",
+        _ => "I can only read text messages. Please type your message.",
     };
 
     // ── Helpers ──────────────────────────────────────────────────────────

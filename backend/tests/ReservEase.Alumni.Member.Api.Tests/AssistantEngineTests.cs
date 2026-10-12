@@ -54,6 +54,8 @@ public class AssistantEngineTests
         public Task<IReadOnlyList<AssistantItem>> MemberJobsAsync(AssistantCommunity c, CancellationToken ct = default) => Items("member-jobs", "Member role");
         public Task<IReadOnlyList<AssistantItem>> MemberUpdatesAsync(AssistantCommunity c, CancellationToken ct = default) => Items("member-news", "Member news");
         public Task<AssistantDues?> MemberDuesAsync(AssistantCommunity c, CancellationToken ct = default) { Calls.Add("member-dues"); return Task.FromResult(Dues); }
+        public string? InviteLink { get; set; } = "https://umat.example.org/register?ref=ABC123&src=whatsapp";
+        public Task<string?> MemberInviteLinkAsync(AssistantCommunity c, CancellationToken ct = default) { Calls.Add("invite-link"); return Task.FromResult(InviteLink); }
         public Task<bool> IsAvailableAsync(AssistantCommunity c, string feature, CancellationToken ct = default) => Task.FromResult(!Disabled.Contains(feature));
     }
 
@@ -277,8 +279,8 @@ public class AssistantEngineTests
         var (engine, _, _) = Create([Umat(member: true, verified: true)]);
         await engine.HandleAsync(Say("hi"));
         var reply = await engine.HandleAsync(Say("qwerty asdf"));
-        Assert.Contains("didn't understand", reply!.Text);
-        Assert.Contains("1. Contributions", reply.Text);
+        Assert.Contains("didn't catch", reply!.Text);
+        Assert.Contains("Contributions & dues", reply.Text);
     }
 
     // ── Linking by message ───────────────────────────────────────────────
@@ -371,7 +373,7 @@ public class AssistantEngineTests
 
         Assert.Equal([false], LastLinker.AlertChanges);
         Assert.Equal(0, LastLinker.Unlinked);
-        Assert.Contains("stopped alerts", reply!.Text);
+        Assert.Contains("alerts are off", reply!.Text);
     }
 
     [Fact]
@@ -410,7 +412,7 @@ public class AssistantEngineTests
         var reply = await engine.HandleAsync(Media(kind));
 
         Assert.Contains(expected, reply!.Text);
-        Assert.DoesNotContain("didn't understand", reply.Text);
+        Assert.DoesNotContain("didn't catch", reply.Text);
     }
 
     [Fact]
@@ -510,7 +512,7 @@ public class AssistantEngineTests
 
         Assert.Single(LastActions.Posted);
         Assert.Equal("Reunion this Saturday at 4pm", LastActions.Posted[0]);   // case kept: it is the member's own words
-        Assert.Contains("didn't understand", again!.Text);
+        Assert.Contains("didn't catch", again!.Text);
     }
 
     [Fact]
@@ -535,10 +537,10 @@ public class AssistantEngineTests
     {
         var (guestEngine, _, _) = Create();
         await guestEngine.HandleAsync(Say("start umat"));
-        Assert.DoesNotContain("8.", (await guestEngine.HandleAsync(Say("menu")))!.Text);
+        Assert.DoesNotContain("Share a job", (await guestEngine.HandleAsync(Say("menu")))!.Text);
 
         var (memberEngine, _, _) = Create([Umat(member: true, verified: true)]);
-        Assert.Contains("8. Share", (await memberEngine.HandleAsync(Say("menu")))!.Text);
+        Assert.Contains("Share a job or an update", (await memberEngine.HandleAsync(Say("menu")))!.Text);
     }
 
     [Theory]
@@ -574,5 +576,109 @@ public class AssistantEngineTests
 
         content.Throw = false;
         Assert.Contains("Upcoming events", (await engine.HandleAsync(Say("2")))!.Text);
+    }
+
+    [Theory]
+    [InlineData("!link K7M2QX9P")]
+    [InlineData("!events")]
+    [InlineData("  !help")]
+    public async Task A_group_command_typed_in_a_private_chat_is_explained_not_read_as_a_personal_link(string text)
+    {
+        var (engine, _, _) = Create();
+
+        var reply = await engine.HandleAsync(Say(text));
+
+        Assert.Contains("are for groups", reply!.Text);
+        Assert.Empty(LastLinker.Completed);
+    }
+
+    [Fact]
+    public async Task A_failed_personal_code_points_group_codes_at_the_group()
+    {
+        var (engine, _, _) = Create();
+
+        var reply = await engine.HandleAsync(Say("LINK ABCD2345"));
+
+        Assert.Contains("*group*", reply!.Text);
+        Assert.Contains("!link CODE", reply.Text);
+    }
+
+    [Fact]
+    public async Task An_answer_is_complete_in_itself_and_does_not_ask_the_person_to_pick_something_else()
+    {
+        var (engine, _, _) = Create([Umat(member: true, verified: true)]);
+        await engine.HandleAsync(Say("hi"));
+
+        foreach (var option in new[] { "1", "3", "4", "5", "7" })
+        {
+            var reply = await engine.HandleAsync(Say(option));
+            Assert.DoesNotContain("for the main menu", reply!.Text);
+            Assert.DoesNotContain("Reply with a number", reply.Text);
+        }
+        // The one follow-up offered is a useful action, not a way back.
+        var events = await engine.HandleAsync(Say("2"));
+        Assert.Contains("rsvp 1", events!.Text);
+        Assert.DoesNotContain("for the main menu", events.Text);
+    }
+
+    [Fact]
+    public async Task Connecting_lands_on_the_menu_with_no_further_question()
+    {
+        var (engine, _, _) = Create([Umat(member: true, verified: true)]);
+        LastLinker.Outcome = new LinkOutcome(LinkStatus.Linked, "UMaT Alumni", "Ama", "inst-umat");
+
+        var reply = await engine.HandleAsync(Say("LINK K7M2QX9P"));
+
+        Assert.Contains("You're connected", reply!.Text);
+        Assert.Contains("Contributions & dues", reply.Text);
+    }
+
+    [Theory]
+    [InlineData("pay")]
+    [InlineData("Dues")]
+    [InlineData("donate")]
+    public async Task Pay_goes_straight_to_dues_and_fundraisers_without_opening_the_menu(string word)
+    {
+        var (engine, content, _) = Create([Umat(member: true, verified: true)]);
+
+        var reply = await engine.HandleAsync(Say(word));
+
+        Assert.Contains("Your dues at UMaT Alumni", reply!.Text);
+        Assert.Contains("https://umat.example.org/contributions", reply.Text);
+        Assert.Contains("member-dues", content.Calls);
+    }
+
+    [Fact]
+    public async Task Invite_gives_a_member_a_message_they_can_forward_with_their_own_link()
+    {
+        var (engine, _, _) = Create([Umat(member: true, verified: true)]);
+
+        var reply = await engine.HandleAsync(Say("invite"));
+
+        Assert.Contains("Forward this message", reply!.Text);
+        Assert.Contains("Join me on UMaT Alumni on AlumUnion: https://umat.example.org/register?ref=ABC123&src=whatsapp", reply.Text);
+    }
+
+    [Fact]
+    public async Task Invite_for_someone_not_connected_asks_them_to_connect_and_never_makes_a_link()
+    {
+        var (engine, content, _) = Create();
+        await engine.HandleAsync(Say("start umat"));
+
+        var reply = await engine.HandleAsync(Say("invite"));
+
+        Assert.Contains("*link*", reply!.Text);
+        Assert.DoesNotContain("invite-link", content.Calls);
+    }
+
+    [Fact]
+    public async Task Invite_falls_back_to_the_portal_page_when_no_link_can_be_made()
+    {
+        var (engine, content, _) = Create([Umat(member: true, verified: true)]);
+        content.InviteLink = null;
+
+        var reply = await engine.HandleAsync(Say("invite"));
+
+        Assert.Contains("https://umat.example.org/referrals", reply!.Text);
     }
 }

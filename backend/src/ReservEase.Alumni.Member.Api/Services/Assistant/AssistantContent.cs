@@ -31,7 +31,9 @@ public class AssistantContent(
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<Job> jobRepo,
     IAlumniPgRepository<NewsPost> newsRepo,
-    IAlumniPgRepository<Institution> institutionRepo) : IAssistantContent
+    IAlumniPgRepository<Institution> institutionRepo,
+    IReferralService referralService,
+    IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member> memberRepo) : IAssistantContent
 {
     private const int Take = 5;
 
@@ -121,6 +123,20 @@ public class AssistantContent(
 
         var unpaid = status.Data.ArrearsCount + (status.Data.IsCurrentYearPaid ? 0 : 1);
         return new AssistantDues(status.Data.IsCurrentYearPaid, status.Data.HasArrears, unpaid, $"{c.PortalUrl}/contributions");
+    }
+
+    public async Task<string?> MemberInviteLinkAsync(AssistantCommunity c, CancellationToken ct = default)
+    {
+        if (!c.IsMember || c.MemberId is null) return null;
+        Pin(c);
+        var m = await memberRepo.GetByIdAsync(c.MemberId);
+        if (m is null || m.Status != "Active") return null;
+        if (!await IsAvailableAsync(c, InstitutionFeatures.Referrals, ct)) return null;
+
+        // The same call the portal's Refer & Earn page makes: it creates the member's code the first time it is asked for.
+        var info = await referralService.GetMyReferralInfoAsync(new AuthData { Id = m.Id, FirstName = m.FirstName, LastName = m.LastName, Email = m.Email, Role = "Member" });
+        var code = info.Data?.ReferralCode;
+        return string.IsNullOrWhiteSpace(code) || string.IsNullOrEmpty(c.PortalUrl) ? null : $"{c.PortalUrl}/register?ref={Uri.EscapeDataString(code)}&src=whatsapp";
     }
 
     public async Task<bool> IsAvailableAsync(AssistantCommunity c, string feature, CancellationToken ct = default)

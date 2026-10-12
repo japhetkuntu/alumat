@@ -1,8 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, LoadError, cn } from "@alumni/ui";
-import { getWhatsAppHealth } from "@/lib/platform-api";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Card, CardContent, ConfirmModal, LoadError, cn } from "@alumni/ui";
+import { getPlatformSettings, getWhatsAppHealth, setWhatsAppBotEnabled } from "@/lib/platform-api";
+import { handleApiError } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 
 function Check({ ok, label, hint }: { ok: boolean; label: string; hint?: string }) {
   return (
@@ -92,13 +96,78 @@ function Adoption({ a }: { a: NonNullable<import("@/lib/platform-api").WhatsAppH
   );
 }
 
+/**
+ * The platform-wide switch for the WhatsApp bot: assistant replies, group commands and posting, and WhatsApp notifications, for
+ * every institution at once. Off takes effect within seconds with no restart, and notifications go by SMS and email as before.
+ */
+function BotSwitch() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [confirmOff, setConfirmOff] = useState(false);
+  const settings = useQuery({ queryKey: ["platform-settings"], queryFn: getPlatformSettings });
+  const mutation = useMutation({
+    mutationFn: (on: boolean) => setWhatsAppBotEnabled(on, settings.data?.blockOverdueCampaignPayments ?? false),
+    onSuccess: (data) => {
+      qc.setQueryData(["platform-settings"], data);
+      qc.invalidateQueries({ queryKey: ["whatsapp-health"] });
+      setConfirmOff(false);
+      toast.success(data.whatsAppBotEnabled ? "WhatsApp bot switched on" : "WhatsApp bot switched off");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const s = settings.data;
+  if (!s) return <div className="skeleton h-24 w-full" aria-busy="true" />;
+  const on = s.whatsAppBotEnabled !== false;
+  const canChange = user?.role === "SuperAdmin";
+
+  return (
+    <Card className="border-border/40">
+      <CardContent className="space-y-3 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold">WhatsApp bot for every institution</p>
+            <p className="mt-0.5 max-w-[60ch] text-[13px] text-muted-foreground">
+              Covers the assistant, group commands and posting, and WhatsApp notifications. Switched off, the bot goes quiet and every
+              notification goes by SMS and email, exactly as it did before the bot.
+            </p>
+          </div>
+          <button
+            type="button" role="switch" aria-checked={on} aria-label="WhatsApp bot for every institution"
+            disabled={!canChange || mutation.isPending}
+            onClick={() => (on ? setConfirmOff(true) : mutation.mutate(true))}
+            className={cn("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-50", on ? "bg-primary" : "bg-muted")}
+          >
+            <span className={cn("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform", on ? "translate-x-5" : "translate-x-0")} />
+          </button>
+        </div>
+        <p className="text-[13px]">
+          Right now: <span className={cn("font-semibold", on ? "text-success" : "text-destructive")}>{on ? "On" : "Off"}</span>
+          {!s.whatsAppConfigured && <span className="text-muted-foreground"> · the channel is not set up yet, so this has no effect until it is</span>}
+          {!canChange && <span className="text-muted-foreground"> · only a super administrator can change it</span>}
+        </p>
+      </CardContent>
+      <ConfirmModal
+        open={confirmOff}
+        title="Switch the WhatsApp bot off for everyone?"
+        message="The assistant and group commands stop answering right away, and notifications fall back to SMS and email. Members stay connected, and you can switch it back on at any time."
+        confirmLabel="Switch off"
+        variant="destructive"
+        isLoading={mutation.isPending}
+        onConfirm={() => mutation.mutate(false)}
+        onCancel={() => setConfirmOff(false)}
+      />
+    </Card>
+  );
+}
+
 export default function WhatsAppHealthPage() {
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["whatsapp-health"], queryFn: getWhatsAppHealth, refetchInterval: 30_000 });
 
   if (isError) return <div className="mx-auto max-w-[1000px] p-4 sm:p-7"><LoadError title="WhatsApp health couldn’t load" onRetry={() => void refetch()} /></div>;
 
   const d = data;
-  const state = !d ? "…" : !d.enabled ? "Switched off" : !d.connected ? "Not connected" : "Connected";
+  const state = !d ? "…" : d.botSwitchedOn === false ? "Switched off by you" : !d.enabled ? "Switched off" : !d.connected ? "Not connected" : "Connected";
 
   return (
     <div className="mx-auto max-w-[1000px] space-y-5 p-4 sm:p-7">
@@ -108,6 +177,8 @@ export default function WhatsAppHealthPage() {
           The AlumUnion Assistant and WhatsApp notifications. This is the shared session every institution uses. You see states and counts only: never numbers, members or keys.
         </p>
       </header>
+
+      <BotSwitch />
 
       <Card className="border-border/40">
         <CardContent className="space-y-4 p-5">

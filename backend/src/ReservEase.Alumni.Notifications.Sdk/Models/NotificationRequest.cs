@@ -75,6 +75,12 @@ public sealed class NotificationRequest
     public SendEmailRequest? EmailRequest { get; init; }
     public string? EmailContext { get; init; }
 
+    /// <summary>
+    /// When set on an Email request, the same message may go to the member on WhatsApp instead: if the member connected
+    /// WhatsApp and wants alerts there, it is sent there and the email is not. Otherwise the email goes as before.
+    /// </summary>
+    public WhatsAppAlternative? WhatsApp { get; init; }
+
     public static NotificationRequest JobAlert(string institutionId, string jobId) => new()
     { Kind = NotificationKind.JobAlert, InstitutionId = institutionId, JobId = jobId };
 
@@ -214,4 +220,8 @@ public sealed class NotificationRequest
 
     public static NotificationRequest Email(SendEmailRequest request, string context) => new()
     { Kind = NotificationKind.Email, EmailRequest = request, EmailContext = context };
+
+    /// <summary>An email that prefers WhatsApp for a member who has connected it (see <see cref="WhatsAppAlternative"/>).</summary>
+    public static NotificationRequest Email(SendEmailRequest request, string context, WhatsAppAlternative? whatsApp) => new()
+    { Kind = NotificationKind.Email, EmailRequest = request, EmailContext = context, WhatsApp = whatsApp, InstitutionId = whatsApp?.InstitutionId ?? string.Empty };
 }

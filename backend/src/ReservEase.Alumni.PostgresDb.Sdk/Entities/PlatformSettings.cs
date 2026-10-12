@@ -20,6 +20,14 @@ public class PlatformSettings : BaseEntity
     public bool BlockOverdueCampaignPayments { get; set; }
 
     /// <summary>
+    /// The platform administrator's switch for the WhatsApp bot, for every institution at once: the assistant's replies, group
+    /// commands, group posting and WhatsApp notifications. On by default. Turning it off takes effect within seconds and needs no
+    /// restart; notifications then go by SMS and email as they did before the bot. It sits on top of the configuration setting
+    /// (WaSenderConfig:Enabled), which says whether the channel is set up at all.
+    /// </summary>
+    public bool WhatsAppBotEnabled { get; set; } = true;
+
+    /// <summary>
     /// The onboarding goal the platform's Activation page tracks progress
     /// against — e.g. 20 activated institutions by a date. Null count hides
     /// the goal line entirely.

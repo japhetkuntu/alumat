@@ -43,6 +43,7 @@ public class GroupCommandHandlerTests
         public Task<IReadOnlyList<AssistantItem>> MemberJobsAsync(AssistantCommunity c, CancellationToken ct = default) => throw new InvalidOperationException("A group must never use member data");
         public Task<IReadOnlyList<AssistantItem>> MemberUpdatesAsync(AssistantCommunity c, CancellationToken ct = default) => throw new InvalidOperationException("A group must never use member data");
         public Task<AssistantDues?> MemberDuesAsync(AssistantCommunity c, CancellationToken ct = default) => throw new InvalidOperationException("A group must never use member data");
+        public Task<string?> MemberInviteLinkAsync(AssistantCommunity c, CancellationToken ct = default) => Task.FromResult<string?>(null);
         public Task<bool> IsAvailableAsync(AssistantCommunity c, string feature, CancellationToken ct = default) => Task.FromResult(!Disabled.Contains(feature));
     }
 
@@ -128,14 +129,18 @@ public class GroupCommandHandlerTests
     }
 
     [Fact]
-    public async Task A_code_works_once_and_a_wrong_or_expired_one_is_met_with_silence()
+    public async Task A_code_works_once_and_a_wrong_or_expired_one_is_told_so_while_chatter_stays_silent()
     {
         var rig = Create(Inst("i1", Waiting()), Inst("i2", Waiting("EXPIRED22", DateTime.UtcNow.AddMinutes(-1))));
 
-        Assert.Null(await rig.Handler.HandleAsync(Post("!link NOPE1234")));
-        Assert.Null(await rig.Handler.HandleAsync(Post("!link EXPIRED22")));
+        var wrong = await rig.Handler.HandleAsync(Post("!link NOPE1234"));
+        Assert.Contains("couldn't match that code", wrong!.Text);
+        Assert.Contains("EXPIRED22".Length > 0 ? "24 hours" : "", (await rig.Handler.HandleAsync(Post("!link EXPIRED22")))!.Text);
+        Assert.Null(await rig.Handler.HandleAsync(Post("!link hi there")));   // not shaped like a code: no answer
+        Assert.Null(await rig.Handler.HandleAsync(Post("!link")));
         Assert.NotNull(await rig.Handler.HandleAsync(Post("!link K7M2QX9P")));
-        Assert.Null(await rig.Handler.HandleAsync(Post("!link K7M2QX9P", group: "777@g.us")));   // already spent
+        // Already spent: another group posting it is told it didn't match, and nothing is connected.
+        Assert.Contains("couldn't match that code", (await rig.Handler.HandleAsync(Post("!link K7M2QX9P", group: "777@g.us")))!.Text);
     }
 
     [Fact]
@@ -161,7 +166,7 @@ public class GroupCommandHandlerTests
         Assert.Equal(Group, events!.To);
         Assert.Contains("Homecoming", events.Text);
         Assert.Contains("https://umat.test/Homecoming", events.Text);
-        Assert.Contains("message me privately: https://wa.me/233200000000?text=start%20umat", events.Text);
+        Assert.Contains("message me privately:\nhttps://wa.me/233200000000?text=start%20umat", events.Text);
     }
 
     [Theory]

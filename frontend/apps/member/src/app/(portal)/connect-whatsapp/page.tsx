@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -69,6 +69,16 @@ export default function ConnectWhatsAppPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["m-notif-prefs"] }); qc.invalidateQueries({ queryKey: STATUS_KEY }); },
     onError: (e) => toast.error(handleApiError(e)),
   });
+
+  // One tap fewer: arriving here to connect means the code is wanted, so make it straight away (once).
+  const autoStarted = useRef(false);
+  const s0 = status.data;
+  useEffect(() => {
+    if (autoStarted.current || !s0 || !s0.available || s0.connected || s0.pendingNumber || challenge) return;
+    autoStarted.current = true;
+    start.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s0, challenge]);
 
   // Countdown for the code.
   useEffect(() => {

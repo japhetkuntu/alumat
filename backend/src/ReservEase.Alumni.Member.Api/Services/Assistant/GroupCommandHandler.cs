@@ -69,7 +69,7 @@ public class GroupCommandHandler(
 
         var privateChat = string.IsNullOrWhiteSpace(whatsApp.Value.AssistantNumber)
             ? ""
-            : $"\nFor anything personal, message me privately: https://wa.me/{whatsApp.Value.AssistantNumber}?text=start%20{institution.Slug}";
+            : $"\n\nFor anything personal, message me privately:\nhttps://wa.me/{whatsApp.Value.AssistantNumber}?text=start%20{institution.Slug}";
 
         var reply = command switch
         {
@@ -121,8 +121,16 @@ public class GroupCommandHandler(
             return new AssistantReply(groupJid,
                 "Got it. An administrator of this community now needs to confirm this group in the AlumUnion portal. Once they have, send *!help* here to see what I can do.");
         }
-        return null;
+
+        // Something shaped like one of our codes that matched nothing: say so, once in a while, instead of leaving the
+        // administrator staring at a silent group. Anything not shaped like a code stays silent, so ordinary chatter and other
+        // bots' commands never get an answer.
+        if (!LooksLikeCode(wanted) || await CountAsync(groupJid) > 3) return null;
+        return new AssistantReply(groupJid,
+            "I couldn't match that code. Codes last 24 hours and work once. Make a new one in the AlumUnion portal (Settings, WhatsApp, Connect a group) and post it here as *!link CODE*.");
     }
+
+    private static bool LooksLikeCode(string code) => code.Length is >= 6 and <= 10 && code.All(c => char.IsAsciiLetterOrDigit(c));
 
     // ── Finding a connected group ────────────────────────────────────────
 
@@ -161,15 +169,16 @@ public class GroupCommandHandler(
 
     private static Task<string> Listing(string title, IReadOnlyList<AssistantItem> items, AssistantCommunity c, string path, string empty)
     {
-        var sb = new StringBuilder($"*{title}* · {c.Name}\n");
-        if (items.Count == 0) sb.AppendLine(empty);
+        var sb = new StringBuilder($"*{title}*  ·  {c.Name}\n");
+        if (items.Count == 0) sb.AppendLine($"\n{empty}");
         foreach (var (item, i) in items.Take(MaxItems).Select((x, i) => (x, i)))
         {
-            sb.AppendLine($"{i + 1}. {item.Title}");
-            if (!string.IsNullOrWhiteSpace(item.Detail)) sb.AppendLine($"   {item.Detail}");
-            sb.AppendLine($"   {item.Url}");
+            sb.AppendLine();
+            sb.AppendLine($"{i + 1}. *{item.Title}*");
+            if (!string.IsNullOrWhiteSpace(item.Detail)) sb.AppendLine($"    {item.Detail}");
+            sb.AppendLine($"    {item.Url}");
         }
-        if (items.Count > MaxItems) sb.AppendLine($"More: {c.PortalUrl}/{path}");
+        if (items.Count > MaxItems) sb.AppendLine($"\nSee everything: {c.PortalUrl}/{path}");
         return Task.FromResult(sb.ToString().TrimEnd());
     }
 
@@ -178,12 +187,12 @@ public class GroupCommandHandler(
         var all = link.AllowedCommands.Count > 0 ? link.AllowedCommands : WhatsAppGroupCommands.All.ToList();
         var lines = new[]
         {
-            ("events", "!events: upcoming events"), ("campaigns", "!campaigns: open fundraisers"), ("jobs", "!jobs: jobs and opportunities"),
-            ("updates", "!updates: community news"), ("community", "!community: where to find us"), ("help", "!help: this list"),
+            ("events", "*!events*  upcoming events"), ("campaigns", "*!campaigns*  open fundraisers"), ("jobs", "*!jobs*  jobs and opportunities"),
+            ("updates", "*!updates*  community news"), ("community", "*!community*  where to find us"), ("help", "*!help*  this list"),
         }.Where(l => all.Contains(l.Item1, StringComparer.OrdinalIgnoreCase)).Select(l => l.Item2);
-        return $"*{name} on AlumUnion*\n{string.Join("\n", lines)}";
+        return $"*{name} on AlumUnion*\n\n{string.Join("\n", lines)}";
     }
 
     private static string CommunityLine(AssistantCommunity c, WhatsAppGroupLink link)
-        => $"*{c.Name}*\nPortal: {c.PortalUrl}\nJoin: {c.PortalUrl}/register";
+        => $"*{c.Name}*\n\nPortal: {c.PortalUrl}\nJoin: {c.PortalUrl}/register";
 }

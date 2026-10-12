@@ -165,6 +165,17 @@ public class WaSenderWebhookParserTests
     }
 
     [Theory]
+    [InlineData("messages-personal.received", "120363@g.us", WhatsAppInboundKind.GroupMessage)]    // the address says group
+    [InlineData("messages-group.received", "233244123456@s.whatsapp.net", WhatsAppInboundKind.PersonalMessage)]
+    [InlineData("messages-group.received", "120363@g.us", WhatsAppInboundKind.GroupMessage)]
+    public void Where_a_message_was_posted_is_taken_from_the_chat_address_not_the_event_name(string ev, string jid, WhatsAppInboundKind expected)
+    {
+        var json = "{\"event\":\"" + ev + "\",\"data\":{\"messages\":{\"key\":{\"id\":\"x\",\"remoteJid\":\"" + jid + "\",\"participant\":\"555@lid\",\"cleanedParticipantPn\":\"233244123456\",\"cleanedSenderPn\":\"233244123456\"},\"messageBody\":\"!link K7M2QX9P\"}}}";
+
+        Assert.Equal(expected, WaSenderWebhookParser.Parse(json).Kind);
+    }
+
+    [Theory]
     [InlineData("audioMessage", "voice")]
     [InlineData("imageMessage", "image")]
     [InlineData("locationMessage", "location")]

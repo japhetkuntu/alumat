@@ -38,7 +38,7 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
         public List<SendEmailRequest> EmailsSent { get; } = new();
         public NotificationDispatchActivities Activities { get; }
 
-        public Rig(Action<Institution>? institution = null, bool whatsAppOn = false)
+        public Rig(Action<Institution>? institution = null, bool whatsAppOn = false, ReservEase.Alumni.Operations.Worker.Services.IWhatsAppDeliveryPolicy? policy = null, bool botOn = true)
         {
             Sms.Setup(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .Callback<string, string, CancellationToken>((p, m, _) => SmsSent.Add($"{p}|{m}")).ReturnsAsync(true);
@@ -66,7 +66,8 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
                     ["MemberPortalBaseDomain"] = "members.test", ["AdminPortalBaseDomain"] = "admin.test",
                     ["WaSenderConfig:Enabled"] = whatsAppOn ? "true" : "false",
                 }).Build(),
-                NullLogger<NotificationDispatchActivities>.Instance);
+                NullLogger<NotificationDispatchActivities>.Instance, policy,
+                Mock.Of<ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch>(x => x.IsOnAsync() == Task.FromResult(botOn)));
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName);
@@ -396,6 +397,107 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
         await off.Seed(Person("m1"), Both("m1"));
         await Send(off, NotificationRequest.MemberStatusChanged(Inst, "m1", "Ama", "Active", null));
         using (var db = off.Db()) Assert.DoesNotContain("WhatsApp", db.Set<Notification>().IgnoreQueryFilters().Single(n => n.RecipientId == "m1").Body);
+    }
+
+    // ── Email that prefers WhatsApp ──────────────────────────────────────
+
+    private static NotificationRequest ReminderEmail(string memberId, string priority = WhatsAppPriority.Reminder)
+        => NotificationRequest.Email(
+            new SendEmailRequest { To = [new EmailContact { Email = $"{memberId}@x.com", Name = memberId }], TemplateId = "notification" },
+            "test reminder",
+            new WhatsAppAlternative { InstitutionId = Inst, MemberId = memberId, Text = "Your dues are due.", ActionUrl = "https://umat.members.test/contributions", Priority = priority });
+
+    [WorkflowFact]
+    public async Task A_reminder_goes_to_whatsapp_instead_of_email_for_a_member_who_connected_it()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        await rig.Seed(Verified("m1"), Both("m1"));
+
+        await Send(rig, ReminderEmail("m1"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync("0241000000",
+            It.Is<string>(t => t.StartsWith("*UMaT*\n") && t.Contains("Your dues are due.") && t.EndsWith("https://umat.members.test/contributions")), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Empty(rig.EmailsSent);
+        Assert.Empty(rig.SmsSent);
+    }
+
+    [WorkflowFact]
+    public async Task With_the_bot_switched_off_by_the_platform_everything_falls_back_to_sms_and_email()
+    {
+        var rig = new Rig(whatsAppOn: true, botOn: false);
+        await rig.Seed(Verified("m1"), Both("m1"), new Job { Id = "j1", Title = "Engineer", Company = "Acme", Location = "Accra" });
+
+        // A receipt: WhatsApp would have carried it; now SMS does.
+        await Send(rig, NotificationRequest.ContributionConfirmed(Inst, "m1", "m1@x.com", "Ama", 5m, "Fund", "c"));
+        // A reminder: WhatsApp would have carried it instead of email; now the email goes.
+        await Send(rig, ReminderEmail("m1"));
+        // News: nothing on WhatsApp.
+        await Send(rig, NotificationRequest.JobAlert(Inst, "j1"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Single(rig.SmsSent);
+        Assert.Single(rig.EmailsSent, e => e.To![0].Email == "m1@x.com");
+        Assert.Single(await rig.Notes(), n => n.Type == "JobAlert");   // the in-app notice is unaffected
+    }
+
+    [WorkflowTheory]
+    [InlineData("not-connected")]
+    [InlineData("no-consent")]
+    [InlineData("whatsapp-fails")]
+    [InlineData("channel-off")]
+    public async Task A_reminder_still_goes_by_email_when_whatsapp_cannot_carry_it(string scenario)
+    {
+        var rig = new Rig(whatsAppOn: scenario != "channel-off");
+        if (scenario == "whatsapp-fails")
+            rig.WhatsApp.Setup(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        await rig.Seed(scenario == "not-connected" ? Person("m1") : Verified("m1"), Both("m1", whatsApp: scenario != "no-consent"));
+
+        await Send(rig, ReminderEmail("m1"));
+
+        Assert.Single(rig.EmailsSent);
+        Assert.Empty(rig.SmsSent);   // a reminder never turns into an SMS
+    }
+
+    [WorkflowFact]
+    public async Task A_reminder_held_back_by_quiet_hours_or_the_daily_limit_goes_by_email()
+    {
+        var policy = new Mock<ReservEase.Alumni.Operations.Worker.Services.IWhatsAppDeliveryPolicy>();
+        policy.Setup(p => p.TryReserveAsync(It.IsAny<string>(), WhatsAppPriority.Reminder)).ReturnsAsync(false);
+        var rig = new Rig(whatsAppOn: true, policy: policy.Object);
+        await rig.Seed(Verified("m1"), Both("m1"));
+
+        await Send(rig, ReminderEmail("m1"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Single(rig.EmailsSent);
+    }
+
+    [WorkflowFact]
+    public async Task A_new_job_is_told_on_whatsapp_to_connected_members_only_and_never_by_sms()
+    {
+        var rig = new Rig(whatsAppOn: true);
+        var connected = Verified("a");
+        await rig.Seed(connected, Person("b"), Both("a"), Both("b"), new Job { Id = "j1", Title = "Engineer", Company = "Acme", Location = "Accra" });
+
+        await Send(rig, NotificationRequest.JobAlert(Inst, "j1"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync("0241000000", It.Is<string>(t => t.Contains("New job: Engineer at Acme, Accra.") && t.EndsWith("/jobs/j1")), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Empty(rig.SmsSent);
+        Assert.Equal(new[] { "a", "b" }, (await rig.Notes()).Select(n => n.RecipientId));   // both still get the in-app notice
+    }
+
+    [WorkflowFact]
+    public async Task A_mentorship_decision_is_a_receipt_and_goes_to_whatsapp_even_during_quiet_hours()
+    {
+        var policy = new Mock<ReservEase.Alumni.Operations.Worker.Services.IWhatsAppDeliveryPolicy>();
+        policy.Setup(p => p.TryReserveAsync(It.IsAny<string>(), WhatsAppPriority.Transactional)).ReturnsAsync(true);
+        policy.Setup(p => p.TryReserveAsync(It.IsAny<string>(), WhatsAppPriority.Update)).ReturnsAsync(false);
+        var rig = new Rig(whatsAppOn: true, policy: policy.Object);
+        await rig.Seed(Verified("mentee"), Both("mentee"));
+
+        await Send(rig, NotificationRequest.MentorshipRequestDecision(Inst, "mentee", true, "Career", "req-1"));
+
+        rig.WhatsApp.Verify(w => w.SendMessageAsync("0241000000", It.Is<string>(t => t.Contains("accepted")), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [WorkflowTheory]

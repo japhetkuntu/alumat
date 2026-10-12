@@ -197,7 +197,7 @@ public class EngagementActivities(
                 await messageRepo.AddAsync(new EngagementMessage { InstitutionId = institutionId, RecipientType = "Member", RecipientId = m.Id, Kind = EngagementMessageKinds.MemberReengagement, CreatedBy = "system" });
                 var brand = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;
                 var (title, body) = EngagementMessageText.QuietMember(brand, mine.Select(i => i.Text).ToList());
-                await SendAsync(institution, m.FirstName, m.Email, title, body, "See what's new", portal, "Community update", $"engagement reengagement to {m.Email}");
+                await SendAsync(institution, m.FirstName, m.Email, title, body, "See what's new", portal, "Community update", $"engagement reengagement to {m.Email}", m.Id);
                 sentCount++;
             }
             logger.LogInformation("Engagement re-engagement for {InstitutionId}: {Sent} sent of {Candidates} quiet candidates", institutionId, sentCount, candidates.Count);
@@ -212,7 +212,7 @@ public class EngagementActivities(
         return rows.GroupBy(r => (r.RecipientId, r.Kind, r.Subject)).ToDictionary(g => g.Key, g => g.Max(r => r.CreatedAt));
     }
 
-    private Task SendAsync(Institution institution, string firstName, string email, string title, string body, string actionLabel, string actionUrl, string badge, string context) =>
+    private Task SendAsync(Institution institution, string firstName, string email, string title, string body, string actionLabel, string actionUrl, string badge, string context, string? memberId = null) =>
         temporalProvider.EnqueueNotificationAsync(NotificationRequest.Email(new SendEmailRequest
         {
             To = [new EmailContact { Email = email, Name = firstName }],
@@ -223,7 +223,10 @@ public class EngagementActivities(
                 brand_name = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName,
                 brand_color = institution.PrimaryColorHex, brand_secondary_color = institution.SecondaryColorHex, brand_logo = institution.LogoUrl,
             },
-        }, context), logger);
+        }, context, memberId is null ? null : new WhatsAppAlternative
+        {
+            InstitutionId = institution.Id, MemberId = memberId, Text = $"{title} {body}".Trim(), ActionUrl = actionUrl, Priority = WhatsAppPriority.Update,
+        }), logger);
 
     private static async Task<T> Wrap<T>(Func<Task<T>> action, string what, string context)
     {

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using ReservEase.Alumni.Mailtrap.Sdk.Models;
 using ReservEase.Alumni.Mailtrap.Sdk.Services;
 using ReservEase.Alumni.Operations.Worker.Models;
+using ReservEase.Alumni.Operations.Worker.Services;
+using ReservEase.Alumni.Notifications.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
@@ -47,8 +49,16 @@ public class NotificationDispatchActivities(
     IEmailService emailService,
     IWebPushService webPushService,
     IConfiguration configuration,
-    ILogger<NotificationDispatchActivities> logger)
+    ILogger<NotificationDispatchActivities> logger,
+    IWhatsAppDeliveryPolicy? whatsAppPolicy = null,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch? platformSwitch = null)
 {
+    /// <summary>The platform administrator's WhatsApp switch. Everything that sends on WhatsApp checks it at the moment of sending, so switching it off takes effect at once, even for workflows already in flight.</summary>
+    private async Task<bool> BotOnAsync() => platformSwitch is null || await platformSwitch.IsOnAsync();
+
+    /// <summary>The pause between WhatsApp sends from this worker (WhatsAppAssistant:PaceMilliseconds), so a long list is sent at a human pace.</summary>
+    private int PaceMilliseconds => configuration.GetValue("WhatsAppAssistant:PaceMilliseconds", 0);
+
     [Activity("NotificationDispatch.LoadInstitution")]
     public virtual async Task<InstitutionContactInfo?> LoadInstitutionAsync(string institutionId)
     {
@@ -71,7 +81,8 @@ public class NotificationDispatchActivities(
                 SmsNotificationsEnabled = institution.SmsNotificationsEnabled,
                 EmailNotificationsEnabled = institution.EmailNotificationsEnabled,
                 WhatsAppChannelOpen = configuration.GetValue("WaSenderConfig:Enabled", false)
-                    && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp),
+                    && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)
+                    && await BotOnAsync(),
                 MemberPortalUrl = MemberPortalLinks.UrlOrEmpty(institution.Slug, institution.CustomDomain, memberDomain),
                 AdminPortalUrl = string.IsNullOrWhiteSpace(adminDomain) ? string.Empty : $"https://{institution.Slug}.{adminDomain}",
             };
@@ -287,7 +298,58 @@ public class NotificationDispatchActivities(
 
     [Activity("NotificationDispatch.SendWhatsApp")]
     public virtual Task<bool> SendWhatsAppAsync(string phone, string message) =>
-        Wrap(() => whatsAppService.SendMessageAsync(phone, message), "send WhatsApp message", phone);
+        Wrap(async () =>
+        {
+            if (!await BotOnAsync()) return false;   // switched off: the caller falls back to SMS or email
+            if (PaceMilliseconds > 0) await Task.Delay(PaceMilliseconds);
+            return await whatsAppService.SendMessageAsync(phone, message);
+        }, "send WhatsApp message", phone);
+
+    /// <summary>
+    /// Whether a non-urgent WhatsApp message may go to this number right now (quiet hours and the member's daily share). Taking
+    /// the answer takes the slot. Receipts and decisions are "transactional" and always pass.
+    /// </summary>
+    [Activity("NotificationDispatch.ReserveWhatsApp")]
+    public virtual async Task<bool> ReserveWhatsAppAsync(string phone, string priority)
+    {
+        if (!await BotOnAsync()) return false;
+        if (whatsAppPolicy is null) return true;
+        try { return await whatsAppPolicy.TryReserveAsync(phone, priority); }
+        catch (Exception ex)
+        {
+            // If the limiter cannot be reached, send nothing non-urgent rather than risk a burst.
+            logger.LogWarning(ex, "WhatsApp delivery policy unavailable; holding back a {Priority} message", priority);
+            return priority == WhatsAppPriority.Transactional;
+        }
+    }
+
+    /// <summary>
+    /// A paced run of WhatsApp messages to many members (a new job, a fundraiser, an event reminder), as one activity so a big
+    /// list does not become thousands of workflow steps. Each message passes the delivery policy; the result is how many were
+    /// delivered. Counts only are kept (see RecordMessagingUsage).
+    /// </summary>
+    [Activity("NotificationDispatch.SendWhatsAppBatch")]
+    public virtual async Task<int> SendWhatsAppBatchAsync(string institutionId, string priority, List<WhatsAppBatchItem> items)
+    {
+        var delivered = 0;
+        if (!await BotOnAsync()) return 0;
+        foreach (var item in items)
+        {
+            if (ActivityExecutionContext.HasCurrent) ActivityExecutionContext.Current.Heartbeat();
+            if (!await ReserveWhatsAppAsync(item.Phone, priority)) continue;
+            try
+            {
+                if (PaceMilliseconds > 0) await Task.Delay(PaceMilliseconds);
+                if (await whatsAppService.SendMessageAsync(item.Phone, item.Text)) delivered++;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "WhatsApp batch send failed for one recipient; continuing");
+            }
+        }
+        if (delivered > 0) await RecordMessagingUsageAsync(institutionId, delivered, 0, 0);
+        return delivered;
+    }
 
     /// <summary>
     /// Adds to the institution's monthly count of messages by channel. Counts only. A failure here is logged and swallowed:

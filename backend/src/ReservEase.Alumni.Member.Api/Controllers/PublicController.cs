@@ -40,7 +40,8 @@ public class PublicController(
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IRedisService<PublicContentCacheConfig> publicCache,
-    Microsoft.Extensions.Options.IOptions<ReservEase.Alumni.Whatsapp.Sdk.Options.WaSenderConfig> whatsApp) : DefaultController
+    Microsoft.Extensions.Options.IOptions<ReservEase.Alumni.Whatsapp.Sdk.Options.WaSenderConfig> whatsApp,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch platformSwitch) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
     private const int MaxCacheableItems = 12;
@@ -64,7 +65,7 @@ public class PublicController(
     [SwaggerOperation(Summary = "Get the current tenant's branding/theme")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionThemeResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetInstitutionTheme()
+    public async Task<IActionResult> GetInstitutionTheme()
     {
         if (HttpContext.Items["Institution"] is not Institution institution)
             return NotFound(new ApiResponse<object> { Message = "No institution resolved for this host", Code = 404 });
@@ -96,7 +97,8 @@ public class PublicController(
             institution.CohortLabel,
             institution.CohortLabelPlural,
             whatsApp.Value.Enabled && !string.IsNullOrWhiteSpace(whatsApp.Value.AssistantNumber)
-                && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp));
+                && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)
+                && await platformSwitch.IsOnAsync());
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }

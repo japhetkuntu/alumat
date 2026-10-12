@@ -197,7 +197,7 @@ export function WhatsAppSettings({ enabled, onToggleEnabled, toggling }: { enabl
                   <ol className="space-y-1.5 border-t border-border/50 pt-3 text-[13.5px]">
                     <li><span className="font-semibold">1.</span> Add the AlumUnion Assistant{o.assistantNumber ? ` (+${o.assistantNumber})` : ""} to the WhatsApp group.</li>
                     <li>
-                      <span className="font-semibold">2.</span> Post this message in the group:{" "}
+                      <span className="font-semibold">2.</span> Post this message <span className="font-semibold">inside the group chat</span> (not in a private message to the assistant):{" "}
                       <span className="whitespace-nowrap bg-muted px-2 py-0.5 font-mono font-semibold">!link {g.code}</span>
                     </li>
                     <li><span className="font-semibold">3.</span> Come back here and confirm. This page updates by itself.</li>

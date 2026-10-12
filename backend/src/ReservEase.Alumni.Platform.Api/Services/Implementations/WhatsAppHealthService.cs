@@ -19,7 +19,8 @@ public class WhatsAppHealthService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<NotificationPreference> prefRepo,
     IConfiguration configuration,
-    ILogger<WhatsAppHealthService> logger) : IWhatsAppHealthService
+    ILogger<WhatsAppHealthService> logger,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch? platformSwitch = null) : IWhatsAppHealthService
 {
     private async Task<WhatsAppAdoptionSummary> BuildAdoptionAsync(List<Institution> institutions)
     {
@@ -73,7 +74,8 @@ public class WhatsAppHealthService(
                 config.Enabled, apiKey, !string.IsNullOrWhiteSpace(config.WebhookSecret), !string.IsNullOrWhiteSpace(config.AssistantNumber),
                 status?.Connected ?? false, status?.State ?? (apiKey ? "unknown" : "not configured"),
                 institutions.Count(i => i.WhatsAppGroups.Any(g => g.Status == WhatsAppGroupStatuses.Active)), groups.Count, verified,
-                institutions.Count(i => i.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)), adoption).ToOkApiResponse();
+                institutions.Count(i => i.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)), adoption,
+                platformSwitch is null || await platformSwitch.IsOnAsync()).ToOkApiResponse();
         }
         catch (Exception e)
         {

@@ -89,6 +89,9 @@ public interface IAssistantContent
     Task<IReadOnlyList<AssistantItem>> MemberUpdatesAsync(AssistantCommunity c, CancellationToken ct = default);
     Task<AssistantDues?> MemberDuesAsync(AssistantCommunity c, CancellationToken ct = default);
 
+    /// <summary>The member's own invitation link (their referral code, tagged as shared from WhatsApp). Null when it cannot be made.</summary>
+    Task<string?> MemberInviteLinkAsync(AssistantCommunity c, CancellationToken ct = default);
+
     /// <summary>Whether the institution has this part of the product switched on at all.</summary>
     Task<bool> IsAvailableAsync(AssistantCommunity c, string feature, CancellationToken ct = default);
 }

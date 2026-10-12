@@ -240,7 +240,8 @@ public class ScheduledJobsActivities(
                             brand_logo = institution.LogoUrl,
                         },
                     },
-                    $"membership reminder to {member.Email}"), logger);
+                    $"membership reminder to {member.Email}",
+                    new WhatsAppAlternative { InstitutionId = institutionId, MemberId = member.Id, Text = body, ActionUrl = actionUrl, Priority = WhatsAppPriority.Reminder }), logger);
 
                 if (pref is not null)
                 {
@@ -453,7 +454,8 @@ public class ScheduledJobsActivities(
                             brand_secondary_color = institution.SecondaryColorHex, brand_logo = institution.LogoUrl,
                         },
                     },
-                    $"pledge reminder to {member.Email}"), logger);
+                    $"pledge reminder to {member.Email}",
+                    new WhatsAppAlternative { InstitutionId = institutionId, MemberId = member.Id, Text = $"{title}. {body}", ActionUrl = actionUrl, Priority = WhatsAppPriority.Reminder }), logger);
                 sent++;
             }
 
@@ -545,7 +547,8 @@ public class ScheduledJobsActivities(
                                 brand_logo = institution.LogoUrl,
                             },
                         },
-                        $"event reminder to {member.Email}"), logger);
+                        $"event reminder to {member.Email}",
+                        new WhatsAppAlternative { InstitutionId = institutionId, MemberId = member.Id, Text = body, ActionUrl = actionUrl, Priority = WhatsAppPriority.Reminder }), logger);
 
                     sentCount++;
                 }
@@ -596,6 +599,18 @@ public class ScheduledJobsActivities(
         return new ContentBucket(jobs, eventItem, campaignItem, spotlightItem);
     }
 
+    /// <summary>A few words for WhatsApp in place of the email digest: what is new, by count, and the link to see it.</summary>
+    private static string DigestWhatsAppText(string frequency, int jobs, bool hasEvent, bool hasCampaign, bool hasSpotlight)
+    {
+        var parts = new List<string>();
+        if (jobs > 0) parts.Add($"{jobs} new job{(jobs == 1 ? "" : "s")}");
+        if (hasEvent) parts.Add("an upcoming event");
+        if (hasCampaign) parts.Add("a fundraiser closing soon");
+        if (hasSpotlight) parts.Add("a member spotlight");
+        var what = parts.Count == 0 ? "a few things worth a look" : string.Join(", ", parts.Take(parts.Count - 1)) + (parts.Count > 1 ? " and " : "") + parts[^1];
+        return $"Your {frequency.ToLowerInvariant()} update: {what}.";
+    }
+
     private async Task SendDigestEmailAsync(
         MemberEntity member, Institution institution, string frequency, string portalUrl,
         List<DigestItem> jobs, DigestItem? ev, DigestItem? campaign, DigestItem? spotlight)
@@ -628,7 +643,12 @@ public class ScheduledJobsActivities(
                         brand_logo = institution.LogoUrl,
                     },
                 },
-                $"{frequency.ToLowerInvariant()} digest to {member.Email}"),
+                $"{frequency.ToLowerInvariant()} digest to {member.Email}",
+                new WhatsAppAlternative
+                {
+                    InstitutionId = institution.Id, MemberId = member.Id, ActionUrl = portalUrl, Priority = WhatsAppPriority.Update,
+                    Text = DigestWhatsAppText(frequency, jobs.Count, ev is not null, campaign is not null, spotlight is not null),
+                }),
             logger);
     }
 

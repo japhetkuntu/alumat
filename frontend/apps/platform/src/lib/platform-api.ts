@@ -37,10 +37,20 @@ export async function changePlatformPassword(currentPassword: string, newPasswor
 
 export interface PlatformSettings {
   blockOverdueCampaignPayments: boolean;
+  /** The platform switch for the WhatsApp bot. Off: the bot is silent and notifications use SMS and email. */
+  whatsAppBotEnabled?: boolean;
+  /** The channel is set up in configuration; without it the switch has no effect. */
+  whatsAppConfigured?: boolean;
 }
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   const res = await platformClient.get<ApiResponse<PlatformSettings>>("/platform-settings");
+  return res.data.data!;
+}
+
+/** Flips only the WhatsApp bot switch, keeping the other platform setting as it is. */
+export async function setWhatsAppBotEnabled(enabled: boolean, blockOverdueCampaignPayments: boolean): Promise<PlatformSettings> {
+  const res = await platformClient.patch<ApiResponse<PlatformSettings>>("/platform-settings", { blockOverdueCampaignPayments, whatsAppBotEnabled: enabled });
   return res.data.data!;
 }
 
@@ -1257,6 +1267,8 @@ export interface WhatsAppHealth {
   verifiedMembers: number;
   institutionsOptedOut: number;
   adoption?: WhatsAppAdoption | null;
+  /** The platform administrator's switch (see platform settings). */
+  botSwitchedOn?: boolean;
 }
 export interface WhatsAppAdoption {
   activeMembers: number;

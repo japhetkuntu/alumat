@@ -37,7 +37,8 @@ public class WhatsAppSendWorkflow : IWhatsAppSendWorkflow
 /// Sends through <see cref="IWhatsAppProvider"/>. Runs on a queue with one activity slot, and pauses a moment after each send,
 /// so the single shared session sends at a human-plausible pace however many messages are queued.
 /// </summary>
-public class WhatsAppSendActivities(IWhatsAppProvider provider, IConfiguration configuration, ILogger<WhatsAppSendActivities> logger)
+public class WhatsAppSendActivities(IWhatsAppProvider provider, IConfiguration configuration, ILogger<WhatsAppSendActivities> logger,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch? platformSwitch = null)
 {
     /// <summary>Lower bound and spread of the pause between sends, in milliseconds. Configurable so tests do not wait.</summary>
     private int PaceMs => configuration.GetValue("WhatsAppAssistant:PaceMilliseconds", 2500);
@@ -48,6 +49,12 @@ public class WhatsAppSendActivities(IWhatsAppProvider provider, IConfiguration c
         if (!configuration.GetValue("WaSenderConfig:Enabled", false))
         {
             logger.LogInformation("WhatsApp disabled by configuration; message not sent");
+            return false;
+        }
+
+        if (platformSwitch is not null && !await platformSwitch.IsOnAsync())
+        {
+            logger.LogInformation("WhatsApp bot switched off by the platform administrator; message not sent");
             return false;
         }
 

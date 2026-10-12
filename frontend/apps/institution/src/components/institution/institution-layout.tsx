@@ -27,6 +27,7 @@ import {
   Layers,
   Users2,
   Radio,
+  MessageCircle,
   ShoppingBag,
   Images,
   Store,
@@ -67,6 +68,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/services": "Services",
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",
+  "/settings?tab=whatsapp": "WhatsApp",
 };
 
 // Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
@@ -117,6 +119,7 @@ const baseNavItems = [
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/broadcast", label: "Broadcast", icon: Radio },
+  { href: "/settings?tab=whatsapp", label: "WhatsApp", icon: MessageCircle },
   { label: "Institution", isHeader: true },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/audit-log", label: "Audit Log", icon: ClipboardList },
@@ -166,7 +169,7 @@ function useNavItems() {
       // place). Mentorship and Albums are partially available to a
       // ScopedAdmin too (scoped to their own batch/community) — see
       // MentorshipController/AlbumsController.
-      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement") {
+      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement" || item.href === "/settings?tab=whatsapp") {
         if (user?.role !== "SuperAdmin") return false;
       }
       if (item.href === "/mentorship" || item.href === "/albums") {

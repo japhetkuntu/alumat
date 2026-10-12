@@ -1,6 +1,7 @@
 "use client";
 
 import { NextSteps } from "@/components/member/next-steps";
+import { WhatsAppConnectCard } from "@/components/member/whatsapp-connect-card";
 import { useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
 import { isFeatureDisabledError } from "@/lib/feature-errors";
 import { useEffect, useRef, useState } from "react";
@@ -714,6 +715,7 @@ export default function MemberDashboardPage() {
       )}
 
       {/* ── What to do next: right under the member card, before the feed, so it is seen ── */}
+      <WhatsAppConnectCard />
       <NextSteps />
 
       {/* ── People feed — skipped only when the whole portal is empty and the welcome below speaks for it ── */}

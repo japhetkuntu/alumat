@@ -41,6 +41,7 @@ builder.Configuration
 // NotificationDispatch workflow instead.
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<MemberRedisConfig>(builder.Configuration);
+builder.Services.AddScoped<ReservEase.Alumni.Operations.Worker.Services.IWhatsAppDeliveryPolicy, ReservEase.Alumni.Operations.Worker.Services.WhatsAppDeliveryPolicy>();
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
 builder.Services.AddWaSenderWhatsAppService(builder.Configuration);

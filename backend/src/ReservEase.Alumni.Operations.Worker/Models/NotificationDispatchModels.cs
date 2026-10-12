@@ -14,6 +14,9 @@ public sealed class NotificationRecipient
 
 /// <summary>The common single-recipient case: a member's contact fields bundled with
 /// their NotificationPreference flags in one read.</summary>
+/// <summary>One message in a WhatsApp batch: where it goes and what it says.</summary>
+public sealed record WhatsAppBatchItem(string Phone, string Text);
+
 public sealed class MemberWithPreference
 {
     public required string MemberId { get; init; }

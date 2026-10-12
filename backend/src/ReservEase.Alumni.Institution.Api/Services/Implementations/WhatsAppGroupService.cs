@@ -33,14 +33,17 @@ public class WhatsAppGroupService(
     IInstitutionAuditLogService auditLog,
     ITemporalClientProvider temporal,
     IConfiguration configuration,
-    ILogger<WhatsAppGroupService> logger) : IWhatsAppGroupService
+    ILogger<WhatsAppGroupService> logger,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch? platformSwitch = null) : IWhatsAppGroupService
 {
     private const int MaxGroups = 10;
     private const int MaxMessageLength = 1000;
     private static readonly TimeSpan CodeLifetime = TimeSpan.FromHours(24);
     private const string Alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-    private bool PlatformEnabled => configuration.GetValue("WaSenderConfig:Enabled", false);
+    /// <summary>The channel is set up AND the platform administrator has not switched the bot off.</summary>
+    private async Task<bool> PlatformEnabledAsync()
+        => configuration.GetValue("WaSenderConfig:Enabled", false) && (platformSwitch is null || await platformSwitch.IsOnAsync());
     private string? AssistantNumber => configuration["WaSenderConfig:AssistantNumber"] is { Length: > 0 } n ? n : null;
 
     private async Task<PostgresDb.Sdk.Entities.Institution?> LoadAsync()
@@ -99,7 +102,7 @@ public class WhatsAppGroupService(
             var communities = (await communityRepo.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
             var link = AssistantNumber is null ? null : $"https://wa.me/{AssistantNumber}?text=start%20{institution.Slug}";
             var groups = institution.WhatsAppGroups.OrderByDescending(g => g.CreatedAt).Select(g => ToDto(g, communities)).ToList();
-            return new WhatsAppOverviewDto(PlatformEnabled, AssistantNumber, link, groups, [.. WhatsAppGroupCommands.All]).ToOkApiResponse();
+            return new WhatsAppOverviewDto(await PlatformEnabledAsync(), AssistantNumber, link, groups, [.. WhatsAppGroupCommands.All]).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -252,7 +255,7 @@ public class WhatsAppGroupService(
     {
         try
         {
-            if (!PlatformEnabled)
+            if (!await PlatformEnabledAsync())
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("WhatsApp isn't switched on for the platform yet.");
 
             var built = await BuildAsync(request);

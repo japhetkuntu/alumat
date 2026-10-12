@@ -26,6 +26,7 @@ public static class PostgresExtensionService
         services.AddScoped<ICurrentTenantService, CurrentTenantService>();
         services.AddScoped<InstitutionActivationService>();
         services.AddScoped<IStaffActivityRecorder, StaffActivityRecorder>();
+        services.AddScoped<IPlatformWhatsAppSwitch, PlatformWhatsAppSwitch>();
 
         return services;
     }

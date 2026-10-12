@@ -14,6 +14,7 @@ import { GlobalSearch } from "@/components/member/global-search";
 import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
 import { InstallPromptBanner, useInstallPrompt } from "@/components/member/install-prompt";
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
+import { useWhatsAppStatus } from "@/components/member/whatsapp-connect-card";
 import { memberClient } from "@/lib/api-client";
 import { getHomeModules, getUnreadNotificationsByCategory } from "@/lib/member-api";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -41,6 +42,7 @@ import {
   Building2,
   FileText,
   Share2,
+  MessageCircle,
 } from "@alumni/ui";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -52,6 +54,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     items: [
       { href: "/dashboard", label: "Home", icon: LayoutDashboard },
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
+      { href: "/connect-whatsapp", label: "WhatsApp", icon: MessageCircle },
     ],
   },
   {
@@ -113,6 +116,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/directory": "Directory",
   "/alumni-map": "AlumniMap",
   "/calendar": "Calendar",
+  "/connect-whatsapp": "WhatsApp",
   "/news": "News",
   "/forum": "Forum",
   "/mentorship": "Mentorship",
@@ -254,15 +258,19 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const unreadByCategory = useUnreadByCategory();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
+  const { data: whatsApp } = useWhatsAppStatus();
+  // Offered only where the assistant is really on; says what it does for someone who has not connected yet.
+  const whatsAppOffered = !!whatsApp && (whatsApp.available || whatsApp.connected);
   const visibleGroups = navGroups
     .map((g) => ({
       ...g,
       items: g.items.filter((item) => {
         const featureKey = NAV_FEATURE_KEYS[item.href];
+        if (item.href === "/connect-whatsapp" && !whatsAppOffered) return false;
         // Every feature the institution has switched on is listed, whether or not it has content yet,
         // so members can see what their community offers and be the first to use it.
         return !(featureKey && disabledFeatures.has(featureKey));
-      }),
+      }).map((item) => (item.href === "/connect-whatsapp" && whatsApp && !whatsApp.connected ? { ...item, label: "Connect WhatsApp" } : item)),
     }))
     .filter((g) => g.items.length > 0);
   let itemIndex = 0;
