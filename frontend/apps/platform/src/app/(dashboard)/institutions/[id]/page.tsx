@@ -37,7 +37,7 @@ import {
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@alumni/ui";
-import { getBanks, resolveAccount } from "@/lib/platform-api";
+import { getBanks, resolveAccount, getTeamAssignees, reassignWork } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";
 import { InstitutionActivationCard } from "@/components/platform/institution-activation-card";
 import { InstitutionNotifyTab } from "@/components/platform/institution-notify-tab";
@@ -141,8 +141,54 @@ function HeroImagesField({ urls, onChange, institutionSlug }: {
   );
 }
 
+/** Who is responsible for this institution's growth, and a way to hand it to someone else on the team. */
+function OwnerRow({ institutionId, ownerStaffId, ownerName }: { institutionId: string; ownerStaffId: string | null; ownerName: string | null }) {
+  const qc = useQueryClient();
+  const [changing, setChanging] = useState(false);
+  const assignees = useQuery({ queryKey: ["team-assignees"], queryFn: getTeamAssignees, enabled: changing });
+  const move = useMutation({
+    mutationFn: (toStaffId: string) => reassignWork({ toStaffId, institutionIds: [institutionId] }),
+    onSuccess: (r) => {
+      if (r.institutions === 0) { toast.error("That institution could not be reassigned."); return; }
+      toast.success("Owner updated");
+      setChanging(false);
+      qc.invalidateQueries({ queryKey: ["institution", institutionId] });
+      qc.invalidateQueries({ queryKey: ["institutions"] });
+      qc.invalidateQueries({ queryKey: ["team"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  return (
+    <div className="border-t border-border pt-3">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <span className="text-muted-foreground">Owner</span>
+          <p className="mt-1 font-semibold">{ownerName ?? "No owner yet"}</p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => setChanging((v) => !v)}>{ownerStaffId ? "Change" : "Assign"}</Button>
+      </div>
+      {changing && (
+        <select
+          aria-label="New owner"
+          defaultValue=""
+          disabled={move.isPending || assignees.isLoading}
+          onChange={(e) => e.target.value && move.mutate(e.target.value)}
+          className="mt-2.5 h-9 w-full rounded-md border border-border bg-background px-3 text-[13px]"
+        >
+          <option value="" disabled>{assignees.isLoading ? "Loading…" : "Choose who takes this over"}</option>
+          {(assignees.data ?? []).map((a) => <option key={a.id} value={a.id}>{a.name} ({a.role})</option>)}
+        </select>
+      )}
+    </div>
+  );
+}
+
 export default function InstitutionDetailPage() {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, user: signedIn } = useAuth();
+  // A representative follows an institution's growth. Branding, features, payments and the rest belong to the team.
+  const isRepresentative = signedIn?.role === "Representative";
+  const visibleTabs = isRepresentative ? TABS.filter((t) => t === "Overview") : TABS;
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -525,7 +571,7 @@ export default function InstitutionDetailPage() {
       </Card>
 
       <div className="-mx-4 flex gap-6 overflow-x-auto border-b border-border px-4 mb-5 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -546,6 +592,7 @@ export default function InstitutionDetailPage() {
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Primary contact</span><span className="font-semibold">{inst.contactName}</span></div>
               <div className="flex justify-between border-b border-border pb-3"><span className="text-muted-foreground">Contact email</span><span className="font-semibold">{inst.contactEmail}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Onboarded</span><span className="font-semibold">{formatDate(inst.onboardedAt)}</span></div>
+              <OwnerRow institutionId={id} ownerStaffId={inst.ownerStaffId ?? null} ownerName={inst.ownerName ?? null} />
               <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
                 <div>
                   <span className="text-muted-foreground">Portal slug</span>

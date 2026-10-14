@@ -44,6 +44,12 @@ public class Institution : BaseEntity
     /// <summary>Whether registration asks for a member or student ID at all. When off, the field is not shown and RequireStudentId is moot.</summary>
     public bool CollectMemberId { get; set; } = true;
 
+    /// <summary>
+    /// The platform staff member responsible for onboarding this institution and helping it grow. Null means unassigned, which
+    /// only SuperAdmins can see among representatives. Never changes who administers the institution itself.
+    /// </summary>
+    public string? OwnerStaffId { get; set; }
+
     /// <summary>Which automatic messages this community sends and how often. Defaults match what every community had before this was configurable.</summary>
     public AutomationSettings Automation { get; set; } = new();
 

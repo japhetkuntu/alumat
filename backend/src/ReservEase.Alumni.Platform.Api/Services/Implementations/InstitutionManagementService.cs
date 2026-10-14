@@ -46,12 +46,17 @@ public class InstitutionManagementService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Batch> batchRepo,
     IAlumniPgRepository<ForumCategory> forumCategoryRepo,
+    IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAuditLogService auditLog, IPaystackService paystackService,
     IConfiguration config, ITemporalClientProvider temporalProvider, IOptions<MailtrapConfig> mailtrapConfigOptions,
-    IRedisService<PlatformRedisConfig> cache, ILogger<InstitutionManagementService> logger)
+    IRedisService<PlatformRedisConfig> cache, IStaffScope staffScope, ILogger<InstitutionManagementService> logger)
     : IInstitutionManagementService
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
+
+    /// <summary>The fee a representative-onboarded institution starts on. Only a SuperAdmin or Billing can change commercial terms.</summary>
+    private decimal DefaultPlatformFeePercentage() =>
+        decimal.TryParse(config["Institutions:DefaultPlatformFeePercentage"], System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 5m;
     /// <summary>
     /// The member and institution portals live on entirely different base
     /// domains (e.g. "yourplatform.com" vs "admin.yourplatform.com") — never
@@ -75,6 +80,14 @@ public class InstitutionManagementService(
         if (pageSize < 1 || pageSize > 200) pageSize = 20;
 
         var query = institutionRepo.GetQueryable();
+
+        // A representative sees only what they and the people under them own; everyone else is unchanged.
+        var visibility = await staffScope.GetAsync();
+        if (!visibility.Unrestricted)
+        {
+            var owners = visibility.StaffIds.ToList();
+            query = query.Where(i => i.OwnerStaffId != null && owners.Contains(i.OwnerStaffId));
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -124,12 +137,18 @@ public class InstitutionManagementService(
             .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(r => r.PlatformFeeAmount) })
             .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
 
+        var ownerIds = institutions.Where(i => i.OwnerStaffId != null).Select(i => i.OwnerStaffId!).Distinct().ToList();
+        var ownerNames = ownerIds.Count == 0
+            ? new Dictionary<string, string>()
+            : (await platformStaffRepo.GetAllAsync(s => ownerIds.Contains(s.Id))).ToDictionary(s => s.Id, s => s.Name);
+
         var items = institutions.Select(i => new InstitutionListItemResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
             i.LogoUrl, i.Status, memberCounts.GetValueOrDefault(i.Id), i.OnboardedAt,
             i.PlatformFeePercentage,
             contributionRevenues.GetValueOrDefault(i.Id) + storeRevenues.GetValueOrDefault(i.Id) + serviceRevenues.GetValueOrDefault(i.Id),
-            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug))).ToList();
+            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug),
+            i.OwnerStaffId, i.OwnerStaffId is null ? null : ownerNames.GetValueOrDefault(i.OwnerStaffId))).ToList();
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var result = new PgPagedResult<InstitutionListItemResponse>
@@ -158,7 +177,8 @@ public class InstitutionManagementService(
         try
         {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
-        if (institution is null)
+        // Outside someone's view is reported as not found, not as forbidden, so it never confirms that the institution exists.
+        if (institution is null || !(await staffScope.GetAsync()).CanSee(institution.OwnerStaffId))
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse();
@@ -194,11 +214,20 @@ public class InstitutionManagementService(
         if (request.PlatformFeeFlatThreshold.HasValue != request.PlatformFeeFlatAmount.HasValue)
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("Provide both a flat-fee threshold and amount, or neither");
 
+        // A representative onboards institutions but does not decide money: the commercial terms use the platform defaults and
+        // any settlement details they enter wait for a SuperAdmin or Billing to approve, exactly like details an institution
+        // submits itself. Nothing reaches Paystack until then.
+        var visibility = await staffScope.GetAsync();
+        var byRepresentative = !visibility.Unrestricted;
+        var settlementForApproval = byRepresentative
+            && !string.IsNullOrWhiteSpace(request.SettlementBankCode) && !string.IsNullOrWhiteSpace(request.SettlementAccountNumber);
+
         await using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
             var institution = new Institution
             {
+                OwnerStaffId = byRepresentative ? visibility.StaffId : (string.IsNullOrWhiteSpace(request.OwnerStaffId) ? createdBy : request.OwnerStaffId),
                 Name = request.Name,
                 Slug = slug,
                 ContactName = request.ContactName,
@@ -211,15 +240,27 @@ public class InstitutionManagementService(
                 Status = "Active",
                 TrialEndsAt = DateTime.UtcNow.AddDays(request.TrialDays ?? 14),
                 OnboardedAt = DateTime.UtcNow,
-                PlatformFeePercentage = request.PlatformFeePercentage,
-                PlatformFeeFlatThreshold = request.PlatformFeeFlatThreshold,
-                PlatformFeeFlatAmount = request.PlatformFeeFlatAmount,
-                SettlementBankCode = request.SettlementBankCode,
-                SettlementBankName = request.SettlementBankName,
-                SettlementAccountNumber = request.SettlementAccountNumber,
-                SettlementAccountName = request.SettlementAccountName,
+                PlatformFeePercentage = byRepresentative ? DefaultPlatformFeePercentage() : request.PlatformFeePercentage,
+                PlatformFeeFlatThreshold = byRepresentative ? null : request.PlatformFeeFlatThreshold,
+                PlatformFeeFlatAmount = byRepresentative ? null : request.PlatformFeeFlatAmount,
+                SettlementBankCode = byRepresentative ? null : request.SettlementBankCode,
+                SettlementBankName = byRepresentative ? null : request.SettlementBankName,
+                SettlementAccountNumber = byRepresentative ? null : request.SettlementAccountNumber,
+                SettlementAccountName = byRepresentative ? null : request.SettlementAccountName,
                 CreatedBy = createdBy,
             };
+
+            if (settlementForApproval)
+            {
+                institution.PendingPayoutChanges = new InstitutionPayoutPendingChanges
+                {
+                    SettlementBankCode = request.SettlementBankCode,
+                    SettlementBankName = request.SettlementBankName,
+                    SettlementAccountNumber = request.SettlementAccountNumber,
+                    SettlementAccountName = request.SettlementAccountName,
+                };
+                institution.PayoutStatus = "Pending";
+            }
 
             // How members are grouped: from the template if one was chosen, a stated mode, or the older type; otherwise nothing is assumed.
             var template = InstitutionTemplates.Find(request.TemplateId);
@@ -234,7 +275,7 @@ public class InstitutionManagementService(
             institution.CohortLabel = template?.CohortLabel;
             institution.CohortLabelPlural = template?.CohortLabelPlural;
 
-            if (!string.IsNullOrWhiteSpace(request.SettlementBankCode) && !string.IsNullOrWhiteSpace(request.SettlementAccountNumber))
+            if (!byRepresentative && !string.IsNullOrWhiteSpace(request.SettlementBankCode) && !string.IsNullOrWhiteSpace(request.SettlementAccountNumber))
             {
                 var subaccount = await paystackService.CreateSubaccountAsync(new SubaccountRequest
                 {
@@ -1100,6 +1141,10 @@ public class InstitutionManagementService(
     {
         try
         {
+        var owned = await institutionRepo.GetOneAsync(i => i.Id == institutionId);
+        if (owned is null || !(await staffScope.GetAsync()).CanSee(owned.OwnerStaffId))
+            return ApiResponseExtensions.ToNotFoundApiResponse<List<InstitutionStaffDto>>("Institution not found");
+
         var staff = await staffRepo.GetQueryable(s => s.InstitutionId == institutionId, ignoreQueryFilters: true)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
@@ -1296,6 +1341,7 @@ public class InstitutionManagementService(
             i.PlatformFeePercentage, i.PlatformFeeFlatThreshold, i.PlatformFeeFlatAmount, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
-            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug), i.GraduationYearMode, i.RegistrationFields);
+            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug), i.GraduationYearMode, i.RegistrationFields,
+            i.OwnerStaffId, i.OwnerStaffId is null ? null : (await platformStaffRepo.GetOneAsync(s => s.Id == i.OwnerStaffId))?.Name);
     }
 }

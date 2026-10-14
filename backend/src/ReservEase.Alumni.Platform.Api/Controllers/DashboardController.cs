@@ -13,6 +13,8 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 [Route("api/v{version:apiVersion}/dashboard")]
 public class DashboardController(IInstitutionManagementService institutionService, IPlatformAnalyticsService analyticsService) : DefaultController
 {
+    // Platform-wide figures. A representative follows their own team on the Team page instead.
+    [Authorize(Roles = "SuperAdmin,Support,Billing,Sales")]
     [HttpGet("summary")]
     [SwaggerOperation(Summary = "Platform-wide aggregate stats")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformDashboardSummary>))]
@@ -45,6 +47,7 @@ public class DashboardController(IInstitutionManagementService institutionServic
     }
 
     /// <summary>Growth, participation, money and the institutions that lead or have gone quiet. Revenue is included only for roles that already see the payments list.</summary>
+    [Authorize(Roles = "SuperAdmin,Support,Billing,Sales")]
     [HttpGet("analytics")]
     [SwaggerOperation(Summary = "Platform analytics")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PlatformAnalyticsDto>))]

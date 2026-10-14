@@ -30,7 +30,7 @@ export interface AuthTokens {
   expiresIn: number;
 }
 
-export type PlatformStaffRole = "SuperAdmin" | "Support" | "Billing" | "Sales";
+export type PlatformStaffRole = "SuperAdmin" | "Representative" | "Support" | "Billing" | "Sales";
 
 export interface AuthData {
   id: string;

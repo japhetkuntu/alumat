@@ -3736,6 +3736,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("OwnerStaffId")
+                        .HasColumnType("text");
+
                     b.Property<string>("PayoutStatus")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3843,6 +3846,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("CustomDomain")
                         .IsUnique();
+
+                    b.HasIndex("OwnerStaffId");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -4406,6 +4411,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("PasswordResetToken")
                         .HasColumnType("text");
 
+                    b.Property<string>("ReportsToStaffId")
+                        .HasColumnType("text");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text");
@@ -4423,6 +4431,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("ReportsToStaffId");
 
                     b.ToTable("PlatformStaff", "alumni");
                 });
@@ -4526,6 +4536,73 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("Status", "ExpiresAt");
 
                     b.ToTable("ReportJobs", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.RepresentativeIncentiveEntry", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("OccurredOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecordedByName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecordedByStaffId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reference")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StaffId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VoidReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("VoidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VoidedByName")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("RepresentativeIncentiveEntries", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.StaffActivityWeek", b =>

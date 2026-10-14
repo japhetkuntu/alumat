@@ -587,3 +587,13 @@ export function MemberLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+/** What this community calls a year group (Class, Set, Cohort...), singular and plural, with "year group" as the fallback. */
+export function useCohortLabels() {
+  const { data: theme } = useNavTheme();
+  return {
+    singular: theme?.cohortLabel?.trim() || "Year group",
+    plural: theme?.cohortLabelPlural?.trim() || "Year groups",
+  };
+}
+

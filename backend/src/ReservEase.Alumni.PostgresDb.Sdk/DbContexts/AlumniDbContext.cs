@@ -33,6 +33,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Institution> Institutions => Set<Institution>();
     public DbSet<PlatformSettings> PlatformSettings => Set<PlatformSettings>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
+    public DbSet<RepresentativeIncentiveEntry> RepresentativeIncentiveEntries => Set<RepresentativeIncentiveEntry>();
     public DbSet<SupportCase> SupportCases => Set<SupportCase>();
     public DbSet<OnboardingLead> OnboardingLeads => Set<OnboardingLead>();
     public DbSet<InstitutionActivitySnapshot> InstitutionActivitySnapshots => Set<InstitutionActivitySnapshot>();
@@ -574,7 +575,11 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
                 (a, b) => JsonSerializer.Serialize(a, jsonOpts) == JsonSerializer.Serialize(b, jsonOpts),
                 v => JsonSerializer.Serialize(v, jsonOpts).GetHashCode(),
                 v => JsonSerializer.Deserialize<AutomationSettings>(JsonSerializer.Serialize(v, jsonOpts), jsonOpts)!));
+        modelBuilder.Entity<Institution>().HasIndex(i => i.OwnerStaffId);
+        modelBuilder.Entity<PlatformStaff>().HasIndex(s => s.ReportsToStaffId);
         modelBuilder.Entity<AudienceSegment>().HasIndex(x => x.InstitutionId);
+        modelBuilder.Entity<RepresentativeIncentiveEntry>().HasIndex(x => x.StaffId);
+        modelBuilder.Entity<RepresentativeIncentiveEntry>().Property(x => x.Amount).HasPrecision(18, 2);
         modelBuilder.Entity<AudienceSegment>().Property(x => x.Criteria).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<SegmentCriteria>(jsonOpts))
             .Metadata.SetValueComparer(new ValueComparer<SegmentCriteria>(

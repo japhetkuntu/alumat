@@ -14,6 +14,7 @@ import { ColorPicker } from "@alumni/ui";
 import { createInstitution, getBaseDomains, getOnboardingLead, updateOnboardingLeadStatus } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { SettlementAccountFields } from "@alumni/ui";
+import { useAuth } from "@/hooks/use-auth";
 import { getBanks, resolveAccount } from "@/lib/platform-api";
 import { PageHeading } from "@/components/platform/page-heading";
 
@@ -36,6 +37,8 @@ export default function NewInstitutionPage() {
 }
 
 function NewInstitutionPageContent() {
+  const { user: authUser } = useAuth();
+  const isRepresentative = authUser?.role === "Representative";
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -348,9 +351,17 @@ function NewInstitutionPageContent() {
               <>
                 <h2 className="text-[16px] font-semibold mb-1">Payments &amp; payouts</h2>
                 <p className="text-[13px] text-muted-foreground mb-4">
-                  Set the platform fee taken on this institution&apos;s collections and where their share settles.
+                  {isRepresentative
+                    ? "Where this institution's collections should settle. A SuperAdmin or Billing approves these details before anything is paid out."
+                    : "Set the platform fee taken on this institution's collections and where their share settles."}
                 </p>
                 <div className="space-y-4">
+                  {isRepresentative && (
+                    <p className="text-[12.5px] rounded-md p-3 bg-muted/50">
+                      The platform fee is set by the team, so there is nothing to choose here. You can still add the settlement details if you have them.
+                    </p>
+                  )}
+                  {!isRepresentative && (<>
                   <div className="space-y-1.5">
                     <Label className="inline-flex items-center gap-1.5">Platform fee<InfoTip text="The percentage of each payment kept by the platform." /></Label>
                     <div className="flex items-center gap-2">
@@ -394,6 +405,7 @@ function NewInstitutionPageContent() {
                       />
                     </div>
                   </div>
+                  </>)}
                   <SettlementAccountFields
                     value={form}
                     onChange={(next) => setForm((f) => ({ ...f, ...next }))}
@@ -401,7 +413,9 @@ function NewInstitutionPageContent() {
                     resolveAccount={resolveAccount}
                   />
                   <p className="text-[12.5px] rounded-md p-3" style={{ background: "var(--brand-primary-light)", color: "var(--color-text-info)" }}>
-                    Optional: leave blank and configure later from the institution&apos;s Payments tab. Providing settlement details here sets up their payout account automatically.
+                    {isRepresentative
+                      ? "Optional. Details you add are held for approval; the payout account is only set up once a SuperAdmin or Billing approves them."
+                      : "Optional: leave blank and configure later from the institution's Payments tab. Providing settlement details here sets up their payout account automatically."}
                   </p>
                 </div>
               </>

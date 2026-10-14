@@ -43,6 +43,7 @@ public class OnboardingLeadServiceTests
             new AlumniPgRepository<PlatformStaff>(db),
             institutionRepo.Object,
             Mock.Of<IAuditLogService>(),
+            new FixedScope(),
             NullLogger<OnboardingLeadService>.Instance);
     }
 

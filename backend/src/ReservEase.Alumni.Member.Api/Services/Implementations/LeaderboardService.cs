@@ -21,8 +21,8 @@ public class LeaderboardService(
         {
             var currentYear = DateTime.UtcNow.Year;
 
-            // Get all active members grouped by graduation year
-            var members = await memberRepo.GetQueryable(m => m.Status == "Active")
+            // Members with no graduation year (optional or off for this community) have no year group to rank.
+            var members = await memberRepo.GetQueryable(m => m.Status == "Active" && m.GraduationYear > 0)
                 .GroupBy(m => m.GraduationYear)
                 .Select(g => new { YearGroup = g.Key, Count = g.Count() })
                 .ToListAsync();

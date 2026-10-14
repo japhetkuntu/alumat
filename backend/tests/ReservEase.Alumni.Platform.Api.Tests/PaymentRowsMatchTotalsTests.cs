@@ -34,9 +34,9 @@ public class PaymentRowsMatchTotalsTests
             new AlumniPgRepository<Institution>(ctx), new AlumniPgRepository<InstitutionStaff>(ctx), new AlumniPgRepository<MemberEntity>(ctx),
             new AlumniPgRepository<Contribution>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx),
             new AlumniPgRepository<PaymentTransaction>(ctx), new AlumniPgRepository<Campaign>(ctx), new AlumniPgRepository<Batch>(ctx),
-            new AlumniPgRepository<ForumCategory>(ctx), Mock.Of<IAuditLogService>(), Mock.Of<IPaystackService>(),
+            new AlumniPgRepository<ForumCategory>(ctx), new AlumniPgRepository<PlatformStaff>(ctx), Mock.Of<IAuditLogService>(), Mock.Of<IPaystackService>(),
             new ConfigurationBuilder().Build(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),
-            MsOptions.Create(new MailtrapConfig()), cache.Object, NullLogger<InstitutionManagementService>.Instance);
+            MsOptions.Create(new MailtrapConfig()), cache.Object, new FixedScope(), NullLogger<InstitutionManagementService>.Instance);
         return (service, name);
     }
 

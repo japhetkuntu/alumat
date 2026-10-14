@@ -110,7 +110,9 @@ function MilestoneRow({ m }: { m: MilestoneProgress }) {
 
 function ScorecardTab() {
   const [taskFor, setTaskFor] = useState<TaskPrefill | null>(null);
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, user: signedInUser } = useAuth();
+  // Targets and tasks are the operating team's; a representative follows their own team on the Team page.
+  const canCreateTasks = signedInUser?.role !== "Representative";
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Filter>("all");
   const [targetOpen, setTargetOpen] = useState(false);
@@ -320,7 +322,7 @@ function ScorecardTab() {
                       {item.nextStep && (
                         <p className="text-[12.5px] leading-snug mt-2">
                           <span className="font-semibold">Next: </span>{item.nextStep}
-                          {!item.isActivated && (
+                          {!item.isActivated && canCreateTasks && (
                             <button
                               type="button"
                               onClick={() => setTaskFor({ title: `${item.name}: ${item.nextStep}`, institutionId: item.institutionId })}
@@ -480,20 +482,24 @@ type Tab = (typeof TABS)[number]["value"];
 
 function ActivationTabs() {
   const router = useRouter();
+  const { user } = useAuth();
+  const tabs = user?.role === "Representative" ? TABS.filter((t) => t.value === "scorecard") : TABS;
   const params = useSearchParams();
   const raw = params.get("tab");
-  const tab: Tab = TABS.some((t) => t.value === raw) ? (raw as Tab) : "scorecard";
+  const tab: Tab = tabs.some((t) => t.value === raw) ? (raw as Tab) : "scorecard";
 
   return (
     <div>
-      <div className="px-4 sm:px-7 pt-4 sm:pt-7">
-        <SegmentedControl
-          label="Activation sections"
-          options={TABS.map((t) => ({ value: t.value, label: t.label }))}
-          value={tab}
-          onChange={(v) => router.replace(v === "scorecard" ? "/activation" : `/activation?tab=${v}`)}
-        />
-      </div>
+      {tabs.length > 1 && (
+        <div className="px-4 sm:px-7 pt-4 sm:pt-7">
+          <SegmentedControl
+            label="Activation sections"
+            options={tabs.map((t) => ({ value: t.value, label: t.label }))}
+            value={tab}
+            onChange={(v) => router.replace(v === "scorecard" ? "/activation" : `/activation?tab=${v}`)}
+          />
+        </div>
+      )}
       {tab === "scorecard" && <ScorecardTab />}
       {tab === "targets" && <TargetsTab />}
       {tab === "tasks" && <MyTasksTab />}

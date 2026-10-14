@@ -2,7 +2,7 @@
 
 import { NextSteps } from "@/components/member/next-steps";
 import { WhatsAppConnectCard } from "@/components/member/whatsapp-connect-card";
-import { useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
+import { useCohortLabels, useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
 import { isFeatureDisabledError } from "@/lib/feature-errors";
 import { useEffect, useRef, useState } from "react";
 import { LoadError } from "@alumni/ui";
@@ -374,8 +374,9 @@ function feedHref(item: HomeFeedItem): string {
 const EARLIER_SHOWN = 6;
 
 function FeedRow({ item, isNew, showCohort }: { item: HomeFeedItem; isNew: boolean; showCohort: boolean }) {
+  const cohortLabel = useCohortLabels().singular.toLowerCase();
   const cohort = !showCohort ? null
-    : item.sameYearGroup ? "Your year group"
+    : item.sameYearGroup ? `Your ${cohortLabel}`
     : item.personGraduationYear ? `Class of ${item.personGraduationYear}`
     : null;
   const meta = [cohort, showCohort && item.sameDepartment ? "Your department" : null].filter(Boolean).join(" · ");
@@ -431,12 +432,13 @@ function PeopleFeed({
   const items = feed?.items ?? [];
   const fresh = since ? items.filter((i) => i.occurredAt > since) : [];
   const earlier = (since ? items.filter((i) => i.occurredAt <= since) : items).slice(0, fresh.length > 0 ? EARLIER_SHOWN : undefined);
+  const cohortLabel = useCohortLabels().singular.toLowerCase();
   const freshFromMyYear = showCohort ? fresh.filter((i) => i.sameYearGroup).length : 0;
 
   const away = since ? formatDistanceToNow(new Date(since)) : null;
   const heading = fresh.length > 0 ? "Since your last visit" : "Recently in your community";
   const sub = fresh.length > 0
-    ? `${fresh.length} new in the last ${away}${freshFromMyYear > 0 ? `, ${freshFromMyYear} from your year group` : ""}`
+    ? `${fresh.length} new in the last ${away}${freshFromMyYear > 0 ? `, ${freshFromMyYear} from your ${cohortLabel}` : ""}`
     : away && items.length > 0
       ? `Nothing new since you were here ${away} ago`
       : "What other members have been doing";
@@ -614,7 +616,9 @@ export default function MemberDashboardPage() {
   const feed = useQuery({ queryKey: ["m-home-feed"], queryFn: getHomeFeed });
   const emptyModules = useModuleActivity()?.empty ?? [];
   // Community-type institutions don't collect graduation years, so there is no year group to point at.
-  const showCohort = useNavTheme().data?.organizationType !== "Community";
+  const navTheme = useNavTheme().data;
+  // Year groups only exist where members have a graduation year; the mode is the source of truth.
+  const showCohort = (navTheme?.graduationYearMode ?? (navTheme?.organizationType === "Community" ? "Off" : "Required")) !== "Off";
 
   // Community campaigns are scoped per-community on the backend (never
   // returned by the general /campaigns call), so pulling them onto the

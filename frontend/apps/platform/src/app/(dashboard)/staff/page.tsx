@@ -28,18 +28,18 @@ export default function PlatformStaffPage() {
   const staff = data?.results ?? [];
 
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ name: "", email: "", password: "", role: "Support", team: "" });
+  const [inviteForm, setInviteForm] = useState({ name: "", email: "", password: "", role: "Support", team: "", reportsToStaffId: "" });
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [manageTarget, setManageTarget] = useState<PlatformStaffItem | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: () => createPlatformStaff(inviteForm),
+    mutationFn: () => createPlatformStaff({ ...inviteForm, reportsToStaffId: inviteForm.role === "Representative" ? inviteForm.reportsToStaffId || undefined : undefined }),
     onSuccess: () => {
       toast.success("Staff member invited");
       queryClient.invalidateQueries({ queryKey: ["platform-staff"] });
       setInviteOpen(false);
-      setInviteForm({ name: "", email: "", password: "", role: "Support", team: "" });
+      setInviteForm({ name: "", email: "", password: "", role: "Support", team: "", reportsToStaffId: "" });
       setInviteError(null);
     },
     onError: (e) => {
@@ -56,6 +56,8 @@ export default function PlatformStaffPage() {
         role: manageTarget!.role,
         team: manageTarget!.team ?? undefined,
         isDisabled: vars.isDisabled,
+        // Sent back as it is, so turning access on or off never changes who someone reports to.
+        reportsToStaffId: manageTarget!.reportsToStaffId ?? undefined,
       }),
     onSuccess: () => {
       toast.success("Staff member updated");
@@ -157,11 +159,28 @@ export default function PlatformStaffPage() {
                 onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
               >
                 <option value="SuperAdmin">SuperAdmin</option>
+                <option value="Representative">Representative</option>
                 <option value="Support">Support</option>
                 <option value="Billing">Billing</option>
                 <option value="Sales">Sales</option>
               </select>
             </div>
+            {inviteForm.role === "Representative" && (
+              <div className="space-y-1.5">
+                <Label>Reports to</Label>
+                <select
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-[13px]"
+                  value={inviteForm.reportsToStaffId}
+                  onChange={(e) => setInviteForm((f) => ({ ...f, reportsToStaffId: e.target.value }))}
+                >
+                  <option value="">Choose a SuperAdmin or representative</option>
+                  {staff.filter((s) => !s.isDisabled && (s.role === "SuperAdmin" || s.role === "Representative")).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
+                  ))}
+                </select>
+                <p className="text-[12px] text-muted-foreground">They see the institutions and leads owned by themselves and anyone under them.</p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Team</Label>
               <Input value={inviteForm.team} onChange={(e) => setInviteForm((f) => ({ ...f, team: e.target.value }))} />
@@ -172,7 +191,7 @@ export default function PlatformStaffPage() {
             <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
             <Button
               onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending || !inviteForm.name || !inviteForm.email || inviteForm.password.length < 8}
+              disabled={createMutation.isPending || !inviteForm.name || !inviteForm.email || inviteForm.password.length < 8 || (inviteForm.role === "Representative" && !inviteForm.reportsToStaffId)}
             >
               {createMutation.isPending ? "Inviting…" : "Invite"}
             </Button>

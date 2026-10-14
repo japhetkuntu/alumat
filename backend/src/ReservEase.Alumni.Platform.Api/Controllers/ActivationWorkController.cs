@@ -12,7 +12,8 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 /// Targets the platform team is working towards and the tasks under them. Every platform staff member can read them and
 /// work their own tasks; what each person may change is decided in the service (Super Admins create targets and assign work).
 /// </summary>
-[Authorize]
+// Internal platform work (targets, tasks and their notes) is for the operating team, not representatives.
+[Authorize(Roles = "SuperAdmin,Support,Billing,Sales")]
 [Route("api/v{version:apiVersion}/work")]
 public class ActivationWorkController(IActivationWorkService workService) : DefaultController
 {

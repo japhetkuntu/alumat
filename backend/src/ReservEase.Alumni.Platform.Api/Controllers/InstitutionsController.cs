@@ -96,7 +96,7 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
     }
 
     /// <summary>Onboard a new institution: creates the tenant and its first (SuperAdmin) admin.</summary>
-    [Authorize(Roles = "SuperAdmin,Sales")]
+    [Authorize(Roles = "SuperAdmin,Sales,Representative")]
     [HttpPost]
     [SwaggerOperation(Summary = "Onboard a new institution")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<InstitutionDetailResponse>))]

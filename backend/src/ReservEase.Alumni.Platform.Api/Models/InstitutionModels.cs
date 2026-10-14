@@ -32,6 +32,9 @@ public class CreateInstitutionRequest
     /// <summary>A starting point (see InstitutionTemplates): pre-fills whether graduation years are used and the wording for year groups. Nothing is locked.</summary>
     public string? TemplateId { get; set; }
 
+    /// <summary>Who is responsible for this institution's growth. Only honoured for a SuperAdmin; a representative always owns what they onboard. Defaults to whoever created it.</summary>
+    public string? OwnerStaffId { get; set; }
+
     /// <summary>"Off", "Optional" or "Required". Overrides the template and the legacy OrganizationType when given. Nothing assumed (Off) when none is.</summary>
     [RegularExpression("^(Off|Optional|Required)$")]
     public string? GraduationYearMode { get; set; }
@@ -80,7 +83,8 @@ public record InstitutionListItemResponse(
     string ContactName, string ContactEmail, string? LogoUrl, string Status,
     int MemberCount, DateTime OnboardedAt,
     decimal PlatformFeePercentage, decimal Revenue,
-    string MemberPortalUrl, string InstitutionPortalUrl);
+    string MemberPortalUrl, string InstitutionPortalUrl,
+    string? OwnerStaffId = null, string? OwnerName = null);
 
 public record InstitutionDetailResponse(
     string Id, string Name, string Slug, string? CustomDomain,
@@ -100,7 +104,9 @@ public record InstitutionDetailResponse(
     string MemberPortalUrl, string InstitutionPortalUrl,
     string GraduationYearMode = "Required",
     // The community's own registration questions, so platform staff can see how it is set up.
-    List<RegistrationField>? RegistrationFields = null);
+    List<RegistrationField>? RegistrationFields = null,
+    // Who is responsible for onboarding it and helping it grow.
+    string? OwnerStaffId = null, string? OwnerName = null);
 
 public class UpdateInstitutionStatusRequest
 {

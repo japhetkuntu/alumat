@@ -6,8 +6,14 @@ public class PlatformStaff : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string Role { get; set; } = "Support"; // SuperAdmin, Support, Billing, Sales
+    public string Role { get; set; } = "Support"; // SuperAdmin, Representative, Support, Billing, Sales
     public string? Team { get; set; }
+
+    /// <summary>
+    /// Who this person reports to (another platform staff member). A SuperAdmin reports to nobody. A Representative reports
+    /// to a SuperAdmin or to another Representative, so representatives can have representatives of their own.
+    /// </summary>
+    public string? ReportsToStaffId { get; set; }
     public bool Mfa { get; set; }
     public bool IsDisabled { get; set; }
     public DateTime? LastActiveAt { get; set; }

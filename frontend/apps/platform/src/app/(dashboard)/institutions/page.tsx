@@ -16,6 +16,7 @@ import { handleApiError } from "@/lib/api-client";
 import { getInstitutions, type InstitutionListItem } from "@/lib/platform-api";
 import { InstitutionStatus } from "@/types";
 import { PageHeading } from "@/components/platform/page-heading";
+import { useAuth } from "@/hooks/use-auth";
 
 const STATUS_FILTERS: { label: string; value: InstitutionStatus | "All" }[] = [
   { label: "All", value: "All" },
@@ -29,6 +30,10 @@ const statusBadge: Record<string, { label: string; variant: "info" | "success" |
 };
 
 export default function InstitutionsPage() {
+  const { user: signedIn } = useAuth();
+  // Revenue is the platform's money, not something a representative works from.
+  const showRevenue = signedIn?.role !== "Representative";
+  const columns = showRevenue ? 7 : 6;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<InstitutionStatus | "All">("All");
   const [exporting, setExporting] = useState(false);
@@ -128,17 +133,18 @@ export default function InstitutionsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Institution</TableHead>
+              <TableHead>Owner</TableHead>
               <TableHead>Members</TableHead>
-              <TableHead>Revenue</TableHead>
+              {showRevenue && <TableHead>Revenue</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead>Onboarded</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableSkeleton rows={6} cols={6} />}
-            {isError && <tr><td colSpan={6}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
-            {!isLoading && !isError && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={6} />}
+            {isLoading && <TableSkeleton rows={6} cols={columns} />}
+            {isError && <tr><td colSpan={columns}><LoadError className="py-10" onRetry={() => refetch()} /></td></tr>}
+            {!isLoading && !isError && results.length === 0 && <TableEmpty title="No institutions match your filters" colSpan={columns} />}
             {results.map((inst) => (
               <TableRow key={inst.id}>
                 <TableCell>
@@ -152,8 +158,9 @@ export default function InstitutionsPage() {
                     </div>
                   </div>
                 </TableCell>
+                <TableCell className="text-[13px]">{inst.ownerName ?? <span className="text-muted-foreground">No owner</span>}</TableCell>
                 <TableCell className="tabular-nums">{inst.memberCount.toLocaleString()}</TableCell>
-                <TableCell className="tabular-nums font-medium">{formatCurrency(inst.revenue, "GHS")}</TableCell>
+                {showRevenue && <TableCell className="tabular-nums font-medium">{formatCurrency(inst.revenue, "GHS")}</TableCell>}
                 <TableCell>
                   <Badge variant={(statusBadge[inst.status] ?? statusBadge.Active).variant}>
                     {(statusBadge[inst.status] ?? statusBadge.Active).label}

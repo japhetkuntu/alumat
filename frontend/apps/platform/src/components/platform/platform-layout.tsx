@@ -21,6 +21,8 @@ import {
   Activity,
   MessageCircle,
   ScrollText,
+  Sitemap,
+  HandCoins,
 } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@alumni/ui";
@@ -34,6 +36,8 @@ import { PlatformSetupChecklist } from "./setup-checklist";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/team", label: "Team", icon: Sitemap },
+  { href: "/incentives", label: "Incentives", icon: HandCoins },
   { href: "/institutions", label: "Institutions", icon: Building2 },
   { href: "/activation", label: "Activation", icon: Target },
   { href: "/institution-health", label: "Institution health", icon: Activity },
@@ -57,7 +61,13 @@ export function PlatformSidebar({ onClose }: { onClose?: () => void }) {
   const { user, isSuperAdmin } = useAuth();
   const isSupport = user?.role === "Support";
 
+  // A representative works their own institutions and leads; the money, support and platform tooling are not theirs.
+  const isRepresentative = user?.role === "Representative";
+  const REPRESENTATIVE_PAGES = ["/team", "/incentives", "/institutions", "/activation", "/onboarding-leads"];
+
   const visibleNavItems = navItems.filter((item) => {
+    if (isRepresentative) return REPRESENTATIVE_PAGES.includes(item.href);
+    if (item.href === "/team" || item.href === "/incentives") return isSuperAdmin;
     if (item.href === "/marketing-campaigns" && !isSuperAdmin && user?.role !== "Sales") return false;
     if ((item.href === "/staff" || item.href === "/audit-log") && !isSuperAdmin) return false;
     if (item.href === "/members" && !isSuperAdmin && !isSupport) return false;

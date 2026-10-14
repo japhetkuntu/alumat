@@ -12,7 +12,7 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 /// Image uploads for platform staff — e.g. an institution's logo/icon while
 /// onboarding or editing branding, instead of pasting an externally-hosted URL.
 /// </summary>
-[Authorize(Roles = "SuperAdmin,Support,Sales")]
+[Authorize(Roles = "SuperAdmin,Support,Sales,Representative")]
 public class UploadsController(IUploadService uploadService) : DefaultController
 {
     /// <summary>Upload a single image file (max 5MB). Returns its public URL. Pass institutionSlug when the image belongs to a specific institution (e.g. editing its branding), so it's filed under that institution's own subfolder.</summary>

@@ -9,6 +9,7 @@ import { getLeaderboard } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
+import { useCohortLabels } from "@/components/member/member-layout";
 import { cn } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 
@@ -44,6 +45,7 @@ function RankBadge({ index }: { index: number }) {
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+  const label = useCohortLabels();
 
   const { data: entries, isLoading, isError, refetch } = useQuery({
     queryKey: ["m-leaderboard"],
@@ -57,7 +59,7 @@ export default function LeaderboardPage() {
       <PageHeader
         eyebrow="Community progress"
         title="Class leaderboard"
-        description="See how each year group ranks against the others through membership, contributions, and events."
+        description={`See how each ${label.singular.toLowerCase()} ranks against the others through membership, contributions, and events.`}
       />
 
       {/* ── List ── */}
@@ -70,8 +72,8 @@ export default function LeaderboardPage() {
       ) : !entries?.length ? (
         <EmptyState
           icon={<Trophy size={40} />}
-          title="See how your year group is doing"
-          description="Year groups are ranked by how many members have joined, how much they have given and how many attend events. Rankings appear once members pay dues, contribute and RSVP."
+          title={`No ${label.plural.toLowerCase()} to rank yet`}
+          description={`${label.plural} are ranked by membership, giving and event attendance, and only members who gave a graduation year are counted. Rankings appear once members pay dues, contribute and RSVP.`}
         />
       ) : (
         <div className="space-y-2.5">
@@ -98,11 +100,11 @@ export default function LeaderboardPage() {
                         className="font-[family-name:var(--font-display)] font-bold"
                         style={{ fontSize: "1rem", color: "var(--foreground)" }}
                       >
-                        Year group {entry.yearGroup}
+                        {label.singular} {entry.yearGroup}
                       </h3>
                       {isMyYear && (
                         <Badge variant="info" className="text-[12px] font-semibold">
-                          Your year
+                          Your {label.singular.toLowerCase()}
                         </Badge>
                       )}
                     </div>

@@ -76,10 +76,16 @@ export interface InstitutionListItem {
   revenue: number;
   memberPortalUrl: string;
   institutionPortalUrl: string;
+  /** Who is responsible for onboarding it and helping it grow. */
+  ownerStaffId?: string | null;
+  ownerName?: string | null;
 }
 
 export interface InstitutionDetail {
   id: string;
+  /** Who is responsible for onboarding it and helping it grow. */
+  ownerStaffId?: string | null;
+  ownerName?: string | null;
   name: string;
   slug: string;
   customDomain?: string | null;
@@ -139,6 +145,8 @@ export interface InstitutionDetail {
 }
 
 export interface CreateInstitutionRequest {
+  /** SuperAdmin only: who is responsible for this institution. Defaults to whoever creates it. */
+  ownerStaffId?: string;
   name: string;
   slug: string;
   contactName: string;
@@ -629,6 +637,8 @@ export interface PlatformStaffItem {
   mfa: boolean;
   isDisabled: boolean;
   lastActiveAt?: string | null;
+  /** The SuperAdmin or representative this person reports to. */
+  reportsToStaffId?: string | null;
 }
 
 export async function getPlatformStaff(params: { page?: number; pageSize?: number; search?: string }) {
@@ -636,13 +646,92 @@ export async function getPlatformStaff(params: { page?: number; pageSize?: numbe
   return res.data.data!;
 }
 
-export async function createPlatformStaff(req: { name: string; email: string; password: string; role?: string; team?: string }) {
+export async function createPlatformStaff(req: { name: string; email: string; password: string; role?: string; team?: string; reportsToStaffId?: string }) {
   const res = await platformClient.post<ApiResponse<PlatformStaffItem>>("/staff", req);
   return res.data.data!;
 }
 
-export async function updatePlatformStaff(id: string, req: { name: string; role?: string; team?: string; isDisabled: boolean }) {
+export async function updatePlatformStaff(id: string, req: { name: string; role?: string; team?: string; isDisabled: boolean; reportsToStaffId?: string | null }) {
   const res = await platformClient.patch<ApiResponse<PlatformStaffItem>>(`/staff/${id}`, req);
+  return res.data.data!;
+}
+
+// ─── Team structure ──────────────────────────────────────────────────────
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: "SuperAdmin" | "Representative" | string;
+  reportsToStaffId?: string | null;
+  isDisabled: boolean;
+  lastActiveAt?: string | null;
+  directReports: number;
+  institutions: number;
+  activeInstitutions: number;
+  members: number;
+  openLeads: number;
+  convertedLeads: number;
+}
+export interface TeamView {
+  myId: string;
+  myRole: string;
+  canManage: boolean;
+  people: TeamMember[];
+  unassignedInstitutions?: number | null;
+  unassignedLeads?: number | null;
+}
+export interface TeamAssignee { id: string; name: string; role: string; }
+
+export async function getTeam(): Promise<TeamView> {
+  const res = await platformClient.get<ApiResponse<TeamView>>("/team");
+  return res.data.data!;
+}
+export async function getTeamAssignees(): Promise<TeamAssignee[]> {
+  const res = await platformClient.get<ApiResponse<TeamAssignee[]>>("/team/assignees");
+  return res.data.data ?? [];
+}
+export async function setTeamManager(staffId: string, managerId: string | null): Promise<TeamMember> {
+  const res = await platformClient.put<ApiResponse<TeamMember>>(`/team/${staffId}/manager`, { managerId });
+  return res.data.data!;
+}
+// ─── Representative incentives (settlement is entered by hand) ─────────────
+
+export interface IncentiveEntry {
+  id: string;
+  staffId: string;
+  staffName: string;
+  kind: "Earned" | "Paid";
+  amount: number;
+  reason: string;
+  reference?: string | null;
+  institutionId?: string | null;
+  institutionName?: string | null;
+  occurredOn: string;
+  recordedByName: string;
+  createdAt: string;
+  isVoided: boolean;
+  voidReason?: string | null;
+  voidedByName?: string | null;
+}
+export interface IncentiveBalance { staffId: string; staffName: string; earned: number; paid: number; owed: number; lastPaidOn?: string | null; }
+export interface IncentivesView { canRecord: boolean; currency: string; balances: IncentiveBalance[]; entries: IncentiveEntry[]; }
+
+export async function getIncentives(): Promise<IncentivesView> {
+  const res = await platformClient.get<ApiResponse<IncentivesView>>("/incentives");
+  return res.data.data!;
+}
+export async function addIncentiveEntry(body: { staffId: string; kind: "Earned" | "Paid"; amount: number; reason: string; reference?: string; institutionId?: string; occurredOn?: string }) {
+  const res = await platformClient.post<ApiResponse<IncentiveEntry>>("/incentives", body);
+  return res.data.data!;
+}
+export async function voidIncentiveEntry(id: string, reason: string) {
+  const res = await platformClient.post<ApiResponse<IncentiveEntry>>(`/incentives/${id}/void`, { reason });
+  return res.data.data!;
+}
+
+export async function reassignWork(body: { toStaffId: string; institutionIds?: string[]; leadIds?: string[] }) {
+  const res = await platformClient.post<ApiResponse<{ institutions: number; leads: number }>>("/team/reassign", { institutionIds: [], leadIds: [], ...body });
   return res.data.data!;
 }
 

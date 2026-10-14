@@ -21,6 +21,7 @@ public class ActivationTrackingService(
     IAlumniPgRepository<PlatformSettings> platformSettingsRepo,
     InstitutionActivationService activation,
     IAuditLogService auditLog,
+    IStaffScope staffScope,
     ILogger<ActivationTrackingService> logger) : IActivationTrackingService
 {
     public async Task<IApiResponse<ActivationScorecardResponse>> GetScorecardAsync()
@@ -41,7 +42,7 @@ public class ActivationTrackingService(
         try
         {
             var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId);
-            if (institution is null)
+            if (institution is null || !(await staffScope.GetAsync()).CanSee(institution.OwnerStaffId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<ActivationScorecardItem>("Institution not found");
 
             var result = await activation.EvaluateOneAsync(institution, DateTime.UtcNow);
@@ -62,10 +63,12 @@ public class ActivationTrackingService(
             var now = DateTime.UtcNow;
             var firstWeek = InstitutionActivationService.WeekStart(now).AddDays(-7 * (weeks - 1));
 
-            var leads = await leadRepo.GetQueryable()
+            var visibility = await staffScope.GetAsync();
+            var owners = visibility.StaffIds.ToList();
+            var leads = await leadRepo.GetQueryable(l => visibility.Unrestricted || (l.AssigneeStaffId != null && owners.Contains(l.AssigneeStaffId)))
                 .Select(l => new { l.CreatedAt, l.ContactedAt })
                 .ToListAsync();
-            var institutions = await institutionRepo.GetQueryable()
+            var institutions = await institutionRepo.GetQueryable(i => visibility.Unrestricted || (i.OwnerStaffId != null && owners.Contains(i.OwnerStaffId)))
                 .Select(i => new { i.OnboardedAt, i.Status })
                 .ToListAsync();
 
@@ -151,7 +154,7 @@ public class ActivationTrackingService(
         try
         {
             var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId);
-            if (institution is null)
+            if (institution is null || !(await staffScope.GetAsync()).CanSee(institution.OwnerStaffId))
                 return ApiResponseExtensions.ToNotFoundApiResponse<ActivationScorecardItem>("Institution not found");
 
             institution.ActivationMinMembers = request.ActivationMinMembers;
@@ -186,7 +189,9 @@ public class ActivationTrackingService(
     private async Task<ActivationScorecardResponse> BuildScorecardAsync()
     {
         var now = DateTime.UtcNow;
-        var institutions = (await institutionRepo.GetAllAsync(i => i.Status == "Active")).ToList();
+        var visibility = await staffScope.GetAsync();
+        var institutions = (await institutionRepo.GetAllAsync(i => i.Status == "Active"))
+            .Where(i => visibility.CanSee(i.OwnerStaffId)).ToList();
         var results = await activation.EvaluateAsync(institutions, now);
         var settings = await platformSettingsRepo.GetOneAsync(s => s.Id == PlatformSettings.SingletonId);
 

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { EmptyState } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, StatCard, StatCardSkeleton } from "@alumni/ui";
@@ -26,6 +28,10 @@ function ListRowSkeleton() {
 }
 
 export default function PlatformDashboardPage() {
+  const router = useRouter();
+  const { user: signedInUser } = useAuth();
+  // The platform-wide figures are not a representative's to see; their home is their team.
+  useEffect(() => { if (signedInUser?.role === "Representative") router.replace("/team"); }, [signedInUser?.role, router]);
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: getDashboardSummary,

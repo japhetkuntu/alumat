@@ -12,6 +12,7 @@ public class OnboardingLeadService(
     IAlumniPgRepository<PlatformStaff> platformStaffRepo,
     IAlumniPgRepository<Institution> institutionRepo,
     IAuditLogService auditLog,
+    IStaffScope staffScope,
     ILogger<OnboardingLeadService> logger) : IOnboardingLeadService
 {
     public async Task<IApiResponse<List<OnboardingLeadResponse>>> GetLeadsAsync(string? status)
@@ -19,6 +20,13 @@ public class OnboardingLeadService(
         try
         {
         var query = onboardingLeadRepo.GetQueryable();
+        // A representative works the leads assigned to them and the people under them. Unassigned leads wait for a SuperAdmin.
+        var visibility = await staffScope.GetAsync();
+        if (!visibility.Unrestricted)
+        {
+            var owners = visibility.StaffIds.ToList();
+            query = query.Where(l => l.AssigneeStaffId != null && owners.Contains(l.AssigneeStaffId));
+        }
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(l => l.Status == status);
 
@@ -38,7 +46,7 @@ public class OnboardingLeadService(
         try
         {
         var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
-        if (lead is null)
+        if (lead is null || !(await staffScope.GetAsync()).CanSee(lead.AssigneeStaffId))
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
         var dto = (await ToDtosAsync([lead])).Single();
@@ -133,7 +141,7 @@ public class OnboardingLeadService(
         try
         {
         var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
-        if (lead is null)
+        if (lead is null || !(await staffScope.GetAsync()).CanSee(lead.AssigneeStaffId))
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
         if (!OnboardingLeadStatuses.All.Contains(request.Status))
@@ -176,7 +184,7 @@ public class OnboardingLeadService(
         try
         {
         var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
-        if (lead is null)
+        if (lead is null || !(await staffScope.GetAsync()).CanSee(lead.AssigneeStaffId))
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
         if (!string.IsNullOrEmpty(request.AssigneeStaffId)
@@ -274,7 +282,12 @@ public class OnboardingLeadService(
     {
         try
         {
-        var staff = await platformStaffRepo.GetQueryable(s => !s.IsDisabled && (s.Role == "SuperAdmin" || s.Role == "Sales"))
+        var visibility = await staffScope.GetAsync();
+        var scopeIds = visibility.StaffIds.ToList();
+        // A representative can hand a lead to themselves or to someone under them, never sideways or upwards.
+        var staff = await platformStaffRepo.GetQueryable(s => !s.IsDisabled
+                && (s.Role == "SuperAdmin" || s.Role == "Sales" || s.Role == "Representative")
+                && (visibility.Unrestricted || scopeIds.Contains(s.Id)))
             .OrderBy(s => s.Name)
             .Select(s => new LeadAssigneeResponse(s.Id, s.Name, s.Role))
             .ToListAsync();
@@ -298,7 +311,7 @@ public class OnboardingLeadService(
         try
         {
         var lead = await onboardingLeadRepo.GetOneAsync(l => l.Id == id);
-        if (lead is null)
+        if (lead is null || !(await staffScope.GetAsync()).CanSee(lead.AssigneeStaffId))
             return ApiResponseExtensions.ToNotFoundApiResponse<OnboardingLeadResponse>("Onboarding lead not found");
 
         lead.InternalNote = request.Note;

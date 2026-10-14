@@ -92,7 +92,7 @@ public class PublicWalkthroughTests
         });
         var platform = new OnboardingLeadService(leadStore,
             new AlumniPgRepository<PlatformStaff>(db), new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution>(db),
-            Mock.Of<IAuditLogService>(), NullLogger<OnboardingLeadService>.Instance);
+            Mock.Of<IAuditLogService>(), new EveryoneScope(), NullLogger<OnboardingLeadService>.Instance);
         var result = await platform.GetLeadsAsync("New");
         Assert.Equal(200, result.Code);
         var lead = Assert.Single(result.Data!);
@@ -150,4 +150,11 @@ public class PublicWalkthroughTests
             .GetCustomAttributes(typeof(EnableRateLimitingAttribute), false).Cast<EnableRateLimitingAttribute>().Single();
         Assert.Equal(RateLimitingExtensions.AuthPolicy, attribute.PolicyName);
     }
+}
+
+/// <summary>Visibility for a test that is not about who can see what: everything.</summary>
+internal sealed class EveryoneScope : ReservEase.Alumni.Platform.Api.Services.Implementations.IStaffScope
+{
+    public Task<ReservEase.Alumni.Platform.Api.Services.Implementations.StaffVisibility> GetAsync()
+        => Task.FromResult(ReservEase.Alumni.Platform.Api.Services.Implementations.StaffVisibility.Everything);
 }

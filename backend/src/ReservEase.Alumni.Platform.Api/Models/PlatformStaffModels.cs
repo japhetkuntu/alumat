@@ -12,6 +12,9 @@ public class CreatePlatformStaffRequest
     public string Password { get; set; } = string.Empty;
     public string Role { get; set; } = "Support";
     public string? Team { get; set; }
+
+    /// <summary>Required for a Representative: the SuperAdmin or Representative they report to.</summary>
+    public string? ReportsToStaffId { get; set; }
 }
 
 public class UpdatePlatformStaffRequest
@@ -21,8 +24,9 @@ public class UpdatePlatformStaffRequest
     public string Role { get; set; } = "Support";
     public string? Team { get; set; }
     public bool IsDisabled { get; set; }
+    public string? ReportsToStaffId { get; set; }
 }
 
 public record PlatformStaffResponse(
     string Id, string Name, string Email, string Role, string? Team,
-    bool Mfa, bool IsDisabled, DateTime? LastActiveAt);
+    bool Mfa, bool IsDisabled, DateTime? LastActiveAt, string? ReportsToStaffId = null);

@@ -8,7 +8,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 
 namespace ReservEase.Alumni.Platform.Api.Controllers;
 
-[Authorize(Roles = "SuperAdmin,Sales")]
+[Authorize(Roles = "SuperAdmin,Sales,Representative")]
 public class OnboardingLeadsController(IOnboardingLeadService onboardingLeadService) : DefaultController
 {
     [HttpGet]

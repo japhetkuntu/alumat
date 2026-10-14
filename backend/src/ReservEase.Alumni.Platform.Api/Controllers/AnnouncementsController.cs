@@ -12,6 +12,7 @@ namespace ReservEase.Alumni.Platform.Api.Controllers;
 [Route("api/v{version:apiVersion}/announcements")]
 public class AnnouncementsController(IAnnouncementService announcementService) : DefaultController
 {
+    [Authorize(Roles = "SuperAdmin,Support,Billing,Sales")]
     [HttpGet]
     [SwaggerOperation(Summary = "List sent announcements")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<AnnouncementResponse>>))]
@@ -32,6 +33,8 @@ public class AnnouncementsController(IAnnouncementService announcementService) :
         return result.ToActionResult();
     }
 
+    // The whole staff list: not for representatives.
+    [Authorize(Roles = "SuperAdmin,Support,Billing,Sales")]
     [HttpGet("staff-directory")]
     [SwaggerOperation(Summary = "Search institution admins", Description = "For picking specific recipients — searches by name or email across every institution, or within one when institutionId is given.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<StaffDirectoryEntry>>))]

@@ -9,7 +9,7 @@ using ReservEase.Alumni.Platform.Api.Services.Interfaces;
 namespace ReservEase.Alumni.Platform.Api.Controllers;
 
 /// <summary>Onboarding progress: which institutions are actively using the platform, and the lead → live funnel.</summary>
-[Authorize(Roles = "SuperAdmin,Sales,Support")]
+[Authorize(Roles = "SuperAdmin,Sales,Representative,Support")]
 public class ActivationController(IActivationTrackingService activationService) : DefaultController
 {
     [HttpGet("scorecard")]
@@ -30,7 +30,7 @@ public class ActivationController(IActivationTrackingService activationService) 
         return result.ToActionResult();
     }
 
-    [Authorize(Roles = "SuperAdmin,Sales")]
+    [Authorize(Roles = "SuperAdmin,Sales,Representative")]
     [HttpPut("institutions/{institutionId}/settings")]
     [SwaggerOperation(Summary = "Set an institution's member threshold and whether it gets setup reminders")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ActivationScorecardItem>))]
