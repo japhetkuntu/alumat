@@ -6,6 +6,7 @@
 # Usage:
 #   sudo bash /opt/alumunion-src/deploy/deploy.sh                    # everything (default)
 #   sudo bash /opt/alumunion-src/deploy/deploy.sh operations-worker  # just one service
+#   sudo bash /opt/alumunion-src/deploy/deploy.sh backend            # four .NET services only
 # Valid single targets: institution-api member-api platform-api operations-worker
 #                        frontend-institution frontend-member frontend-platform
 #
@@ -22,7 +23,14 @@
 #     incremental. Wipe them only when needed:  CLEAN_BUILD=1 sudo -E bash deploy.sh
 #   - `all` only rebuilds what changed since the last successful deploy (backend vs
 #     frontend, from git). Force everything:   FORCE_ALL=1 sudo -E bash deploy.sh
-#   - Each step prints how long it took.
+#   - Each step prints how long it took, and how much memory and swap were in use.
+#   - Within `all`, only the services whose code changed are rebuilt: a change inside one API's own
+#     project rebuilds just that API, a change inside one frontend app rebuilds just that app. Anything
+#     shared (the SDK projects, packages/, lockfiles) rebuilds the lot.
+#   - STOP_FIRST=1 stops the services that are being redeployed BEFORE the build instead of after it:
+#     the build then has the whole machine to itself (no memory pressure, no swapping), which is
+#     noticeably faster on a small droplet, at the cost of the site being down for the whole build.
+#     Use it for a quiet moment:   STOP_FIRST=1 sudo -E bash deploy.sh
 set -euo pipefail
 
 SRC_DIR="/opt/alumunion-src"
@@ -34,7 +42,17 @@ TARGET="${1:-all}"
 STARTED_AT=$SECONDS
 step_start=$SECONDS
 # Prints how long the step that just finished took, then starts timing the next one.
-lap() { local now=$SECONDS; echo "   ($(( now - step_start ))s: $1)"; step_start=$now; }
+lap() {
+  local now=$SECONDS
+  local mem=""
+  # Memory and swap in use: a build that is slow because the machine is swapping looks identical to a
+  # slow build in the timings, so say so.
+  if command -v free >/dev/null 2>&1; then
+    mem=" | mem $(free -m | awk '/^Mem:/{print $3"/"$2"MB"}'), swap $(free -m | awk '/^Swap:/{print $3"MB"}')"
+  fi
+  echo "   ($(( now - step_start ))s: $1${mem})"
+  step_start=$now
+}
 DO_INSTITUTION_API=0
 DO_MEMBER_API=0
 DO_PLATFORM_API=0
@@ -48,6 +66,9 @@ case "$TARGET" in
     DO_INSTITUTION_API=1; DO_MEMBER_API=1; DO_PLATFORM_API=1; DO_OPERATIONS_WORKER=1
     DO_FRONTEND_INSTITUTION=1; DO_FRONTEND_MEMBER=1; DO_FRONTEND_PLATFORM=1
     ;;
+  backend)
+    DO_INSTITUTION_API=1; DO_MEMBER_API=1; DO_PLATFORM_API=1; DO_OPERATIONS_WORKER=1
+    ;;
   institution-api) DO_INSTITUTION_API=1 ;;
   member-api) DO_MEMBER_API=1 ;;
   platform-api) DO_PLATFORM_API=1 ;;
@@ -57,7 +78,7 @@ case "$TARGET" in
   frontend-platform) DO_FRONTEND_PLATFORM=1 ;;
   *)
     echo "Unknown target: $TARGET"
-    echo "Valid: all institution-api member-api platform-api operations-worker frontend-institution frontend-member frontend-platform"
+    echo "Valid: all backend institution-api member-api platform-api operations-worker frontend-institution frontend-member frontend-platform"
     exit 1
     ;;
 esac
@@ -72,7 +93,7 @@ wait_healthy() {
   local url="$1" name="$2" tries=30
   echo "Waiting for $name to report healthy at $url ..."
   for ((i = 1; i <= tries; i++)); do
-    if curl -fs "$url" >/dev/null 2>&1; then
+    if curl -fs --connect-timeout 2 --max-time 3 "$url" >/dev/null 2>&1; then
       echo "$name is healthy."
       return 0
     fi
@@ -125,7 +146,9 @@ check_disk_space() {
 
 echo "== pulling latest source =="
 cd "$SRC_DIR"
-git pull
+if [[ -z "${ALUMNI_DEPLOY_REEXECED:-}" ]]; then
+  git pull --ff-only
+fi
 
 # This script lives inside the repo it just pulled — if that pull changed
 # deploy.sh itself (e.g. this very file was edited upstream), bash's read
@@ -143,23 +166,65 @@ fi
 lap "git pull"
 
 # `all` means "everything that changed": compare with the commit last deployed successfully and
-# leave out the backend or the frontends when nothing under them changed. A single named target,
-# FORCE_ALL=1, or no record of a previous deploy always builds what was asked for.
+# rebuild only what the changes can affect. A single named target, FORCE_ALL=1, or no record of a
+# previous deploy always builds what was asked for.
+#
+# What a change can affect:
+#   backend/src/<Service>/...        that service only
+#   backend/tests, *.md, docs        nothing
+#   anything else under backend/     every .NET service (shared SDK projects, solution, props)
+#   frontend/apps/<app>/...          that app only
+#   frontend/packages, lockfile ...  every frontend (shared UI and tooling)
 REV_FILE="$OUT/.last-deployed-rev"
 if [[ "$TARGET" == "all" && -z "${FORCE_ALL:-}" && -f "$REV_FILE" ]]; then
   PREV_REV="$(cat "$REV_FILE")"
   if git -C "$SRC_DIR" cat-file -e "${PREV_REV}^{commit}" 2>/dev/null; then
-    CHANGED="$(git -C "$SRC_DIR" diff --name-only "$PREV_REV" HEAD)"
-    if ! grep -q '^backend/' <<<"$CHANGED"; then
+    CHANGED="$(git -C "$SRC_DIR" diff --name-only "$PREV_REV" HEAD \
+      | grep -v -E '(^|/)(docs|Designs|design-plans|marketing)/|\.md$|^backend/tests/' || true)"
+
+    # --- .NET ---
+    backend_changes="$(grep '^backend/' <<<"$CHANGED" || true)"
+    if [[ -z "$backend_changes" ]]; then
       DO_INSTITUTION_API=0; DO_MEMBER_API=0; DO_PLATFORM_API=0; DO_OPERATIONS_WORKER=0; DO_ANY_DOTNET=0
       echo "No backend changes since ${PREV_REV:0:8}: skipping the .NET services."
+    else
+      # Anything that is not inside one service's own project folder is shared.
+      shared_backend="$(grep -v -E '^backend/src/ReservEase\.Alumni\.(Institution\.Api|Member\.Api|Platform\.Api|Operations\.Worker)/' <<<"$backend_changes" || true)"
+      if [[ -z "$shared_backend" ]]; then
+        grep -q '^backend/src/ReservEase\.Alumni\.Institution\.Api/' <<<"$backend_changes" || DO_INSTITUTION_API=0
+        grep -q '^backend/src/ReservEase\.Alumni\.Member\.Api/' <<<"$backend_changes" || DO_MEMBER_API=0
+        grep -q '^backend/src/ReservEase\.Alumni\.Platform\.Api/' <<<"$backend_changes" || DO_PLATFORM_API=0
+        grep -q '^backend/src/ReservEase\.Alumni\.Operations\.Worker/' <<<"$backend_changes" || DO_OPERATIONS_WORKER=0
+        echo "Backend changes are inside individual services only: rebuilding just those."
+      else
+        echo "Shared backend code changed: rebuilding every .NET service."
+      fi
     fi
-    if ! grep -q '^frontend/' <<<"$CHANGED"; then
+
+    # --- frontends ---
+    frontend_changes="$(grep '^frontend/' <<<"$CHANGED" || true)"
+    if [[ -z "$frontend_changes" ]]; then
       DO_FRONTEND_INSTITUTION=0; DO_FRONTEND_MEMBER=0; DO_FRONTEND_PLATFORM=0; DO_ANY_FRONTEND=0
       echo "No frontend changes since ${PREV_REV:0:8}: skipping the frontends."
+    else
+      shared_frontend="$(grep -v -E '^frontend/apps/(institution|member|platform)/' <<<"$frontend_changes" || true)"
+      if [[ -z "$shared_frontend" ]]; then
+        grep -q '^frontend/apps/institution/' <<<"$frontend_changes" || DO_FRONTEND_INSTITUTION=0
+        grep -q '^frontend/apps/member/' <<<"$frontend_changes" || DO_FRONTEND_MEMBER=0
+        grep -q '^frontend/apps/platform/' <<<"$frontend_changes" || DO_FRONTEND_PLATFORM=0
+        echo "Frontend changes are inside individual apps only: rebuilding just those."
+      else
+        echo "Shared frontend code changed: rebuilding every frontend."
+      fi
     fi
+
+    DO_ANY_DOTNET=0
+    [[ "$DO_INSTITUTION_API$DO_MEMBER_API$DO_PLATFORM_API$DO_OPERATIONS_WORKER" == *1* ]] && DO_ANY_DOTNET=1
+    DO_ANY_FRONTEND=0
+    [[ "$DO_FRONTEND_INSTITUTION$DO_FRONTEND_MEMBER$DO_FRONTEND_PLATFORM" == *1* ]] && DO_ANY_FRONTEND=1
+
     if [[ "$DO_ANY_DOTNET$DO_ANY_FRONTEND" == "00" ]]; then
-      echo "Nothing to deploy (only deploy/docs files changed). FORCE_ALL=1 to rebuild everything anyway."
+      echo "Nothing to deploy (only deploy/docs/test files changed). FORCE_ALL=1 to rebuild everything anyway."
       git -C "$SRC_DIR" rev-parse HEAD > "$REV_FILE"
       exit 0
     fi
@@ -176,15 +241,6 @@ if [[ "$DO_ANY_DOTNET" == 1 && -n "${CLEAN_BUILD:-}" ]]; then
 fi
 
 check_disk_space
-# Disk is the one thing the kept caches can eat: when it is tight, clear them rather than fail the build.
-if [[ "$DO_ANY_DOTNET" == 1 ]]; then
-  free_gb=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
-  if [[ "$free_gb" -lt $(( MIN_FREE_GB + 3 )) ]]; then
-    echo "== disk is getting tight (${free_gb}G free): clearing build artifacts before building =="
-    find "$BACKEND_SRC" -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
-    dotnet nuget locals http-cache --clear
-  fi
-fi
 
 # install.sh only renders nginx.conf once, at first provisioning — a later
 # change to the template never reaches already-provisioned droplets on its
@@ -255,10 +311,40 @@ fi
 STAGE="$OUT/.staging"
 mkdir -p "$STAGE"
 
+# The services this run will replace.
+STOP_LIST=()
+[[ "$DO_INSTITUTION_API" == 1 ]] && STOP_LIST+=(alumni-institution-api)
+[[ "$DO_MEMBER_API" == 1 ]] && STOP_LIST+=(alumni-member-api)
+[[ "$DO_PLATFORM_API" == 1 ]] && STOP_LIST+=(alumni-platform-api)
+[[ "$DO_OPERATIONS_WORKER" == 1 ]] && STOP_LIST+=(alumni-operations-worker)
+[[ "$DO_FRONTEND_INSTITUTION" == 1 ]] && STOP_LIST+=(alumni-frontend-institution)
+[[ "$DO_FRONTEND_MEMBER" == 1 ]] && STOP_LIST+=(alumni-frontend-member)
+[[ "$DO_FRONTEND_PLATFORM" == 1 ]] && STOP_LIST+=(alumni-frontend-platform)
+
+STOPPED_EARLY=0
+if [[ -n "${STOP_FIRST:-}" && ${#STOP_LIST[@]} -gt 0 ]]; then
+  echo "== STOP_FIRST: stopping ${STOP_LIST[*]} before the build (the site is down until it finishes) =="
+  systemctl stop "${STOP_LIST[@]}" 2>/dev/null || true
+  STOPPED_EARLY=1
+  lap "stop (before build)"
+
+  # If the build fails the old version is still on disk untouched, so start it again rather than
+  # leaving the site down. Cleared once the new files start being copied in.
+  OLD_VERSION_INTACT=1
+  bring_back_old_version() {
+    local code=$?
+    if [[ $code -ne 0 && "${OLD_VERSION_INTACT:-0}" == 1 ]]; then
+      echo "== build failed: starting the previous version again =="
+      systemctl start "${STOP_LIST[@]}" 2>/dev/null || true
+    fi
+  }
+  trap bring_back_old_version EXIT
+fi
+
 if [[ "$DO_ANY_FRONTEND" == 1 ]]; then
   echo "== installing workspace dependencies (pnpm) =="
   cd "$FRONTEND_SRC"
-  pnpm install --frozen-lockfile
+  pnpm install --frozen-lockfile --prefer-offline
   lap "pnpm install"
 fi
 
@@ -287,7 +373,7 @@ publish_dotnet() {
 build_frontend() {
   local app="$1"
   echo "== building frontend: ${app} =="
-  (cd "$FRONTEND_SRC" && pnpm --filter "@alumni/${app}" build)
+  (cd "$FRONTEND_SRC" && pnpm exec turbo run build --filter="@alumni/${app}" --concurrency=1)
   lap "build frontend ${app}"
 }
 
@@ -298,17 +384,14 @@ build_frontend() {
 # ---------------------------------------------------------------------------
 # SWAP: stop what is about to change, copy the finished builds in, start again.
 # ---------------------------------------------------------------------------
-echo "== stopping services for this deploy (target: $TARGET) =="
-STOP_LIST=()
-[[ "$DO_INSTITUTION_API" == 1 ]] && STOP_LIST+=(alumni-institution-api)
-[[ "$DO_MEMBER_API" == 1 ]] && STOP_LIST+=(alumni-member-api)
-[[ "$DO_PLATFORM_API" == 1 ]] && STOP_LIST+=(alumni-platform-api)
-[[ "$DO_OPERATIONS_WORKER" == 1 ]] && STOP_LIST+=(alumni-operations-worker)
-[[ "$DO_FRONTEND_INSTITUTION" == 1 ]] && STOP_LIST+=(alumni-frontend-institution)
-[[ "$DO_FRONTEND_MEMBER" == 1 ]] && STOP_LIST+=(alumni-frontend-member)
-[[ "$DO_FRONTEND_PLATFORM" == 1 ]] && STOP_LIST+=(alumni-frontend-platform)
-systemctl stop "${STOP_LIST[@]}" 2>/dev/null || true
-lap "stop"
+if [[ "$STOPPED_EARLY" == 0 ]]; then
+  echo "== stopping services for this deploy (target: $TARGET) =="
+  systemctl stop "${STOP_LIST[@]}" 2>/dev/null || true
+  lap "stop"
+fi
+
+# From here the live folders are being overwritten, so the old version can no longer be restored as is.
+OLD_VERSION_INTACT=0
 
 install_dotnet() {
   local name="$1"
@@ -325,10 +408,12 @@ install_frontend() {
   local app="$1"
   local out="$OUT/frontend-${app}"
   mkdir -p "$out"
-  rsync -a --delete "$FRONTEND_SRC/apps/${app}/.next/standalone/" "$out/"
-  rsync -a --delete "$FRONTEND_SRC/apps/${app}/.next/static/" "$out/apps/${app}/.next/static/"
-  rsync -a --delete "$FRONTEND_SRC/apps/${app}/public/" "$out/apps/${app}/public/"
-  chown -R www-data:www-data "$out"
+  rsync -a --delete --chown=www-data:www-data \
+    --filter="protect /apps/${app}/.next/static/***" \
+    --filter="protect /apps/${app}/public/***" \
+    "$FRONTEND_SRC/apps/${app}/.next/standalone/" "$out/"
+  rsync -a --delete --chown=www-data:www-data "$FRONTEND_SRC/apps/${app}/.next/static/" "$out/apps/${app}/.next/static/"
+  rsync -a --delete --chown=www-data:www-data "$FRONTEND_SRC/apps/${app}/public/" "$out/apps/${app}/public/"
 }
 [[ "$DO_FRONTEND_INSTITUTION" == 1 ]] && install_frontend institution
 [[ "$DO_FRONTEND_MEMBER" == 1 ]] && install_frontend member
