@@ -119,6 +119,8 @@ export default function MemberProfilePage() {
     yearOfEntry: "", house: "", studentStatus: "", prefectStatus: "", achievements: "",
   });
   const [clubsAndSocieties, setClubsAndSocieties] = useState<string[]>([]);
+  // Answers to the community's own questions (the ones asked at registration), editable here too.
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
   const [leadershipRoles, setLeadershipRoles] = useState<string[]>([]);
   const [connectionType, setConnectionType] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
@@ -215,7 +217,18 @@ export default function MemberProfilePage() {
     });
     setEmploymentStatus(profile.employmentStatus ?? "Employed");
     setShowOnAlumniMap(profile.showOnAlumniMap ?? false);
+    setCustomAnswers(profile.customFields ?? {});
   }
+
+  const customQuestions = navTheme?.registrationFields ?? [];
+  const customMut = useMutation({
+    mutationFn: () => updateMyProfile({ customFieldsJson: JSON.stringify(customAnswers) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["m-profile"] });
+      toast.success("Your answers are saved.");
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
 
   const updateMut = useMutation({
     mutationFn: () => updateMyProfile({
@@ -484,7 +497,7 @@ export default function MemberProfilePage() {
                   {profile.email}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-                  {!isCommunity && (
+                  {!isCommunity && profile.graduationYear > 0 && (
                     <Badge variant="outline" className="text-[12px] font-semibold">
                       Cohort {profile.graduationYear}
                     </Badge>
@@ -506,6 +519,46 @@ export default function MemberProfilePage() {
 
         {/* ── Main column ── */}
         <div className="space-y-5">
+
+        {customQuestions.length > 0 && (
+          <Card className="border-border/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">About you</CardTitle>
+              <CardDescription>Questions your community asks its members</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <form className="space-y-4" onSubmit={e => { e.preventDefault(); customMut.mutate(); }}>
+                {customQuestions.map(q => (
+                  <div key={q.id} className="space-y-1.5">
+                    <Label htmlFor={`cf-${q.id}`} className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      {q.label}
+                    </Label>
+                    {q.type === "select" ? (
+                      <select
+                        id={`cf-${q.id}`}
+                        value={customAnswers[q.id] ?? ""}
+                        onChange={e => setCustomAnswers(a => ({ ...a, [q.id]: e.target.value }))}
+                        className="h-11 w-full rounded-md border border-input bg-background px-3 text-[14px]"
+                      >
+                        <option value="">Select</option>
+                        {q.options.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <Input
+                        id={`cf-${q.id}`}
+                        maxLength={200}
+                        value={customAnswers[q.id] ?? ""}
+                        onChange={e => setCustomAnswers(a => ({ ...a, [q.id]: e.target.value }))}
+                        className="h-11 text-[14px]"
+                      />
+                    )}
+                  </div>
+                ))}
+                <Button type="submit" isLoading={customMut.isPending}>Save</Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Professional info ── */}
         <Card className="border-border/40 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
@@ -726,12 +779,14 @@ export default function MemberProfilePage() {
                     className="h-11 text-[14px]"
                   />
                 </div>
+                {profile.graduationYear > 0 && (
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                     Cohort year
                   </Label>
                   <Input value={profile.graduationYear} disabled className="h-11 text-[14px]" />
                 </div>
+                )}
                 <div className="space-y-1.5">
                   <Label htmlFor="house" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                     Group or chapter

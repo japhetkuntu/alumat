@@ -5,12 +5,12 @@ import { headers } from "next/headers";
 export const SITE_NAME = "AlumUnion";
 export const MARKETING_TITLE = "AlumUnion — Community Platform for Institutions";
 export const MARKETING_DESCRIPTION =
-  "AlumUnion gives institutions a home for their community — from alumni and former students to members, supporters, and stakeholders. Build, organize, and grow a structured community with a directory, events, fundraising, memberships, and more.";
+  "AlumUnion gives institutions a home for their community, whatever kind it is: members, supporters, and stakeholders. Build, organize, and grow a structured community with a directory, events, fundraising, memberships, and more.";
 export const MARKETING_KEYWORDS = [
   "institution community platform",
   "community platform for institutions",
   "alumni association software",
-  "school alumni community platform",
+  "club and society management software",
   "university community management platform",
   "member management platform",
   "institutional community portal",

@@ -45,6 +45,30 @@
         "http"
       ],
       "port": 5300
+    },
+    {
+      "name": "member-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "backend/src/ReservEase.Alumni.Member.Api",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5200
+    },
+    {
+      "name": "institution-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "backend/src/ReservEase.Alumni.Institution.Api",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5100
     }
   ]
 }

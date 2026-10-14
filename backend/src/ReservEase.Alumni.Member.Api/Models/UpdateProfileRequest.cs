@@ -33,4 +33,7 @@ public class UpdateProfileRequest
     public bool? ShowPhoneOnDirectory { get; set; }
     public bool? ShowCompanyOnDirectory { get; set; }
     public bool? ShowBioOnDirectory { get; set; }
+
+    /// <summary>Answers to the community's own questions as a JSON object (this request is multipart, so it travels as text). Null leaves them as they are.</summary>
+    public string? CustomFieldsJson { get; set; }
 }

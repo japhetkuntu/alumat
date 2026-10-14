@@ -57,7 +57,7 @@ export default function LeaderboardPage() {
       <PageHeader
         eyebrow="Community progress"
         title="Class leaderboard"
-        description="See how your graduating class ranks against others through membership, contributions, and events."
+        description="See how each year group ranks against the others through membership, contributions, and events."
       />
 
       {/* ── List ── */}
@@ -70,8 +70,8 @@ export default function LeaderboardPage() {
       ) : !entries?.length ? (
         <EmptyState
           icon={<Trophy size={40} />}
-          title="See how your class year is doing"
-          description="Class years are ranked by how many members have joined, how much they have given and how many attend events. Rankings appear once members pay dues, contribute and RSVP."
+          title="See how your year group is doing"
+          description="Year groups are ranked by how many members have joined, how much they have given and how many attend events. Rankings appear once members pay dues, contribute and RSVP."
         />
       ) : (
         <div className="space-y-2.5">
@@ -98,11 +98,11 @@ export default function LeaderboardPage() {
                         className="font-[family-name:var(--font-display)] font-bold"
                         style={{ fontSize: "1rem", color: "var(--foreground)" }}
                       >
-                        Class of {entry.yearGroup}
+                        Year group {entry.yearGroup}
                       </h3>
                       {isMyYear && (
                         <Badge variant="info" className="text-[12px] font-semibold">
-                          Your class
+                          Your year
                         </Badge>
                       )}
                     </div>

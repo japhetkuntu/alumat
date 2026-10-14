@@ -78,6 +78,7 @@ public class MemberManagementService(
                     badge_label = "Account Update",
                     action_url = memberPortalUrl,
                     action_label = actionLabel,
+                    pref_label = "your membership status changed",
                     brand_name = brandName,
                     brand_color = institution.PrimaryColorHex,
                     brand_secondary_color = institution.SecondaryColorHex,
@@ -170,7 +171,8 @@ public class MemberManagementService(
                 slug = institution.Slug.ToUpperInvariant();
             isCommunity = institution?.OrganizationType == OrganizationTypes.Community;
         }
-        return isCommunity ? $"{slug}-" : $"{slug}-{graduationYear}-";
+        // No year segment when the community has no years, or this member simply has none (Optional mode): never a "-0-".
+        return isCommunity || graduationYear is null or <= 0 ? $"{slug}-" : $"{slug}-{graduationYear}-";
     }
 
     public async Task<IApiResponse<PgPagedResult<MemberListItem>>> GetMembersAsync(MemberListFilter filter, AuthData admin)
@@ -194,9 +196,7 @@ public class MemberManagementService(
             var search = filter.Search is null ? null : string.Join(" ", filter.Search.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLower();
             var jobTitleContains = filter.JobTitleContains?.ToLower();
             var locationContains = filter.LocationContains?.ToLower();
-            var result = await memberRepo.GetPagedAsync(
-                filter.Page, filter.PageSize,
-                sortColumn: filter.SortColumn ?? "CreatedAt", sortDir: filter.SortDir ?? "desc",
+            System.Linq.Expressions.Expression<Func<Member, bool>> predicate =
                 f => (isSuper || yearGroups.Contains(f.GraduationYear) || communityMemberIds!.Contains(f.Id))
                   && (string.IsNullOrEmpty(filter.Status) ? f.Status != "Deleted" : f.Status == filter.Status)
                   && (string.IsNullOrEmpty(filter.DepartmentId) || f.DepartmentId == filter.DepartmentId)
@@ -204,7 +204,37 @@ public class MemberManagementService(
                   && (!filter.GraduationYearTo.HasValue || f.GraduationYear <= filter.GraduationYearTo.Value)
                   && (string.IsNullOrEmpty(jobTitleContains) || (f.JobTitle != null && f.JobTitle.ToLower().Contains(jobTitleContains)))
                   && (string.IsNullOrEmpty(locationContains) || (f.Location != null && f.Location.ToLower().Contains(locationContains)))
-                  && TextSearch.Matches(search, f.FirstName, f.LastName, (f.FirstName + " " + f.LastName), (f.LastName + " " + f.FirstName), f.MemberNumber, f.Email));
+                  && TextSearch.Matches(search, f.FirstName, f.LastName, (f.FirstName + " " + f.LastName), (f.LastName + " " + f.FirstName), f.MemberNumber, f.Email);
+
+            PgPagedResult<Member> result;
+            var answerContains = filter.AnswerContains?.Trim().ToLower();
+            if (string.IsNullOrEmpty(answerContains))
+            {
+                result = await memberRepo.GetPagedAsync(
+                    filter.Page, filter.PageSize,
+                    sortColumn: filter.SortColumn ?? "CreatedAt", sortDir: filter.SortDir ?? "desc",
+                    predicate);
+            }
+            else
+            {
+                // Answers are stored as a JSON document, which the database cannot search by value here, so the members that
+                // match every other filter are narrowed in memory and paged by hand. Fine at the size of one community.
+                var all = (await memberRepo.GetAllAsync(predicate))
+                    .Where(m => m.CustomFields is not null && m.CustomFields.Values.Any(v => v.ToLower().Contains(answerContains)))
+                    .ToList();
+                var ordered = (filter.SortDir ?? "desc") == "asc" ? all.OrderBy(m => m.CreatedAt) : all.OrderByDescending(m => m.CreatedAt);
+                var pageSize = Math.Max(1, filter.PageSize);
+                var page = Math.Max(1, filter.Page);
+                var slice = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                result = new PgPagedResult<Member>
+                {
+                    PageIndex = page, PageSize = pageSize, Count = slice.Count, TotalCount = all.Count,
+                    TotalPages = Math.Max(1, (int)Math.Ceiling(all.Count / (double)pageSize)),
+                    LowerBoundSize = all.Count == 0 ? 0 : (page - 1) * pageSize + 1,
+                    UpperBoundSize = (page - 1) * pageSize + slice.Count,
+                    Results = slice,
+                };
+            }
 
             var items = result.Results.Select(m => new MemberListItem(
                 m.Id, m.FirstName, m.LastName, m.Email, m.Phone,
@@ -250,7 +280,8 @@ public class MemberManagementService(
                 member.LinkedInUrl, member.Bio, member.ProfilePictureUrl,
                 member.StudentId, member.CreatedAt, member.LastLoginAt,
                 member.MemberNumber, member.IsEmailVerified, member.RejectionCount, member.BanReason,
-                member.IsMembershipActive, member.MembershipExpiry, member.MembershipYearsPaid, member.LastMembershipPaidAt);
+                member.IsMembershipActive, member.MembershipExpiry, member.MembershipYearsPaid, member.LastMembershipPaidAt,
+                member.CustomFields);
             return detail.ToOkApiResponse();
         }
         catch (Exception e)
@@ -350,6 +381,51 @@ public class MemberManagementService(
         {
             logger.LogError(e, "Error rejecting member {MemberId} by admin {AdminId}", memberId, admin.Id);
             return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to reject member");
+        }
+    }
+
+    private static Dictionary<string, string>? ImportedAnswers(InstitutionEntity? institution, Dictionary<string, string>? answers)
+    {
+        if (institution is null || institution.RegistrationFields.Count == 0 || answers is null || answers.Count == 0) return null;
+        var cleaned = RegistrationFieldRules.Validate(institution.RegistrationFields, answers, out var error, enforceRequired: false);
+        // A bad choice in one cell must not lose the whole row; the rest of the answers are kept.
+        if (cleaned is not null) return cleaned.Count > 0 ? cleaned : null;
+        var safe = institution.RegistrationFields
+            .Where(f => answers.TryGetValue(f.Id, out var v) && RegistrationFieldRules.Validate([f], new Dictionary<string, string> { [f.Id] = v }, out _, false) is not null)
+            .ToList();
+        var salvaged = RegistrationFieldRules.Validate(safe, answers, out _, enforceRequired: false);
+        return salvaged is { Count: > 0 } ? salvaged : null;
+    }
+
+    public async Task<IApiResponse<object>> UpdateMemberCustomFieldsAsync(string memberId, UpdateMemberCustomFieldsRequest request, AuthData admin)
+    {
+        try
+        {
+            var member = await memberRepo.GetByIdAsync(memberId);
+            if (member is null || !(await IsMemberInScopeAsync(admin, member)))
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
+            var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            var fields = institution?.RegistrationFields ?? [];
+            if (fields.Count == 0)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This community has no extra questions to answer.");
+
+            // Staff are correcting a record, so a required question may stay blank (the member may simply not have said).
+            var cleaned = RegistrationFieldRules.Validate(fields, request.Answers, out var error, enforceRequired: false);
+            if (cleaned is null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(error!);
+
+            member.CustomFields = cleaned.Count > 0 ? cleaned : null;
+            member.UpdatedAt = DateTime.UtcNow;
+            member.UpdatedBy = admin.Id;
+            await memberRepo.UpdateAsync(member);
+            await auditLog.LogAsync(admin, "Member Answers Updated", $"{member.FirstName} {member.LastName} ({member.Email})");
+            return new object().ToOkApiResponse("Answers updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error updating custom fields for member {MemberId} by admin {AdminId}", memberId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to update the answers");
         }
     }
 
@@ -492,6 +568,8 @@ public class MemberManagementService(
                         StudentId = item.StudentId,
                         GraduationYear = item.GraduationYear ?? 0,
                         DepartmentId = item.DepartmentId ?? string.Empty,
+                        // Answers that match one of the community's questions are kept; anything else in the file is ignored.
+                        CustomFields = ImportedAnswers(institution, item.CustomFields),
                         Status = "Active",
                         IsEmailVerified = true,
                         EmailVerificationToken = GenerateUrlToken("reset"),
@@ -616,7 +694,7 @@ public class MemberManagementService(
             var requiredCampaigns = await campaignRepo.GetAllAsync(c =>
                 c.IsMembershipCampaign
                 && c.MembershipYear.HasValue
-                && c.MembershipYear.Value >= member.GraduationYear
+                && c.MembershipYear.Value >= MembershipPeriods.RequiredFromYear(member.GraduationYear, member.CreatedAt)
                 && c.MembershipYear.Value <= currentYear);
 
             var allPaid = true;

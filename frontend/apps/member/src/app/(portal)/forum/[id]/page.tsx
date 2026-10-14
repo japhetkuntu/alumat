@@ -157,7 +157,7 @@ export default function ThreadDetailPage() {
       ) : (
         <div className="space-y-3">
           {posts.map((post, i) => {
-            const authorName = post.authorName ?? "Alumni member";
+            const authorName = post.authorName ?? "Member";
             const isOriginal = i === 0 && page === 1;
             const postedAt   = safeDate(post.createdAt);
 

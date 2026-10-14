@@ -92,7 +92,7 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <div className="space-y-2">
             <Label>Fundraiser title</Label>
-            <Input placeholder="e.g. Alumni Development Fund 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
+            <Input placeholder="e.g. Community Development Fund 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
           </div>
           <div className="space-y-2">
             <Label>Description</Label>

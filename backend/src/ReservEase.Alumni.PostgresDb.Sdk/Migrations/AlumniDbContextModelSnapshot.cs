@@ -841,6 +841,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Kind")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1858,6 +1861,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("CreatedBy")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("CustomFields")
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("date");
@@ -3591,6 +3597,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("CohortLabelPlural")
                         .HasColumnType("text");
 
+                    b.Property<bool>("CollectMemberId")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ContactEmail")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3618,6 +3627,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<bool>("EmailNotificationsEnabled")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("GraduationYearMode")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("HeroHeadline")
                         .HasColumnType("text");
@@ -3716,6 +3729,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<bool>("PromptMembershipActivationAtSignup")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("RegistrationFields")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<bool>("RequireStudentId")
                         .HasColumnType("boolean");
 
@@ -3770,6 +3787,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
+
+                    b.Property<bool>("WhatsAppBotEnabled")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("WhatsAppGroups")
                         .IsRequired()

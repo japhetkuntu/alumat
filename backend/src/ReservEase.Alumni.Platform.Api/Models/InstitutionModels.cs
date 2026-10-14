@@ -27,7 +27,14 @@ public class CreateInstitutionRequest
     /// me/organization-type endpoint; this just sets the starting value at onboarding.
     /// </summary>
     [RegularExpression("^(Alumni|Community)$")]
-    public string OrganizationType { get; set; } = "Alumni";
+    public string? OrganizationType { get; set; }
+
+    /// <summary>A starting point (see InstitutionTemplates): pre-fills whether graduation years are used and the wording for year groups. Nothing is locked.</summary>
+    public string? TemplateId { get; set; }
+
+    /// <summary>"Off", "Optional" or "Required". Overrides the template and the legacy OrganizationType when given. Nothing assumed (Off) when none is.</summary>
+    [RegularExpression("^(Off|Optional|Required)$")]
+    public string? GraduationYearMode { get; set; }
 
     /// <summary>Trial length in days (Institution.TrialEndsAt); 14 when omitted. Converting a Trial onboarding lead to Approved clears the trial end date.</summary>
     [Range(1, 180)]
@@ -90,7 +97,10 @@ public record InstitutionDetailResponse(
     decimal PlatformFeePercentage, decimal? PlatformFeeFlatThreshold, decimal? PlatformFeeFlatAmount, string? PaystackSubaccountCode,
     string? SettlementBankCode, string? SettlementBankName,
     string? SettlementAccountNumber, string? SettlementAccountName, decimal Revenue,
-    string MemberPortalUrl, string InstitutionPortalUrl);
+    string MemberPortalUrl, string InstitutionPortalUrl,
+    string GraduationYearMode = "Required",
+    // The community's own registration questions, so platform staff can see how it is set up.
+    List<RegistrationField>? RegistrationFields = null);
 
 public class UpdateInstitutionStatusRequest
 {
@@ -177,8 +187,12 @@ public class UpdateInstitutionAutoApproveMembersRequest
 /// </summary>
 public class UpdateInstitutionOrganizationTypeRequest
 {
-    [Required, RegularExpression("^(Alumni|Community)$")]
-    public string OrganizationType { get; set; } = string.Empty;
+    [RegularExpression("^(Alumni|Community)$")]
+    public string? OrganizationType { get; set; }
+
+    /// <summary>"Off", "Optional" or "Required". Preferred over OrganizationType, which is kept for older clients.</summary>
+    [RegularExpression("^(Off|Optional|Required)$")]
+    public string? GraduationYearMode { get; set; }
     [MaxLength(50)]
     public string? CohortLabel { get; set; }
     [MaxLength(50)]

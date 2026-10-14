@@ -3,7 +3,7 @@ import { InstitutionAgreementBody, INSTITUTION_AGREEMENT_DATE } from "@alumni/ui
 
 export const metadata = {
   title: "Institution Agreement",
-  description: "What a school, association or organization agrees to when it sets up a portal on AlumUnion, including how members' personal data is handled.",
+  description: "What a community or organization agrees to when it sets up a portal on AlumUnion, including how members' personal data is handled.",
 };
 
 export default function InstitutionAgreementPage() {

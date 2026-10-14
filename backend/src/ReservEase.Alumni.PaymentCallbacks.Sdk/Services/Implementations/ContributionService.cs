@@ -681,7 +681,7 @@ public class ContributionService : IContributionService
             var memberActivePolicy = institutionForPolicy?.MemberActivePolicy;
 
             var currentYear = DateTime.UtcNow.Year;
-            var memberGradYear = m.GraduationYear;
+            var memberGradYear = MembershipPeriods.RequiredFromYear(m.GraduationYear, m.CreatedAt);
 
             // All membership campaigns this member could owe, from grad year through current year
             var requiredCampaigns = (await campaignRepo.GetAllAsync(c =>
@@ -748,7 +748,7 @@ public class ContributionService : IContributionService
         {
             var currentYear = DateTime.UtcNow.Year;
             var memberEntity = await memberRepo.GetByIdAsync(member.Id);
-            var memberGradYear = memberEntity?.GraduationYear ?? 0;
+            var memberGradYear = memberEntity is null ? 0 : MembershipPeriods.RequiredFromYear(memberEntity.GraduationYear, memberEntity.CreatedAt);
 
             // Get all membership campaigns from grad year through current year (not future)
             var campaigns = await campaignRepo.GetAllAsync(c =>

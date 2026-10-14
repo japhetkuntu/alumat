@@ -46,7 +46,8 @@ public class PublicController : DefaultController
             institution.DisabledFeatures,
             institution.OrganizationType,
             institution.CohortLabel,
-            institution.CohortLabelPlural);
+            institution.CohortLabelPlural,
+            institution.GraduationYearMode);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }

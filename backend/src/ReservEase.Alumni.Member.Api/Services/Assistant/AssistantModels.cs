@@ -6,7 +6,10 @@ namespace ReservEase.Alumni.Member.Api.Services.Assistant;
 /// match is ever treated as the member: an unverified one is just a number somebody typed.
 /// </summary>
 public sealed record AssistantCommunity(
-    string InstitutionId, string Slug, string Name, string PortalUrl, string? MemberId = null, bool Verified = false, string? MemberFirstName = null)
+    string InstitutionId, string Slug, string Name, string PortalUrl, string? MemberId = null, bool Verified = false, string? MemberFirstName = null,
+    bool Allowed = true,
+    // False when the community has no graduation years, so there are no year-group walls to post to.
+    bool UsesYears = true)
 {
     public bool IsMember => Verified && MemberId is not null;
 }

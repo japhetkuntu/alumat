@@ -103,7 +103,7 @@ function RequestForm({
         </Label>
         <Input
           id="req-area"
-          placeholder="e.g. Career guidance, Mining Engineering…"
+          placeholder="e.g. Career guidance, Public speaking…"
           value={area}
           onChange={e => onAreaChange(e.target.value)}
           className="h-11 text-[14px]"
@@ -249,7 +249,7 @@ export default function MemberMentorshipPage() {
       <PageHeader
         eyebrow="Community · Growth"
         title="Mentorship"
-        description="Find a mentor, or give back by mentoring fellow alumni."
+        description="Find a mentor, or give back by mentoring fellow members."
       />
 
       {/* Tab nav */}
@@ -310,7 +310,7 @@ export default function MemberMentorshipPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {mentors.map(m => {
-                const mentorName = m.memberName ?? "Alumni Mentor";
+                const mentorName = m.memberName ?? "Mentor";
                 const isFull     = m.currentMenteeCount >= m.maxMentees;
                 const isSelected = requestForm.mentorProfileId === m.id;
                 const isSelf     = m.memberId === user?.id;
@@ -641,7 +641,7 @@ export default function MemberMentorshipPage() {
                   </Label>
                   <Input
                     id="mentor-area"
-                    placeholder="e.g. Mining Engineering, Environmental Science…"
+                    placeholder="e.g. Marketing, Environmental Science…"
                     value={mentorForm.area}
                     onChange={e => setMentorForm(f => ({ ...f, area: e.target.value }))}
                     className="h-11 text-[14px]"
@@ -729,7 +729,7 @@ export default function MemberMentorshipPage() {
                   <HeartHandshake size={20} style={{ color: "var(--primary)" }} />
                 </div>
                 <h3 className="text-[15px] font-semibold" style={{ color: "var(--foreground)" }}>
-                  Why alumni mentor
+                  Why members mentor
                 </h3>
                 <p className="text-[13px] mt-1 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
                   A few hours of your time can change the direction of a fellow member&apos;s career.

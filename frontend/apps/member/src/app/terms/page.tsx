@@ -2,7 +2,7 @@ import { LegalPageShell, Section } from "@/components/member/legal-page-shell";
 
 export const metadata = {
   title: "Terms of Service",
-  description: "The terms governing use of AlumUnion's alumni portal platform by institutions and their members.",
+  description: "The terms governing use of AlumUnion's community platform by organizations and their members.",
 };
 
 export default function TermsPage() {
@@ -11,8 +11,8 @@ export default function TermsPage() {
       <Section heading="1. Who these terms are between">
         <p>
           AlumUnion (&quot;the Platform&quot;, &quot;we&quot;, &quot;us&quot;) is a company registered in Ghana. We provide software
-          that lets schools, universities, alumni associations, and other community organizations (each an
-          &quot;Institution&quot;) run a branded alumni network for their own members and staff (each a
+          that lets any community or organization, such as an association, school, club, faith group or
+          professional body (each an &quot;Institution&quot;), run a branded community for its own members and staff (each a
           &quot;Member&quot;).
         </p>
         <p>
@@ -28,8 +28,8 @@ export default function TermsPage() {
         <p>
           Each Institution gets its own portal: a member-facing site (for example, at a subdomain of
           alumunion.com or the Institution&apos;s own custom domain) and a staff-facing admin console. Depending on
-          what the Institution turns on, a portal may include: a searchable alumni directory, an opt-in world
-          map showing where alumni are based, class notes and forum discussions, events with RSVP, a job board,
+          what the Institution turns on, a portal may include: a searchable member directory, an opt-in world
+          map showing where members are based, notes and forum discussions, events with RSVP, a job board,
           mentorship matching, news and announcements, membership renewal, and fundraisers or membership dues
           collected online (through our payment processor) or recorded manually by staff.
         </p>
@@ -43,8 +43,8 @@ export default function TermsPage() {
       <Section heading="3. Eligibility and accounts">
         <p>
           You must be at least 18 years old to create a Member account. Member registration is intended for
-          alumni, students, and staff of a participating Institution. An Institution may ask for a graduation
-          year, student ID, or department to confirm you belong to their community, and may require a staff
+          people who belong to a participating Institution. An Institution may ask for details such as a graduation
+          year, member or student ID, department, or other questions of its own to confirm you belong to their community, and may require a staff
           member to approve new registrations before an account becomes active.
         </p>
         <p>
@@ -129,9 +129,9 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section heading="8. Alumni Map">
+      <Section heading="8. Member Map">
         <p>
-          The Alumni Map plots Members by general location (city/country as you entered it) so fellow alumni can
+          The Member Map plots Members by general location (city/country as you entered it) so fellow members can
           see where the community is based. It is opt-in and off by default. Your location is never shown on
           the map unless you turn the setting on yourself in your profile, and you can turn it back off at any
           time, which removes you from the map immediately.
@@ -141,7 +141,7 @@ export default function TermsPage() {
       <Section heading="9. Suspension and termination">
         <p>
           An Institution can suspend or remove a Member account from its own portal (for example, for breaching
-          community guidelines, or because someone is confirmed not to be an alumnus). We can suspend or
+          community guidelines, or because someone is confirmed not to belong to the community). We can suspend or
           terminate access to the Platform for an Institution or a Member who breaches these Terms, engages in
           fraud, or creates security or legal risk for the Platform or other users. You may stop using the
           Platform, or ask an Institution to delete your Member account, at any time. You can also close your own
@@ -188,7 +188,7 @@ export default function TermsPage() {
           <a href="mailto:support@alumunion.com" className="font-semibold underline underline-offset-2" style={{ color: "var(--primary)" }}>
             support@alumunion.com
           </a>. For anything specific to your own Institution&apos;s portal (like membership dues or event
-          details), the fastest route is usually your Institution&apos;s own alumni office, since they run that
+          details), the fastest route is usually your Institution&apos;s own administrators, since they run that
           side of things directly.
         </p>
       </Section>

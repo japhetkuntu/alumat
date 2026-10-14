@@ -75,4 +75,76 @@ public class PlatformWhatsAppSwitchTests
         Assert.True(await gate.IsOnAsync());
         audit.Verify(a => a.LogAsync("staff-1", "Ama Admin", It.Is<string>(m => m.Contains("ON")), "Platform settings"), Times.Once);
     }
+
+    // ── Per institution ──────────────────────────────────────────────────
+
+    private static (WhatsAppHealthService service, string db, Mock<IAuditLogService> audit) CreateHealth(params object[] seed)
+    {
+        var name = TestDb.NewName();
+        using (var db = TestDb.Create(name)) { foreach (var e in seed) db.Add(e); db.SaveChanges(); }
+        var ctx = TestDb.Create(name);
+        var audit = new Mock<IAuditLogService>();
+        var service = new WhatsAppHealthService(Mock.Of<ReservEase.Alumni.Whatsapp.Sdk.Services.IWhatsAppProvider>(),
+            Microsoft.Extensions.Options.Options.Create(new ReservEase.Alumni.Whatsapp.Sdk.Options.WaSenderConfig()),
+            new AlumniPgRepository<Institution>(ctx), new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>(ctx),
+            new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.NotificationPreference>(ctx),
+            new ConfigurationBuilder().Build(), audit.Object, NullLogger<WhatsAppHealthService>.Instance);
+        return (service, name, audit);
+    }
+
+    [Fact]
+    public async Task Deactivating_one_institution_changes_only_that_one_and_is_audited_once()
+    {
+        var (service, db, audit) = CreateHealth(
+            new Institution { Id = "i1", Slug = "alpha", Name = "Alpha", Status = "Active" },
+            new Institution { Id = "i2", Slug = "bravo", Name = "Bravo", Status = "Active" });
+
+        var off = await service.SetInstitutionAsync("i1", false, "staff-1", "Ama Admin");
+        await service.SetInstitutionAsync("i1", false, "staff-1", "Ama Admin");   // no change, no second entry
+
+        Assert.False(off.Data!.PlatformEnabled);
+        using var ctx = TestDb.Create(db);
+        Assert.False(ctx.Institutions.Single(i => i.Id == "i1").WhatsAppBotEnabled);
+        Assert.True(ctx.Institutions.Single(i => i.Id == "i2").WhatsAppBotEnabled);
+        audit.Verify(a => a.LogAsync("staff-1", "Ama Admin", It.Is<string>(m => m.Contains("deactivated") && m.Contains("SMS and email")), "Alpha"), Times.Once);
+
+        var back = await service.SetInstitutionAsync("i1", true, "staff-1", "Ama Admin");
+        Assert.True(back.Data!.PlatformEnabled);
+        audit.Verify(a => a.LogAsync("staff-1", "Ama Admin", It.Is<string>(m => m.StartsWith("activated")), "Alpha"), Times.Once);
+    }
+
+    [Fact]
+    public async Task The_list_shows_each_institutions_platform_switch_its_own_opt_out_and_adoption()
+    {
+        var (service, _, _) = CreateHealth(
+            new Institution { Id = "i1", Slug = "alpha", Name = "Alpha", Status = "Active", WhatsAppBotEnabled = false },
+            new Institution { Id = "i2", Slug = "bravo", Name = "Bravo", Status = "Active", DisabledFeatures = [InstitutionFeatures.WhatsApp] },
+            new Institution { Id = "i3", Slug = "gone", Name = "Gone", Status = "Suspended" },
+            new ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member { Id = "m1", InstitutionId = "i2", Status = "Active", PhoneVerifiedAt = DateTime.UtcNow, Email = "a@x.com", FirstName = "A", LastName = "B" });
+
+        var rows = (await service.ListInstitutionsAsync()).Data!;
+
+        Assert.Equal(["Alpha", "Bravo"], rows.Select(r => r.Name));
+        Assert.Equal((false, false), (rows[0].PlatformEnabled, rows[0].InstitutionOptedOut));
+        Assert.Equal((true, true, 1, 1), (rows[1].PlatformEnabled, rows[1].InstitutionOptedOut, rows[1].Connected, rows[1].ActiveMembers));
+    }
+
+    [Fact]
+    public async Task An_unknown_institution_is_not_found()
+    {
+        var (service, _, _) = CreateHealth();
+
+        var r = await service.SetInstitutionAsync("nope", false, "s", "n");
+
+        Assert.Equal(404, r.Code);
+    }
+
+    [Fact]
+    public void Whatsapp_runs_for_an_institution_only_when_neither_the_platform_nor_the_institution_has_it_off()
+    {
+        Assert.True(new Institution().IsWhatsAppAllowed());
+        Assert.False(new Institution { WhatsAppBotEnabled = false }.IsWhatsAppAllowed());
+        Assert.False(new Institution { DisabledFeatures = [InstitutionFeatures.WhatsApp] }.IsWhatsAppAllowed());
+        Assert.False(new Institution { WhatsAppBotEnabled = false, DisabledFeatures = [InstitutionFeatures.WhatsApp] }.IsWhatsAppAllowed());
+    }
 }

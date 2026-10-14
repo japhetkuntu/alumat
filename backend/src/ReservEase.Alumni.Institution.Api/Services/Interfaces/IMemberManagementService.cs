@@ -14,6 +14,7 @@ public interface IMemberManagementService
     Task<IApiResponse<object>> UnbanMemberAsync(string memberId, AuthData admin);
     Task<IApiResponse<ImportMembersResult>> ImportMembersAsync(ImportMembersRequest request, AuthData admin);
     Task<IApiResponse<object>> ActivateMembershipAsync(string memberId, ActivateMembershipRequest request, AuthData admin);
+    Task<IApiResponse<object>> UpdateMemberCustomFieldsAsync(string memberId, UpdateMemberCustomFieldsRequest request, AuthData admin);
 }
 
 public record ImportMembersResult(int Imported, int Skipped, List<string> Errors);
@@ -32,4 +33,6 @@ public record MemberDetailItem(
     string? LinkedInUrl, string? Bio, string? ProfilePictureUrl,
     string? StudentId, DateTime CreatedAt, DateTime? LastLoginAt,
     string? MemberNumber, bool IsEmailVerified, int RejectionCount, string? BanReason,
-    bool IsMembershipActive, DateTime? MembershipExpiry, int MembershipYearsPaid, DateTime? LastMembershipPaidAt);
+    bool IsMembershipActive, DateTime? MembershipExpiry, int MembershipYearsPaid, DateTime? LastMembershipPaidAt,
+    // Answers to the community's own registration questions, keyed by question id.
+    Dictionary<string, string>? CustomFields = null);

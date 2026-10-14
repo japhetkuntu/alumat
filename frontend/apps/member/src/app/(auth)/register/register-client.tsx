@@ -56,7 +56,7 @@ const gradYears = Array.from(
 // password to collect (this account only ever signs in with Google), so the
 // password fields are dropped from validation entirely rather than just
 // hidden, which would otherwise still block submission.
-function buildSchema(requireStudentId: boolean, googleMode: boolean, collectGraduationYear: boolean) {
+function buildSchema(requireStudentId: boolean, googleMode: boolean, yearMode: "Off" | "Optional" | "Required") {
   const base = z.object({
     firstName: z.string().min(2, "Required"),
     lastName: z.string().min(2, "Required"),
@@ -64,10 +64,13 @@ function buildSchema(requireStudentId: boolean, googleMode: boolean, collectGrad
     phone: z.string()
       .min(9, "Enter a valid mobile number")
       .regex(/^[+0-9\s-]+$/, "Enter a valid mobile number"),
-    studentId: requireStudentId ? z.string().min(1, "Student ID is required") : z.string().optional(),
-    graduationYear: collectGraduationYear
+    studentId: requireStudentId ? z.string().min(1, "Please enter your member or student ID") : z.string().optional(),
+    // Required: a real year. Optional: blank is fine, but a year that is given must be believable. Off: never asked.
+    graduationYear: yearMode === "Required"
       ? z.coerce.number().min(GRAD_YEAR_START).max(currentYear)
-      : z.coerce.number().optional(),
+      : yearMode === "Optional"
+        ? z.preprocess((v) => (v === "" || v === null || v === 0 ? undefined : v), z.coerce.number().min(GRAD_YEAR_START).max(currentYear).optional())
+        : z.coerce.number().optional(),
     departmentId: z.string().optional(),
     program: z.string().optional(),
     password: googleMode ? z.string().optional() : z.string().min(8, "Password must be at least 8 characters"),
@@ -409,7 +412,7 @@ function RegisterForm() {
       const res = await publicMemberClient.get<{ data: {
         requireStudentId: boolean; promptMembershipActivationAtSignup: boolean;
         programOfStudyEnabled: boolean; programsOfStudy: string[];
-        organizationType: "Alumni" | "Community"; disabledFeatures?: string[]; whatsAppAssistantAvailable?: boolean;
+        organizationType: "Alumni" | "Community"; graduationYearMode?: "Off" | "Optional" | "Required"; collectMemberId?: boolean; registrationFields?: { id: string; label: string; type: "text" | "select"; required: boolean; options: string[] }[]; disabledFeatures?: string[]; whatsAppAssistantAvailable?: boolean;
       } }>("/public/institution/theme");
       return res.data.data;
     },
@@ -438,10 +441,23 @@ function RegisterForm() {
   const requireStudentId = theme?.requireStudentId ?? true;
   const programOfStudyEnabled = theme?.programOfStudyEnabled ?? false;
   const programsOfStudy = theme?.programsOfStudy ?? [];
-  // Community institutions have no graduation years — skip the "Alumni
-  // information" sub-step entirely (see nextFromStep1/totalSteps below).
-  // Defaults to Alumni behavior while the theme is still loading.
-  const isCommunity = theme?.organizationType === "Community";
+  // When the community uses no graduation years, the membership-details sub-step is skipped entirely
+  // (see nextFromStep1/totalSteps below). Defaults to asking for one while the theme is still loading.
+  // Whether this community asks for a graduation year at all. Older answers carry only the type, so fall back to that.
+  const yearMode: "Off" | "Optional" | "Required" = theme?.graduationYearMode ?? (theme?.organizationType === "Community" ? "Off" : "Required");
+  const collectMemberId = theme?.collectMemberId ?? true;
+  // Nothing to ask on the details step at all: no year and no member ID (a program list still rides on the step when one of those shows).
+  const customQuestions = theme?.registrationFields ?? [];
+  const isCommunity = yearMode === "Off" && !collectMemberId && customQuestions.length === 0;
+  // Answers to the community's own questions. Kept outside the form schema because the questions differ per community.
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
+  const [customErrors, setCustomErrors] = useState<Record<string, string>>({});
+  function customAnswersAreComplete() {
+    const missing: Record<string, string> = {};
+    for (const q of customQuestions) if (q.required && !(customAnswers[q.id] ?? "").trim()) missing[q.id] = "Required";
+    setCustomErrors(missing);
+    return Object.keys(missing).length === 0;
+  }
   const CUSTOM_PROGRAM_VALUE = "__custom__";
   const [programMode, setProgramMode] = useState<"select" | "custom">("select");
   // Opt-in per institution (default off) — most institutions don't want a
@@ -449,11 +465,11 @@ function RegisterForm() {
   // approved. Defaults to false (not shown) until the real value loads.
   // Activation is a payment, so there's nothing to ask for when the institution has Contributions switched off.
   const promptMembershipActivation = (theme?.promptMembershipActivationAtSignup ?? false) && !theme?.disabledFeatures?.includes("Contributions");
-  // The student ID is collected on the "Alumni information" sub-step, which Community organizations skip, so
+  // The student ID is collected on the membership-details sub-step, which communities without graduation years skip, so
   // requiring it there would block the form on a field nobody can fill in.
   const schema = useMemo(
-    () => buildSchema(requireStudentId && !isCommunity, !!googleIdToken, !isCommunity),
-    [requireStudentId, googleIdToken, isCommunity],
+    () => buildSchema(requireStudentId && collectMemberId && !isCommunity, !!googleIdToken, yearMode),
+    [requireStudentId, collectMemberId, googleIdToken, yearMode, isCommunity],
   );
   const totalSteps = isCommunity ? 2 : 3;
   // formSubStep stays 1|2|3 internally (Community orgs just skip 2); this is
@@ -497,7 +513,7 @@ function RegisterForm() {
 
   async function onSubmit(data: FormData) {
     try {
-      await memberClient.post("/auth/register", referralCode ? { ...data, referralCode, ...(communityId ? { communityId } : {}), ...(inviteChannel ? { channel: inviteChannel } : {}) } : data);
+      await memberClient.post("/auth/register", { ...data, customFields: customAnswers, ...(referralCode ? { referralCode, ...(communityId ? { communityId } : {}), ...(inviteChannel ? { channel: inviteChannel } : {}) } : {}) });
       setEmail(data.email);
       setStep("otp");
       setResendsLeft(3);
@@ -519,6 +535,7 @@ function RegisterForm() {
         graduationYear: data.graduationYear,
         departmentId: data.departmentId,
         program: data.program,
+        customFields: customAnswers,
         acceptedTerms: data.acceptedTerms,
         ...(referralCode ? { referralCode } : {}),
         ...(referralCode && communityId ? { communityId } : {}),
@@ -595,7 +612,7 @@ function RegisterForm() {
   async function nextFromStep1() {
     const ok = await trigger(["firstName", "lastName", "email", "phone", "acceptedTerms"]);
     if (!ok) return;
-    // Community institutions skip the "Alumni information" sub-step entirely
+    // Communities without graduation years skip the membership-details sub-step entirely
     // (formSubStep stays 1|2|3 internally; step 2's back button also returns
     // here — see its onClick below). Google mode also skips the password
     // sub-step — for a Community org that means Google signup submits right
@@ -608,7 +625,8 @@ function RegisterForm() {
   }
   async function nextFromStep2() {
     const ok = await trigger(["studentId", "graduationYear"]);
-    if (!ok) return;
+    const customOk = customAnswersAreComplete();
+    if (!ok || !customOk) return;
     // Google mode skips the password sub-step (and the OTP step after it)
     // entirely — submit straight from here instead of advancing to step 3.
     if (googleIdToken) { await handleSubmit(onSubmitGoogle)(); return; }
@@ -666,7 +684,7 @@ function RegisterForm() {
               style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}
             >
               {formSubStep === 1 && "Personal details"}
-              {formSubStep === 2 && "Alumni information"}
+              {formSubStep === 2 && "A few more details"}
               {formSubStep === 3 && "Secure your account"}
             </h1>
             <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>
@@ -800,26 +818,26 @@ function RegisterForm() {
                 </div>
                 <Button type="button" className="w-full text-[14px] font-semibold mt-1" style={{ height: 44 }}
                   onClick={nextFromStep1} isLoading={isCommunity && !!googleIdToken && submittingGoogle} loadingText="Creating account…">
-                  {isCommunity ? (googleIdToken ? "Create account" : "Next: create password") : "Next: alumni details"} <ChevronRight size={15} className="ml-1" />
+                  {isCommunity ? (googleIdToken ? "Create account" : "Next: create password") : "Next: a few more details"} <ChevronRight size={15} className="ml-1" />
                 </Button>
               </div>
             )}
 
-            {/* ── Sub-step 2: Alumni info ── */}
+            {/* ── Sub-step 2: Membership details ── */}
             {formSubStep === 2 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
-                <div className="space-y-1.5">
+                {collectMemberId && <div className="space-y-1.5">
                   <Label htmlFor="studentId" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Student ID{!requireStudentId && <span className="font-normal text-muted-foreground"> (optional)</span>}
+                    Member or student ID{!requireStudentId && <span className="font-normal text-muted-foreground"> (optional)</span>}
                   </Label>
                   <Input id="studentId" placeholder="ENG/20/0001" autoFocus error={!!errors.studentId}
                     className="h-11 text-[14px]" {...register("studentId")} />
                   <FieldError message={errors.studentId?.message} />
-                </div>
+                </div>}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
+                  {yearMode !== "Off" && <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                      Graduation year
+                      Graduation year{yearMode === "Optional" && <span className="font-normal text-muted-foreground"> (optional)</span>}
                     </Label>
                     <FormSelect
                       value={watch("graduationYear") ? String(watch("graduationYear")) : ""}
@@ -828,7 +846,7 @@ function RegisterForm() {
                       options={graduationYearOptions}
                     />
                     <FieldError message={errors.graduationYear?.message} />
-                  </div>
+                  </div>}
                   {departments.length > 0 && (
                     <div className="space-y-1.5">
                       <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
@@ -887,6 +905,26 @@ function RegisterForm() {
                     </div>
                   )}
                 </div>
+                {customQuestions.map((q) => (
+                  <div key={q.id} className="space-y-1.5">
+                    <Label htmlFor={`cf-${q.id}`} className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
+                      {q.label}{!q.required && <span className="font-normal text-muted-foreground"> (optional)</span>}
+                    </Label>
+                    {q.type === "select" ? (
+                      <FormSelect
+                        value={customAnswers[q.id] ?? ""}
+                        onValueChange={(v) => setCustomAnswers((a) => ({ ...a, [q.id]: v }))}
+                        placeholder="Select"
+                        className="sm:w-full"
+                        options={q.options.map((o) => ({ value: o, label: o }))}
+                      />
+                    ) : (
+                      <Input id={`cf-${q.id}`} maxLength={200} className="h-11 text-[14px]" value={customAnswers[q.id] ?? ""}
+                        onChange={(e) => setCustomAnswers((a) => ({ ...a, [q.id]: e.target.value }))} />
+                    )}
+                    <FieldError message={customErrors[q.id]} />
+                  </div>
+                ))}
                 <div className="flex gap-3 mt-1">
                   <Button type="button" variant="outline" className="flex-1 text-[14px] font-medium" style={{ height: 44 }}
                     onClick={() => setFormSubStep(1)}>

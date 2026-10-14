@@ -37,6 +37,12 @@ public class Community : BaseEntity, ITenantScoped
     public string? CoverImageUrl { get; set; }
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// What this group is called in this community: "Chapter", "Committee", "Department", "Ministry", "Team"… Free text the
+    /// administrators choose, never a fixed list. Null reads as a plain "Group".
+    /// </summary>
+    public string? Kind { get; set; }
+
     /// <summary>Optional external channels (e.g. the community's WhatsApp group). Null = none connected.</summary>
     public List<CommunityChannel>? ExternalChannels { get; set; }
 }

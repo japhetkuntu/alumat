@@ -46,7 +46,7 @@ export default function BusinessDirectoryPage() {
       <PageHeader
         eyebrow="Community"
         title="Business Directory"
-        description="Discover and support businesses run by fellow alumni."
+        description="Discover and support businesses run by fellow members."
       >
         <Link href="/business-directory/mine">
           <Button size="sm" className="font-semibold gap-1.5">

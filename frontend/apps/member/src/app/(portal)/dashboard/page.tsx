@@ -99,7 +99,7 @@ function MembershipCard({
               ? `${profile.firstName} ${profile.lastName ?? ""}`
               : "—"}
           </p>
-          {profile?.graduationYear && (
+          {profile?.graduationYear != null && profile.graduationYear > 0 && (
             <p className="text-white/70 text-[12.5px] sm:text-[14px]">
               Class of {profile.graduationYear}
               {profile.departmentName ? ` · ${profile.departmentName}` : ""}
@@ -828,7 +828,7 @@ export default function MemberDashboardPage() {
               <div>
                 <CardTitle className="text-[15px] font-bold">Open fundraisers</CardTitle>
                 <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-                  Alumni-led fundraisers you can contribute to
+                  Member-led fundraisers you can contribute to
                 </p>
               </div>
               <Link href="/contributions">

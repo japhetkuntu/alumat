@@ -187,7 +187,7 @@ export default function MembershipCertificatePage() {
     );
   }
 
-  const memberName     = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "Alumni Member";
+  const memberName     = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "Member";
   const memberNumber   = profile?.memberNumber ?? profile?.id?.slice(0, 8).toUpperCase() ?? "";
   const graduationYear = profile?.graduationYear;
   const paymentDate    = selected?.contribution.confirmedAt ?? selected?.contribution.createdAt;
@@ -339,7 +339,7 @@ export default function MembershipCertificatePage() {
                 className="font-bold tracking-wider"
                 style={{ fontSize: "clamp(7px, 2.1cqw, 20px)", color: "var(--brand-primary-800, var(--primary))" }}
               >
-                {(theme?.displayName ?? "ALUMNI").toUpperCase()} ALUMNI ASSOCIATION
+                {(theme?.displayName ?? "COMMUNITY").toUpperCase()}
               </h2>
             </div>
 

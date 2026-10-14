@@ -16,6 +16,9 @@ public interface IMemberAuthService
     Task<IApiResponse<MemberTokenResponse>> LoginAsync(LoginRequest request);
     Task<IApiResponse<MemberTokenResponse>> GoogleLoginAsync(GoogleLoginRequest request);
     Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+
+    /// <summary>A signed-in session for an account that has already been proved by other means (switching communities).</summary>
+    Task<IApiResponse<MemberTokenResponse>> CreateSessionAsync(ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member member);
     Task<IApiResponse<MemberProfileResponse>> GetProfileAsync(AuthData auth);
     Task<IApiResponse<MemberProfileResponse>> UpdateProfileAsync(UpdateProfileRequest request, AuthData auth);
     Task<IApiResponse<object>> ChangePasswordAsync(ChangePasswordRequest request, AuthData auth);

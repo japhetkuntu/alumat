@@ -54,6 +54,45 @@ public class WhatsAppGroupServiceTests
         return ctx.Institutions.Single(i => i.Id == Tenant);
     }
 
+    // ── Deactivated by the platform ──────────────────────────────────────
+
+    [Fact]
+    public async Task When_the_platform_has_deactivated_this_institution_the_overview_says_so_and_publishing_is_refused()
+    {
+        var (s, db, _) = Create(true, [Group("g1", WhatsAppGroupStatuses.Active)]);
+        using (var ctx = TestDb.Create(db, Tenant)) { ctx.Institutions.Single(i => i.Id == Tenant).WhatsAppBotEnabled = false; ctx.SaveChanges(); }
+        var fresh = Create(true, [Group("g1", WhatsAppGroupStatuses.Active)]);
+        using (var ctx = TestDb.Create(fresh.db, Tenant)) { ctx.Institutions.Single(i => i.Id == Tenant).WhatsAppBotEnabled = false; ctx.SaveChanges(); }
+
+        // A service built over the changed database (the first one's context predates the change).
+        var rig = Create(true, [Group("g1", WhatsAppGroupStatuses.Active)]);
+        using (var ctx = TestDb.Create(rig.db, Tenant)) { ctx.Institutions.Single(i => i.Id == Tenant).WhatsAppBotEnabled = false; ctx.SaveChanges(); }
+        var service = Rebuild(rig.db);
+
+        var overview = (await service.GetOverviewAsync()).Data!;
+        Assert.False(overview.PlatformEnabled);
+        Assert.True(overview.DeactivatedByPlatform);
+
+        var publish = await service.PublishAsync(new WhatsAppPublishRequest("event", "e1", "g1", null), Admin);
+        Assert.Equal(400, publish.Code);
+        Assert.Contains("switched off for your institution by AlumUnion", publish.Message);
+    }
+
+    private static WhatsAppGroupService Rebuild(string db)
+    {
+        var ctx = TestDb.Create(db, Tenant);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["WaSenderConfig:Enabled"] = "true", ["WaSenderConfig:AssistantNumber"] = "233200000000", ["MemberPortalBaseDomain"] = "alumunion.test",
+        }).Build();
+        return new WhatsAppGroupService(
+            new AlumniPgRepository<PostgresDb.Sdk.Entities.Institution>(ctx), new AlumniPgRepository<Community>(ctx), new AlumniPgRepository<AlumniEvent>(ctx),
+            new AlumniPgRepository<Job>(ctx), new AlumniPgRepository<NewsPost>(ctx), new AlumniPgRepository<Campaign>(ctx),
+            new AlumniPgRepository<MemberEntity>(ctx), new AlumniPgRepository<NotificationPreference>(ctx), new AlumniPgRepository<Referral>(ctx),
+            TestDb.Tenant(Tenant, "umat"), Mock.Of<IInstitutionAuditLogService>(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), config,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WhatsAppGroupService>.Instance);
+    }
+
     // ── Adoption and invite links ────────────────────────────────────────
 
     [Fact]

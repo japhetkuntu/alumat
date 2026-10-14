@@ -316,7 +316,7 @@ public class ProcessContributionCallbackWorkflow : IProcessContributionCallbackW
 
         var now = Workflow.UtcNow;
         var currentYear = now.Year;
-        var gradYear = memberToUpdate.GraduationYear;
+        var gradYear = MembershipPeriods.RequiredFromYear(memberToUpdate.GraduationYear, memberToUpdate.CreatedAt);
 
         var reeval = await Workflow.ExecuteActivityAsync(
             (ContributionCallbackActivities a) => a.LoadMembershipReevalDataAsync(institutionId, memberId, gradYear, currentYear),

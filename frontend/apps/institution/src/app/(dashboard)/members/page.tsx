@@ -21,7 +21,7 @@ import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { PhoneInput } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
-import { getMembers, approveMember, rejectMember, banMember, unbanMember, importMembers, type ImportMemberItem } from "@/lib/institution-api";
+import { getMembers, approveMember, rejectMember, banMember, unbanMember, importMembers, getInstitutionProfile, type ImportMemberItem } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { TableSkeleton } from "@alumni/ui";
 import type { MemberStatus } from "@/types";
@@ -43,9 +43,13 @@ const CSV_TEMPLATE_COMMUNITY = [
   `Ama,Owusu,ama@example.com,,,`,
 ].join("\n");
 
-function downloadCsvTemplate(isCommunity: boolean) {
+function downloadCsvTemplate(isCommunity: boolean, questions: { label: string }[] = []) {
+  // The community's own questions become extra columns, headed by the question itself.
+  const quote = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const base = isCommunity ? CSV_TEMPLATE_COMMUNITY : CSV_TEMPLATE;
+  const withQuestions = questions.length === 0 ? base : base.split("\n").map((line, i) => line + questions.map((q) => (i === 0 ? "," + quote(q.label) : ",")).join("")).join("\n");
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([isCommunity ? CSV_TEMPLATE_COMMUNITY : CSV_TEMPLATE], { type: "text/csv" }));
+  a.href = URL.createObjectURL(new Blob([withQuestions], { type: "text/csv" }));
   a.download = "member-upload-template.csv";
   a.click();
 }
@@ -98,7 +102,7 @@ interface CsvParseResult {
   errors: string[];
 }
 
-function parseMembersCsv(text: string, isCommunity: boolean): CsvParseResult {
+function parseMembersCsv(text: string, isCommunity: boolean, yearRequired: boolean, questions: { id: string; label: string }[] = []): CsvParseResult {
   const table = parseCsvText(text);
   if (table.length === 0) return { rows: [], errors: ["The file is empty."] };
 
@@ -109,7 +113,14 @@ function parseMembersCsv(text: string, isCommunity: boolean): CsvParseResult {
     if (field) columnFor[field] = i;
   });
 
-  const requiredColumns = isCommunity
+  // A column headed with one of the community's questions (or its id) carries that answer.
+  const questionColumns: { id: string; index: number }[] = [];
+  headerRow.forEach((h, i) => {
+    const q = questions.find((x) => normalizeHeader(x.label) === h || normalizeHeader(x.id) === h);
+    if (q && !HEADER_ALIASES[h]) questionColumns.push({ id: q.id, index: i });
+  });
+
+  const requiredColumns = !yearRequired
     ? (["firstName", "lastName", "email"] as const)
     : (["firstName", "lastName", "email", "graduationYear"] as const);
   const missing = requiredColumns.filter((f) => columnFor[f] === undefined);
@@ -128,7 +139,7 @@ function parseMembersCsv(text: string, isCommunity: boolean): CsvParseResult {
     const graduationYearRaw = get("graduationYear");
     const graduationYear = Number(graduationYearRaw);
 
-    if (!firstName || !lastName || !email || (!isCommunity && (!graduationYearRaw || !Number.isFinite(graduationYear)))) {
+    if (!firstName || !lastName || !email || (yearRequired && (!graduationYearRaw || !Number.isFinite(graduationYear)))) {
       errors.push(`Row ${r + 1}: missing or invalid required field(s)`);
       continue;
     }
@@ -137,6 +148,9 @@ function parseMembersCsv(text: string, isCommunity: boolean): CsvParseResult {
       graduationYear: graduationYearRaw && Number.isFinite(graduationYear) ? graduationYear : undefined,
       phone: get("phone") || undefined,
       studentId: get("studentId") || undefined,
+      customFields: questionColumns.length > 0
+        ? Object.fromEntries(questionColumns.map((c) => [c.id, (cells[c.index] ?? "").trim()]).filter(([, v]) => v))
+        : undefined,
     });
   }
   return { rows, errors };
@@ -169,6 +183,7 @@ type ModalState =
 export default function AdminMembersPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
+  const [answer, setAnswer] = useState("");
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<MemberStatus | "">(() => (searchParams.get("status") as MemberStatus | null) ?? "");
   const [page, setPage] = useState(1);
@@ -186,10 +201,14 @@ export default function AdminMembersPage() {
 
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
+  // A year is only demanded when the community made it a requirement; Optional accepts rows without one.
+  const { data: institutionProfile } = useQuery({ queryKey: ["institution-profile"], queryFn: getInstitutionProfile });
+  const questions = institutionProfile?.registrationFields ?? [];
+  const yearRequired = (navTheme?.graduationYearMode ?? (isCommunity ? "Off" : "Required")) === "Required";
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["admin-members", search, statusFilter, page],
-    queryFn: () => getMembers({ search: search || undefined, status: statusFilter || undefined, page, pageSize }),
+    queryKey: ["admin-members", search, answer, statusFilter, page],
+    queryFn: () => getMembers({ search: search || undefined, answerContains: answer || undefined, status: statusFilter || undefined, page, pageSize }),
     placeholderData: (prev) => prev,
   });
 
@@ -254,7 +273,7 @@ export default function AdminMembersPage() {
     setCsvFileName(file.name);
     setCsvParsed(null);
     const reader = new FileReader();
-    reader.onload = () => setCsvParsed(parseMembersCsv(String(reader.result ?? ""), isCommunity));
+    reader.onload = () => setCsvParsed(parseMembersCsv(String(reader.result ?? ""), isCommunity, yearRequired, questions));
     reader.onerror = () => setCsvParsed({ rows: [], errors: ["Could not read that file."] });
     reader.readAsText(file);
   }
@@ -295,7 +314,7 @@ export default function AdminMembersPage() {
   const handleExportCsv = async () => {
     setExportLoading(true);
     try {
-      const result = await getMembers({ search: search || undefined, status: statusFilter || undefined, page: 1, pageSize: 5000 });
+      const result = await getMembers({ search: search || undefined, answerContains: answer || undefined, status: statusFilter || undefined, page: 1, pageSize: 5000 });
       const rows = result.results ?? [];
       if (!rows.length) { toast.error("No members to export"); return; }
       const headers = ["id", "firstName", "lastName", "email", "phone", "graduationYear", "department", "status", "memberNumber"];
@@ -346,6 +365,15 @@ export default function AdminMembersPage() {
           placeholder="Search name, email, member number"
           className="w-full sm:w-[260px] h-9"
         />
+        {questions.length > 0 && (
+          <Input
+            value={answer}
+            onChange={(e) => { setAnswer(e.target.value); setPage(1); }}
+            placeholder={`Search answers, e.g. ${questions[0].label}`}
+            aria-label="Search members by their answers to your questions"
+            className="w-full sm:w-[260px] h-9"
+          />
+        )}
         <ChipRow label="Filter by status" activeKey={String(statusFilter)}>
         {STATUS_FILTERS.map((f, i) => {
           const count = countQueries[i]?.data?.totalCount;
@@ -381,7 +409,7 @@ export default function AdminMembersPage() {
               <TableRow>
                 <TableHead>Member</TableHead>
                 <TableHead>Number</TableHead>
-                {!isCommunity && <TableHead>Class year</TableHead>}
+                {!isCommunity && <TableHead>Graduation year</TableHead>}
                 <TableHead>Status</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Joined</TableHead>
@@ -400,7 +428,7 @@ export default function AdminMembersPage() {
     title={search || statusFilter ? "No members match" : "Add your first members"}
     description={search || statusFilter ? "Nothing matches your search or status filter." : "Import a list from a spreadsheet or add people one by one. Members can also register themselves."}
     action={search || statusFilter ? (
-      <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setStatusFilter(""); setPage(1); }}>Clear search and filters</Button>
+      <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setAnswer(""); setStatusFilter(""); setPage(1); }}>Clear search and filters</Button>
     ) : (
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button size="sm" className="font-semibold" onClick={() => setShowImport(true)}><Upload size={14} className="mr-1.5" />Import from a file</Button>
@@ -428,7 +456,7 @@ export default function AdminMembersPage() {
                     </div>
                   </TableCell>
                   <TableCell className={`text-sm font-mono text-muted-foreground whitespace-nowrap ${densityCellClass}`}>{m.memberNumber ?? "—"}</TableCell>
-                  {!isCommunity && <TableCell className={`text-sm whitespace-nowrap ${densityCellClass}`}>{m.graduationYear}</TableCell>}
+                  {!isCommunity && <TableCell className={`text-sm whitespace-nowrap ${densityCellClass}`}>{m.graduationYear > 0 ? m.graduationYear : "—"}</TableCell>}
                   <TableCell className={`whitespace-nowrap ${densityCellClass}`}><Badge variant={statusVariant[m.status]}>{m.status}</Badge></TableCell>
                   <TableCell className={densityCellClass}>
                     <span className={cn("inline-flex items-center gap-1.5 text-[12px]", m.isEmailVerified ? "text-success" : "text-muted-foreground")}>
@@ -491,7 +519,7 @@ export default function AdminMembersPage() {
     title={search || statusFilter ? "No members match" : "Add your first members"}
     description={search || statusFilter ? "Nothing matches your search or status filter." : "Import a list from a spreadsheet or add people one by one. Members can also register themselves."}
     action={search || statusFilter ? (
-      <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setStatusFilter(""); setPage(1); }}>Clear search and filters</Button>
+      <Button variant="outline" size="sm" className="font-semibold" onClick={() => { setSearch(""); setAnswer(""); setStatusFilter(""); setPage(1); }}>Clear search and filters</Button>
     ) : (
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button size="sm" className="font-semibold" onClick={() => setShowImport(true)}><Upload size={14} className="mr-1.5" />Import from a file</Button>
@@ -625,7 +653,7 @@ export default function AdminMembersPage() {
                 <p className="text-[13px] font-semibold">Not sure how to format your file?</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5">Start from our template — it opens fine in Excel, Numbers, or Google Sheets. Fill it in and save as CSV.</p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => downloadCsvTemplate(isCommunity)} className="shrink-0">
+              <Button type="button" variant="outline" size="sm" onClick={() => downloadCsvTemplate(isCommunity, questions)} className="shrink-0">
                 <Download size={13} />
                 Get template
               </Button>
@@ -640,7 +668,7 @@ export default function AdminMembersPage() {
               <Upload size={20} className="text-muted-foreground" />
               <p className="text-[13px] font-semibold">{csvFileName ?? "Click to choose a CSV file"}</p>
               <p className="text-[12px] text-muted-foreground">
-                Required columns: {(isCommunity ? ["firstName", "lastName", "email"] : ["firstName", "lastName", "email", "graduationYear"]).join(", ")}. Optional: phone, studentId.
+                Required columns: {(!yearRequired ? ["firstName", "lastName", "email"] : ["firstName", "lastName", "email", "graduationYear"]).join(", ")}. Optional: phone, studentId{questions.length > 0 ? `, and one column for each of your questions (${questions.map((q) => q.label).join(", ")})` : ""}.
               </p>
               <input
                 type="file"
@@ -717,7 +745,7 @@ export default function AdminMembersPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Student ID (optional)</Label>
+              <Label>Member or student ID (optional)</Label>
               <Input value={addMemberForm.studentId} onChange={(e) => setAddMemberForm((f) => ({ ...f, studentId: e.target.value }))} />
             </div>
           </div>
@@ -729,7 +757,7 @@ export default function AdminMembersPage() {
                 !addMemberForm.firstName.trim() ||
                 !addMemberForm.lastName.trim() ||
                 !addMemberForm.email.trim() ||
-                (!isCommunity && !addMemberForm.graduationYear) ||
+                (yearRequired && !addMemberForm.graduationYear) ||
                 !addMemberForm.phone.trim()
               }
               onClick={() =>

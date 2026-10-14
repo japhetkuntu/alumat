@@ -90,6 +90,7 @@ import {
   faShareNodes,
   faShield,
   faShieldHalved,
+  faSitemap,
   faBagShopping,
   faCartShopping,
   faMobileScreen,
@@ -323,6 +324,7 @@ export const Shield = makeIcon(faShield);
 export const ShieldAlert = makeIcon(faShieldHalved);
 export const ShieldBan = makeIcon(faShieldHalved);
 export const ShieldCheck = makeIcon(faShieldHalved);
+export const Sitemap = makeIcon(faSitemap);
 export const ShoppingBag = makeIcon(faBagShopping);
 export const ShoppingCart = makeIcon(faCartShopping);
 export const SlidersHorizontal = makeIcon(faSliders);

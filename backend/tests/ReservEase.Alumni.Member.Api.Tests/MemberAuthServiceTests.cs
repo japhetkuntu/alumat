@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +12,7 @@ using ReservEase.Alumni.Mailtrap.Sdk.Options;
 using ReservEase.Alumni.Member.Api.Models;
 using ReservEase.Alumni.Member.Api.Services.Implementations;
 using ReservEase.Alumni.PaymentCallbacks.Sdk.Options;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
@@ -34,11 +36,21 @@ public class MemberAuthServiceTests
     private static MemberAuthService BuildSut(
         Mock<IAlumniPgRepository<MemberEntity>> memberRepo,
         Mock<IGoogleTokenVerifier> googleTokenVerifier,
-        Mock<IRedisService<MemberRedisConfig>>? redis = null)
+        Mock<IRedisService<MemberRedisConfig>>? redis = null,
+        string? yearMode = null,
+        List<RegistrationField>? registrationFields = null)
     {
         var referralRepo = new Mock<IAlumniPgRepository<Referral>>();
         var institutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
         var currentTenant = new Mock<ICurrentTenantService>();
+        if (yearMode is not null || registrationFields is not null)
+        {
+            var inst = new InstitutionEntity { Id = "inst1" };
+            inst.UseGraduationYears(yearMode ?? "Off");
+            if (registrationFields is not null) inst.RegistrationFields = registrationFields;
+            currentTenant.SetupGet(t => t.InstitutionId).Returns("inst1");
+            institutionRepo.Setup(r => r.GetByIdAsync("inst1", It.IsAny<bool>())).ReturnsAsync(inst);
+        }
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
         redis ??= new Mock<IRedisService<MemberRedisConfig>>();
         var tokenOptions = Microsoft.Extensions.Options.Options.Create(new BearerTokenConfig
@@ -189,5 +201,51 @@ public class MemberAuthServiceTests
         Assert.True(created.IsEmailVerified);
         Assert.Equal("google", created.CreatedBy);
         Assert.False(string.IsNullOrEmpty(created.Password)); // never-typed placeholder hash, but must not be blank
+    }
+
+    [Theory]
+    [InlineData("Required", null, 400)]
+    [InlineData("Required", 1800, 400)]
+    [InlineData("Required", 2015, 201)]
+    [InlineData("Optional", null, 201)]
+    [InlineData("Off", null, 201)]
+    public async Task GoogleRegisterAsync_AsksForAYearOnlyWhenTheCommunityRequiresOne(string mode, int? year, int expected)
+    {
+        var memberRepo = new Mock<IAlumniPgRepository<MemberEntity>>();
+        memberRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync((MemberEntity?)null);
+        memberRepo.Setup(r => r.AddAsync(It.IsAny<MemberEntity>())).ReturnsAsync(1);
+        var googleTokenVerifier = new Mock<IGoogleTokenVerifier>();
+        googleTokenVerifier.Setup(v => v.VerifyAsync(It.IsAny<string>()))
+            .ReturnsAsync(new GoogleIdentity("new@test.com", "Ama", "Owusu", null));
+        var sut = BuildSut(memberRepo, googleTokenVerifier, yearMode: mode);
+
+        var response = await sut.GoogleRegisterAsync(new GoogleRegisterRequest("good-token", "0244000000", null, year, null, AcceptedTerms: true));
+
+        Assert.Equal(expected, response.Code);
+    }
+
+    [Fact]
+    public async Task GoogleRegisterAsync_RefusesARequiredCommunityQuestionLeftBlank_AndStoresTheAnswersOtherwise()
+    {
+        var fields = new List<RegistrationField> { new() { Id = "chapter", Label = "Chapter", Required = true } };
+        MemberEntity? created = null;
+        MemberAuthService Build()
+        {
+            var repo = new Mock<IAlumniPgRepository<MemberEntity>>();
+            repo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>())).ReturnsAsync((MemberEntity?)null);
+            repo.Setup(r => r.AddAsync(It.IsAny<MemberEntity>())).Callback<MemberEntity>(m => created = m).ReturnsAsync(1);
+            var verifier = new Mock<IGoogleTokenVerifier>();
+            verifier.Setup(v => v.VerifyAsync(It.IsAny<string>())).ReturnsAsync(new GoogleIdentity("new@test.com", "Ama", "Owusu", null));
+            return BuildSut(repo, verifier, registrationFields: fields);
+        }
+
+        var blank = await Build().GoogleRegisterAsync(new GoogleRegisterRequest("t", "0244000000", null, null, null, AcceptedTerms: true));
+        Assert.Equal(400, blank.Code);
+        Assert.Null(created);
+
+        var answered = await Build().GoogleRegisterAsync(new GoogleRegisterRequest("t", "0244000000", null, null, null, AcceptedTerms: true,
+            CustomFields: new Dictionary<string, string> { ["chapter"] = "Kumasi", ["junk"] = "x" }));
+        Assert.Equal(201, answered.Code);
+        Assert.Equal(new Dictionary<string, string> { ["chapter"] = "Kumasi" }, created!.CustomFields);
     }
 }

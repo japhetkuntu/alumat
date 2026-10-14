@@ -28,6 +28,7 @@ public class WhatsAppHealthTests
             new AlumniPgRepository<MemberEntity>(ctx), new AlumniPgRepository<NotificationPreference>(ctx),
             new ConfigurationBuilder().AddInMemoryCollection(
                 new Dictionary<string, string?> { ["WhatsAppAssistant:SmsUnitCost"] = smsUnitCost }).Build(),
+            Mock.Of<ReservEase.Alumni.Platform.Api.Services.Interfaces.IAuditLogService>(),
             NullLogger<WhatsAppHealthService>.Instance);
     }
 

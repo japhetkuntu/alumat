@@ -78,6 +78,12 @@ public class WhatsAppLinkService(
         var pref = await prefRepo.GetOneAsync(p => p.MemberId == memberId);
         var available = config.Enabled && !string.IsNullOrWhiteSpace(config.AssistantNumber)
             && (platformSwitch is null || await platformSwitch.IsOnAsync());
+        // The platform may also have deactivated WhatsApp for this institution alone, or the institution may have turned it off.
+        if (available && member is not null)
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == member.InstitutionId, ignoreQueryFilters: true);
+            available = institution is not null && institution.IsWhatsAppAllowed();
+        }
         var pending = await redis.GetAsync<PendingApproval>(PendingKey(memberId));
 
         if (member?.PhoneVerifiedAt is null)

@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -53,6 +54,8 @@ public class CampaignService(
 
             var member = await memberRepo.GetByIdAsync(memberId);
             var memberYear = member?.GraduationYear;
+            // Membership dues are owed from the graduation year, or from the year of joining where there is none.
+            int? memberFromYear = member is null ? null : MembershipPeriods.RequiredFromYear(member.GraduationYear, member.CreatedAt);
 
             var approvedCommunityIds = string.IsNullOrEmpty(communityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
 
@@ -63,7 +66,7 @@ public class CampaignService(
                           ? (c.CommunityId == null || approvedCommunityIds.Contains(c.CommunityId))
                           : c.CommunityId == communityId)
                       && (c.YearGroups == null || c.YearGroups.Count == 0 || (memberYear.HasValue && c.YearGroups.Contains(memberYear.Value)))
-                      && (!c.IsMembershipCampaign || !c.MembershipYear.HasValue || !memberYear.HasValue || c.MembershipYear.Value >= memberYear.Value)
+                      && (!c.IsMembershipCampaign || !c.MembershipYear.HasValue || !memberFromYear.HasValue || c.MembershipYear.Value >= memberFromYear.Value)
             );
 
             var dtos = result.Results.Select(c => c.ToDto()).ToList();

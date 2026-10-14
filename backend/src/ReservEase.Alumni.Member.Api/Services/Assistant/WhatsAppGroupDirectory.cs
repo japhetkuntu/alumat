@@ -23,7 +23,7 @@ public class WhatsAppGroupDirectory(
     {
         if (tenant.InstitutionId is null) return [];
         var institution = await institutionRepo.GetOneAsync(i => i.Id == tenant.InstitutionId, ignoreQueryFilters: true);
-        if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)) return [];
+        if (institution is null || !institution.IsWhatsAppAllowed()) return [];
 
         var candidates = institution.WhatsAppGroups
             .Where(g => g.Status == WhatsAppGroupStatuses.Active && !string.IsNullOrWhiteSpace(g.InviteLink)).ToList();

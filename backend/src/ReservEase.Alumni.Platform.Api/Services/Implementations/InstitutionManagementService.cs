@@ -208,7 +208,6 @@ public class InstitutionManagementService(
                 PrimaryColorHex = request.PrimaryColorHex,
                 SecondaryColorHex = request.SecondaryColorHex,
                 MemberActivePolicy = request.MemberActivePolicy,
-                OrganizationType = request.OrganizationType,
                 Status = "Active",
                 TrialEndsAt = DateTime.UtcNow.AddDays(request.TrialDays ?? 14),
                 OnboardedAt = DateTime.UtcNow,
@@ -221,6 +220,19 @@ public class InstitutionManagementService(
                 SettlementAccountName = request.SettlementAccountName,
                 CreatedBy = createdBy,
             };
+
+            // How members are grouped: from the template if one was chosen, a stated mode, or the older type; otherwise nothing is assumed.
+            var template = InstitutionTemplates.Find(request.TemplateId);
+            var startMode = request.GraduationYearMode
+                ?? template?.GraduationYearMode
+                ?? request.OrganizationType switch
+                {
+                    OrganizationTypes.Alumni => GraduationYearModes.Required,
+                    _ => GraduationYearModes.Off,
+                };
+            institution.UseGraduationYears(startMode);
+            institution.CohortLabel = template?.CohortLabel;
+            institution.CohortLabelPlural = template?.CohortLabelPlural;
 
             if (!string.IsNullOrWhiteSpace(request.SettlementBankCode) && !string.IsNullOrWhiteSpace(request.SettlementAccountNumber))
             {
@@ -415,17 +427,24 @@ public class InstitutionManagementService(
         if (institution is null)
             return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
-        if (request.OrganizationType != OrganizationTypes.Alumni && request.OrganizationType != OrganizationTypes.Community)
-            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("OrganizationType must be either \"Alumni\" or \"Community\"");
+        var mode = request.GraduationYearMode
+            ?? request.OrganizationType switch
+            {
+                OrganizationTypes.Community => GraduationYearModes.Off,
+                OrganizationTypes.Alumni => institution.GraduationYearMode == GraduationYearModes.Off ? GraduationYearModes.Required : institution.GraduationYearMode,
+                _ => null,
+            };
+        if (mode is null)
+            return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>("GraduationYearMode must be Off, Optional or Required");
 
-        institution.OrganizationType = request.OrganizationType;
+        institution.UseGraduationYears(mode);
         institution.CohortLabel = request.CohortLabel?.Trim() is { Length: > 0 } label ? label : null;
         institution.CohortLabelPlural = request.CohortLabelPlural?.Trim() is { Length: > 0 } plural ? plural : null;
         institution.UpdatedAt = DateTime.UtcNow;
         institution.UpdatedBy = updatedBy;
         await institutionRepo.UpdateAsync(institution);
 
-        await auditLog.LogAsync(updatedBy, actorName, $"set organization type to {request.OrganizationType}", institution.Name);
+        await auditLog.LogAsync(updatedBy, actorName, $"set graduation years to {mode}", institution.Name);
 
         return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Organization type updated");
 
@@ -1277,6 +1296,6 @@ public class InstitutionManagementService(
             i.PlatformFeePercentage, i.PlatformFeeFlatThreshold, i.PlatformFeeFlatAmount, i.PaystackSubaccountCode,
             i.SettlementBankCode, i.SettlementBankName,
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
-            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug));
+            MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug), i.GraduationYearMode, i.RegistrationFields);
     }
 }

@@ -102,7 +102,9 @@ public class WhatsAppGroupService(
             var communities = (await communityRepo.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
             var link = AssistantNumber is null ? null : $"https://wa.me/{AssistantNumber}?text=start%20{institution.Slug}";
             var groups = institution.WhatsAppGroups.OrderByDescending(g => g.CreatedAt).Select(g => ToDto(g, communities)).ToList();
-            return new WhatsAppOverviewDto(await PlatformEnabledAsync(), AssistantNumber, link, groups, [.. WhatsAppGroupCommands.All]).ToOkApiResponse();
+            // The channel is only "on" for this institution when the platform has not deactivated it here either.
+            return new WhatsAppOverviewDto(await PlatformEnabledAsync() && institution.WhatsAppBotEnabled, AssistantNumber, link, groups,
+                [.. WhatsAppGroupCommands.All], DeactivatedByPlatform: !institution.WhatsAppBotEnabled).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -257,6 +259,9 @@ public class WhatsAppGroupService(
         {
             if (!await PlatformEnabledAsync())
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("WhatsApp isn't switched on for the platform yet.");
+            var current = await LoadAsync();
+            if (current is { WhatsAppBotEnabled: false })
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("WhatsApp has been switched off for your institution by AlumUnion.");
 
             var built = await BuildAsync(request);
             if (built.Error is not null) return ApiResponseExtensions.ToBadRequestApiResponse<object>(built.Error);

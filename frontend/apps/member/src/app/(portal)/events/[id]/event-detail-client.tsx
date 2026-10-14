@@ -439,7 +439,7 @@ function RsvpBlock({
           <div>
             <p className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>Attendance</p>
             <p className="text-[13.5px] font-semibold" style={{ color: "var(--foreground)" }}>
-              {event.rsvpCount} alumni going
+              {event.rsvpCount} going
               {event.capacity ? ` · ${event.capacity - event.rsvpCount} spots remaining` : ""}
             </p>
           </div>

@@ -139,6 +139,8 @@ export interface InstitutionProfileResponse {
   memberAuthHeadline?: string | null;
   memberAuthSubtext?: string | null;
   requireStudentId: boolean;
+  collectMemberId?: boolean;
+  registrationFields?: RegistrationField[];
   /** Off by default. When on, registration shows a program-of-study dropdown built from programsOfStudy, with a "not listed" custom text fallback. */
   programOfStudyEnabled: boolean;
   programsOfStudy: string[];
@@ -171,11 +173,15 @@ export interface InstitutionProfileResponse {
   settlementAccountName?: string | null;
   /** "Alumni" (default) — year-based cohorts via Batches. "Community" — no graduation years; members organize via Communities instead. */
   organizationType: "Alumni" | "Community";
-  /** Alumni-only relabeling of "Batch" (e.g. "Class", "Cohort"). Null falls back to "Batch". */
+  /** What this community calls a year group (for example "Class" or "Set"). Null falls back to "Cohort". */
   cohortLabel?: string | null;
-  /** Plural form of cohortLabel (e.g. "Classes"). Null falls back to "Batches". */
+  /** Plural form of cohortLabel (for example "Classes"). Null falls back to "Cohorts". */
   cohortLabelPlural?: string | null;
+  /** Whether graduation years are used at all. Off for clubs, congregations and the like. */
+  graduationYearMode?: GraduationYearMode;
 }
+
+export type GraduationYearMode = "Off" | "Optional" | "Required";
 
 export interface InstitutionActivationCriterion {
   key: "branding" | "payouts" | "members" | "payments" | "staff";
@@ -248,8 +254,8 @@ export async function updateInstitutionBranding(branding: {
 }
 
 /** How "active member" status is determined, and whether a student ID is required at registration — this institution's own operational choices. */
-export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly", requireStudentId: boolean): Promise<InstitutionProfileResponse> {
-  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy, requireStudentId });
+export async function updateMemberActivePolicy(memberActivePolicy: "DuesRequired" | "ApprovedOnly", requireStudentId: boolean, collectMemberId?: boolean): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/member-policy", { memberActivePolicy, requireStudentId, collectMemberId });
   const profile = res.data.data;
   if (!profile) {
     throw new Error("Institution profile response missing data");
@@ -285,6 +291,49 @@ export async function updateOrganizationType(organizationType: "Alumni" | "Commu
     throw new Error("Institution profile response missing data");
   }
   return profile;
+}
+
+/** How a community uses graduation years, and what it calls a year group. A structural setting, SuperAdmin only. */
+export async function updateGraduationYears(graduationYearMode: GraduationYearMode, cohortLabel?: string | null, cohortLabelPlural?: string | null): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/organization-type", { graduationYearMode, cohortLabel, cohortLabelPlural });
+  return res.data.data!;
+}
+
+export interface RegistrationField {
+  id: string;
+  label: string;
+  type: "text" | "select";
+  required: boolean;
+  options: string[];
+}
+
+export async function updateMemberCustomFields(memberId: string, answers: Record<string, string>): Promise<void> {
+  await institutionClient.put(`/members/${memberId}/custom-fields`, { answers });
+}
+
+export async function updateRegistrationFields(fields: RegistrationField[]): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.put<ApiResponse<InstitutionProfileResponse>>("/institution/me/registration-fields", { fields });
+  return res.data.data!;
+}
+
+export interface InstitutionTemplate {
+  id: string;
+  name: string;
+  description: string;
+  graduationYearMode: GraduationYearMode;
+  cohortLabel?: string | null;
+  cohortLabelPlural?: string | null;
+}
+
+/** The starting points on offer. They only pre-fill settings; nothing is locked. */
+export async function getInstitutionTemplates(): Promise<InstitutionTemplate[]> {
+  const res = await institutionClient.get<ApiResponse<InstitutionTemplate[]>>("/institution/templates");
+  return res.data.data ?? [];
+}
+
+export async function applyInstitutionTemplate(templateId: string): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.post<ApiResponse<InstitutionProfileResponse>>("/institution/me/template", { templateId });
+  return res.data.data!;
 }
 
 /** Social media links shown in the Member Portal's footer. Send the full set each edit — an empty/missing value for a platform clears its icon. */
@@ -398,6 +447,8 @@ export interface CommunityListItem {
   pendingCount: number;
   leaderCount: number;
   createdAt: string;
+  /** What this group is called here (Chapter, Committee…). Null reads as a plain group. */
+  kind?: string | null;
   /** Connected external groups (e.g. a WhatsApp group). */
   channels?: CommunityChannelItem[] | null;
   /** Members who joined this community through a leader's invitation. */
@@ -439,12 +490,12 @@ export async function getCommunities(): Promise<CommunityListItem[]> {
   return res.data.data ?? [];
 }
 
-export async function createCommunity(body: { name: string; description?: string; coverImageUrl?: string }): Promise<CommunityListItem> {
+export async function createCommunity(body: { name: string; kind?: string; description?: string; coverImageUrl?: string }): Promise<CommunityListItem> {
   const res = await institutionClient.post<ApiResponse<CommunityListItem>>("/communities", body);
   return res.data.data!;
 }
 
-export async function updateCommunity(id: string, body: { name: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }): Promise<CommunityListItem> {
+export async function updateCommunity(id: string, body: { name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }): Promise<CommunityListItem> {
   const res = await institutionClient.put<ApiResponse<CommunityListItem>>(`/communities/${id}`, body);
   return res.data.data!;
 }
@@ -469,6 +520,8 @@ export interface MemberListParams {
   graduationYearTo?: number;
   jobTitleContains?: string;
   locationContains?: string;
+  /** Members whose answer to any of the community's own questions contains this text. */
+  answerContains?: string;
 }
 
 export async function getMembers(params: MemberListParams = {}) {
@@ -531,6 +584,8 @@ export interface ImportMemberItem {
   graduationYear?: number;
   departmentId?: string;
   paidMembershipYears?: number[];
+  /** Answers to the community's own questions, keyed by question id. */
+  customFields?: Record<string, string>;
 }
 
 export interface ImportMembersResult {
@@ -1997,6 +2052,65 @@ export async function getMonthlyReport(month?: string): Promise<MonthlyReport> {
 }
 
 
+// ─── Structure ───────────────────────────────────────────────────────────
+
+export interface StructureAdmin {
+  id: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: "SuperAdmin" | "ScopedAdmin" | string;
+  isDisabled: boolean;
+  yearGroups: number[];
+  communityIds: string[];
+  lastLoginAt?: string | null;
+}
+export interface StructureCohort { id: string; name: string; year: number; isActive: boolean; memberCount: number }
+export interface StructureCommunity {
+  id: string; name: string; isActive: boolean; memberCount: number; pendingCount: number;
+  leaders: { memberId: string; name: string }[];
+}
+export interface InstitutionStructure {
+  institutionName: string;
+  logoUrl?: string | null;
+  organizationType: "Alumni" | "Community" | string;
+  cohortLabel?: string | null;
+  cohortLabelPlural?: string | null;
+  admins: StructureAdmin[];
+  cohorts: StructureCohort[];
+  communities: StructureCommunity[];
+  membersWithoutGroup: number;
+  yearsWithoutGroup: number[];
+  adminsWithoutScope: string[];
+  unmanagedCohortIds: string[];
+  unmanagedCommunityIds: string[];
+}
+
+/** The whole institution in one read: administrators, groups, communities and who looks after what. */
+export async function getStructure(): Promise<InstitutionStructure> {
+  const res = await institutionClient.get<ApiResponse<InstitutionStructure>>("/structure");
+  return res.data.data!;
+}
+
+// ─── Other institutions (switching) ───────────────────────────────────────
+
+export interface StaffInstitution {
+  institutionId: string;
+  slug: string;
+  name: string;
+  logoUrl?: string | null;
+  /** That institution's portal sign-in, with this administrator's email already filled in. */
+  loginUrl: string;
+}
+
+/** Other institutions where this email also has an administrator account. Empty for most people. */
+export async function getMyInstitutions(): Promise<StaffInstitution[]> {
+  const res = await institutionClient.get<ApiResponse<StaffInstitution[]>>("/auth/institutions");
+  return res.data.data ?? [];
+}
+
 // ─── WhatsApp assistant and groups ───────────────────────────────────────
 
 export interface WhatsAppGroup {
@@ -2040,6 +2154,8 @@ export interface WhatsAppOverview {
   assistantLink?: string | null;
   groups: WhatsAppGroup[];
   commands: string[];
+  /** AlumUnion switched WhatsApp off for this institution. The institution cannot turn it back on. */
+  deactivatedByPlatform?: boolean;
 }
 
 export interface WhatsAppPostPreview { title: string; text: string; link: string }

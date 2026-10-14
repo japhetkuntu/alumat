@@ -103,7 +103,14 @@ public class PledgesController(
             {
                 To = [new EmailContact { Email = member.Email, Name = member.FirstName }],
                 TemplateId = "notification",
-                TemplateVariables = new { first_name = member.FirstName, title, body, badge_label = "Pledge Reminder", action_url = actionUrl, action_label = actionLabel },
+                TemplateVariables = new
+                {
+                    first_name = member.FirstName, title, body, badge_label = "Pledge Reminder", action_url = actionUrl, action_label = actionLabel,
+                    pref_label = "you made a pledge to this community",
+                    // Sent under the community's own name and colours, like every other member email.
+                    brand_name = string.IsNullOrWhiteSpace(institution?.PortalName) ? institution?.Name : institution.PortalName,
+                    brand_color = institution?.PrimaryColorHex, brand_secondary_color = institution?.SecondaryColorHex, brand_logo = institution?.LogoUrl,
+                },
             }, $"pledge reminder to {member.Email}"), logger);
         }
 

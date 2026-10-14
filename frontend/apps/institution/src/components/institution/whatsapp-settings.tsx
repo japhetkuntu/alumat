@@ -80,13 +80,19 @@ export function WhatsAppSettings({ enabled, onToggleEnabled, toggling }: { enabl
             <button
               type="button" role="switch" aria-checked={enabled} aria-label="WhatsApp assistant" disabled={toggling}
               onClick={() => onToggleEnabled(!enabled)}
-              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${enabled ? "bg-primary" : "bg-muted"} ${toggling ? "opacity-50" : ""}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors after:absolute after:-inset-3 after:content-[''] ${enabled ? "bg-primary" : "bg-muted"} ${toggling ? "opacity-50" : ""}`}
             >
               <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
 
-          {enabled && o && !o.platformEnabled && (
+          {enabled && o?.deactivatedByPlatform && (
+            <p className="border-l-2 border-destructive bg-muted/40 py-2.5 pl-3 pr-2 text-[13px]">
+              WhatsApp has been switched off for your institution by AlumUnion. Members are reached by SMS and email as before. Contact AlumUnion support to have it switched back on.
+            </p>
+          )}
+
+          {enabled && o && !o.platformEnabled && !o.deactivatedByPlatform && (
             <p className="border-l-2 border-warning bg-muted/40 py-2.5 pl-3 pr-2 text-[13px]">
               The WhatsApp channel isn&apos;t switched on for AlumUnion yet. You can set up groups now; nothing is sent or answered until it is.
             </p>
@@ -94,7 +100,7 @@ export function WhatsAppSettings({ enabled, onToggleEnabled, toggling }: { enabl
 
           {enabled && o?.assistantLink && (
             <div className="flex flex-wrap items-center gap-3 border-t border-border/50 pt-4">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                 <p className="text-[12.5px] font-semibold text-muted-foreground">Your assistant link</p>
                 <p className="break-all text-[13px]">{o.assistantLink}</p>
               </div>
@@ -123,7 +129,7 @@ export function WhatsAppSettings({ enabled, onToggleEnabled, toggling }: { enabl
                     <th scope="col" className="py-1.5 pr-3 font-semibold">Month</th>
                     <th scope="col" className="py-1.5 pr-3 text-right font-semibold">By WhatsApp</th>
                     <th scope="col" className="py-1.5 pr-3 text-right font-semibold">By SMS</th>
-                    <th scope="col" className="py-1.5 text-right font-semibold">SMS after a WhatsApp miss</th>
+                    <th scope="col" className="py-1.5 text-right font-semibold" title="SMS sent only because the WhatsApp message did not deliver">SMS fallback</th>
                   </tr></thead>
                   <tbody>
                     {[...adoption.data.months].reverse().map((m) => (
@@ -228,7 +234,7 @@ export function WhatsAppSettings({ enabled, onToggleEnabled, toggling }: { enabl
             {(communities.data?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="wa-community">This is the group for</Label>
-                <select id="wa-community" value={communityId} onChange={(e) => setCommunityId(e.target.value)} className="h-11 w-full border border-border bg-background px-3 text-[14px]">
+                <select id="wa-community" value={communityId} onChange={(e) => setCommunityId(e.target.value)} className="h-11 w-full border border-border bg-background px-3 text-[16px] md:text-[14px]">
                   <option value="">The whole institution</option>
                   {communities.data!.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>

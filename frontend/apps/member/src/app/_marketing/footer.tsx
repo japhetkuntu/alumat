@@ -26,7 +26,7 @@ export function MarketingFooter() {
               <img src="/alumunion-logo-horizontal.svg" alt="AlumUnion" width={1490} height={405} className="h-11 w-auto object-contain shrink-0 dark:rounded-sm dark:bg-white dark:px-2" />
             </Link>
             <p className="text-[15px] leading-relaxed mb-3" style={{ color: "var(--muted-foreground)" }}>
-              A community platform for institutions to organize alumni, members, supporters, and stakeholders in one place.
+              A community platform for institutions to organize their members, supporters, and stakeholders in one place.
             </p>
             <a href="mailto:hello@alumunion.com"
               className="inline-flex items-center gap-2 text-[14px] font-medium transition-colors hover:text-primary"

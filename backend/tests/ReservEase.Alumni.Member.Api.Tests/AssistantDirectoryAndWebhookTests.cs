@@ -71,6 +71,17 @@ public class AssistantDirectoryTests
     }
 
     [Fact]
+    public async Task Search_skips_an_institution_the_platform_has_deactivated()
+    {
+        var off = Inst("i1", "alpha", "Alpha Alumni"); off.WhatsAppBotEnabled = false;
+        var d = Create(off, Inst("i2", "alphb", "Alpha Club"));
+
+        var found = await d.SearchAsync("alpha");
+
+        Assert.Equal("Alpha Club", Assert.Single(found).Name);
+    }
+
+    [Fact]
     public async Task Search_finds_by_name_or_code_skips_ones_with_the_assistant_off_and_ignores_very_short_text()
     {
         var d = Create(Inst("i1", "umat", "UMaT Alumni"), Inst("i2", "pensa", "PENSA UMaT"), Inst("i3", "off", "UMaT Staff", disabled: InstitutionFeatures.WhatsApp));

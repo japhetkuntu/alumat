@@ -46,12 +46,12 @@ function GrowthCard() {
       <CardContent className="space-y-5 p-5">
         <div>
           <h2 className="text-[15px] font-semibold">Joining through invitations</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">When a community leader shares their invitation into a group chat, the people who join through it are counted here.</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">When a group leader shares their invitation into a group chat, the people who join through it are counted here.</p>
         </div>
         {data.totalViaInvites === 0 ? (
           <div className="border border-dashed border-border px-4 py-5 text-[13.5px] text-muted-foreground">
             <p className="font-semibold text-foreground">No one has joined through an invitation yet.</p>
-            <p className="mt-1">Make someone a Leader of a community and ask them to open it. They will find an invitation to share into their WhatsApp group.</p>
+            <p className="mt-1">Make someone a Leader of a group and ask them to open it. They will find an invitation to share into their WhatsApp group.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-[auto_1fr] md:gap-12">
@@ -69,7 +69,7 @@ function GrowthCard() {
                 </ul>
               </div>
               <div>
-                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">By community</p>
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">By group</p>
                 <ul className="mt-2 divide-y divide-border/60">
                   {data.byCommunity.slice(0, 5).map((c) => (
                     <li key={c.communityId} className="flex justify-between gap-3 py-1.5 text-[13.5px]"><span className="truncate">{c.name}</span><span className="tabular-nums font-semibold">{c.joined}</span></li>
@@ -88,11 +88,12 @@ function CommunityForm({
   initial, onSave, onCancel, saving,
 }: {
   initial?: CommunityListItem;
-  onSave: (data: { name: string; description?: string; coverImageUrl?: string; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => void;
+  onSave: (data: { name: string; kind?: string; description?: string; coverImageUrl?: string; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => void;
   onCancel: () => void;
   saving: boolean;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [kind, setKind] = useState(initial?.kind ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? "");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -103,7 +104,7 @@ function CommunityForm({
 
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base">{initial ? "Edit community" : "Create community"}</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base">{initial ? "Edit group" : "Create group"}</CardTitle></CardHeader>
       <CardContent>
         <form
           className="space-y-4"
@@ -126,16 +127,23 @@ function CommunityForm({
             const externalChannels = groupName.trim()
               ? [{ type: "WhatsApp", displayName: groupName.trim(), inviteUrl: groupUrl.trim() || undefined }]
               : existingGroup ? [] : undefined;
-            onSave({ name: name.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined, externalChannels });
+            onSave({ name: name.trim(), kind: kind.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined, externalChannels });
           }}
         >
           <div className="space-y-2">
             <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Mining Engineering Alumni" required />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kumasi Chapter" required />
+          </div>
+          <div className="space-y-2">
+            <Label>What kind of group is this? (optional)</Label>
+            <Input value={kind} onChange={(e) => setKind(e.target.value)} placeholder="e.g. Chapter, Committee, Department, Team" maxLength={40} list="group-kinds" />
+            <datalist id="group-kinds">
+              {["Chapter", "Committee", "Department", "Ministry", "Team", "Class", "Region", "Interest group"].map((k) => <option key={k} value={k} />)}
+            </datalist>
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this community is for" />
+            <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this group is for" />
           </div>
           <LinkOrUpload
             label="Cover image (optional)"
@@ -147,7 +155,7 @@ function CommunityForm({
           <div className="space-y-3 border-t border-border pt-4">
             <div>
               <Label>WhatsApp group <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <p className="mt-1 text-[12.5px] text-muted-foreground">Members of this community will see a link to the group. Clear the name to disconnect it.</p>
+              <p className="mt-1 text-[12.5px] text-muted-foreground">Members of this group will see a link to the chat. Clear the name to disconnect it.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Group name" maxLength={100} />
@@ -155,7 +163,7 @@ function CommunityForm({
             </div>
           </div>
           <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving || uploading} loadingText={uploading ? "Uploading" : "Saving"}>{initial ? "Save changes" : "Create community"}</Button>
+            <Button type="submit" size="sm" isLoading={saving || uploading} loadingText={uploading ? "Uploading" : "Saving"}>{initial ? "Save changes" : "Create group"}</Button>
             <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
           </div>
         </form>
@@ -219,7 +227,7 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
             ) : isLoading ? (
               <TableSkeleton rows={4} cols={4} />
             ) : members.length === 0 ? (
-              <TableRow><TableCell colSpan={4}><EmptyState className="py-8" title="No one has joined yet" description="When members ask to join this community, their requests show up here for you to approve." /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={4}><EmptyState className="py-8" title="No one has joined yet" description="When members ask to join this group, their requests show up here for you to approve." /></TableCell></TableRow>
             ) : members.map((m: CommunityMemberItem) => (
               <TableRow key={m.membershipId}>
                 <TableCell>
@@ -293,7 +301,7 @@ export default function CommunitiesPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => updateCommunity(id, body),
+    mutationFn: ({ id, ...body }: { id: string; name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => updateCommunity(id, body),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); qc.invalidateQueries({ queryKey: ["community-growth"] }); setEditing(null); setDeactivateTarget(null); toast.success("Community updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -304,13 +312,13 @@ export default function CommunitiesPage() {
     <div className="p-4 sm:p-[26px] max-w-[1240px] mx-auto space-y-5">
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Communities</h1>
+          <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Groups</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">
             Sub-groups inside your community network. Promote an approved member to Leader so they can manage day-to-day requests and moderation themselves.
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
-          <Plus size={16} />Create community
+          <Plus size={16} />Create group
         </Button>
       </header>
 
@@ -355,7 +363,7 @@ export default function CommunitiesPage() {
               ) : isLoading ? (
                 <TableSkeleton rows={4} cols={7} />
               ) : communities.length === 0 ? (
-                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Communities group members who share something" description="Create a community for a year group, a programme or a chapter. Members can ask to join, and you approve them here." /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
@@ -368,7 +376,7 @@ export default function CommunitiesPage() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{c.name}</p>
+                        <p className="font-medium truncate">{c.name}{c.kind && <span className="ml-2 align-middle rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{c.kind}</span>}</p>
                         {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{c.description}</p>}
                         {(c.channels?.length || (c.joinedViaInvites ?? 0) > 0) && (
                           <p className="mt-0.5 text-[12px] text-muted-foreground">

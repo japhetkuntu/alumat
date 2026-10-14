@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useRouter } from "next/navigation";
@@ -45,22 +46,43 @@ export default function CommunitiesPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  // Filter by what the administrators call each group (Chapter, Committee…) — only offered when there is more than one kind.
+  const [kindFilter, setKindFilter] = useState<string | null>(null);
+  const kinds = Array.from(new Set(communities.map((c) => c.kind).filter((k): k is string => !!k))).sort();
+  const visible = kindFilter ? communities.filter((c) => c.kind === kindFilter) : communities;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-[1400px] mx-auto">
       <PageHeader
-        title="Communities"
-        description="Find your people beyond the classroom. Request to join the ones relevant to you."
+        title="Groups"
+        description="Find your people within the community. Request to join the ones relevant to you."
       />
+
+      {kinds.length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by kind of group">
+          {[null, ...kinds].map((k) => (
+            <button
+              key={k ?? "all"}
+              type="button"
+              aria-pressed={kindFilter === k}
+              onClick={() => setKindFilter(k)}
+              className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${kindFilter === k ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+            >
+              {k ?? "All"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : communities.length === 0 ? (
-        <EmptyState icon={<Users size={40} />} title="Communities are smaller groups inside your institution" description="A community can be a chapter, a club or a professional group, each with its own news, events and discussions. Your institution has not created any yet. When it does, you can ask to join from this page." action={<NotifyMeButton />} />
+        <EmptyState icon={<Users size={40} />} title="Groups are smaller circles inside your community" description="A group can be a chapter, a committee or a team, each with its own news, events and discussions. None have been created yet. When it does, you can ask to join from this page." action={<NotifyMeButton />} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {communities.map((c) => (
+          {visible.map((c) => (
             <div
               key={c.id}
               role="link"
@@ -88,6 +110,7 @@ export default function CommunitiesPage() {
               </div>
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <div className="min-w-0 space-y-2">
+                  {c.kind && <p className="text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">{c.kind}</p>}
                   <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-snug group-hover:text-primary transition-colors">
                     {c.name}
                   </p>

@@ -23,7 +23,7 @@ import {
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
-import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
+import { useInstitutionNavTheme, DEFAULT_COHORT_LABEL, DEFAULT_COHORT_LABEL_PLURAL } from "@/components/institution/institution-layout";
 
 const payoutStatusVariant: Record<Batch["payoutStatus"], "neutral" | "warning" | "success" | "destructive"> = {
   None: "neutral",
@@ -165,8 +165,8 @@ export default function BatchesPage() {
   });
 
   const { data: navTheme } = useInstitutionNavTheme();
-  const cohortLabel = navTheme?.cohortLabel || "Batch";
-  const cohortLabelPlural = navTheme?.cohortLabelPlural || "Batches";
+  const cohortLabel = navTheme?.cohortLabel?.trim() || DEFAULT_COHORT_LABEL;
+  const cohortLabelPlural = navTheme?.cohortLabelPlural?.trim() || DEFAULT_COHORT_LABEL_PLURAL;
 
   const createMut = useMutation({
     mutationFn: createBatch,

@@ -28,6 +28,7 @@ import {
   Users2,
   Radio,
   MessageCircle,
+  Sitemap,
   ShoppingBag,
   Images,
   Store,
@@ -36,6 +37,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
+import { InstitutionSwitcher } from "@/components/institution/institution-switcher";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
 import { useFeatures } from "@/hooks/use-institution-features";
 import { useAuth } from "@/hooks/use-auth";
@@ -73,7 +75,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
 
 // Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
 const EXTRA_ROUTE_FEATURES: Record<string, string> = {
-  "/communities": "Communities",
+  "/communities": "Groups",
   "/flagged-content": "Forum",
 };
 
@@ -101,7 +103,7 @@ const baseNavItems = [
   { label: "People", isHeader: true },
   { href: "/members", label: "Members", icon: Users },
   { href: "/batches", label: "Batches", icon: Layers },
-  { href: "/communities", label: "Communities", icon: Users2 },
+  { href: "/communities", label: "Groups", icon: Users2 },
   { label: "Community", isHeader: true },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/events", label: "Events", icon: Calendar },
@@ -134,6 +136,8 @@ interface InstitutionNavThemeData {
   iconUrl?: string | null;
   /** "Alumni" (default) or "Community" — see backend Institution.OrganizationType. Community institutions hide graduation-year/cohort UI throughout. */
   organizationType?: "Alumni" | "Community";
+  /** Whether members have a graduation year at all (the source of truth; organizationType follows it). */
+  graduationYearMode?: "Off" | "Optional" | "Required";
   /** Alumni-only relabeling of "Batch" — see backend Institution.CohortLabel. Null/absent falls back to "Batch"/"Batches". */
   cohortLabel?: string | null;
   cohortLabelPlural?: string | null;
@@ -152,12 +156,26 @@ export function useInstitutionNavTheme() {
   });
 }
 
+/** What this institution calls a year group. The default is deliberately plain ("Cohort") so it fits any kind of organisation. */
+export const DEFAULT_COHORT_LABEL = "Cohort";
+export const DEFAULT_COHORT_LABEL_PLURAL = "Cohorts";
+
+/** The institution's own word for a year group, singular and plural, with the generic default when it has not chosen one. */
+export function useCohortLabels() {
+  const { data: theme } = useInstitutionNavTheme();
+  return {
+    singular: theme?.cohortLabel?.trim() || DEFAULT_COHORT_LABEL,
+    plural: theme?.cohortLabelPlural?.trim() || DEFAULT_COHORT_LABEL_PLURAL,
+  };
+}
+
 /** The menu this staff member can actually see: role limits, disabled features and community-only rules already applied. */
 function useNavItems() {
   const { user } = useAuth();
   const { data: theme } = useInstitutionNavTheme();
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
   const isCommunity = theme?.organizationType === "Community";
+  const cohortPlural = theme?.cohortLabelPlural?.trim() || DEFAULT_COHORT_LABEL_PLURAL;
 
   return useMemo(() => {
     const items = baseNavItems.filter((item) => {
@@ -189,17 +207,21 @@ function useNavItems() {
     if (user?.role === "SuperAdmin") {
       const peopleHeaderIndex = items.findIndex((item) => item.isHeader && item.label === "People");
       const insertAt = peopleHeaderIndex === -1 ? items.length : peopleHeaderIndex + 1;
-      items.splice(insertAt, 0, { href: "/staff", label: "Institution Admins", icon: ShieldCheck });
+      items.splice(insertAt, 0, { href: "/structure", label: "Structure", icon: Sitemap });
+      items.splice(insertAt + 1, 0, { href: "/staff", label: "Institution Admins", icon: ShieldCheck });
     }
 
     // Drop any header whose group ended up with zero visible items (e.g. an
     // institution disables every feature in a whole section).
+    // The year-group page carries the institution's own word for it.
+    for (const item of items) if (item.href === "/batches") item.label = cohortPlural;
+
     return items.filter((item, idx) => {
       if (!item.isHeader) return true;
       const next = items[idx + 1];
       return !!next && !next.isHeader;
     });
-  }, [user?.role, disabledFeatures, isCommunity]);
+  }, [user?.role, disabledFeatures, isCommunity, cohortPlural]);
 }
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
@@ -239,6 +261,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             </Button>
           )}
         </div>
+        <InstitutionSwitcher />
         <div className="mt-3 flex items-center gap-1.5 text-[12px]">
           {tenantHost && (
             <span className="font-mono text-blue-300/90 truncate" title={tenantHost}>{tenantHost}</span>
@@ -303,6 +326,7 @@ function useCurrentPageTitle() {
     if (match) return match.label;
     // Staff is added to the menu only for SuperAdmins, so it is not in the base list.
     if (pathname === "/staff" || pathname.startsWith("/staff/")) return "Institution Admins";
+    if (pathname === "/structure") return "Structure";
     return "Dashboard";
   }, [pathname]);
 }
@@ -340,7 +364,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
 
   // Client pages can't export metadata, so the browser tab and history show the page name here.
   useEffect(() => {
-    const base = document.title.split(" · ").pop() || "Alumni Portal";
+    const base = document.title.split(" · ").pop() || "Community Portal";
     document.title = `${pageTitle} · ${base}`;
   }, [pageTitle]);
 

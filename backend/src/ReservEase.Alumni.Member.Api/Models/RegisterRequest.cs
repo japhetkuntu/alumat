@@ -7,7 +7,9 @@ public record RegisterRequest(
     // Must be true: the person has accepted the Terms and Privacy Policy and confirmed they are 18 or older.
     bool AcceptedTerms = false,
     // Set when the person arrived through a community invitation link; verified server-side, never trusted.
-    string? CommunityId = null, string? Channel = null);
+    string? CommunityId = null, string? Channel = null,
+    // Answers to the community's own registration questions, keyed by question id.
+    Dictionary<string, string>? CustomFields = null);
 
 /// <summary>
 /// Registration via a verified Google identity — skips the OTP step entirely
@@ -19,4 +21,5 @@ public record RegisterRequest(
 public record GoogleRegisterRequest(
     string IdToken, string Phone, string? StudentId, int? GraduationYear, string? DepartmentId,
     string? ReferralCode = null, string? Program = null, bool AcceptedTerms = false,
-    string? CommunityId = null, string? Channel = null);
+    string? CommunityId = null, string? Channel = null,
+    Dictionary<string, string>? CustomFields = null);

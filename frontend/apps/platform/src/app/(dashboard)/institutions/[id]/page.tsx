@@ -253,8 +253,8 @@ export default function InstitutionDetailPage() {
   const [cohortLabel, setCohortLabel] = useState<string | null>(null);
   const [cohortLabelPlural, setCohortLabelPlural] = useState<string | null>(null);
   const organizationTypeMutation = useMutation({
-    mutationFn: ({ type, label, labelPlural }: { type: "Alumni" | "Community"; label?: string | null; labelPlural?: string | null }) =>
-      updateInstitutionOrganizationType(id, type, label, labelPlural),
+    mutationFn: ({ mode, label, labelPlural }: { mode: "Off" | "Optional" | "Required"; label?: string | null; labelPlural?: string | null }) =>
+      updateInstitutionOrganizationType(id, mode, label, labelPlural),
     onSuccess: () => {
       toast.success("Organization type updated");
       invalidate();
@@ -604,61 +604,62 @@ export default function InstitutionDetailPage() {
               </div>
             </CardContent>
           </Card>
+          {(inst.registrationFields?.length ?? 0) > 0 && (
+            <Card className="lg:col-span-2">
+              <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Registration questions</p></div>
+              <CardContent className="p-5">
+                <p className="mb-3 text-[12px] text-muted-foreground">The extra questions this community asks new members. The community manages these from its own settings.</p>
+                <ul className="space-y-2">
+                  {inst.registrationFields!.map((q) => (
+                    <li key={q.id} className="flex flex-wrap items-baseline justify-between gap-2 text-[13px]">
+                      <span className="font-medium">{q.label}</span>
+                      <span className="text-muted-foreground">
+                        {q.type === "select" ? `Pick one of ${q.options.length}` : "Short answer"} · {q.required ? "Required" : "Optional"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
           <Card className="lg:col-span-2">
-            <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Organization type</p></div>
+            <div className="px-5 py-4 border-b border-border"><p className="text-[14px] font-semibold">Graduation years</p></div>
             <CardContent className="p-5 space-y-4">
               <p className="text-[12px] text-muted-foreground">
-                Choose Alumni for graduation-year cohorts, or Community for groups, chapters, and other member structures.
-                This controls which organization tools appear throughout the portals.
+                Whether members of this community have a graduation year. When not used, nobody is asked for one and dues run from the year each member joined.
               </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={inst.organizationType === "Alumni" ? "default" : "outline"}
-                  disabled={organizationTypeMutation.isPending}
-                  onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel ?? inst.cohortLabel, labelPlural: cohortLabelPlural ?? inst.cohortLabelPlural })}
-                >
-                  Alumni
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={inst.organizationType === "Community" ? "default" : "outline"}
-                  disabled={organizationTypeMutation.isPending}
-                  onClick={() => organizationTypeMutation.mutate({ type: "Community" })}
-                >
-                  Community
-                </Button>
+              <div className="flex flex-wrap gap-2">
+                {(["Off", "Optional", "Required"] as const).map((m) => (
+                  <Button
+                    key={m}
+                    type="button"
+                    size="sm"
+                    variant={(inst.graduationYearMode ?? (inst.organizationType === "Community" ? "Off" : "Required")) === m ? "default" : "outline"}
+                    disabled={organizationTypeMutation.isPending}
+                    onClick={() => organizationTypeMutation.mutate({ mode: m, label: cohortLabel ?? inst.cohortLabel, labelPlural: cohortLabelPlural ?? inst.cohortLabelPlural })}
+                  >
+                    {m === "Off" ? "Not used" : m}
+                  </Button>
+                ))}
               </div>
               {inst.organizationType === "Alumni" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Cohort label</Label>
-                    <Input
-                      value={cohortLabel ?? inst.cohortLabel ?? ""}
-                      onChange={(e) => setCohortLabel(e.target.value)}
-                      placeholder="Batch"
-                      maxLength={50}
-                    />
+                    <Label>Year group label</Label>
+                    <Input value={cohortLabel ?? inst.cohortLabel ?? ""} onChange={(e) => setCohortLabel(e.target.value)} placeholder="Cohort" maxLength={50} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Cohort label (plural)</Label>
-                    <Input
-                      value={cohortLabelPlural ?? inst.cohortLabelPlural ?? ""}
-                      onChange={(e) => setCohortLabelPlural(e.target.value)}
-                      placeholder="Batches"
-                      maxLength={50}
-                    />
+                    <Label>Year group label (plural)</Label>
+                    <Input value={cohortLabelPlural ?? inst.cohortLabelPlural ?? ""} onChange={(e) => setCohortLabelPlural(e.target.value)} placeholder="Cohorts" maxLength={50} />
                   </div>
                   <div className="sm:col-span-2">
                     <Button
                       type="button"
                       size="sm"
                       isLoading={organizationTypeMutation.isPending}
-                      onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel ?? inst.cohortLabel, labelPlural: cohortLabelPlural ?? inst.cohortLabelPlural })}
+                      onClick={() => organizationTypeMutation.mutate({ mode: inst.graduationYearMode ?? "Required", label: cohortLabel ?? inst.cohortLabel, labelPlural: cohortLabelPlural ?? inst.cohortLabelPlural })}
                     >
-                      Save cohort wording
+                      Save wording
                     </Button>
                   </div>
                 </div>

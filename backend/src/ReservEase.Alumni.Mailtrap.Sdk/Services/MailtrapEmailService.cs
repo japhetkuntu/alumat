@@ -31,6 +31,15 @@ public class MailtrapEmailService(
         try
         {
             var variables = ExtractVariables(request.TemplateVariables);
+
+            // Every intended email is sent. If a caller left out what the email is about (a link, a code) that is a bug in
+            // the caller, so it is logged as an error with the template and the variable names, but the message still goes.
+            var missing = MissingRequiredVariables(request.TemplateId, variables);
+            if (missing.Count > 0)
+                logger.LogError(
+                    "Template {Template} for {Recipients} was sent without {Missing}; the caller needs to provide it",
+                    request.TemplateId, string.Join(", ", request.To.Select(t => t.Email)), string.Join(", ", missing));
+
             var html = await RenderHtmlAsync(request.TemplateId, variables);
             var subject = ResolveSubject(request.TemplateId);
 
@@ -183,15 +192,105 @@ public class MailtrapEmailService(
             ? string.Empty
             : $"<img src=\"{Sanitize(imageUrl)}\" alt=\"\" width=\"520\" style=\"width:100%;max-width:520px;height:auto;display:block;margin:0 0 20px;border-radius:0\" />";
 
+        ApplyDefaults(variables);
+
         var templatePath = GetTemplatePath(templateId);
         if (templatePath is not null)
         {
             var templateText = await File.ReadAllTextAsync(templatePath);
-            return ReplaceTemplateVariables(templateText, variables);
+            var rendered = ReplaceTemplateVariables(templateText, variables);
+            return RemoveUnresolvedPlaceholders(rendered, templateId);
         }
 
         logger.LogWarning("No template file found for '{TemplateId}' in {Directory}; using fallback layout", templateId, config.TemplateDirectory);
         return BuildFallbackHtml(templateId, variables);
+    }
+
+    /// <summary>
+    /// Variables an email cannot make sense without. Optional ones (names, labels, footers) are filled in by
+    /// <see cref="ApplyDefaults"/> instead.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> RequiredVariables = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["email-verification"] = ["otp_code"],
+        ["otp"] = ["otp_code"],
+        ["email-verification-link"] = ["verify_url"],
+        ["reset-password"] = ["reset_url"],
+        ["institution-welcome"] = ["set_password_url"],
+        ["member-welcome"] = ["set_password_url"],
+        ["referral-invitation"] = ["register_url", "referral_code"],
+        ["digest"] = ["portal_url"],
+    };
+
+    internal static List<string> MissingRequiredVariables(string templateId, Dictionary<string, string> variables)
+    {
+        var missing = new List<string>();
+        if (RequiredVariables.TryGetValue(templateId, out var required))
+            missing.AddRange(required.Where(k => !variables.TryGetValue(k, out var v) || string.IsNullOrWhiteSpace(v)));
+
+        // A notification is the title and the message; one with neither has nothing to say.
+        if (string.Equals(templateId, "notification", StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(variables.GetValueOrDefault("title"))
+            && string.IsNullOrWhiteSpace(variables.GetValueOrDefault("body")))
+            missing.Add("title or body");
+
+        return missing;
+    }
+
+    /// <summary>
+    /// Fills everything an email can sensibly do without. Callers pass nulls and blanks freely (an absent logo, a member
+    /// with no first name, a link that is not configured), and none of that may ever show up as a raw <c>{{name}}</c>.
+    /// Parts that only make sense with a value (the button, the footer line) are built here as one fragment so they simply
+    /// do not appear when there is nothing to put in them.
+    /// </summary>
+    internal static void ApplyDefaults(Dictionary<string, string> variables)
+    {
+        string Get(string key) => variables.TryGetValue(key, out var v) ? v?.Trim() ?? string.Empty : string.Empty;
+        void Default(string key, string fallback) { if (string.IsNullOrWhiteSpace(Get(key))) variables[key] = fallback; }
+
+        var brand = Get("brand_name");
+
+        // Greeting: "Hi there," reads fine; "Hi ," does not.
+        Default("first_name", "there");
+        Default("member_first_name", Get("first_name"));
+        Default("referrer_name", "A member");
+
+        Default("badge_label", "Update");
+        Default("title", Get("badge_label"));
+        Default("body", string.Empty);
+
+        // Links that depend on deployment configuration. Never blank, never a placeholder.
+        Default("institution_portal_url", "the address your platform team shared with you");
+        Default("member_portal_url", "the address your administrators shared with you");
+
+        // The button only exists when there is somewhere to go.
+        var actionUrl = Get("action_url");
+        var actionLabel = Get("action_label");
+        if (string.IsNullOrWhiteSpace(actionLabel)) actionLabel = $"Open {brand}".Trim();
+        variables["action_button_html"] = string.IsNullOrWhiteSpace(actionUrl)
+            ? string.Empty
+            : $"<a href=\"{Sanitize(actionUrl)}\" class=\"button\">{Sanitize(actionLabel)}</a>";
+
+        // "you are a member of …" style reasons; callers that give none get a truthful generic one.
+        var reason = Get("pref_label");
+        if (string.IsNullOrWhiteSpace(reason))
+            reason = string.IsNullOrWhiteSpace(brand) ? "you have an account with us" : $"you have an account with {brand}";
+        variables["pref_line_html"] = $"You're receiving this because {Sanitize(reason)}.";
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex Placeholder = new(@"\{\{\s*([A-Za-z0-9_\-.]+)\s*\}\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Last line of defence: whatever is still a <c>{{placeholder}}</c> after substitution is removed (and named in the
+    /// log, so the template or the caller gets fixed) instead of reaching someone's inbox.
+    /// </summary>
+    private string RemoveUnresolvedPlaceholders(string html, string templateId)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var cleaned = Placeholder.Replace(html, m => { names.Add(m.Groups[1].Value); return string.Empty; });
+        if (names.Count > 0)
+            logger.LogWarning("Template {Template} had unresolved placeholder(s) {Names}; they were removed before sending", templateId, string.Join(", ", names));
+        return cleaned;
     }
 
     private static string BuildBrandMarkHtml(Dictionary<string, string> variables)
@@ -244,7 +343,7 @@ public class MailtrapEmailService(
     // HTML-encoding each dynamic value itself before assembling the markup —
     // it needs the same raw treatment since it's a multi-item list block this
     // template engine's flat {{key}} substitution can't loop over on its own.
-    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html", "digest_sections_html", "image_block_html" };
+    private static readonly HashSet<string> RawHtmlVariableKeys = new(StringComparer.OrdinalIgnoreCase) { "brand_mark_html", "digest_sections_html", "image_block_html", "action_button_html", "pref_line_html" };
 
     private static string ReplaceTemplateVariables(string templateText, Dictionary<string, string> variables)
     {
@@ -383,6 +482,15 @@ public class MailtrapEmailService(
                 if (text is not null)
                     dict[prop.Name] = text;
             }
+            return dict;
+        }
+
+        // A dictionary passed straight in (not yet serialised): its entries are the variables, not its CLR properties.
+        if (templateVariables is System.Collections.IDictionary map)
+        {
+            foreach (System.Collections.DictionaryEntry entry in map)
+                if (entry.Key?.ToString() is { } key && entry.Value is not null)
+                    dict[key] = entry.Value.ToString() ?? string.Empty;
             return dict;
         }
 

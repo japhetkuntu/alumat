@@ -67,6 +67,42 @@ public class ReportDataBuilderTests
     }
 
     [Fact]
+    public async Task The_member_roster_adds_a_column_for_each_of_the_communitys_own_questions()
+    {
+        var community = new Institution
+        {
+            Id = Ours, Name = "Grace", Slug = "grace",
+            RegistrationFields =
+            [
+                new() { Id = "chapter", Label = "Which chapter are you in?", Type = RegistrationFieldTypes.Select, Options = ["Accra", "Kumasi"] },
+                new() { Id = "profession", Label = "Profession" },
+            ],
+        };
+        var ama = Person("ama"); ama.CustomFields = new() { ["chapter"] = "Kumasi", ["profession"] = "Nurse" };
+        var kofi = Person("kofi"); kofi.CustomFields = new() { ["chapter"] = "Accra" };   // left one blank
+        var esi = Person("esi");                                                         // joined before the questions existed
+        var builder = await Create(community, ama, kofi, esi);
+
+        var (data, rows) = await Run(builder, Job(ReportTypes.Members));
+
+        // The standard columns come first and the questions follow, in the order they are asked.
+        Assert.Equal(["Which chapter are you in?", "Profession"], data.Columns.TakeLast(2).Select(c => c.Header));
+        // Rows are sorted by name: ama, esi (joined before the questions), kofi.
+        Assert.Equal(["Kumasi", null, "Accra"], ReportRig.Column(data, rows, "Which chapter are you in?"));
+        Assert.Equal(["Nurse", null, null], ReportRig.Column(data, rows, "Profession"));
+    }
+
+    [Fact]
+    public async Task A_community_without_extra_questions_gets_the_standard_roster_unchanged()
+    {
+        var builder = await Create(new Institution { Id = Ours, Name = "Grace", Slug = "grace" }, Person("ama"));
+
+        var (data, _) = await Run(builder, Job(ReportTypes.Members));
+
+        Assert.Equal("Last signed in", data.Columns.Last().Header);
+    }
+
+    [Fact]
     public async Task The_member_roster_shows_the_department_by_name_and_no_internal_ids()
     {
         var builder = await Create(Person("ama"), new Department { Id = "mining", InstitutionId = Ours, Name = "Mining Engineering" });

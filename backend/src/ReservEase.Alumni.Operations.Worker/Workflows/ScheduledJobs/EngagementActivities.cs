@@ -220,6 +220,7 @@ public class EngagementActivities(
             TemplateVariables = new
             {
                 first_name = firstName, title, body, badge_label = badge, action_url = actionUrl, action_label = actionLabel,
+                pref_label = $"you are a member of {(string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName)}",
                 brand_name = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName,
                 brand_color = institution.PrimaryColorHex, brand_secondary_color = institution.SecondaryColorHex, brand_logo = institution.LogoUrl,
             },

@@ -47,9 +47,12 @@ public class ClassNoteService(
     private async Task<bool> AreDuesMetAsync(string memberId, int graduationYear)
     {
         var currentYear = DateTime.UtcNow.Year;
+        // From the graduation year, or from the year of joining where the community has no graduation years.
+        var joined = await memberRepo.GetByIdAsync(memberId);
+        var fromYear = MembershipPeriods.RequiredFromYear(graduationYear, joined?.CreatedAt ?? DateTime.UtcNow);
         var requiredCampaigns = await campaignRepo.GetAllAsync(c =>
             c.IsMembershipCampaign && c.MembershipYear.HasValue
-            && c.MembershipYear.Value >= graduationYear
+            && c.MembershipYear.Value >= fromYear
             && c.MembershipYear.Value <= currentYear);
         if (requiredCampaigns.Any())
         {

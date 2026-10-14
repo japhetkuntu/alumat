@@ -157,6 +157,17 @@ public class GroupCommandHandlerTests
     // ── Answering ────────────────────────────────────────────────────────
 
     [Fact]
+    public async Task A_connected_group_goes_quiet_when_the_platform_deactivates_its_institution()
+    {
+        var inst = Inst("i1", Active());
+        inst.WhatsAppBotEnabled = false;
+        var rig = Create(inst);
+
+        Assert.Null(await rig.Handler.HandleAsync(Post("!events")));
+        Assert.Null(await rig.Handler.HandleAsync(Post("!help")));
+    }
+
+    [Fact]
     public async Task A_connected_group_gets_public_information_with_exact_links_and_a_pointer_to_private_chat()
     {
         var rig = Create(Inst("i1", Active()));

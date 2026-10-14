@@ -15,6 +15,7 @@ import { PushNotificationPrompt } from "@/components/member/push-notification-pr
 import { InstallPromptBanner, useInstallPrompt } from "@/components/member/install-prompt";
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
 import { useWhatsAppStatus } from "@/components/member/whatsapp-connect-card";
+import { InstitutionSwitcher } from "@/components/member/institution-switcher";
 import { memberClient } from "@/lib/api-client";
 import { getHomeModules, getUnreadNotificationsByCategory } from "@/lib/member-api";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
@@ -79,7 +80,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     section: "Community",
     items: [
       { href: "/forum", label: "Forum", icon: MessageSquare },
-      { href: "/communities", label: "Communities", icon: UsersRound },
+      { href: "/communities", label: "Groups", icon: UsersRound },
       { href: "/events", label: "Events", icon: Calendar },
       { href: "/news", label: "News", icon: Newspaper },
       { href: "/resources", label: "Resources", icon: FolderOpen },
@@ -130,7 +131,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
 
 // Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
 const EXTRA_ROUTE_FEATURES: Record<string, string> = {
-  "/communities": "Communities",
+  "/communities": "Groups",
   "/membership-certificate": "Contributions",
 };
 
@@ -152,9 +153,13 @@ interface NavThemeData {
   smsNotificationsEnabled?: boolean;
   /** "Alumni" (default) or "Community" — see backend Institution.OrganizationType. Community institutions hide graduation-year/cohort UI throughout. */
   organizationType?: "Alumni" | "Community";
+  /** Whether members have a graduation year at all. Year-based screens (the leaderboard) are hidden when it is "Off". */
+  graduationYearMode?: "Off" | "Optional" | "Required";
   /** Alumni-only relabeling of "Batch" — see backend Institution.CohortLabel. Null/absent falls back to "Batch"/"Batches". */
   cohortLabel?: string | null;
   cohortLabelPlural?: string | null;
+  /** The community's own extra questions, also asked at registration. */
+  registrationFields?: { id: string; label: string; type: "text" | "select"; required: boolean; options: string[] }[];
 }
 
 /** Shared across Sidebar, MobileBottomNav, and the mobile header — react-query dedupes the fetch since they all use the same queryKey. Exported so other screens (e.g. Settings) can show the real institution name instead of a generic placeholder. */
@@ -267,6 +272,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
       items: g.items.filter((item) => {
         const featureKey = NAV_FEATURE_KEYS[item.href];
         if (item.href === "/connect-whatsapp" && !whatsAppOffered) return false;
+        // The leaderboard ranks year groups; with no graduation years there is nothing to rank.
+        if (item.href === "/leaderboard" && (navTheme?.graduationYearMode ?? (navTheme?.organizationType === "Community" ? "Off" : "Required")) === "Off") return false;
         // Every feature the institution has switched on is listed, whether or not it has content yet,
         // so members can see what their community offers and be the first to use it.
         return !(featureKey && disabledFeatures.has(featureKey));
@@ -297,6 +304,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             </Button>
           )}
         </div>
+        <InstitutionSwitcher />
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 space-y-3 custom-scrollbar">

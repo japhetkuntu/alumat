@@ -47,23 +47,31 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-[10000] grid w-full translate-x-[-50%] translate-y-[-50%]",
-        "border border-border/60 bg-background p-7 shadow-[0_8px_32px_rgba(0,0,0,0.12)]",
-        "max-h-[85vh] overflow-y-auto",
+        // Phones: a sheet that rises from the bottom edge, full width, within reach of a thumb, and never taller than what is
+        // actually visible (dvh follows the browser bars and the keyboard). It scrolls inside itself; the footer stays put.
+        "fixed inset-x-0 bottom-0 z-[10000] mx-auto grid w-full",
+        "border border-border/60 bg-background p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_-8px_32px_rgba(0,0,0,0.14)]",
+        "max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
-        "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+        "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+        // From sm: the centred card it always was.
+        "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:translate-x-[-50%] sm:translate-y-[-50%]",
+        "sm:p-7 sm:max-h-[85vh] sm:shadow-[0_8px_32px_rgba(0,0,0,0.12)]",
+        "sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95",
+        "sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]",
+        "sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",
         "duration-250",
-        size === "default" && "max-w-[520px]",
-        size === "lg" && "max-w-[720px]",
+        size === "default" && "sm:max-w-[520px]",
+        size === "lg" && "sm:max-w-[720px]",
         className
       )}
       {...props}
     >
+      {/* A small grip on the sheet so it reads as something that came up from the bottom. Phones only. */}
+      <span aria-hidden className="mx-auto -mt-1 mb-3 block h-1 w-10 bg-border sm:hidden" />
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center text-muted-foreground/60 transition-all duration-150 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
+      <DialogPrimitive.Close className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center text-muted-foreground/70 transition-all duration-150 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:right-4 sm:top-4 sm:h-8 sm:w-8">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -73,11 +81,24 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col space-y-2 text-left", className)} {...props} />;
+  // pr-9 keeps a long title clear of the close button.
+  return <div className={cn("flex flex-col space-y-2 pr-9 text-left", className)} {...props} />;
 }
 
 function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-3 mt-6", className)} {...props} />;
+  // On a phone the actions stay pinned to the bottom of the sheet while the content scrolls, full width and easy to hit; the
+  // main action sits on top. From sm they are the familiar right-aligned row.
+  return (
+    <div
+      className={cn(
+        "mt-6 flex flex-col-reverse gap-2",
+        "sticky bottom-0 -mx-5 border-t border-border/60 bg-background px-5 py-3",
+        "sm:static sm:mx-0 sm:flex-row sm:justify-end sm:gap-3 sm:border-0 sm:bg-transparent sm:p-0",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 const DialogTitle = React.forwardRef<

@@ -129,7 +129,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
                       : `${spotlight.memberName} + ${spotlight.coCelebrants.length} other${spotlight.coCelebrants.length === 1 ? "" : "s"}`
                     : spotlight.memberName}
                 </p>
-                {spotlight.memberGraduationYear && !(spotlight.coCelebrants && spotlight.coCelebrants.length > 0) && (
+                {(spotlight.memberGraduationYear ?? 0) > 0 && !(spotlight.coCelebrants && spotlight.coCelebrants.length > 0) && (
                   <p className="flex items-center gap-1 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     <GraduationCap size={11} /> Class of {spotlight.memberGraduationYear}
                   </p>
@@ -249,7 +249,7 @@ function SubmitDrawer({
               id="spot-title"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. From campus to Silicon Valley"
+              placeholder="e.g. From first job to founder"
               className="h-11 text-[14px]"
             />
           </div>

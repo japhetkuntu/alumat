@@ -284,6 +284,63 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
+    public async Task GetMembersAsync_CanBeNarrowedByAnswersToTheCommunitysQuestions()
+    {
+        var members = new List<DbMember>
+        {
+            new() { Id = "m1", FirstName = "Ama", LastName = "A", Email = "a@x.com", Status = "Active", CreatedAt = new DateTime(2026, 1, 1), CustomFields = new() { ["chapter"] = "Kumasi" } },
+            new() { Id = "m2", FirstName = "Kofi", LastName = "B", Email = "b@x.com", Status = "Active", CreatedAt = new DateTime(2026, 2, 1), CustomFields = new() { ["chapter"] = "Accra" } },
+            new() { Id = "m3", FirstName = "Esi", LastName = "C", Email = "c@x.com", Status = "Active", CreatedAt = new DateTime(2026, 3, 1) },
+        };
+        var memberRepo = new Mock<IAlumniPgRepository<DbMember>>();
+        memberRepo.Setup(r => r.GetAllAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DbMember, bool>>>(), It.IsAny<bool>()))
+            .ReturnsAsync((System.Linq.Expressions.Expression<Func<DbMember, bool>> p, bool _) => members.Where(p.Compile()).ToList());
+        var service = new MemberManagementService(memberRepo.Object, Mock.Of<IAlumniPgRepository<Campaign>>(), Mock.Of<IAlumniPgRepository<Contribution>>(), Mock.Of<IAlumniPgRepository<InstitutionEntity>>(), Mock.Of<IAlumniPgRepository<CommunityMembership>>(), Mock.Of<IAlumniPgRepository<Referral>>(), Mock.Of<ICurrentTenantService>(), Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<MemberManagementService>());
+
+        var response = await service.GetMembersAsync(new MemberListFilter { Page = 1, PageSize = 10, AnswerContains = "KUMA" }, new AuthData { Id = "a", Role = "SuperAdmin" });
+
+        Assert.Equal(200, response.Code);
+        Assert.Equal(["m1"], response.Data!.Results.Select(m => m.Id));
+        Assert.Equal(1, response.Data.TotalCount);
+    }
+
+    [Fact]
+    public async Task UpdateMemberCustomFieldsAsync_KeepsOnlyAnswersToTheCommunitysQuestions_AndRejectsABadChoice()
+    {
+        var member = new DbMember { Id = "m1", FirstName = "Ama", LastName = "Mensah", Email = "ama@x.com", GraduationYear = 2026 };
+        var memberRepo = new Mock<IAlumniPgRepository<DbMember>>();
+        memberRepo.Setup(r => r.GetByIdAsync("m1", It.IsAny<bool>())).ReturnsAsync(member);
+        var institution = new InstitutionEntity
+        {
+            Id = "inst1",
+            RegistrationFields =
+            [
+                new() { Id = "chapter", Label = "Chapter", Type = "select", Required = true, Options = ["Accra", "Kumasi"] },
+                new() { Id = "profession", Label = "Profession" },
+            ],
+        };
+        var institutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
+        institutionRepo.Setup(r => r.GetByIdAsync("inst1", It.IsAny<bool>())).ReturnsAsync(institution);
+        var tenant = new Mock<ICurrentTenantService>();
+        tenant.SetupGet(t => t.InstitutionId).Returns("inst1");
+        var service = new MemberManagementService(memberRepo.Object, Mock.Of<IAlumniPgRepository<Campaign>>(), Mock.Of<IAlumniPgRepository<Contribution>>(), institutionRepo.Object, Mock.Of<IAlumniPgRepository<CommunityMembership>>(), Mock.Of<IAlumniPgRepository<Referral>>(), tenant.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<MemberManagementService>());
+        var admin = new AuthData { Id = "admin1", Role = "SuperAdmin" };
+
+        var bad = await service.UpdateMemberCustomFieldsAsync("m1", new UpdateMemberCustomFieldsRequest(new() { ["chapter"] = "Tamale" }), admin);
+        Assert.Equal(400, bad.Code);
+        Assert.Null(member.CustomFields);
+
+        var ok = await service.UpdateMemberCustomFieldsAsync("m1", new UpdateMemberCustomFieldsRequest(new() { ["chapter"] = "kumasi", ["profession"] = " Nurse ", ["injected"] = "x" }), admin);
+        Assert.Equal(200, ok.Code);
+        Assert.Equal(new Dictionary<string, string> { ["chapter"] = "Kumasi", ["profession"] = "Nurse" }, member.CustomFields);
+
+        // Staff may leave a required question blank when correcting a record.
+        var cleared = await service.UpdateMemberCustomFieldsAsync("m1", new UpdateMemberCustomFieldsRequest(new()), admin);
+        Assert.Equal(200, cleared.Code);
+        Assert.Null(member.CustomFields);
+    }
+
+    [Fact]
     public async Task CreateCategoryAsync_AndThreadActions_ReturnForbidden_ForScopedAdmin()
     {
         var mockCategoryRepo = new Mock<IAlumniPgRepository<ForumCategory>>();

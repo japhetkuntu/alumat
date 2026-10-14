@@ -23,7 +23,16 @@ public record WhatsAppAdoptionMonth(string Month, int ByWhatsApp, int BySms);
 
 public record WhatsAppAdoptionInstitution(string Name, int ActiveMembers, int Connected, int ByWhatsAppThisMonth, int BySmsThisMonth);
 
+/// <summary>One institution's WhatsApp state, for the platform administrator's per-institution switch.</summary>
+public record WhatsAppInstitutionRow(
+    string Id, string Name, string Slug, bool PlatformEnabled, bool InstitutionOptedOut, int Connected, int ActiveMembers, int ActiveGroups);
+
 public interface IWhatsAppHealthService
 {
+    Task<IApiResponse<List<WhatsAppInstitutionRow>>> ListInstitutionsAsync();
+
+    /// <summary>Activates or deactivates WhatsApp for one institution. Only effective while the platform-wide switch is on.</summary>
+    Task<IApiResponse<WhatsAppInstitutionRow>> SetInstitutionAsync(string institutionId, bool enabled, string actorId, string actorName);
+
     Task<IApiResponse<WhatsAppHealthDto>> GetAsync();
 }

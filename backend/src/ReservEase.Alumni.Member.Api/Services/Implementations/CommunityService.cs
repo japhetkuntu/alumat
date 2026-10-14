@@ -39,7 +39,7 @@ public class CommunityService(
             var items = communities.OrderByDescending(c => c.Name).Select(c =>
             {
                 myMemberships.TryGetValue(c.Id, out var mine);
-                return new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), mine?.Status, mine?.Status == "Approved" ? mine.Role : null);
+                return new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), mine?.Status, mine?.Status == "Approved" ? mine.Role : null, null, c.Kind);
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -68,7 +68,7 @@ public class CommunityService(
             foreach (var m in myMemberships)
             {
                 if (!communities.TryGetValue(m.CommunityId, out var c)) continue;
-                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), m.Status, m.Role));
+                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), m.Status, m.Role, null, c.Kind));
             }
             return items.OrderByDescending(i => i.Name).ToList().ToOkApiResponse();
         }
@@ -90,7 +90,7 @@ public class CommunityService(
             var mine = await membershipRepo.GetOneAsync(m => m.CommunityId == id && m.MemberId == memberId);
             var approvedCount = await membershipRepo.CountAsync(m => m.CommunityId == id && m.Status == "Approved");
             var channels = mine?.Status == "Approved" ? ToChannelDtos(community.ExternalChannels) : null;
-            return new CommunityDto(community.Id, community.Name, community.Description, community.CoverImageUrl, approvedCount, mine?.Status, mine?.Status == "Approved" ? mine.Role : null, channels)
+            return new CommunityDto(community.Id, community.Name, community.Description, community.CoverImageUrl, approvedCount, mine?.Status, mine?.Status == "Approved" ? mine.Role : null, channels, community.Kind)
                 .ToOkApiResponse();
         }
         catch (Exception e)

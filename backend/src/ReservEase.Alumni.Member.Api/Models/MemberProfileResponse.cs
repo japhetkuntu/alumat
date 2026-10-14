@@ -11,4 +11,6 @@ public record MemberProfileResponse(
     int? YearOfEntry, string? House, string? StudentStatus, string? PrefectStatus,
     List<string>? ClubsAndSocieties, List<string>? LeadershipRoles, string? Achievements,
     string? ConnectionType, List<string>? Skills, List<string>? Interests,
-    bool ShowEmailOnDirectory, bool ShowPhoneOnDirectory, bool ShowCompanyOnDirectory, bool ShowBioOnDirectory);
+    bool ShowEmailOnDirectory, bool ShowPhoneOnDirectory, bool ShowCompanyOnDirectory, bool ShowBioOnDirectory,
+    // Answers to the community's own registration questions, keyed by question id.
+    Dictionary<string, string>? CustomFields = null);

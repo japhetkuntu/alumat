@@ -10,8 +10,42 @@ using ReservEase.Alumni.Member.Api.Services.Interfaces;
 namespace ReservEase.Alumni.Member.Api.Controllers;
 
 [Route("api/v{version:apiVersion}/auth")]
-public class MembersController(IMemberAuthService authService, IMemberAccountDeletionService accountDeletionService) : DefaultController
+public class MembersController(
+    IMemberAuthService authService, IMemberAccountDeletionService accountDeletionService,
+    Services.Implementations.IInstitutionSwitchService switchService) : DefaultController
 {
+    [HttpGet("institutions")]
+    [Authorize]
+    [SwaggerOperation(Summary = "My other communities", Description = "Other communities where this email has an active, verified account")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<IReadOnlyList<Services.Implementations.SwitchTarget>>))]
+    public async Task<IActionResult> MyInstitutions()
+        => (await switchService.ListAsync(User.GetAccount().Id)).ToOkApiResponse().ToActionResult();
+
+    [HttpPost("switch")]
+    [Authorize]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Start switching community", Description = "Returns the portal address to open, carrying a one-time code valid for a minute")]
+    public async Task<IActionResult> StartSwitch([FromBody] SwitchRequest request)
+    {
+        var url = await switchService.StartAsync(User.GetAccount().Id, request.InstitutionId);
+        return url is null
+            ? ApiResponseExtensions.ToNotFoundApiResponse<object>("That community isn't one of yours.").ToActionResult()
+            : new { url }.ToOkApiResponse().ToActionResult();
+    }
+
+    [HttpPost("switch/exchange")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [SwaggerOperation(Summary = "Finish switching community", Description = "Redeems the one-time code on the community's own portal and signs the member in")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<MemberTokenResponse>))]
+    public async Task<IActionResult> ExchangeSwitch([FromBody] SwitchExchangeRequest request)
+    {
+        var member = await switchService.ConsumeAsync(request.Code);
+        if (member is null)
+            return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("That link has expired. Please sign in.").ToActionResult();
+        return (await authService.CreateSessionAsync(member)).ToActionResult();
+    }
+
     [HttpPost("register")]
     [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     [SwaggerOperation(Summary = "Register", Description = "Submit registration and receive an OTP for email verification")]

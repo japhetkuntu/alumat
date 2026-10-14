@@ -74,7 +74,15 @@ public class AssistantEngine(
         string reply;
         try
         {
-            var communities = await directory.FindMemberCommunitiesAsync(phone, ct);
+            var found = await directory.FindMemberCommunitiesAsync(phone, ct);
+            var communities = found.Where(c => c.Allowed).ToList();
+            if (found.Count > 0 && communities.Count == 0)
+            {
+                // Their only community is one where WhatsApp has been switched off (by the platform or by the institution itself).
+                var c = found[0];
+                await stateStore.SetAsync(phone, state);
+                return new AssistantReply(to, $"The WhatsApp assistant isn't available for {c.Name} right now. You can use the portal instead{(string.IsNullOrEmpty(c.PortalUrl) ? "." : $": {c.PortalUrl}")}");
+            }
             reply = await RouteAsync(text, (message.Text ?? "").Trim(), phone, state, communities, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
@@ -144,7 +152,11 @@ public class AssistantEngine(
         if (current is { IsMember: true } && text is "suggest" or "suggest job" or "post job" or "share opportunity" or "share job")
             return StartFlow("suggest", state);
         if (current is { IsMember: true } && text is "post update" or "post" or "share update" or "update")
+        {
+            if (current.UsesYears == false)
+                return "Your community doesn't use year groups, so there's no year wall to post to. Reply *suggest* to send a job or opportunity, or *menu* for the main menu.";
             return StartFlow("note", state);
+        }
 
         // "6" is "Switch Community" only on the menu; in a numbered pick list it is that list's sixth entry (handled below).
         if (text is "switch" or "change community" or "change" || (text == "6" && current is not null && state.Stage == AssistantStages.Menu))
@@ -354,6 +366,8 @@ public class AssistantEngine(
                 return Help(c);
             case 8 when c.IsMember:
                 state.Stage = AssistantStages.Share;
+                if (!c.UsesYears)
+                    return StartFlow("suggest", state);
                 return "*What would you like to share?*\n\n1️⃣  A job or opportunity\n      _an administrator reviews it first_\n2️⃣  An update for your year group's wall\n\nReply with a number, or *menu* to go back.";
             default:
                 return $"That's not one of the options. Please choose a number from 1 to {(c.IsMember ? 8 : 7)}.\n\n{Menu(c)}";
@@ -435,7 +449,7 @@ public class AssistantEngine(
             sb.AppendLine("*invite*  invite a friend");
             sb.AppendLine("*rsvp 1*  book an event you were shown");
             sb.AppendLine("*suggest*  send a job or opportunity");
-            sb.AppendLine("*post update*  post to your year group");
+            if (c.UsesYears) sb.AppendLine("*post update*  post to your year group");
             sb.AppendLine("*stop*  pause WhatsApp alerts");
             sb.AppendLine("*unlink*  disconnect this number");
         }

@@ -7,7 +7,9 @@ public record WhatsAppGroupDto(
 
 /// <summary>Everything the portal's WhatsApp tab needs in one read.</summary>
 public record WhatsAppOverviewDto(
-    bool PlatformEnabled, string? AssistantNumber, string? AssistantLink, List<WhatsAppGroupDto> Groups, List<string> Commands);
+    bool PlatformEnabled, string? AssistantNumber, string? AssistantLink, List<WhatsAppGroupDto> Groups, List<string> Commands,
+    /// <summary>AlumUnion has switched WhatsApp off for this institution. The institution cannot turn it back on.</summary>
+    bool DeactivatedByPlatform = false);
 
 public record CreateWhatsAppGroupRequest(string Name, string? CommunityId);
 

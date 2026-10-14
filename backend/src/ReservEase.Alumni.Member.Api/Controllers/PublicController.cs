@@ -97,8 +97,11 @@ public class PublicController(
             institution.CohortLabel,
             institution.CohortLabelPlural,
             whatsApp.Value.Enabled && !string.IsNullOrWhiteSpace(whatsApp.Value.AssistantNumber)
-                && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)
-                && await platformSwitch.IsOnAsync());
+                && institution.IsWhatsAppAllowed()
+                && await platformSwitch.IsOnAsync(),
+            institution.GraduationYearMode,
+            institution.CollectMemberId,
+            institution.RegistrationFields);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }

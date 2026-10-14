@@ -81,7 +81,7 @@ public class NotificationDispatchActivities(
                 SmsNotificationsEnabled = institution.SmsNotificationsEnabled,
                 EmailNotificationsEnabled = institution.EmailNotificationsEnabled,
                 WhatsAppChannelOpen = configuration.GetValue("WaSenderConfig:Enabled", false)
-                    && !institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)
+                    && institution.IsWhatsAppAllowed()
                     && await BotOnAsync(),
                 MemberPortalUrl = MemberPortalLinks.UrlOrEmpty(institution.Slug, institution.CustomDomain, memberDomain),
                 AdminPortalUrl = string.IsNullOrWhiteSpace(adminDomain) ? string.Empty : $"https://{institution.Slug}.{adminDomain}",

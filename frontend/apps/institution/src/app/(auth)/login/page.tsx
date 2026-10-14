@@ -128,7 +128,11 @@ export default function AdminLoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    // Arriving from another institution's switcher brings the email along, so only the password is left to type.
+    defaultValues: { email: searchParams.get("email") ?? "" },
+  });
 
   async function onSubmit(data: FormData) {
     // Only writes when non-empty — leaving this field blank means "don't

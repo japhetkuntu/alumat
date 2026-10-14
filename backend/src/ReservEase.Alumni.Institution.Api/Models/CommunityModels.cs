@@ -5,7 +5,7 @@ namespace ReservEase.Alumni.Institution.Api.Models;
 public record CommunityListItem(
     string Id, string Name, string? Description, string? CoverImageUrl, bool IsActive,
     int ApprovedCount, int PendingCount, int LeaderCount, DateTime CreatedAt,
-    List<CommunityChannelItem>? Channels = null, int JoinedViaInvites = 0, int JoinedLast30Days = 0);
+    List<CommunityChannelItem>? Channels = null, int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null);
 
 public record CommunityChannelItem(string Type, string DisplayName, string? InviteUrl, DateTime ConnectedAt);
 
@@ -29,6 +29,10 @@ public class CreateCommunityRequest
     public string? Description { get; set; }
 
     public string? CoverImageUrl { get; set; }
+
+    /// <summary>What this group is, in the community's own words (Chapter, Committee, Team…).</summary>
+    [MaxLength(40)]
+    public string? Kind { get; set; }
 }
 
 public class UpdateCommunityRequest
@@ -40,6 +44,9 @@ public class UpdateCommunityRequest
     public string? Description { get; set; }
 
     public string? CoverImageUrl { get; set; }
+
+    [MaxLength(40)]
+    public string? Kind { get; set; }
     public bool IsActive { get; set; } = true;
 
     /// <summary>Connected external groups. Null leaves them unchanged; an empty list disconnects them all.</summary>

@@ -315,7 +315,7 @@ function CampaignCard({
           </div>
           {!isMembership && c.paidCount > 0 && (
             <p className="text-[12px] font-medium" style={{ color: "var(--primary)" }}>
-              {c.paidCount} alumni {c.paidCount === 1 ? "has" : "have"} given
+              {c.paidCount} {c.paidCount === 1 ? "member" : "members"} {c.paidCount === 1 ? "has" : "have"} given
             </p>
           )}
         </div>
@@ -629,7 +629,7 @@ export default function MemberContributionsPage() {
         <PageHeader
           eyebrow="Financial overview"
           title="My Contributions"
-          description="Fund projects & welfare: easy payments for school development fundraisers, year-group dues, and member welfare support."
+          description="Fund projects & welfare: easy payments for fundraisers, membership dues, and member welfare support."
         />
       </div>
 

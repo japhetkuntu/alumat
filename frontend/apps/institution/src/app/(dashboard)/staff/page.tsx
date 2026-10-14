@@ -112,7 +112,7 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
                 <YearGroupPicker value={yearGroups} onChange={(years) => setYearGroups(toSingleYear(years))} />
               </div>
               <div className="space-y-2">
-                <Label>Communities</Label>
+                <Label>Groups</Label>
                 <CommunityCheckboxList communities={communities} selected={communityIds} onChange={setCommunityIds} />
               </div>
             </div>
@@ -189,7 +189,7 @@ function EditAdminForm({
                 <YearGroupPicker value={yearGroups} onChange={(years) => setYearGroups(toSingleYear(years))} />
               </div>
               <div className="space-y-2">
-                <Label>Communities</Label>
+                <Label>Groups</Label>
                 <CommunityCheckboxList communities={communities} selected={communityIds} onChange={setCommunityIds} />
               </div>
             </div>

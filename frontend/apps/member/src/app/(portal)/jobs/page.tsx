@@ -48,7 +48,7 @@ export default function MemberJobsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 sm:space-y-8">
 
-      <PageHeader title="Job board" description="Opportunities shared by the alumni network." />
+      <PageHeader title="Job board" description="Opportunities shared by the community." />
       <SuggestOpportunity initiallyOpen={searchParams.get("suggest") === "1"} />
 
       {/* ── Filters ── */}

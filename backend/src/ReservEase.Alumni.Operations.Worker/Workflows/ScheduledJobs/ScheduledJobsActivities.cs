@@ -193,7 +193,7 @@ public class ScheduledJobsActivities(
 
             foreach (var member in activeMembers)
             {
-                var required = membershipCampaigns.Where(c => c.MembershipYear >= member.GraduationYear).ToList();
+                var required = membershipCampaigns.Where(c => c.MembershipYear >= MembershipPeriods.RequiredFromYear(member.GraduationYear, member.CreatedAt)).ToList();
                 if (required.Count == 0) continue;
 
                 var paidIds = paidByMember.GetValueOrDefault(member.Id) ?? new HashSet<string>();
@@ -234,6 +234,7 @@ public class ScheduledJobsActivities(
                             badge_label = "Dues Reminder",
                             action_url = actionUrl,
                             action_label = "Pay now",
+                            pref_label = $"you are a member of {brandName}",
                             brand_name = brandName,
                             brand_color = institution.PrimaryColorHex,
                             brand_secondary_color = institution.SecondaryColorHex,
@@ -450,6 +451,7 @@ public class ScheduledJobsActivities(
                         {
                             first_name = member.FirstName, title, body, badge_label = "Pledge Reminder",
                             action_url = actionUrl, action_label = actionLabel,
+                            pref_label = $"you made a pledge to {brandName}",
                             brand_name = brandName, brand_color = institution.PrimaryColorHex,
                             brand_secondary_color = institution.SecondaryColorHex, brand_logo = institution.LogoUrl,
                         },
@@ -541,6 +543,7 @@ public class ScheduledJobsActivities(
                                 badge_label = "Event Reminder",
                                 action_url = actionUrl,
                                 action_label = "See who's going",
+                                pref_label = $"you are going to an event at {brandName}",
                                 brand_name = brandName,
                                 brand_color = institution.PrimaryColorHex,
                                 brand_secondary_color = institution.SecondaryColorHex,

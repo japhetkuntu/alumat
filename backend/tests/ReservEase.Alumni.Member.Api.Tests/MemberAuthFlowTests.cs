@@ -221,6 +221,24 @@ public class MemberAuthFlowTests : IDisposable
     }
 
     [Fact]
+    public async Task Where_a_year_is_optional_a_member_without_one_is_numbered_without_a_zero_year_segment()
+    {
+        await SetInstitution(i => { i.AutoApproveMembers = true; i.UseGraduationYears(GraduationYearModes.Optional); });
+        var noYear = new RegisterRequest("Ama", "Owusu", "no.year@example.com", "Secret#123", "0241", null, null, null, AcceptedTerms: true);
+        await service.RegisterAsync(noYear);
+        await service.VerifyOtpAsync(new VerifyOtpRequest("no.year@example.com", Staged("no.year@example.com")!.Otp));
+
+        // A member in the same community who did give a year keeps the year in their number.
+        await service.RegisterAsync(Register("with.year@example.com"));
+        await service.VerifyOtpAsync(new VerifyOtpRequest("with.year@example.com", Staged("with.year@example.com")!.Otp));
+
+        var members = await Db().Members.IgnoreQueryFilters().ToListAsync();
+        Assert.Equal("UMAT-0001", members.Single(m => m.Email == "no.year@example.com").MemberNumber);
+        Assert.Equal("UMAT-2018-0001", members.Single(m => m.Email == "with.year@example.com").MemberNumber);
+        Assert.DoesNotContain(members, m => m.MemberNumber!.Contains("-0-"));
+    }
+
+    [Fact]
     public async Task A_referral_code_links_the_new_member_to_the_referrer_and_records_a_registered_referral()
     {
         var referrer = Person("Active", email: "ref@x.com", id: "ref1"); referrer.ReferralCode = "REF-ABC";

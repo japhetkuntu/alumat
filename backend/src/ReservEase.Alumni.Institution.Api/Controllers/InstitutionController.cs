@@ -125,6 +125,29 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Landing content updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>The extra questions this community asks at registration. Replaces the whole list.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPut("me/registration-fields")]
+    [SwaggerOperation(Summary = "Set the community's own registration questions")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateRegistrationFields([FromBody] UpdateRegistrationFieldsRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        var fields = RegistrationFieldRules.Normalize(request.Fields ?? [], out var error);
+        if (fields is null)
+            return BadRequest(new ApiResponse<object> { Message = error!, Code = 400 });
+
+        institution.RegistrationFields = fields;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Registration questions updated", Code = 200, Data = ToDto(institution) });
+    }
+
     /// <summary>How "active member" status is determined — this institution's own operational choice.</summary>
     [Authorize(Roles = "SuperAdmin")]
     [HttpPatch("me/member-policy")]
@@ -145,6 +168,7 @@ public class InstitutionController(
 
         institution.MemberActivePolicy = request.MemberActivePolicy;
         institution.RequireStudentId = request.RequireStudentId;
+        if (request.CollectMemberId is { } collect) institution.CollectMemberId = collect;
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
 
@@ -251,16 +275,51 @@ public class InstitutionController(
         if (institution is null)
             return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
 
-        if (request.OrganizationType != OrganizationTypes.Alumni && request.OrganizationType != OrganizationTypes.Community)
-            return BadRequest(new ApiResponse<object> { Message = "Unrecognized organization type", Code = 400 });
+        // The graduation-year setting is what matters; the older "Alumni"/"Community" value is still accepted and mapped onto it.
+        var mode = request.GraduationYearMode
+            ?? request.OrganizationType switch
+            {
+                OrganizationTypes.Community => GraduationYearModes.Off,
+                OrganizationTypes.Alumni => institution.GraduationYearMode == GraduationYearModes.Off ? GraduationYearModes.Required : institution.GraduationYearMode,
+                _ => null,
+            };
+        if (!GraduationYearModes.IsValid(mode))
+            return BadRequest(new ApiResponse<object> { Message = "Graduation years must be Off, Optional or Required", Code = 400 });
 
-        institution.OrganizationType = request.OrganizationType;
+        institution.UseGraduationYears(mode!);
         institution.CohortLabel = request.CohortLabel?.Trim() is { Length: > 0 } label ? label : null;
         institution.CohortLabelPlural = request.CohortLabelPlural?.Trim() is { Length: > 0 } plural ? plural : null;
         institution.UpdatedAt = DateTime.UtcNow;
         await institutionRepo.UpdateAsync(institution);
 
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Organization type updated", Code = 200, Data = ToDto(institution) });
+    }
+
+    /// <summary>The starting points offered for how a community is set up. Pre-fills only; nothing is locked.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpGet("templates")]
+    [SwaggerOperation(Summary = "Starting points")]
+    public IActionResult Templates() => Ok(new ApiResponse<IReadOnlyList<InstitutionTemplate>> { Message = "Success", Code = 200, Data = InstitutionTemplates.All });
+
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPost("me/template")]
+    [SwaggerOperation(Summary = "Apply a starting point", Description = "Sets whether graduation years are used and the wording for year groups. Existing members and groups are untouched.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    public async Task<IActionResult> ApplyTemplate([FromBody] ApplyTemplateRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+        var template = InstitutionTemplates.Find(request.TemplateId);
+        if (template is null)
+            return BadRequest(new ApiResponse<object> { Message = "Unknown starting point", Code = 400 });
+
+        institution.UseGraduationYears(template.GraduationYearMode);
+        institution.CohortLabel = template.CohortLabel;
+        institution.CohortLabelPlural = template.CohortLabelPlural;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Applied", Code = 200, Data = ToDto(institution) });
     }
 
     /// <summary>Set this institution's social media profile URLs, shown as icon links in the Member Portal's footer — see UpdateSocialLinksRequest.</summary>
@@ -380,6 +439,6 @@ public class InstitutionController(
             i.HeroImageUrls, i.HeroHeadline,
             i.OrganizationType, i.CohortLabel, i.CohortLabelPlural,
             i.Status, memberPortalUrl,
-            i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName);
+            i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName, i.GraduationYearMode, i.CollectMemberId, i.RegistrationFields);
     }
 }

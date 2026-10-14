@@ -17,4 +17,5 @@ public class CachedRegistration
     public string? ReferralCode { get; set; }
     public string? CommunityId { get; set; }
     public string? Channel { get; set; }
+    public Dictionary<string, string>? CustomFields { get; set; }
 }

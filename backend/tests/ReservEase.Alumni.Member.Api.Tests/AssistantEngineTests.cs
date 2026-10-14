@@ -516,6 +516,20 @@ public class AssistantEngineTests
     }
 
     [Fact]
+    public async Task A_community_without_years_has_no_year_wall_to_post_to()
+    {
+        var (engine, _, _) = Create([Umat(member: true, verified: true) with { UsesYears = false }]);
+        await engine.HandleAsync(Say("hi"));
+
+        var help = await engine.HandleAsync(Say("help"));
+        var post = await engine.HandleAsync(Say("post update"));
+
+        Assert.DoesNotContain("year group", help!.Text);
+        Assert.Contains("doesn't use year groups", post!.Text);
+        Assert.Empty(LastActions.Posted);
+    }
+
+    [Fact]
     public async Task A_redelivered_message_is_not_handled_twice()
     {
         var (engine, _, _) = Create([Umat(member: true, verified: true)]);
@@ -680,5 +694,28 @@ public class AssistantEngineTests
         var reply = await engine.HandleAsync(Say("invite"));
 
         Assert.Contains("https://umat.example.org/referrals", reply!.Text);
+    }
+
+    [Fact]
+    public async Task A_member_whose_community_has_whatsapp_switched_off_is_told_so_and_gets_no_menu()
+    {
+        var (engine, content, _) = Create([Umat(member: true, verified: true) with { Allowed = false }]);
+
+        var reply = await engine.HandleAsync(Say("hi"));
+
+        Assert.Contains("isn't available for UMaT Alumni", reply!.Text);
+        Assert.Contains("https://umat.example.org", reply.Text);
+        Assert.DoesNotContain("Contributions", reply.Text);
+        Assert.Empty(content.Calls);
+    }
+
+    [Fact]
+    public async Task A_member_of_several_communities_only_sees_the_ones_where_it_is_on()
+    {
+        var (engine, _, _) = Create([Umat(member: true, verified: true) with { Allowed = false }, Pensa(member: true, verified: true)]);
+
+        var reply = await engine.HandleAsync(Say("hi"));
+
+        Assert.Contains("PENSA UMaT", reply!.Text);   // the one that is on, with no "which community" question
     }
 }

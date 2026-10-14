@@ -19,9 +19,66 @@ public class WhatsAppHealthService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<NotificationPreference> prefRepo,
     IConfiguration configuration,
+    IAuditLogService auditLog,
     ILogger<WhatsAppHealthService> logger,
     ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch? platformSwitch = null) : IWhatsAppHealthService
 {
+    public async Task<IApiResponse<List<WhatsAppInstitutionRow>>> ListInstitutionsAsync()
+    {
+        try
+        {
+            var institutions = (await institutionRepo.GetAllAsync(i => i.Status == "Active", ignoreQueryFilters: true)).OrderBy(i => i.Name).ToList();
+            var counts = (await memberRepo.GetQueryable(m => m.Status == "Active", ignoreQueryFilters: true)
+                .GroupBy(m => m.InstitutionId)
+                .Select(g => new { Id = g.Key, Active = g.Count(), Connected = g.Count(m => m.PhoneVerifiedAt != null) })
+                .ToListAsync()).ToDictionary(x => x.Id);
+
+            return institutions.Select(i =>
+            {
+                counts.TryGetValue(i.Id, out var c);
+                return new WhatsAppInstitutionRow(i.Id, string.IsNullOrWhiteSpace(i.PortalName) ? i.Name : i.PortalName, i.Slug, i.WhatsAppBotEnabled,
+                    i.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp), c?.Connected ?? 0, c?.Active ?? 0,
+                    i.WhatsAppGroups.Count(g => g.Status == WhatsAppGroupStatuses.Active));
+            }).ToList().ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Listing institutions for WhatsApp failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<WhatsAppInstitutionRow>>("Failed to list institutions");
+        }
+    }
+
+    public async Task<IApiResponse<WhatsAppInstitutionRow>> SetInstitutionAsync(string institutionId, bool enabled, string actorId, string actorName)
+    {
+        try
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
+            if (institution is null) return ApiResponseExtensions.ToNotFoundApiResponse<WhatsAppInstitutionRow>("Institution not found");
+
+            if (institution.WhatsAppBotEnabled != enabled)
+            {
+                institution.WhatsAppBotEnabled = enabled;
+                institution.UpdatedAt = DateTime.UtcNow;
+                institution.UpdatedBy = actorId;
+                await institutionRepo.UpdateAsync(institution);
+                await auditLog.LogAsync(actorId, actorName,
+                    enabled ? "activated WhatsApp for this institution" : "deactivated WhatsApp for this institution (its notifications use SMS and email)",
+                    institution.Name);
+            }
+
+            var members = await memberRepo.CountAsync(m => m.InstitutionId == institution.Id && m.Status == "Active", ignoreQueryFilters: true);
+            var connected = await memberRepo.CountAsync(m => m.InstitutionId == institution.Id && m.Status == "Active" && m.PhoneVerifiedAt != null, ignoreQueryFilters: true);
+            return new WhatsAppInstitutionRow(institution.Id, string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName, institution.Slug,
+                institution.WhatsAppBotEnabled, institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp), connected, members,
+                institution.WhatsAppGroups.Count(g => g.Status == WhatsAppGroupStatuses.Active)).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Setting WhatsApp for an institution failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<WhatsAppInstitutionRow>("Failed to update the institution");
+        }
+    }
+
     private async Task<WhatsAppAdoptionSummary> BuildAdoptionAsync(List<Institution> institutions)
     {
         var keys = Enumerable.Range(0, 6).Select(i => DateTime.UtcNow.AddMonths(-i)).Select(MessagingUsageKeys.For).Reverse().ToList();

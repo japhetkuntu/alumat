@@ -57,7 +57,7 @@ public class GroupCommandHandler(
         var institution = await institutionRepo.GetOneAsync(i => i.Id == route.InstitutionId && i.Status == "Active", ignoreQueryFilters: true);
         var link = institution?.WhatsAppGroups.FirstOrDefault(g => g.Id == route.LinkId && g.Status == WhatsAppGroupStatuses.Active && g.GroupJid == message.ChatId);
         if (institution is null || link is null || !link.AssistantEnabled) return null;
-        if (institution.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)) return null;
+        if (!institution.IsWhatsAppAllowed()) return null;
         if (link.AllowedCommands.Count > 0 && !link.AllowedCommands.Contains(command, StringComparer.OrdinalIgnoreCase)) return null;
 
         var rate = await CountAsync(message.ChatId);

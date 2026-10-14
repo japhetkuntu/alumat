@@ -69,7 +69,7 @@ export default function ReferralsPage() {
     }
   }, [info?.referralCode]);
 
-  const shareMessage = `Join me on our alumni community — ${link}`;
+  const shareMessage = `Join me in our community — ${link}`;
 
   const inviteMut = useMutation({
     mutationFn: () => sendReferralInvite(inviteEmail.trim()),

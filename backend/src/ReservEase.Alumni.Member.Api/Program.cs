@@ -64,6 +64,7 @@ builder.Services.AddMemberControllers();
 
 // Application services
 builder.Services.AddScoped<IMemberAuthService, MemberAuthService>();
+builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Implementations.IInstitutionSwitchService, ReservEase.Alumni.Member.Api.Services.Implementations.InstitutionSwitchService>();
 builder.Services.AddScoped<IMemberAccountDeletionService, MemberAccountDeletionService>();
 builder.Services.AddScoped<IContributionService, ContributionService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();

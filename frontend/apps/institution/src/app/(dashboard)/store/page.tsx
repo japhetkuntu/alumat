@@ -473,7 +473,7 @@ export default function AdminStorePage() {
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Store</h1>
-          <p className="text-muted-foreground text-[13px] mt-1.5">List products for alumni to buy. Delivery is handled by your team outside the platform.</p>
+          <p className="text-muted-foreground text-[13px] mt-1.5">List products for members to buy. Delivery is handled by your team outside the platform.</p>
         </div>
         {tab === "Products" && (
           <Button onClick={() => setShowCreate(!showCreate)}>

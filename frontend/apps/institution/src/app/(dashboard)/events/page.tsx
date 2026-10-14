@@ -93,7 +93,7 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
       <CardContent>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <div className="space-y-2"><Label>Event Title</Label>
-            <Input placeholder="e.g. Alumni Homecoming 2027" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
+            <Input placeholder="e.g. Annual Gathering 2027" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
           <div className="space-y-2"><Label>Description</Label>
             <Textarea placeholder="Describe the event..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -50,16 +50,30 @@ public class ReportDataBuilder(
 
     // ── Institution reports ─────────────────────────────────────────────────
 
-    private ReportData Members(ReportJob job) => new(
-        [
+    private ReportData Members(ReportJob job)
+    {
+        // The community's own questions become extra columns after the standard ones. The column list has to be known before
+        // any row is produced, so the (small, single-row) institution lookup is done up front.
+        var questions = RegistrationQuestions(job);
+        var columns = new List<ReportColumn>
+        {
             new("Member number"), new("First name"), new("Last name"), new("Email"), new("Phone"),
             new("Graduation year", Number), new("Department"), new("Programme"), new("Status"),
             new("Dues paid up"), new("Dues valid until", Date), new("Company"), new("Job title"), new("Location"),
             new("Joined", Date), new("Last signed in", Timestamp),
-        ],
-        MemberRows(job));
+        };
+        columns.AddRange(questions.Select(q => new ReportColumn(q.Label)));
+        return new(columns, MemberRows(job, questions));
+    }
 
-    private async IAsyncEnumerable<object?[]> MemberRows(ReportJob job, [EnumeratorCancellation] CancellationToken ct = default)
+    private List<RegistrationField> RegistrationQuestions(ReportJob job)
+    {
+        if (string.IsNullOrEmpty(job.InstitutionId)) return [];
+        var institution = institutionRepo.GetByIdAsync(job.InstitutionId, ignoreQueryFilters: true).GetAwaiter().GetResult();
+        return institution?.RegistrationFields ?? [];
+    }
+
+    private async IAsyncEnumerable<object?[]> MemberRows(ReportJob job, List<RegistrationField> questions, [EnumeratorCancellation] CancellationToken ct = default)
     {
         var institutionId = job.InstitutionId!;
         var status = Param(job, ReportParameters.Status);
@@ -79,13 +93,18 @@ public class ReportDataBuilder(
 
         await foreach (var page in PagesAsync(members, ct))
             foreach (var m in page)
-                yield return
-                [
+            {
+                var row = new List<object?>
+                {
                     m.MemberNumber, m.FirstName, m.LastName, m.Email, m.Phone,
                     YearOrNull(m.GraduationYear), departments.GetValueOrDefault(m.DepartmentId), m.Program, m.Status,
                     m.IsMembershipActive, m.MembershipExpiry, m.Company, m.JobTitle, m.Location,
                     m.CreatedAt, m.LastLoginAt,
-                ];
+                };
+                foreach (var q in questions)
+                    row.Add(m.CustomFields is not null && m.CustomFields.TryGetValue(q.Id, out var answer) ? answer : null);
+                yield return row.ToArray();
+            }
     }
 
     private ReportData DuesStanding(ReportJob job) => new(

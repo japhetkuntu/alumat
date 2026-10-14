@@ -143,7 +143,8 @@ public class MailtrapEmailServiceTests : IDisposable
         var result = await service.SendEmailAsync(Request("hello", vars));
 
         Assert.True(result.Success);
-        Assert.Equal("Ama|3|{{missing}}", Payload(handler).GetProperty("html").GetString());
+        // A null variable never reaches the inbox as a raw placeholder.
+        Assert.Equal("Ama|3|", Payload(handler).GetProperty("html").GetString());
     }
 
     [Fact]
@@ -266,7 +267,12 @@ public class MailtrapEmailServiceTests : IDisposable
     {
         WriteTemplate(template, "x");
         var (service, handler, _) = Create();
-        await service.SendEmailAsync(Request(template));
+        // Every variable any template can insist on, so this stays a test of the subject only.
+        await service.SendEmailAsync(Request(template, new
+        {
+            otp_code = "1", verify_url = "u", reset_url = "u", set_password_url = "u", register_url = "u", referral_code = "c",
+            portal_url = "u", title = "t", body = "b",
+        }));
         Assert.Equal(expected, Payload(handler).GetProperty("subject").GetString());
     }
 
@@ -387,5 +393,133 @@ public class MailtrapEmailServiceTests : IDisposable
     private sealed class JsonObjectBag(Dictionary<string, string> values)
     {
         public JsonElement ToElement() => JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(values));
+    }
+
+    // ── Every real template, rendered the way each caller really fills it ────────────────────────────────────────────
+
+    private string RealTemplates => Path.Combine(AppContext.BaseDirectory, "Templates");
+
+    public static IEnumerable<object[]> RealSends() => new[]
+    {
+        // The smallest set of variables each caller in the codebase supplies. If a caller drops one, this is where it shows.
+        new object[] { "email-verification", new { first_name = "Ama", otp_code = "123456" } },
+        new object[] { "email-verification-link", new { first_name = "Ama", verify_url = "https://p/verify" } },
+        new object[] { "reset-password", new { first_name = "Ama", reset_url = "https://p/reset" } },
+        new object[] { "institution-welcome", new { first_name = "Ama", set_password_url = "https://p/set" } },
+        new object[] { "member-welcome", new { first_name = "Ama", set_password_url = "https://p/set" } },
+        new object[] { "referral-invitation", new { referrer_name = "Kofi", referral_code = "ABC", register_url = "https://p/r" } },
+        new object[] { "digest", new { member_first_name = "Ama", portal_url = "https://p", digest_sections_html = "<p>x</p>" } },
+        // Notifications are sent from a dozen places; several give no footer reason, no link, or no first name.
+        new object[] { "notification", new { title = "Dues reminder", body = "Please pay" } },
+        new object[] { "notification", new { first_name = "Ama", title = "T", body = "B", badge_label = "Reminder", action_url = "", action_label = "Open" } },
+        new object[] { "notification", new { first_name = (string?)null, title = "T", body = "B", pref_label = (string?)null, action_url = (string?)null } },
+    }.Select(r => r);
+
+    [Theory]
+    [MemberData(nameof(RealSends))]
+    public async Task No_real_template_ever_leaves_a_placeholder_in_the_sent_email(string template, object vars)
+    {
+        var (service, handler, _) = Create(configure: c => c.TemplateDirectory = RealTemplates);
+
+        var result = await service.SendEmailAsync(Request(template, vars));
+
+        Assert.True(result.Success, result.Error);
+        var html = Payload(handler).GetProperty("html").GetString()!;
+        Assert.DoesNotContain("{{", html);
+        Assert.DoesNotContain("}}", html);
+    }
+
+    [Fact]
+    public async Task A_notification_without_a_link_has_no_button_and_a_truthful_footer()
+    {
+        var (service, handler, _) = Create(configure: c => c.TemplateDirectory = RealTemplates);
+
+        await service.SendEmailAsync(Request("notification", new { title = "Hello", body = "World", brand_name = "Grace Fellowship" }));
+
+        var html = Payload(handler).GetProperty("html").GetString()!;
+        Assert.DoesNotContain("class=\"button\"", html);
+        Assert.Contains("Hi there,", html);
+        Assert.Contains("You&#39;re receiving this because you have an account with Grace Fellowship", html.Replace("You're", "You&#39;re"));
+    }
+
+    [Theory]
+    [InlineData("reset-password", "reset_url")]
+    [InlineData("email-verification", "otp_code")]
+    [InlineData("member-welcome", "set_password_url")]
+    [InlineData("referral-invitation", "register_url")]
+    public async Task A_caller_that_leaves_out_the_key_value_still_gets_its_email_sent_and_the_bug_is_logged(string template, string missing)
+    {
+        var (service, handler, logger) = Create(configure: c => c.TemplateDirectory = RealTemplates);
+
+        var result = await service.SendEmailAsync(Request(template, new { first_name = "Ama" }));
+
+        // Intended emails are never held back; the message names the gap so the caller gets fixed.
+        Assert.True(result.Success, result.Error);
+        Assert.Single(handler.Requests);
+        Assert.DoesNotContain("{{", Payload(handler).GetProperty("html").GetString());
+        Assert.Contains(logger.Entries, e => e.Message.Contains(missing));
+    }
+
+    // ── The exact variable sets the application's send sites build (kept in step with the code by this table) ──────────
+
+    private static readonly object Brand = new { brand_name = "Grace Fellowship", brand_color = "#7a3e9d", brand_secondary_color = "#e0a526", brand_logo = "https://cdn.test/logo.png" };
+
+    private static Dictionary<string, object?> With(object vars, object? brand = null)
+    {
+        var d = new Dictionary<string, object?>();
+        foreach (var p in vars.GetType().GetProperties()) d[p.Name] = p.GetValue(vars);
+        foreach (var p in (brand ?? Brand).GetType().GetProperties()) d[p.Name] = p.GetValue(brand ?? Brand);
+        return d;
+    }
+
+    public static IEnumerable<object[]> AllSendSites() => new (string site, string template, Dictionary<string, object?> vars, string[] mustContain)[]
+    {
+        ("sign-up code", "email-verification", With(new { first_name = "Ama", otp_code = "482913" }), ["482913", "Ama", "Grace Fellowship"]),
+        ("verify email link", "email-verification-link", With(new { first_name = "Ama", verify_url = "https://grace.test/verify?t=1" }), ["https://grace.test/verify?t=1", "Ama"]),
+        ("member reset password", "reset-password", With(new { first_name = "Ama", reset_url = "https://grace.test/reset-password?token=x" }), ["reset-password?token=x"]),
+        ("staff reset password", "reset-password", With(new { first_name = "Kofi", reset_url = "https://admin.grace.test/reset-password?token=y" }), ["admin.grace.test"]),
+        ("platform staff reset", "reset-password", new Dictionary<string, object?> { ["first_name"] = "Esi", ["reset_url"] = "https://platform.test/reset" }, ["platform.test/reset", "Esi"]),
+        ("institution welcome", "institution-welcome", With(new { first_name = "Kofi", set_password_url = "https://admin.grace.test/set", institution_portal_url = "https://admin.grace.test", member_portal_url = "https://grace.test" }), ["admin.grace.test/set", "https://grace.test"]),
+        ("staff invite", "reset-password", With(new { first_name = "Kofi", reset_url = "https://admin.grace.test/invite" }), ["admin.grace.test/invite"]),
+        ("member welcome (import)", "member-welcome", With(new { first_name = "Ama", set_password_url = "https://grace.test/set", member_portal_url = "https://grace.test" }), ["grace.test/set"]),
+        ("referral invitation", "referral-invitation", With(new { referrer_name = "Kofi", referral_code = "KOFI42", register_url = "https://grace.test/register?ref=KOFI42" }), ["KOFI42", "Kofi", "register?ref=KOFI42"]),
+        ("digest", "digest", With(new { member_first_name = "Ama", digest_period_label = "Weekly", digest_frequency_label = "weekly", digest_sections_html = "<p>Events this week</p>", portal_url = "https://grace.test", preferences_url = "https://grace.test/profile" }), ["Events this week", "grace.test/profile"]),
+        ("dues reminder", "notification", With(new { first_name = "Ama", title = "Membership Dues Reminder", body = "Your 2026 dues are due.", badge_label = "Dues Reminder", action_url = "https://grace.test/contributions", action_label = "Pay now", pref_label = "you are a member of Grace Fellowship" }), ["Pay now", "contributions", "you are a member of Grace Fellowship"]),
+        ("pledge reminder (scheduled)", "notification", With(new { first_name = "Ama", title = "Pledge due", body = "GHS 50 outstanding.", badge_label = "Pledge Reminder", action_url = "https://grace.test/p", action_label = "Give now", pref_label = "you made a pledge to Grace Fellowship" }), ["Give now", "GHS 50"]),
+        ("pledge reminder (admin button)", "notification", With(new { first_name = "Ama", title = "Pledge due", body = "GHS 50 outstanding.", badge_label = "Pledge Reminder", action_url = "https://grace.test/p", action_label = "Give now", pref_label = "you made a pledge to this community" }), ["Give now"]),
+        ("event reminder", "notification", With(new { first_name = "Ama", title = "Event tomorrow", body = "Annual gathering at 5pm.", badge_label = "Event Reminder", action_url = "https://grace.test/e", action_label = "See who's going", pref_label = "you are going to an event at Grace Fellowship" }), ["Annual gathering", "going"]),
+        ("engagement nudge", "notification", With(new { first_name = "Ama", title = "We miss you", body = "Here is what you missed.", badge_label = "Update", action_url = "https://grace.test", action_label = "Open", pref_label = "you are a member of Grace Fellowship" }), ["We miss you"]),
+        ("member status change", "notification", With(new { first_name = "Ama", title = "Your account is active", body = "Welcome aboard.", badge_label = "Account Update", action_url = "https://grace.test", action_label = "Open the portal", pref_label = "your membership status changed" }), ["Welcome aboard"]),
+        ("broadcast announcement", "notification", With(new { first_name = "Ama", title = "Service times", body = "We now meet at 9am.", badge_label = "Announcement", pref_label = "you are a member of this community", action_url = "https://grace.test/notifications", action_label = "Open notifications", image_url = "https://cdn.test/b.png" }), ["We now meet at 9am", "cdn.test/b.png"]),
+        ("report ready", "notification", With(new { first_name = "Kofi", title = "Your report is ready", body = "Members report.", badge_label = "Reports", action_url = "https://admin.grace.test/reports", action_label = "Download the report", pref_label = "you asked for this report" }), ["Download the report"]),
+        ("activation nudge to admins", "notification", With(new { first_name = "Kofi", title = "Finish setting up", body = "3 steps left.", badge_label = "Setup progress", action_url = "https://admin.grace.test", action_label = "Open your portal", pref_label = "you are an administrator of this portal" }), ["3 steps left"]),
+        ("platform: activation digest", "notification", new Dictionary<string, object?> { ["first_name"] = "Esi", ["title"] = "Weekly digest", ["body"] = "5 institutions.", ["badge_label"] = "Weekly activation digest", ["action_url"] = "https://platform.test/activation", ["action_label"] = "Open the scorecard", ["pref_label"] = "you are SuperAdmin or Sales staff on the platform" }, ["5 institutions"]),
+        ("platform: task reminder", "notification", new Dictionary<string, object?> { ["first_name"] = "Esi", ["title"] = "Task due", ["body"] = "Call Grace.", ["badge_label"] = "Platform task", ["pref_label"] = "you are on the AlumUnion platform team", ["action_url"] = "https://platform.test/t", ["action_label"] = "Open the task" }, ["Call Grace"]),
+        ("platform: announcement", "notification", new Dictionary<string, object?> { ["first_name"] = "Kofi", ["title"] = "Maintenance", ["body"] = "Tonight 11pm.", ["badge_label"] = "Notice from AlumUnion", ["pref_label"] = "you are listed as an administrator on AlumUnion", ["action_url"] = "https://admin.grace.test", ["action_label"] = "Open your portal" }, ["Tonight 11pm"]),
+    }.Select(x => new object[] { x.site, x.template, x.vars, x.mustContain });
+
+    [Theory]
+    [MemberData(nameof(AllSendSites))]
+    public async Task Every_send_site_renders_a_complete_email(string site, string template, Dictionary<string, object?> vars, string[] mustContain)
+    {
+        var (service, handler, logger) = Create(configure: c => c.TemplateDirectory = RealTemplates);
+
+        var result = await service.SendEmailAsync(Request(template, vars));
+
+        Assert.True(result.Success, $"{site}: {result.Error}");
+        var html = Payload(handler).GetProperty("html").GetString()!;
+        Assert.DoesNotContain("{{", html);
+        Assert.DoesNotContain("}}", html);
+        foreach (var expected in mustContain)
+            Assert.True(html.Contains(expected) || html.Contains(System.Net.WebUtility.HtmlEncode(expected)), $"{site}: expected the email to contain \"{expected}\"");
+        Assert.DoesNotContain(logger.Entries, e => e.Message.Contains("without") || e.Message.Contains("unresolved"));
+
+        // Kept for eyeballing: set MAIL_PREVIEW_DIR to write each rendered email out as a file.
+        var dir = Environment.GetEnvironmentVariable("MAIL_PREVIEW_DIR");
+        if (!string.IsNullOrWhiteSpace(dir))
+        {
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, $"{site.Replace(' ', '-').Replace(':', '-').Replace('(', '-').Replace(')', '-')}.html"), html);
+        }
     }
 }

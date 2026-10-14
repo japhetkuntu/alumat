@@ -13,7 +13,6 @@ import { EmptyState } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { getServiceTypes } from "@/lib/member-api";
-import { useNavTheme } from "@/components/member/member-layout";
 
 /** A little visual variety across cards — picked deterministically from the name, not random, so a given service always gets the same icon/tint. */
 const CARD_STYLES = [
@@ -47,15 +46,13 @@ export default function ServicesPage() {
     queryFn: () => getServiceTypes(1, 50),
   });
   const services = data?.results ?? [];
-  const { data: navTheme } = useNavTheme();
-  const isCommunity = navTheme?.organizationType === "Community";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <PageHeader
           eyebrow="Services"
-          title={isCommunity ? "Services" : "Alumni services"}
+          title={"Services"}
           description="Request transcripts, attestation letters, and other institution services — submit, pay, and track progress right here."
         />
         <Link href="/services/requests">

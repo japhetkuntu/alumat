@@ -504,10 +504,15 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
     [InlineData("unverified-number")]
     [InlineData("no-whatsapp-consent")]
     [InlineData("institution-turned-it-off")]
+    [InlineData("deactivated-for-this-institution-by-the-platform")]
     [InlineData("platform-off")]
     public async Task Whatsapp_is_not_used_unless_every_condition_holds_and_sms_carries_on_as_before(string scenario)
     {
-        var rig = new Rig(i => { if (scenario == "institution-turned-it-off") i.DisabledFeatures = [InstitutionFeatures.WhatsApp]; }, whatsAppOn: scenario != "platform-off");
+        var rig = new Rig(i =>
+        {
+            if (scenario == "institution-turned-it-off") i.DisabledFeatures = [InstitutionFeatures.WhatsApp];
+            if (scenario == "deactivated-for-this-institution-by-the-platform") i.WhatsAppBotEnabled = false;
+        }, whatsAppOn: scenario != "platform-off");
         var member = scenario == "unverified-number" ? Person("m1") : Verified("m1");
         await rig.Seed(member, Both("m1", whatsApp: scenario != "no-whatsapp-consent"));
 

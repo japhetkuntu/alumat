@@ -36,7 +36,7 @@ public class CommunityService(
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                     memberships.Count(m => m.Status == "Pending"),
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                    c.CreatedAt, ToChannelItems(c.ExternalChannels), invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since));
+                    c.CreatedAt, ToChannelItems(c.ExternalChannels), invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind);
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -80,12 +80,13 @@ public class CommunityService(
                 Name = request.Name.Trim(),
                 Description = request.Description,
                 CoverImageUrl = request.CoverImageUrl,
+                Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim(),
                 CreatedBy = createdBy,
             };
             await communityRepo.AddAsync(community);
 
             logger.LogInformation("Community {CommunityId} created by {CreatorId}", community.Id, createdBy);
-            return new CommunityListItem(community.Id, community.Name, community.Description, community.CoverImageUrl, community.IsActive, 0, 0, 0, community.CreatedAt)
+            return new CommunityListItem(community.Id, community.Name, community.Description, community.CoverImageUrl, community.IsActive, 0, 0, 0, community.CreatedAt, Kind: community.Kind)
                 .ToCreatedApiResponse("Community created");
         }
         catch (Exception e)
@@ -106,6 +107,8 @@ public class CommunityService(
             community.Name = request.Name.Trim();
             community.Description = request.Description;
             community.CoverImageUrl = request.CoverImageUrl;
+            // Null leaves the kind as it is (so toggling a group on or off never wipes it); a blank clears it.
+            if (request.Kind is not null) community.Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim();
             community.IsActive = request.IsActive;
             if (request.ExternalChannels is not null)
             {
@@ -124,7 +127,7 @@ public class CommunityService(
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                 memberships.Count(m => m.Status == "Pending"),
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                community.CreatedAt, ToChannelItems(community.ExternalChannels)).ToOkApiResponse("Community updated");
+                community.CreatedAt, ToChannelItems(community.ExternalChannels), Kind: community.Kind).ToOkApiResponse("Community updated");
         }
         catch (Exception e)
         {

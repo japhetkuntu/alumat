@@ -119,6 +119,8 @@ export interface Member {
   isEmailVerified?: boolean;
   rejectionCount?: number;
   banReason?: string;
+  /** Answers to the community's own registration questions, keyed by question id. */
+  customFields?: Record<string, string> | null;
   // membership fields
   isMembershipActive?: boolean;
   membershipExpiry?: string;

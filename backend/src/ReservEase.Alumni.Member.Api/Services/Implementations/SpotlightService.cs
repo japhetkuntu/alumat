@@ -107,7 +107,7 @@ public class SpotlightService(
             var currentYear = DateTime.UtcNow.Year;
             var requiredCampaigns = await campaignRepo.GetAllAsync(c =>
                 c.IsMembershipCampaign && c.MembershipYear.HasValue
-                && c.MembershipYear.Value >= memberEntity.GraduationYear
+                && c.MembershipYear.Value >= MembershipPeriods.RequiredFromYear(memberEntity.GraduationYear, memberEntity.CreatedAt)
                 && c.MembershipYear.Value <= currentYear);
             bool duesRequirementMet;
             if (requiredCampaigns.Any())

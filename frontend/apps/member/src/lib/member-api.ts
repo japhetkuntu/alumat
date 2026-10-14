@@ -89,6 +89,8 @@ export interface MemberProfileResponse {
   showPhoneOnDirectory?: boolean;
   showCompanyOnDirectory?: boolean;
   showBioOnDirectory?: boolean;
+  /** Answers to the community's own registration questions, keyed by question id. */
+  customFields?: Record<string, string> | null;
 }
 
 export interface MembershipStatusResponse {
@@ -110,6 +112,8 @@ export async function getMyProfile(): Promise<MemberProfileResponse> {
 }
 
 export interface UpdateProfileBody {
+  /** Answers to the community's own questions, as a JSON object string (the request is multipart). */
+  customFieldsJson?: string;
   program?: string;
   company?: string;
   jobTitle?: string;
@@ -444,6 +448,8 @@ export interface Community {
   memberCount: number;
   myStatus: "Pending" | "Approved" | "Rejected" | null;
   myRole: "Member" | "Leader" | null;
+  /** What the administrators call this group (Chapter, Committee…). */
+  kind?: string | null;
   /** Connected external groups (e.g. WhatsApp). Only sent to approved members. */
   channels?: CommunityChannel[] | null;
 }
@@ -786,6 +792,29 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 export async function updateNotificationPreferences(data: Omit<NotificationPreference, "id">): Promise<NotificationPreference> {
   const res = await memberClient.put("/notificationpreferences", data);
   return res.data.data!;
+}
+
+// ── Other communities (switching) ───────────────────────────────────────────
+
+export interface SwitchTarget {
+  institutionId: string;
+  slug: string;
+  name: string;
+  logoUrl?: string | null;
+  /** The community's own member portal address. */
+  portalUrl: string;
+}
+
+/** Other communities where this email has an active, verified account. Empty for most people. */
+export async function getMyInstitutions(): Promise<SwitchTarget[]> {
+  const res = await memberClient.get("/auth/institutions");
+  return res.data.data ?? [];
+}
+
+/** The address to open (carrying a one-time code valid for a minute) to continue as this person in another community. */
+export async function startInstitutionSwitch(institutionId: string): Promise<string> {
+  const res = await memberClient.post("/auth/switch", { institutionId });
+  return res.data.data.url as string;
 }
 
 // ── WhatsApp ────────────────────────────────────────────────────────────────

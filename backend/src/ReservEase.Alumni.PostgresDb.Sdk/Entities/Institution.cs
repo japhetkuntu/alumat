@@ -41,6 +41,12 @@ public class Institution : BaseEntity
     /// <summary>Whether member self-registration requires a Student ID. Defaults to true (most institutions track one).</summary>
     public bool RequireStudentId { get; set; } = true;
 
+    /// <summary>Whether registration asks for a member or student ID at all. When off, the field is not shown and RequireStudentId is moot.</summary>
+    public bool CollectMemberId { get; set; } = true;
+
+    /// <summary>The community's own extra registration questions, in the order they are asked (at most <c>RegistrationFieldRules.MaxFields</c>).</summary>
+    public List<RegistrationField> RegistrationFields { get; set; } = [];
+
     /// <summary>
     /// Whether member self-registration collects a Program/Course of Study —
     /// off by default, since not every institution's programs map cleanly
@@ -146,6 +152,16 @@ public class Institution : BaseEntity
     /// </summary>
     public List<WhatsAppGroupLink> WhatsAppGroups { get; set; } = [];
 
+    /// <summary>
+    /// The platform administrator's switch for WhatsApp for THIS institution. It sits between the platform-wide switch
+    /// (PlatformSettings.WhatsAppBotEnabled, which blocks everyone when off) and the institution's own choice (the WhatsApp entry
+    /// in DisabledFeatures). WhatsApp works for an institution only when all three allow it. On by default.
+    /// </summary>
+    public bool WhatsAppBotEnabled { get; set; } = true;
+
+    /// <summary>Whether WhatsApp may run for this institution: the platform has not deactivated it and the institution has not turned it off itself.</summary>
+    public bool IsWhatsAppAllowed() => WhatsAppBotEnabled && !DisabledFeatures.Contains(InstitutionFeatures.WhatsApp);
+
     /// <summary>Messages sent to members this institution's notifications reached, per month ("2026-10"), by channel. See <see cref="MessagingUsageMonth"/>.</summary>
     public Dictionary<string, MessagingUsageMonth> MessagingUsage { get; set; } = [];
 
@@ -212,6 +228,22 @@ public class Institution : BaseEntity
     /// enum, so a third type needs no schema change.
     /// </summary>
     public string OrganizationType { get; set; } = OrganizationTypes.Alumni;
+
+    /// <summary>
+    /// Off, Optional or Required (<see cref="GraduationYearModes"/>). The single place this is decided; always set through
+    /// <see cref="UseGraduationYears"/> so <see cref="OrganizationType"/> follows it.
+    /// </summary>
+    public string GraduationYearMode { get; set; } = GraduationYearModes.Required;
+
+    public void UseGraduationYears(string mode)
+    {
+        var wasOff = GraduationYearMode == GraduationYearModes.Off;
+        GraduationYearMode = GraduationYearModes.IsValid(mode) ? mode : GraduationYearModes.Required;
+        // A community that has no years is usually not a school-like body either, so it does not ask for an ID until an
+        // admin switches that on. Only on the way into Off, so a later explicit choice is never overwritten.
+        if (GraduationYearMode == GraduationYearModes.Off && !wasOff) CollectMemberId = false;
+        OrganizationType = GraduationYearModes.OrganizationTypeFor(GraduationYearMode);
+    }
 
     /// <summary>
     /// Alumni-type-only relabeling of "Batch" (e.g. "Class", "Cohort", "Set")

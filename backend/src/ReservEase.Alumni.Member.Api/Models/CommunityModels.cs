@@ -4,7 +4,9 @@ public record CommunityDto(
     string Id, string Name, string? Description, string? CoverImageUrl,
     int MemberCount, string? MyStatus, string? MyRole,
     // Only filled in for approved members of the community.
-    List<CommunityChannelDto>? Channels = null);
+    List<CommunityChannelDto>? Channels = null,
+    // What the administrators call this group (Chapter, Committee…); null reads as a plain group.
+    string? Kind = null);
 
 public record CommunityChannelDto(string Type, string DisplayName, string? InviteUrl, DateTime ConnectedAt);
 

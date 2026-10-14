@@ -43,7 +43,7 @@ const FEATURE_GROUPS: { label: string; blurb: string; items: Feature[] }[] = [
     blurb: "A community people want to stay in because opportunity brings them back.",
     items: [
       { icon: Briefcase,   label: "Jobs",       title: "A jobs board for your community",      desc: "Employers post roles for members and supporters before they ever hit public boards.", illustration: JobsIllustration },
-      { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Former students and experienced members connect with those just starting out.", illustration: MentorshipIllustration },
+      { icon: Heart,       label: "Mentorship", title: "Built-in mentor matching",              desc: "Experienced members connect with those just starting out.", illustration: MentorshipIllustration },
       { icon: Building2,   label: "Businesses", title: "A member business directory",            desc: "Members list their businesses; the community discovers and supports each other.", illustration: BusinessIllustration },
       { icon: Trophy,      label: "Spotlight",  title: "Celebrate your standout members",       desc: "Recognize members, leaders, supporters, and changemakers right on your community home page.", illustration: SpotlightIllustration },
     ],
@@ -147,10 +147,10 @@ interface LeadForm {
 }
 
 const MEMBER_COUNT_RANGES = ["0 – 100", "101 – 500", "501 – 999", "1,000+"];
-const ORGANIZATION_TYPES = ["Alumni association", "University or college", "School network", "Professional association", "Nonprofit or NGO", "Faith-based organization", "Membership organization", "Other"];
+const ORGANIZATION_TYPES = ["Association or society", "Club", "Faith-based organization", "Alumni association", "School or university", "Professional association", "Nonprofit or NGO", "Membership organization", "Other"];
 const PRIMARY_GOALS = ["Member directory", "Member registration and approvals", "Membership dues", "Contributions and fundraising", "Events and RSVPs", "Communities or chapters", "Mentorship", "Jobs", "News and announcements", "Digital resources", "Merchandise/store", "Official document or service requests"];
 const CONTACT_ROLES = ["Executive leadership", "Community or membership office", "IT or digital transformation", "Finance", "Communications or marketing", "Programs or member services", "Other"];
-const MANAGEMENT_OPTIONS = ["Spreadsheet", "WhatsApp groups", "Existing alumni or community software", "CRM", "Student information system", "Website or custom system", "Mostly manual processes", "Other"];
+const MANAGEMENT_OPTIONS = ["Spreadsheet", "WhatsApp groups", "Existing membership or community software", "CRM", "Student information system", "Website or custom system", "Mostly manual processes", "Other"];
 const CONTACT_CHANNELS = ["Email", "Phone call", "WhatsApp", "Video call"];
 const CONTACT_TIMES = ["Morning", "Afternoon", "Evening", "Flexible"];
 
@@ -480,7 +480,7 @@ export default function PlatformMarketingPage() {
         <section className="mk-hero">
           <div className="mk-wrap mk-hero-content">
             <div className="mk-hero-copy"><h1>Give your community a home, <span>at no cost</span> to your institution.</h1>
-            <p className="mk-hero-description">AlumUnion helps institutions build, organize, and grow thriving communities, including alumni, former students, members, supporters, and stakeholders.</p>
+            <p className="mk-hero-description">AlumUnion helps institutions build, organize, and grow thriving communities of any kind: associations, clubs, congregations, schools, professional bodies and more.</p>
             <div className="mk-hero-actions"><a href="#onboard" className="mk-button mk-button-large">Build my community <ArrowRight size={17} /></a><a href="#product" className="mk-text-link">See the member experience <ChevronDown size={14} /></a></div>
             <p className="mk-hero-assurances"><span>Free for your institution</span><span>We handle setup</span><span>Your branding, your community</span></p></div>
             <StoryPhoto photo={STORY_PHOTOS.hero} className="mk-hero-photo" priority />

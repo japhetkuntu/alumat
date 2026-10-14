@@ -271,6 +271,21 @@ public class WhatsAppLinkServiceTests
         Assert.NotNull(Load(rig.Db, "b").PhoneVerifiedAt);
     }
 
+    [Theory]
+    [InlineData("platform-deactivated-for-this-institution")]
+    [InlineData("institution-turned-it-off")]
+    public async Task Status_says_unavailable_when_this_institution_is_switched_off_by_the_platform_or_by_itself(string how)
+    {
+        var inst = Inst("i1");
+        if (how.StartsWith("platform")) inst.WhatsAppBotEnabled = false; else inst.DisabledFeatures = [InstitutionFeatures.WhatsApp];
+        var rig = Create(inst, Inst("i2"), Person("a", "i1"), Person("b", "i2"));
+
+        rig.Tenant.SetInstitutionId("i1");
+        Assert.False((await rig.Service.GetStatusAsync("a")).Available);
+        rig.Tenant.SetInstitutionId("i2");
+        Assert.True((await rig.Service.GetStatusAsync("b")).Available);   // another institution is unaffected
+    }
+
     [Fact]
     public async Task Status_shows_a_masked_number_and_never_the_whole_one()
     {

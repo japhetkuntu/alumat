@@ -1,7 +1,7 @@
 "use client";
 
 import { ChipRow } from "@alumni/ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,8 +27,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import { WhatsAppSettings } from "@/components/institution/whatsapp-settings";
 import {
-  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers,
-  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateOrganizationType,
+  getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers, updateRegistrationFields, type RegistrationField,
+  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateGraduationYears, getInstitutionTemplates, applyInstitutionTemplate, type GraduationYearMode,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
@@ -211,6 +211,94 @@ function PayoutSetupCard({ institution }: { institution: InstitutionProfileRespo
 
 const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "WhatsApp", "Security"] as const;
 
+/**
+ * The community's own extra registration questions. Edited as a list and saved as a whole; existing questions keep their
+ * id (so answers already given stay attached when one is renamed), new ones get theirs from the server.
+ */
+// A stable empty list: the editor re-syncs whenever its `fields` prop changes identity.
+const NO_FIELDS: RegistrationField[] = [];
+
+function RegistrationQuestionsEditor({ fields, saving, onSave }: {
+  fields: RegistrationField[];
+  saving: boolean;
+  onSave: (fields: RegistrationField[]) => void;
+}) {
+  const [draft, setDraft] = useState<RegistrationField[]>(fields);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { setDraft(fields); setDirty(false); }, [fields]);
+
+  const change = (i: number, patch: Partial<RegistrationField>) => {
+    setDraft((d) => d.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+    setDirty(true);
+  };
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <div>
+        <p className="text-[14px] font-semibold">Your own registration questions</p>
+        <p className="text-[12.5px] text-muted-foreground">
+          Ask new members anything you need to know, such as their chapter, profession or branch. Up to 8 questions.
+        </p>
+      </div>
+
+      {draft.map((f, i) => (
+        <div key={f.id || i} className="rounded-lg border border-border p-3 space-y-2.5">
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <Input
+              value={f.label}
+              onChange={(e) => change(i, { label: e.target.value })}
+              placeholder="Question, e.g. Which chapter are you in?"
+              maxLength={60}
+              aria-label="Question"
+            />
+            <select
+              value={f.type}
+              onChange={(e) => change(i, { type: e.target.value as "text" | "select", options: e.target.value === "select" && f.options.length < 2 ? ["", ""] : f.options })}
+              className="h-10 rounded-md border border-input bg-background px-3 text-[13px]"
+              aria-label="Answer type"
+            >
+              <option value="text">Short answer</option>
+              <option value="select">Pick from a list</option>
+            </select>
+          </div>
+          {f.type === "select" && (
+            <Textarea
+              rows={3}
+              value={f.options.join("\n")}
+              onChange={(e) => change(i, { options: e.target.value.split("\n") })}
+              placeholder={"One choice per line\nAccra\nKumasi"}
+              aria-label="Choices"
+            />
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-[13px]">
+              <input type="checkbox" className="h-4 w-4" checked={f.required} onChange={(e) => change(i, { required: e.target.checked })} />
+              Required
+            </label>
+            <Button type="button" variant="ghost" size="sm" onClick={() => { setDraft((d) => d.filter((_, idx) => idx !== i)); setDirty(true); }}>
+              Remove
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      <div className="flex flex-wrap gap-2">
+        {draft.length < 8 && (
+          <Button type="button" variant="outline" size="sm"
+            onClick={() => { setDraft((d) => [...d, { id: "", label: "", type: "text", required: false, options: [] }]); setDirty(true); }}>
+            Add a question
+          </Button>
+        )}
+        {dirty && (
+          <Button type="button" size="sm" isLoading={saving} onClick={() => onSave(draft)}>
+            Save questions
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function BrandingSettingsPage() {
   const { user, logout, isScopedAdmin } = useAuth();
   const searchParams = useSearchParams();
@@ -361,6 +449,25 @@ export default function BrandingSettingsPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const collectMemberIdMutation = useMutation({
+    mutationFn: (collect: boolean) =>
+      updateMemberActivePolicy(institution?.memberActivePolicy ?? "DuesRequired", !!institution?.requireStudentId, collect),
+    onSuccess: () => {
+      toast.success("Registration form updated");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const registrationFieldsMutation = useMutation({
+    mutationFn: (fields: RegistrationField[]) => updateRegistrationFields(fields),
+    onSuccess: () => {
+      toast.success("Registration questions saved");
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   const autoApproveMutation = useMutation({
     mutationFn: (autoApproveMembers: boolean) => updateAutoApproveMembers(autoApproveMembers),
     onSuccess: (updated) => {
@@ -375,12 +482,26 @@ export default function BrandingSettingsPage() {
   if (institution && cohortLabel === null && institution.cohortLabel) setCohortLabel(institution.cohortLabel);
   if (institution && cohortLabelPlural === null && institution.cohortLabelPlural) setCohortLabelPlural(institution.cohortLabelPlural);
 
-  const organizationTypeMutation = useMutation({
-    mutationFn: ({ type, label, labelPlural }: { type: "Alumni" | "Community"; label?: string | null; labelPlural?: string | null }) =>
-      updateOrganizationType(type, label, labelPlural),
+  const graduationYearsMutation = useMutation({
+    mutationFn: ({ mode, label, labelPlural }: { mode: GraduationYearMode; label?: string | null; labelPlural?: string | null }) =>
+      updateGraduationYears(mode, mode === "Off" ? null : label, mode === "Off" ? null : labelPlural),
     onSuccess: () => {
-      toast.success("Organization type updated");
+      toast.success("Saved");
       queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["institution-nav-theme"] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const { data: templates } = useQuery({ queryKey: ["institution-templates"], queryFn: getInstitutionTemplates, staleTime: 30 * 60_000, enabled: !isScopedAdmin });
+  const templateMutation = useMutation({
+    mutationFn: (id: string) => applyInstitutionTemplate(id),
+    onSuccess: (profile) => {
+      toast.success("Template applied");
+      setCohortLabel(profile.cohortLabel ?? null);
+      setCohortLabelPlural(profile.cohortLabelPlural ?? null);
+      queryClient.invalidateQueries({ queryKey: ["institution-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["institution-nav-theme"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -784,10 +905,21 @@ export default function BrandingSettingsPage() {
                   }
                 />
                 <Toggle
+                  checked={institution?.collectMemberId ?? true}
+                  onChange={(checked) => collectMemberIdMutation.mutate(checked)}
+                  label="Ask for a member or student ID at registration"
+                  description="Off: the ID field is not shown on the registration form at all."
+                />
+                <Toggle
                   checked={!!institution?.requireStudentId}
                   onChange={(checked) => requireStudentIdMutation.mutate(checked)}
-                  label="Require student ID at registration"
+                  label="Require a member or student ID at registration"
                   description="On the Member Portal's registration form: on, the institution or membership ID field becomes required; off, it stays optional."
+                />
+                <RegistrationQuestionsEditor
+                  fields={institution?.registrationFields ?? NO_FIELDS}
+                  saving={registrationFieldsMutation.isPending}
+                  onSave={(f) => registrationFieldsMutation.mutate(f)}
                 />
                 <Toggle
                   checked={!!institution?.autoApproveMembers}
@@ -802,67 +934,72 @@ export default function BrandingSettingsPage() {
 
           {!isScopedAdmin && (
             <Card className="border-border/40 lg:col-span-2">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <Building2 size={16} className="text-primary" />
-                  <p className="font-semibold text-[15px]">Organization type</p>
+              <CardContent className="space-y-5 p-6">
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <Building2 size={16} className="text-primary" />
+                    <p className="text-[15px] font-semibold">How members are organised</p>
+                  </div>
+                  <p className="text-[12.5px] text-muted-foreground">
+                    Your community is whatever you shape it into. Decide whether members have a graduation year, and what you call a year group if they do.
+                    Groups, communities and chapters work either way.
+                  </p>
                 </div>
-                <p className="text-[12.5px] text-muted-foreground -mt-1 mb-3">
-                  Alumni organizations can organize by graduation year or a custom cohort label. Other communities organize through
-                  groups and chapters instead, and school-specific year fields stay hidden when they are not relevant.
-                </p>
-                <div className="flex gap-2 mb-3">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={(institution?.organizationType ?? "Alumni") === "Alumni" ? "default" : "outline"}
-                    onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel, labelPlural: cohortLabelPlural })}
-                    disabled={organizationTypeMutation.isPending}
-                  >
-                    Alumni
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={institution?.organizationType === "Community" ? "default" : "outline"}
-                    onClick={() => organizationTypeMutation.mutate({ type: "Community" })}
-                    disabled={organizationTypeMutation.isPending}
-                  >
-                    Community
-                  </Button>
-                </div>
-                {(institution?.organizationType ?? "Alumni") === "Alumni" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                <fieldset className="space-y-2">
+                  <legend className="mb-1 text-[13px] font-semibold">Graduation year</legend>
+                  {([
+                    ["Off", "Not used", "Members have no year. Nothing about years appears in the portal or on sign-up."],
+                    ["Optional", "Optional", "Members can give a year if they have one. Year groups exist for those who do."],
+                    ["Required", "Required", "Everyone gives a year when they sign up, and year groups are how the community is organised."],
+                  ] as const).map(([value, title, text]) => {
+                    const current = institution?.graduationYearMode ?? (institution?.organizationType === "Community" ? "Off" : "Required");
+                    return (
+                      <label key={value} className={`flex min-h-12 cursor-pointer items-start gap-3 border p-3 ${current === value ? "border-primary bg-primary/5" : "border-border"}`}>
+                        <input
+                          type="radio" name="graduation-year-mode" className="mt-1 size-4 accent-[var(--primary)]"
+                          checked={current === value}
+                          disabled={graduationYearsMutation.isPending}
+                          onChange={() => graduationYearsMutation.mutate({ mode: value, label: cohortLabel, labelPlural: cohortLabelPlural })}
+                        />
+                        <span><span className="block text-[14px] font-semibold">{title}</span><span className="block text-[12.5px] text-muted-foreground">{text}</span></span>
+                      </label>
+                    );
+                  })}
+                </fieldset>
+
+                {(institution?.graduationYearMode ?? (institution?.organizationType === "Community" ? "Off" : "Required")) !== "Off" && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <Label className="inline-flex items-center gap-1.5">Cohort label<InfoTip text="What you call a graduating group, such as Class or Set." /></Label>
-                      <Input
-                        value={cohortLabel ?? ""}
-                        onChange={(e) => setCohortLabel(e.target.value)}
-                        placeholder="Batch"
-                        maxLength={50}
-                      />
+                      <Label className="inline-flex items-center gap-1.5">What you call a year group<InfoTip text="For example Class, Set, Year group or Cohort." /></Label>
+                      <Input value={cohortLabel ?? ""} onChange={(e) => setCohortLabel(e.target.value)} placeholder="Cohort" maxLength={50} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="inline-flex items-center gap-1.5">Cohort label (plural)<InfoTip text="The plural form, used in headings such as Classes." /></Label>
-                      <Input
-                        value={cohortLabelPlural ?? ""}
-                        onChange={(e) => setCohortLabelPlural(e.target.value)}
-                        placeholder="Batches"
-                        maxLength={50}
-                      />
+                      <Label className="inline-flex items-center gap-1.5">In the plural<InfoTip text="Used in headings, such as Classes." /></Label>
+                      <Input value={cohortLabelPlural ?? ""} onChange={(e) => setCohortLabelPlural(e.target.value)} placeholder="Cohorts" maxLength={50} />
                     </div>
                     <div className="sm:col-span-2">
                       <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => organizationTypeMutation.mutate({ type: "Alumni", label: cohortLabel, labelPlural: cohortLabelPlural })}
-                        isLoading={organizationTypeMutation.isPending}
-                      >
-                        Save cohort wording
-                      </Button>
+                        type="button" size="sm"
+                        onClick={() => graduationYearsMutation.mutate({ mode: (institution?.graduationYearMode ?? "Required") as "Optional" | "Required" | "Off", label: cohortLabel, labelPlural: cohortLabelPlural })}
+                        isLoading={graduationYearsMutation.isPending}
+                      >Save wording</Button>
                     </div>
                   </div>
                 )}
+
+                <details className="border-t border-border pt-4">
+                  <summary className="cursor-pointer text-[13.5px] font-semibold">Start from a template</summary>
+                  <p className="mt-1 text-[12.5px] text-muted-foreground">Fills in the settings above for you. Nothing is locked, and your members and groups are not touched.</p>
+                  <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {(templates ?? []).map((t) => (
+                      <li key={t.id} className="flex flex-col justify-between gap-2 border border-border p-3">
+                        <span><span className="block text-[14px] font-semibold">{t.name}</span><span className="block text-[12.5px] text-muted-foreground">{t.description}</span></span>
+                        <Button size="sm" variant="outline" className="self-start" onClick={() => templateMutation.mutate(t.id)} isLoading={templateMutation.isPending && templateMutation.variables === t.id}>Use this</Button>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               </CardContent>
             </Card>
           )}

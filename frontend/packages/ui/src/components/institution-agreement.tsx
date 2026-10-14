@@ -25,7 +25,7 @@ export function InstitutionAgreementBody() {
   return (
     <div>
       <p className={para} style={{ color: "var(--muted-foreground)" }}>
-        This agreement is between AlumUnion (&quot;AlumUnion&quot;, &quot;we&quot;, &quot;us&quot;) and the school, association or organization that sets up a
+        This agreement is between AlumUnion (&quot;AlumUnion&quot;, &quot;we&quot;, &quot;us&quot;) and the community or organization that sets up a
         portal on the platform (the &quot;Institution&quot;, &quot;you&quot;). It sits alongside our Terms of Service and Privacy Policy. If there is a
         conflict about how the Institution uses the platform, this agreement applies.
       </p>

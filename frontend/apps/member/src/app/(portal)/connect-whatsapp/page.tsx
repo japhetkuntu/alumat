@@ -96,7 +96,7 @@ export default function ConnectWhatsAppPage() {
   return (
     <div className="mx-auto max-w-[720px] space-y-6 p-4 sm:p-6 lg:p-8">
       <header>
-        <Link href="/profile" className="text-[13px] font-semibold text-muted-foreground underline underline-offset-4">Back to profile</Link>
+        <Link href="/profile" className="inline-flex min-h-11 items-center text-[13px] font-semibold text-muted-foreground underline underline-offset-4">Back to profile</Link>
         <h1 className="mt-3 text-[26px] font-bold leading-tight">Connect WhatsApp</h1>
         <p className="mt-1.5 text-[14px] text-muted-foreground">
           Ask the AlumUnion assistant about your dues, events and opportunities from WhatsApp, and get alerts there instead of by SMS.
@@ -136,7 +136,7 @@ export default function ConnectWhatsAppPage() {
               />
               <span>
                 <span className="block text-[14.5px] font-semibold">Send my notifications on WhatsApp</span>
-                <span className="block text-[13px] text-muted-foreground">Reminders and alerts arrive here first, and by SMS only if WhatsApp can&apos;t deliver them. You can turn this off any time.</span>
+                <span className="block text-[13px] text-muted-foreground">Reminders and updates arrive here first. If WhatsApp can&apos;t deliver one, we send it by email or SMS as before. You can turn this off any time.</span>
               </span>
             </label>
 
@@ -219,6 +219,8 @@ export default function ConnectWhatsAppPage() {
           <CardContent>
             <ul className="space-y-1.5 text-[14px]">
               <li><span className="font-semibold">menu</span>: dues, events, jobs and updates</li>
+              <li><span className="font-semibold">pay</span>: your dues and fundraisers</li>
+              <li><span className="font-semibold">invite</span>: a message to forward with your own invitation link</li>
               <li><span className="font-semibold">rsvp 1</span>: book a place at an event you were just shown</li>
               <li><span className="font-semibold">suggest</span>: send a job or opportunity for review</li>
               <li><span className="font-semibold">post update</span>: post to your year group&apos;s wall</li>

@@ -110,7 +110,7 @@ export function GlobalSearch({ pages, hotkey = false }: { pages: SearchPage[]; h
       </button>
 
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : close())}>
-        <DialogContent className="top-[4%] max-h-[90dvh] translate-y-0 gap-0 overflow-hidden p-0 sm:top-[8%] sm:max-w-xl">
+        <DialogContent className="bottom-auto top-[4%] max-h-[90dvh] translate-y-0 gap-0 overflow-hidden p-0 sm:top-[8%] sm:translate-y-0 sm:max-w-xl">
           <DialogTitle className="sr-only">Search the portal</DialogTitle>
           <DialogDescription className="sr-only">Find pages, members, fundraisers, events, jobs, news and resources.</DialogDescription>
           <div className="flex items-center gap-2 border-b border-border pl-3 pr-14">

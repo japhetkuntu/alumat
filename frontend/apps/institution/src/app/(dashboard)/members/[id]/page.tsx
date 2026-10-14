@@ -4,7 +4,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle, XCircle, ShieldBan, ShieldCheck, MailCheck, MailX, MapPin, Building2, Briefcase, GraduationCap, Calendar, Link as LinkIcon, Smartphone, CreditCard, ChevronRight, Check, Share2, BookOpen } from "@alumni/ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Input } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
@@ -13,7 +14,7 @@ import { Textarea } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
 import { useFeatures } from "@/hooks/use-institution-features";
-import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile } from "@/lib/institution-api";
+import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile, updateMemberCustomFields, type RegistrationField } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
@@ -36,6 +37,54 @@ type ModalState =
   | { type: "unban" }
   | { type: "activate-membership" }
   | null;
+
+/** The community's own questions and this member's answers, correctable by staff. */
+function AnswersCard({ memberId, questions, answers }: { memberId: string; questions: RegistrationField[]; answers: Record<string, string> }) {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState<Record<string, string>>(answers);
+  // Re-sync when the saved answers change (after a save, or when moving between members).
+  const saved = JSON.stringify(answers);
+  useEffect(() => { setDraft(answers); }, [saved]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = JSON.stringify(draft) !== saved;
+
+  const save = useMutation({
+    mutationFn: () => updateMemberCustomFields(memberId, draft),
+    onSuccess: () => {
+      toast.success("Answers saved");
+      qc.invalidateQueries({ queryKey: ["member", memberId] });
+      qc.invalidateQueries({ queryKey: ["admin-member", memberId] });
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Answers to your questions</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {questions.map((q) => (
+            <label key={q.id} className="block space-y-1.5">
+              <span className="text-[12.5px] font-semibold">{q.label}{q.required && <span className="text-muted-foreground font-normal"> (required)</span>}</span>
+              {q.type === "select" ? (
+                <select
+                  value={draft[q.id] ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, [q.id]: e.target.value }))}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-[13.5px]"
+                >
+                  <option value="">Not answered</option>
+                  {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : (
+                <Input value={draft[q.id] ?? ""} maxLength={200} onChange={(e) => setDraft((d) => ({ ...d, [q.id]: e.target.value }))} placeholder="Not answered" />
+              )}
+            </label>
+          ))}
+        </div>
+        {dirty && <Button size="sm" isLoading={save.isPending} onClick={() => save.mutate()}>Save answers</Button>}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -189,12 +238,20 @@ export default function MemberDetailPage() {
         </CardContent>
       </Card>
 
+      {(institution?.registrationFields?.length ?? 0) > 0 && (
+        <AnswersCard
+          memberId={member.id}
+          questions={institution!.registrationFields!}
+          answers={member.customFields ?? {}}
+        />
+      )}
+
       {/* Details grid — mirrors the mockup's Personal / Professional / Membership 3-column layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader><CardTitle className="text-base">Personal information</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {!isCommunity && <InfoRow icon={<GraduationCap size={14} />} label="Graduation Year" value={String(member.graduationYear)} />}
+            {!isCommunity && member.graduationYear > 0 && <InfoRow icon={<GraduationCap size={14} />} label="Graduation Year" value={String(member.graduationYear)} />}
             {member.program && <InfoRow icon={<BookOpen size={14} />} label="Program" value={member.program} />}
             <InfoRow icon={<Calendar size={14} />} label="Joined" value={formatDate(member.createdAt)} />
             {member.phone && <InfoRow icon={<Smartphone size={14} />} label="Phone" value={member.phone} />}

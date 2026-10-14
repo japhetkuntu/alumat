@@ -10,6 +10,9 @@ public class MemberListFilter : BaseFilter
     public int? GraduationYearTo { get; set; }
     public string? JobTitleContains { get; set; }
     public string? LocationContains { get; set; }
+
+    /// <summary>Matches members whose answer to any of the community's own questions contains this text (case-insensitive).</summary>
+    public string? AnswerContains { get; set; }
 }
 
 public class CampaignFilter : BaseFilter

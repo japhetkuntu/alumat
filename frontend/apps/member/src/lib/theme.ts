@@ -14,6 +14,10 @@ export interface InstitutionTheme {
   authHeadline: string | null;
   authSubtext: string | null;
   requireStudentId: boolean;
+  /** Whether registration shows the member or student ID field at all. */
+  collectMemberId?: boolean;
+  /** The community's own extra registration questions, in the order they are asked. */
+  registrationFields?: { id: string; label: string; type: "text" | "select"; required: boolean; options: string[] }[];
   /** "Alumni" or "Community" — see InstitutionManagementService. Distinguishes an
    *  EducationalOrganization (alumni) from a plain Organization (community) in
    *  the homepage's JSON-LD, since a community group is not an educational one. */

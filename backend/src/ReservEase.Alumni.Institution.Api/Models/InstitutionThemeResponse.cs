@@ -15,4 +15,5 @@ public record InstitutionThemeResponse(
     List<string> DisabledFeatures,
     string OrganizationType,
     string? CohortLabel,
-    string? CohortLabelPlural);
+    string? CohortLabelPlural,
+    string GraduationYearMode = "Required");

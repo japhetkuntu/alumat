@@ -73,7 +73,8 @@ function NewInstitutionPageContent() {
     adminLastName: "",
     adminEmail: "",
     requireDues: false,
-    organizationType: "Alumni" as "Alumni" | "Community",
+    templateId: "blank",
+    graduationYearMode: "Off" as "Off" | "Optional" | "Required",
     batchStartYear: "",
     batchEndYear: "",
   });
@@ -132,9 +133,10 @@ function NewInstitutionPageContent() {
           adminLastName: form.adminLastName || form.contactName.split(" ").slice(1).join(" ") || "User",
           adminEmail: form.adminEmail || form.contactEmail,
           memberActivePolicy: form.requireDues ? "DuesRequired" : "ApprovedOnly",
-          organizationType: form.organizationType,
-          batchStartYear: form.organizationType === "Alumni" && form.batchStartYear ? Number(form.batchStartYear) : undefined,
-          batchEndYear: form.organizationType === "Alumni" && form.batchEndYear ? Number(form.batchEndYear) : undefined,
+          templateId: form.templateId,
+          graduationYearMode: form.graduationYearMode,
+          batchStartYear: form.graduationYearMode !== "Off" && form.batchStartYear ? Number(form.batchStartYear) : undefined,
+          batchEndYear: form.graduationYearMode !== "Off" && form.batchEndYear ? Number(form.batchEndYear) : undefined,
           trialDays: isTrial && Number(trialDays) > 0 ? Number(trialDays) : undefined,
         });
         toast.success("Institution created", {
@@ -243,23 +245,39 @@ function NewInstitutionPageContent() {
                   </div>
                 </div>
                 <div className="space-y-1.5 pt-2">
-                  <Label className="inline-flex items-center gap-1.5">Organization type<InfoTip text="Alumni uses graduation-year batches. Community groups members without years." /></Label>
-                  <p className="text-[12px] text-muted-foreground -mt-0.5">
-                    Choose Alumni for graduation-year cohorts, or Community for groups, chapters, and other member structures.
-                    This can be changed later.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button type="button" size="sm" variant={form.organizationType === "Alumni" ? "default" : "outline"} onClick={() => update("organizationType", "Alumni")}>
-                      Alumni
-                    </Button>
-                    <Button type="button" size="sm" variant={form.organizationType === "Community" ? "default" : "outline"} onClick={() => update("organizationType", "Community")}>
-                      Community
-                    </Button>
+                  <Label className="inline-flex items-center gap-1.5">Starting point<InfoTip text="Only pre-fills settings. Nothing is locked and the community can change all of it later." /></Label>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { id: "blank", label: "Start from scratch", mode: "Off" },
+                      { id: "alumni", label: "Alumni group", mode: "Required" },
+                      { id: "school", label: "School", mode: "Optional" },
+                      { id: "club", label: "Club or society", mode: "Off" },
+                      { id: "faith", label: "Faith community", mode: "Off" },
+                      { id: "professional", label: "Professional network", mode: "Optional" },
+                    ] as const).map((t) => (
+                      <Button
+                        key={t.id}
+                        type="button"
+                        size="sm"
+                        variant={form.templateId === t.id ? "default" : "outline"}
+                        onClick={() => setForm((f) => ({ ...f, templateId: t.id, graduationYearMode: t.mode }))}
+                      >
+                        {t.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Label className="pt-2">Graduation years</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {([["Off", "Not used"], ["Optional", "Optional"], ["Required", "Required"]] as const).map(([m, label]) => (
+                      <Button key={m} type="button" size="sm" variant={form.graduationYearMode === m ? "default" : "outline"} onClick={() => update("graduationYearMode", m)}>
+                        {label}
+                      </Button>
+                    ))}
                   </div>
                 </div>
-                {form.organizationType === "Alumni" && (
+                {form.graduationYearMode !== "Off" && (
                   <div className="space-y-1.5 pt-2">
-                    <Label>Batches (optional)</Label>
+                    <Label>Year groups (optional)</Label>
                     <p className="text-[12px] text-muted-foreground -mt-0.5">
                       Enter a graduation-year range to auto-create one batch per year, named after the year by default, renameable later. Leave blank to add batches manually afterward.
                     </p>
@@ -296,7 +314,7 @@ function NewInstitutionPageContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>Application name</Label>
-                      <Input value={form.appName} onChange={(e) => update("appName", e.target.value)} placeholder={`${form.name || "Institution"} Alumni`} />
+                      <Input value={form.appName} onChange={(e) => update("appName", e.target.value)} placeholder={form.name || "Community name"} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Support contact</Label>
@@ -425,9 +443,9 @@ function NewInstitutionPageContent() {
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Institution portal</span><span className="font-semibold font-mono">{form.slug || "—"}{baseDomains ? `.${baseDomains.adminBaseDomain}` : ""}</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Platform fee</span><span className="font-semibold">{form.platformFeePercentage || "0"}%</span></div>
                   <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Settlement account</span><span className="font-semibold">{form.settlementAccountName || "Not configured"}</span></div>
-                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Organization type</span><span className="font-semibold">{form.organizationType}</span></div>
-                  {form.organizationType === "Alumni" && (
-                    <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Batches</span><span className="font-semibold">{form.batchStartYear && form.batchEndYear ? `${form.batchStartYear}–${form.batchEndYear} (${Number(form.batchEndYear) - Number(form.batchStartYear) + 1} batches)` : "None, add manually later"}</span></div>
+                  <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Graduation years</span><span className="font-semibold">{form.graduationYearMode === "Off" ? "Not used" : form.graduationYearMode}</span></div>
+                  {form.graduationYearMode !== "Off" && (
+                    <div className="flex justify-between border-b border-border pb-2"><span className="text-muted-foreground">Year groups</span><span className="font-semibold">{form.batchStartYear && form.batchEndYear ? `${form.batchStartYear}–${form.batchEndYear} (${Number(form.batchEndYear) - Number(form.batchStartYear) + 1} batches)` : "None, add manually later"}</span></div>
                   )}
                   <div className="flex justify-between"><span className="text-muted-foreground">First admin</span><span className="font-semibold">{form.adminFirstName || "—"} {form.adminLastName} ({form.adminEmail || form.contactEmail || "—"})</span></div>
                 </div>

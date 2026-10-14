@@ -142,7 +142,9 @@ public class AssistantContent(
     public async Task<bool> IsAvailableAsync(AssistantCommunity c, string feature, CancellationToken ct = default)
     {
         var institution = await institutionRepo.GetOneAsync(i => i.Id == c.InstitutionId, ignoreQueryFilters: true);
-        return institution is not null && !institution.DisabledFeatures.Contains(feature);
+        if (institution is null) return false;
+        // Asking about the assistant itself also honours the platform's per-institution switch.
+        return feature == InstitutionFeatures.WhatsApp ? institution.IsWhatsAppAllowed() : !institution.DisabledFeatures.Contains(feature);
     }
 
     private static string EventLine(DateTime start, string venue)

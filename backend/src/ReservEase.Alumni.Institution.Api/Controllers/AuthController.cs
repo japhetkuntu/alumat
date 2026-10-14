@@ -14,8 +14,15 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// </summary>
 [Authorize]
 [Route("api/v{version:apiVersion}/auth")]
-public class AuthController(IInstitutionAuthService authService) : DefaultController
+public class AuthController(IInstitutionAuthService authService, Services.Implementations.IStaffInstitutionsService staffInstitutions) : DefaultController
 {
+    /// <summary>Other institutions this administrator's email also administers, for the portal's switcher.</summary>
+    [HttpGet("institutions")]
+    [SwaggerOperation(Summary = "My other institutions", Description = "Other institutions where this email has an administrator account, with each one's sign-in address")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<IReadOnlyList<Services.Implementations.StaffInstitution>>))]
+    public async Task<IActionResult> MyInstitutions()
+        => (await staffInstitutions.ListAsync(User.GetAccount().Id)).ToOkApiResponse().ToActionResult();
+
     /// <summary>
     /// Authenticate an institution staff member and receive JWT tokens.
     /// </summary>

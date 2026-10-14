@@ -103,7 +103,7 @@ function ClusterLayer({ pins }: { pins: Pin[] }) {
           <span class="alumni-popup__avatar">${avatar}</span>
           <div class="alumni-popup__body">
             <p class="alumni-popup__name">${member.firstName} ${member.lastName}</p>
-            <p class="alumni-popup__meta">${member.location ?? ""}${member.location ? " &middot; " : ""}Class of ${member.graduationYear}</p>
+            <p class="alumni-popup__meta">${member.location ?? ""}${member.location && member.graduationYear > 0 ? " &middot; " : ""}${member.graduationYear > 0 ? `Class of ${member.graduationYear}` : ""}</p>
           </div>
         </div>`,
         { className: "alumni-popup-wrapper", closeButton: false }

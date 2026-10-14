@@ -90,7 +90,7 @@ export default function MemberDirectoryPage() {
             className="w-full sm:w-48"
             options={[
               { value: "__all__", label: "All graduation years" },
-              ...years.map(y => ({ value: String(y), label: `Class of ${y}` })),
+              ...years.filter(y => y > 0).map(y => ({ value: String(y), label: `Class of ${y}` })),
             ]}
           />
         )}
@@ -172,7 +172,7 @@ export default function MemberDirectoryPage() {
                   className="text-[12px] font-semibold tracking-[0.1em] uppercase"
                   style={{ color: "var(--muted-foreground)" }}
                 >
-                  {isCommunity ? "Member profile" : "Alumni profile"}
+                  {isCommunity ? "Member profile" : "Member profile"}
                 </p>
                 <button
                   onClick={() => setSelected(null)}
@@ -201,7 +201,7 @@ export default function MemberDirectoryPage() {
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {!isCommunity && (
+                    {!isCommunity && selected.graduationYear > 0 && (
                       <Badge variant="secondary" className="text-[12px] font-semibold">
                         Class of {selected.graduationYear}
                       </Badge>

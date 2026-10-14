@@ -112,7 +112,11 @@ export interface InstitutionDetail {
   heroHeadline?: string | null;
   /** "Alumni" (default) — year-based cohorts via Batches. "Community" — no graduation years; members organize via Communities instead. */
   organizationType: "Alumni" | "Community";
-  /** Alumni-only relabeling of "Batch" (e.g. "Class", "Cohort"). Null falls back to "Batch". */
+  /** Whether this community uses graduation years at all. The source of truth; organizationType is derived from it. */
+  graduationYearMode?: "Off" | "Optional" | "Required";
+  /** The community's own registration questions, in the order they are asked. */
+  registrationFields?: { id: string; label: string; type: "text" | "select"; required: boolean; options: string[] }[];
+  /** Relabeling of the year-group wording (e.g. "Class", "Cohort"). Null falls back to the neutral default. */
   cohortLabel?: string | null;
   /** Plural form of cohortLabel (e.g. "Classes"). Null falls back to "Batches". */
   cohortLabelPlural?: string | null;
@@ -140,7 +144,10 @@ export interface CreateInstitutionRequest {
   contactName: string;
   contactEmail: string;
   memberActivePolicy?: "ApprovedOnly" | "DuesRequired";
-  /** "Alumni" (default) or "Community" — see Institution.OrganizationType. Can be changed later via updateInstitutionOrganizationType. */
+  /** A starting point (blank, alumni, school, club, faith, professional). Only pre-fills settings. */
+  templateId?: string;
+  /** Whether members have a graduation year. Overrides the template's choice when given. */
+  graduationYearMode?: "Off" | "Optional" | "Required";
   organizationType?: "Alumni" | "Community";
   /** Trial length in days; the server defaults to 14. */
   trialDays?: number;
@@ -250,9 +257,9 @@ export async function updateInstitutionAutoApproveMembers(id: string, autoApprov
 
 /** Alumni-vs-Community organization type + Alumni-only cohort label wording. */
 export async function updateInstitutionOrganizationType(
-  id: string, organizationType: "Alumni" | "Community", cohortLabel?: string | null, cohortLabelPlural?: string | null,
+  id: string, graduationYearMode: "Off" | "Optional" | "Required", cohortLabel?: string | null, cohortLabelPlural?: string | null,
 ) {
-  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/organization-type`, { organizationType, cohortLabel, cohortLabelPlural });
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/organization-type`, { graduationYearMode, cohortLabel, cohortLabelPlural });
   return res.data.data!;
 }
 
@@ -1279,6 +1286,29 @@ export interface WhatsAppAdoption {
   estimatedSmsSaved?: number | null;
   institutions: { name: string; activeMembers: number; connected: number; byWhatsAppThisMonth: number; bySmsThisMonth: number }[];
 }
+export interface WhatsAppInstitutionRow {
+  id: string;
+  name: string;
+  slug: string;
+  /** Activated by the platform for this institution. */
+  platformEnabled: boolean;
+  /** The institution also switched it off for itself. */
+  institutionOptedOut: boolean;
+  connected: number;
+  activeMembers: number;
+  activeGroups: number;
+}
+
+export async function getWhatsAppInstitutions(): Promise<WhatsAppInstitutionRow[]> {
+  const res = await platformClient.get<ApiResponse<WhatsAppInstitutionRow[]>>("/whatsapp-health/institutions");
+  return res.data.data ?? [];
+}
+
+export async function setInstitutionWhatsApp(id: string, enabled: boolean): Promise<WhatsAppInstitutionRow> {
+  const res = await platformClient.put<ApiResponse<WhatsAppInstitutionRow>>(`/whatsapp-health/institutions/${id}`, { enabled });
+  return res.data.data!;
+}
+
 export async function getWhatsAppHealth(): Promise<WhatsAppHealth> {
   const res = await platformClient.get<ApiResponse<WhatsAppHealth>>("/whatsapp-health");
   return res.data.data!;

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, ConfirmModal, LoadError, cn } from "@alumni/ui";
-import { getPlatformSettings, getWhatsAppHealth, setWhatsAppBotEnabled } from "@/lib/platform-api";
+import { getPlatformSettings, getWhatsAppHealth, getWhatsAppInstitutions, setInstitutionWhatsApp, setWhatsAppBotEnabled, type WhatsAppInstitutionRow } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -136,7 +136,7 @@ function BotSwitch() {
             type="button" role="switch" aria-checked={on} aria-label="WhatsApp bot for every institution"
             disabled={!canChange || mutation.isPending}
             onClick={() => (on ? setConfirmOff(true) : mutation.mutate(true))}
-            className={cn("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-50", on ? "bg-primary" : "bg-muted")}
+            className={cn("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors after:absolute after:-inset-3 after:content-[''] disabled:cursor-not-allowed disabled:opacity-50", on ? "bg-primary" : "bg-muted")}
           >
             <span className={cn("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform", on ? "translate-x-5" : "translate-x-0")} />
           </button>
@@ -161,6 +161,80 @@ function BotSwitch() {
   );
 }
 
+/**
+ * One switch per institution, under the platform-wide one. With the platform-wide switch on, an institution that is off here has
+ * no bot and no WhatsApp notifications (SMS and email carry on); with it off, nothing runs anywhere whatever is set here.
+ */
+function InstitutionSwitches() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const settings = useQuery({ queryKey: ["platform-settings"], queryFn: getPlatformSettings });
+  const list = useQuery({ queryKey: ["whatsapp-institutions"], queryFn: getWhatsAppInstitutions });
+  const [pending, setPending] = useState<string | null>(null);
+  const canChange = user?.role === "SuperAdmin";
+  const globalOn = settings.data?.whatsAppBotEnabled !== false;
+
+  const mutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => setInstitutionWhatsApp(id, enabled),
+    onMutate: ({ id }) => setPending(id),
+    onSuccess: (row: WhatsAppInstitutionRow) => {
+      qc.setQueryData<WhatsAppInstitutionRow[]>(["whatsapp-institutions"], (rows) => (rows ?? []).map((r) => (r.id === row.id ? row : r)));
+      toast.success(`WhatsApp ${row.platformEnabled ? "activated" : "deactivated"} for ${row.name}`);
+    },
+    onError: (e) => toast.error(handleApiError(e)),
+    onSettled: () => setPending(null),
+  });
+
+  const rows = list.data ?? [];
+  return (
+    <Card className="border-border/40">
+      <CardContent className="space-y-3 p-5">
+        <div>
+          <p className="text-[15px] font-semibold">WhatsApp by institution</p>
+          <p className="mt-0.5 max-w-[64ch] text-[13px] text-muted-foreground">
+            {globalOn
+              ? "Switch it off for one institution and only that institution loses the bot and WhatsApp notifications; the others carry on."
+              : "The platform-wide switch is off, so WhatsApp is blocked for every institution below whatever is set here."}
+          </p>
+        </div>
+
+        {list.isLoading && <div className="skeleton h-20 w-full" aria-busy="true" />}
+        {!list.isLoading && rows.length === 0 && <p className="text-[13px] text-muted-foreground">No active institutions yet.</p>}
+
+        <ul className="divide-y divide-border">
+          {rows.map((r) => {
+            const effective = globalOn && r.platformEnabled && !r.institutionOptedOut;
+            return (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="truncate text-[14px] font-semibold">{r.name}</p>
+                  <p className="text-[12.5px] text-muted-foreground">
+                    {r.connected} of {r.activeMembers} members connected · {r.activeGroups} group{r.activeGroups === 1 ? "" : "s"}
+                  </p>
+                  <p className="mt-0.5 text-[12.5px]">
+                    <span className={cn("font-semibold", effective ? "text-success" : "text-muted-foreground")}>{effective ? "Running" : "Not running"}</span>
+                    {!globalOn && <span className="text-muted-foreground"> · blocked by the platform-wide switch</span>}
+                    {globalOn && !r.platformEnabled && <span className="text-muted-foreground"> · deactivated by you</span>}
+                    {globalOn && r.platformEnabled && r.institutionOptedOut && <span className="text-muted-foreground"> · the institution turned it off itself</span>}
+                  </p>
+                </div>
+                <button
+                  type="button" role="switch" aria-checked={r.platformEnabled} aria-label={`WhatsApp for ${r.name}`}
+                  disabled={!canChange || pending === r.id}
+                  onClick={() => mutation.mutate({ id: r.id, enabled: !r.platformEnabled })}
+                  className={cn("relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors after:absolute after:-inset-3 after:content-[''] disabled:cursor-not-allowed disabled:opacity-50", r.platformEnabled ? "bg-primary" : "bg-muted")}
+                >
+                  <span className={cn("pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform", r.platformEnabled ? "translate-x-5" : "translate-x-0")} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function WhatsAppHealthPage() {
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["whatsapp-health"], queryFn: getWhatsAppHealth, refetchInterval: 30_000 });
 
@@ -179,6 +253,7 @@ export default function WhatsAppHealthPage() {
       </header>
 
       <BotSwitch />
+      <InstitutionSwitches />
 
       <Card className="border-border/40">
         <CardContent className="space-y-4 p-5">

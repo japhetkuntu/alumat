@@ -45,7 +45,11 @@ public record InstitutionResponse(
     string PayoutStatus,
     string? SettlementBankName,
     string? SettlementAccountNumber,
-    string? SettlementAccountName);
+    string? SettlementAccountName,
+    /// <summary>Off, Optional or Required: whether this community uses graduation years at all.</summary>
+    string GraduationYearMode = "Required",
+    bool CollectMemberId = true,
+    List<RegistrationField>? RegistrationFields = null);
 
 /// <summary>
 /// Deliberate carve-out from the "institution staff can't edit branding"
@@ -92,7 +96,7 @@ public class UpdateInstitutionBrandingRequest
 /// registration, are this institution's own operational choices, not
 /// platform staff's, so they're edited here rather than via Platform.Api.
 /// </summary>
-public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool RequireStudentId);
+public record UpdateMemberActivePolicyRequest(string MemberActivePolicy, bool RequireStudentId, bool? CollectMemberId = null);
 
 /// <summary>
 /// Off by default — a self-registered member lands in "Pending" and an
@@ -118,7 +122,13 @@ public record UpdateProgramOfStudyRequest(bool ProgramOfStudyEnabled, List<strin
 /// null falls back to "Batch"/"Batches". A structural setting, so gated
 /// SuperAdmin-only like Batch CRUD itself.
 /// </summary>
-public record UpdateOrganizationTypeRequest(string OrganizationType, string? CohortLabel, string? CohortLabelPlural);
+public record UpdateOrganizationTypeRequest(string? OrganizationType, string? CohortLabel, string? CohortLabelPlural, string? GraduationYearMode = null);
+
+/// <summary>The community's own extra registration questions, replaced as a whole. Ids of existing questions are kept so answers stay attached.</summary>
+public record UpdateRegistrationFieldsRequest(List<RegistrationField> Fields);
+
+/// <summary>Apply one of the starting points (<see cref="ReservEase.Alumni.PostgresDb.Sdk.Entities.InstitutionTemplates"/>). Only fills settings in; nothing is locked.</summary>
+public record ApplyTemplateRequest(string TemplateId);
 
 /// <summary>
 /// The institution's own social media profile URLs, shown as icon links in

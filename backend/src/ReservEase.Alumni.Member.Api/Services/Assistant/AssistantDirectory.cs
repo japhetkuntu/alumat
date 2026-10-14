@@ -22,7 +22,8 @@ public class AssistantDirectory(
     private AssistantCommunity ToCommunity(Institution i, MemberEntity? member = null) => new(
         i.Id, i.Slug, string.IsNullOrWhiteSpace(i.PortalName) ? i.Name : i.PortalName!,
         MemberPortalLinks.UrlOrEmpty(i.Slug, i.CustomDomain, BaseDomain),
-        member?.Id, member?.PhoneVerifiedAt is not null, member?.FirstName);
+        member?.Id, member?.PhoneVerifiedAt is not null, member?.FirstName, i.IsWhatsAppAllowed(),
+        i.GraduationYearMode != GraduationYearModes.Off);
 
     public async Task<IReadOnlyList<AssistantCommunity>> FindMemberCommunitiesAsync(string normalizedPhone, CancellationToken ct = default)
     {
@@ -64,12 +65,17 @@ public class AssistantDirectory(
         if (q.Length < 3) return [];
 
         var bySlug = await FindBySlugAsync(q, ct);
-        if (bySlug is not null) return [bySlug];
+        if (bySlug is not null)
+        {
+            // An exact code wins over looser name matches, but only when the assistant is allowed there.
+            var row = await institutionRepo.GetOneAsync(x => x.Id == bySlug.InstitutionId, ignoreQueryFilters: true);
+            if (row is { } r && r.IsWhatsAppAllowed()) return [bySlug];
+        }
 
         var found = await institutionRepo.GetQueryable(i => i.Status == "Active", ignoreQueryFilters: true)
             .Where(i => i.Name.ToLower().Contains(q) || i.PortalName.ToLower().Contains(q) || i.Slug.Contains(q))
             .OrderBy(i => i.Name).Take(20).ToListAsync(ct);
         // DisabledFeatures is a JSON list, so that part is applied here rather than in the query.
-        return found.Where(i => !i.DisabledFeatures.Contains(InstitutionFeatures.WhatsApp)).Take(5).Select(i => ToCommunity(i)).ToList();
+        return found.Where(i => i.IsWhatsAppAllowed()).Take(5).Select(i => ToCommunity(i)).ToList();
     }
 }

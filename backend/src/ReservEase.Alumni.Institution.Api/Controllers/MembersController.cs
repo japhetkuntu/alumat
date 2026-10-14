@@ -99,6 +99,20 @@ public class MembersController(IMemberManagementService memberService) : Default
     }
 
     /// <summary>
+    /// Correct or fill in a member's answers to the community's own registration questions.
+    /// </summary>
+    [HttpPut("{memberId}/custom-fields")]
+    [SwaggerOperation(Summary = "Update a member's answers to the community's own questions")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateCustomFields(string memberId, [FromBody] UpdateMemberCustomFieldsRequest request)
+    {
+        var admin = User.GetAccount();
+        var result = await memberService.UpdateMemberCustomFieldsAsync(memberId, request, admin);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Bulk import pre-existing members with optional pre-paid membership years.
     /// </summary>
     [HttpPost("import")]

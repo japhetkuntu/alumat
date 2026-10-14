@@ -23,7 +23,7 @@ export function DirectoryMemberCard({ member: m, selected = false, isCommunity =
         </div>
       </button>
       <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-border">
-        {!isCommunity && <Badge variant="secondary" className="text-[12px] font-semibold">Class of {m.graduationYear}</Badge>}
+        {!isCommunity && m.graduationYear > 0 && <Badge variant="secondary" className="text-[12px] font-semibold">Class of {m.graduationYear}</Badge>}
         {m.departmentName && <Badge variant="outline" className="text-[12px] font-semibold truncate max-w-[110px]">{m.departmentName}</Badge>}
         {m.linkedInUrl && <a href={ensureAbsoluteUrl(m.linkedInUrl)} target="_blank" rel="noopener noreferrer"
           className="ml-auto w-7 h-7 rounded-lg flex items-center justify-center text-primary hover:bg-primary/10"

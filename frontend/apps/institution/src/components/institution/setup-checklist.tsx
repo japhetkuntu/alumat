@@ -41,7 +41,7 @@ export function InstitutionSetupChecklist() {
 
   const institution = profile.data;
   const isCommunity = institution.organizationType === "Community";
-  const cohortLabel = institution.cohortLabel?.trim() || "Batch";
+  const cohortLabel = institution.cohortLabel?.trim() || "Cohort";
   const hasActivation = !!activation.data;
   const criterion = (key: string) => activation.data?.criteria.find((c) => c.key === key);
   const branding = criterion("branding");
@@ -75,10 +75,10 @@ export function InstitutionSetupChecklist() {
     ...((isCommunity ? communities.isSuccess : batches.isSuccess) ? [isCommunity
       ? {
           id: "groups",
-          title: "Create your first community",
-          description: "Communities are how your members organize into groups.",
+          title: "Create your first group",
+          description: "Groups, such as chapters, committees or teams, are how your members organise. Decide whether members have a graduation year first, in Settings under \"How members are organised\".",
           done: groupsDone,
-          actionLabel: "Create a community",
+          actionLabel: "Create a group",
           onAction: () => router.push("/communities"),
         }
       : {

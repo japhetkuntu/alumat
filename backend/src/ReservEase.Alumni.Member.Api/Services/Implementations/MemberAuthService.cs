@@ -176,7 +176,8 @@ public class MemberAuthService(
     {
         var slug = string.IsNullOrWhiteSpace(institution?.Slug) ? "MEMBER" : institution.Slug.ToUpperInvariant();
         var isCommunity = institution?.OrganizationType == OrganizationTypes.Community;
-        var prefix = isCommunity ? $"{slug}-" : $"{slug}-{graduationYear}-";
+        // No year segment when the community has no years, or this member simply has none (Optional mode): never a "-0-".
+        var prefix = isCommunity || graduationYear <= 0 ? $"{slug}-" : $"{slug}-{graduationYear}-";
 
         var existing = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
         var maxSeq = existing
@@ -184,6 +185,26 @@ public class MemberAuthService(
             .DefaultIfEmpty(0)
             .Max();
         return $"{prefix}{(maxSeq + 1):D4}";
+    }
+
+    /// <summary>True when this community requires a graduation year and the person has not given a believable one.</summary>
+    /// <summary>
+    /// Checks the answers to this community's own registration questions. Returns the cleaned answers (null when none),
+    /// or an error message the person can act on.
+    /// </summary>
+    private async Task<(Dictionary<string, string>? Answers, string? Error)> ValidateCustomFieldsAsync(Dictionary<string, string>? answers)
+    {
+        var institution = currentTenant.InstitutionId is null ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        if (institution is null || institution.RegistrationFields.Count == 0) return (null, null);
+        var cleaned = RegistrationFieldRules.Validate(institution.RegistrationFields, answers, out var error);
+        return error is not null ? (null, error) : (cleaned is { Count: > 0 } ? cleaned : null, null);
+    }
+
+    private async Task<bool> GraduationYearMissingAsync(int? year)
+    {
+        var institution = currentTenant.InstitutionId is null ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+        if (institution?.GraduationYearMode != GraduationYearModes.Required) return false;
+        return year is null || year < 1950 || year > DateTime.UtcNow.Year + 8;
     }
 
     public async Task<IApiResponse<object>> RegisterAsync(RegisterRequest request)
@@ -194,6 +215,14 @@ public class MemberAuthService(
 
             if (!request.AcceptedTerms)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Please accept the Terms and Privacy Policy and confirm you are 18 or older to register.");
+
+            // Only a community that has made graduation year a requirement asks for it; others never block on it.
+            if (await GraduationYearMissingAsync(request.GraduationYear))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Please tell us your graduation year.");
+
+            var (customFields, customError) = await ValidateCustomFieldsAsync(request.CustomFields);
+            if (customError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(customError);
 
             var email = request.Email.ToLower().Trim();
             var existing = await memberRepo.GetOneAsync(m => m.Email == email);
@@ -227,6 +256,7 @@ public class MemberAuthService(
                 ReferralCode = request.ReferralCode?.Trim(),
                 CommunityId = request.CommunityId?.Trim(),
                 Channel = request.Channel,
+                CustomFields = customFields,
             };
 
             await redis.SetAsync($"reg:otp:{email}", cached, TimeSpan.FromMinutes(15));
@@ -257,6 +287,13 @@ public class MemberAuthService(
 
             if (!request.AcceptedTerms)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("Please accept the Terms and Privacy Policy and confirm you are 18 or older to register.");
+
+            if (await GraduationYearMissingAsync(request.GraduationYear))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Please tell us your graduation year.");
+
+            var (googleCustomFields, googleCustomError) = await ValidateCustomFieldsAsync(request.CustomFields);
+            if (googleCustomError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(googleCustomError);
 
             // Same re-registration allowance as the password flow — a Suspended
             // (rejected) member can try again; anything else with this email is
@@ -292,6 +329,7 @@ public class MemberAuthService(
                 GraduationYear = request.GraduationYear ?? 0,
                 DepartmentId = request.DepartmentId ?? string.Empty,
                 Program = request.Program?.Trim(),
+                CustomFields = googleCustomFields,
                 Status = autoApprove ? "Active" : "Pending",
                 IsEmailVerified = true,
                 TermsAcceptedAt = DateTime.UtcNow,
@@ -369,6 +407,7 @@ public class MemberAuthService(
                 GraduationYear = cached.GraduationYear ?? 0,
                 DepartmentId = cached.DepartmentId ?? string.Empty,
                 Program = cached.Program,
+                CustomFields = cached.CustomFields,
                 Status = autoApprove ? "Active" : "Pending",
                 IsEmailVerified = true,
                 TermsAcceptedAt = cached.TermsAcceptedAt,
@@ -668,6 +707,32 @@ public class MemberAuthService(
         }
     }
 
+    public async Task<IApiResponse<MemberTokenResponse>> CreateSessionAsync(MemberEntity member)
+    {
+        try
+        {
+            if (member.Status != "Active")
+                return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("This account cannot sign in.");
+
+            member.LastLoginAt = DateTime.UtcNow;
+            await memberRepo.UpdateAsync(member);
+
+            var accessToken = GenerateJwtToken(BuildClaimData(member));
+            var refreshToken = GenerateRefreshToken();
+            await redis.SetAsync($"member:refresh:{member.Id}", refreshToken, TimeSpan.FromDays(tokenConfig.RefreshTokenLifetime));
+
+            var user = new AuthUserResponse(member.Id, member.Email, member.FirstName, member.LastName, "Member", member.GraduationYear, member.ProfilePictureUrl);
+            var tokens = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
+            logger.LogInformation("Member {MemberId} signed in by switching communities", member.Id);
+            return new MemberTokenResponse(user, tokens).ToOkApiResponse("Login successful");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error creating a session for a community switch");
+            return ApiResponseExtensions.ToServerErrorApiResponse<MemberTokenResponse>("Login failed");
+        }
+    }
+
     public async Task<IApiResponse<MemberTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request)
     {
         try
@@ -772,6 +837,22 @@ public class MemberAuthService(
             member.ShowPhoneOnDirectory = request.ShowPhoneOnDirectory ?? member.ShowPhoneOnDirectory;
             member.ShowCompanyOnDirectory = request.ShowCompanyOnDirectory ?? member.ShowCompanyOnDirectory;
             member.ShowBioOnDirectory = request.ShowBioOnDirectory ?? member.ShowBioOnDirectory;
+
+            if (request.CustomFieldsJson is not null)
+            {
+                Dictionary<string, string>? sent = null;
+                try { sent = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(request.CustomFieldsJson); }
+                catch (System.Text.Json.JsonException) { return ApiResponseExtensions.ToBadRequestApiResponse<MemberProfileResponse>("Those answers could not be read."); }
+
+                var institution = currentTenant.InstitutionId is null ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+                if (institution is { RegistrationFields.Count: > 0 })
+                {
+                    // Required is not enforced here: someone who joined before a question existed should not be blocked from saving the rest of their profile.
+                    var cleaned = RegistrationFieldRules.Validate(institution.RegistrationFields, sent, out var customError, enforceRequired: false);
+                    if (customError is not null) return ApiResponseExtensions.ToBadRequestApiResponse<MemberProfileResponse>(customError);
+                    member.CustomFields = cleaned is { Count: > 0 } ? cleaned : null;
+                }
+            }
 
             if (!member.ShowOnAlumniMap)
             {
@@ -1008,5 +1089,6 @@ public class MemberAuthService(
         m.YearOfEntry, m.House, m.StudentStatus, m.PrefectStatus,
         m.ClubsAndSocieties, m.LeadershipRoles, m.Achievements,
         m.ConnectionType, m.Skills, m.Interests,
-        m.ShowEmailOnDirectory, m.ShowPhoneOnDirectory, m.ShowCompanyOnDirectory, m.ShowBioOnDirectory);
+        m.ShowEmailOnDirectory, m.ShowPhoneOnDirectory, m.ShowCompanyOnDirectory, m.ShowBioOnDirectory,
+        m.CustomFields);
 }

@@ -24,6 +24,9 @@ public class Member : BaseEntity, ITenantScoped
     public DateTime? PhoneVerifiedAt { get; set; }
     public string Password { get; set; } = string.Empty;
     public string? StudentId { get; set; }
+
+    /// <summary>Answers to the community's own registration questions, keyed by <see cref="RegistrationField.Id"/>. Null when none were asked.</summary>
+    public Dictionary<string, string>? CustomFields { get; set; }
     public int GraduationYear { get; set; }
     // Opt-in — null unless the member has entered it themselves. Only the
     // month/day are ever used (the Birthday Spotlight scheduler), so the

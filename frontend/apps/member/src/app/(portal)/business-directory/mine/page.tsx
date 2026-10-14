@@ -213,7 +213,7 @@ export default function MyBusinessListingPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="mb-0 font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight">My Business Listing</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your listing in the alumni business directory.</p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your listing in the business directory.</p>
         </div>
         <Badge variant={meta.variant} className="gap-1 text-[12px] px-3 py-1.5">
           <meta.icon size={12} />{meta.label}
@@ -367,7 +367,7 @@ function BusinessFormFields({
 
       <div>
         <Label required>Description</Label>
-        <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Tell alumni what your business does..." rows={4} />
+        <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Tell members what your business does..." rows={4} />
       </div>
 
       <div className="space-y-1.5">

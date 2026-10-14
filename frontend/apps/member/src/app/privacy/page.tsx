@@ -2,7 +2,7 @@ import { LegalPageShell, Section } from "@/components/member/legal-page-shell";
 
 export const metadata = {
   title: "Privacy Policy",
-  description: "How AlumUnion collects, uses, and protects alumni and institution data across every portal on the platform.",
+  description: "How AlumUnion collects, uses, and protects member and institution data across every portal on the platform.",
 };
 
 export default function PrivacyPage() {
@@ -11,8 +11,8 @@ export default function PrivacyPage() {
       <Section heading="1. Scope of this policy">
         <p>
           This policy explains how AlumUnion (&quot;we&quot;, &quot;us&quot;), a company registered in Ghana, handles
-          personal data when a school, university, alumni association, or other community organization
-          (&quot;Institution&quot;) uses the Platform to run an alumni network, and when their alumni, members, or
+          personal data when a community or organization, such as an association, school, club or faith group
+          (&quot;Institution&quot;), uses the Platform to run its community, and when its members or
           staff (&quot;Members&quot;) use that network. It is written to meet Ghana&apos;s Data Protection Act, 2012
           (Act 843), and applies to every Institution portal hosted on the Platform.
         </p>
@@ -29,11 +29,11 @@ export default function PrivacyPage() {
       <Section heading="2. What we collect">
         <p><strong style={{ color: "var(--foreground)" }}>From Members, when you register or use a portal:</strong></p>
         <ul className="list-disc pl-5 space-y-1.5">
-          <li>Identity and contact details: full name, email address, mobile number, graduation year, student
-            ID, department;</li>
+          <li>Identity and contact details: full name, email address, mobile number, and, where the Institution asks for them, graduation year, member or student
+            ID, department and answers to its own registration questions;</li>
           <li>Profile details you choose to add: company, job title, location, LinkedIn URL, bio, profile
             photo;</li>
-          <li>Location, only if you turn on the Alumni Map: the city/country you entered, nothing more precise;</li>
+          <li>Location, only if you turn on the Member Map: the city/country you entered, nothing more precise;</li>
           <li>Activity data: event RSVPs, forum and class-note posts, job applications, mentorship requests,
             community memberships;</li>
           <li>Payment records: the amount, date, fundraiser or membership dues item, and status of a contribution or payment.
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
             initiate, sending you the account emails needed to operate the service (like password resets and
             payment receipts);</li>
           <li><strong style={{ color: "var(--foreground)" }}>Consent</strong>: showing your location on the
-            Alumni Map, sending you SMS notifications, and any marketing communications. You can withdraw this
+            Member Map, sending you SMS notifications, and any marketing communications. You can withdraw this
             consent at any time from your profile settings, and we stop that specific use going forward;</li>
           <li><strong style={{ color: "var(--foreground)" }}>Legitimate interest</strong>: keeping the Platform
             secure (fraud prevention, abuse detection), improving reliability, and maintaining audit logs of
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
           <li>Access a copy of your personal data;</li>
           <li>Correct inaccurate or incomplete data: most profile fields can be edited directly from your
             account;</li>
-          <li>Object to, or ask us to stop, a specific processing activity (for example, withdrawing your Alumni
+          <li>Object to, or ask us to stop, a specific processing activity (for example, withdrawing your Member
             Map or notification consent);</li>
           <li>Ask for your account and associated personal data to be deleted, subject to the retention
             exceptions described above;</li>
@@ -131,7 +131,7 @@ export default function PrivacyPage() {
             mishandled.</li>
         </ul>
         <p>
-          To exercise any of these rights, start with your Institution&apos;s alumni office if the request relates
+          To exercise any of these rights, start with your Institution&apos;s administrators if the request relates
           to your Member account, since they control that data day to day. For anything platform-level, or if
           your Institution is unresponsive, contact us directly at{" "}
           <a href="mailto:privacy@alumunion.com" className="font-semibold underline underline-offset-2" style={{ color: "var(--primary)" }}>
@@ -166,7 +166,7 @@ export default function PrivacyPage() {
 
       <Section heading="10. Children">
         <p>
-          The Platform is built for alumni, students, and staff of participating Institutions and is not
+          The Platform is built for members and staff of participating Institutions and is not
           intended for children under 18. If we learn that we have collected personal data from a child without
           appropriate consent, we will delete it.
         </p>
