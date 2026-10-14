@@ -112,6 +112,7 @@ import {
   faUsers,
   faUserGroup,
   faWallet,
+  faFilter,
   faXmark,
   faBolt,
   faMagnifyingGlassPlus,
@@ -351,6 +352,7 @@ export const UserX = makeIcon(faUserXmark);
 export const Users = makeIcon(faUsers);
 export const Users2 = makeIcon(faUserGroup);
 export const UsersRound = makeIcon(faUserGroup);
+export const Filter = makeIcon(faFilter);
 export const Wallet = makeIcon(faWallet);
 export const X = makeIcon(faXmark);
 export const XCircle = makeIcon(faCircleXmark);

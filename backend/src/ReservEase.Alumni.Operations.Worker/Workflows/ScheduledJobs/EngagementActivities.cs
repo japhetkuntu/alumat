@@ -153,6 +153,10 @@ public class EngagementActivities(
             if (!AutomationPolicy.InSendWindow(now, Limits)) return 0;
             var institution = await EnterAsync(institutionId);
             if (institution is null || !institution.EmailNotificationsEnabled) return 0;
+            var automation = institution.Automation.Normalised();
+            if (!automation.ReengageQuietMembers) return 0;
+            // This community's own idea of "quiet", on top of the platform limits.
+            var limits = Limits with { MemberQuietDays = automation.QuietDays };
 
             // What there really is to show. Nothing here is invented; with none of it, nobody is written to.
             var events = await eventRepo.GetQueryable(e => e.Status == "Upcoming" && e.CommunityId == null && e.StartDate >= now && e.StartDate <= now.AddDays(14))
@@ -166,7 +170,7 @@ public class EngagementActivities(
                 .Concat(news.Select(n => new Item($"News: {n.Title}", n.YearGroups))).ToList();
             if (content.Count == 0) return 0;
 
-            var quietSince = now.AddDays(-Limits.MemberQuietDays);
+            var quietSince = now.AddDays(-limits.MemberQuietDays);
             var candidates = await memberRepo.GetQueryable(m => m.Status == "Active" && m.CreatedAt < quietSince && (m.LastLoginAt == null || m.LastLoginAt < quietSince))
                 .OrderBy(m => m.LastLoginAt).Take(500).ToListAsync();
             if (candidates.Count == 0) return 0;
@@ -187,12 +191,12 @@ public class EngagementActivities(
             var sentCount = 0;
             foreach (var m in candidates)
             {
-                if (sentCount >= Limits.MaxMemberMessagesPerRun) break;
+                if (sentCount >= limits.MaxMemberMessagesPerRun) break;
                 var mine = content.Where(i => i.YearGroups is null or { Count: 0 } || i.YearGroups.Contains(m.GraduationYear)).Take(3).ToList();
                 var lastRe = history.Where(h => h.RecipientId == m.Id && h.Kind == EngagementMessageKinds.MemberReengagement).Select(h => (DateTime?)h.CreatedAt).Max();
                 var lastAny = history.Where(h => h.RecipientId == m.Id).Select(h => (DateTime?)h.CreatedAt).Max();
                 if (!AutomationPolicy.ShouldReengage(optedOut.Contains(m.Id), institution.EmailNotificationsEnabled, !string.IsNullOrWhiteSpace(m.Email),
-                        m.CreatedAt, m.LastLoginAt, active.Contains(m.Id), lastRe, lastAny, mine.Count, now, Limits)) continue;
+                        m.CreatedAt, m.LastLoginAt, active.Contains(m.Id), lastRe, lastAny, mine.Count, now, limits)) continue;
 
                 await messageRepo.AddAsync(new EngagementMessage { InstitutionId = institutionId, RecipientType = "Member", RecipientId = m.Id, Kind = EngagementMessageKinds.MemberReengagement, CreatedBy = "system" });
                 var brand = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName;

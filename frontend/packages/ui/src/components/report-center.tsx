@@ -56,6 +56,8 @@ export interface ReportCenterApi {
   request: (body: { reportType: string; format: string; parameters: Record<string, string> }) => Promise<ReportJobItem>;
   /** Fetches the finished file and hands it to the browser to save. */
   download: (job: ReportJobItem) => Promise<void>;
+  /** The community's saved audiences, offered as a filter on the reports that accept one. Omit where there are none. */
+  getSegments?: () => Promise<{ id: string; name: string }[]>;
 }
 
 interface ReportCenterProps {
@@ -81,6 +83,7 @@ const FILTER_LABELS: Record<string, string> = {
   profession: "Job title contains",
   location: "Location contains",
   year: "Dues year",
+  segment: "Saved audience",
 };
 
 const FILTER_PLACEHOLDERS: Record<string, string> = {
@@ -107,9 +110,9 @@ function fileSize(bytes: number): string {
 }
 
 /** The filters a report was run with, as one readable line: "From 2026-01-01 · Status Paid". */
-function filterSummary(job: ReportJobItem): string {
+function filterSummary(job: ReportJobItem, segmentNames: Record<string, string> = {}): string {
   return Object.entries(job.parameters)
-    .map(([key, value]) => `${filterLabel(key, job.reportType)} ${value}`)
+    .map(([key, value]) => `${filterLabel(key, job.reportType)} ${key === "segment" ? segmentNames[value] ?? "(removed)" : value}`)
     .join(" · ");
 }
 
@@ -128,8 +131,8 @@ function StatusBadge({ status }: { status: ReportJobStatus }) {
   }
 }
 
-function JobRow({ job, onDownload, downloading }: { job: ReportJobItem; onDownload: () => void; downloading: boolean }) {
-  const filters = filterSummary(job);
+function JobRow({ job, onDownload, downloading, segmentNames }: { job: ReportJobItem; onDownload: () => void; downloading: boolean; segmentNames: Record<string, string> }) {
+  const filters = filterSummary(job, segmentNames);
   return (
     <li className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5">
       <div className="min-w-0">
@@ -182,9 +185,14 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
     refetchInterval: (query) => (query.state.data?.some(inProgress) ? 4000 : false),
   });
 
+  const segments = useQuery({ queryKey: ["report-segments"], queryFn: api.getSegments ?? (async () => []), staleTime: 60_000 });
+  const segmentNames = Object.fromEntries((segments.data ?? []).map((s) => [s.id, s.name]));
+
   const definitions = catalog.data ?? [];
   const selected = definitions.find((d) => d.key === selectedKey) ?? definitions[0] ?? null;
-  const visibleFilters = (selected?.parameters ?? []).filter((p) => !(hideYearFilters && (p === "yearFrom" || p === "yearTo")));
+  // The audience filter is only offered where the community has saved audiences to choose from.
+  const visibleFilters = (selected?.parameters ?? []).filter((p) =>
+    !(hideYearFilters && (p === "yearFrom" || p === "yearTo")) && !(p === "segment" && (segments.data ?? []).length === 0));
 
   const request = useMutation({
     mutationFn: () => {
@@ -281,7 +289,14 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
                         return (
                           <div key={key} className="space-y-1.5">
                             <Label htmlFor={id} className="text-[12.5px] font-normal text-muted-foreground">{label}</Label>
-                            {key === "status" ? (
+                            {key === "segment" ? (
+                              <FormSelect
+                                className="sm:w-full"
+                                value={filters[key] || ANY}
+                                onValueChange={(value) => setFilter(key, value)}
+                                options={[{ value: ANY, label: "Everyone" }, ...(segments.data ?? []).map((s) => ({ value: s.id, label: s.name }))]}
+                              />
+                            ) : key === "status" ? (
                               <FormSelect
                                 className="sm:w-full"
                                 value={filters[key] || ANY}
@@ -347,7 +362,7 @@ export function ReportCenter({ api, errorMessage, hideYearFilters = false }: Rep
           ) : (
             <ul className="divide-y divide-border border-t border-border">
               {(jobs.data ?? []).map((job) => (
-                <JobRow key={job.id} job={job} onDownload={() => void download(job)} downloading={downloadingId === job.id} />
+                <JobRow key={job.id} job={job} onDownload={() => void download(job)} downloading={downloadingId === job.id} segmentNames={segmentNames} />
               ))}
             </ul>
           )}

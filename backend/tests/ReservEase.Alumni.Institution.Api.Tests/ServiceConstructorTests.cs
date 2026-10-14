@@ -74,7 +74,7 @@ public class ServiceConstructorTests
         var __________ = new ReportService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, eventRepo.Object, jobRepo.Object, membershipRepo.Object, storeOrderRepo.Object, serviceRequestRepo.Object, currentTenant.Object, redisService.Object, new NullLogger<ReportService>());
         var ___________ = new ResourceService(resourceRepo.Object, storageService.Object, currentTenant.Object, auditLog.Object, new NullLogger<ResourceService>());
         var ____________ = new UploadService(storageService.Object, currentTenant.Object, new NullLogger<UploadService>());
-        var _____________ = new BroadcastService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, storageService.Object, temporalProvider, currentTenant.Object, new NullLogger<BroadcastService>());
+        var _____________ = new BroadcastService(memberRepo.Object, contributionRepo.Object, campaignRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment>>(), new ReservEase.Alumni.PostgresDb.Sdk.Services.AudienceSegmentResolver(memberRepo.Object, membershipRepo.Object, Mock.Of<IAlumniPgRepository<Community>>(), contributionRepo.Object, campaignRepo.Object), storageService.Object, temporalProvider, currentTenant.Object, new NullLogger<BroadcastService>());
 
         Assert.NotNull(_);
         Assert.NotNull(__);

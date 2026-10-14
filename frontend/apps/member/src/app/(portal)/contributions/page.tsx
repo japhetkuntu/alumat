@@ -34,6 +34,8 @@ import {
 import { handleApiError } from "@/lib/api-client";
 import type { Campaign, Contribution, ContributionStatus } from "@/types";
 import { contributionMethodLabel } from "@/types";
+import { openReceipt } from "@/lib/receipt";
+import { useNavTheme } from "@/components/member/member-layout";
 import { PaymentRedirectOverlay } from "@/components/member/payment-redirect-overlay";
 import { SourceBadge } from "@/components/member/source-badge";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
@@ -541,6 +543,25 @@ export default function MemberContributionsPage() {
     queryFn:  getMyProfile,
   });
 
+  const { data: navTheme } = useNavTheme();
+  function showReceipt(c: Contribution) {
+    const opened = openReceipt({
+      institutionName: navTheme?.displayName ?? "Your community",
+      logoUrl: navTheme?.logoUrl ?? null,
+      colour: navTheme?.primaryColorHex ?? null,
+      memberName: `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || c.memberName || "Member",
+      memberNumber: profile?.memberNumber ?? c.memberNumber ?? null,
+      memberEmail: profile?.email ?? c.memberEmail ?? null,
+      campaignTitle: c.campaignTitle ?? "Contribution",
+      amount: formatCurrency(c.amount),
+      method: contributionMethodLabel(c.paymentMethod),
+      reference: c.transactionRef ?? null,
+      paymentId: c.id,
+      paidOn: formatDate(c.confirmedAt ?? c.createdAt),
+    });
+    if (!opened) toast.error("Your browser blocked the receipt window. Allow pop-ups for this site and try again.");
+  }
+
   const { data: recurringGifts } = useQuery({
     queryKey: ["m-recurring-giving"],
     queryFn:  getMyRecurringGiving,
@@ -835,6 +856,15 @@ export default function MemberContributionsPage() {
                       <span className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
                         {formatDate(c.confirmedAt ?? c.createdAt)}
                       </span>
+                      {c.status === "Successful" && (
+                        <button
+                          type="button"
+                          onClick={() => showReceipt(c)}
+                          className="mt-1 block ml-auto text-[12px] font-semibold text-primary hover:underline"
+                        >
+                          Receipt
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -903,6 +933,15 @@ export default function MemberContributionsPage() {
                   <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>
                     {formatDate(c.confirmedAt ?? c.createdAt)}
                   </span>
+                  {c.status === "Successful" && (
+                    <button
+                      type="button"
+                      onClick={() => showReceipt(c)}
+                      className="ml-auto text-[12px] font-semibold text-primary"
+                    >
+                      Receipt
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

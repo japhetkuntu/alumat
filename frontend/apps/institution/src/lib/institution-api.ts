@@ -311,6 +311,82 @@ export async function updateMemberCustomFields(memberId: string, answers: Record
   await institutionClient.put(`/members/${memberId}/custom-fields`, { answers });
 }
 
+// ─── Automatic messages ──────────────────────────────────────────────────────
+
+export interface AutomationSettings {
+  duesReminders: boolean;
+  duesReminderEveryDays: number;
+  duesChaseAfterDays: number;
+  eventReminders: boolean;
+  pledgeReminders: boolean;
+  reengageQuietMembers: boolean;
+  quietDays: number;
+}
+
+export async function getAutomations(): Promise<AutomationSettings> {
+  const res = await institutionClient.get<ApiResponse<AutomationSettings>>("/institution/me/automations");
+  return res.data.data!;
+}
+
+export async function saveAutomations(body: AutomationSettings): Promise<AutomationSettings> {
+  const res = await institutionClient.put<ApiResponse<AutomationSettings>>("/institution/me/automations", body);
+  return res.data.data!;
+}
+
+// ─── Saved segments ──────────────────────────────────────────────────────────
+
+export interface SegmentCriteria {
+  status?: string | null;
+  groupIds: string[];
+  groupKinds: string[];
+  graduationYearFrom?: number | null;
+  graduationYearTo?: number | null;
+  departmentId?: string | null;
+  duesStatus?: "Paid" | "Unpaid" | null;
+  answerContains?: string | null;
+  dormantOnly: boolean;
+  joinedWithinDays?: number | null;
+}
+
+export interface Segment { id: string; name: string; description?: string | null; criteria: SegmentCriteria; createdAt: string; }
+export interface SegmentPreview { count: number; sample: { id: string; name: string; email: string }[]; }
+export const emptySegmentCriteria = (): SegmentCriteria => ({ groupIds: [], groupKinds: [], dormantOnly: false, status: "Active" });
+
+export async function getSegments(): Promise<Segment[]> {
+  const res = await institutionClient.get<ApiResponse<Segment[]>>("/segments");
+  return res.data.data ?? [];
+}
+export async function saveSegment(id: string | null, body: { name: string; description?: string; criteria: SegmentCriteria }): Promise<Segment> {
+  const res = id
+    ? await institutionClient.put<ApiResponse<Segment>>(`/segments/${id}`, body)
+    : await institutionClient.post<ApiResponse<Segment>>("/segments", body);
+  return res.data.data!;
+}
+export async function deleteSegment(id: string): Promise<void> {
+  await institutionClient.delete(`/segments/${id}`);
+}
+export async function previewSegment(criteria: SegmentCriteria): Promise<SegmentPreview> {
+  const res = await institutionClient.post<ApiResponse<SegmentPreview>>("/segments/preview", criteria);
+  return res.data.data!;
+}
+
+export interface SampleContentStatus { present: boolean; newsPosts: number; events: number; }
+
+export async function getSampleContent(): Promise<SampleContentStatus> {
+  const res = await institutionClient.get<ApiResponse<SampleContentStatus>>("/institution/me/sample-content");
+  return res.data.data!;
+}
+
+export async function addSampleContent(): Promise<SampleContentStatus> {
+  const res = await institutionClient.post<ApiResponse<SampleContentStatus>>("/institution/me/sample-content");
+  return res.data.data!;
+}
+
+export async function removeSampleContent(): Promise<SampleContentStatus> {
+  const res = await institutionClient.delete<ApiResponse<SampleContentStatus>>("/institution/me/sample-content");
+  return res.data.data!;
+}
+
 export async function updateRegistrationFields(fields: RegistrationField[]): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.put<ApiResponse<InstitutionProfileResponse>>("/institution/me/registration-fields", { fields });
   return res.data.data!;
@@ -832,6 +908,7 @@ export const reportCenterApi: ReportCenterApi = {
   getCatalog: async () => (await institutionClient.get<ApiResponse<ReportDefinitionItem[]>>('/reports/catalog')).data.data!,
   getJobs: async () => (await institutionClient.get<ApiResponse<PagedResult<ReportJobItem>>>('/reports/jobs', { params: { pageSize: 30 } })).data.data!.results,
   request: async (body) => (await institutionClient.post<ApiResponse<ReportJobItem>>('/reports/jobs', body)).data.data!,
+  getSegments: async () => (await getSegments()).map((s) => ({ id: s.id, name: s.name })),
   download: async (job) => {
     const res = await institutionClient.get(`/reports/jobs/${job.id}/download`, { responseType: "blob" });
     saveBlob(res.data as Blob, res.headers["content-disposition"] as string | undefined, job.fileName ?? `report.${job.format}`);
@@ -1612,6 +1689,8 @@ export interface BroadcastFilter {
   graduationYearFrom?: number;
   graduationYearTo?: number;
   engagementSegment?: EngagementSegment;
+  /** A saved audience; when set it replaces the other filters. */
+  segmentId?: string;
 }
 
 export interface SendBroadcastBody extends BroadcastFilter {

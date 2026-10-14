@@ -44,6 +44,9 @@ public class Institution : BaseEntity
     /// <summary>Whether registration asks for a member or student ID at all. When off, the field is not shown and RequireStudentId is moot.</summary>
     public bool CollectMemberId { get; set; } = true;
 
+    /// <summary>Which automatic messages this community sends and how often. Defaults match what every community had before this was configurable.</summary>
+    public AutomationSettings Automation { get; set; } = new();
+
     /// <summary>The community's own extra registration questions, in the order they are asked (at most <c>RegistrationFieldRules.MaxFields</c>).</summary>
     public List<RegistrationField> RegistrationFields { get; set; } = [];
 

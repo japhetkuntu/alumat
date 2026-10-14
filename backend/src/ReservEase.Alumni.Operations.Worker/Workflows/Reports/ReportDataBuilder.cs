@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Reports.Sdk.Models;
 using static ReservEase.Alumni.Operations.Worker.Workflows.Reports.ReportCellKind;
 
@@ -29,7 +30,9 @@ public class ReportDataBuilder(
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
     IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
-    IAlumniPgRepository<Institution> institutionRepo)
+    IAlumniPgRepository<Institution> institutionRepo,
+    IAlumniPgRepository<AudienceSegment> segmentRepo,
+    IAlumniPgRepository<Community> communityRepo)
 {
     private const int PageSize = 500;
 
@@ -83,7 +86,22 @@ public class ReportDataBuilder(
         var location = Param(job, ReportParameters.Location)?.ToLower();
 
         var departments = await DepartmentNamesAsync(institutionId, ct);
-        var members = (await ScopedMembersAsync(job, ct))
+        var scopedMembers = await ScopedMembersAsync(job, ct);
+
+        // A saved audience narrows the roster to the people it describes today (and never beyond what the requester may see).
+        var segmentId = Param(job, ReportParameters.Segment);
+        if (!string.IsNullOrWhiteSpace(segmentId))
+        {
+            var segment = await segmentRepo.GetOneAsync(s => s.Id == segmentId && s.InstitutionId == institutionId, ignoreQueryFilters: true);
+            var resolver = new AudienceSegmentResolver(memberRepo, membershipRepo, communityRepo, contributionRepo, campaignRepo);
+            var scope = new SegmentScope(!job.RequesterIsScoped, job.ScopeYearGroups, job.ScopeCommunityIds);
+            var inSegment = segment is null
+                ? []
+                : (await resolver.ResolveAsync(segment.Criteria, scope, institutionId: institutionId)).Select(m => m.Id).ToList();
+            scopedMembers = scopedMembers.Where(m => inSegment.Contains(m.Id));
+        }
+
+        var members = scopedMembers
             .Where(m => (status == null || m.Status == status)
                 && (yearFrom == null || m.GraduationYear >= yearFrom)
                 && (yearTo == null || m.GraduationYear <= yearTo)

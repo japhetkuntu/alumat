@@ -45,6 +45,19 @@ successive runs to assess warm-build performance. A cold build, pending database
 migrations, server load and package downloads can still extend deployment time.
 There is no measured speedup until this version has been run on the server.
 
+Backend builds use at most two MSBuild workers, or one when Linux reports less
+than 2 GB available memory. This limits competing compiler processes on a busy
+droplet. Override with `DOTNET_BUILD_JOBS=1` (or a larger positive integer for a
+larger server). Compiler-server sharing and MSBuild node reuse are disabled for
+these deployment builds so they do not leave reusable build processes behind.
+This can reduce memory pressure; it is not a guaranteed speedup on every server.
+
+Restore and compile/publish now have separate timings. Publish also prints an
+MSBuild performance summary. If a deployment still stalls, capture that output
+alongside `free -h` and `nproc` on the server: it distinguishes package/network
+waits, expensive compilation and a machine that lacks memory. Compilation checks
+and analyzers remain enabled; deployment does not run unit tests.
+
 The root `deploy.sh` is the older Docker Compose deployment path. These targets
 and cache improvements apply to `deploy/deploy.sh`.
 

@@ -125,6 +125,35 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Landing content updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>Which automatic messages this community sends and how often.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpGet("me/automations")]
+    [SwaggerOperation(Summary = "Automatic message settings")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<AutomationSettings>))]
+    public async Task<IActionResult> GetAutomations()
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+        return Ok(new ApiResponse<AutomationSettings> { Message = "Success", Code = 200, Data = institution.Automation.Normalised() });
+    }
+
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPut("me/automations")]
+    [SwaggerOperation(Summary = "Update automatic message settings", Description = "Numbers outside their allowed range are brought back into it.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<AutomationSettings>))]
+    public async Task<IActionResult> UpdateAutomations([FromBody] AutomationSettings request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        institution.Automation = request.Normalised();
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+        return Ok(new ApiResponse<AutomationSettings> { Message = "Automatic messages updated", Code = 200, Data = institution.Automation });
+    }
+
     /// <summary>The extra questions this community asks at registration. Replaces the whole list.</summary>
     [Authorize(Roles = "SuperAdmin")]
     [HttpPut("me/registration-fields")]

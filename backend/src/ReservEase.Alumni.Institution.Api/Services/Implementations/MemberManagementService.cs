@@ -529,9 +529,10 @@ public class MemberManagementService(
                     // no year group to check at all, so a ScopedAdmin scoped by community
                     // is authorized instead — consistent with IsMemberInScopeAsync's own
                     // dual pathway.
+                    // A new person has no group yet, so any group the admin is assigned to is enough (not just the first).
                     var authorized = isCommunityOrg
-                        ? admin.CanModifyScopedItem(itemYearGroups: null, createdBy: null,
-                            itemCommunityId: admin.CommunityIds is { Count: > 0 } ? admin.CommunityIds[0] : null)
+                        ? admin.Role != StaffRoles.ScopedAdmin
+                            || (admin.CommunityIds ?? []).Any(id => admin.CanModifyScopedItem(itemYearGroups: null, createdBy: null, itemCommunityId: id))
                         : admin.CanModifyScopedItem(new List<int> { item.GraduationYear ?? 0 }, createdBy: null);
                     if (!authorized)
                     {

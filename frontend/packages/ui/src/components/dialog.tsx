@@ -82,7 +82,7 @@ DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   // pr-9 keeps a long title clear of the close button.
-  return <div className={cn("flex flex-col space-y-2 pr-9 text-left", className)} {...props} />;
+  return <div className={cn("flex flex-col space-y-2 pb-3 pr-9 text-left", className)} {...props} />;
 }
 
 function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

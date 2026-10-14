@@ -69,6 +69,9 @@ builder.Services.AddAlumniControllers();
 // Application services
 builder.Services.AddScoped<IInstitutionAuthService, InstitutionAuthService>();
 builder.Services.AddScoped<ReservEase.Alumni.Institution.Api.Services.Implementations.IStructureService, ReservEase.Alumni.Institution.Api.Services.Implementations.StructureService>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Services.AudienceSegmentResolver>();
+builder.Services.AddScoped<ReservEase.Alumni.Institution.Api.Services.Implementations.ISegmentService, ReservEase.Alumni.Institution.Api.Services.Implementations.SegmentService>();
+builder.Services.AddScoped<ReservEase.Alumni.Institution.Api.Services.Implementations.ISampleContentService, ReservEase.Alumni.Institution.Api.Services.Implementations.SampleContentService>();
 builder.Services.AddScoped<ReservEase.Alumni.Institution.Api.Services.Implementations.IStaffInstitutionsService, ReservEase.Alumni.Institution.Api.Services.Implementations.StaffInstitutionsService>();
 builder.Services.AddScoped<IMemberManagementService, MemberManagementService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();

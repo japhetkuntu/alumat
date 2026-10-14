@@ -1,10 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
-import { getBatches, getCommunities, getEvents, getInstitutionActivation, getInstitutionProfile, getNewsPosts } from "@/lib/institution-api";
+import { addSampleContent, getBatches, getCommunities, getEvents, getInstitutionActivation, getInstitutionProfile, getNewsPosts, getSampleContent, removeSampleContent } from "@/lib/institution-api";
+import { handleApiError } from "@/lib/api-client";
 
 /**
  * The setup steps a new institution's SuperAdmin needs to finish, each derived from real
@@ -35,6 +37,23 @@ export function InstitutionSetupChecklist() {
   const communities = useQuery({ queryKey: ["setup-communities"], queryFn: getCommunities, enabled: communitiesOn });
   const events = useQuery({ queryKey: ["dash-events"], queryFn: () => getEvents(1, 1), enabled: eventsOn });
 
+  // Example content: offered while the portal is empty, and a one-step way to clear it once real content exists.
+  const qc = useQueryClient();
+  const sample = useQuery({ queryKey: ["sample-content"], queryFn: getSampleContent, enabled: isSuperAdmin && (newsEnabled || eventsOn) });
+  const refreshContent = () => {
+    for (const key of ["sample-content", "setup-published-news", "dash-events", "admin-news", "admin-events"]) qc.invalidateQueries({ queryKey: [key] });
+  };
+  const addSample = useMutation({
+    mutationFn: addSampleContent,
+    onSuccess: () => { toast.success("Example content added. Members will see it straight away."); refreshContent(); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+  const removeSample = useMutation({
+    mutationFn: removeSampleContent,
+    onSuccess: () => { toast.success("Example content removed."); refreshContent(); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   if (!isSuperAdmin) return null;
   // Activation failing (e.g. mid-deploy) degrades to the profile-derived steps rather than hiding the whole list.
   if (!profile.data) return null;
@@ -52,6 +71,15 @@ export function InstitutionSetupChecklist() {
 
   const groupsDone = isCommunity ? (communities.data?.length ?? 0) > 0 : (batches.data?.length ?? 0) > 0;
   const payoutPending = institution.payoutStatus === "Pending";
+
+  // The first invite should be one tap: a ready-written WhatsApp message with the portal link in it.
+  const portalUrl = institution.memberPortalUrl;
+  const inviteOnWhatsApp = () => {
+    const name = institution.portalName || institution.name;
+    const text = `You're invited to join ${name} online. Register here: ${portalUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  };
+  const contentIsEmpty = (newsEnabled ? (news.data?.totalCount ?? 0) === 0 : true) && (eventsOn ? (events.data?.totalCount ?? 0) === 0 : true);
 
   const items: ChecklistItem[] = [
     {
@@ -89,11 +117,36 @@ export function InstitutionSetupChecklist() {
           actionLabel: `Create a ${cohortLabel.toLowerCase()}`,
           onAction: () => router.push("/batches"),
         }] : []),
+    ...(sample.isSuccess && !sample.data!.present && contentIsEmpty && (newsEnabled || eventsOn) ? [{
+      id: "sample-content",
+      title: "See it with example content",
+      description: "Your portal is empty, which can look abandoned to the first members. Add a welcome post and an example event. They are marked as examples and you can remove them in one step.",
+      done: false,
+      actionLabel: addSample.isPending ? "Adding…" : "Add example content",
+      onAction: () => addSample.mutate(),
+    }] : []),
+    ...(sample.isSuccess && sample.data!.present ? [{
+      id: "remove-sample-content",
+      title: "Replace the example content",
+      description: "Write your own first update and event, then remove the examples. This only removes what was added as examples, never anything you wrote.",
+      done: false,
+      actionLabel: removeSample.isPending ? "Removing…" : "Remove example content",
+      onAction: () => removeSample.mutate(),
+    }] : []),
+    ...(portalUrl ? [{
+      id: "invite-whatsapp",
+      title: "Invite your first members",
+      description: "Send the registration link to your WhatsApp group in one tap. Members sign up themselves and you approve them.",
+      done: (members?.met ?? false),
+      actionLabel: "Share on WhatsApp",
+      onAction: inviteOnWhatsApp,
+    }] : []),
     ...(newsEnabled && news.isSuccess ? [{
       id: "welcome",
       title: "Publish your first update",
       description: "A welcome message is a good first update. Choose institution-wide visibility if you want it to appear on your public site.",
-      done: (news.data?.totalCount ?? 0) > 0,
+      // Example posts never count as the community's own first update.
+      done: (news.data?.totalCount ?? 0) - (sample.data?.newsPosts ?? 0) > 0,
       actionLabel: "Open news",
       onAction: () => router.push("/news"),
     }] : []),
@@ -126,7 +179,7 @@ export function InstitutionSetupChecklist() {
           id: "event",
           title: "Post your first event",
           description: "Give members a reason to log in and RSVP.",
-          done: (events.data?.totalCount ?? 0) > 0,
+          done: (events.data?.totalCount ?? 0) - (sample.data?.events ?? 0) > 0,
           actionLabel: "Create an event",
           onAction: () => router.push("/events"),
         }]

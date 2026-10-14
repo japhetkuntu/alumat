@@ -67,6 +67,8 @@ public class BroadcastServiceTests
 
         return new BroadcastService(
             memberRepo.Object, contributionRepo.Object, campaignRepo.Object,
+            Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment>>(),
+            new ReservEase.Alumni.PostgresDb.Sdk.Services.AudienceSegmentResolver(memberRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community>>(), contributionRepo.Object, campaignRepo.Object),
             (storage ?? new Mock<IStorageService>()).Object,
             temporalProvider, currentTenant.Object, new NullLogger<BroadcastService>());
     }

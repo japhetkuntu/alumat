@@ -37,7 +37,7 @@ public static class ReportRig
         new AlumniPgRepository<Member>(ctx), new AlumniPgRepository<Department>(ctx), new AlumniPgRepository<CommunityMembership>(ctx),
         new AlumniPgRepository<Campaign>(ctx), new AlumniPgRepository<Contribution>(ctx), new AlumniPgRepository<AlumniEvent>(ctx),
         new AlumniPgRepository<EventRsvp>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx),
-        new AlumniPgRepository<Institution>(ctx));
+        new AlumniPgRepository<Institution>(ctx), new AlumniPgRepository<AudienceSegment>(ctx), new AlumniPgRepository<Community>(ctx));
 
     public static async Task<List<object?[]>> Rows(ReportData data)
     {

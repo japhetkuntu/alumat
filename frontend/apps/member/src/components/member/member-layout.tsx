@@ -149,6 +149,8 @@ interface NavThemeData {
   displayName?: string | null;
   logoUrl?: string | null;
   iconUrl?: string | null;
+  /** The community's brand colour (#rrggbb), used on printed receipts. */
+  primaryColorHex?: string | null;
   /** Institution-wide SMS switch — a real per-message cost. Defaults to true when absent (older cached responses). */
   smsNotificationsEnabled?: boolean;
   /** "Alumni" (default) or "Community" — see backend Institution.OrganizationType. Community institutions hide graduation-year/cohort UI throughout. */

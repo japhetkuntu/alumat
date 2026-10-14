@@ -93,6 +93,31 @@ public class ReportDataBuilderTests
     }
 
     [Fact]
+    public async Task The_member_roster_can_be_limited_to_a_saved_segment_and_still_respects_the_requesters_scope()
+    {
+        var kumasi = new Community { Id = "kumasi", InstitutionId = Ours, Name = "Kumasi", Kind = "Chapter" };
+        var segment = new AudienceSegment { Id = "seg-1", InstitutionId = Ours, Name = "Chapters", Criteria = new SegmentCriteria { GroupKinds = ["Chapter"], Status = "Active" } };
+        var builder = await Create(
+            Person("ama", 2014), Person("kofi", 2015), Person("esi", 2014), Person("pending", 2014, "Pending"), Person("stranger", 2014, institution: Theirs),
+            kumasi, segment,
+            new CommunityMembership { Id = "m1", InstitutionId = Ours, CommunityId = "kumasi", MemberId = "ama", Status = "Approved", Role = "Member" },
+            new CommunityMembership { Id = "m2", InstitutionId = Ours, CommunityId = "kumasi", MemberId = "kofi", Status = "Approved", Role = "Member" },
+            new CommunityMembership { Id = "m3", InstitutionId = Ours, CommunityId = "kumasi", MemberId = "pending", Status = "Approved", Role = "Member" });
+
+        // Everyone in the chapters who is Active ("esi" is in no chapter; "pending" is not Active).
+        var (data, rows) = await Run(builder, Job(ReportTypes.Members, new() { [ReportParameters.Segment] = "seg-1" }));
+        Assert.Equal(["ama", "kofi"], ReportRig.Column(data, rows, "First name"));
+
+        // A requester scoped to the 2014 year group sees only the segment's members within 2014.
+        var (d2, r2) = await Run(builder, Job(ReportTypes.Members, new() { [ReportParameters.Segment] = "seg-1" }, scoped: true, years: [2014]));
+        Assert.Equal(["ama"], ReportRig.Column(d2, r2, "First name"));
+
+        // A segment that does not exist describes no one rather than everyone.
+        var (d3, r3) = await Run(builder, Job(ReportTypes.Members, new() { [ReportParameters.Segment] = "nope" }));
+        Assert.Empty(ReportRig.Column(d3, r3, "First name"));
+    }
+
+    [Fact]
     public async Task A_community_without_extra_questions_gets_the_standard_roster_unchanged()
     {
         var builder = await Create(new Institution { Id = Ours, Name = "Grace", Slug = "grace" }, Person("ama"));

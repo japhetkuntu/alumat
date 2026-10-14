@@ -51,6 +51,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<Community> Communities => Set<Community>();
+    public DbSet<AudienceSegment> AudienceSegments => Set<AudienceSegment>();
     public DbSet<CommunityMembership> CommunityMemberships => Set<CommunityMembership>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignUpdate> CampaignUpdates => Set<CampaignUpdate>();
@@ -567,6 +568,19 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
                 (l1, l2) => JsonSerializer.Serialize(l1, jsonOpts) == JsonSerializer.Serialize(l2, jsonOpts),
                 l => JsonSerializer.Serialize(l, jsonOpts).GetHashCode(),
                 l => JsonSerializer.Deserialize<List<RegistrationField>>(JsonSerializer.Serialize(l, jsonOpts), jsonOpts)!));
+        modelBuilder.Entity<Institution>().Property(i => i.Automation).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<AutomationSettings>(jsonOpts))
+            .Metadata.SetValueComparer(new ValueComparer<AutomationSettings>(
+                (a, b) => JsonSerializer.Serialize(a, jsonOpts) == JsonSerializer.Serialize(b, jsonOpts),
+                v => JsonSerializer.Serialize(v, jsonOpts).GetHashCode(),
+                v => JsonSerializer.Deserialize<AutomationSettings>(JsonSerializer.Serialize(v, jsonOpts), jsonOpts)!));
+        modelBuilder.Entity<AudienceSegment>().HasIndex(x => x.InstitutionId);
+        modelBuilder.Entity<AudienceSegment>().Property(x => x.Criteria).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<SegmentCriteria>(jsonOpts))
+            .Metadata.SetValueComparer(new ValueComparer<SegmentCriteria>(
+                (a, b) => JsonSerializer.Serialize(a, jsonOpts) == JsonSerializer.Serialize(b, jsonOpts),
+                v => JsonSerializer.Serialize(v, jsonOpts).GetHashCode(),
+                v => JsonSerializer.Deserialize<SegmentCriteria>(JsonSerializer.Serialize(v, jsonOpts), jsonOpts)!));
         modelBuilder.Entity<Member>().Property(m => m.CustomFields).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<Dictionary<string, string>>(jsonOpts)).Metadata.SetValueComparer(stringDictComparer);
         modelBuilder.Entity<Institution>().Property(i => i.SocialLinks).HasColumnType("jsonb")

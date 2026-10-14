@@ -21,6 +21,8 @@ public class BroadcastService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<ContributionEntity> contributionRepo,
     IAlumniPgRepository<CampaignEntity> campaignRepo,
+    IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment> segmentRepo,
+    AudienceSegmentResolver segmentResolver,
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
@@ -84,6 +86,14 @@ public class BroadcastService(
 
     private async Task<List<MemberEntity>> ResolveRecipientsAsync(BroadcastFilter filter, AuthData admin)
     {
+        // A saved audience stands in for the ad hoc filters, and still never reaches beyond what this admin may reach.
+        if (!string.IsNullOrWhiteSpace(filter.SegmentId))
+        {
+            var segment = await segmentRepo.GetByIdAsync(filter.SegmentId);
+            if (segment is null) return [];
+            return await segmentResolver.ResolveAsync(segment.Criteria, SegmentService.ScopeFor(admin));
+        }
+
         var members = await memberRepo.GetAllAsync(BuildPredicate(filter, admin));
         return await ApplyEngagementSegmentAsync(members.ToList(), filter.EngagementSegment);
     }

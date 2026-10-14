@@ -62,7 +62,7 @@ public class ScheduledJobsActivities(
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     private const int MaxFailedRecurringAttempts = 3;
-    private const int MembershipReminderCooldownDays = 21;
+    // The cooldown between dues reminders is now each community's own setting (AutomationSettings.DuesReminderEveryDays, default 21).
 
     // ── Shared ──────────────────────────────────────────────────────────────
 
@@ -164,6 +164,8 @@ public class ScheduledJobsActivities(
             var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
             if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Contributions))
                 return 0;
+            var automation = institution.Automation.Normalised();
+            if (!automation.DuesReminders) return 0;
 
             var currentYear = DateTime.UtcNow.Year;
             var membershipCampaigns = (await campaignRepo.GetAllAsync(c =>
@@ -202,7 +204,9 @@ public class ScheduledJobsActivities(
 
                 var pref = prefsByMember.GetValueOrDefault(member.Id);
                 if (pref?.MembershipReminders == false) continue;
-                if (pref?.LastMembershipReminderSentAt is not null && pref.LastMembershipReminderSentAt > now.AddDays(-MembershipReminderCooldownDays)) continue;
+                if (pref?.LastMembershipReminderSentAt is not null && pref.LastMembershipReminderSentAt > now.AddDays(-automation.DuesReminderEveryDays)) continue;
+                // A new member is given time to settle in before being asked for money.
+                if (automation.DuesChaseAfterDays > 0 && member.CreatedAt > now.AddDays(-automation.DuesChaseAfterDays)) continue;
 
                 var latestUnpaid = unpaid[0];
                 var body = unpaid.Count > 1 || latestUnpaid.MembershipYear < currentYear
@@ -372,6 +376,7 @@ public class ScheduledJobsActivities(
             var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
             if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Contributions))
                 return 0;
+            if (!institution.Automation.PledgeReminders) return 0;
 
             var open = (await pledgeRepo.GetAllAsync(p => p.InstitutionId == institutionId && p.Status == PledgeStatuses.Open, ignoreQueryFilters: true)).ToList();
             if (open.Count == 0) return 0;
@@ -478,6 +483,7 @@ public class ScheduledJobsActivities(
             var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
             if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Events))
                 return 0;
+            if (!institution.Automation.EventReminders) return 0;
 
             var now = DateTime.UtcNow;
             // A ~24h window, wide enough that a schedule firing every few hours can't miss an event, guarded from

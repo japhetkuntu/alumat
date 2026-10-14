@@ -33,6 +33,7 @@ import {
   Images,
   Store,
   FileText,
+  Filter,
 } from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -104,6 +105,7 @@ const baseNavItems = [
   { href: "/members", label: "Members", icon: Users },
   { href: "/batches", label: "Batches", icon: Layers },
   { href: "/communities", label: "Groups", icon: Users2 },
+  { href: "/segments", label: "Saved audiences", icon: Filter },
   { label: "Community", isHeader: true },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/events", label: "Events", icon: Calendar },
@@ -121,6 +123,7 @@ const baseNavItems = [
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/broadcast", label: "Broadcast", icon: Radio },
+  { href: "/automations", label: "Automatic messages", icon: Activity },
   { href: "/settings?tab=whatsapp", label: "WhatsApp", icon: MessageCircle },
   { label: "Institution", isHeader: true },
   { href: "/settings", label: "Settings", icon: Settings },

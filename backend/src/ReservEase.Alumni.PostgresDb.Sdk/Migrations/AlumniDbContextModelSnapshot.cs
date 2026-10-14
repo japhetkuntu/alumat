@@ -411,6 +411,46 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.ToTable("Events", "alumni");
                 });
 
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Criteria")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.ToTable("AudienceSegments", "alumni");
+                });
+
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch", b =>
                 {
                     b.Property<string>("Id")
@@ -3590,6 +3630,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<bool>("AutoApproveMembers")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Automation")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("CohortLabel")
                         .HasColumnType("text");

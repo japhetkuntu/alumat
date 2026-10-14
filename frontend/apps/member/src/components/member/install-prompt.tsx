@@ -6,10 +6,27 @@ import { Button } from "@alumni/ui";
 
 const DISMISS_KEY = "install_prompt_dismissed_until";
 const COOLDOWN_DAYS = 30;
+// The layout and the banner each call useInstallPrompt(), so a dismissal has to reach every copy of the hook.
+const DISMISSED_EVENT = "install-prompt-dismissed";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+// The browser fires beforeinstallprompt once, to whoever is listening at that moment. The layout and the
+// banner both use the hook, and the banner mounts later, so the event is kept here for every copy to use.
+let sharedPrompt: BeforeInstallPromptEvent | null = null;
+const AVAILABLE_EVENT = "install-prompt-available";
+let listening = false;
+function listenForInstallPrompt() {
+  if (listening || typeof window === "undefined") return;
+  listening = true;
+  window.addEventListener("beforeinstallprompt", (e: Event) => {
+    e.preventDefault();
+    sharedPrompt = e as BeforeInstallPromptEvent;
+    window.dispatchEvent(new Event(AVAILABLE_EVENT));
+  });
 }
 
 function isStandalone(): boolean {
@@ -27,7 +44,7 @@ function isIos(): boolean {
  * layout can decide whether to show this or the push-notification nudge — never both at once.
  */
 export function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(sharedPrompt);
   const [showIosHint, setShowIosHint] = useState(false);
   const [dismissed, setDismissed] = useState(true);
 
@@ -38,15 +55,20 @@ export function useInstallPrompt() {
       setDismissed(Date.now() < until);
     } catch { /* ignore */ }
 
-    function onBeforeInstallPrompt(e: Event) {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    }
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    listenForInstallPrompt();
+    setDeferredPrompt(sharedPrompt);
+    function onAvailable() { setDeferredPrompt(sharedPrompt); }
+    window.addEventListener(AVAILABLE_EVENT, onAvailable);
+
+    function onDismissed() { setDismissed(true); }
+    window.addEventListener(DISMISSED_EVENT, onDismissed);
 
     if (isIos()) setShowIosHint(true);
 
-    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener(AVAILABLE_EVENT, onAvailable);
+      window.removeEventListener(DISMISSED_EVENT, onDismissed);
+    };
   }, []);
 
   const visible = !dismissed && !isStandalone() && (!!deferredPrompt || showIosHint);
@@ -56,13 +78,16 @@ export function useInstallPrompt() {
       localStorage.setItem(DISMISS_KEY, String(Date.now() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000));
     } catch { /* ignore */ }
     setDismissed(true);
+    window.dispatchEvent(new Event(DISMISSED_EVENT));
   }
 
   async function install() {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setDeferredPrompt(null);
+    // A prompt can be used once; drop it for every copy of the hook.
+    sharedPrompt = null;
+    setDeferredPrompt(null);
     dismiss();
   }
 

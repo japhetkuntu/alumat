@@ -24,6 +24,9 @@ public class BroadcastFilter
     public int? GraduationYearTo { get; set; }
     /// <summary>One of EngagementSegments, or null/empty for no engagement-based narrowing.</summary>
     public string? EngagementSegment { get; set; }
+
+    /// <summary>A saved audience (see SegmentsController). When set it replaces the other filters.</summary>
+    public string? SegmentId { get; set; }
 }
 
 /// <summary>
@@ -41,6 +44,7 @@ public class SendBroadcastRequest
     public int? GraduationYearFrom { get; set; }
     public int? GraduationYearTo { get; set; }
     public string? EngagementSegment { get; set; }
+    public string? SegmentId { get; set; }
     /// <summary>Shown in the in-app notification panel and, when Email is a selected channel, as a
     /// banner image in the email — optional, purely to make a re-engagement push more eye-catching.</summary>
     public IFormFile? Image { get; set; }
@@ -49,7 +53,7 @@ public class SendBroadcastRequest
     {
         Status = Status, DepartmentId = DepartmentId,
         GraduationYearFrom = GraduationYearFrom, GraduationYearTo = GraduationYearTo,
-        EngagementSegment = EngagementSegment,
+        EngagementSegment = EngagementSegment, SegmentId = SegmentId,
     };
 }
 

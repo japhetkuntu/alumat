@@ -739,7 +739,8 @@ export default function AdminMembersPage() {
                   <Input type="number" placeholder="2024" value={addMemberForm.graduationYear} onChange={(e) => setAddMemberForm((f) => ({ ...f, graduationYear: e.target.value }))} />
                 </div>
               )}
-              <div className="space-y-1.5">
+              {/* A phone field needs the whole row: squeezed beside another field the number box is only a few characters wide. */}
+              <div className="col-span-2 space-y-1.5">
                 <Label>Mobile number</Label>
                 <PhoneInput value={addMemberForm.phone} onChange={(val) => setAddMemberForm((f) => ({ ...f, phone: val }))} />
               </div>

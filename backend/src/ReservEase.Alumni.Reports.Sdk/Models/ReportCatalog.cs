@@ -16,8 +16,10 @@ public static class ReportParameters
     public const string Location = "location";
     /// <summary>The membership year a dues report is about. Defaults to the current year.</summary>
     public const string Year = "year";
+    /// <summary>A saved audience (segment id) the report is restricted to.</summary>
+    public const string Segment = "segment";
 
-    public static readonly IReadOnlyList<string> All = [From, To, Status, YearFrom, YearTo, Profession, Location, Year];
+    public static readonly IReadOnlyList<string> All = [From, To, Status, YearFrom, YearTo, Profession, Location, Year, Segment];
 }
 
 public static class ReportFormats
@@ -79,7 +81,7 @@ public static class ReportCatalog
     [
         new(ReportTypes.Members, ReportAudiences.Institution, "Member roster",
             "Who are our members, and how do we reach them?",
-            Parameters: [ReportParameters.Status, ReportParameters.YearFrom, ReportParameters.YearTo, ReportParameters.Profession, ReportParameters.Location],
+            Parameters: [ReportParameters.Status, ReportParameters.YearFrom, ReportParameters.YearTo, ReportParameters.Profession, ReportParameters.Location, ReportParameters.Segment],
             StatusOptions: ["Active", "Pending", "Suspended", "Banned"]),
         new(ReportTypes.DuesStanding, ReportAudiences.Institution, "Dues standing",
             "Who has paid this year's dues, and who still owes?",

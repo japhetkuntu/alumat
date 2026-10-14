@@ -15,7 +15,7 @@ import { FormSelect } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { getBroadcastRecipientCount, sendBroadcast, getInstitutionProfile, type BroadcastFilter, type EngagementSegment } from "@/lib/institution-api";
+import { getBroadcastRecipientCount, sendBroadcast, getInstitutionProfile, getSegments, type BroadcastFilter, type EngagementSegment } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -47,15 +47,20 @@ export default function BroadcastPage() {
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
   const [engagementSegment, setEngagementSegment] = useState<EngagementSegment>("");
+  const [segmentId, setSegmentId] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const filter: BroadcastFilter = {
-    status: status || undefined,
-    graduationYearFrom: yearFrom ? Number(yearFrom) : undefined,
-    graduationYearTo: yearTo ? Number(yearTo) : undefined,
-    engagementSegment: engagementSegment || undefined,
-  };
+  // A saved audience stands in for the filters below; the server resolves it the same way for the count and the send.
+  const filter: BroadcastFilter = segmentId
+    ? { segmentId }
+    : {
+        status: status || undefined,
+        graduationYearFrom: yearFrom ? Number(yearFrom) : undefined,
+        graduationYearTo: yearTo ? Number(yearTo) : undefined,
+        engagementSegment: engagementSegment || undefined,
+      };
+  const savedAudiences = useQuery({ queryKey: ["segments"], queryFn: getSegments, enabled: isSuperAdmin });
 
   const { data: recipientCount, isFetching: countLoading } = useQuery({
     queryKey: ["broadcast-recipient-count", filter],
@@ -201,6 +206,22 @@ export default function BroadcastPage() {
             </p>
           </div>
 
+          {(savedAudiences.data ?? []).length > 0 && (
+            <div className="space-y-2">
+              <Label>Saved audience</Label>
+              <FormSelect
+                className="sm:w-full"
+                value={segmentId || "__none__"}
+                onValueChange={(v) => setSegmentId(v === "__none__" ? "" : v)}
+                options={[{ value: "__none__", label: "No, choose with the filters below" }, ...savedAudiences.data!.map((s) => ({ value: s.id, label: s.name }))]}
+              />
+              <p className="text-[12px] text-muted-foreground">
+                Manage these under <Link href="/segments" className="underline">Saved audiences</Link>. Choosing one replaces the filters below.
+              </p>
+            </div>
+          )}
+
+          {!segmentId && (<>
           <div className="space-y-2">
             <Label>Audience filter</Label>
             <div className={cn("grid grid-cols-1 gap-3", isCommunity ? "sm:grid-cols-1" : "sm:grid-cols-3")}>
@@ -249,6 +270,7 @@ export default function BroadcastPage() {
               ))}
             </div>
           </div>
+          </>)}
 
           <div className="flex items-center justify-between pt-2 border-t border-border">
             <p className="text-[13px] text-muted-foreground">
