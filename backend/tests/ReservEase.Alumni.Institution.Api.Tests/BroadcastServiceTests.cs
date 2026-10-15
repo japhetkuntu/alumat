@@ -55,7 +55,7 @@ public class BroadcastServiceTests
 
     private static BroadcastService MakeService(
         List<MemberEntity> members, List<ContributionEntity>? contributions = null, List<CampaignEntity>? campaigns = null,
-        Mock<IStorageService>? storage = null)
+        Mock<IStorageService>? storage = null, ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution? institution = null)
     {
         var memberRepo = MemberRepoReturning(members);
         var contributionRepo = ContributionRepoReturning(contributions ?? []);
@@ -64,10 +64,17 @@ public class BroadcastServiceTests
         currentTenant.SetupGet(c => c.InstitutionId).Returns("inst-1");
         currentTenant.SetupGet(c => c.InstitutionSlug).Returns("demo");
         var temporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false); // never actually reaches Temporal in tests
+        // By default the platform has switched every channel on, so tests about audiences are not about channel gating.
+        institution ??= new ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution
+            { Id = "inst-1", BroadcastEmailAllowed = true, BroadcastSmsAllowed = true, BroadcastWhatsAppAllowed = true };
+        var institutionRepo = new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution>>();
+        institutionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution, bool>>>(), It.IsAny<bool>()))
+            .ReturnsAsync(institution);
 
         return new BroadcastService(
             memberRepo.Object, contributionRepo.Object, campaignRepo.Object,
             Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment>>(),
+            institutionRepo.Object,
             new ReservEase.Alumni.PostgresDb.Sdk.Services.AudienceSegmentResolver(memberRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community>>(), contributionRepo.Object, campaignRepo.Object),
             (storage ?? new Mock<IStorageService>()).Object,
             temporalProvider, currentTenant.Object, new NullLogger<BroadcastService>());
@@ -184,5 +191,42 @@ public class BroadcastServiceTests
         var result = await service.SendBroadcastAsync(new SendBroadcastRequest { Message = "  " }, SuperAdmin());
 
         Assert.Equal(400, result.Code);
+    }
+
+    [Fact]
+    public async Task Sms_broadcast_is_refused_until_the_platform_switches_it_on()
+    {
+        var off = new ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution { Id = "inst-1", BroadcastEmailAllowed = true, BroadcastSmsAllowed = false };
+        var service = MakeService([Member("a")], institution: off);
+
+        var result = await service.SendBroadcastAsync(new SendBroadcastRequest { Message = "Hello", Channels = ["InApp", "Sms"] }, SuperAdmin());
+
+        Assert.Equal(400, result.Code);
+        Assert.Contains("SMS", result.Message);
+    }
+
+    [Fact]
+    public async Task In_app_always_goes_through_even_when_nothing_else_is_switched_on()
+    {
+        var off = new ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution { Id = "inst-1" };
+        var service = MakeService([Member("a")], institution: off);
+
+        var result = await service.SendBroadcastAsync(new SendBroadcastRequest { Message = "Hello", Channels = ["InApp"] }, SuperAdmin());
+
+        Assert.Equal(200, result.Code);
+    }
+
+    [Fact]
+    public async Task The_channels_endpoint_reports_what_the_platform_has_allowed()
+    {
+        var some = new ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution { Id = "inst-1", BroadcastEmailAllowed = true };
+        var service = MakeService([], institution: some);
+
+        var c = (await service.GetChannelsAsync()).Data!;
+
+        Assert.True(c.InApp);
+        Assert.True(c.Email);
+        Assert.False(c.Sms);
+        Assert.False(c.WhatsApp);
     }
 }

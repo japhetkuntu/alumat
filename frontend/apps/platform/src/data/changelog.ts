@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-15",
+    title: "Broadcast channels are switched on per institution, to control cost",
+    scopes: ["Platform", "Institution"],
+    type: "Improvement",
+    body: "SMS and email broadcasts cost money, so an institution can now use them only once the platform has switched them on for it. In-app broadcasts are free and are always available. Platform staff (SuperAdmin and Billing) set this on the institution's Features tab under Broadcast channels, with a switch each for email, SMS and WhatsApp (WhatsApp broadcast cannot be sent yet, so that switch only prepares for it). The institution's Broadcast page shows a channel as unavailable with a plain explanation and a prompt to contact AlumUnion, and the server refuses a request for a channel that is not switched on, so it cannot be bypassed. Institutions that already broadcast keep email and SMS as they are today; institutions created from now on start with in-app only.",
+  },
+  {
+    date: "2026-10-15",
     title: "Structure that scales: cohorts by decade, search, folding and a clearer tree",
     scopes: ["Institution", "Platform"],
     type: "Improvement",

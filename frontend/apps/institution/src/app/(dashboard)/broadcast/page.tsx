@@ -15,7 +15,7 @@ import { FormSelect } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { getBroadcastRecipientCount, sendBroadcast, getInstitutionProfile, getSegments, type BroadcastFilter, type EngagementSegment } from "@/lib/institution-api";
+import { getBroadcastRecipientCount, getBroadcastChannels, sendBroadcast, getInstitutionProfile, getSegments, type BroadcastFilter, type EngagementSegment } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -75,8 +75,14 @@ export default function BroadcastPage() {
     enabled: isSuperAdmin,
     staleTime: 60 * 1000,
   });
-  const smsNotificationsEnabled = institution?.smsNotificationsEnabled ?? true;
-  const emailNotificationsEnabled = institution?.emailNotificationsEnabled ?? true;
+  const { data: platformChannels } = useQuery({ queryKey: ["broadcast-channels"], queryFn: getBroadcastChannels, enabled: isSuperAdmin });
+  // SMS and email broadcasts cost money, so the platform switches each on per institution. Until we know, treat them as off.
+  const smsPlatformAllowed = platformChannels?.sms ?? false;
+  const emailPlatformAllowed = platformChannels?.email ?? false;
+  const smsNotificationsEnabled = (institution?.smsNotificationsEnabled ?? true) && smsPlatformAllowed;
+  const emailNotificationsEnabled = (institution?.emailNotificationsEnabled ?? true) && emailPlatformAllowed;
+  const smsOwnSwitchOff = smsPlatformAllowed && institution?.smsNotificationsEnabled === false;
+  const emailOwnSwitchOff = emailPlatformAllowed && institution?.emailNotificationsEnabled === false;
   const isCommunity = institution?.organizationType === "Community";
 
   const sendMut = useMutation({
@@ -156,7 +162,7 @@ export default function BroadcastPage() {
               <button
                 type="button"
                 disabled={!smsNotificationsEnabled}
-                title={smsNotificationsEnabled ? undefined : "SMS notifications are off for this institution — turn them on in Settings to use this channel"}
+                title={smsNotificationsEnabled ? undefined : smsPlatformAllowed ? "SMS notifications are off for this institution. Turn them on in Settings to use this channel" : "SMS broadcasts are not switched on for your institution. Contact AlumUnion to enable them"}
                 onClick={() => setSms((v) => !v)}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold transition-colors",
@@ -169,7 +175,7 @@ export default function BroadcastPage() {
               <button
                 type="button"
                 disabled={!emailNotificationsEnabled}
-                title={emailNotificationsEnabled ? undefined : "Email notifications are off for this institution — turn them on in Settings to use this channel"}
+                title={emailNotificationsEnabled ? undefined : emailPlatformAllowed ? "Email notifications are off for this institution. Turn them on in Settings to use this channel" : "Email broadcasts are not switched on for your institution. Contact AlumUnion to enable them"}
                 onClick={() => setEmail((v) => !v)}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold transition-colors",
@@ -188,9 +194,22 @@ export default function BroadcastPage() {
                 <MessageSquare size={14} />WhatsApp (coming soon)
               </button>
             </div>
-            {!smsNotificationsEnabled && (
+            {!smsPlatformAllowed && platformChannels && (
+              <p className="text-[12px] text-muted-foreground">
+                SMS broadcasts cost money per message, so AlumUnion switches them on for each institution. Contact us to enable SMS{!emailPlatformAllowed ? " or email" : ""}. In-app broadcasts are always free and available.
+              </p>
+            )}
+            {smsPlatformAllowed && !emailPlatformAllowed && platformChannels && (
+              <p className="text-[12px] text-muted-foreground">Email broadcasts are not switched on for your institution yet. Contact AlumUnion to enable them.</p>
+            )}
+            {smsOwnSwitchOff && (
               <p className="text-[12px] text-warning">
                 SMS notifications are off for this institution (Settings &gt; Notifications &amp; costs). Turn them on to send this broadcast by SMS.
+              </p>
+            )}
+            {emailOwnSwitchOff && (
+              <p className="text-[12px] text-warning">
+                Email notifications are off for this institution (Settings &gt; Notifications &amp; costs). Turn them on to send this broadcast by email.
               </p>
             )}
             <p className="text-[12px] text-muted-foreground">

@@ -86,6 +86,10 @@ export interface InstitutionDetail {
   /** Who is responsible for onboarding it and helping it grow. */
   ownerStaffId?: string | null;
   ownerName?: string | null;
+  /** Broadcast channels the platform has switched on for this institution. In-app is free and always on. */
+  broadcastEmailAllowed?: boolean;
+  broadcastSmsAllowed?: boolean;
+  broadcastWhatsAppAllowed?: boolean;
   name: string;
   slug: string;
   customDomain?: string | null;
@@ -537,6 +541,11 @@ export async function getFeatureCatalog() {
 
 export async function updateInstitutionFeatures(id: string, disabledFeatures: string[]) {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/features`, { disabledFeatures });
+  return res.data.data!;
+}
+
+export async function updateBroadcastChannels(id: string, channels: { email: boolean; sms: boolean; whatsApp: boolean }) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/broadcast-channels`, channels);
   return res.data.data!;
 }
 

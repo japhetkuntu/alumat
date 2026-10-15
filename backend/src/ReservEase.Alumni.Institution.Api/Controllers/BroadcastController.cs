@@ -27,6 +27,12 @@ public class BroadcastController(IBroadcastService broadcastService) : DefaultCo
         return result.ToActionResult();
     }
 
+    /// <summary>Which channels the platform has switched on for this institution (in-app is always on).</summary>
+    [HttpGet("channels")]
+    [SwaggerOperation(Summary = "Broadcast channels available", Description = "SMS, email and WhatsApp broadcasts are switched on per institution by the platform; in-app is always available.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<BroadcastChannelsDto>))]
+    public async Task<IActionResult> GetChannels() => (await broadcastService.GetChannelsAsync()).ToActionResult();
+
     /// <summary>
     /// Send a broadcast (SMS, email and/or in-app) to all members matching the filter.
     /// </summary>

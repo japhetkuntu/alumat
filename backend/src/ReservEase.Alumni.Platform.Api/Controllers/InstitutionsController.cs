@@ -213,6 +213,18 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>Which broadcast channels this institution may use. SMS and email broadcasts cost money, so the platform decides; in-app is free and always on.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing")]
+    [HttpPatch("{id}/broadcast-channels")]
+    [SwaggerOperation(Summary = "Set the broadcast channels an institution may use")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdateBroadcastChannels(string id, [FromBody] UpdateBroadcastChannelsRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdateBroadcastChannelsAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
     /// <summary>Update this institution's platform fee % and Paystack settlement banking details — keeps the Paystack subaccount in sync.</summary>
     [Authorize(Roles = "SuperAdmin,Billing")]
     [HttpPatch("{id}/payments")]

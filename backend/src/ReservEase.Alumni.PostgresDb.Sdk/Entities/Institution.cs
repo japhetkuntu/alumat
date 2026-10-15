@@ -113,6 +113,20 @@ public class Institution : BaseEntity
     /// </summary>
     public bool SmsNotificationsEnabled { get; set; } = true;
 
+    // ── Broadcast channels (switched on by the platform, because SMS and email broadcasts cost money) ──
+    // In-app broadcasts are free and always available, so there is no flag for them. A new institution starts with all
+    // three off; platform staff turn on what that institution is allowed to spend on. These sit in front of the
+    // institution's own SmsNotificationsEnabled/EmailNotificationsEnabled: a channel is usable only when both allow it.
+
+    /// <summary>Whether this institution may send a broadcast by email. Set by the platform, off for new institutions.</summary>
+    public bool BroadcastEmailAllowed { get; set; }
+
+    /// <summary>Whether this institution may send a broadcast by SMS. Set by the platform, off for new institutions.</summary>
+    public bool BroadcastSmsAllowed { get; set; }
+
+    /// <summary>Whether this institution may send a broadcast by WhatsApp. Set by the platform, off for new institutions.</summary>
+    public bool BroadcastWhatsAppAllowed { get; set; }
+
     /// <summary>
     /// How "active member" status is determined for this institution.
     /// "ApprovedOnly" (default) — any approved member (Member.Status ==

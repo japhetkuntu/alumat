@@ -1705,6 +1705,14 @@ export interface BroadcastResult {
   channels: string[];
 }
 
+export interface BroadcastChannels { inApp: boolean; email: boolean; sms: boolean; whatsApp: boolean }
+
+/** Which broadcast channels the platform has switched on for this institution. In-app is always on. */
+export async function getBroadcastChannels(): Promise<BroadcastChannels> {
+  const res = await institutionClient.get<ApiResponse<BroadcastChannels>>("/broadcast/channels");
+  return res.data.data!;
+}
+
 export async function getBroadcastRecipientCount(filter: BroadcastFilter): Promise<number> {
   const res = await institutionClient.get<ApiResponse<number>>("/broadcast/recipient-count", { params: filter });
   return res.data.data ?? 0;

@@ -28,7 +28,7 @@ import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionSlug, deleteInstitution, updateInstitutionMemberPolicy,
   updateInstitutionAutoApproveMembers,
   updateInstitutionOrganizationType,
-  updateInstitutionFeatures, getFeatureCatalog,
+  updateInstitutionFeatures, getFeatureCatalog, updateBroadcastChannels,
   updateInstitutionPayments, getInstitutionRevenue, getInstitutionPayments, type PlatformPayment,
   getPaymentDetail, type PaymentDetail,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -138,6 +138,53 @@ function HeroImagesField({ urls, onChange, institutionSlug }: {
         {uploadMutation.isPending ? "Uploading…" : "Add photo"}
       </Button>
     </div>
+  );
+}
+
+/**
+ * Which broadcast channels this institution may spend on. SMS and email broadcasts cost money, so they are off until switched
+ * on here; in-app broadcasts are free and always available. Platform staff with access to money decisions only.
+ */
+function BroadcastChannelsCard({ institutionId, email, sms, whatsApp }: { institutionId: string; email: boolean; sms: boolean; whatsApp: boolean }) {
+  const qc = useQueryClient();
+  const save = useMutation({
+    mutationFn: (next: { email: boolean; sms: boolean; whatsApp: boolean }) => updateBroadcastChannels(institutionId, next),
+    onSuccess: () => { toast.success("Broadcast channels updated"); qc.invalidateQueries({ queryKey: ["institution", institutionId] }); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+  const rows: { key: "email" | "sms" | "whatsApp"; label: string; hint: string; on: boolean }[] = [
+    { key: "email", label: "Email", hint: "Costs per message. Needed for email broadcasts to members.", on: email },
+    { key: "sms", label: "SMS", hint: "Costs per message and the most expensive channel. Sent to every member with a phone number.", on: sms },
+    { key: "whatsApp", label: "WhatsApp", hint: "Not available to send yet. Setting it now means it is ready when it ships.", on: whatsApp },
+  ];
+  return (
+    <Card className="max-w-[1100px] mb-5">
+      <div className="px-5 py-4 border-b border-border">
+        <p className="text-[14px] font-semibold">Broadcast channels</p>
+        <p className="text-[12px] text-muted-foreground mt-0.5">
+          In-app broadcasts are free and always available. Switch on the others only for institutions that should spend on them. Enforced on the server.
+        </p>
+      </div>
+      <CardContent className="p-5 space-y-3">
+        {rows.map((r) => (
+          <label key={r.key} className="flex cursor-pointer items-start justify-between gap-4 border border-border px-4 py-3">
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-semibold">{r.label}</span>
+              <span className="block text-[12.5px] text-muted-foreground">{r.hint}</span>
+            </span>
+            <input
+              type="checkbox"
+              checked={r.on}
+              disabled={save.isPending}
+              onChange={(e) => save.mutate({ email, sms, whatsApp, [r.key]: e.target.checked })}
+              className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
+              aria-label={`Allow ${r.label} broadcasts`}
+            />
+          </label>
+        ))}
+        <p className="text-[12.5px] text-muted-foreground">In-app: always on.</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -885,6 +932,15 @@ export default function InstitutionDetailPage() {
       )}
 
       {tab === "Features" && disabledFeatures && (
+        <>
+        {(isSuperAdmin || signedIn?.role === "Billing") && (
+          <BroadcastChannelsCard
+            institutionId={id}
+            email={!!inst.broadcastEmailAllowed}
+            sms={!!inst.broadcastSmsAllowed}
+            whatsApp={!!inst.broadcastWhatsAppAllowed}
+          />
+        )}
         <Card className="max-w-[1100px]">
           <div className="px-5 py-4 border-b border-border">
             <p className="text-[14px] font-semibold">Feature access</p>
@@ -932,6 +988,7 @@ export default function InstitutionDetailPage() {
             </Button>
           </div>
         </Card>
+        </>
       )}
 
       {tab === "Content" && stories && banner && (

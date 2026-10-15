@@ -563,6 +563,34 @@ public class InstitutionManagementService(
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to updatefeatures");
         }}
 
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdateBroadcastChannelsAsync(string id, UpdateBroadcastChannelsRequest request, string updatedBy, string actorName)
+    {
+        try
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
+            if (institution is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+            institution.BroadcastEmailAllowed = request.Email;
+            institution.BroadcastSmsAllowed = request.Sms;
+            institution.BroadcastWhatsAppAllowed = request.WhatsApp;
+            institution.UpdatedAt = DateTime.UtcNow;
+            institution.UpdatedBy = updatedBy;
+            await institutionRepo.UpdateAsync(institution);
+
+            var on = new[] { request.Email ? "email" : null, request.Sms ? "SMS" : null, request.WhatsApp ? "WhatsApp" : null }.Where(x => x != null).ToList();
+            await auditLog.LogAsync(updatedBy, actorName,
+                on.Count == 0 ? "set broadcasts to in-app only" : $"allowed broadcasts by {string.Join(", ", on)}", institution.Name);
+
+            return (await ToDetailDtoAsync(institution)).ToOkApiResponse("Broadcast channels updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdateBroadcastChannelsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to update broadcast channels");
+        }
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateInstitutionSlug(string id, UpdateInstitutionSlugRequest request, AuthData admin)
     {
         try
@@ -1342,6 +1370,7 @@ public class InstitutionManagementService(
             i.SettlementBankCode, i.SettlementBankName,
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
             MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug), i.GraduationYearMode, i.RegistrationFields,
-            i.OwnerStaffId, i.OwnerStaffId is null ? null : (await platformStaffRepo.GetOneAsync(s => s.Id == i.OwnerStaffId))?.Name);
+            i.OwnerStaffId, i.OwnerStaffId is null ? null : (await platformStaffRepo.GetOneAsync(s => s.Id == i.OwnerStaffId))?.Name,
+            i.BroadcastEmailAllowed, i.BroadcastSmsAllowed, i.BroadcastWhatsAppAllowed);
     }
 }

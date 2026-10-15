@@ -106,7 +106,16 @@ public record InstitutionDetailResponse(
     // The community's own registration questions, so platform staff can see how it is set up.
     List<RegistrationField>? RegistrationFields = null,
     // Who is responsible for onboarding it and helping it grow.
-    string? OwnerStaffId = null, string? OwnerName = null);
+    string? OwnerStaffId = null, string? OwnerName = null,
+    bool BroadcastEmailAllowed = false, bool BroadcastSmsAllowed = false, bool BroadcastWhatsAppAllowed = false);
+
+/// <summary>Which broadcast channels this institution may use. In-app is free and always on, so it is not here.</summary>
+public class UpdateBroadcastChannelsRequest
+{
+    public bool Email { get; set; }
+    public bool Sms { get; set; }
+    public bool WhatsApp { get; set; }
+}
 
 public class UpdateInstitutionStatusRequest
 {

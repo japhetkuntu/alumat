@@ -22,6 +22,7 @@ public class BroadcastService(
     IAlumniPgRepository<ContributionEntity> contributionRepo,
     IAlumniPgRepository<CampaignEntity> campaignRepo,
     IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment> segmentRepo,
+    IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution> institutionRepo,
     AudienceSegmentResolver segmentResolver,
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
@@ -98,6 +99,25 @@ public class BroadcastService(
         return await ApplyEngagementSegmentAsync(members.ToList(), filter.EngagementSegment);
     }
 
+    private async Task<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution?> LoadInstitutionAsync()
+        => currentTenant.InstitutionId is null ? null
+            : await institutionRepo.GetOneAsync(i => i.Id == currentTenant.InstitutionId, ignoreQueryFilters: true);
+
+    public async Task<IApiResponse<BroadcastChannelsDto>> GetChannelsAsync()
+    {
+        try
+        {
+            var institution = await LoadInstitutionAsync();
+            if (institution is null) return ApiResponseExtensions.ToNotFoundApiResponse<BroadcastChannelsDto>("Institution not found");
+            return new BroadcastChannelsDto(true, institution.BroadcastEmailAllowed, institution.BroadcastSmsAllowed, institution.BroadcastWhatsAppAllowed).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error reading broadcast channels");
+            return ApiResponseExtensions.ToServerErrorApiResponse<BroadcastChannelsDto>("Failed to read broadcast channels");
+        }
+    }
+
     public async Task<IApiResponse<int>> GetRecipientCountAsync(BroadcastFilter filter, AuthData admin)
     {
         try
@@ -120,6 +140,15 @@ public class BroadcastService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<BroadcastResult>("Message is required");
 
             var channels = request.Channels.Count == 0 ? new List<string> { "InApp" } : request.Channels;
+
+            // SMS and email broadcasts cost money, so the platform switches each on per institution. Checked here, on the
+            // server, so it cannot be bypassed by calling the endpoint directly.
+            var institution = await LoadInstitutionAsync();
+            if (institution is null) return ApiResponseExtensions.ToNotFoundApiResponse<BroadcastResult>("Institution not found");
+            var blocked = BroadcastChannelRules.Blocked(channels, institution.BroadcastEmailAllowed, institution.BroadcastSmsAllowed, institution.BroadcastWhatsAppAllowed);
+            if (blocked.Count > 0)
+                return ApiResponseExtensions.ToBadRequestApiResponse<BroadcastResult>(
+                    $"Broadcasts by {string.Join(" and ", blocked)} are not switched on for your institution. In-app broadcasts are always available; contact AlumUnion to switch on the others.");
 
             var members = await ResolveRecipientsAsync(request.ToFilter(), admin);
             var recipients = members

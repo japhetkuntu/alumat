@@ -3635,6 +3635,15 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<bool>("BroadcastEmailAllowed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("BroadcastSmsAllowed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("BroadcastWhatsAppAllowed")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("CohortLabel")
                         .HasColumnType("text");
 

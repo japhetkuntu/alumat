@@ -7,4 +7,5 @@ public interface IBroadcastService
 {
     Task<IApiResponse<int>> GetRecipientCountAsync(BroadcastFilter filter, AuthData admin);
     Task<IApiResponse<BroadcastResult>> SendBroadcastAsync(SendBroadcastRequest request, AuthData admin);
+    Task<IApiResponse<BroadcastChannelsDto>> GetChannelsAsync();
 }
