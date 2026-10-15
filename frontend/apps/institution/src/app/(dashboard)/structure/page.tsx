@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Button, Card, CardContent, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, FormError, Input, Label, LoadError, Plus, Sitemap, UserAvatar, cn,
+  Button, Card, CardContent, ChevronDown, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, FormError, Input, Label, LoadError, Plus, Search, Sitemap, UserAvatar, X, cn,
 } from "@alumni/ui";
 import {
   createBatch, createCommunity, createInstitutionStaff, getStructure, updateInstitutionStaff,
@@ -30,44 +31,42 @@ function Person({ admin, small }: { admin: StructureAdmin; small?: boolean }) {
   );
 }
 
-/** One group or community in the chart, with the people who look after it. A dashed amber edge means nobody does yet. */
+/** One cohort or group as a single row: what it is on the left, who looks after it on the right. A dashed amber edge means nobody does. */
 function NodeCard({ node, admins, onOpen }: { node: Node; admins: StructureAdmin[]; onOpen: () => void }) {
   const unmanaged = admins.length === 0;
   const count = node.data.memberCount;
   const quiet = !node.data.isActive;
+  const leaders = node.kind === "community" ? node.data.leaders : [];
   return (
     <button
       type="button"
       onClick={onOpen}
       className={cn(
-        "group relative w-full border bg-card px-3.5 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
-        unmanaged ? "border-dashed border-warning/70" : "border-border",
+        "flex w-full flex-wrap items-center gap-x-4 gap-y-1.5 border bg-card px-3.5 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+        unmanaged ? "border-dashed border-muted-foreground/50" : "border-border",
         quiet && "opacity-70",
       )}
     >
-      <span className="flex items-start justify-between gap-3">
-        <span className="min-w-0">
-          <span className="block truncate text-[14.5px] font-semibold">{node.data.name}</span>
-          <span className="mt-0.5 block text-[12.5px] text-muted-foreground">
-            {count} member{count === 1 ? "" : "s"}
-            {node.kind === "cohort" && ` · ${node.data.year}`}
-            {node.kind === "community" && node.data.pendingCount > 0 && ` · ${node.data.pendingCount} waiting`}
-            {quiet && " · inactive"}
-          </span>
+      <span className="min-w-0 flex-1 basis-48">
+        <span className="block truncate text-[14px] font-semibold">{node.data.name}</span>
+        <span className="block text-[12.5px] text-muted-foreground">
+          {count} member{count === 1 ? "" : "s"}
+          {node.kind === "community" && node.data.pendingCount > 0 && ` · ${node.data.pendingCount} waiting`}
+          {quiet && " · inactive"}
         </span>
       </span>
-
-      <span className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-        {admins.map((a) => <Person key={a.id} admin={a} small />)}
-        {node.kind === "community" && node.data.leaders.map((l) => (
-          <span key={l.memberId} className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground" title="Community leader (a member)">
+      <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        {admins.slice(0, 3).map((a) => <Person key={a.id} admin={a} small />)}
+        {admins.length > 3 && <span className="text-[12.5px] text-muted-foreground">+{admins.length - 3}</span>}
+        {leaders.slice(0, 2).map((l) => (
+          <span key={l.memberId} className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground" title="Group leader (a member)">
             <UserAvatar name={l.name} size="sm" />
             <span className="truncate">{l.name.split(" ")[0]} · leader</span>
           </span>
         ))}
         {unmanaged && (
-          <span className="text-[12.5px] font-semibold text-warning">
-            {node.kind === "community" && node.data.leaders.length > 0 ? "No administrator yet" : "No one looks after this yet"}
+          <span className="text-[12.5px] text-muted-foreground">
+            {leaders.length > 0 ? "No administrator" : "No administrator"}
           </span>
         )}
       </span>
@@ -75,28 +74,73 @@ function NodeCard({ node, admins, onOpen }: { node: Node; admins: StructureAdmin
   );
 }
 
-function Branch({ title, count, hint, children, empty, split }: { title: string; count: number; hint: string; children: React.ReactNode; empty?: React.ReactNode; split: boolean }) {
+/** Past this many entries a branch shows the first few and offers the rest, so a big institution is not one endless scroll. */
+const BRANCH_PREVIEW = 8;
+
+function Branch({ title, count, hint, children, empty, split, preview = true }: { title: string; count: number; hint: string; children: React.ReactNode; empty?: React.ReactNode; split: boolean; preview?: boolean }) {
+  const storageKey = `structure-branch-open:${title}`;
+  const [open, setOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  // Remember what each person left open between visits (after mount, so server and client render the same).
+  useEffect(() => {
+    try { if (localStorage.getItem(storageKey) === "0") setOpen(false); } catch { /* storage unavailable */ }
+  }, [storageKey]);
+  const toggle = () => {
+    setOpen((v) => {
+      try { localStorage.setItem(storageKey, v ? "0" : "1"); } catch { /* storage unavailable */ }
+      return !v;
+    });
+  };
+
+  const items = React.Children.toArray(children);
+  const overflow = preview && items.length > BRANCH_PREVIEW + 2;
+  const shown = overflow && !showAll ? items.slice(0, BRANCH_PREVIEW) : items;
+  const panelId = `branch-${title.replace(/\s+/g, "-").toLowerCase()}`;
+
   return (
     // On wide screens each branch hangs from the bar under the institution by a short drop line.
     <section className={cn("relative min-w-0", split && "lg:before:absolute lg:before:-top-5 lg:before:left-1/2 lg:before:h-5 lg:before:w-0.5 lg:before:bg-border")}>
-      <div className="border-b border-border pb-2.5">
-        <h2 className="flex items-baseline gap-2 text-[15px] font-bold">
-          {title}
-          <span className="bg-muted px-1.5 py-0.5 text-[11.5px] font-semibold text-muted-foreground">{count}</span>
-        </h2>
-        <p className="text-[12.5px] text-muted-foreground">{hint}</p>
-      </div>
-      {/* The spine and the little ticks are what make a list read as a tree. */}
-      <ul className="relative mt-3 space-y-2.5 border-l-2 border-border pl-4 sm:pl-5">
-        {children}
-      </ul>
-      {empty}
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex w-full items-start gap-2.5 border border-border bg-muted/40 px-3.5 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <ChevronDown size={14} className={cn("mt-1.5 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
+        <span className="min-w-0">
+          <span className="flex items-baseline gap-2 text-[16px] font-bold">
+            {title}
+            <span className="bg-muted px-1.5 py-0.5 text-[11.5px] font-semibold text-muted-foreground">{count}</span>
+          </span>
+          <span className="block text-[12.5px] font-normal text-muted-foreground">{open ? hint : `${count} hidden. Tap to show.`}</span>
+        </span>
+      </button>
+      {open && (
+        <div id={panelId}>
+          {/* The spine and the little ticks are what make a list read as a tree. */}
+          <ul className="relative ml-4 mt-0 space-y-2.5 border-l-2 border-muted-foreground/40 pb-1 pl-5 pt-3">
+            {shown}
+          </ul>
+          {overflow && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-3 min-h-10 text-[13px] font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              {showAll ? "Show fewer" : `Show all ${items.length}`}
+            </button>
+          )}
+          {empty}
+        </div>
+      )}
     </section>
   );
 }
 
 function Leaf({ children }: { children: React.ReactNode }) {
-  return <li className="relative before:absolute before:-left-4 before:top-6 before:h-0.5 before:w-4 before:bg-border sm:before:-left-5 sm:before:w-5">{children}</li>;
+  // The elbow that joins an entry to the line running down its parent. It sits at the middle of the first row.
+  return <li className="relative before:absolute before:-left-5 before:top-[22px] before:h-0.5 before:w-5 before:bg-muted-foreground/40">{children}</li>;
 }
 
 function RootNode({ s }: { s: InstitutionStructure }) {
@@ -246,6 +290,41 @@ function ManageDialog({
   );
 }
 
+/** One decade of cohorts, folded by default unless it is the current one. Built so a school founded in 1940 stays navigable. */
+function DecadeGroup({
+  decade, cohorts, s, open, onToggle, onOpenNode, singular, plural,
+}: {
+  decade: number; cohorts: StructureCohort[]; s: InstitutionStructure; open: boolean; onToggle: () => void; onOpenNode: (id: string) => void; singular: string; plural: string;
+}) {
+  const needing = cohorts.filter((c) => adminsOf(s, { kind: "cohort", data: c }).length === 0).length;
+  const members = cohorts.reduce((n, c) => n + c.memberCount, 0);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border border-border bg-card px-3.5 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <ChevronDown size={13} className={cn("shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
+        <span className="text-[15px] font-bold">{decade}s</span>
+        <span className="text-[12.5px] text-muted-foreground">
+          {cohorts.length} {(cohorts.length === 1 ? singular : plural).toLowerCase()} · {members.toLocaleString()} member{members === 1 ? "" : "s"}
+        </span>
+        {needing > 0 && <span className="ml-auto text-[12.5px] font-semibold text-warning">{needing} without an administrator</span>}
+      </button>
+      {open && (
+        <ul className="relative ml-4 space-y-2 border-l-2 border-muted-foreground/40 pb-0.5 pl-5 pt-2.5">
+          {cohorts.map((c) => {
+            const node: Node = { kind: "cohort", data: c };
+            return <Leaf key={c.id}><NodeCard node={node} admins={adminsOf(s, node)} onOpen={() => onOpenNode(c.id)} /></Leaf>;
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function StructurePage() {
@@ -260,6 +339,17 @@ export default function StructurePage() {
   const singular = s?.cohortLabel?.trim() || DEFAULT_COHORT_LABEL;
   const plural = s?.cohortLabelPlural?.trim() || DEFAULT_COHORT_LABEL_PLURAL;
   const isCommunityOrg = s?.organizationType === "Community";
+  const [q, setQ] = useState("");
+  const [needsOnly, setNeedsOnly] = useState(false);
+  const [decadeOpen, setDecadeOpen] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    try { const raw = localStorage.getItem("structure-decades"); if (raw) setDecadeOpen(JSON.parse(raw)); } catch { /* storage unavailable */ }
+  }, []);
+  const saveDecades = (next: Record<string, boolean>) => {
+    setDecadeOpen(next);
+    try { localStorage.setItem("structure-decades", JSON.stringify(next)); } catch { /* storage unavailable */ }
+  };
+  const currentDecade = Math.floor(new Date().getFullYear() / 10) * 10;
   const refresh = () => { qc.invalidateQueries({ queryKey: ["structure"] }); qc.invalidateQueries({ queryKey: ["batches"] }); qc.invalidateQueries({ queryKey: ["staff"] }); };
 
   const addCohort = useMutation({
@@ -284,6 +374,35 @@ export default function StructurePage() {
     const c = s.communities.find((x) => x.id === open.id);
     return c ? { kind: "community", data: c } : null;
   }, [s, open]);
+
+  const query = q.trim().toLowerCase();
+  const filtering = query.length > 0 || needsOnly;
+  const view = useMemo(() => {
+    if (!s) return null;
+    const matches = (text: string) => !query || text.toLowerCase().includes(query);
+    const cohorts = s.cohorts.filter((c) => {
+      const node: Node = { kind: "cohort", data: c };
+      const adminList = adminsOf(s, node);
+      if (needsOnly && adminList.length > 0) return false;
+      return matches(`${c.name} ${c.year} ${adminList.map((a) => a.name).join(" ")}`);
+    });
+    const communities = s.communities.filter((c) => {
+      const node: Node = { kind: "community", data: c };
+      const adminList = adminsOf(s, node);
+      if (needsOnly && adminList.length > 0) return false;
+      return matches(`${c.name} ${c.leaders.map((l) => l.name).join(" ")} ${adminList.map((a) => a.name).join(" ")}`);
+    });
+    const byDecade = new Map<number, StructureCohort[]>();
+    for (const c of cohorts) {
+      const d = Math.floor(c.year / 10) * 10;
+      byDecade.set(d, [...(byDecade.get(d) ?? []), c]);
+    }
+    const decades = [...byDecade.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([decade, list]) => ({ decade, list: [...list].sort((a, b) => b.year - a.year) }));
+    const needing = s.unmanagedCohortIds.length + s.unmanagedCommunityIds.length;
+    return { cohorts, communities, decades, needing };
+  }, [s, query, needsOnly]);
 
   if (isError) return <div className="mx-auto max-w-[1100px] p-4 sm:p-7"><LoadError title="The structure couldn’t load" onRetry={() => void refetch()} /></div>;
 
@@ -339,43 +458,106 @@ export default function StructurePage() {
           <div className="space-y-5">
             <RootNode s={s} />
             <div aria-hidden className="mx-auto h-5 w-0.5 bg-border" />
-            {!isCommunityOrg && <div aria-hidden className="mx-auto hidden h-0.5 w-1/2 bg-border lg:block" />}
-            <div className={cn("grid gap-x-8 gap-y-8", !isCommunityOrg && "lg:grid-cols-2 lg:pt-5")}>
-              {!isCommunityOrg && (
-                <Branch
-                  split
-                  title={plural}
-                  count={s.cohorts.length}
-                  hint={`Members grouped by the year they graduated`}
-                  empty={s.cohorts.length === 0 && (
-                    <p className="mt-3 border border-dashed border-border p-4 text-[13.5px] text-muted-foreground">
-                      No {plural.toLowerCase()} yet. Add one for each year of members, and give each a scoped administrator to look after it.
-                    </p>
+
+            {/* Finding things is the main job once there are dozens. */}
+            {view && (s.cohorts.length + s.communities.length > 6) && (
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                <div className="relative min-w-0 flex-1">
+                  <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder={`Find a ${singular.toLowerCase()}, year, group or administrator`}
+                    aria-label="Find in the structure"
+                    className="h-11 pl-9 pr-9"
+                  />
+                  {q && (
+                    <button type="button" onClick={() => setQ("")} aria-label="Clear search" className="absolute right-1 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground">
+                      <X size={14} />
+                    </button>
                   )}
-                >
-                  {s.cohorts.map((c) => {
-                    const node: Node = { kind: "cohort", data: c };
-                    return <Leaf key={c.id}><NodeCard node={node} admins={adminsOf(s, node)} onOpen={() => setOpen({ kind: "cohort", id: c.id })} /></Leaf>;
-                  })}
-                </Branch>
-              )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={!needsOnly}
+                    onClick={() => setNeedsOnly(false)}
+                    className={cn("h-11 border px-3.5 text-[13px] font-semibold", !needsOnly ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted")}
+                  >All</button>
+                  <button
+                    type="button"
+                    aria-pressed={needsOnly}
+                    onClick={() => setNeedsOnly(true)}
+                    className={cn("h-11 border px-3.5 text-[13px] font-semibold", needsOnly ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted")}
+                  >Needs an administrator <span className="tabular-nums">{view.needing}</span></button>
+                </div>
+              </div>
+            )}
+
+            {view && !isCommunityOrg && (
               <Branch
-                split={!isCommunityOrg}
-                title="Groups"
-                count={s.communities.length}
-                hint="Interest and location groups, each with its own leaders"
-                empty={s.communities.length === 0 && (
+                split={false}
+                preview={false}
+                title={plural}
+                count={filtering ? view.cohorts.length : s.cohorts.length}
+                hint={filtering ? `${view.cohorts.length} of ${s.cohorts.length} match` : "Members grouped by the year they graduated, newest decade first"}
+                empty={view.cohorts.length === 0 && (
                   <p className="mt-3 border border-dashed border-border p-4 text-[13.5px] text-muted-foreground">
-                    No communities yet. Add one for a profession, a place or an interest.
+                    {s.cohorts.length === 0
+                      ? `No ${plural.toLowerCase()} yet. Add one for each year of members, and give each a scoped administrator to look after it.`
+                      : `No ${plural.toLowerCase()} match${filtering ? " that search" : ""}.`}
                   </p>
                 )}
               >
-                {s.communities.map((c) => {
+                {view.decades.length > 1 || view.decades.length === 1 ? (
+                  [
+                    <li key="__bar" className="list-none">
+                      <div className="-mt-1 mb-1 flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => saveDecades(Object.fromEntries(view.decades.map((d) => [String(d.decade), true])))}>Expand all</Button>
+                        <Button size="sm" variant="ghost" onClick={() => saveDecades(Object.fromEntries(view.decades.map((d) => [String(d.decade), false])))}>Collapse all</Button>
+                      </div>
+                    </li>,
+                    ...view.decades.map(({ decade, list }) => {
+                      const stored = decadeOpen[String(decade)];
+                      const isOpen = filtering ? true : stored ?? decade === currentDecade;
+                      return (
+                        <Leaf key={decade}>
+                          <DecadeGroup
+                            decade={decade}
+                            cohorts={list}
+                            s={s}
+                            open={isOpen}
+                            onToggle={() => saveDecades({ ...decadeOpen, [String(decade)]: !isOpen })}
+                            onOpenNode={(id) => setOpen({ kind: "cohort", id })}
+                            singular={singular}
+                            plural={plural}
+                          />
+                        </Leaf>
+                      );
+                    }),
+                  ]
+                ) : null}
+              </Branch>
+            )}
+
+            {view && (
+              <Branch
+                split={false}
+                title="Groups"
+                count={filtering ? view.communities.length : s.communities.length}
+                hint={filtering ? `${view.communities.length} of ${s.communities.length} match` : "Interest and location groups, each with its own leaders"}
+                empty={view.communities.length === 0 && (
+                  <p className="mt-3 border border-dashed border-border p-4 text-[13.5px] text-muted-foreground">
+                    {s.communities.length === 0 ? "No communities yet. Add one for a profession, a place or an interest." : `No groups match${filtering ? " that search" : ""}.`}
+                  </p>
+                )}
+              >
+                {view.communities.map((c) => {
                   const node: Node = { kind: "community", data: c };
                   return <Leaf key={c.id}><NodeCard node={node} admins={adminsOf(s, node)} onOpen={() => setOpen({ kind: "community", id: c.id })} /></Leaf>;
                 })}
               </Branch>
-            </div>
+            )}
           </div>
 
           <Card className="border-border/40">

@@ -8,6 +8,7 @@ import { Plus, Download, Link2, FileText, Pencil, Eye } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
@@ -53,68 +54,67 @@ interface FormState {
 }
 const emptyForm: FormState = { title: "", description: "", category: "General", type: "Link", yearGroups: [], externalUrl: "", file: null, existingFileUrl: "", bannerImage: null, existingBannerUrl: "", communityId: "" };
 
-function ResourceForm({ init, onSave, onCancel, saving, formTitle, isSuperAdmin }: {
+function ResourceForm({ id, init, onSave, isSuperAdmin }: {
+  id: string;
   init: FormState; onSave: (f: FormState) => void;
-  onCancel: () => void; saving: boolean; formTitle: string; isSuperAdmin: boolean;
+     isSuperAdmin: boolean;
 }) {
   const [form, setForm] = useState(init);
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{formTitle}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <div className="grid grid-cols-2 gap-4">
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <FormSection title="The resource">
             <div className="space-y-2"><Label>Title</Label>
-              <Input placeholder="Resource title..." value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Category</Label>
-              <FormSelect value={form.category} onValueChange={(v) => f("category", v)}
+              <Input placeholder="e.g. Alumni handbook 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
+            <div className="space-y-2"><Label>Description</Label>
+              <Textarea placeholder="What it is and when members would use it." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Category</Label>
+              <FormSelect className="w-full" value={form.category} onValueChange={(v) => f("category", v)}
                 options={cats.map((c) => ({ value: c, label: c }))} /></div>
-          </div>
-          <div className="space-y-2"><Label>Description</Label>
-            <Textarea placeholder="Short description..." rows={2} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
-          {communities.length > 0 && (
-            <div className="space-y-2">
-              <Label>Community (optional)</Label>
-              <FormSelect
-                value={form.communityId}
-                onValueChange={(v) => f("communityId", v)}
-                options={[{ value: "", label: "Institution-wide (all members)" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
-              />
-              <p className="text-xs text-muted-foreground">Restricts this resource to one community's approved members instead of the whole institution.</p>
+          </FormSection>
+
+          <FormSection title="What members get">
+            <div className="space-y-2"><Label>Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant={form.type === "Link" ? "default" : "outline"} onClick={() => f("type", "Link")}>A link</Button>
+                <Button type="button" variant={form.type === "File" ? "default" : "outline"} onClick={() => f("type", "File")}>A file</Button>
+              </div>
             </div>
-          )}
-          <div className="space-y-2"><Label>Type</Label>
-            <div className="flex gap-3">
-              <Button type="button" size="sm" variant={form.type === "Link" ? "default" : "outline"} onClick={() => f("type", "Link")}>External Link</Button>
-              <Button type="button" size="sm" variant={form.type === "File" ? "default" : "outline"} onClick={() => f("type", "File")}>File (URL)</Button>
-            </div>
-          </div>
-          <div className="space-y-2"><Label>Target year groups</Label>
-            {isSuperAdmin ? (
-              <YearGroupPicker value={form.yearGroups} onChange={(years) => setForm(prev => ({ ...prev, yearGroups: years }))} />
-            ) : (
-              <p className="text-xs text-muted-foreground">Regular admins cannot choose year groups. Resource will be limited to your year group.</p>
+            {form.type === "Link" && (
+              <div className="space-y-2"><Label>Link</Label>
+                <Input type="url" placeholder="https://…" value={form.externalUrl} onChange={(e) => f("externalUrl", e.target.value)} /></div>
             )}
-          </div>
-          {form.type === "Link" && (
-            <div className="space-y-2"><Label>External URL</Label>
-              <Input type="url" placeholder="https://..." value={form.externalUrl} onChange={(e) => f("externalUrl", e.target.value)} /></div>
-          )}
-          {form.type === "File" && (
-            <div className="space-y-2"><Label>Upload File</Label>
-              <ImageUpload file={form.file} existingUrl={form.existingFileUrl} onChange={(file) => setForm(prev => ({ ...prev, file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingFileUrl: "" }))} label="Upload file" accept="*/*" /></div>
-          )}
-          <div className="space-y-2"><Label>Banner Image (optional)</Label>
-            <ImageUpload file={form.bannerImage} existingUrl={form.existingBannerUrl} onChange={(file) => setForm(prev => ({ ...prev, bannerImage: file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingBannerUrl: "" }))} label="Upload banner image" /></div>
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save resource</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            {form.type === "File" && (
+              <div className="space-y-2"><Label>File</Label>
+                <ImageUpload file={form.file} existingUrl={form.existingFileUrl} onChange={(file) => setForm(prev => ({ ...prev, file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingFileUrl: "" }))} label="Upload file" accept="*/*" /></div>
+            )}
+            <div className="space-y-2"><Label>Banner image <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <ImageUpload file={form.bannerImage} existingUrl={form.existingBannerUrl} onChange={(file) => setForm(prev => ({ ...prev, bannerImage: file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingBannerUrl: "" }))} label="Upload banner image" /></div>
+          </FormSection>
+
+          <FormSection title="Who can see it">
+            {communities.length > 0 && (
+              <div className="space-y-2">
+                <Label>Group <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <FormSelect
+                  className="w-full"
+                  value={form.communityId}
+                  onValueChange={(v) => f("communityId", v)}
+                  options={[{ value: "", label: "Everyone in the institution" }, ...communities.map(c => ({ value: c.id, label: c.name }))]}
+                />
+                <p className="text-[12.5px] text-muted-foreground">Choose a group to show it only to that group&apos;s approved members.</p>
+              </div>
+            )}
+            <div className="space-y-2"><Label>Year groups</Label>
+              {isSuperAdmin ? (
+                <YearGroupPicker value={form.yearGroups} onChange={(years) => setForm(prev => ({ ...prev, yearGroups: years }))} />
+              ) : (
+                <p className="text-[12.5px] text-muted-foreground">Regular admins cannot choose year groups. This resource is limited to your year group.</p>
+              )}
+            </div>
+          </FormSection>
+          </form>
   );
 }
 
@@ -190,7 +190,7 @@ export default function AdminResourcesPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Resources</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Keep institutional knowledge easy to find and reuse.</p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)}><Plus size={14} />Add resource</Button>
+        <Button onClick={() => setShowCreate(true)}><Plus size={14} />Add resource</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -245,26 +245,34 @@ export default function AdminResourcesPage() {
         <Input type="date" value={addedBefore} onChange={(e) => { setAddedBefore(e.target.value); setPage(1); }} />
       </div>
 
-      {showCreate && (
-        <ResourceForm formTitle="Add Resource" init={emptyForm} saving={createMut.isPending} isSuperAdmin={isSuperAdmin}
-          onSave={(f) => createMut.mutate(f)} onCancel={() => setShowCreate(false)} />
-      )}
-
-      {editResource && (
-        <ResourceForm
-          formTitle={`Edit ${editResource.title}`}
-          init={{ title: editResource.title, description: editResource.description ?? "",
-            category: editResource.category, type: editResource.type,
-            yearGroups: editResource.yearGroups ?? [],
-            externalUrl: editResource.externalUrl ?? "", file: null,
-            existingFileUrl: editResource.fileUrl ?? "",
-            bannerImage: null, existingBannerUrl: editResource.bannerImageUrl ?? "",
-            communityId: editResource.communityId ?? "" }}
-          saving={updateMut.isPending} isSuperAdmin={isSuperAdmin}
-          onSave={(f) => updateMut.mutate({ id: editResource.id, f })}
-          onCancel={() => setEditResource(null)}
-        />
-      )}
+      <FormSheet
+        open={showCreate || editResource !== null}
+        onClose={() => { setShowCreate(false); setEditResource(null); }}
+        title={editResource ? "Edit resource" : "Add a resource"}
+        description={editResource ? editResource.title : "Files, guides and links members can search and download."}
+        formId="resource-form"
+        submitLabel={editResource ? "Save changes" : "Add resource"}
+        saving={createMut.isPending || updateMut.isPending}
+        size="lg"
+      >
+        {editResource ? (
+          <ResourceForm
+            key={editResource.id}
+            id="resource-form"
+            init={{ title: editResource.title, description: editResource.description ?? "",
+              category: editResource.category, type: editResource.type,
+              yearGroups: editResource.yearGroups ?? [],
+              externalUrl: editResource.externalUrl ?? "", file: null,
+              existingFileUrl: editResource.fileUrl ?? "",
+              bannerImage: null, existingBannerUrl: editResource.bannerImageUrl ?? "",
+              communityId: editResource.communityId ?? "" }}
+            isSuperAdmin={isSuperAdmin}
+            onSave={(f) => updateMut.mutate({ id: editResource.id, f })}
+          />
+        ) : showCreate ? (
+          <ResourceForm id="resource-form" init={emptyForm} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+        ) : null}
+      </FormSheet>
 
       {isError || (!isLoading && !data) ? (
         <LoadError onRetry={() => refetch()} />

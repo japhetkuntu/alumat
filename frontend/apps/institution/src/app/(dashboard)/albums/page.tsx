@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Images, Trash2, Loader2 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -153,30 +154,30 @@ export default function AdminAlbumsPage() {
 
       {totalPages > 1 && <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
 
-      <Dialog open={showCreate} onOpenChange={(v) => { if (!v) { setShowCreate(false); setForm(emptyForm); } }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New album</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <FormSheet
+        open={showCreate}
+        onClose={() => { setShowCreate(false); setForm(emptyForm); }}
+        title="New album"
+        description="Add the album first, then upload photos to it from its page."
+        formId="album-form"
+        submitLabel="Create album"
+        savingLabel="Creating"
+        saving={createMut.isPending}
+        submitDisabled={!form.title.trim()}
+        error={formError || null}
+      >
+        <form id="album-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (form.title.trim()) createMut.mutate(); }}>
+          <FormSection title="The album">
             <div className="space-y-2">
               <Label>Title</Label>
-              <Input
-                placeholder="e.g. Homecoming 2026"
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                required
-              />
+              <Input placeholder="e.g. Homecoming 2026" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required autoFocus />
             </div>
             <div className="space-y-2">
-              <Label>Description (optional)</Label>
-              <Textarea
-                placeholder="What is this album about?"
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              />
+              <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Textarea placeholder="What the album is about." rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             </div>
+          </FormSection>
+          <FormSection title="Who can see it">
             <AudienceScopePicker
               mode={form.audienceMode}
               onModeChange={(mode) => setForm((f) => ({ ...f, audienceMode: mode }))}
@@ -189,17 +190,9 @@ export default function AdminAlbumsPage() {
               hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "This album will be shared with your own batch or community automatically." } : undefined}
             />
-          </div>
-          <FormError message={formError} className="mt-3" />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCreate(false); setForm(emptyForm); }}>Cancel</Button>
-            <Button disabled={!form.title.trim() || createMut.isPending} onClick={() => createMut.mutate()}>
-              {createMut.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
-              Create album
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </FormSection>
+        </form>
+      </FormSheet>
 
       <ConfirmModal
         open={!!deleteTarget}

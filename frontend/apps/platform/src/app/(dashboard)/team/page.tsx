@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Button, Badge, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, LoadError, Sitemap, UserAvatar, cn } from "@alumni/ui";
+import { Button, Badge, Card, CardContent, ChevronDown, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, LoadError, Sitemap, UserAvatar, cn } from "@alumni/ui";
 import {
   getInstitutions, getOnboardingLeads, getTeam, getTeamAssignees, reassignWork, setTeamManager,
   type InstitutionListItem, type OnboardingLead, type TeamMember,
@@ -83,14 +83,34 @@ function PersonCard({ node, myId, onOpen }: { node: Node; myId: string; onOpen: 
   );
 }
 
-/** The spine and ticks are what make a list read as a tree. */
-function Branch({ node, myId, onOpen }: { node: Node; myId: string; onOpen: (id: string) => void }) {
+/** How many people a branch holds beneath it, at any depth. */
+function descendantCount(n: Node): number {
+  return n.children.reduce((t, c) => t + 1 + descendantCount(c), 0);
+}
+
+/** The spine and ticks are what make a list read as a tree. A leader's team folds away so a big team stays scannable. */
+function Branch({ node, myId, onOpen, collapsed, onToggle }: {
+  node: Node; myId: string; onOpen: (id: string) => void; collapsed: Set<string>; onToggle: (id: string) => void;
+}) {
+  const hidden = collapsed.has(node.id);
+  const below = descendantCount(node);
   return (
     <li className="relative before:absolute before:-left-4 before:top-6 before:h-0.5 before:w-4 before:bg-border sm:before:-left-5 sm:before:w-5">
       <PersonCard node={node} myId={myId} onOpen={() => onOpen(node.id)} />
       {node.children.length > 0 && (
-        <ul className="relative mt-2.5 space-y-2.5 border-l-2 border-border pl-4 sm:pl-5">
-          {node.children.map((c) => <Branch key={c.id} node={c} myId={myId} onOpen={onOpen} />)}
+        <button
+          type="button"
+          aria-expanded={!hidden}
+          onClick={() => onToggle(node.id)}
+          className="mt-1.5 inline-flex min-h-9 items-center gap-1.5 px-1 text-[12.5px] font-semibold text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <ChevronDown size={12} className={cn("transition-transform", hidden && "-rotate-90")} />
+          {hidden ? `Show ${below} ${below === 1 ? "person" : "people"} on this team` : "Hide this team"}
+        </button>
+      )}
+      {node.children.length > 0 && !hidden && (
+        <ul className="relative mt-1.5 space-y-2.5 border-l-2 border-border pl-4 sm:pl-5">
+          {node.children.map((c) => <Branch key={c.id} node={c} myId={myId} onOpen={onOpen} collapsed={collapsed} onToggle={onToggle} />)}
         </ul>
       )}
     </li>
@@ -236,12 +256,26 @@ function ManageDialog({
 export default function TeamPage() {
   const { user, isSuperAdmin } = useAuth();
   const [open, setOpen] = useState<string | null>(null);
+  // Leaders whose team is folded away. A big team starts folded below the first level, so it opens as an overview.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [seeded, setSeeded] = useState(false);
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["team"], queryFn: getTeam });
   const { data: instPage } = useQuery({ queryKey: ["team-institutions"], queryFn: () => getInstitutions({ page: 1, pageSize: 100 }) });
   const { data: leads } = useQuery({ queryKey: ["team-leads"], queryFn: () => getOnboardingLeads() });
 
-  const people = data?.people ?? [];
+  const people = useMemo(() => data?.people ?? [], [data]);
   const tree = useMemo(() => buildTree(people), [people]);
+  const leaders = useMemo(() => {
+    const ids: string[] = [];
+    const walk = (n: Node, depth: number) => { if (n.children.length > 0) ids.push(n.id + ":" + depth); n.children.forEach((c) => walk(c, depth + 1)); };
+    tree.forEach((r) => walk(r, 0));
+    return ids.map((x) => ({ id: x.split(":")[0], depth: Number(x.split(":")[1]) }));
+  }, [tree]);
+  if (!seeded && people.length > 0) {
+    setSeeded(true);
+    if (people.length > 12) setCollapsed(new Set(leaders.filter((l) => l.depth >= 1).map((l) => l.id)));
+  }
+  const toggle = (id: string) => setCollapsed((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const myId = user?.id ?? data?.myId ?? "";
   const supers = people.filter((p) => p.role === "SuperAdmin" && !p.isDisabled);
   const reps = people.filter((p) => p.role === "Representative" && !p.isDisabled);
@@ -318,8 +352,14 @@ export default function TeamPage() {
               </>
             )}
 
+            {leaders.length > 0 && (
+              <div className="flex justify-end gap-1">
+                <Button size="sm" variant="ghost" onClick={() => setCollapsed(new Set())}>Expand all</Button>
+                <Button size="sm" variant="ghost" onClick={() => setCollapsed(new Set(leaders.map((l) => l.id)))}>Collapse all</Button>
+              </div>
+            )}
             <ul className="relative space-y-2.5 border-l-2 border-border pl-4 sm:pl-5">
-              {tree.map((n) => <Branch key={n.id} node={n} myId={myId} onOpen={setOpen} />)}
+              {tree.map((n) => <Branch key={n.id} node={n} myId={myId} onOpen={setOpen} collapsed={collapsed} onToggle={toggle} />)}
               {isSuperAdmin && (unassignedInst > 0 || unassignedLeads > 0) && (
                 <li className="relative before:absolute before:-left-4 before:top-6 before:h-0.5 before:w-4 before:bg-border sm:before:-left-5 sm:before:w-5">
                   <button

@@ -9,6 +9,7 @@ import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
@@ -53,7 +54,7 @@ function CommunityCheckboxList({ communities, selected, onChange }: { communitie
   );
 }
 
-function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInstitutionStaffRequest) => void; onCancel: () => void; saving: boolean }) {
+function NewAdminForm({ id, onSave }: { id: string; onSave: (data: CreateInstitutionStaffRequest) => void }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -70,33 +71,35 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
   });
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">Add institution admin</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, phone: phone.trim() || undefined, password, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>First name</Label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Last name</Label>
-              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, phone: phone.trim() || undefined, password, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
+          <FormSection title="Who they are">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>First name</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Last name</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
+              <Label>Phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233 24 000 0000" />
+              <p className="text-[12.5px] text-muted-foreground">Needed only if platform staff should be able to reach this admin by SMS.</p>
+            </div>
+          </FormSection>
+
+          <FormSection title="Sign-in" hint="Share this password with them securely. They can change it after signing in.">
+            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
               <Label>Password</Label>
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233 24 000 0000" />
-              <p className="text-xs text-muted-foreground">Needed only if platform staff should be able to reach this admin by SMS.</p>
-            </div>
-          </div>
+          </FormSection>
           <div className="space-y-2">
             <Label>Role</Label>
             <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
@@ -117,26 +120,18 @@ function NewAdminForm({ onSave, onCancel, saving }: { onSave: (data: CreateInsti
               </div>
             </div>
           )}
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Creating">Create admin</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
   );
 }
 
 function EditAdminForm({
+  id,
   admin,
   onSave,
-  onCancel,
-  saving,
 }: {
+  id: string;
   admin: InstitutionStaffUser;
   onSave: (data: UpdateInstitutionStaffRequest) => void;
-  onCancel: () => void;
-  saving: boolean;
 }) {
   const [firstName, setFirstName] = useState(admin.firstName);
   const [lastName, setLastName] = useState(admin.lastName);
@@ -153,31 +148,31 @@ function EditAdminForm({
   });
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">Edit admin</CardTitle></CardHeader>
-      <CardContent>
-        <form
-          className="space-y-4"
+    <form
+          id={id}
+          className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
             onSave({ firstName, lastName, phone: phone.trim() || undefined, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined, isDisabled });
           }}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>First name</Label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+          <FormSection title="Who they are">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>First name</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Last name</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Last name</Label>
-              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
               <Label>Phone <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+233 24 000 0000" />
-              <p className="text-xs text-muted-foreground">Needed only if platform staff should be able to reach this admin by SMS.</p>
+              <p className="text-[12.5px] text-muted-foreground">Needed only if platform staff should be able to reach this admin by SMS.</p>
             </div>
-          </div>
+          </FormSection>
           <div className="space-y-2">
             <Label>Role</Label>
             <FormSelect value={role} onValueChange={(v) => setRole(v as typeof roles[number])} options={roles.map((r) => ({ value: r, label: r }))} />
@@ -202,17 +197,7 @@ function EditAdminForm({
             </label>
           </div>
 
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">
-              Save changes
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
   );
 }
 
@@ -286,22 +271,22 @@ export default function AdminsPage() {
         <b>SuperAdmin-only area.</b> Administrators can view staff access but cannot create, edit, or disable accounts.
       </div>
 
-      {showCreate && (
-        <NewAdminForm
-          onSave={(d) => createMut.mutate(d)}
-          onCancel={() => setShowCreate(false)}
-          saving={createMut.isPending}
-        />
-      )}
-
-      {editingAdmin && (
-        <EditAdminForm
-          admin={editingAdmin}
-          onSave={(d) => updateMut.mutate([editingAdmin.id, d])}
-          onCancel={() => setEditingAdmin(null)}
-          saving={updateMut.isPending}
-        />
-      )}
+      <FormSheet
+        open={showCreate || editingAdmin !== null}
+        onClose={() => { setShowCreate(false); setEditingAdmin(null); }}
+        title={editingAdmin ? "Edit admin" : "Add institution admin"}
+        description={editingAdmin ? `${editingAdmin.firstName} ${editingAdmin.lastName}` : "They sign in with the email and password you set here."}
+        formId="admin-form"
+        submitLabel={editingAdmin ? "Save changes" : "Create admin"}
+        savingLabel={editingAdmin ? "Saving" : "Creating"}
+        saving={createMut.isPending || updateMut.isPending}
+      >
+        {editingAdmin ? (
+          <EditAdminForm key={editingAdmin.id} id="admin-form" admin={editingAdmin} onSave={(d) => updateMut.mutate([editingAdmin.id, d])} />
+        ) : showCreate ? (
+          <NewAdminForm id="admin-form" onSave={(d) => createMut.mutate(d)} />
+        ) : null}
+      </FormSheet>
 
       <Card>
         <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row gap-2.5">

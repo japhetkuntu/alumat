@@ -11,6 +11,7 @@ import { Pagination } from "@alumni/ui";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, MoreHorizontal } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
@@ -78,9 +79,10 @@ function arrayToComma(arr?: string[]): string {
   return arr?.join(", ") ?? "";
 }
 
-function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdmin }: {
+function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
+  id: string;
   init: FormState; onSave: (f: FormState) => void;
-  onCancel: () => void; saving: boolean; showStatus: boolean; title: string; isSuperAdmin: boolean;
+    showStatus: boolean;  isSuperAdmin: boolean;
 }) {
   const [form, setForm] = useState(init);
   const f = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }));
@@ -88,31 +90,32 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <div className="space-y-2"><Label>Event Title</Label>
-            <Input placeholder="e.g. Annual Gathering 2027" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
-          <div className="space-y-2"><Label>Description</Label>
-            <Textarea placeholder="Describe the event..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2"><Label>Start Date</Label>
-              <Input type="datetime-local" value={form.startDate} onChange={(e) => f("startDate", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>End Date (optional)</Label>
-              <Input type="datetime-local" value={form.endDate} onChange={(e) => f("endDate", e.target.value)} /></div>
-            <div className="space-y-2"><Label>Venue</Label>
-              <Input placeholder="e.g. Main Campus" value={form.venue} onChange={(e) => f("venue", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Google Maps location URL (optional)</Label>
-              <Input placeholder="https://maps.app.goo.gl/..." value={form.googleLocationUrl} onChange={(e) => f("googleLocationUrl", e.target.value)} /></div>
-            <div className="space-y-2"><Label>Capacity (optional)</Label>
-              <Input type="number" placeholder="200" value={form.capacity} onChange={(e) => f("capacity", e.target.value)} /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold">Free event only</p>
-              <p className="text-xs text-muted-foreground">Paid / ticketed events are not supported yet.</p>
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <FormSection title="The event">
+            <div className="space-y-2"><Label>Event title</Label>
+              <Input placeholder="e.g. Annual Gathering 2027" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
+            <div className="space-y-2"><Label>Description</Label>
+              <Textarea placeholder="What the event is, who should come, and what to bring." rows={4} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+          </FormSection>
+
+          <FormSection title="When and where" hint="Members see the date, time and venue on the event and in their calendar.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Starts</Label>
+                <Input type="datetime-local" value={form.startDate} onChange={(e) => f("startDate", e.target.value)} required /></div>
+              <div className="space-y-2"><Label>Ends <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input type="datetime-local" value={form.endDate} onChange={(e) => f("endDate", e.target.value)} /></div>
             </div>
+            <div className="space-y-2"><Label>Venue</Label>
+              <Input placeholder="e.g. Main Campus, Great Hall" value={form.venue} onChange={(e) => f("venue", e.target.value)} required /></div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Map link <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input placeholder="https://maps.app.goo.gl/..." value={form.googleLocationUrl} onChange={(e) => f("googleLocationUrl", e.target.value)} /></div>
+              <div className="space-y-2"><Label>Capacity <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input type="number" min={1} placeholder="No limit" value={form.capacity} onChange={(e) => f("capacity", e.target.value)} /></div>
+            </div>
+          </FormSection>
+
+          <FormSection title="Who it is for" hint="Events are free to attend. Paid tickets are not supported yet.">
             <AudienceScopePicker
               mode={form.audienceMode}
               onModeChange={(mode) => f("audienceMode", mode)}
@@ -126,36 +129,31 @@ function EventForm({ init, onSave, onCancel, saving, showStatus, title, isSuperA
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This event will be restricted to your assigned year group or community." } : undefined}
             />
             {showStatus && (
-              <div className="space-y-2"><Label>Status</Label>
-                <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
+              <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
+                <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
                   options={statusOptions.map(s => ({ value: s, label: s }))} /></div>
             )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
-            <div className="space-y-2"><Label>Banner Image (optional)</Label>
+          </FormSection>
+
+          <FormSection title="Photos and video" hint="All optional. A banner appears at the top of the event.">
+            <div className="space-y-2"><Label>Banner image</Label>
               <ImageUpload file={form.bannerImage} existingUrl={form.existingBannerUrl} onChange={(file) => setForm(prev => ({ ...prev, bannerImage: file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingBannerUrl: "" }))} label="Upload banner image" /></div>
-            <div className="space-y-2"><Label>Event Photos (optional)</Label>
+            <div className="space-y-2"><Label>Event photos</Label>
               <MultiImageUpload files={form.images} existingUrls={form.existingImageUrls}
                 onAddFile={(file) => setForm(prev => ({ ...prev, images: [...prev.images, file] }))}
                 onRemoveFile={(i) => setForm(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))}
                 onRemoveExisting={(i) => setForm(prev => ({ ...prev, existingImageUrls: prev.existingImageUrls.filter((_, idx) => idx !== i) }))}
                 label="Add photo" /></div>
-            <div className="space-y-2"><Label>YouTube URLs (comma-separated, optional)</Label>
-              <Input placeholder="https://youtube.com/..." value={form.youtubeVideoUrls} onChange={(e) => f("youtubeVideoUrls", e.target.value)} />
+            <div className="space-y-2"><Label>YouTube links</Label>
+              <Input placeholder="https://youtube.com/… (separate several with commas)" value={form.youtubeVideoUrls} onChange={(e) => f("youtubeVideoUrls", e.target.value)} />
               {form.youtubeVideoUrls && (
                 <div className="grid grid-cols-2 gap-2">
                   {form.youtubeVideoUrls.split(",").map((u, i) => u.trim() && <YouTubePreview key={i} url={u.trim()} />)}
                 </div>
               )}
             </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save event</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </FormSection>
+          </form>
   );
 }
 
@@ -255,20 +253,32 @@ export default function AdminEventsPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Events</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Publish gatherings and track RSVP capacity in one place.</p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)}><Plus size={14} />Create event</Button>
+        <Button onClick={() => setShowCreate(true)}><Plus size={14} />Create event</Button>
       </div>
 
-      {showCreate && (
-        <EventForm title="Create New Event" init={emptyForm} saving={createMut.isPending} showStatus={false}
-          isSuperAdmin={isSuperAdmin}
-          onSave={(f) => createMut.mutate(f)} onCancel={() => setShowCreate(false)} />
-      )}
-
-      {editEvent && (
-        <EventForm title={`Edit ${editEvent.title}`} init={toFormState(editEvent)} saving={updateMut.isPending} showStatus
-          isSuperAdmin={isSuperAdmin}
-          onSave={(f) => updateMut.mutate({ id: editEvent.id, f })} onCancel={() => setEditEvent(null)} />
-      )}
+      <FormSheet
+        open={showCreate || editEvent !== null}
+        onClose={() => { setShowCreate(false); setEditEvent(null); }}
+        title={editEvent ? "Edit event" : "Create event"}
+        description={editEvent ? editEvent.title : "Members RSVP from their portal and you see who is coming."}
+        formId="event-form"
+        submitLabel={editEvent ? "Save changes" : "Create event"}
+        saving={createMut.isPending || updateMut.isPending}
+        size="lg"
+      >
+        {editEvent ? (
+          <EventForm
+            key={editEvent.id}
+            id="event-form"
+            init={toFormState(editEvent)}
+            showStatus
+            isSuperAdmin={isSuperAdmin}
+            onSave={(f) => updateMut.mutate({ id: editEvent.id, f })}
+          />
+        ) : showCreate ? (
+          <EventForm id="event-form" init={emptyForm} showStatus={false} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+        ) : null}
+      </FormSheet>
 
       {isError || (!isLoading && !data) ? (
         <LoadError onRetry={() => refetch()} />
@@ -324,23 +334,32 @@ export default function AdminEventsPage() {
                     <Users size={11} />{e.rsvpCount} RSVPs{e.capacity && ` / ${e.capacity} capacity`}
                   </div>
                 </div>
-                <div className="flex gap-2 mt-4 flex-wrap">
-                  {e.status === "Upcoming" && <PostToWhatsAppButton type="event" contentId={e.id} />}
-                  <Link href={`/events/${e.id}/rsvps`}>
-                    <Button size="sm" variant="outline"><Users size={12} />View RSVPs</Button>
-                  </Link>
+                <div className="mt-4 space-y-2">
+                  <div className="flex gap-2">
+                    <Link href={`/events/${e.id}/rsvps`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full"><Users size={12} />View RSVPs</Button>
+                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline" aria-label={`More actions for ${e.title}`} className="px-3"><MoreHorizontal size={15} /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[170px]">
+                        {e.status !== "Cancelled" && e.status !== "Completed" && (
+                          <DropdownMenuItem onSelect={() => setEditEvent(e)}><Pencil size={14} />Edit</DropdownMenuItem>
+                        )}
+                        {e.status !== "Cancelled" && e.status !== "Completed" && (
+                          <DropdownMenuItem destructive onSelect={() => setCancelTarget(e)}>Cancel event</DropdownMenuItem>
+                        )}
+                        {(e.status === "Cancelled" || e.status === "Completed") && (
+                          <DropdownMenuItem destructive onSelect={() => setDeleteTarget(e)}>Delete</DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                   {e.status !== "Cancelled" && (
-                    <MemberShareButton memberPath={`/events/${e.id}`} title={e.title} message={shareMessages.event({ title: e.title, startDate: e.startDate, venue: e.venue, description: e.description })} />
+                    <MemberShareButton fill memberPath={`/events/${e.id}`} title={e.title} message={shareMessages.event({ title: e.title, startDate: e.startDate, venue: e.venue, description: e.description })} />
                   )}
-                  {e.status !== "Cancelled" && e.status !== "Completed" && (
-                    <Button size="sm" variant="outline" onClick={() => setEditEvent(e)}><Pencil size={12} />Edit</Button>
-                  )}
-                  {e.status !== "Cancelled" && e.status !== "Completed" && (
-                    <Button size="sm" variant="destructive" onClick={() => setCancelTarget(e)}>Cancel</Button>
-                  )}
-                  {(e.status === "Cancelled" || e.status === "Completed") && (
-                    <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(e)}>Delete</Button>
-                  )}
+                  {e.status === "Upcoming" && <PostToWhatsAppButton type="event" contentId={e.id} />}
                 </div>
               </CardContent>
             </Card>

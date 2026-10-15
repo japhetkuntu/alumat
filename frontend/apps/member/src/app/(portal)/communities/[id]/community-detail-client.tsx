@@ -10,6 +10,7 @@ import {
 } from "@alumni/ui";
 import { toast } from "sonner";
 import { Button } from "@alumni/ui";
+import { FormSheet } from "@alumni/ui";
 import { ShareLinkButton } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -449,28 +450,34 @@ export default function CommunityDetailPage() {
               title="Discussion"
               seeAllHref={`/forum?communityId=${id}`}
               action={
-                <Button size="sm" variant="outline" onClick={() => setShowNewThread((v) => !v)} className="gap-1.5">
+                <Button size="sm" variant="outline" onClick={() => setShowNewThread(true)} className="gap-1.5">
                   <Plus size={13} /> New thread
                 </Button>
               }
             />
 
-            {showNewThread && (
-              <div className="card p-4 space-y-3 mb-3">
+            <FormSheet
+              open={showNewThread}
+              onClose={() => setShowNewThread(false)}
+              title="Start a discussion"
+              description="Visible to everyone in this group."
+              formId="community-thread-form"
+              submitLabel="Post"
+              savingLabel="Posting"
+              saving={createThreadMut.isPending}
+              submitDisabled={form.title.trim().length < 3 || form.content.trim().length < 3}
+            >
+              <form id="community-thread-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); createThreadMut.mutate(); }}>
                 <div className="space-y-1.5">
-                  <Label>Title</Label>
-                  <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="What's on your mind?" />
+                  <Label htmlFor="ct-title">Title</Label>
+                  <Input id="ct-title" value={form.title} maxLength={150} autoFocus onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="What's on your mind?" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Message</Label>
-                  <Textarea rows={3} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} />
+                  <Label htmlFor="ct-body">Message</Label>
+                  <Textarea id="ct-body" rows={9} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} required />
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => createThreadMut.mutate()} isLoading={createThreadMut.isPending} disabled={!form.title || !form.content}>Post</Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowNewThread(false)}>Cancel</Button>
-                </div>
-              </div>
-            )}
+              </form>
+            </FormSheet>
 
             {threadsLoading ? (
               <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>

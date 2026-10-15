@@ -17,10 +17,37 @@ function cartStorageKey() {
   return `alumni-store-cart:${slug ?? "default"}`;
 }
 
+const CART_EVENT = "alumni-store-cart-changed";
+
+/** Tells other parts of the page (the floating cart bar, a header count) that the saved cart changed. */
+function announceCartChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CART_EVENT));
+}
+
 /** Empties the saved cart — called once a payment is confirmed so bought items don't linger in it. */
 export function clearStoredCart() {
   const key = cartStorageKey();
   if (key) localStorage.removeItem(key);
+  announceCartChange();
+}
+
+/** Count and total of the saved cart, kept current as it changes anywhere on the page. For read-only displays. */
+export function useCartSummary() {
+  const [summary, setSummary] = useState({ count: 0, total: 0 });
+  useEffect(() => {
+    const read = () => {
+      const lines = loadCart();
+      setSummary({
+        count: lines.reduce((n, l) => n + l.quantity, 0),
+        total: lines.reduce((sum, l) => sum + lineUnitPrice(l.product, l.variant) * l.quantity, 0),
+      });
+    };
+    read();
+    window.addEventListener(CART_EVENT, read);
+    window.addEventListener("storage", read);
+    return () => { window.removeEventListener(CART_EVENT, read); window.removeEventListener("storage", read); };
+  }, []);
+  return summary;
 }
 
 function loadCart(): CartLine[] {
@@ -73,6 +100,7 @@ export function useStoreCart(liveProducts?: StoreProduct[]) {
     } else {
       localStorage.setItem(key, JSON.stringify(cart));
     }
+    announceCartChange();
   }, [cart]);
 
   useEffect(() => {

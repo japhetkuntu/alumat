@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -108,8 +109,8 @@ function buildOptionValuesRaw(optionTypes: string[], variants: StoreProductVaria
   return raw;
 }
 
-function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInfo }: {
-  init: FormState; onSave: (f: FormState) => void; onCancel: () => void; saving: boolean; title: string; defaultDeliveryInfo?: string;
+function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
+  id: string; init: FormState; onSave: (f: FormState) => void; defaultDeliveryInfo?: string;
 }) {
   const [form, setForm] = useState(init);
   const [newOptionType, setNewOptionType] = useState("");
@@ -142,38 +143,41 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
   }));
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Product name</Label>
-              <Input placeholder="e.g. Community hoodie" value={form.name} onChange={(e) => f("name", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Status</Label>
-              <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
-                options={[
-                  { value: "Active", label: "Active, visible to members" },
-                  { value: "Draft", label: "Draft, hidden" },
-                  { value: "Archived", label: "Archived" },
-                ]} /></div>
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <FormSection title="The product">
+          <div className="space-y-2"><Label>Product name</Label>
+            <Input placeholder="e.g. Community hoodie" value={form.name} onChange={(e) => f("name", e.target.value)} required /></div>
+          <div className="space-y-2"><Label>Description</Label>
+            <Textarea placeholder="What it is, sizes or materials, and anything buyers should know." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label>{form.optionTypes.length > 0 ? "Base price (GHS)" : "Price (GHS)"}</Label>
               <Input type="number" min="0" step="0.01" placeholder="150" value={form.price} onChange={(e) => f("price", e.target.value)} required />
               {form.optionTypes.length > 0 && (
-                <p className="text-[12px] text-muted-foreground">Each option below adds its extra amount to this price. Leave an option at 0 to sell it at the base price.</p>
+                <p className="text-[12.5px] text-muted-foreground">Each option adds its extra amount to this price.</p>
               )}</div>
             {form.config.trackStock && (
               <div className="space-y-2"><Label>Quantity available</Label>
                 <Input type="number" min="0" placeholder="50" value={form.quantityAvailable} onChange={(e) => f("quantityAvailable", e.target.value)} required /></div>
             )}
           </div>
-          <div className="space-y-2"><Label>Description</Label>
-            <Textarea placeholder="Describe the product..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+          <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
+            <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
+              options={[
+                { value: "Active", label: "Active, visible to members" },
+                { value: "Draft", label: "Draft, hidden" },
+                { value: "Archived", label: "Archived" },
+              ]} /></div>
+          <div className="space-y-2"><Label>Photos</Label>
+            <MultiImageUpload files={form.images} existingUrls={form.existingImageUrls}
+              onAddFile={(file) => setForm((prev) => ({ ...prev, images: [...prev.images, file] }))}
+              onRemoveFile={(i) => setForm((prev) => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))}
+              onRemoveExisting={(i) => setForm((prev) => ({ ...prev, existingImageUrls: prev.existingImageUrls.filter((_, idx) => idx !== i) }))}
+              label="Add photo" /></div>
+          </FormSection>
+
+          <FormSection title="Delivery or pickup" hint="Shown to buyers on the product and in their order.">
           <div className="space-y-2">
-            <Label>Delivery info</Label>
-            <p className="text-[12px] text-muted-foreground -mt-0.5">
-              Shown to buyers. Delivery itself is handled by your team outside the platform (e.g. pickup location/hours, shipping timeframe).
-              {defaultDeliveryInfo && " Leave blank to use your store's default delivery info (set below)."}
-            </p>
+            {defaultDeliveryInfo && <p className="text-[12px] text-muted-foreground -mt-0.5">Leave blank to use your store's default delivery info.</p>}
             <Textarea
               rows={2}
               value={form.deliveryInfo}
@@ -181,12 +185,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
               placeholder={defaultDeliveryInfo || "Pickup at the community office, Mon–Fri 9am–5pm."}
             />
           </div>
-          <div className="space-y-2"><Label>Photos</Label>
-            <MultiImageUpload files={form.images} existingUrls={form.existingImageUrls}
-              onAddFile={(file) => setForm((prev) => ({ ...prev, images: [...prev.images, file] }))}
-              onRemoveFile={(i) => setForm((prev) => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))}
-              onRemoveExisting={(i) => setForm((prev) => ({ ...prev, existingImageUrls: prev.existingImageUrls.filter((_, idx) => idx !== i) }))}
-              label="Add photo" /></div>
+          </FormSection>
 
           <StoreConfigEditor
             value={form.config}
@@ -278,13 +277,7 @@ function ProductForm({ init, onSave, onCancel, saving, title, defaultDeliveryInf
             )}
           </div>
 
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save product</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
   );
 }
 
@@ -476,7 +469,7 @@ export default function AdminStorePage() {
           <p className="text-muted-foreground text-[13px] mt-1.5">List products for members to buy. Delivery is handled by your team outside the platform.</p>
         </div>
         {tab === "Products" && (
-          <Button onClick={() => setShowCreate(!showCreate)}>
+          <Button onClick={() => setShowCreate(true)}>
             <Plus size={15} />Add product
           </Button>
         )}
@@ -575,15 +568,21 @@ export default function AdminStorePage() {
             </CardContent>
           </Card>
 
-          {showCreate && (
-            <ProductForm title="Add a New Product" init={emptyForm} saving={createMut.isPending}
-              onSave={(f) => createMut.mutate(f)} onCancel={() => setShowCreate(false)}
-              defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined} />
-          )}
-          {editProduct && (
-            <ProductForm
-              title={`Edit ${editProduct.name}`}
-              init={{
+          <FormSheet
+            open={showCreate || editProduct !== null}
+            onClose={() => { setShowCreate(false); setEditProduct(null); }}
+            title={editProduct ? "Edit product" : "Add a product"}
+            description={editProduct ? editProduct.name : "Members buy it online and you follow each order through to delivery."}
+            formId="product-form"
+            submitLabel={editProduct ? "Save changes" : "Add product"}
+            saving={createMut.isPending || updateMut.isPending}
+            size="lg"
+          >
+            {editProduct ? (
+              <ProductForm
+                key={editProduct.id}
+                id="product-form"
+                init={{
                 name: editProduct.name, description: editProduct.description ?? "",
                 price: String(editProduct.price), quantityAvailable: String(editProduct.quantityAvailable),
                 deliveryInfo: editProduct.deliveryInfo ?? "", status: editProduct.status,
@@ -601,13 +600,15 @@ export default function AdminStorePage() {
                     },
                   ])
                 ),
-              }}
-              saving={updateMut.isPending}
-              onSave={(f) => updateMut.mutate({ id: editProduct.id, f })}
-              onCancel={() => setEditProduct(null)}
-              defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined}
-            />
-          )}
+                }}
+                onSave={(f) => updateMut.mutate({ id: editProduct.id, f })}
+                defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined}
+              />
+            ) : showCreate ? (
+              <ProductForm id="product-form" init={emptyForm} onSave={(f) => createMut.mutate(f)}
+                defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined} />
+            ) : null}
+          </FormSheet>
 
           <ChipRow label="Filter" activeKey={String(statusFilter)}>
             {["", "Active", "Draft", "Archived"].map((s) => (

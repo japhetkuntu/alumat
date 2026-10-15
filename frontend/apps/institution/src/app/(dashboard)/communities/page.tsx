@@ -9,6 +9,7 @@ import { Plus, Crown, Users } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -85,29 +86,28 @@ function GrowthCard() {
 }
 
 function CommunityForm({
-  initial, onSave, onCancel, saving,
+  id, initial, onSave, onUploadingChange,
 }: {
+  id: string;
   initial?: CommunityListItem;
+  onUploadingChange?: (v: boolean) => void;
   onSave: (data: { name: string; kind?: string; description?: string; coverImageUrl?: string; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => void;
-  onCancel: () => void;
-  saving: boolean;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [kind, setKind] = useState(initial?.kind ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? "");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploadingState] = useState(false);
+  const setUploading = (v: boolean) => { setUploadingState(v); onUploadingChange?.(v); };
   const existingGroup = initial?.channels?.find((c) => c.type === "WhatsApp");
   const [groupName, setGroupName] = useState(existingGroup?.displayName ?? "");
   const [groupUrl, setGroupUrl] = useState(existingGroup?.inviteUrl ?? "");
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{initial ? "Edit group" : "Create group"}</CardTitle></CardHeader>
-      <CardContent>
-        <form
-          className="space-y-4"
+    <form
+          id={id}
+          className="space-y-5"
           onSubmit={async (e) => {
             e.preventDefault();
             let resolvedCoverUrl = coverImageUrl.trim();
@@ -130,45 +130,44 @@ function CommunityForm({
             onSave({ name: name.trim(), kind: kind.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined, externalChannels });
           }}
         >
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kumasi Chapter" required />
-          </div>
-          <div className="space-y-2">
-            <Label>What kind of group is this? (optional)</Label>
-            <Input value={kind} onChange={(e) => setKind(e.target.value)} placeholder="e.g. Chapter, Committee, Department, Team" maxLength={40} list="group-kinds" />
-            <datalist id="group-kinds">
-              {["Chapter", "Committee", "Department", "Ministry", "Team", "Class", "Region", "Interest group"].map((k) => <option key={k} value={k} />)}
-            </datalist>
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this group is for" />
-          </div>
-          <LinkOrUpload
-            label="Cover image (optional)"
-            url={coverImageUrl}
-            onUrlChange={setCoverImageUrl}
-            file={coverImageFile}
-            onFileChange={setCoverImageFile}
-          />
-          <div className="space-y-3 border-t border-border pt-4">
-            <div>
-              <Label>WhatsApp group <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <p className="mt-1 text-[12.5px] text-muted-foreground">Members of this group will see a link to the chat. Clear the name to disconnect it.</p>
+          <FormSection title="The group">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kumasi Chapter" required />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Group name" maxLength={100} />
-              <Input type="url" inputMode="url" value={groupUrl} onChange={(e) => setGroupUrl(e.target.value)} placeholder="https://chat.whatsapp.com/…" />
+            <div className="space-y-2">
+              <Label>What kind of group is this? <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input value={kind} onChange={(e) => setKind(e.target.value)} placeholder="e.g. Chapter, Committee, Department, Team" maxLength={40} list="group-kinds" />
+              <datalist id="group-kinds">
+                {["Chapter", "Committee", "Department", "Ministry", "Team", "Class", "Region", "Interest group"].map((k) => <option key={k} value={k} />)}
+              </datalist>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving || uploading} loadingText={uploading ? "Uploading" : "Saving"}>{initial ? "Save changes" : "Create group"}</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
+            <div className="space-y-2">
+              <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this group is for." />
+            </div>
+            <LinkOrUpload
+              label="Cover image (optional)"
+              url={coverImageUrl}
+              onUrlChange={setCoverImageUrl}
+              file={coverImageFile}
+              onFileChange={setCoverImageFile}
+            />
+          </FormSection>
+
+          <FormSection title="WhatsApp group" hint="Optional. Members of this group see a link to the chat. Clear the name to disconnect it.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Group name</Label>
+                <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="e.g. Kumasi chapter chat" maxLength={100} />
+              </div>
+              <div className="space-y-2">
+                <Label>Invite link</Label>
+                <Input type="url" inputMode="url" value={groupUrl} onChange={(e) => setGroupUrl(e.target.value)} placeholder="https://chat.whatsapp.com/…" />
+              </div>
+            </div>
+          </FormSection>
         </form>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -285,6 +284,7 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
 export default function CommunitiesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<CommunityListItem | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [viewingMembers, setViewingMembers] = useState<CommunityListItem | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<CommunityListItem | null>(null);
   const qc = useQueryClient();
@@ -322,18 +322,28 @@ export default function CommunitiesPage() {
         </Button>
       </header>
 
-      {showCreate && (
-        <CommunityForm onSave={(d) => createMut.mutate(d)} onCancel={() => setShowCreate(false)} saving={createMut.isPending} />
-      )}
-
-      {editing && (
-        <CommunityForm
-          initial={editing}
-          onSave={(d) => updateMut.mutate({ id: editing.id, ...d, isActive: editing.isActive })}
-          onCancel={() => setEditing(null)}
-          saving={updateMut.isPending}
-        />
-      )}
+      <FormSheet
+        open={showCreate || editing !== null}
+        onClose={() => { setShowCreate(false); setEditing(null); setUploadingCover(false); }}
+        title={editing ? "Edit group" : "Create group"}
+        description={editing ? editing.name : "A chapter, committee, team or interest group. Members can ask to join and you approve them."}
+        formId="community-form"
+        submitLabel={editing ? "Save changes" : "Create group"}
+        saving={createMut.isPending || updateMut.isPending || uploadingCover}
+        size="lg"
+      >
+        {editing ? (
+          <CommunityForm
+            key={editing.id}
+            id="community-form"
+            initial={editing}
+            onUploadingChange={setUploadingCover}
+            onSave={(d) => updateMut.mutate({ id: editing.id, ...d, isActive: editing.isActive })}
+          />
+        ) : showCreate ? (
+          <CommunityForm id="community-form" onUploadingChange={setUploadingCover} onSave={(d) => createMut.mutate(d)} />
+        ) : null}
+      </FormSheet>
 
       {viewingMembers && <MembersPanel community={viewingMembers} onClose={() => setViewingMembers(null)} />}
 

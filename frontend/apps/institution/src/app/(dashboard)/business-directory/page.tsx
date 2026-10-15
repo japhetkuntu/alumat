@@ -13,6 +13,7 @@ import {
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSection } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
@@ -138,62 +139,70 @@ function ListingForm({ title, init, onSave, onCancel, saving }: {
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) onSave(form); }}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2 sm:col-span-2">
+      <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); if (valid) onSave(form); }}>
+        <FormSection title="The business">
+          <div className="space-y-2">
             <Label>Business name</Label>
             <Input value={form.businessName} onChange={(e) => f("businessName", e.target.value)} placeholder="e.g. Kofi's Bakery" required />
           </div>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} placeholder="What does this business do?" required />
+            <Textarea rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} placeholder="What the business does and who it serves." required />
           </div>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-2">
             <Label>Location</Label>
             <Input value={form.location} onChange={(e) => f("location", e.target.value)} placeholder="e.g. Accra, Ghana" required />
           </div>
-          <div className="space-y-2">
-            <Label>Phone</Label>
-            <Input type="tel" value={form.phoneNumber} onChange={(e) => f("phoneNumber", e.target.value)} placeholder="+233..." />
+        </FormSection>
+
+        <FormSection title="How to reach them" hint="Give at least one: members use these to contact the business.">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input type="tel" value={form.phoneNumber} onChange={(e) => f("phoneNumber", e.target.value)} placeholder="+233 24 000 0000" />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} placeholder="business@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label>Website</Label>
+              <Input value={form.websiteUrl} onChange={(e) => f("websiteUrl", e.target.value)} placeholder="https://…" />
+            </div>
+            <div className="space-y-2">
+              <Label>Another link <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input value={form.externalLinkUrl} onChange={(e) => f("externalLinkUrl", e.target.value)} placeholder="Instagram, shop page…" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} placeholder="business@example.com" />
+          {!hasContactInfo(form) && (
+            <p className="text-[12.5px] text-destructive">Add at least one of phone, email or website.</p>
+          )}
+        </FormSection>
+
+        <FormSection title="Logo and banner" hint="Both optional.">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Logo</Label>
+              <ImageUpload
+                file={form.logo}
+                existingUrl={form.existingLogoUrl || undefined}
+                onChange={(file) => f("logo", file)}
+                onClearExisting={() => f("existingLogoUrl", "")}
+                label="Upload logo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Banner</Label>
+              <ImageUpload
+                file={form.banner}
+                existingUrl={form.existingBannerUrl || undefined}
+                onChange={(file) => f("banner", file)}
+                onClearExisting={() => f("existingBannerUrl", "")}
+                label="Upload banner"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Website</Label>
-            <Input value={form.websiteUrl} onChange={(e) => f("websiteUrl", e.target.value)} placeholder="https://..." />
-          </div>
-          <div className="space-y-2">
-            <Label>External link (optional)</Label>
-            <Input value={form.externalLinkUrl} onChange={(e) => f("externalLinkUrl", e.target.value)} placeholder="https://..." />
-          </div>
-        </div>
-        {!hasContactInfo(form) && (
-          <p className="text-[12px] text-destructive">Provide at least one of phone, email, or website.</p>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Logo</Label>
-            <ImageUpload
-              file={form.logo}
-              existingUrl={form.existingLogoUrl || undefined}
-              onChange={(file) => f("logo", file)}
-              onClearExisting={() => f("existingLogoUrl", "")}
-              label="Upload logo"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Banner</Label>
-            <ImageUpload
-              file={form.banner}
-              existingUrl={form.existingBannerUrl || undefined}
-              onChange={(file) => f("banner", file)}
-              onClearExisting={() => f("existingBannerUrl", "")}
-              label="Upload banner"
-            />
-          </div>
-        </div>
+        </FormSection>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
           <Button type="submit" disabled={!valid || saving} isLoading={saving} loadingText="Saving">Save listing</Button>

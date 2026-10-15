@@ -10,7 +10,9 @@ import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
+import { Card, CardContent } from "@alumni/ui";
+import { FormSheet } from "@alumni/ui";
+import { Plus } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -25,12 +27,9 @@ export default function AdminForumPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
   const [view, setView] = useState<"categories" | "threads">("threads");
-  const [catName, setCatName] = useState("");
-  const [catDesc, setCatDesc] = useState("");
+  // One sheet adds or edits a category: `id` is set when editing.
+  const [catSheet, setCatSheet] = useState<{ id?: string; name: string; description: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [editingCatId, setEditingCatId] = useState<string | null>(null);
-  const [editCatName, setEditCatName] = useState("");
-  const [editCatDesc, setEditCatDesc] = useState("");
   const [deleteCatTarget, setDeleteCatTarget] = useState<{ id: string; name: string } | null>(null);
   const [closeTarget, setCloseTarget] = useState<{ id: string; title: string; isClosed: boolean } | null>(null);
   const [threadPage, setThreadPage] = useState(1);
@@ -59,21 +58,19 @@ export default function AdminForumPage() {
     enabled: isSuperAdmin,
   });
 
-  const createCatMut = useMutation({
-    mutationFn: () => createForumCategory(catName, catDesc || undefined),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-forum-categories"] }); setCatName(""); setCatDesc(""); toast.success("Category created"); },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const updateCatMut = useMutation({
-    mutationFn: () => updateForumCategory(editingCatId!, editCatName, editCatDesc || undefined),
-    onSuccess: () => {
+  const [catError, setCatError] = useState<string | null>(null);
+  const saveCatMut = useMutation({
+    mutationFn: (c: { id?: string; name: string; description: string }) => c.id
+      ? updateForumCategory(c.id, c.name.trim(), c.description.trim() || undefined)
+      : createForumCategory(c.name.trim(), c.description.trim() || undefined),
+    onSuccess: (_r, c) => {
       qc.invalidateQueries({ queryKey: ["admin-forum-categories"] });
       qc.invalidateQueries({ queryKey: ["admin-forum-threads"] });
-      setEditingCatId(null);
-      toast.success("Category updated");
+      setCatSheet(null);
+      setCatError(null);
+      toast.success(c.id ? "Category updated" : "Category created");
     },
-    onError: (e) => toast.error(handleApiError(e)),
+    onError: (e) => setCatError(handleApiError(e)),
   });
 
   const deleteCatMut = useMutation({
@@ -138,24 +135,9 @@ export default function AdminForumPage() {
           <p className="text-[13px] text-muted-foreground max-w-2xl">
             Categories keep discussions organized. Members pick one when they start a thread. We added a starter set, headed by General, so the forum works from day one. Rename, edit or delete any of them, or add your own.
           </p>
-          <Card>
-            <CardHeader><CardTitle className="text-base">Add Category</CardTitle></CardHeader>
-            <CardContent>
-              <form className="flex flex-col gap-3 sm:flex-row" onSubmit={(e) => { e.preventDefault(); createCatMut.mutate(); }}>
-                <div className="flex-1 space-y-2">
-                  <Label>Category Name</Label>
-                  <Input placeholder="e.g. Career & Jobs" value={catName} onChange={(e) => setCatName(e.target.value)} required />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Label>Description</Label>
-                  <Input placeholder="Short description..." value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
-                </div>
-                <div className="sm:pt-8">
-                  <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={createCatMut.isPending}>{createCatMut.isPending ? "Adding..." : "Add"}</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+          <div className="flex justify-end">
+            <Button onClick={() => { setCatError(null); setCatSheet({ name: "", description: "" }); }}><Plus size={14} />Add category</Button>
+          </div>
           {catsLoading ? (
             <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}</div>
           ) : (
@@ -163,29 +145,14 @@ export default function AdminForumPage() {
               {categories.map((c) => (
                 <Card key={c.id}>
                   <CardContent className="p-4">
-                    {editingCatId === c.id ? (
-                      <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(e) => { e.preventDefault(); updateCatMut.mutate(); }}>
-                        <div className="flex-1 space-y-2">
-                          <Label>Category name</Label>
-                          <Input value={editCatName} onChange={(e) => setEditCatName(e.target.value)} required />
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <Label>Description</Label>
-                          <Input value={editCatDesc} onChange={(e) => setEditCatDesc(e.target.value)} placeholder="Short description..." />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button type="submit" size="sm" disabled={updateCatMut.isPending}>{updateCatMut.isPending ? "Saving..." : "Save category"}</Button>
-                          <Button type="button" size="sm" variant="outline" onClick={() => setEditingCatId(null)}>Cancel</Button>
-                        </div>
-                      </form>
-                    ) : (
+                    {(
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <p className="font-semibold">{c.name}</p>
                           {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
                         </div>
                         <div className="flex shrink-0 gap-2">
-                          <Button size="sm" variant="outline" onClick={() => { setEditingCatId(c.id); setEditCatName(c.name); setEditCatDesc(c.description ?? ""); }}>
+                          <Button size="sm" variant="outline" onClick={() => { setCatError(null); setCatSheet({ id: c.id, name: c.name, description: c.description ?? "" }); }}>
                             <Pencil size={13} className="mr-1.5" />Edit
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setDeleteCatTarget({ id: c.id, name: c.name })}>
@@ -349,6 +316,33 @@ export default function AdminForumPage() {
           <Pagination page={threadPage} totalPages={threadTotalPages} onPageChange={setThreadPage} />
         </div>
       )}
+
+      <FormSheet
+        open={catSheet !== null}
+        onClose={() => setCatSheet(null)}
+        title={catSheet?.id ? "Edit category" : "Add category"}
+        description="Members pick a category when they start a thread."
+        formId="forum-category-form"
+        submitLabel={catSheet?.id ? "Save category" : "Add category"}
+        saving={saveCatMut.isPending}
+        submitDisabled={!catSheet || catSheet.name.trim().length < 2}
+        error={catError}
+      >
+        {catSheet && (
+          <form id="forum-category-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); setCatError(null); saveCatMut.mutate(catSheet); }}>
+            <div className="space-y-2">
+              <Label htmlFor="cat-name">Name</Label>
+              <Input id="cat-name" placeholder="e.g. Careers and jobs" value={catSheet.name} maxLength={80} autoFocus
+                onChange={(e) => setCatSheet({ ...catSheet, name: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cat-desc">Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input id="cat-desc" placeholder="What belongs here" value={catSheet.description} maxLength={200}
+                onChange={(e) => setCatSheet({ ...catSheet, description: e.target.value })} />
+            </div>
+          </form>
+        )}
+      </FormSheet>
 
       <ConfirmModal
         open={!!closeTarget}

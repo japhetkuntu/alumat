@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, MessageSquare, Pin, Lock, Clock, Search } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
+import { FormSheet } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
@@ -82,6 +82,11 @@ export default function MemberForumPage() {
   });
 
   const categories    = catsData?.results ?? [];
+  const openNewThread = () => {
+    // Start in the category you are already looking at.
+    if (selectedCategory) setForm((f) => ({ ...f, categoryId: selectedCategory }));
+    setShowNewThread(true);
+  };
   const threads       = threadsData?.results ?? [];
   const totalPages    = threadsData?.totalPages ?? 1;
 
@@ -95,7 +100,7 @@ export default function MemberForumPage() {
             Forum
           </h1>
           <Button
-            onClick={() => setShowNewThread(v => !v)}
+            onClick={openNewThread}
             className="shrink-0 gap-2 font-semibold text-[13.5px]"
             style={{ height: 40 }}
           >
@@ -107,73 +112,58 @@ export default function MemberForumPage() {
         </p>
       </div>
 
-      {/* ── New thread form ── */}
-      {showNewThread && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[15px]">Start a new thread</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              className="space-y-4"
-              onSubmit={e => { e.preventDefault(); createMut.mutate(); }}
-            >
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Category</Label>
-                <FormSelect
-                  placeholder="Select a category"
-                  value={form.categoryId || categories[0]?.id || ""}
-                  onValueChange={v => setForm({ ...form, categoryId: v })}
-                  options={categories.map(c => ({ value: c.id, label: c.name }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="thread-title" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Title</Label>
-                <Input
-                  id="thread-title"
-                  placeholder="What would you like to discuss?"
-                  value={form.title}
-                  onChange={e => setForm({ ...form, title: e.target.value })}
-                  className="h-11 text-[14px]"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="thread-content" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Content</Label>
-                <Textarea
-                  id="thread-content"
-                  placeholder="Share the details…"
-                  rows={4}
-                  value={form.content}
-                  onChange={e => setForm({ ...form, content: e.target.value })}
-                  className="text-[14px]"
-                  required
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="font-semibold gap-1.5"
-                  style={{ height: 38 }}
-                  disabled={createMut.isPending}
-                >
-                  {createMut.isPending ? "Posting…" : "Post thread"}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  style={{ height: 38 }}
-                  onClick={() => setShowNewThread(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      {/* ── New thread: a sheet over the page, so it is in view wherever you were on the list ── */}
+      <FormSheet
+        open={showNewThread}
+        onClose={() => setShowNewThread(false)}
+        title="Start a new thread"
+        description="Ask a question or start a conversation. Members who follow the category will see it."
+        formId="new-thread-form"
+        submitLabel="Post thread"
+        savingLabel="Posting"
+        saving={createMut.isPending}
+        submitDisabled={form.title.trim().length < 3 || form.content.trim().length < 3}
+      >
+        <form id="new-thread-form" className="space-y-5" onSubmit={e => { e.preventDefault(); createMut.mutate(); }}>
+          <div className="space-y-1.5">
+            <Label className="text-[13px] font-semibold">Category</Label>
+            <FormSelect
+              placeholder="Select a category"
+              value={form.categoryId || categories[0]?.id || ""}
+              onValueChange={v => setForm({ ...form, categoryId: v })}
+              options={categories.map(c => ({ value: c.id, label: c.name }))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <Label htmlFor="thread-title" className="text-[13px] font-semibold">Title</Label>
+              <span className="text-[12px] tabular-nums text-muted-foreground">{form.title.length}/150</span>
+            </div>
+            <Input
+              id="thread-title"
+              placeholder="What would you like to discuss?"
+              value={form.title}
+              maxLength={150}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              className="h-11 text-[14px]"
+              autoFocus
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="thread-content" className="text-[13px] font-semibold">Details</Label>
+            <Textarea
+              id="thread-content"
+              placeholder="Share the details, and what kind of answer would help."
+              rows={9}
+              value={form.content}
+              onChange={e => setForm({ ...form, content: e.target.value })}
+              className="text-[14px]"
+              required
+            />
+          </div>
+        </form>
+      </FormSheet>
 
       {/* ── Search ── */}
       <div className="relative sm:max-w-sm">
@@ -227,7 +217,7 @@ export default function MemberForumPage() {
           title={search ? "No threads match your search" : "The forum is where members talk"}
           description={search ? "Try a different search term." : "Ask for advice, share news or start a conversation with people from your institution. Start the first discussion."}
           action={!search ? (
-            <Button onClick={() => setShowNewThread(true)} className="gap-2 font-semibold">
+            <Button onClick={openNewThread} className="gap-2 font-semibold">
               <Plus size={14} /> New thread
             </Button>
           ) : undefined}

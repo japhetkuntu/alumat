@@ -9,6 +9,7 @@ import { Plus } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
@@ -104,23 +105,20 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
 }
 
 function BatchForm({
-  initial, onSave, onCancel, saving, cohortLabel,
+  id, initial, onSave, cohortLabel,
 }: {
+  id: string;
   initial?: Batch;
   onSave: (data: { name: string; year: number }) => void;
-  onCancel: () => void;
-  saving: boolean;
   cohortLabel: string;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [year, setYear] = useState(initial ? String(initial.year) : String(new Date().getFullYear()));
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{initial ? `Edit ${cohortLabel.toLowerCase()}` : `Add ${cohortLabel.toLowerCase()}`}</CardTitle></CardHeader>
-      <CardContent>
-        <form
-          className="space-y-4"
+    <form
+          id={id}
+          className="space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
             onSave({ name: name.trim(), year: Number(year) });
@@ -136,15 +134,7 @@ function BatchForm({
               <Input type="number" min={1900} max={2200} value={year} onChange={(e) => setYear(e.target.value)} required />
             </div>
           </div>
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">
-              {initial ? "Save changes" : `Create ${cohortLabel.toLowerCase()}`}
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
   );
 }
 
@@ -204,24 +194,27 @@ export default function BatchesPage() {
         )}
       </header>
 
-      {showCreate && (
-        <BatchForm
-          onSave={(d) => createMut.mutate(d)}
-          onCancel={() => setShowCreate(false)}
-          saving={createMut.isPending}
-          cohortLabel={cohortLabel}
-        />
-      )}
-
-      {editingBatch && (
-        <BatchForm
-          initial={editingBatch}
-          onSave={(d) => updateMut.mutate({ id: editingBatch.id, ...d, isActive: editingBatch.isActive })}
-          onCancel={() => setEditingBatch(null)}
-          saving={updateMut.isPending}
-          cohortLabel={cohortLabel}
-        />
-      )}
+      <FormSheet
+        open={showCreate || editingBatch !== null}
+        onClose={() => { setShowCreate(false); setEditingBatch(null); }}
+        title={editingBatch ? `Edit ${cohortLabel.toLowerCase()}` : `Add ${cohortLabel.toLowerCase()}`}
+        description={editingBatch ? editingBatch.name : undefined}
+        formId="batch-form"
+        submitLabel={editingBatch ? "Save changes" : `Create ${cohortLabel.toLowerCase()}`}
+        saving={createMut.isPending || updateMut.isPending}
+      >
+        {editingBatch ? (
+          <BatchForm
+            key={editingBatch.id}
+            id="batch-form"
+            initial={editingBatch}
+            cohortLabel={cohortLabel}
+            onSave={(d) => updateMut.mutate({ id: editingBatch.id, ...d, isActive: editingBatch.isActive })}
+          />
+        ) : showCreate ? (
+          <BatchForm id="batch-form" cohortLabel={cohortLabel} onSave={(d) => createMut.mutate(d)} />
+        ) : null}
+      </FormSheet>
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">

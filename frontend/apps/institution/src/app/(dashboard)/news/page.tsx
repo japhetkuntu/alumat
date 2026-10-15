@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection, CheckOption } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { Label } from "@alumni/ui";
@@ -58,9 +59,8 @@ function arrayToComma(arr?: string[]): string {
   return arr?.join(", ") ?? "";
 }
 
-function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
-  init: FormState; onSave: (f: FormState) => void;
-  onCancel: () => void; saving: boolean; title: string; isSuperAdmin: boolean;
+function PostForm({ id, init, onSave, isSuperAdmin }: {
+  id: string; init: FormState; onSave: (f: FormState) => void; isSuperAdmin: boolean;
 }) {
   const [form, setForm] = useState(init);
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
@@ -68,67 +68,65 @@ function PostForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <div className="space-y-2"><Label>Title</Label>
-            <Input placeholder="Post title..." value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2"><Label>Category</Label>
-              <FormSelect value={form.category} onValueChange={(v) => f("category", v)}
-                options={categories.map((c) => ({ value: c, label: c }))} /></div>
-            <div className="space-y-2"><Label>Status</Label>
-              <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
-                options={[
-                  { value: "Draft", label: "Save as Draft" },
-                  { value: "Published", label: "Publish" },
-                  { value: "Archived", label: "Archive" },
-                ]} /></div>
-            <div className="space-y-2"><Label>Pin post?</Label>
-              <FormSelect value={form.isPinned} onValueChange={(v) => f("isPinned", v)}
-                options={[
-                  { value: "false", label: "No" },
-                  { value: "true", label: "Yes (Pinned)" },
-                ]} /></div>
-          </div>
-          <AudienceScopePicker
-            mode={form.audienceMode}
-            onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
-            communityId={form.communityId}
-            onCommunityChange={(v) => f("communityId", v)}
-            communities={communities}
-            yearGroups={form.yearGroups}
-            onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
-            supportsCommunity
-            hideYearGroups={isCommunity}
-            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned group, chapter, or community." } : undefined}
-          />
-          <div className="space-y-2"><Label>Content</Label>
-            <RichTextEditor value={form.content} onChange={(html) => f("content", html)} placeholder="Write your post content here..." /></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Post Images (optional)</Label>
+        <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <FormSection title="The post">
+            <div className="space-y-2"><Label>Title</Label>
+              <Input placeholder="e.g. Scholarship fund reaches GH₵ 50,000" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
+            <div className="space-y-2"><Label>Content</Label>
+              <RichTextEditor value={form.content} onChange={(html) => f("content", html)} placeholder="Write the post here…" /></div>
+          </FormSection>
+
+          <FormSection title="Images and video" hint="All optional.">
+            <div className="space-y-2"><Label>Images</Label>
               <MultiImageUpload files={form.images} existingUrls={form.existingImageUrls}
                 onAddFile={(file) => setForm(prev => ({ ...prev, images: [...prev.images, file] }))}
                 onRemoveFile={(i) => setForm(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))}
                 onRemoveExisting={(i) => setForm(prev => ({ ...prev, existingImageUrls: prev.existingImageUrls.filter((_, idx) => idx !== i) }))}
                 label="Add image" /></div>
-            <div className="space-y-2"><Label>YouTube URLs (comma-separated, optional)</Label>
-              <Input placeholder="https://youtube.com/..." value={form.youtubeVideoUrls} onChange={(e) => f("youtubeVideoUrls", e.target.value)} />
+            <div className="space-y-2"><Label>YouTube links</Label>
+              <Input placeholder="https://youtube.com/… (separate several with commas)" value={form.youtubeVideoUrls} onChange={(e) => f("youtubeVideoUrls", e.target.value)} />
               {form.youtubeVideoUrls && (
                 <div className="grid grid-cols-2 gap-2">
                   {form.youtubeVideoUrls.split(",").map((u, i) => u.trim() && <YouTubePreview key={i} url={u.trim()} />)}
                 </div>
               )}
             </div>
-          </div>
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save Post</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
+          </FormSection>
+
+          <FormSection title="Publishing">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Category</Label>
+                <FormSelect className="w-full" value={form.category} onValueChange={(v) => f("category", v)}
+                  options={categories.map((c) => ({ value: c, label: c }))} /></div>
+              <div className="space-y-2"><Label>Status</Label>
+                <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
+                  options={[
+                    { value: "Draft", label: "Draft (only you see it)" },
+                    { value: "Published", label: "Published (members see it)" },
+                    ...(form.status === "Archived" ? [{ value: "Archived", label: "Archived" }] : []),
+                  ]} /></div>
+            </div>
+            <CheckOption
+              id="news-pinned"
+              checked={form.isPinned === "true"}
+              onChange={(v) => f("isPinned", v ? "true" : "false")}
+              label="Pin to the top"
+              hint="Pinned posts stay first in members' news."
+            />
+            <AudienceScopePicker
+              mode={form.audienceMode}
+              onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
+              communityId={form.communityId}
+              onCommunityChange={(v) => f("communityId", v)}
+              communities={communities}
+              yearGroups={form.yearGroups}
+              onYearGroupsChange={(years) => setForm((prev) => ({ ...prev, yearGroups: years }))}
+              supportsCommunity
+              hideYearGroups={isCommunity}
+              restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned group, chapter, or community." } : undefined}
+            />
+          </FormSection>
         </form>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -219,7 +217,7 @@ export default function AdminNewsPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">News</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Publish updates for your community.</p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)}>
+        <Button onClick={() => setShowCreate(true)}>
           <Plus size={16} />Create article
         </Button>
       </header>
@@ -271,16 +269,21 @@ export default function AdminNewsPage() {
         </ChipRow>
       </div>
 
-      {showCreate && (
-        <PostForm title="Create Post" init={emptyForm} saving={createMut.isPending} isSuperAdmin={isSuperAdmin}
-          onSave={(f) => createMut.mutate(f)} onCancel={() => setShowCreate(false)} />
-      )}
-
-      {editPost && (
-        <div className="space-y-2">
-          {editError && <p className="text-sm text-destructive font-medium">{editError}</p>}
+      <FormSheet
+        open={showCreate || editPost !== null}
+        onClose={() => { setShowCreate(false); setEditPost(null); setEditError(""); }}
+        title={editPost ? "Edit post" : "Create post"}
+        description={editPost ? editPost.title : "Publish an update for your community. Save it as a draft if you are not ready."}
+        formId="news-post-form"
+        submitLabel={editPost ? "Save changes" : "Save post"}
+        saving={createMut.isPending || updateMut.isPending}
+        error={editError || null}
+        size="lg"
+      >
+        {editPost ? (
           <PostForm
-            title={`Edit ${editPost.title}`}
+            key={editPost.id}
+            id="news-post-form"
             init={{
               title: editPost.title ?? "",
               content: editPost.content ?? "",
@@ -294,13 +297,13 @@ export default function AdminNewsPage() {
               existingImageUrls: editPost.imageUrls ?? [],
               youtubeVideoUrls: arrayToComma(editPost.youtubeVideoUrls),
             }}
-            saving={updateMut.isPending}
             isSuperAdmin={isSuperAdmin}
             onSave={(f) => { setEditError(""); updateMut.mutate({ id: editPost.id, f }); }}
-            onCancel={() => { setEditPost(null); setEditError(""); }}
           />
-        </div>
-      )}
+        ) : showCreate ? (
+          <PostForm id="news-post-form" init={emptyForm} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+        ) : null}
+      </FormSheet>
 
       {isError || (!isLoading && !data) ? (
         <LoadError onRetry={() => refetch()} />

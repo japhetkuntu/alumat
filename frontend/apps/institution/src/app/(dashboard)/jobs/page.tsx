@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Briefcase, MapPin, Clock, ExternalLink, Pencil, Archive } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
@@ -63,9 +64,10 @@ interface FormState {
 const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", yearGroups: [], communityId: "", bannerImage: null, existingBannerUrl: "" };
 const statusOptions = ["Active", "Closed", "Draft", "Pending"];
 
-function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdmin }: {
+function JobForm({ id, init, onSave, showStatus, isSuperAdmin }: {
+  id: string;
   init: FormState & { status?: string }; onSave: (f: FormState & { status: string }) => void;
-  onCancel: () => void; saving: boolean; showStatus: boolean; title: string; isSuperAdmin: boolean;
+    showStatus: boolean;  isSuperAdmin: boolean;
 }) {
   const [form, setForm] = useState({ status: "Active", ...init });
   const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
@@ -73,25 +75,40 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Job Title</Label>
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <FormSection title="The role">
+            <div className="space-y-2"><Label>Job title</Label>
               <Input placeholder="e.g. Senior Mining Engineer" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Company</Label>
-              <Input placeholder="e.g. Gold Fields Ghana" value={form.company} onChange={(e) => f("company", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Location</Label>
-              <Input placeholder="e.g. Tarkwa, Ghana" value={form.location} onChange={(e) => f("location", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Job Type</Label>
-              <FormSelect value={form.type} onValueChange={(v) => f("type", v)}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Company</Label>
+                <Input placeholder="e.g. Gold Fields Ghana" value={form.company} onChange={(e) => f("company", e.target.value)} required /></div>
+              <div className="space-y-2"><Label>Location</Label>
+                <Input placeholder="e.g. Tarkwa, Ghana" value={form.location} onChange={(e) => f("location", e.target.value)} required /></div>
+            </div>
+            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Job type</Label>
+              <FormSelect className="w-full" value={form.type} onValueChange={(v) => f("type", v)}
                 options={[
                   { value: "Full-time", label: "Full-time" },
                   { value: "Part-time", label: "Part-time" },
                   { value: "Contract", label: "Contract" },
                   { value: "Internship", label: "Internship" },
                 ]} /></div>
+            <div className="space-y-2"><Label>Description</Label>
+              <Textarea placeholder="What the role involves and what you are looking for." rows={6} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+          </FormSection>
+
+          <FormSection title="How to apply">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Apply link <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input type="url" placeholder="https://…" value={form.applyUrl} onChange={(e) => f("applyUrl", e.target.value)} /></div>
+              <div className="space-y-2"><Label>Apply by <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} /></div>
+            </div>
+            <div className="space-y-2"><Label>Banner image <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <ImageUpload file={form.bannerImage} existingUrl={form.existingBannerUrl} onChange={(file) => setForm(prev => ({ ...prev, bannerImage: file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingBannerUrl: "" }))} label="Upload banner image" /></div>
+          </FormSection>
+
+          <FormSection title="Who sees it">
             <AudienceScopePicker
               mode={form.audienceMode}
               onModeChange={(mode) => setForm((prev) => ({ ...prev, audienceMode: mode }))}
@@ -104,27 +121,13 @@ function JobForm({ init, onSave, onCancel, saving, showStatus, title, isSuperAdm
               hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience; this job will use your year group or community automatically." } : undefined}
             />
-            <div className="space-y-2"><Label>Deadline (optional)</Label>
-              <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} /></div>
-            <div className="space-y-2"><Label>Apply URL (optional)</Label>
-              <Input type="url" placeholder="https://..." value={form.applyUrl} onChange={(e) => f("applyUrl", e.target.value)} /></div>
-            <div className="space-y-2"><Label>Banner Image (optional)</Label>
-              <ImageUpload file={form.bannerImage} existingUrl={form.existingBannerUrl} onChange={(file) => setForm(prev => ({ ...prev, bannerImage: file }))} onClearExisting={() => setForm(prev => ({ ...prev, existingBannerUrl: "" }))} label="Upload banner image" /></div>
             {showStatus && (
-              <div className="space-y-2"><Label>Status</Label>
-                <FormSelect value={form.status} onValueChange={(v) => f("status", v)}
+              <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
+                <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
                   options={statusOptions.map(s => ({ value: s, label: s }))} /></div>
             )}
-          </div>
-          <div className="space-y-2"><Label>Job Description</Label>
-            <Textarea placeholder="Describe the role..." rows={4} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
-          <div className="flex gap-3">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save job</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </FormSection>
+          </form>
   );
 }
 
@@ -209,29 +212,38 @@ export default function AdminJobsPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Job Board</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Publish relevant opportunities and keep deadlines current.</p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)}>
+        <Button onClick={() => setShowCreate(true)}>
           <Plus size={15} />Create job posting
         </Button>
       </header>
 
       {/* Create / Edit forms */}
-      {showCreate && (
-        <JobForm title="Post a New Job" init={emptyForm} saving={createMut.isPending} showStatus={false} isSuperAdmin={isSuperAdmin}
-          onSave={(f) => createMut.mutate(f)} onCancel={() => setShowCreate(false)} />
-      )}
-      {editJob && (
-        <JobForm
-          title={`Edit ${editJob.title}`}
-          init={{ title: editJob.title, company: editJob.company, location: editJob.location, type: editJob.type,
-            description: editJob.description ?? "", applyUrl: editJob.applyUrl ?? "",
-            deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(editJob.communityId, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], communityId: editJob.communityId ?? "", bannerImage: null,
-            existingBannerUrl: editJob.bannerImageUrl ?? "",
-            status: editJob.status }}
-          saving={updateMut.isPending} showStatus isSuperAdmin={isSuperAdmin}
-          onSave={(f) => updateMut.mutate({ id: editJob.id, f })}
-          onCancel={() => setEditJob(null)}
-        />
-      )}
+      <FormSheet
+        open={showCreate || editJob !== null}
+        onClose={() => { setShowCreate(false); setEditJob(null); }}
+        title={editJob ? "Edit job" : "Post a job"}
+        description={editJob ? `${editJob.title} at ${editJob.company}` : "Members see it on their job board and get notified."}
+        formId="job-form"
+        submitLabel={editJob ? "Save changes" : "Post job"}
+        saving={createMut.isPending || updateMut.isPending}
+        size="lg"
+      >
+        {editJob ? (
+          <JobForm
+            key={editJob.id}
+            id="job-form"
+            init={{ title: editJob.title, company: editJob.company, location: editJob.location, type: editJob.type,
+              description: editJob.description ?? "", applyUrl: editJob.applyUrl ?? "",
+              deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(editJob.communityId, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], communityId: editJob.communityId ?? "", bannerImage: null,
+              existingBannerUrl: editJob.bannerImageUrl ?? "",
+              status: editJob.status }}
+            showStatus isSuperAdmin={isSuperAdmin}
+            onSave={(f) => updateMut.mutate({ id: editJob.id, f })}
+          />
+        ) : showCreate ? (
+          <JobForm id="job-form" init={emptyForm} showStatus={false} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+        ) : null}
+      </FormSheet>
 
       {/* Filters */}
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">

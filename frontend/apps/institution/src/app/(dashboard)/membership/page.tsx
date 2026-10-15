@@ -12,6 +12,7 @@ import { handleApiError } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection, CheckOption } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -123,7 +124,7 @@ export default function AdminMembershipPage() {
           </p>
         </div>
         {isSuperAdmin && (
-          <Button onClick={() => setShowCreate(!showCreate)}>
+          <Button onClick={() => setShowCreate(true)}>
             <Plus size={16} />Create renewal period
           </Button>
         )}
@@ -154,68 +155,72 @@ export default function AdminMembershipPage() {
         </div>
       </div>
 
-      {/* Create Form */}
-      {showCreate && isSuperAdmin && (
-        <Card className="animate-in fade-in slide-in-from-top-4 duration-500 border-primary/30">
-          <CardHeader>
-            <CardTitle className="text-base">Create Dues Period</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input placeholder="e.g. Dues 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Dues Year</Label>
-                  <Input type="number" value={form.membershipYear} onChange={(e) => { const y = Number(e.target.value); f("membershipYear", y); f("title", `Dues ${y}`); }} required />
-                  <p className="text-xs text-muted-foreground">
-                    {form.membershipYear === currentYear
-                      ? "Current year: members must pay this to stay active."
-                      : form.membershipYear > currentYear
-                        ? "Future year: optional early payment, does not affect active status."
-                        : "Past year: for members who haven't paid for previous years."}
-                  </p>
-                </div>
+      {/* Create form */}
+      <FormSheet
+        open={showCreate && isSuperAdmin}
+        onClose={() => setShowCreate(false)}
+        title="Create dues period"
+        description="Members pay once for the period. The amount, the deadline and who must pay are set here."
+        formId="dues-form"
+        submitLabel="Create dues period"
+        savingLabel="Creating"
+        saving={createMut.isPending}
+        size="lg"
+      >
+        <form id="dues-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }}>
+          <FormSection title="The period">
+            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+              <Label>Dues year</Label>
+              <Input type="number" value={form.membershipYear} onChange={(e) => { const y = Number(e.target.value); f("membershipYear", y); f("title", `Dues ${y}`); }} required />
+            </div>
+            <p className="-mt-2 text-[12.5px] text-muted-foreground">
+              {form.membershipYear === currentYear
+                ? "Current year: members must pay this to stay active."
+                : form.membershipYear > currentYear
+                  ? "Future year: optional early payment, does not affect active status."
+                  : "Past year: for members who haven't paid for previous years."}
+            </p>
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input placeholder="e.g. Dues 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Textarea placeholder="What the dues are for." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} />
+            </div>
+          </FormSection>
+
+          <FormSection title="Amount and deadline">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Employed members (GHS)</Label>
+                <Input type="number" min={1} step="0.01" placeholder="e.g. 100" value={form.amountPerMember} onChange={(e) => f("amountPerMember", e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Description (optional)</Label>
-                <Textarea placeholder="Describe the purpose of this dues period..." rows={2} value={form.description} onChange={(e) => f("description", e.target.value)} />
+                <Label>Pensioners (GHS) <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input type="number" min={1} step="0.01" placeholder="Same as employed" value={form.pensionerAmountPerMember} onChange={(e) => f("pensionerAmountPerMember", e.target.value)} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Amount for employed members (GHS)</Label>
-                  <Input type="number" min={1} step="0.01" placeholder="e.g. 100" value={form.amountPerMember} onChange={(e) => f("amountPerMember", e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Amount for pensioners (GHS)</Label>
-                  <Input type="number" min={1} step="0.01" placeholder="e.g. 50" value={form.pensionerAmountPerMember} onChange={(e) => f("pensionerAmountPerMember", e.target.value)} />
-                  <p className="text-xs text-muted-foreground">Leave empty to use same amount as employed members.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Deadline</Label>
-                  <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} required />
-                </div>
-              </div>
+            </div>
+            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+              <Label>Pay by</Label>
+              <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} required />
+            </div>
+          </FormSection>
 
-              <div className="space-y-2">
-                <Label>Banner image (optional)</Label>
-                <ImageUpload file={bannerImage} existingUrl="" onChange={setBannerImage} onClearExisting={() => {}} label="Upload banner image" />
-              </div>
-
-              {manualPaymentsEnabled && (
-                <div className="space-y-2">
-                  <Label>Allow Manual Payments</Label>
-                  <div className="flex items-center gap-2">
-                    <input id="m-manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
-                    <label htmlFor="m-manual-pay" className="text-sm">Bank/Mobile money transfers</label>
-                  </div>
-                </div>
-              )}
-
+          <FormSection title="How members pay">
+            {manualPaymentsEnabled ? (
+              <CheckOption
+                id="m-manual-pay"
+                checked={form.allowManualPayments}
+                onChange={(v) => f("allowManualPayments", v)}
+                label="Accept bank and mobile money transfers"
+                hint="Members can pay outside the card checkout and you confirm each payment."
+              />
+            ) : (
+              <p className="text-[13px] text-muted-foreground">Members pay online at checkout.</p>
+            )}
               {manualPaymentsEnabled && form.allowManualPayments && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 border border-border rounded-lg space-y-2">
                     <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
                     <div className="space-y-1.5"><Label>Account number</Label><Input value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} /></div>
@@ -231,15 +236,13 @@ export default function AdminMembershipPage() {
                   </div>
                 </div>
               )}
+          </FormSection>
 
-              <div className="flex gap-3 pt-2">
-                <Button type="submit" size="sm" isLoading={createMut.isPending} loadingText="Creating">Create dues period</Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+          <FormSection title="Banner" hint="Optional. Shown at the top of the dues page for members.">
+            <ImageUpload file={bannerImage} existingUrl="" onChange={setBannerImage} onClearExisting={() => {}} label="Upload banner image" />
+          </FormSection>
+        </form>
+      </FormSheet>
 
       {/* Current Year Section */}
       <section className="space-y-3">

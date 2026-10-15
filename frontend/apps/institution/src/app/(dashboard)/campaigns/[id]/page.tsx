@@ -488,7 +488,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
               </FormSection>
 
               <FormSection title="Amounts and deadline">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Employed members (GHS)</Label>
                     <Input type="number" min={1} step="0.01" placeholder="e.g. 100" value={amountPerMember} onChange={(e) => setAmountPerMember(e.target.value)} required />
@@ -497,10 +497,10 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                     <Label>Pensioners (GHS)</Label>
                     <Input type="number" min={1} step="0.01" placeholder="e.g. 50" value={pensionerAmountPerMember} onChange={(e) => setPensionerAmountPerMember(e.target.value)} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Deadline</Label>
-                    <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
-                  </div>
+                </div>
+                <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+                  <Label>Deadline</Label>
+                  <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
                 </div>
                 <p className="text-[12.5px] text-muted-foreground -mt-2">Leave the pensioner amount empty to charge everyone the same.</p>
               </FormSection>
@@ -529,19 +529,19 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
               </FormSection>
 
               <FormSection title="Goal and timing">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Target (GHS)</Label>
                     <Input type="number" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label>Minimum gift (GHS)</Label>
+                    <Label>Smallest gift (GHS)</Label>
                     <Input type="number" value={amountPerMember} onChange={(e) => setAmountPerMember(e.target.value)} required />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Deadline</Label>
-                    <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
-                  </div>
+                </div>
+                <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+                  <Label>Deadline</Label>
+                  <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
                 </div>
               </FormSection>
 

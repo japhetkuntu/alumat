@@ -16,6 +16,8 @@ export * from "./components/checkbox";
 export * from "./components/color-picker";
 export * from "./components/confirm-modal";
 export * from "./components/dialog";
+export * from "./components/form-sheet";
+export * from "./components/form-parts";
 export * from "./components/dropdown-menu";
 export * from "./components/empty-state";
 export * from "./components/chip-row";

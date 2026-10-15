@@ -16,6 +16,8 @@ export interface ShareLinkButtonProps extends Omit<ButtonProps, "onClick" | "onE
   copiedLabel?: string;
   onSuccess?: (result: ShareResult) => void;
   onError?: (message: string) => void;
+  /** Spread the buttons across the full width of their row, equal widths — for a card footer. */
+  fill?: boolean;
 }
 
 async function copyText(value: string) {
@@ -45,6 +47,7 @@ export function ShareLinkButton({
   copiedLabel = "Copied!",
   onSuccess,
   onError,
+  fill,
   variant = "outline",
   size = "sm",
   type = "button",
@@ -113,12 +116,12 @@ export function ShareLinkButton({
   // One wrapper so the two buttons travel (and wrap) together wherever a page puts this: as bare siblings they
   // overflowed any narrow header row that did not itself allow wrapping.
   return (
-    <div className="inline-flex max-w-full flex-wrap items-center gap-2">
+    <div className={cn("max-w-full items-center gap-2", fill ? "flex w-full" : "inline-flex flex-wrap")}>
     <Button
       type={type}
       variant={variant}
       size={size}
-      className={className}
+      className={cn(fill && "flex-1", className)}
       onClick={() => { void handleShare(); }}
       aria-label={copied ? copiedLabel : shareLabel}
       title={copied ? copiedLabel : shareLabel}
@@ -139,7 +142,7 @@ export function ShareLinkButton({
     {offerWhatsApp && (
       <a
         href={waHref} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" title="Share on WhatsApp"
-        className={cn(buttonVariants({ variant, size }), className)}
+        className={cn(buttonVariants({ variant, size }), fill && "flex-1", className)}
       >
         <MessageCircle size={14} />
         WhatsApp

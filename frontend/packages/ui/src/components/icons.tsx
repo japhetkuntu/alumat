@@ -73,6 +73,7 @@ import {
   faBox,
   faChampagneGlasses,
   faPen,
+  faEllipsis,
   faPhone,
   faPhoneSlash,
   faThumbtack,
@@ -304,6 +305,7 @@ export const Newspaper = makeIcon(faNewspaper);
 export const Package = makeIcon(faBox);
 export const PartyPopper = makeIcon(faChampagneGlasses);
 export const Pencil = makeIcon(faPen);
+export const MoreHorizontal = makeIcon(faEllipsis);
 export const Phone = makeIcon(faPhone);
 export const PhoneOff = makeIcon(faPhoneSlash);
 export const Pin = makeIcon(faThumbtack);

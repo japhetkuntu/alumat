@@ -13,6 +13,8 @@ import { cn } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { getStoreProduct } from "@/lib/member-api";
 import { useStoreCart } from "@/hooks/use-store-cart";
+import { StoreCartBar } from "@/components/member/store-cart-bar";
+import { toast } from "sonner";
 import type { StoreProduct, StoreProductVariant } from "@/types";
 import { FitImage } from "@alumni/ui";
 
@@ -52,7 +54,7 @@ export default function StoreProductDetailPage() {
     [product, hasVariants, selectedOptions]
   );
 
-  const { cart, addToCart, updateQuantity } = useStoreCart();
+  const { cart, addToCart, updateQuantity, cartCount } = useStoreCart();
   const inCart = cart.find((l) => l.productId === id && (l.variantId ?? undefined) === (selectedVariant?.id ?? undefined));
 
   const effectivePrice = product ? (hasVariants ? selectedVariant?.price : product.price) : undefined;
@@ -93,9 +95,16 @@ export default function StoreProductDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1000px] mx-auto space-y-6">
-      <button onClick={() => router.push("/store")} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={14} /> Back to store
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button onClick={() => router.push("/store")} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground">
+          <ArrowLeft size={14} /> Back to store
+        </button>
+        {cartCount > 0 && (
+          <Link href="/store/cart" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:underline">
+            <ShoppingCart size={14} /> Cart ({cartCount})
+          </Link>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <div className="space-y-2">
@@ -254,17 +263,24 @@ export default function StoreProductDetailPage() {
                 </button>
               </div>
             ) : (
-              <Button className="gap-2 font-semibold" disabled={!canAdd} onClick={() => addToCart(product, selectedVariant)}>
+              <Button
+                className="gap-2 font-semibold"
+                disabled={!canAdd}
+                onClick={() => { addToCart(product, selectedVariant); toast.success(`${product.name} added`); }}
+              >
                 <ShoppingCart size={15} />
-                Add to cart
+                {hasVariants && !selectedVariant ? "Choose options" : "Add to cart"}
               </Button>
             )}
-            <Link href="/store">
-              <Button variant="outline">Continue shopping</Button>
-            </Link>
+            {inCart ? (
+              <Link href="/store/cart"><Button className="font-semibold">View cart</Button></Link>
+            ) : (
+              <Link href="/store"><Button variant="outline">Continue shopping</Button></Link>
+            )}
           </div>
         </div>
       </div>
+      <StoreCartBar />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection, CheckOption, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, MoreHorizontal } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -78,7 +79,7 @@ const emptyForm: FormState = {
   communityId: "",
 };
 
-function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: { init: FormState; onSave: (f: FormState) => void; onCancel: () => void; saving: boolean; title: string; isSuperAdmin: boolean }) {
+function CampaignForm({ id, init, onSave, isSuperAdmin }: { id: string; init: FormState; onSave: (f: FormState) => void; isSuperAdmin: boolean }) {
   const [form, setForm] = useState(init);
   const f = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(prev => ({ ...prev, [k]: v }));
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
@@ -86,49 +87,53 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-          <div className="space-y-2">
-            <Label>Fundraiser title</Label>
-            <Input placeholder="e.g. Community Development Fund 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea placeholder="Describe the purpose of this fundraiser..." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+          <FormSection title="The fundraiser">
             <div className="space-y-2">
-              <Label className="inline-flex items-center gap-1.5">Target amount (GHS)<InfoTip text="The total you aim to raise. Progress is measured against it." /></Label>
-              <Input type="number" placeholder="100000" value={form.targetAmount} onChange={(e) => f("targetAmount", e.target.value)} required />
+              <Label>Title</Label>
+              <Input placeholder="e.g. Community Development Fund 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label className="inline-flex items-center gap-1.5">Minimum Contribution (GHS)<InfoTip text="The smallest amount a member can give." /></Label>
-              <Input type="number" placeholder="200" value={form.minContribution} onChange={(e) => f("minContribution", e.target.value)} required />
+              <Label>Description</Label>
+              <Textarea placeholder="What the money is for and what it will achieve." rows={4} value={form.description} onChange={(e) => f("description", e.target.value)} />
             </div>
-            <div className="space-y-2">
+          </FormSection>
+
+          <FormSection title="The goal">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="inline-flex items-center gap-1.5">Target amount (GHS)<InfoTip text="The total you aim to raise. Progress is measured against it." /></Label>
+                <Input type="number" min={1} placeholder="100000" value={form.targetAmount} onChange={(e) => f("targetAmount", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label className="inline-flex items-center gap-1.5">Smallest gift (GHS)<InfoTip text="The smallest amount a member can give." /></Label>
+                <Input type="number" min={1} placeholder="200" value={form.minContribution} onChange={(e) => f("minContribution", e.target.value)} required />
+              </div>
+            </div>
+            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
               <Label>Deadline</Label>
               <Input type="date" value={form.deadline} onChange={(e) => f("deadline", e.target.value)} required />
             </div>
-          </div>
+          </FormSection>
 
-          <AudienceScopePicker
-            mode={form.audienceMode}
-            onModeChange={(mode) => f("audienceMode", mode)}
-            communityId={form.communityId}
-            onCommunityChange={(v) => f("communityId", v)}
-            communities={communities}
-            yearGroups={form.yearGroups}
-            onYearGroupsChange={(years) => f("yearGroups", years)}
-            supportsCommunity
-            hideYearGroups={isCommunity}
-            restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This fundraiser will be restricted to your assigned year group or community." } : undefined}
-          />
+          <FormSection title="Who can give">
+            <AudienceScopePicker
+              mode={form.audienceMode}
+              onModeChange={(mode) => f("audienceMode", mode)}
+              communityId={form.communityId}
+              onCommunityChange={(v) => f("communityId", v)}
+              communities={communities}
+              yearGroups={form.yearGroups}
+              onYearGroupsChange={(years) => f("yearGroups", years)}
+              supportsCommunity
+              hideYearGroups={isCommunity}
+              restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This fundraiser will be restricted to your assigned year group or community." } : undefined}
+            />
+          </FormSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormSection title="Banner and video" hint="Both optional.">
             <div className="space-y-2">
-              <Label>Banner image (optional)</Label>
+              <Label>Banner image</Label>
               <ImageUpload
                 file={form.bannerImage}
                 existingUrl={form.existingBannerUrl}
@@ -138,55 +143,48 @@ function CampaignForm({ init, onSave, onCancel, saving, title, isSuperAdmin }: {
               />
             </div>
             <div className="space-y-2">
-              <Label>YouTube video URL (optional)</Label>
-              <Input type="url" placeholder="https://youtube.com/..." value={form.youtubeVideoUrl} onChange={(e) => f("youtubeVideoUrl", e.target.value)} />
+              <Label>YouTube video link</Label>
+              <Input type="url" placeholder="https://youtube.com/…" value={form.youtubeVideoUrl} onChange={(e) => f("youtubeVideoUrl", e.target.value)} />
               {form.youtubeVideoUrl && <YouTubePreview url={form.youtubeVideoUrl} />}
             </div>
-          </div>
+          </FormSection>
 
-          <div className="space-y-2">
-            <Label className="inline-flex items-center gap-1.5">Allow pledges<InfoTip text="Let members promise to give by a date. A pledge moves no money and is never counted in the total raised. You see the pledges, and members get gentle reminders." /></Label>
-            <div className="flex items-center gap-2">
-              <input id="allow-pledges" type="checkbox" checked={form.allowPledges} onChange={(e) => f("allowPledges", e.target.checked)} className="h-4 w-4" />
-              <label htmlFor="allow-pledges" className="text-sm">Members can pledge to this fundraiser</label>
-            </div>
-          </div>
-
-          {manualPaymentsEnabled && (
-            <div className="space-y-2">
-              <Label className="inline-flex items-center gap-1.5">Allow Manual Payments<InfoTip text="Let members pay by bank or mobile money outside the card checkout." /></Label>
-              <div className="flex items-center gap-2">
-                <input id="manual-pay" type="checkbox" checked={form.allowManualPayments} onChange={(e) => f("allowManualPayments", e.target.checked)} className="h-4 w-4" />
-                <label htmlFor="manual-pay" className="text-sm">Allow bank/mobile money transfers</label>
-              </div>
-            </div>
-          )}
-
+          <FormSection title="How members give">
+            <CheckOption
+              id="allow-pledges"
+              checked={form.allowPledges}
+              onChange={(v) => f("allowPledges", v)}
+              label="Let members pledge"
+              hint="A pledge is a promise to give by a date. It moves no money and is never counted in the total raised; members get gentle reminders."
+            />
+            {manualPaymentsEnabled && (
+              <CheckOption
+                id="manual-pay"
+                checked={form.allowManualPayments}
+                onChange={(v) => f("allowManualPayments", v)}
+                label="Accept bank and mobile money transfers"
+                hint="Members can pay outside the card checkout and you confirm each payment."
+              />
+            )}
           {manualPaymentsEnabled && form.allowManualPayments && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="p-4 border border-border rounded-lg space-y-2">
-                <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
-                <div className="space-y-1.5"><Label>Account number</Label><Input value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Account name</Label><Input value={form.bankAccountName} onChange={(e) => f("bankAccountName", e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Bank name</Label><Input value={form.bankName} onChange={(e) => f("bankName", e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Branch</Label><Input value={form.bankBranch} onChange={(e) => f("bankBranch", e.target.value)} /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 border border-border rounded-lg space-y-2">
+                  <h4 className="text-sm font-black uppercase tracking-wider">Bank Account</h4>
+                  <div className="space-y-1.5"><Label>Account number</Label><Input value={form.bankAccountNumber} onChange={(e) => f("bankAccountNumber", e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Account name</Label><Input value={form.bankAccountName} onChange={(e) => f("bankAccountName", e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Bank name</Label><Input value={form.bankName} onChange={(e) => f("bankName", e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Branch</Label><Input value={form.bankBranch} onChange={(e) => f("bankBranch", e.target.value)} /></div>
+                </div>
+                <div className="p-4 border border-border rounded-lg space-y-2">
+                  <h4 className="text-sm font-black uppercase tracking-wider">Mobile Money</h4>
+                  <div className="space-y-1.5"><Label>Mobile money number</Label><Input type="tel" value={form.mobileMoneyNumber} onChange={(e) => f("mobileMoneyNumber", e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Account name</Label><Input value={form.mobileMoneyName} onChange={(e) => f("mobileMoneyName", e.target.value)} /></div>
+                  <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={form.mobileMoneyProvider} onChange={(e) => f("mobileMoneyProvider", e.target.value)} /></div>
+                </div>
               </div>
-              <div className="p-4 border border-border rounded-lg space-y-2">
-                <h4 className="text-sm font-black uppercase tracking-wider">Mobile Money</h4>
-                <div className="space-y-1.5"><Label>Mobile money number</Label><Input type="tel" value={form.mobileMoneyNumber} onChange={(e) => f("mobileMoneyNumber", e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Account name</Label><Input value={form.mobileMoneyName} onChange={(e) => f("mobileMoneyName", e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>Provider</Label><Input placeholder="MTN, Telecel or AT" value={form.mobileMoneyProvider} onChange={(e) => f("mobileMoneyProvider", e.target.value)} /></div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <Button type="submit" size="sm" isLoading={saving} loadingText="Saving">Save fundraiser</Button>
-            <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            )}
+          </FormSection>
+          </form>
   );
 }
 
@@ -289,26 +287,26 @@ export default function AdminCampaignsPage() {
           <h1 className="text-[20px] sm:text-[25px] font-bold m-0">Fundraisers</h1>
           <p className="text-muted-foreground text-[13px] mt-1.5">Initiatives outside standard membership dues.</p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)}>
+        <Button onClick={() => setShowCreate(true)}>
           <Plus size={16} />Create fundraiser
         </Button>
       </header>
 
-      {showCreate && (
-        <CampaignForm
-          title="Create New Fundraiser"
-          init={emptyForm}
-          saving={createMut.isPending}
-          isSuperAdmin={isSuperAdmin}
-          onSave={(f) => createMut.mutate(f)}
-          onCancel={() => setShowCreate(false)}
-        />
-      )}
-
-      {editCampaign && (
-        <CampaignForm
-          title={`Edit ${editCampaign.title}`}
-          init={{
+      <FormSheet
+        open={showCreate || editCampaign !== null}
+        onClose={() => { setShowCreate(false); setEditCampaign(null); }}
+        title={editCampaign ? "Edit fundraiser" : "Create fundraiser"}
+        description={editCampaign ? editCampaign.title : "Set a target and a deadline. Members pay online and you follow progress here."}
+        formId="campaign-form"
+        submitLabel={editCampaign ? "Save changes" : "Create fundraiser"}
+        saving={createMut.isPending || updateMut.isPending}
+        size="lg"
+      >
+        {editCampaign ? (
+          <CampaignForm
+            key={editCampaign.id}
+            id="campaign-form"
+            init={{
             title: editCampaign.title,
             description: editCampaign.description ?? "",
             targetAmount: String(editCampaign.targetAmount),
@@ -330,12 +328,13 @@ export default function AdminCampaignsPage() {
             mobileMoneyProvider: editCampaign.mobileMoneyAccount?.provider ?? "",
             communityId: editCampaign.communityId ?? "",
           }}
-          saving={updateMut.isPending}
-          isSuperAdmin={isSuperAdmin}
-          onSave={(f) => updateMut.mutate({ id: editCampaign.id, f, status: editCampaign.status })}
-          onCancel={() => setEditCampaign(null)}
-        />
-      )}
+            isSuperAdmin={isSuperAdmin}
+            onSave={(f) => updateMut.mutate({ id: editCampaign.id, f, status: editCampaign.status })}
+          />
+        ) : showCreate ? (
+          <CampaignForm id="campaign-form" init={emptyForm} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+        ) : null}
+      </FormSheet>
 
       {/* Status Filter — flat pill row matching the design */}
       <ChipRow label="Filter" activeKey={String(statusFilter)}>
@@ -400,37 +399,40 @@ export default function AdminCampaignsPage() {
                     Deadline {formatDate(c.deadline)} &middot; {c.paidCount} contributors
                   </p>
 
-                  <div className="mt-auto flex flex-wrap gap-2">
-                    <Link href={`/campaigns/${c.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        <Eye size={13} />View details
-                      </Button>
-                    </Link>
+                  <div className="mt-auto space-y-2">
+                    <div className="flex gap-2">
+                      <Link href={`/campaigns/${c.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Eye size={13} />View details
+                        </Button>
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" aria-label={`More actions for ${c.title}`} className="px-3">
+                            <MoreHorizontal size={15} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[180px]">
+                          {c.status === "Active" && (
+                            <DropdownMenuItem onSelect={() => setEditCampaign(c)}><Pencil size={14} />Edit</DropdownMenuItem>
+                          )}
+                          {c.status === "Active" && (
+                            <DropdownMenuItem destructive onSelect={() => setCloseTarget(c)}>Close fundraiser</DropdownMenuItem>
+                          )}
+                          {c.status === "Completed" && (
+                            <DropdownMenuItem onSelect={() => activateMut.mutate(c.id)}><Plus size={14} />Re-open</DropdownMenuItem>
+                          )}
+                          {c.status !== "Active" && c.status !== "Archived" && (
+                            <DropdownMenuItem onSelect={() => setArchiveTarget(c)}><Archive size={14} />Archive</DropdownMenuItem>
+                          )}
+                          {c.status === "Archived" && (
+                            <DropdownMenuItem onSelect={() => setUnarchiveTarget(c)}><ArchiveRestore size={14} />Restore</DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     {c.status === "Active" && (
-                      <MemberShareButton memberPath={c.isMembershipCampaign ? `/contributions/${c.id}` : `/payment-campaign/${c.id}`} title={c.title} message={c.isMembershipCampaign ? shareMessages.dues({ title: c.title, amount: c.amountPerMember, deadline: c.deadline }) : shareMessages.fundraiser({ title: c.title, target: c.targetAmount, raised: c.collectedAmount, contributors: c.paidCount, description: c.description })} />
-                    )}
-                    {c.status === "Active" && (
-                      <Button size="sm" variant="outline" onClick={() => setEditCampaign(c)}>
-                        <Pencil size={13} />Edit
-                      </Button>
-                    )}
-                    {c.status === "Active" && (
-                      <Button size="sm" variant="outline" onClick={() => setCloseTarget(c)}>Close</Button>
-                    )}
-                    {c.status !== "Active" && c.status !== "Archived" && (
-                      <Button size="sm" variant="outline" onClick={() => setArchiveTarget(c)}>
-                        <Archive size={13} />Archive
-                      </Button>
-                    )}
-                    {c.status === "Completed" && (
-                      <Button size="sm" variant="outline" onClick={() => activateMut.mutate(c.id)}>
-                        <Plus size={13} />Re-open
-                      </Button>
-                    )}
-                    {c.status === "Archived" && (
-                      <Button size="sm" variant="outline" onClick={() => setUnarchiveTarget(c)}>
-                        <ArchiveRestore size={13} />Restore
-                      </Button>
+                      <MemberShareButton fill memberPath={c.isMembershipCampaign ? `/contributions/${c.id}` : `/payment-campaign/${c.id}`} title={c.title} message={c.isMembershipCampaign ? shareMessages.dues({ title: c.title, amount: c.amountPerMember, deadline: c.deadline }) : shareMessages.fundraiser({ title: c.title, target: c.targetAmount, raised: c.collectedAmount, contributors: c.paidCount, description: c.description })} />
                     )}
                   </div>
                 </CardContent>

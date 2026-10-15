@@ -732,22 +732,21 @@ export default function AdminMembersPage() {
               <Label>Email</Label>
               <Input type="email" value={addMemberForm.email} onChange={(e) => setAddMemberForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Mobile number</Label>
+              <PhoneInput value={addMemberForm.phone} onChange={(val) => setAddMemberForm((f) => ({ ...f, phone: val }))} />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {!isCommunity && (
                 <div className="space-y-1.5">
-                  <Label>Graduation year</Label>
+                  <Label>Graduation year{!yearRequired && <span className="font-normal text-muted-foreground"> (optional)</span>}</Label>
                   <Input type="number" placeholder="2024" value={addMemberForm.graduationYear} onChange={(e) => setAddMemberForm((f) => ({ ...f, graduationYear: e.target.value }))} />
                 </div>
               )}
-              {/* A phone field needs the whole row: squeezed beside another field the number box is only a few characters wide. */}
-              <div className="col-span-2 space-y-1.5">
-                <Label>Mobile number</Label>
-                <PhoneInput value={addMemberForm.phone} onChange={(val) => setAddMemberForm((f) => ({ ...f, phone: val }))} />
+              <div className="space-y-1.5">
+                <Label>Member or student ID <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input value={addMemberForm.studentId} onChange={(e) => setAddMemberForm((f) => ({ ...f, studentId: e.target.value }))} />
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Member or student ID (optional)</Label>
-              <Input value={addMemberForm.studentId} onChange={(e) => setAddMemberForm((f) => ({ ...f, studentId: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>

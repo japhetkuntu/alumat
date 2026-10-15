@@ -9,6 +9,7 @@ import {
 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
@@ -363,126 +364,107 @@ export default function ServicesPage() {
       )}
 
       {/* ── Service type form dialog ── */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-[640px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit service" : "New service"}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
+      <FormSheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title={editingId ? "Edit service" : "New service"}
+        description="Members request it from their portal. You see each request in your queue and move it through your stages."
+        formId="service-form"
+        submitLabel={editingId ? "Save changes" : "Create service"}
+        savingLabel="Saving"
+        saving={saveMutation.isPending}
+        error={formError || null}
+        size="lg"
+      >
+        <form id="service-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); submitForm(); }}>
+          <FormSection title="The service">
+            <div className="space-y-2">
               <Label>Name</Label>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Academic Transcript Request" />
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Academic transcript request" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+              <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} placeholder="What the service is and how long it usually takes." />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Price</Label>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Price (GHS)</Label>
                 <Input type="number" min={0.01} step="0.01" placeholder="e.g. 25.00" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Status</Label>
                 <FormSelect
+                  className="w-full"
                   value={form.status}
                   onValueChange={(v) => setForm((f) => ({ ...f, status: v as ServiceType["status"] }))}
-                  options={[{ value: "Active", label: "Active" }, { value: "Draft", label: "Draft" }, { value: "Archived", label: "Archived" }]}
+                  options={[{ value: "Active", label: "Active, members can request it" }, { value: "Draft", label: "Draft, hidden" }, { value: "Archived", label: "Archived" }]}
                 />
               </div>
             </div>
+          </FormSection>
 
-            {/* Fields builder */}
-            <div className="space-y-2.5 pt-2 border-t border-border/60">
-              <Label>Request form fields</Label>
-              <p className="text-[12px] text-muted-foreground -mt-1">What you need from the member to fulfill this request. Use the arrows to set the order they appear in.</p>
-              {form.fields.map((fl, i) => (
-                <div key={i} className="border border-border/60 p-3 space-y-2.5">
-                  <div className="flex gap-2 items-start">
-                    <div className="flex flex-col shrink-0 -my-1">
-                      <button type="button" onClick={() => moveField(i, -1)} disabled={i === 0} className="p-1 disabled:opacity-25 disabled:cursor-not-allowed text-muted-foreground hover:text-foreground" aria-label="Move field up">
-                        <ArrowUp size={13} />
-                      </button>
-                      <button type="button" onClick={() => moveField(i, 1)} disabled={i === form.fields.length - 1} className="p-1 disabled:opacity-25 disabled:cursor-not-allowed text-muted-foreground hover:text-foreground" aria-label="Move field down">
-                        <ArrowDown size={13} />
-                      </button>
-                    </div>
-                    <Input className="flex-1" placeholder="Field label, e.g. Index Number" value={fl.label} onChange={(e) => updateField(i, { label: e.target.value })} />
-                    <FormSelect
-                      className="w-[140px] shrink-0"
-                      value={fl.type}
-                      onValueChange={(v) => updateField(i, { type: v as ServiceFieldType })}
-                      options={FIELD_TYPES}
-                    />
-                    <button type="button" onClick={() => removeField(i)} className="text-destructive hover:opacity-70 shrink-0 p-2" aria-label={`Remove ${fl.label || "field"}`}>
-                      <X size={16} />
-                    </button>
+          <FormSection title="What you ask the member" hint="The details you need to fulfil a request. Members fill these in when they request it, in this order.">
+            {form.fields.length === 0 && (
+              <p className="border border-dashed border-border p-3 text-[13px] text-muted-foreground">No questions yet. Add the details you need, such as an index number or a graduation year.</p>
+            )}
+            {form.fields.map((fl, i) => (
+              <div key={i} className="space-y-3 border border-border bg-card p-3.5">
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Label className="text-[12.5px]">Question {i + 1}</Label>
+                    <Input placeholder="e.g. Index number" value={fl.label} onChange={(e) => updateField(i, { label: e.target.value })} />
                   </div>
-                  {fl.type === "Select" && (
-                    <Input className="ml-[26px] w-[calc(100%-26px)]" placeholder="Options, comma separated" value={fl.optionsRaw} onChange={(e) => updateField(i, { optionsRaw: e.target.value })} />
-                  )}
-                  <div className="flex items-center gap-2.5 ml-[26px]">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={fl.required}
-                      onClick={() => updateField(i, { required: !fl.required })}
-                      className={cn(
-                        "relative inline-flex h-[18px] w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150",
-                        fl.required ? "bg-accent" : "bg-muted"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-150",
-                          fl.required ? "translate-x-[14px]" : "translate-x-0"
-                        )}
-                      />
-                    </button>
-                    <span className="text-[13px] text-foreground select-none">
-                      {fl.required ? "Required" : "Optional"}
-                    </span>
+                  <div className="flex shrink-0 gap-0.5 pt-6">
+                    <button type="button" onClick={() => moveField(i, -1)} disabled={i === 0} className="flex size-9 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30" aria-label="Move question up"><ArrowUp size={14} /></button>
+                    <button type="button" onClick={() => moveField(i, 1)} disabled={i === form.fields.length - 1} className="flex size-9 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30" aria-label="Move question down"><ArrowDown size={14} /></button>
+                    <button type="button" onClick={() => removeField(i)} className="flex size-9 items-center justify-center text-destructive hover:bg-destructive/10" aria-label={`Remove ${fl.label || "question"}`}><X size={15} /></button>
                   </div>
                 </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" onClick={addField}><Plus size={13} className="mr-1.5" /> Add field</Button>
-            </div>
-
-            {/* Stages builder */}
-            <div className="space-y-2.5 pt-2 border-t border-border/60">
-              <Label>Fulfillment stages</Label>
-              <p className="text-[12px] text-muted-foreground -mt-1">Your own pipeline — every new request starts at the first stage.</p>
-              <div className="flex gap-2">
-                <Input
-                  value={newStage}
-                  onChange={(e) => setNewStage(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addStage(); } }}
-                  placeholder="e.g. Under Review"
-                />
-                <Button type="button" variant="outline" onClick={addStage} disabled={!newStage.trim()}><Plus size={14} className="mr-1.5" /> Add stage</Button>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
+                  <div className="space-y-1.5">
+                    <Label className="text-[12.5px]">Answer type</Label>
+                    <FormSelect className="w-full" value={fl.type} onValueChange={(v) => updateField(i, { type: v as ServiceFieldType })} options={FIELD_TYPES} />
+                  </div>
+                  <label className="flex h-10 cursor-pointer items-center gap-2.5 text-[13.5px]">
+                    <input type="checkbox" checked={fl.required} onChange={(e) => updateField(i, { required: e.target.checked })} className="size-4 accent-[var(--primary)]" />
+                    Required
+                  </label>
+                </div>
+                {fl.type === "Select" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-[12.5px]">Choices</Label>
+                    <Input placeholder="Separate with commas, e.g. Local, International" value={fl.optionsRaw} onChange={(e) => updateField(i, { optionsRaw: e.target.value })} />
+                  </div>
+                )}
               </div>
-              <ol className="space-y-1.5">
-                {form.stages.map((s, i) => (
-                  <li key={i} className="flex items-center gap-2 border border-border/60 px-3 py-2 text-[13px]">
-                    <span className="text-muted-foreground tabular-nums w-5">{i + 1}.</span>
-                    <span className="flex-1">{s}</span>
-                    <button type="button" onClick={() => moveStage(i, -1)} disabled={i === 0} className="disabled:opacity-30 p-1"><ArrowUp size={13} /></button>
-                    <button type="button" onClick={() => moveStage(i, 1)} disabled={i === form.stages.length - 1} className="disabled:opacity-30 p-1"><ArrowDown size={13} /></button>
-                    <button type="button" onClick={() => removeStage(i)} className="text-destructive hover:opacity-70 p-1" aria-label={`Remove stage ${s}`}><X size={14} /></button>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+            ))}
+            <Button type="button" variant="outline" onClick={addField}><Plus size={14} className="mr-1.5" /> Add a question</Button>
+          </FormSection>
 
-          <FormError message={formError} className="mt-3" />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
-            <Button onClick={submitForm} isLoading={saveMutation.isPending}>{editingId ? "Save changes" : "Create service"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <FormSection title="Fulfilment stages" hint="Your own pipeline. Every new request starts at the first stage, and members follow it as it moves.">
+            <div className="flex gap-2">
+              <Input
+                value={newStage}
+                onChange={(e) => setNewStage(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addStage(); } }}
+                placeholder="e.g. Under review"
+              />
+              <Button type="button" variant="outline" onClick={addStage} disabled={!newStage.trim()}><Plus size={14} className="mr-1.5" /> Add</Button>
+            </div>
+            <ol className="space-y-1.5">
+              {form.stages.map((s, i) => (
+                <li key={i} className="flex items-center gap-2 border border-border bg-card px-3 py-2 text-[13.5px]">
+                  <span className="w-5 tabular-nums text-muted-foreground">{i + 1}</span>
+                  <span className="flex-1">{s}</span>
+                  <button type="button" onClick={() => moveStage(i, -1)} disabled={i === 0} className="flex size-8 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Move stage up"><ArrowUp size={13} /></button>
+                  <button type="button" onClick={() => moveStage(i, 1)} disabled={i === form.stages.length - 1} className="flex size-8 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Move stage down"><ArrowDown size={13} /></button>
+                  <button type="button" onClick={() => removeStage(i)} className="flex size-8 items-center justify-center text-destructive hover:bg-destructive/10" aria-label={`Remove stage ${s}`}><X size={14} /></button>
+                </li>
+              ))}
+            </ol>
+          </FormSection>
+        </form>
+      </FormSheet>
 
       <ConfirmModal
         open={!!deleteTarget}
