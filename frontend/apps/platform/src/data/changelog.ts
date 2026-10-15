@@ -20,6 +20,62 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-15",
+    title: "Structure that scales: cohorts by decade, search, folding and a clearer tree",
+    scopes: ["Institution", "Platform"],
+    type: "Improvement",
+    body: "The Structure page (Institution Admins' view of cohorts, groups and who looks after them) now copes with an institution that has run for decades. Cohorts are grouped by decade, newest first, and only the current decade starts open; the rest fold and remember how you left them. One search box finds a cohort by name or year, a group by name or leader, or anything by an administrator's name, and a \"Needs an administrator\" filter shows only what nobody looks after. Each cohort and group is one row hung from its parent on a visible line, so the levels read as a tree; warnings stay quiet on the rows and are summarised on the decade. Long group lists show a preview with \"Show all\". The page's data is now counted in the database rather than by loading every member and membership, so it stays fast with tens of thousands of members (about a tenth of a second with 400 groups and 38,000 members in testing). The platform Team tree folds each leader's team too, with Expand all and Collapse all.",
+  },
+  {
+    date: "2026-10-15",
+    title: "Adding and editing opens beside the page, with forms laid out in clear sections",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+    body: "Creating or editing news, jobs, events, fundraisers, dues, resources, groups, cohorts, store products, services, albums, institution admins and forum categories used to open a form at the top of the page, out of sight if you had scrolled to the item. They now open as a panel from the right (a tall sheet from the bottom on phones) with Save pinned at the bottom, a prompt before closing if you have unsaved changes, and server errors shown beside Save. The forms themselves were rearranged: each is split into short labelled sections (for example The event, When and where, Who it is for, Photos and video), only genuinely paired fields share a row, descriptions and main content come first, and checkbox options explain what they do. Members start forum and community threads the same way. Fundraiser and event cards keep one main button and a ... menu for Edit, Close and similar, with Share and WhatsApp on their own row.",
+  },
+  {
+    date: "2026-10-14",
+    title: "Store: a proper cart, clearer order history and request tracking",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "The member store cart is now its own page instead of a panel above the products, with quantity controls, an order summary, and a Pay bar that stays within thumb reach on phones. Anything an item needs from the member (a name to print, delivery details) is asked under that item, and a missing detail scrolls to it and says what is missing. A bar appears above the bottom menu once something is in the cart, adding an item gives a View cart shortcut, and product pages link to the cart. My orders and My requests (services) are rebuilt: filter by In progress, Complete or Awaiting payment, see exactly where each order or request is (for example step 2 of 4) with the full steps and staff updates a tap away, and use Check payment on one that has not been confirmed yet.",
+  },
+  {
+    date: "2026-10-14",
+    title: "Platform team: Representatives, reporting lines and a Team page",
+    scopes: ["Platform"],
+    type: "Feature",
+    body: "Platform staff can now be organised. A new Representative role onboards institutions and follows their growth; each Representative reports to a SuperAdmin or to another Representative, so teams can be nested. SuperAdmins see everything whoever it is assigned to; a Representative sees only the institutions and leads that they and the people beneath them own, and anything outside that behaves as not found. Institutions and leads now have an owner. A Representative can onboard an institution but cannot make settlement details live: the details are held for approval by a SuperAdmin or Billing and no payout account is created until then, and the fee is the platform default. The Team page shows the reporting tree with each person's institutions, leads and team size, flags work with no owner, and lets a SuperAdmin change who someone reports to and hand institutions and leads to someone else; the staff form has a Reports to field. Representatives cannot reach platform-wide dashboards, announcements, activation targets, payments or the staff list.",
+  },
+  {
+    date: "2026-10-14",
+    title: "Incentive ledger for Representatives (settled by hand)",
+    scopes: ["Platform"],
+    type: "Feature",
+    body: "A new Incentives page records what each Representative has earned and what they have been paid. Nothing is paid from the platform: a SuperAdmin records an earning, pays the person outside AlumUnion (mobile money or bank), then records the payment with its reference. Owed is earned minus paid; a payment larger than what is owed is refused; a mistake is voided with a reason and stays in the history rather than being deleted. SuperAdmins see everyone, and a Representative sees only their own lines, read-only.",
+  },
+  {
+    date: "2026-10-14",
+    title: "Communities of any kind: year groups are optional, with templates and your own questions",
+    scopes: ["Institution", "Member", "Platform"],
+    type: "Feature",
+    body: "An institution no longer has to be alumni of a school. Each one chooses whether members have a graduation year at all (Off, Optional or Required), and the wording across the member and administrator portals follows that choice, including what the institution calls a year group. New institutions can start from a template (alumni group, school, club or society, faith community, professional network). Institutions can ask their own extra registration questions, choose what kind of group each group is (chapter, committee, team and so on), and decide whether to ask for a member or student ID. The member leaderboard ranks year groups only where members have a graduation year, uses the institution's own word for them, and is left out of the menu otherwise. Platform staff can set these when onboarding an institution.",
+  },
+  {
+    date: "2026-10-14",
+    title: "A better first week: example content, saved audiences, automation settings and receipts",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "A new institution can add example news, an event and an opportunity in one step so the member portal is never empty, and is prompted to invite members to the community WhatsApp group. Administrators can save an audience (for example all members of the 2015 class who have not paid dues) and reuse it when sending messages and generating reports. A new Automations page lets an administrator choose which automatic messages the community sends (dues reminders, event reminders, pledge reminders, notes to members who have gone quiet) and how often; existing institutions keep today's behaviour until they change it. Members get a printable receipt for every payment they make, in the institution's own colours.",
+  },
+  {
+    date: "2026-10-14",
+    title: "Smaller fixes: faster deploys, the install banner and email placeholders",
+    scopes: ["Platform", "Member"],
+    type: "Fix",
+    body: "Deployments are quicker: only the services that changed are rebuilt, and running services can be stopped first so the build is not competing for the server's memory. The \"Add to home screen\" banner on the member portal did nothing when Got it was pressed; it now dismisses and stays dismissed. Several emails could go out with a blank where a name or link should be, and one could be skipped when a value was missing; every intended email is now sent with its details filled in, and anything unresolved is logged instead of being sent as a literal placeholder.",
+  },
+  {
     date: "2026-10-11",
     title: "AlumUnion on WhatsApp: ask the assistant, connect your number, post to groups",
     scopes: ["Institution", "Member", "Platform"],
