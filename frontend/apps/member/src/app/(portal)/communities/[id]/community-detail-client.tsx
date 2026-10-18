@@ -432,7 +432,7 @@ export default function CommunityDetailPage() {
                       </div>
                       <div className="mt-auto pt-3">
                         {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && (
-                          <Button size="sm" className="w-full" onClick={() => rsvpMut.mutate(e.id)} isLoading={rsvpMut.isPending} loadingText="RSVPing">RSVP</Button>
+                          <Button size="sm" className="w-full" onClick={() => rsvpMut.mutate(e.id)} isLoading={rsvpMut.isPending && rsvpMut.variables === e.id} loadingText="RSVPing">RSVP</Button>
                         )}
                         {hasRsvp && <Badge variant="success" className="gap-1"><Check size={11} /> You're attending</Badge>}
                       </div>
@@ -545,7 +545,7 @@ export default function CommunityDetailPage() {
                   </div>
                 </div>
                 {isLeader && m.role !== "Leader" && (
-                  <Button size="sm" variant="ghost" className="gap-1.5 text-destructive shrink-0" onClick={() => removeMut.mutate(m.memberId)} isLoading={removeMut.isPending}>
+                  <Button size="sm" variant="ghost" className="gap-1.5 text-destructive shrink-0" onClick={() => removeMut.mutate(m.memberId)} isLoading={removeMut.isPending && removeMut.variables === m.memberId}>
                     <UserMinus size={13} /> Remove
                   </Button>
                 )}
@@ -575,10 +575,10 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => decideMut.mutate({ membershipId: r.membershipId, approve: true })} isLoading={decideMut.isPending}>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => decideMut.mutate({ membershipId: r.membershipId, approve: true })} isLoading={decideMut.isPending && decideMut.variables?.membershipId === r.membershipId && decideMut.variables.approve}>
                       <Check size={13} /> Approve
                     </Button>
-                    <Button size="sm" variant="ghost" className="gap-1.5 text-destructive" onClick={() => decideMut.mutate({ membershipId: r.membershipId, approve: false })} isLoading={decideMut.isPending}>
+                    <Button size="sm" variant="ghost" className="gap-1.5 text-destructive" onClick={() => decideMut.mutate({ membershipId: r.membershipId, approve: false })} isLoading={decideMut.isPending && decideMut.variables?.membershipId === r.membershipId && !decideMut.variables.approve}>
                       <X size={13} /> Reject
                     </Button>
                   </div>

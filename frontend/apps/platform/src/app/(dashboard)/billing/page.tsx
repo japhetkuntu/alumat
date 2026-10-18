@@ -201,8 +201,8 @@ export default function BillingPage() {
                   <TableCell className="text-[13px] text-muted-foreground">{formatDate(p.submittedAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="outline" isLoading={rejectMut.isPending} onClick={() => rejectMut.mutate(p.batchId)}>Reject</Button>
-                      <Button size="sm" isLoading={approveMut.isPending} onClick={() => approveMut.mutate(p.batchId)}>Approve</Button>
+                      <Button size="sm" variant="outline" isLoading={rejectMut.isPending && rejectMut.variables === p.batchId} onClick={() => rejectMut.mutate(p.batchId)}>Reject</Button>
+                      <Button size="sm" isLoading={approveMut.isPending && approveMut.variables === p.batchId} onClick={() => approveMut.mutate(p.batchId)}>Approve</Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -239,8 +239,8 @@ export default function BillingPage() {
                   <TableCell className="text-[13px] text-muted-foreground">{formatDate(p.submittedAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="outline" isLoading={rejectInstitutionMut.isPending} onClick={() => rejectInstitutionMut.mutate(p.institutionId)}>Reject</Button>
-                      <Button size="sm" isLoading={approveInstitutionMut.isPending} onClick={() => approveInstitutionMut.mutate(p.institutionId)}>Approve</Button>
+                      <Button size="sm" variant="outline" isLoading={rejectInstitutionMut.isPending && rejectInstitutionMut.variables === p.institutionId} onClick={() => rejectInstitutionMut.mutate(p.institutionId)}>Reject</Button>
+                      <Button size="sm" isLoading={approveInstitutionMut.isPending && approveInstitutionMut.variables === p.institutionId} onClick={() => approveInstitutionMut.mutate(p.institutionId)}>Approve</Button>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -8,7 +8,7 @@ import { getMyInstitutions, startInstitutionSwitch } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 
 /**
- * "Switch community": the other communities this person's email belongs to, one tap each, without signing in again. Shown only
+ * "Switch institution": the other institutions this person's email belongs to, one tap each, without signing in again. Shown only
  * when there is at least one other, so for most members it simply is not there. Quiet while loading or on any error.
  */
 export function InstitutionSwitcher() {
@@ -42,12 +42,12 @@ export function InstitutionSwitcher() {
         onClick={() => setOpen((o) => !o)}
         className="flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border border-sidebar-border px-2.5 text-[12.5px] font-semibold text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
       >
-        <span>Switch community</span>
+        <span>Switch institution</span>
         <ChevronDown size={12} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
 
       {open && (
-        <div role="menu" aria-label="Your other communities" className="absolute left-2 right-2 top-full z-30 mt-1 border border-border bg-card p-1 shadow-lg">
+        <div role="menu" aria-label="Your other institutions" className="absolute left-2 right-2 top-full z-30 mt-1 border border-border bg-card p-1 shadow-lg">
           {data.map((t) => (
             <button
               key={t.institutionId}

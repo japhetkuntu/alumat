@@ -2,11 +2,38 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Loader2, XCircle, ArrowLeft, generateBrandPalette } from "@alumni/ui";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+/** When on, the bridge sends the visitor straight to Google's account picker (no second click on this page) and
+ *  finishes sign-in when Google sends them back. Needs this page's URL (`<base>/google-auth`) added to the Google
+ *  client's "Authorized redirect URIs"; until then leave it off and the button flow below is used. */
+const AUTO_REDIRECT = process.env.NEXT_PUBLIC_GOOGLE_AUTO_REDIRECT === "true";
+const NONCE_KEY = "google_bridge_nonce";
+
+/** Google refuses its full-page sign-in inside the embedded browsers of social apps (Instagram, Facebook, WhatsApp,
+ *  TikTok and similar) and Android WebViews, so they keep the button flow rather than landing on a Google error. */
+const IN_APP_BROWSER = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|TikTok|musical_ly|Snapchat|Line\/|MicroMessenger|Twitter|LinkedInApp|Pinterest|; wv\)/i;
+
+/** What Google sends back in the URL fragment after the redirect: an ID token, or an error (e.g. they cancelled).
+ *  The original request's parameters ride along in `state`, since Google only returns to one fixed address. */
+function readGoogleReturn(): { idToken?: string; error?: string; params: URLSearchParams } | null {
+  if (typeof window === "undefined" || !window.location.hash.includes("state=")) return null;
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  let state: { n?: string; q?: string } = {};
+  try { state = JSON.parse(atob(decodeURIComponent(hash.get("state") ?? ""))); } catch { /* treated as invalid below */ }
+  const params = new URLSearchParams(state.q ?? "");
+  const idToken = hash.get("id_token");
+  let expected: string | null = null;
+  try { expected = sessionStorage.getItem(NONCE_KEY); } catch { /* storage blocked */ }
+  if (hash.get("error")) return { error: hash.get("error") ?? "error", params };
+  if (!idToken || !state.n || state.n !== expected || decodeJwtPayload(idToken).nonce !== state.n)
+    return { error: "invalid", params };
+  return { idToken, params };
+}
 
 declare global {
   interface Window {
@@ -30,7 +57,7 @@ const PORTAL_LABEL: Record<string, string> = {
 /** Decodes (never verifies — that only ever happens server-side) a Google ID
  *  token's payload, purely so the register form can prefill name/email
  *  before the token is actually submitted and checked. */
-function decodeJwtPayload(idToken: string): { email?: string; given_name?: string; family_name?: string } {
+function decodeJwtPayload(idToken: string): { email?: string; given_name?: string; family_name?: string; nonce?: string } {
   try {
     const base64 = idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     return JSON.parse(decodeURIComponent(escape(atob(base64))));
@@ -70,8 +97,11 @@ function hostnameOf(url: string | null): string | null {
  * institution's. Same split-screen shell as (auth)/layout.tsx for visual
  * continuity, just with generic copy instead of a fetched tenant theme.
  */
-function GoogleAuthBridgeContent() {
-  const searchParams = useSearchParams();
+function GoogleAuthBridgeBody() {
+  const urlParams = useSearchParams();
+  const [googleReturn] = useState(readGoogleReturn);
+  // After coming back from Google the original parameters are in `state`, not the query string.
+  const searchParams = googleReturn?.params ?? urlParams;
   const returnUrl = searchParams.get("return");
   const portal = searchParams.get("portal") ?? "member";
   // "register" never completes anything itself — the register page still
@@ -81,6 +111,8 @@ function GoogleAuthBridgeContent() {
   // that token only ever happens server-side, same as the login mode below.
   const mode = searchParams.get("mode") === "register" ? "register" : "login";
   const buttonRef = useRef<HTMLDivElement>(null);
+  // Each return from Google is submitted once, however many times the effect below re-runs.
+  const submittedRef = useRef(false);
   const [status, setStatus] = useState<"loading" | "ready" | "signing-in" | "error">("loading");
   const [error, setError] = useState("");
   const destination = useMemo(() => hostnameOf(returnUrl), [returnUrl]);
@@ -117,7 +149,8 @@ function GoogleAuthBridgeContent() {
       const payload = encodeURIComponent(btoa(JSON.stringify({
         idToken, email: claims.email ?? "", firstName: claims.given_name ?? "", lastName: claims.family_name ?? "",
       })));
-      window.location.href = `${returnUrl}/register#googleReg=${payload}`;
+      // replace, so Back from the portal does not land on this page and start the Google redirect again.
+      window.location.replace(`${returnUrl}/register#googleReg=${payload}`);
       return;
     }
 
@@ -160,10 +193,39 @@ function GoogleAuthBridgeContent() {
       return;
     }
     const payload = encodeURIComponent(btoa(JSON.stringify({ user: body.data.user, tokens: body.data.tokens })));
-    window.location.href = `${returnUrl}/login#auth=${payload}`;
+    window.location.replace(`${returnUrl}/login#auth=${payload}`);
   }, [returnUrl, mode]);
 
   useEffect(() => {
+    if (AUTO_REDIRECT && GOOGLE_CLIENT_ID && returnUrl && !IN_APP_BROWSER.test(navigator.userAgent)) {
+      if (googleReturn?.idToken) {
+        // Drop the token from the address bar and history, then finish exactly as the button flow would.
+        window.history.replaceState(null, "", window.location.pathname);
+        try { sessionStorage.removeItem(NONCE_KEY); } catch { /* ignore */ }
+        if (submittedRef.current) return;
+        submittedRef.current = true;
+        const token = googleReturn.idToken;
+        queueMicrotask(() => { void handleCredential(token); });
+        return;
+      }
+      if (!googleReturn) {
+        const nonce = crypto.randomUUID();
+        try { sessionStorage.setItem(NONCE_KEY, nonce); } catch { /* the return check will fail and show the button */ }
+        const state = encodeURIComponent(btoa(JSON.stringify({ n: nonce, q: searchParams.toString() })));
+        const auth = new URLSearchParams({
+          client_id: GOOGLE_CLIENT_ID,
+          redirect_uri: `${window.location.origin}/google-auth`,
+          response_type: "id_token",
+          scope: "openid email profile",
+          nonce,
+        });
+        // replace, so Back from Google returns to the portal rather than re-triggering this redirect.
+        window.location.replace(`https://accounts.google.com/o/oauth2/v2/auth?${auth.toString()}&state=${state}`);
+        return;
+      }
+      // They cancelled at Google, or the return could not be trusted: fall through to the button so they can retry.
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     if (!GOOGLE_CLIENT_ID) {
       setStatus("error");
       setError("Google sign-in is not configured yet.");
@@ -195,7 +257,7 @@ function GoogleAuthBridgeContent() {
     };
     document.body.appendChild(script);
     return () => { document.body.removeChild(script); };
-  }, [returnUrl, handleCredential]);
+  }, [returnUrl, handleCredential, googleReturn, searchParams]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -308,6 +370,10 @@ function GoogleAuthBridgeContent() {
     </div>
   );
 }
+
+// Client-only: what Google sends back lives in the URL fragment, which the server never sees, so the first
+// render has to happen in the browser or it would start from an empty fragment and ignore the return.
+const GoogleAuthBridgeContent = dynamic(() => Promise.resolve(GoogleAuthBridgeBody), { ssr: false });
 
 export default function GoogleAuthBridgePage() {
   return (

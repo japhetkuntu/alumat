@@ -121,7 +121,7 @@ export default function CommunitiesPage() {
                     <Users size={13} /> {c.memberCount} {c.memberCount === 1 ? "member" : "members"}
                   </span>
                   <div className="pt-3" onClick={(e) => e.stopPropagation()}>
-                    <StatusAction community={c} onJoin={() => joinMut.mutate(c.id)} joining={joinMut.isPending} />
+                    <StatusAction community={c} onJoin={() => joinMut.mutate(c.id)} joining={joinMut.isPending && joinMut.variables === c.id} />
                   </div>
                 </div>
               </div>

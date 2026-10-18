@@ -329,6 +329,7 @@ services:
         # path — this app also serves per-institution subdomains, and only
         # the fixed base domain is actually registered with Google.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_GOOGLE_AUTO_REDIRECT: ${GOOGLE_AUTO_REDIRECT:-}
         NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-}
         # GA4 measurement ID — left unset (empty) means GoogleAnalytics never
         # renders (see layout.tsx), so this is safe to leave blank until a
