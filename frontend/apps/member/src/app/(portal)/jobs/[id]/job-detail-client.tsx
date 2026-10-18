@@ -1,6 +1,7 @@
 "use client";
 
 import { ReportButton } from "@/components/member/report-button";
+import { RichText } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
@@ -179,12 +180,11 @@ export default function MemberJobDetailPage() {
             >
               About the role
             </h2>
-            <p
-              className="whitespace-pre-wrap leading-[1.85]"
-              style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
-            >
-              {job.description || "No description has been provided for this listing. Please visit the application link or contact the community office for more information."}
-            </p>
+            {job.description ? (
+              <RichText className="text-[15.4px]" content={job.description} />
+            ) : (
+              <p className="leading-[1.85]" style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}>No description has been provided for this listing. Please visit the application link or contact the community office for more information.</p>
+            )}
           </div>
 
         </div>

@@ -3,7 +3,7 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 /// <summary>
 /// The rules for paid event tickets, in one place so the institution API, the member API and the tests agree.
 /// A ticket is final: it cannot be cancelled by the member, and it is not refunded. The organiser cannot cancel a
-/// paid event for the same reason, so no money ever has to be given back.
+/// paid event for the same reason, so no money ever has to be given back. The price, though, is the organiser's to change at any time.
 /// </summary>
 public static class EventTicketRules
 {
@@ -26,8 +26,8 @@ public static class EventTicketRules
     public const string CannotDeleteMessage =
         "This event has sold tickets, so it can't be deleted. Tickets are not refunded.";
 
-    public const string PriceLockedMessage =
-        "Tickets have already been sold, so the price can't change and the event can't become free.";
+    public const string CannotBecomeFreeMessage =
+        "Tickets have already been sold, so this event can't become free. You can still change the price.";
 
     /// <summary>
     /// Checks the pricing part of a create or edit. <paramref name="existing"/> is null when creating.
@@ -42,7 +42,8 @@ public static class EventTicketRules
 
         if (!isTicketed)
         {
-            if (wasTicketed && paidTicketsSold > 0) return PriceLockedMessage;
+            // People have paid for seats, so the event stays a paid one. (The price itself is the organiser's to change at any time.)
+            if (wasTicketed && paidTicketsSold > 0) return CannotBecomeFreeMessage;
             return null;
         }
 
@@ -51,9 +52,9 @@ public static class EventTicketRules
         if (ticketPrice > MaxTicketPrice)
             return $"The ticket price can't be more than {MaxTicketPrice:N0}.";
 
+        // The price can change whenever the organiser likes, even after tickets have sold: people who already bought keep what they paid
+        // (it is recorded on their ticket), and anyone buying from then on pays the new price.
         var priceChanged = !wasTicketed || existing!.TicketPrice != ticketPrice;
-        if (wasTicketed && paidTicketsSold > 0 && priceChanged)
-            return PriceLockedMessage;
 
         // Members who already RSVP'd for free would be sitting on a paid event without paying.
         if (!wasTicketed && confirmedRsvps > 0)
@@ -76,6 +77,7 @@ public static class EventTicketRules
     {
         if (!ev.IsTicketed || ev.TicketPrice is not > 0) return "This event doesn't sell tickets.";
         if (ev.Status is "Cancelled" or "Completed") return "This event is no longer open.";
+        if (ev.RegistrationClosed) return "Ticket sales for this event are closed.";
         if (!paidEventsEnabled) return "Tickets for this event aren't on sale right now.";
         return null;
     }

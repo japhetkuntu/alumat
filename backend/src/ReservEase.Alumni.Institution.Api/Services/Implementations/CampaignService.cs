@@ -2,6 +2,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Notifications.Sdk.Models;
@@ -137,11 +138,14 @@ public class CampaignService(
             var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
             ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
 
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>(RichText.TooLongMessage);
             var campaign = new Campaign
             {
                 CommunityId = resolvedCommunityId,
                 Title = request.Title,
-                Description = request.Description,
+                Description = descriptionHtml,
                 TargetAmount = request.TargetAmount,
                 AmountPerMember = request.AmountPerMember,
                 PensionerAmountPerMember = request.IsMembershipCampaign ? request.PensionerAmountPerMember : null,
@@ -229,7 +233,10 @@ public class CampaignService(
             ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
             campaign.CommunityId = updatedCommunityId;
             campaign.Title = request.Title;
-            campaign.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CampaignDto>(RichText.TooLongMessage);
+            campaign.Description = descriptionHtml;
             campaign.Deadline = DateTime.SpecifyKind(request.Deadline, DateTimeKind.Utc);
             campaign.IsMembershipCampaign = request.IsMembershipCampaign;
             campaign.MembershipYear = request.MembershipYear;

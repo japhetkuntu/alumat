@@ -2,7 +2,7 @@
 
 import { ChipRow } from "@alumni/ui";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,6 +26,7 @@ import { CardSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import { WhatsAppSettings } from "@/components/institution/whatsapp-settings";
+import { useWhatsApp } from "@/hooks/use-institution-features";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers, updateRegistrationFields, type RegistrationField,
   updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateGraduationYears, getInstitutionTemplates, applyInstitutionTemplate, type GraduationYearMode,
@@ -300,15 +301,21 @@ function RegistrationQuestionsEditor({ fields, saving, onSave }: {
 }
 
 export default function BrandingSettingsPage() {
+  const router = useRouter();
   const { user, logout, isScopedAdmin } = useAuth();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<(typeof TABS)[number]>(() => {
+  const [chosenTab, setTab] = useState<(typeof TABS)[number]>(() => {
     // ?tab=landing, ?tab=whatsapp, ?tab=domain ... (a tab's name, case-insensitive; "landing" is short for Landing content).
     const wanted = (searchParams.get("tab") ?? "").toLowerCase();
     if (wanted === "landing") return "Landing content";
     return TABS.find((t) => t.toLowerCase() === wanted) ?? "Institution profile";
   });
   const queryClient = useQueryClient();
+  // The WhatsApp tab exists only while AlumUnion has WhatsApp on for this institution. (If the institution turned it off itself the
+  // tab stays, so it can be switched back on.)
+  const { platformOn: whatsAppPlatformOn } = useWhatsApp();
+  const whatsAppTabHidden = !whatsAppPlatformOn || isScopedAdmin;
+  const tab = chosenTab === "WhatsApp" && whatsAppTabHidden ? "Institution profile" : chosenTab;
 
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
   const [showPw, setShowPw] = useState(false);
@@ -382,6 +389,8 @@ export default function BrandingSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["institution-nav-theme"] });
       queryClient.invalidateQueries({ queryKey: ["auth-brand-mark-theme"] });
       queryClient.invalidateQueries({ queryKey: ["google-bridge-theme"] });
+      // Colours, page title and favicon are painted by the server layout, which only re-reads the theme when asked.
+      router.refresh();
       setBrandingError(null);
       setLogoFile(null);
       setIconFile(null);
@@ -666,7 +675,7 @@ export default function BrandingSettingsPage() {
       </header>
 
       <ChipRow label="Settings sections" activeKey={tab} className="gap-6 border-b border-border mb-6 pb-0 sm:gap-6">
-        {TABS.filter((t) => !(isScopedAdmin && (t === "Landing content" || t === "WhatsApp"))).map((t) => (
+        {TABS.filter((t) => !(isScopedAdmin && t === "Landing content") && !(t === "WhatsApp" && whatsAppTabHidden)).map((t) => (
           <button
             key={t}
             aria-pressed={tab === t}
@@ -1478,7 +1487,7 @@ export default function BrandingSettingsPage() {
         </Card>
       )}
 
-      {tab === "WhatsApp" && !isScopedAdmin && (
+      {tab === "WhatsApp" && (
         <WhatsAppSettings
           enabled={!institution?.disabledFeatures?.includes("WhatsApp")}
           toggling={featuresMutation.isPending}

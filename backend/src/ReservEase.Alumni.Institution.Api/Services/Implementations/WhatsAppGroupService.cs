@@ -43,7 +43,7 @@ public class WhatsAppGroupService(
 
     /// <summary>The channel is set up AND the platform administrator has not switched the bot off.</summary>
     private async Task<bool> PlatformEnabledAsync()
-        => configuration.GetValue("WaSenderConfig:Enabled", false) && (platformSwitch is null || await platformSwitch.IsOnAsync());
+        => configuration.GetValue("WaSenderConfig:Enabled", false) && AssistantNumber is not null && (platformSwitch is null || await platformSwitch.IsOnAsync());
     private string? AssistantNumber => configuration["WaSenderConfig:AssistantNumber"] is { Length: > 0 } n ? n : null;
 
     private async Task<PostgresDb.Sdk.Entities.Institution?> LoadAsync()

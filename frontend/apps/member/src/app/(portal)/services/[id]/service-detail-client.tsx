@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RichText } from "@alumni/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, CheckCircle2, ShieldCheck, Info } from "@alumni/ui";
@@ -122,7 +123,7 @@ export default function ServiceDetailPage() {
             </div>
             <h1 className="text-[26px] sm:text-[30px] font-bold leading-tight text-balance">{service.name}</h1>
             {service.description && (
-              <p className="text-[15px] text-muted-foreground leading-relaxed max-w-[560px]">{service.description}</p>
+              <RichText className="text-[15px] text-muted-foreground max-w-[560px]" content={service.description} />
             )}
           </div>
 

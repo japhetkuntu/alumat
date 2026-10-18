@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { RichText } from "@alumni/ui";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Link2, Download, ExternalLink, Pencil, ChevronRight } from "@alumni/ui";
@@ -174,7 +175,7 @@ export default function AdminResourceDetailPage() {
           {resource.description && (
             <div>
               <p className="text-[12px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2">Description</p>
-              <p className="text-sm leading-relaxed text-foreground/90">{resource.description}</p>
+              <RichText className="text-sm text-foreground/90" content={resource.description} />
             </div>
           )}
 

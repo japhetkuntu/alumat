@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RichText, richTextToPlain } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -202,7 +203,7 @@ export default function MemberResourceDetailPage() {
                 ) : resource.externalUrl ? (
                   <div className="p-4 space-y-1">
                     <p className="text-sm font-semibold line-clamp-1">{resource.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{resource.description ?? "External resource link"}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{richTextToPlain(resource.description) || "External resource link"}</p>
                     {hostName && <p className="text-[12px] text-primary font-semibold">{hostName}</p>}
                   </div>
                 ) : (
@@ -215,7 +216,7 @@ export default function MemberResourceDetailPage() {
           {resource.description && (
             <div>
               <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50 mb-3">About</p>
-              <p className="text-[15px] leading-relaxed text-foreground/90">{resource.description}</p>
+              <RichText className="text-[15px] text-foreground/90" content={resource.description} />
             </div>
           )}
 

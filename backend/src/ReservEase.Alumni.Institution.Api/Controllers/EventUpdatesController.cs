@@ -62,6 +62,12 @@ public class EventUpdatesController(IEventUpdateService updateService) : Default
     public async Task<IActionResult> Pin(string eventId, string updateId, [FromQuery] bool pinned = true)
         => (await updateService.SetPinnedAsync(eventId, updateId, pinned, User.GetAccount())).ToActionResult();
 
+    [HttpPut("order")]
+    [SwaggerOperation(Summary = "Arrange an event's updates")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<EventUpdateDto>>))]
+    public async Task<IActionResult> Reorder(string eventId, [FromBody] EventUpdateOrderRequest request)
+        => (await updateService.ReorderAsync(eventId, request.Ids, User.GetAccount())).ToActionResult();
+
     [HttpDelete("{updateId}")]
     [SwaggerOperation(Summary = "Delete an event update")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]

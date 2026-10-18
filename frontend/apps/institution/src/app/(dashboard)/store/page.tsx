@@ -1,6 +1,8 @@
 "use client";
 
 import { ChipRow, ZoomableImage } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
@@ -149,7 +151,7 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
           <div className="space-y-2"><Label>Product name</Label>
             <Input placeholder="e.g. Community hoodie" value={form.name} onChange={(e) => f("name", e.target.value)} required /></div>
           <div className="space-y-2"><Label>Description</Label>
-            <Textarea placeholder="What it is, sizes or materials, and anything buyers should know." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+            <RichTextEditor variant="compact" placeholder="What it is, sizes or materials, and anything buyers should know." minHeight={110} value={form.description} onChange={(v) => f("description", v)} /></div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label>{form.optionTypes.length > 0 ? "Base price (GHS)" : "Price (GHS)"}</Label>
               <Input type="number" min="0" step="0.01" placeholder="150" value={form.price} onChange={(e) => f("price", e.target.value)} required />
@@ -675,7 +677,7 @@ export default function AdminStorePage() {
                       {(p.fields?.length ?? 0) > 0 && ` · ${p.fields!.length} question${p.fields!.length === 1 ? "" : "s"}`}
                       {(p.stages?.length ?? 0) > 0 && ` · ${p.stages!.length} stages`}
                     </p>
-                    {p.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{p.description}</p>}
+                    {p.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(p.description)}</p>}
                     <div className="flex items-center gap-2 pt-2 mt-auto border-t border-border/40">
                       <Button size="sm" variant="outline" className="flex-1 h-9 text-[12px] font-bold gap-1" onClick={() => setEditProduct(p)}>
                         <Pencil size={12} />Edit

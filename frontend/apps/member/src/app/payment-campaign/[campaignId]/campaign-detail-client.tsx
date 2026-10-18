@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { RichText } from "@alumni/ui";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -282,7 +283,7 @@ export default function PublicCampaignContributionPage() {
               </div>
               <h1 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-bold tracking-tight leading-tight">{campaign.title}</h1>
               {campaign.description && (
-                <p className="mt-2.5 text-muted-foreground leading-relaxed text-[14.5px]">{campaign.description}</p>
+                <RichText className="mt-2.5 text-muted-foreground text-[14.5px]" content={campaign.description} />
               )}
             </div>
 

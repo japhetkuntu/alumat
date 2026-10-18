@@ -111,3 +111,16 @@ referral link, tagged `src=whatsapp` so the institution's referral report counts
   delivery during the pilot.
 - Not built yet: submitting events through WhatsApp (jobs and updates are), reading voice notes, and per-link click analytics.
 - "Delivered" means the provider accepted the message; WaSender delivery receipts are not read yet.
+
+## Where it shows
+
+The assistant appears in the portals only when **all** of these hold, and nowhere at all otherwise:
+
+1. the server is set up for it (`WaSenderConfig__Enabled` is true and `WaSenderConfig__AssistantNumber` is set);
+2. the platform's WhatsApp switch is on (`PlatformSettings.WhatsAppBotEnabled`);
+3. the platform has not deactivated it for that institution (`Institution.WhatsAppBotEnabled`).
+
+The member portal reads this from `GET /whatsapp` (`available`) and the public theme (`whatsAppAssistantAvailable`); the institution portal reads it from its public theme
+(`whatsAppPlatformAvailable`). An institution can also turn the assistant off for itself (the `WhatsApp` feature key): members then see nothing, and the institution portal
+keeps only its Settings tab so it can be turned back on. Being connected is never a reason to show it: a member who connected earlier sees nothing while it is off.
+Plain "share on WhatsApp" links, mentor contact numbers and a community's own WhatsApp group link are not the assistant and are always shown.

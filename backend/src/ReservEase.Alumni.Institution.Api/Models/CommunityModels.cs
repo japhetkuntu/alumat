@@ -25,7 +25,7 @@ public class CreateCommunityRequest
     [Required, MaxLength(150)]
     public string Name { get; set; } = string.Empty;
 
-    [MaxLength(1000)]
+    [MaxLength(ReservEase.Alumni.Common.Sdk.Text.RichText.MaxHtmlLength)]
     public string? Description { get; set; }
 
     public string? CoverImageUrl { get; set; }
@@ -40,7 +40,7 @@ public class UpdateCommunityRequest
     [Required, MaxLength(150)]
     public string Name { get; set; } = string.Empty;
 
-    [MaxLength(1000)]
+    [MaxLength(ReservEase.Alumni.Common.Sdk.Text.RichText.MaxHtmlLength)]
     public string? Description { get; set; }
 
     public string? CoverImageUrl { get; set; }

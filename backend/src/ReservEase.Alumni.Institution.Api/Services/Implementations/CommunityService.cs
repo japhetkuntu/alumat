@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -75,10 +76,13 @@ public class CommunityService(
     {
         try
         {
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CommunityListItem>(RichText.TooLongMessage);
             var community = new Community
             {
                 Name = request.Name.Trim(),
-                Description = request.Description,
+                Description = descriptionHtml,
                 CoverImageUrl = request.CoverImageUrl,
                 Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim(),
                 CreatedBy = createdBy,
@@ -105,7 +109,10 @@ public class CommunityService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<CommunityListItem>("Community not found");
 
             community.Name = request.Name.Trim();
-            community.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CommunityListItem>(RichText.TooLongMessage);
+            community.Description = descriptionHtml;
             community.CoverImageUrl = request.CoverImageUrl;
             // Null leaves the kind as it is (so toggling a group on or off never wipes it); a blank clears it.
             if (request.Kind is not null) community.Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim();

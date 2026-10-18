@@ -316,6 +316,8 @@ export interface AlumniEvent {
   status: EventStatus;
   yearGroups?: number[];
   rsvpCount: number;
+  /** The organiser stopped taking new RSVPs and ticket sales. Seats already taken stay. */
+  registrationClosed?: boolean;
   createdAt: string;
   bannerImageUrl?: string;
   imageUrls?: string[];

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { richTextToPlain } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery } from "@tanstack/react-query";
@@ -92,7 +93,7 @@ export default function ServicesPage() {
                     </div>
                     <div className="flex-1 space-y-1.5">
                       <h3 className="font-semibold text-[16px] leading-snug">{s.name}</h3>
-                      {s.description && <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-3">{s.description}</p>}
+                      {s.description && <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-3">{richTextToPlain(s.description)}</p>}
                     </div>
                     <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent">
                       Request this

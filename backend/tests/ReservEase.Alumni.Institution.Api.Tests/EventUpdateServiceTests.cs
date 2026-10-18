@@ -414,4 +414,15 @@ public class EventUpdateServiceTests
     [InlineData(null, null)]
     public void YouTube_addresses_in_their_usual_forms_give_the_same_video_id(string? url, string? expected)
         => Assert.Equal(expected, EventUpdateRules.YouTubeId(url));
+
+    [Fact]
+    public void Display_order_is_pinned_first_then_the_arrangement_then_newest_first()
+    {
+        var t = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+        EventUpdate U(string id, bool pinned, int order, int day) => new() { Id = id, IsPinned = pinned, SortOrder = order, CreatedAt = t.AddDays(day) };
+        var shown = EventUpdateRules.InDisplayOrder([
+            U("arranged-2", false, 2, 5), U("arranged-1", false, 1, 1), U("fresh-old", false, 0, 2), U("fresh-new", false, 0, 9), U("pinned", true, 0, 0),
+        ]).Select(u => u.Id);
+        Assert.Equal(["pinned", "fresh-new", "fresh-old", "arranged-1", "arranged-2"], shown);
+    }
 }

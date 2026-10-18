@@ -6,7 +6,7 @@ import { ArrowLeft, Calendar, Pin } from "@alumni/ui";
 
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
-import { RichTextViewer } from "@alumni/ui";
+import { RichTextViewer, richTextToPlain } from "@alumni/ui";
 import { MediaGallery, ZoomableImage } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -72,7 +72,7 @@ export default function NewsDetailPage() {
           url={shareUrl}
           title={post.title}
           variant="outline"
-          message={shareMessages.news({ title: post.title, excerpt: post.content.replace(/<[^>]*>/g, " ") })}
+          message={shareMessages.news({ title: post.title, excerpt: richTextToPlain(post.content) })}
           size="sm"
           onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "News link copied")}
           onError={(message) => toast.error(message)}

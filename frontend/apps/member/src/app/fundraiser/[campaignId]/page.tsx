@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RichText, richTextExcerpt } from "@alumni/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatCurrency, formatDate, ZoomableImage } from "@alumni/ui";
@@ -10,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ campaignI
   const { campaignId } = await params;
   const [fundraiser, theme] = await Promise.all([getPublicFundraiser(campaignId), getInstitutionTheme()]);
   if (!fundraiser) return { robots: { index: false } };
-  const description = fundraiser.description?.slice(0, 160) || `Thank you to everyone supporting ${fundraiser.title}.`;
+  const description = richTextExcerpt(fundraiser.description, 160) || `Thank you to everyone supporting ${fundraiser.title}.`;
   return {
     title: fundraiser.title,
     description,
@@ -60,7 +61,7 @@ export default async function FundraiserPublicPage({ params }: { params: Promise
 
         <div className="pt-10 pb-8 text-center">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">{f.title}</h1>
-          {f.description && <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground whitespace-pre-line">{f.description}</p>}
+          {f.description && <RichText className="mx-auto mt-4 max-w-xl text-[15px] text-muted-foreground" content={f.description} />}
         </div>
 
         {(figures.length > 0 || f.progressPercent != null) && (

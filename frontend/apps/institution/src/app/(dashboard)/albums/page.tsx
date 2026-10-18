@@ -1,6 +1,8 @@
 "use client";
 
 import { FormError } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import Link from "next/link";
@@ -11,7 +13,6 @@ import { Button } from "@alumni/ui";
 import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
@@ -133,7 +134,7 @@ export default function AdminAlbumsPage() {
                 <Link href={`/albums/${a.id}`} className="hover:text-primary transition-colors">
                   <h3 className="font-bold text-[14px] leading-snug line-clamp-2">{a.title}</h3>
                 </Link>
-                {a.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{a.description}</p>}
+                {a.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(a.description)}</p>}
                 <p className="text-[12px] text-muted-foreground mt-auto pt-2">
                   {a.photoCount} photo{a.photoCount === 1 ? "" : "s"} &middot; {formatDate(a.createdAt)}
                 </p>
@@ -174,7 +175,7 @@ export default function AdminAlbumsPage() {
             </div>
             <div className="space-y-2">
               <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <Textarea placeholder="What the album is about." rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+              <RichTextEditor variant="compact" placeholder="What the album is about." minHeight={110} value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} />
             </div>
           </FormSection>
           <FormSection title="Who can see it">

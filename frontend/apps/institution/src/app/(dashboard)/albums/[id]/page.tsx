@@ -1,6 +1,8 @@
 "use client";
 
 import { compressImages, ZoomableImage } from "@alumni/ui";
+import { RichText } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -9,7 +11,6 @@ import { ArrowLeft, Images, Pencil, Trash2, Star, Plus, Loader2, ImageOff } from
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
@@ -204,7 +205,7 @@ export default function AdminAlbumDetailPage() {
           </div>
           <div className="min-w-0">
             <h1 className="text-[20px] sm:text-[25px] font-bold m-0 truncate">{album.title}</h1>
-            {album.description && <p className="text-muted-foreground text-[13px] mt-1 max-w-xl">{album.description}</p>}
+            {album.description && <RichText className="text-muted-foreground text-[13px] mt-1 max-w-xl" content={album.description} />}
             <p className="text-[12px] text-muted-foreground mt-1">
               {album.photoCount} photo{album.photoCount === 1 ? "" : "s"} &middot; Created {formatDate(album.createdAt)}
             </p>
@@ -342,7 +343,7 @@ export default function AdminAlbumDetailPage() {
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} />
+              <RichTextEditor variant="compact" minHeight={110} value={editForm.description} onChange={(v) => setEditForm((f) => ({ ...f, description: v }))} />
             </div>
             <AudienceScopePicker
               mode={editForm.audienceMode}

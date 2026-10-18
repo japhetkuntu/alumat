@@ -1,6 +1,8 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
@@ -12,7 +14,6 @@ import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
@@ -94,7 +95,7 @@ function JobForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                   { value: "Internship", label: "Internship" },
                 ]} /></div>
             <div className="space-y-2"><Label>Description</Label>
-              <Textarea placeholder="What the role involves and what you are looking for." rows={6} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+              <RichTextEditor variant="compact" placeholder="What the role involves and what you are looking for." minHeight={180} value={form.description} onChange={(v) => f("description", v)} /></div>
           </FormSection>
 
           <FormSection title="How to apply">
@@ -361,7 +362,7 @@ export default function AdminJobsPage() {
                 </div>
 
                 {j.description && (
-                  <p className="text-[12px] text-muted-foreground line-clamp-2">{j.description}</p>
+                  <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(j.description)}</p>
                 )}
 
                 {j.status === "Pending" && (

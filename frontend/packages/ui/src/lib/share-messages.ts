@@ -1,3 +1,4 @@
+import { richTextToPlain } from "./rich-text-utils";
 /**
  * Ready-to-send wording for sharing an item into a chat (WhatsApp and similar). Each builder returns the text
  * that goes ABOVE the link; ShareLinkButton appends the link itself. Wording is deliberately generic
@@ -23,7 +24,7 @@ const lines = (...parts: (string | false | null | undefined)[]) =>
 
 function clip(text: string | null | undefined, max = 140) {
   if (!text) return "";
-  const t = text.replace(/\s+/g, " ").trim();
+  const t = richTextToPlain(text).replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 }
 

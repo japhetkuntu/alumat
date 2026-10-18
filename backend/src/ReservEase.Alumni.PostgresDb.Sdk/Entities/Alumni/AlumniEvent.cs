@@ -16,6 +16,11 @@ public class AlumniEvent : BaseEntity, ITenantScoped
     public string Venue { get; set; } = string.Empty;
     public int? Capacity { get; set; }
     public int RsvpCount { get; set; }
+    /// <summary>
+    /// Set by the organiser to stop taking new RSVPs or ticket sales while the event stays up. Seats already taken stay valid and free RSVPs
+    /// can still be cancelled. It is the organiser's way to stop a paid event's sales, since a paid event can't be cancelled.
+    /// </summary>
+    public bool RegistrationClosed { get; set; }
     public bool IsTicketed { get; set; }
     public decimal? TicketPrice { get; set; }
     public string Status { get; set; } = "Upcoming"; // Upcoming, Ongoing, Completed, Cancelled

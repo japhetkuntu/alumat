@@ -40,7 +40,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
 import { InstitutionSwitcher } from "@/components/institution/institution-switcher";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
-import { useFeatures } from "@/hooks/use-institution-features";
+import { useFeatures, useWhatsApp } from "@/hooks/use-institution-features";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
@@ -186,9 +186,12 @@ function useNavItems() {
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
   const isCommunity = theme?.organizationType === "Community";
   const cohortPlural = theme?.cohortLabelPlural?.trim() || DEFAULT_COHORT_LABEL_PLURAL;
+  const { on: whatsAppOn } = useWhatsApp();
 
   return useMemo(() => {
     const items = baseNavItems.filter((item) => {
+      // The WhatsApp menu entry exists only while the platform has it on and the institution has not turned it off.
+      if (item.href === "/settings?tab=whatsapp" && !whatsAppOn) return false;
       // Forum, Business Directory, Broadcast, and Spotlights stay
       // SuperAdmin-only (matches ForumController/BusinessDirectoryController/
       // BroadcastController/SpotlightsController's [Authorize(Roles = "SuperAdmin")]
@@ -231,7 +234,7 @@ function useNavItems() {
       const next = items[idx + 1];
       return !!next && !next.isHeader;
     });
-  }, [user?.role, disabledFeatures, isCommunity, cohortPlural]);
+  }, [user?.role, disabledFeatures, isCommunity, cohortPlural, whatsAppOn]);
 }
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {

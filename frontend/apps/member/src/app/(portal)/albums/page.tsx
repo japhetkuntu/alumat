@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery } from "@tanstack/react-query";
@@ -73,7 +74,7 @@ export default function MemberAlbumsPage() {
                     {album.title}
                   </h3>
                   {album.description && (
-                    <p className="text-[12px] text-muted-foreground line-clamp-2">{album.description}</p>
+                    <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(album.description)}</p>
                   )}
                   <p className="text-[12px] text-muted-foreground/70 pt-1">Added {formatDate(album.createdAt)}</p>
                 </CardContent>

@@ -16,6 +16,11 @@ public class EventUpdate : BaseEntity, ITenantScoped
     public string Category { get; set; } = string.Empty;
     /// <summary>Pinned updates stay at the top, newest first among themselves.</summary>
     public bool IsPinned { get; set; }
+    /// <summary>
+    /// Where the organiser put it among the unpinned (or among the pinned) updates, 1 first. 0 means never arranged, which sorts above
+    /// every arranged one, so a freshly posted update lands on top until the organiser moves it. See <see cref="EventUpdateRules.InDisplayOrder"/>.
+    /// </summary>
+    public int SortOrder { get; set; }
     public List<EventUpdateBlock> Blocks { get; set; } = [];
     public string? PostedByStaffId { get; set; }
     public string? PostedByName { get; set; }

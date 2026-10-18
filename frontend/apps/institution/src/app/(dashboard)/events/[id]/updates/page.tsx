@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Bell, FileText, ImageIcon, Link2, MoreHorizontal, Pencil, Pin, Plus, Trash2, Youtube } from "@alumni/ui";
+import { ArrowDown, ArrowLeft, ArrowUp, Bell, FileText, ImageIcon, Link2, MoreHorizontal, Pencil, Pin, Plus, Trash2, Youtube } from "@alumni/ui";
 import { Badge, Button, ConfirmModal, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, FormSheet, Input, Label, LoadError, CardSkeleton, cn, formatDateTime } from "@alumni/ui";
 import {
-  createEventUpdate, deleteEventUpdate, getEvent, getEventUpdates, pinEventUpdate, updateEventUpdate,
+  createEventUpdate, deleteEventUpdate, getEvent, getEventUpdates, pinEventUpdate, reorderEventUpdates, updateEventUpdate,
   EVENT_UPDATE_CATEGORIES, type EventUpdateDraft, type EventUpdateDraftBlock,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -110,6 +110,30 @@ export default function EventUpdatesPage() {
     onSuccess: () => refresh(),
     onError: (e) => toast.error(handleApiError(e)),
   });
+  const arrange = useMutation({
+    mutationFn: (ids: string[]) => reorderEventUpdates(id, ids),
+    // Show the new order at once; the server's answer (or a reload, if it failed) settles it.
+    onMutate: async (ids) => {
+      await qc.cancelQueries({ queryKey: ["admin-event-updates", id] });
+      const before = qc.getQueryData<EventUpdate[]>(["admin-event-updates", id]);
+      if (before) qc.setQueryData<EventUpdate[]>(["admin-event-updates", id], ids.map((i) => before.find((u) => u.id === i)!).filter(Boolean));
+      return { before };
+    },
+    onSuccess: (list) => qc.setQueryData(["admin-event-updates", id], list),
+    onError: (e, _ids, ctx) => { if (ctx?.before) qc.setQueryData(["admin-event-updates", id], ctx.before); toast.error(handleApiError(e)); refresh(); },
+  });
+  /** Moves an update one place up or down among those pinned alike (pinned ones always stay above the rest). */
+  const move = (u: EventUpdate, by: -1 | 1) => {
+    if (!updates) return;
+    const group = updates.filter((x) => x.isPinned === u.isPinned);
+    const at = group.findIndex((x) => x.id === u.id);
+    const to = at + by;
+    if (to < 0 || to >= group.length) return;
+    [group[at], group[to]] = [group[to], group[at]];
+    const pinned = u.isPinned ? group : updates.filter((x) => x.isPinned);
+    const rest = u.isPinned ? updates.filter((x) => !x.isPinned) : group;
+    arrange.mutate([...pinned, ...rest].map((x) => x.id));
+  };
   const remove = useMutation({
     mutationFn: (u: EventUpdate) => deleteEventUpdate(id, u.id),
     onSuccess: () => { refresh(); setDeleting(null); toast.success("Update deleted."); },
@@ -131,7 +155,7 @@ export default function EventUpdatesPage() {
 
       <div className="flex items-start gap-2.5 border border-border bg-muted/30 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
         <Bell size={14} className="mt-0.5 shrink-0 text-primary" />
-        <p>Only people going can read updates; everyone else just sees that they exist. Posting one notifies the people going. Editing does not.</p>
+        <p>Only people going can read updates; everyone else just sees that they exist. Posting one notifies the people going. Editing does not. Use the arrows to arrange the updates in the order you want them read; pinned ones always stay on top, and a new update starts at the top.</p>
       </div>
 
       <FormSheet
@@ -171,6 +195,8 @@ export default function EventUpdatesPage() {
       ) : (
         <ul className="space-y-3">
           {updates.map((u) => {
+            const sameGroup = updates.filter((x) => x.isPinned === u.isPinned);
+            const place = sameGroup.findIndex((x) => x.id === u.id);
             const firstText = u.blocks.find((b) => b.type === "Text")?.text;
             const photos = u.blocks.filter((b) => b.type === "Images").flatMap((b) => b.items).slice(0, 4);
             return (
@@ -186,6 +212,13 @@ export default function EventUpdatesPage() {
                       {formatDateTime(u.createdAt)}{u.postedByName ? ` · ${u.postedByName}` : ""}{u.updatedAt ? " · edited" : ""}
                     </p>
                   </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                  {sameGroup.length > 1 && (
+                    <>
+                      <Button size="sm" variant="ghost" className="px-2" disabled={place === 0 || arrange.isPending} onClick={() => move(u, -1)} aria-label={`Move ${u.title} up`}><ArrowUp size={14} /></Button>
+                      <Button size="sm" variant="ghost" className="px-2" disabled={place === sameGroup.length - 1 || arrange.isPending} onClick={() => move(u, 1)} aria-label={`Move ${u.title} down`}><ArrowDown size={14} /></Button>
+                    </>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="outline" className="shrink-0 px-3" aria-label={`More actions for ${u.title}`}><MoreHorizontal size={15} /></Button>
@@ -196,6 +229,7 @@ export default function EventUpdatesPage() {
                       <DropdownMenuItem destructive onSelect={() => setDeleting(u)}><Trash2 size={14} />Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  </div>
                 </div>
                 {(firstText || photos.length > 0) && (
                   <div className="space-y-3 border-t border-border px-4 py-3">

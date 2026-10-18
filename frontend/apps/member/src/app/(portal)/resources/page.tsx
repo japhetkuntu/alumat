@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
@@ -224,7 +225,7 @@ export default function MemberResourcesPage() {
                     <SourceBadge communityId={r.communityId} communityName={r.communityName} className="mb-1.5" />
                     <h3 className="font-[family-name:var(--font-display)] text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors line-clamp-2">{r.title}</h3>
                     {r.description && (
-                      <p className="text-[12px] text-muted-foreground line-clamp-2">{r.description}</p>
+                      <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(r.description)}</p>
                     )}
                   </div>
 

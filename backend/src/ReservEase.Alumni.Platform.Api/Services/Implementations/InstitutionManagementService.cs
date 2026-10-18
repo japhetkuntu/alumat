@@ -608,12 +608,8 @@ public class InstitutionManagementService(
             if (institution is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
 
-            // Tickets are paid out through the institution's own Paystack subaccount; without one the money would land
-            // in the platform account, so paid events cannot be switched on until payouts are set up.
-            if (request.Enabled && string.IsNullOrWhiteSpace(institution.PaystackSubaccountCode))
-                return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>(
-                    "Set up this institution's payout account (Payments tab) before turning on paid events.");
-
+            // Turning this on is a permission, like any other feature, so it can be given at any time. Selling tickets also needs a payout
+            // account (checked when an organiser creates or reprices a paid event), so ticket money never lands in the platform account.
             institution.PaidEventsEnabled = request.Enabled;
             institution.UpdatedAt = DateTime.UtcNow;
             institution.UpdatedBy = updatedBy;

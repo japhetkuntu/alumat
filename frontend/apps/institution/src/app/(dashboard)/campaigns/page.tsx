@@ -1,6 +1,7 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
@@ -15,7 +16,6 @@ import { Button } from "@alumni/ui";
 import { FormSheet, FormSection, CheckOption, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, MoreHorizontal } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
@@ -95,7 +95,7 @@ function CampaignForm({ id, init, onSave, isSuperAdmin }: { id: string; init: Fo
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea placeholder="What the money is for and what it will achieve." rows={4} value={form.description} onChange={(e) => f("description", e.target.value)} />
+              <RichTextEditor variant="compact" placeholder="What the money is for and what it will achieve." minHeight={140} value={form.description} onChange={(v) => f("description", v)} />
             </div>
           </FormSection>
 

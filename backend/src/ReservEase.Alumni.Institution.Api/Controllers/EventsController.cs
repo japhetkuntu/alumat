@@ -97,6 +97,16 @@ public class EventsController(IEventService eventService) : DefaultController
         return result.ToActionResult();
     }
 
+    /// <summary>Stop or resume taking new RSVPs and ticket sales. Seats already taken stay; the event is not cancelled.</summary>
+    [HttpPut("{eventId}/registration")]
+    [SwaggerOperation(Summary = "Close or reopen RSVPs")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<AlumniEventDto>))]
+    public async Task<IActionResult> SetRegistration(string eventId, [FromQuery] bool closed)
+    {
+        var result = await eventService.SetRegistrationClosedAsync(eventId, closed, User.GetAccount());
+        return result.ToActionResult();
+    }
+
     /// <summary>One event, with its ticket sales when it is a paid one.</summary>
     [HttpGet("{eventId}")]
     [SwaggerOperation(Summary = "Get an event")]

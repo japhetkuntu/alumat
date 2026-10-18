@@ -1,6 +1,8 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +17,6 @@ import { Button } from "@alumni/ui";
 import { FormSheet, FormSection, CheckOption } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { formatCurrency, formatDate, cn } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
@@ -186,7 +187,7 @@ export default function AdminMembershipPage() {
             </div>
             <div className="space-y-2">
               <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <Textarea placeholder="What the dues are for." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} />
+              <RichTextEditor variant="compact" placeholder="What the dues are for." minHeight={110} value={form.description} onChange={(v) => f("description", v)} />
             </div>
           </FormSection>
 
@@ -358,7 +359,7 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <h3 className="font-bold text-lg leading-tight">{c.title}</h3>
-            {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>}
+            {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{richTextToPlain(c.description)}</p>}
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <Badge variant={c.status === "Active" ? "success" : "secondary"} className="font-bold uppercase tracking-widest text-[12px]">{c.status}</Badge>

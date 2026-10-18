@@ -17,11 +17,16 @@ public class WhatsAppGroupDirectory(
     ICurrentTenantService tenant,
     IAlumniPgRepository<Institution> institutionRepo,
     IAlumniPgRepository<CommunityMembership> membershipRepo,
-    IAlumniPgRepository<Community> communityRepo)
+    IAlumniPgRepository<Community> communityRepo,
+    Microsoft.Extensions.Options.IOptions<ReservEase.Alumni.Whatsapp.Sdk.Options.WaSenderConfig>? whatsApp = null,
+    IPlatformWhatsAppSwitch? platformSwitch = null)
 {
     public async Task<IReadOnlyList<JoinableWhatsAppGroup>> ForMemberAsync(string memberId)
     {
         if (tenant.InstitutionId is null) return [];
+        // When the platform has WhatsApp off (server not set up, or the platform switch off) no group is offered, whatever the institution connected.
+        if (whatsApp is not null && (!whatsApp.Value.Enabled || string.IsNullOrWhiteSpace(whatsApp.Value.AssistantNumber))) return [];
+        if (platformSwitch is not null && !await platformSwitch.IsOnAsync()) return [];
         var institution = await institutionRepo.GetOneAsync(i => i.Id == tenant.InstitutionId, ignoreQueryFilters: true);
         if (institution is null || !institution.IsWhatsAppAllowed()) return [];
 

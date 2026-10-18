@@ -1,6 +1,8 @@
 "use client";
 
 import { LoadError } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +14,6 @@ import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
@@ -68,7 +69,7 @@ function ResourceForm({ id, init, onSave, isSuperAdmin }: {
             <div className="space-y-2"><Label>Title</Label>
               <Input placeholder="e.g. Member handbook 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
             <div className="space-y-2"><Label>Description</Label>
-              <Textarea placeholder="What it is and when members would use it." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+              <RichTextEditor variant="compact" placeholder="What it is and when members would use it." minHeight={110} value={form.description} onChange={(v) => f("description", v)} /></div>
             <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Category</Label>
               <FormSelect className="w-full" value={form.category} onValueChange={(v) => f("category", v)}
                 options={cats.map((c) => ({ value: c, label: c }))} /></div>
@@ -300,7 +301,7 @@ export default function AdminResourcesPage() {
               <CardContent className="p-4 flex-1 flex flex-col gap-3">
                 <div className="flex-1">
                   <h3 className="font-bold text-sm line-clamp-2 group-hover:text-primary transition-colors">{r.title}</h3>
-                  {r.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{r.description}</p>}
+                  {r.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{richTextToPlain(r.description)}</p>}
                 </div>
                 <p className="text-xs text-muted-foreground">Added {formatDate(r.createdAt)} · <Download size={11} className="inline" /> {r.downloadCount ?? 0}</p>
                 <div className="flex gap-2">

@@ -3,6 +3,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
@@ -128,11 +129,14 @@ public class NewsService(
             var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
             ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
 
+            var contentHtml = RichText.Sanitize(request.Content);
+            if (RichText.IsTooLong(contentHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<NewsPostDto>(RichText.TooLongMessage);
             var post = new NewsPost
             {
                 CommunityId = resolvedCommunityId,
                 Title = request.Title,
-                Content = request.Content,
+                Content = contentHtml,
                 Category = request.Category,
                 IsPinned = request.IsPinned,
                 Status = request.Status ?? "Draft",
@@ -188,7 +192,10 @@ public class NewsService(
             post.CommunityId = updatedCommunityId;
 
             post.Title = request.Title;
-            post.Content = request.Content;
+            var contentHtml = RichText.Sanitize(request.Content);
+            if (RichText.IsTooLong(contentHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<NewsPostDto>(RichText.TooLongMessage);
+            post.Content = contentHtml;
             post.Category = request.Category;
             post.IsPinned = request.IsPinned;
             if (request.Status == "Published" && post.Status != "Published")

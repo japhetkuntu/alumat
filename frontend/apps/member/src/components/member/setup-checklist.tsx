@@ -119,7 +119,7 @@ export function MemberSetupChecklist() {
           onAction: () => router.push("/events"),
         }]
       : []),
-    ...(whatsAppEnabled && whatsApp.data && (whatsApp.data.available || whatsApp.data.connected)
+    ...(whatsAppEnabled && whatsApp.data && whatsApp.data.available
       ? [{
           id: "whatsapp",
           title: "Get your alerts on WhatsApp",

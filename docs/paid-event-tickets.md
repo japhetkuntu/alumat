@@ -5,12 +5,15 @@ An institution can charge for an event. The platform decides which institutions 
 ## Rules (one place: `EventTicketRules` in `PostgresDb.Sdk/Entities/Alumni`)
 
 - **Off by default.** `Institution.PaidEventsEnabled` is false for every institution, old and new. Platform SuperAdmin or Billing turns it on
-  (`PATCH /institutions/{id}/paid-events`). It cannot be turned on without a payout account (`PaystackSubaccountCode`), because ticket money
-  would otherwise land in the platform account. Turning it off stops new paid events and new ticket sales; bought tickets stay valid.
+  (`PATCH /institutions/{id}/paid-events`) at any time, like any other feature: it needs no events, no members and no payout account first.
+  Creating or repricing a paid event does need the institution's payout account (`PaystackSubaccountCode`), checked in the organiser's form
+  and on the server, so ticket money never lands in the platform account. Turning it off stops new paid events and new ticket sales; bought tickets stay valid.
 - **Tickets are final.** No member cancel, no refund. So a paid event **cannot be cancelled** (the cancel action and editing the status are both
   refused) and **cannot be deleted** once a ticket is sold. No code path ever has to give money back.
-- **Price locks on the first sale.** After a ticket is sold the price cannot change and the event cannot become free. Details can change.
-  A free event that already has RSVPs cannot become paid.
+- **The price is the organiser's to change, any time.** People who already bought keep what they paid (it is recorded on their ticket, and "collected"
+  adds up what was actually paid); anyone buying afterwards pays the new price. Once a ticket is sold the event cannot become free. A free event
+  that already has RSVPs cannot become paid.
+- **Stopping sales.** An organiser can stop new tickets (and new free RSVPs on any event) with the event's registration switch (`PUT /events/{id}/registration?closed=true`) without cancelling. Tickets already bought stand, and a payment already started still completes. For a paid event this is the way to stop selling.
 - **Seats.** Paid seats come only from a payment, never a free RSVP. A started payment holds its seat for 30 minutes
   (`SeatHoldWindow`). A ticket paid for after the event filled still stands and is logged as over capacity.
 

@@ -15,5 +15,8 @@ public interface IEventUpdateService
 
     Task<IApiResponse<EventUpdateDto>> SetPinnedAsync(string eventId, string updateId, bool pinned, AuthData admin);
 
+    /// <summary>Saves the order the organiser arranged the event's updates in. <paramref name="orderedIds"/> lists them first to last.</summary>
+    Task<IApiResponse<List<EventUpdateDto>>> ReorderAsync(string eventId, IReadOnlyList<string> orderedIds, AuthData admin);
+
     Task<IApiResponse<object>> DeleteAsync(string eventId, string updateId, AuthData admin);
 }

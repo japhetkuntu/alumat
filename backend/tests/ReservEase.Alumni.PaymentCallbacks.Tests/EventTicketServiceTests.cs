@@ -269,4 +269,35 @@ public class EventTicketServiceTests
         Assert.True(await rig.Service.OwnsReferenceAsync("ET_1"));
         Assert.False(await rig.Service.OwnsReferenceAsync("ET_2"));
     }
+
+    // ── The organiser closed sales ──────────────────────────────────────
+
+    [Fact]
+    public async Task A_closed_event_sells_no_new_tickets()
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(); ev.RegistrationClosed = true;
+        await rig.Seed(ev);
+
+        var response = await rig.Service.InitiateAsync(Buy(), rig.Me);
+
+        Assert.Equal(400, response.Code);
+        Assert.Equal("Ticket sales for this event are closed.", response.Message);
+        Assert.Empty(rig.Db().EventRsvps);
+        rig.Paystack.Verify(p => p.InitializePaymentAsync(It.IsAny<InitializePaymentRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Reopening_sales_lets_tickets_be_bought_again()
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(); ev.RegistrationClosed = true;
+        await rig.Seed(ev);
+        Assert.Equal(400, (await rig.Service.InitiateAsync(Buy(), rig.Me)).Code);
+
+        using (var db = rig.Db()) { (await db.Events.IgnoreQueryFilters().SingleAsync()).RegistrationClosed = false; await db.SaveChangesAsync(); }
+        rig.Fresh();
+
+        Assert.Equal(200, (await rig.Service.InitiateAsync(Buy(), rig.Me)).Code);
+    }
 }

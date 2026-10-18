@@ -1,6 +1,8 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
@@ -12,7 +14,6 @@ import { Button } from "@alumni/ui";
 import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { TableSkeleton, Skeleton } from "@alumni/ui";
@@ -144,7 +145,7 @@ function CommunityForm({
             </div>
             <div className="space-y-2">
               <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this group is for." />
+              <RichTextEditor variant="compact" placeholder="What this group is for." minHeight={110} value={description} onChange={setDescription} />
             </div>
             <LinkOrUpload
               label="Cover image (optional)"
@@ -387,7 +388,7 @@ export default function CommunitiesPage() {
                       )}
                       <div className="min-w-0">
                         <p className="font-medium truncate">{c.name}{c.kind && <span className="ml-2 align-middle rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{c.kind}</span>}</p>
-                        {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{c.description}</p>}
+                        {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{richTextToPlain(c.description)}</p>}
                         {(c.channels?.length || (c.joinedViaInvites ?? 0) > 0) && (
                           <p className="mt-0.5 text-[12px] text-muted-foreground">
                             {c.channels?.length ? "WhatsApp group connected" : ""}

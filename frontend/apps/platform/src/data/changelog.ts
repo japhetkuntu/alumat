@@ -21,6 +21,48 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-18",
+    title: "Saved changes to an institution's branding and settings show straight away, with no refresh",
+    scopes: ["Institution", "Member", "Platform"],
+    type: "Fix",
+    body: "After saving branding, the name, colours, page title and icon only changed after a manual refresh, and sometimes not until a minute later. Two causes, both fixed. The server remembers each institution's details for 60 seconds to keep every page fast, and that copy was not cleared when the institution changed; any save to an institution (branding, wording, features, the platform's switches made through the institution or member APIs) now clears it at once. And the institution portal paints its colours and title from the server layout, which now reloads itself after a branding save. A change made in the platform portal can still take up to a minute to reach an institution's pages, because the platform API does not run that cache. Also fixed: the empty-description hint did not show in the new editor, and editing an event without sending a status no longer blanks its status. No migration beyond AddEventUpdateSortOrder.",
+  },
+  {
+    date: "2026-10-18",
+    title: "Organisers can arrange the updates on an event in the order they want",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+    body: "On an event's Updates page each update now has up and down arrows, so an organiser can put them in the order people should read them, not only by date. The order is saved at once and is what people going see on the event page. Pinned updates stay above the rest and are arranged among themselves. A newly posted update starts at the top until it is moved. Needs one migration, AddEventUpdateSortOrder (adds a SortOrder column; existing updates keep today's newest-first order).",
+  },
+  {
+    date: "2026-10-18",
+    title: "Descriptions can be formatted: headings, bold, lists, quotes and links",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "Wherever an institution writes a description (events, jobs, fundraisers and dues, resources, groups, albums, store products and services, as well as news, which already had it) the box is now a small editor with headings, bold, italic, underline, bulleted and numbered lists, quotes and links, so long descriptions can be organised instead of arriving as one block. The toolbar scrolls sideways on a phone, and a link box replaces the old pop-up. Members see the formatting on every detail page; cards, previews, share messages and search results show a plain-text taste of it. Descriptions written earlier keep their line breaks and show exactly as before. Safety: the server keeps only a short list of harmless tags when saving (scripts, images, embeds, forms and event handlers are removed, links only keep web, email and phone addresses and open in a new tab), and the page cleans the text again before showing it. Very long descriptions (over 20,000 characters of text) are refused with a clear message. Business listings and the in-app notices are unchanged. No migration needed.",
+  },
+  {
+    date: "2026-10-18",
+    title: "Paid events can be switched on at any time, ticket prices can change, and photo viewers always show a clear Close button",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "Paid events: platform staff can now turn the switch on for any institution at any moment, like any other feature, with no payout account, events or other data needed first. Setting up a payout account is still needed before the institution can create or reprice a paid event, and the institution's event form says so plainly. Ticket prices: an organiser can change a paid event's price whenever they like, even after tickets have sold. People who already bought keep what they paid (it is recorded on their ticket, and the money collected adds up what was actually paid); anyone buying afterwards pays the new price. A paid event still cannot become free once tickets are sold, and the notes on the form are updated to say all this. Photo viewers: on a phone the full-size photo viewer could show its close button faintly on top of the photo, so on a bright poster or a photo viewed sideways it disappeared. All gallery, banner and album viewers in the member and institution portals now share one viewer with a solid white Close button in its own bar above the photo (never over it), solid next and previous buttons, tap targets that suit a thumb, page dots that are real dots, an opaque backdrop, and spacing that keeps clear of the notch and home bar. Escape, the arrow keys and tapping the margin still work. No migration needed.",
+  },
+  {
+    date: "2026-10-18",
+    title: "The WhatsApp assistant leaves no trace where the platform has it off",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Fix",
+    body: "Where WhatsApp is not switched on, neither portal now mentions it at all. It is on for an institution only when the server is set up for it with an assistant number, the platform's WhatsApp switch is on, and the platform has not deactivated it for that institution. If any of those is off, members lose the WhatsApp menu entry, the profile row, the home card, the setup-checklist step and the connect page (opening its old link goes home), the group-join offers on community pages, and the \"SMS & WhatsApp\" wording on sign-up (it says SMS only). This includes members who connected WhatsApp earlier: before, being connected kept the entries visible even after it was switched off. Institution staff lose the WhatsApp menu entry, the Settings tab (an old ?tab=whatsapp link opens the first tab), the home card, the Post to WhatsApp group buttons and the WhatsApp (coming soon) broadcast option, and the two notices about it being off are gone. If only the institution turns the assistant off itself, members see nothing, and the institution keeps just its Settings tab so it can turn it back on. Ordinary Share on WhatsApp link buttons, mentors' contact numbers and a community's own WhatsApp group link are not the assistant and are unchanged. No migration needed.",
+  },
+  {
+    date: "2026-10-18",
+    title: "Organisers can stop taking RSVPs on an event without cancelling it",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "On the event card's menu an organiser can now choose Stop taking RSVPs, and later Reopen RSVPs. While closed, nobody new can RSVP or join again after cancelling, and the card shows an RSVPs closed badge. People already going keep their place and a free RSVP can still be cancelled. Members see RSVPs are closed on the event page and RSVPs closed on the event card instead of an RSVP button, and the locked updates card no longer offers to RSVP. For a paid event the same switch reads Stop ticket sales and Resume ticket sales and stops new tickets; tickets already bought stand, and a started payment still completes. This is the organiser's way to stop sales on a paid event, since a paid event can't be cancelled. It is not available once an event is cancelled or completed, and editing an event does not reopen it. Deployment: one new migration (AddEventRegistrationClosed) must run first.",
+  },
+  {
+    date: "2026-10-18",
     title: "Event link button only appears when the organiser added a link, and it can be a meeting link",
     scopes: ["Institution", "Member"],
     type: "Fix",

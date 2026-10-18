@@ -111,6 +111,13 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                       >
                         <CheckCircle2 size={13} /> Ticket confirmed
                       </span>
+                    ) : canRsvp && e.registrationClosed && !hasRsvp ? (
+                      <span
+                        className="flex-1 text-center py-2 rounded-lg text-[12px] font-semibold"
+                        style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}
+                      >
+                        {e.isTicketed ? "Ticket sales closed" : "RSVPs closed"}
+                      </span>
                     ) : canRsvp ? (
                       <Button
                         size="sm"

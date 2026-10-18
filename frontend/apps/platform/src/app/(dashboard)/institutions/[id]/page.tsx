@@ -201,7 +201,7 @@ function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId
       <div className="px-5 py-4 border-b border-border">
         <p className="text-[14px] font-semibold">Paid events</p>
         <p className="text-[12px] text-muted-foreground mt-0.5">
-          Lets this institution charge for event tickets. Off by default. Enforced on the server.
+          Lets this institution charge for event tickets. Off by default; turn it on whenever you like. Enforced on the server.
         </p>
       </div>
       <CardContent className="p-5 space-y-3">
@@ -215,7 +215,7 @@ function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId
           <input
             type="checkbox"
             checked={enabled}
-            disabled={save.isPending || (!enabled && !payoutReady)}
+            disabled={save.isPending}
             onChange={(e) => save.mutate(e.target.checked)}
             className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
             aria-label="Allow ticketed events"
@@ -223,7 +223,7 @@ function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId
         </label>
         {!payoutReady && (
           <p className="text-[12.5px] text-muted-foreground">
-            Set up this institution&apos;s payout account on the Payments tab first. Without it, ticket money would go to the platform account.
+            You can turn this on now. The institution can&apos;t create a paid event until its payout account is set up on the Payments tab, so ticket money never goes to the platform account.
           </p>
         )}
         {!enabled ? null : (

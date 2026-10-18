@@ -1,6 +1,8 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { RichText } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -15,7 +17,6 @@ import { Button } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { Input } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
 import { ImageUpload } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
@@ -288,7 +289,7 @@ export default function AdminJobDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Textarea rows={5} value={form.description} onChange={(e) => f("description", e.target.value)} />
+                <RichTextEditor variant="compact" minHeight={160} value={form.description} onChange={(v) => f("description", v)} />
               </div>
               <div className="flex gap-3">
                 <Button type="submit" size="sm" isLoading={updateMut.isPending} loadingText="Saving">
@@ -359,9 +360,11 @@ export default function AdminJobDetailPage() {
               <h2 className="text-2xl font-black tracking-tight border-b border-border/40 pb-4">
                 Job Description
               </h2>
-              <div className="whitespace-pre-wrap font-medium text-muted-foreground leading-relaxed text-lg">
-                {job.description || "No description provided for this job posting."}
-              </div>
+              {job.description ? (
+                <RichText className="text-muted-foreground text-[17px]" content={job.description} />
+              ) : (
+                <p className="text-muted-foreground text-lg">No description provided for this job posting.</p>
+              )}
             </section>
           </div>
 

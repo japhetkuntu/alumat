@@ -3,6 +3,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
@@ -89,11 +90,14 @@ public class ResourceService(
         try
         {
             logger.LogInformation("CreateResource request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<ResourceDto>(RichText.TooLongMessage);
             var resource = new Resource
             {
                 CommunityId = request.CommunityId,
                 Title = request.Title,
-                Description = request.Description,
+                Description = descriptionHtml,
                 Category = request.Category,
                 Type = request.Type,
                 ExternalUrl = request.ExternalUrl,
@@ -146,7 +150,10 @@ public class ResourceService(
 
             resource.CommunityId = request.CommunityId;
             resource.Title = request.Title;
-            resource.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<ResourceDto>(RichText.TooLongMessage);
+            resource.Description = descriptionHtml;
             resource.Category = request.Category;
             resource.Type = request.Type;
             resource.ExternalUrl = request.ExternalUrl;

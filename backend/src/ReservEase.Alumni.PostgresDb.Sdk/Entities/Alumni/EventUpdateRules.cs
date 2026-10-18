@@ -7,6 +7,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 public static class EventUpdateRules
 {
     /// <summary>The usual kinds of update. An organiser may type their own label instead.</summary>
+    /// <summary>The order everyone sees: pinned first, then the organiser's arrangement, then newest first.</summary>
+    public static List<EventUpdate> InDisplayOrder(IEnumerable<EventUpdate> updates)
+        => updates.OrderByDescending(u => u.IsPinned).ThenBy(u => u.SortOrder).ThenByDescending(u => u.CreatedAt).ToList();
+
     public static readonly string[] Categories = ["Announcement", "Schedule", "Reminder", "Photos & video", "Materials", "Recap"];
 
     public const int MaxTitleLength = 150;

@@ -18,9 +18,11 @@ public static class PostgresExtensionService
     public static IServiceCollection AddAlumniPostgresSdk(
         this IServiceCollection services, IConfiguration config, string connectionName = "AlumniConnection")
     {
-        services.AddDbContext<AlumniDbContext>(opts =>
+        services.AddScoped<TenantCacheInvalidationInterceptor>();
+        services.AddDbContext<AlumniDbContext>((sp, opts) =>
             opts.UseNpgsql(config.GetConnectionString(connectionName),
-                b => b.MigrationsHistoryTable("__EFMigrationsHistory", "alumni")));
+                b => b.MigrationsHistoryTable("__EFMigrationsHistory", "alumni"))
+                .AddInterceptors(sp.GetRequiredService<TenantCacheInvalidationInterceptor>()));
 
         services.AddScoped(typeof(IAlumniPgRepository<>), typeof(AlumniPgRepository<>));
         services.AddScoped<ICurrentTenantService, CurrentTenantService>();

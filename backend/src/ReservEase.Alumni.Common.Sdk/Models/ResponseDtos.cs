@@ -33,6 +33,8 @@ public class AlumniEventDto
     public string Venue { get; set; } = string.Empty;
     public int? Capacity { get; set; }
     public int RsvpCount { get; set; }
+    /// <summary>The organiser stopped taking new RSVPs and ticket sales.</summary>
+    public bool RegistrationClosed { get; set; }
     public bool IsTicketed { get; set; }
     public decimal? TicketPrice { get; set; }
     /// <summary>Tickets bought so far. Filled in for the institution's own views; once above zero the price is locked.</summary>

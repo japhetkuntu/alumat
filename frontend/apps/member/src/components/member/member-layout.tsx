@@ -266,8 +266,9 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const { data: whatsApp } = useWhatsAppStatus();
-  // Offered only where the assistant is really on; says what it does for someone who has not connected yet.
-  const whatsAppOffered = !!whatsApp && (whatsApp.available || whatsApp.connected);
+  // Offered only where the assistant is really on, for everyone including members who connected before. When the platform or this
+  // community has it off, nothing about WhatsApp shows anywhere.
+  const whatsAppOffered = !!whatsApp && whatsApp.available;
   const visibleGroups = navGroups
     .map((g) => ({
       ...g,

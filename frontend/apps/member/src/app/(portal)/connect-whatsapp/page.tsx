@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmModal } from "@alumni/ui";
@@ -19,6 +20,7 @@ const STATUS_KEY = ["m-whatsapp-status"];
  */
 export default function ConnectWhatsAppPage() {
   const qc = useQueryClient();
+  const router = useRouter();
   const [challenge, setChallenge] = useState<WhatsAppLinkChallenge | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -89,9 +91,14 @@ export default function ConnectWhatsAppPage() {
 
   const s = status.data;
   const connected = !!s?.connected;
+  // When the platform or this community has the assistant off there is no WhatsApp page: anyone who lands here is sent home.
+  const unavailable = !!s && !s.available;
+  useEffect(() => { if (unavailable) router.replace("/dashboard"); }, [unavailable, router]);
   const expired = !!challenge && secondsLeft <= 0 && !connected;
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
+
+  if (unavailable) return null;
 
   return (
     <div className="mx-auto max-w-[720px] space-y-6 p-4 sm:p-6 lg:p-8">
@@ -107,15 +114,6 @@ export default function ConnectWhatsAppPage() {
 
       {status.isError && (
         <Card><CardContent className="p-5 text-[14px]">We couldn&apos;t load your WhatsApp settings. Please refresh and try again.</CardContent></Card>
-      )}
-
-      {s && !s.available && !connected && (
-        <Card>
-          <CardContent className="space-y-1.5 p-5">
-            <p className="text-[15px] font-semibold">The WhatsApp assistant isn&apos;t switched on yet</p>
-            <p className="text-[14px] text-muted-foreground">Everything in your portal works as normal. Check back soon.</p>
-          </CardContent>
-        </Card>
       )}
 
       {s && connected && (

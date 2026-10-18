@@ -2,6 +2,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
@@ -124,10 +125,13 @@ public class AlbumService(
             var communityId = admin.ResolveCommunityForCreation(request.CommunityId);
             ScopeAuthorizationExtensions.NormalizeAudience(ref yearGroups, ref communityId);
 
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<PhotoAlbumDto>(RichText.TooLongMessage);
             var album = new PhotoAlbum
             {
                 Title = request.Title,
-                Description = request.Description,
+                Description = descriptionHtml,
                 PhotoCount = 0,
                 CommunityId = communityId,
                 YearGroups = yearGroups,
@@ -173,7 +177,10 @@ public class AlbumService(
             ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
 
             album.Title = request.Title;
-            album.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<PhotoAlbumDto>(RichText.TooLongMessage);
+            album.Description = descriptionHtml;
             album.CoverImageUrl = request.CoverImageUrl;
             album.CommunityId = updatedCommunityId;
             album.YearGroups = updatedYearGroups;

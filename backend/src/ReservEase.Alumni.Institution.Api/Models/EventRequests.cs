@@ -45,6 +45,12 @@ public class UpdateEventRequest
 /// <summary>Whether this community may charge for event tickets, and whether its payout account is ready.</summary>
 public record EventTicketingDto(bool PaidEventsEnabled, bool PayoutReady);
 
+/// <summary>The updates of one event in the order the organiser wants them shown (pinned ones stay above the rest).</summary>
+public class EventUpdateOrderRequest
+{
+    public List<string> Ids { get; set; } = [];
+}
+
 /// <summary>An event update as saved: its title, category and parts. New files travel beside this, named by the id of the part they belong to.</summary>
 public class EventUpdateSaveRequest
 {

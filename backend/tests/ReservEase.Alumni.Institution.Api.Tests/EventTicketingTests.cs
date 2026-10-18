@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ReservEase.Alumni.Common.Sdk.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -183,17 +184,39 @@ public class EventTicketingTests
     // ── Once tickets sell ───────────────────────────────────────────────
 
     [Fact]
-    public async Task Details_can_change_after_tickets_sell_but_the_price_cannot()
+    public async Task The_price_can_change_after_tickets_sell_and_earlier_buyers_keep_what_they_paid()
+    {
+        var rig = new Rig();
+        await rig.Seed(PaidEvent(price: 100m), Ticket("e1", "m1", 100m));
+
+        var repriced = await rig.Service.UpdateEventAsync(Edit("e1", true, 80m), Admin);
+
+        Assert.Equal(200, repriced.Code);
+        Assert.Equal(80m, (await rig.Db().Events.SingleAsync()).TicketPrice);                      // new buyers pay this
+        Assert.Equal(100m, (await rig.Db().EventRsvps.SingleAsync()).AmountPaid);                  // the sold ticket still says what was paid
+        var listed = (await rig.Service.GetEventsAsync(new EventFilter(), Admin)).Data!.Results.Single();
+        Assert.Equal(100m, listed.TicketAmountCollected);                                          // collected money is what was actually paid, not tickets x new price
+    }
+
+    [Fact]
+    public async Task The_price_can_go_up_as_well_as_down_and_details_change_too()
+    {
+        var rig = new Rig();
+        await rig.Seed(PaidEvent(price: 100m), Ticket("e1", "m1", 100m), Ticket("e1", "m2", 100m));
+
+        Assert.Equal(200, (await rig.Service.UpdateEventAsync(Edit("e1", true, 150m), Admin)).Code);
+        Assert.Equal(150m, (await rig.Db().Events.SingleAsync()).TicketPrice);
+        Assert.Equal(200, (await rig.Service.UpdateEventAsync(Edit("e1", true, 150m), Admin)).Code);   // same price, other details: also fine
+    }
+
+    [Fact]
+    public async Task Repricing_still_needs_a_positive_price_and_stays_within_the_limit()
     {
         var rig = new Rig();
         await rig.Seed(PaidEvent(), Ticket("e1", "m1"));
 
-        var repriced = await rig.Service.UpdateEventAsync(Edit("e1", true, 80m), Admin);
-        Assert.Equal(400, repriced.Code);
-        Assert.Equal(EventTicketRules.PriceLockedMessage, repriced.Message);
-
-        var rescheduled = await rig.Service.UpdateEventAsync(Edit("e1", true, 100m), Admin);
-        Assert.Equal(200, rescheduled.Code);
+        Assert.Equal("Enter the ticket price.", (await rig.Service.UpdateEventAsync(Edit("e1", true, 0m), Admin)).Message);
+        Assert.Equal(400, (await rig.Service.UpdateEventAsync(Edit("e1", true, EventTicketRules.MaxTicketPrice + 1), Admin)).Code);
         Assert.Equal(100m, (await rig.Db().Events.SingleAsync()).TicketPrice);
     }
 
@@ -206,11 +229,12 @@ public class EventTicketingTests
         var response = await rig.Service.UpdateEventAsync(Edit("e1", false, null), Admin);
 
         Assert.Equal(400, response.Code);
+        Assert.Equal(EventTicketRules.CannotBecomeFreeMessage, response.Message);
         Assert.True((await rig.Db().Events.SingleAsync()).IsTicketed);
     }
 
     [Fact]
-    public async Task Before_any_sale_the_price_can_change_and_the_event_can_go_back_to_free()
+    public async Task Before_any_sale_the_event_can_also_go_back_to_free()
     {
         var rig = new Rig();
         await rig.Seed(PaidEvent());
@@ -341,5 +365,150 @@ public class EventTicketingTests
 
         Assert.Equal(200, (await rig.Service.UpdateEventAsync(Edit(""), Admin)).Code);
         Assert.Null((await rig.Db().Events.SingleAsync()).GoogleLocationUrl);
+    }
+
+    // ── Closing and reopening RSVPs ─────────────────────────────────────
+
+    [Theory]
+    [InlineData("Upcoming")]
+    [InlineData("Ongoing")]
+    public async Task An_organiser_can_close_and_reopen_rsvps_on_a_live_event(string status)
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(); ev.IsTicketed = false; ev.TicketPrice = null; ev.Status = status;
+        await rig.Seed(ev, Ticket("e1", "m1", 0m));
+
+        var closed = await rig.Service.SetRegistrationClosedAsync("e1", true, Admin);
+        Assert.Equal(200, closed.Code);
+        Assert.True(closed.Data!.RegistrationClosed);
+        Assert.Equal(1, closed.Data.RsvpCount);                              // seats already taken are untouched
+        Assert.True((await rig.Db().Events.SingleAsync()).RegistrationClosed);
+        Assert.Equal(1, await rig.Db().EventRsvps.CountAsync());
+
+        var reopened = await rig.Service.SetRegistrationClosedAsync("e1", false, Admin);
+        Assert.False(reopened.Data!.RegistrationClosed);
+        Assert.False((await rig.Db().Events.SingleAsync()).RegistrationClosed);
+    }
+
+    [Fact]
+    public async Task A_paid_event_can_stop_selling_even_though_it_cannot_be_cancelled()
+    {
+        var rig = new Rig();
+        await rig.Seed(PaidEvent(), Ticket("e1", "m1"));
+
+        Assert.Equal(400, (await rig.Service.CancelEventAsync("e1", Admin)).Code);             // can't cancel
+        Assert.Equal(200, (await rig.Service.SetRegistrationClosedAsync("e1", true, Admin)).Code);   // but can stop sales
+
+        var ev = await rig.Db().Events.SingleAsync();
+        Assert.Equal(("Upcoming", true, 100m), (ev.Status, ev.RegistrationClosed, ev.TicketPrice));   // still on, still priced
+        Assert.Equal("Confirmed", (await rig.Db().EventRsvps.SingleAsync()).Status);                   // the sold ticket stands
+    }
+
+    [Theory]
+    [InlineData("Cancelled")]
+    [InlineData("Completed")]
+    public async Task An_event_that_is_over_has_nothing_to_close(string status)
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(); ev.IsTicketed = false; ev.TicketPrice = null; ev.Status = status;
+        await rig.Seed(ev);
+        Assert.Equal(400, (await rig.Service.SetRegistrationClosedAsync("e1", true, Admin)).Code);
+        Assert.False((await rig.Db().Events.SingleAsync()).RegistrationClosed);
+    }
+
+    [Fact]
+    public async Task Editing_an_event_does_not_reopen_a_closed_one()
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(); ev.IsTicketed = false; ev.TicketPrice = null; ev.RegistrationClosed = true;
+        await rig.Seed(ev);
+
+        Assert.Equal(200, (await rig.Service.UpdateEventAsync(new UpdateEventRequest { EventId = "e1", Title = "New title", Venue = "Hall", StartDate = DateTime.UtcNow.AddDays(3), Status = "Upcoming" }, Admin)).Code);
+
+        Assert.True((await rig.Db().Events.SingleAsync()).RegistrationClosed);
+    }
+
+    [Fact]
+    public async Task A_scoped_admin_cannot_close_an_event_outside_their_scope_and_an_unknown_event_is_404()
+    {
+        var rig = new Rig();
+        var ev = PaidEvent(); ev.IsTicketed = false; ev.TicketPrice = null; ev.YearGroups = [2010];
+        await rig.Seed(ev);
+        var scoped = new AuthData { Id = "scoped", Role = "ScopedAdmin", YearGroups = [2020] };
+
+        Assert.Equal(404, (await rig.Service.SetRegistrationClosedAsync("e1", true, scoped)).Code);
+        Assert.Equal(404, (await rig.Service.SetRegistrationClosedAsync("nope", true, Admin)).Code);
+        Assert.False((await rig.Db().Events.SingleAsync()).RegistrationClosed);
+    }
+
+    // ── Rich-text descriptions ──────────────────────────────────────────
+
+    private static CreateEventRequest WithDescription(string? description) =>
+        new() { Title = "Reunion", Venue = "Hall", StartDate = DateTime.UtcNow.AddDays(10), Description = description };
+
+    [Fact]
+    public async Task A_formatted_description_is_saved_with_its_formatting()
+    {
+        var rig = new Rig();
+        var html = "<h2>Programme</h2><p>Doors open at <strong>5pm</strong>.</p><ul><li>Tea</li><li>Talks</li></ul>";
+        Assert.Equal(201, (await rig.Service.CreateEventAsync(WithDescription(html), Admin)).Code);
+        Assert.Equal(html, (await rig.Db().Events.SingleAsync()).Description);
+    }
+
+    [Fact]
+    public async Task Anything_that_could_run_code_is_removed_before_a_description_is_saved()
+    {
+        var rig = new Rig();
+        var response = await rig.Service.CreateEventAsync(WithDescription("<p>Hello</p><script>alert(1)</script><img src=x onerror=alert(2)><a href=\"javascript:alert(3)\">go</a>"), Admin);
+
+        Assert.Equal(201, response.Code);
+        var saved = (await rig.Db().Events.SingleAsync()).Description!;
+        Assert.Contains("Hello", saved);
+        foreach (var bad in new[] { "script", "onerror", "javascript", "<img" }) Assert.DoesNotContain(bad, saved, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("alert", response.Data!.Description ?? "", StringComparison.OrdinalIgnoreCase);   // and the answer sent back is the cleaned one
+    }
+
+    [Fact]
+    public async Task A_plain_text_description_becomes_paragraphs()
+    {
+        var rig = new Rig();
+        await rig.Service.CreateEventAsync(WithDescription("Bring a friend.\nBring a dish.\n\nSee you there!"), Admin);
+        Assert.Equal("<p>Bring a friend.<br>Bring a dish.</p><p>See you there!</p>", (await rig.Db().Events.SingleAsync()).Description);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("<p></p>")]
+    [InlineData("   ")]
+    public async Task An_empty_editor_saves_no_description(string? description)
+    {
+        var rig = new Rig();
+        await rig.Service.CreateEventAsync(WithDescription(description), Admin);
+        Assert.Null((await rig.Db().Events.SingleAsync()).Description);
+    }
+
+    [Fact]
+    public async Task A_huge_description_is_refused_rather_than_cut()
+    {
+        var rig = new Rig();
+        var response = await rig.Service.CreateEventAsync(WithDescription("<p>" + new string('x', RichText.MaxPlainLength + 1) + "</p>"), Admin);
+        Assert.Equal(400, response.Code);
+        Assert.Equal(RichText.TooLongMessage, response.Message);
+        Assert.Empty(rig.Db().Events);
+    }
+
+    [Fact]
+    public async Task Editing_cleans_the_description_too_and_can_clear_it()
+    {
+        var rig = new Rig();
+        await rig.Seed(new AlumniEvent { Id = "e1", Title = "Reunion", Venue = "Hall", StartDate = DateTime.UtcNow.AddDays(3), Status = "Upcoming", Description = "old words" });
+        UpdateEventRequest Edit(string? d) => new() { EventId = "e1", Title = "Reunion", Venue = "Hall", StartDate = DateTime.UtcNow.AddDays(3), Status = "Upcoming", Description = d };
+
+        Assert.Equal(200, (await rig.Service.UpdateEventAsync(Edit("<p onmouseover=\"x()\">new <em>words</em></p>"), Admin)).Code);
+        Assert.Equal("<p>new <em>words</em></p>", (await rig.Db().Events.SingleAsync()).Description);
+
+        Assert.Equal(200, (await rig.Service.UpdateEventAsync(Edit("<p></p>"), Admin)).Code);
+        Assert.Null((await rig.Db().Events.SingleAsync()).Description);
     }
 }

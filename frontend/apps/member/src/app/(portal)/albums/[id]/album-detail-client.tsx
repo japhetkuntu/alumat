@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { RichText } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -134,7 +135,7 @@ export default function MemberAlbumDetailPage() {
           {album.photoCount} {album.photoCount === 1 ? "photo" : "photos"} · Added {formatDate(album.createdAt)}
         </p>
         {album.description && (
-          <p className="text-[14.5px] leading-relaxed text-foreground/90 max-w-2xl pt-1">{album.description}</p>
+          <RichText className="text-[14.5px] text-foreground/90 max-w-2xl pt-1" content={album.description} />
         )}
       </div>
 

@@ -1034,7 +1034,7 @@ export default function MemberProfilePage() {
                 }
               />
             )}
-            {(whatsAppStatus?.available || whatsAppStatus?.connected) && (
+            {whatsAppStatus?.available && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4">
                 <div className="min-w-0">
                   <p className="text-[14.5px] font-semibold">WhatsApp</p>

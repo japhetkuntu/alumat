@@ -1,6 +1,8 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import { RichText } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -231,7 +233,7 @@ export default function CampaignDetailPage() {
               <span className="text-sm text-muted-foreground tabular-nums">of {formatCurrency(campaign.targetAmount)} · {pct}%</span>
             </div>
             <Progress value={pct} className="mt-4 h-1.5" />
-            {campaign.description && <p className="mt-5 max-w-2xl text-[14px] leading-relaxed text-muted-foreground whitespace-pre-line">{campaign.description}</p>}
+            {campaign.description && <RichText className="mt-5 max-w-2xl text-[14px] text-muted-foreground" content={campaign.description} />}
           </div>
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border/60 pt-6 sm:grid-cols-4">
@@ -486,7 +488,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 </p>
                 <div className="space-y-2">
                   <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
-                  <Textarea placeholder="Describe the purpose of this dues period..." rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+                  <RichTextEditor variant="compact" placeholder="Describe the purpose of this dues period..." minHeight={100} value={description} onChange={setDescription} />
                 </div>
               </FormSection>
 
@@ -527,7 +529,7 @@ function CampaignEditForm({ campaign, isSuperAdmin, saving, onSave, onCancel }: 
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+                  <RichTextEditor variant="compact" minHeight={140} value={description} onChange={setDescription} />
                 </div>
               </FormSection>
 

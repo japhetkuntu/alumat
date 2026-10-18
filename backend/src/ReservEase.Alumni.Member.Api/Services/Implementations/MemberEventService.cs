@@ -144,6 +144,10 @@ public class MemberEventService(
             if (existing is { Status: "Confirmed" })
                 return ApiResponseExtensions.ToConflictApiResponse<object>("Already RSVP'd for this event");
 
+            // The organiser can stop taking RSVPs without cancelling the event. Existing seats stay; only new ones (and re-joining) stop.
+            if (ev.RegistrationClosed)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("The organiser has closed RSVPs for this event.");
+
             // A paid event takes seats only through a ticket payment, never a free RSVP.
             if (ev.IsTicketed)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event needs a ticket. Buy one to reserve your seat.");

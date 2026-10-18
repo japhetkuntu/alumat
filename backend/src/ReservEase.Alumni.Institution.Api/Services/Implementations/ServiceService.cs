@@ -3,6 +3,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Notifications.Sdk.Models;
@@ -128,10 +129,14 @@ public class ServiceService(
             if (request.Price <= 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>("Price must be greater than zero — services can't be free");
 
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>(RichText.TooLongMessage);
+
             var serviceType = new ServiceType
             {
                 Name = request.Name.Trim(),
-                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
+                Description = descriptionHtml,
                 Price = request.Price,
                 Status = request.Status,
                 Fields = MapFields(request.Fields),
@@ -163,7 +168,10 @@ public class ServiceService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>("Price must be greater than zero — services can't be free");
 
             serviceType.Name = request.Name.Trim();
-            serviceType.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>(RichText.TooLongMessage);
+            serviceType.Description = descriptionHtml;
             serviceType.Price = request.Price;
             serviceType.Status = request.Status;
             serviceType.Fields = MapFields(request.Fields);

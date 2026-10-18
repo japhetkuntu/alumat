@@ -3,6 +3,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Notifications.Sdk.Models;
@@ -75,13 +76,16 @@ public class JobService(
             var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
             ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
 
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>(RichText.TooLongMessage);
             var job = new Job
             {
                 CommunityId = resolvedCommunityId,
                 Title = request.Title,
                 Company = request.Company,
                 Location = request.Location,
-                Description = request.Description,
+                Description = descriptionHtml,
                 Type = request.Type,
                 ApplyUrl = request.ApplyUrl,
                 Deadline = request.Deadline.HasValue ? DateTime.SpecifyKind(request.Deadline.Value, DateTimeKind.Utc) : (DateTime?)null,
@@ -134,7 +138,10 @@ public class JobService(
             job.Company = request.Company;
             job.Location = request.Location;
             job.Type = request.Type;
-            job.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<JobDto>(RichText.TooLongMessage);
+            job.Description = descriptionHtml;
             job.ApplyUrl = request.ApplyUrl;
             job.Deadline = request.Deadline.HasValue ? DateTime.SpecifyKind(request.Deadline.Value, DateTimeKind.Utc) : (DateTime?)null;
             job.Status = request.Status;

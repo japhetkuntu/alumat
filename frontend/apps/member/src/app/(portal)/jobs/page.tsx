@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -187,7 +188,7 @@ export default function MemberJobsPage() {
                   {/* Description preview */}
                   {j.description && (
                     <p className="text-[12.5px] line-clamp-2 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                      {j.description}
+                      {richTextToPlain(j.description)}
                     </p>
                   )}
 

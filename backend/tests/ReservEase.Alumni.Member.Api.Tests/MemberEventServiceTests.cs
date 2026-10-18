@@ -317,4 +317,53 @@ public class MemberEventServiceTests
         Assert.Equal(("Ama Mensah", "https://pic"), (dto.MemberName, dto.MemberProfilePictureUrl));
         Assert.Equal("Event e1", dto.EventTitle);
     }
+
+    // ── The organiser closed RSVPs ──────────────────────────────────────
+
+    [Fact]
+    public async Task A_closed_event_takes_no_new_rsvps()
+    {
+        var rig = new Rig();
+        var closed = Event(); closed.RegistrationClosed = true;
+        await rig.Seed(Person(), closed);
+
+        var response = await rig.Service.RsvpAsync(new RsvpRequest("e1"), rig.Me);
+
+        Assert.Equal(400, response.Code);
+        Assert.Contains("closed RSVPs", response.Message);
+        Assert.Empty(rig.Db().EventRsvps);
+    }
+
+    [Fact]
+    public async Task Someone_who_cancelled_cannot_rejoin_a_closed_event()
+    {
+        var rig = new Rig();
+        var closed = Event(); closed.RegistrationClosed = true;
+        await rig.Seed(Person(), closed, Rsvp("e1", "m1", "Cancelled"));
+
+        Assert.Equal(400, (await rig.Service.RsvpAsync(new RsvpRequest("e1"), rig.Me)).Code);
+        Assert.Equal("Cancelled", (await rig.Db().EventRsvps.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task Closing_rsvps_leaves_existing_seats_alone_and_lets_a_free_rsvp_be_cancelled()
+    {
+        var rig = new Rig();
+        var closed = Event(); closed.RegistrationClosed = true;
+        await rig.Seed(Person(), closed, Rsvp("e1", "m1"));
+
+        Assert.Equal(409, (await rig.Service.RsvpAsync(new RsvpRequest("e1"), rig.Me)).Code);   // already going, as before
+        Assert.Equal(200, (await rig.Service.CancelRsvpAsync("e1", rig.Me)).Code);              // and may still step out
+    }
+
+    [Fact]
+    public async Task The_event_tells_members_when_rsvps_are_closed()
+    {
+        var rig = new Rig();
+        var closed = Event(); closed.RegistrationClosed = true;
+        await rig.Seed(closed, Event("open"));
+
+        Assert.True((await rig.Service.GetEventByIdAsync("e1")).Data!.RegistrationClosed);
+        Assert.False((await rig.Service.GetEventByIdAsync("open")).Data!.RegistrationClosed);
+    }
 }

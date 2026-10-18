@@ -13,7 +13,7 @@ function useFeatureTheme() {
   return useQuery({
     queryKey: ["institution-nav-theme"],
     queryFn: async () => {
-      const res = await institutionClient.get<{ data: { disabledFeatures: string[] } }>("/public/institution/theme");
+      const res = await institutionClient.get<{ data: { disabledFeatures: string[]; whatsAppPlatformAvailable?: boolean } }>("/public/institution/theme");
       return res.data.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -24,6 +24,19 @@ function useFeatureTheme() {
 export function useDisabledFeatures(): Set<string> {
   const { data: theme } = useFeatureTheme();
   return useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
+}
+
+/**
+ * Whether anything about the WhatsApp assistant may be shown. `platformOn`: AlumUnion has it on for this institution (the server is
+ * set up, the platform switch is on, it is not deactivated here). `on`: that, and the institution has not turned it off itself.
+ * Both are false until the answer arrives, so nothing about WhatsApp flashes up and then disappears. When the platform has it off,
+ * the portal shows no trace of it at all; when only the institution turned it off, just the settings tab stays, to turn it back on.
+ */
+export function useWhatsApp() {
+  const { data: theme } = useFeatureTheme();
+  const platformOn = theme?.whatsAppPlatformAvailable === true;
+  const selfOff = (theme?.disabledFeatures ?? []).includes("WhatsApp");
+  return { platformOn, on: platformOn && !selfOff };
 }
 
 export function useFeatureEnabled(key: string): boolean {

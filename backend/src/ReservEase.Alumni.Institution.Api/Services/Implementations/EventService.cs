@@ -3,6 +3,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Notifications.Sdk;
@@ -183,11 +184,14 @@ public class EventService(
             var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
             ScopeAuthorizationExtensions.NormalizeAudience(ref resolvedYearGroups, ref resolvedCommunityId);
 
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(RichText.TooLongMessage);
             var ev = new AlumniEvent
             {
                 CommunityId = resolvedCommunityId,
                 Title = request.Title,
-                Description = request.Description,
+                Description = descriptionHtml,
                 Venue = request.Venue,
                 StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
                 EndDate = request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : (DateTime?)null,
@@ -260,7 +264,10 @@ public class EventService(
             ScopeAuthorizationExtensions.NormalizeAudience(ref updatedYearGroups, ref updatedCommunityId);
             ev.CommunityId = updatedCommunityId;
             ev.Title = request.Title;
-            ev.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(RichText.TooLongMessage);
+            ev.Description = descriptionHtml;
             ev.Venue = request.Venue;
             ev.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
             ev.EndDate = request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : (DateTime?)null;
@@ -268,7 +275,7 @@ public class EventService(
             ev.TicketPrice = request.IsTicketed ? request.TicketPrice : null;
             ev.GoogleLocationUrl = locationLink;
             ev.Capacity = request.Capacity;
-            ev.Status = request.Status;
+            if (!string.IsNullOrWhiteSpace(request.Status)) ev.Status = request.Status;   // an edit that does not say keeps the current status
             ev.YearGroups = updatedYearGroups;
             ev.YoutubeVideoUrls = request.YoutubeVideoUrls;
 
@@ -310,6 +317,36 @@ public class EventService(
         {
             logger.LogError(e, "Error updating event {EventId} by admin {AdminId}", request.EventId, admin.Id);
             return ApiResponseExtensions.ToServerErrorApiResponse<AlumniEventDto>("Failed to update event");
+        }
+    }
+
+    public async Task<IApiResponse<AlumniEventDto>> SetRegistrationClosedAsync(string eventId, bool closed, AuthData admin)
+    {
+        try
+        {
+            var ev = await eventRepo.GetByIdAsync(eventId);
+            if (ev is null || !admin.CanModifyScopedItem(ev.YearGroups, ev.CreatedBy, ev.CommunityId))
+                return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
+            if (ev.Status is "Cancelled" or "Completed")
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("This event is already over, so there is nothing to open or close.");
+
+            if (ev.RegistrationClosed != closed)
+            {
+                ev.RegistrationClosed = closed;
+                ev.UpdatedAt = DateTime.UtcNow;
+                ev.UpdatedBy = admin.Id;
+                await eventRepo.UpdateAsync(ev);
+                await InvalidatePublicEventsCacheAsync();
+                await auditLog.LogAsync(admin, closed ? "Event RSVPs Closed" : "Event RSVPs Reopened", ev.Title);
+            }
+            var dto = ev.ToDto();
+            dto.RsvpCount = await rsvpRepo.CountAsync(r => r.EventId == eventId && r.Status == EventRsvpStatuses.Confirmed);
+            return dto.ToOkApiResponse(closed ? "RSVPs closed" : "RSVPs reopened");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error changing registration for event {EventId}", eventId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<AlumniEventDto>("Failed to change registration");
         }
     }
 

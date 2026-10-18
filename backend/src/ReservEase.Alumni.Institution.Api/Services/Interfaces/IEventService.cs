@@ -10,6 +10,8 @@ public interface IEventService
     Task<IApiResponse<AlumniEventDto>> GetEventByIdAsync(string eventId, AuthData admin);
     Task<IApiResponse<AlumniEventDto>> CreateEventAsync(CreateEventRequest request, AuthData admin);
     Task<IApiResponse<AlumniEventDto>> UpdateEventAsync(UpdateEventRequest request, AuthData admin);
+    /// <summary>Stop or resume taking new RSVPs and ticket sales without cancelling the event.</summary>
+    Task<IApiResponse<AlumniEventDto>> SetRegistrationClosedAsync(string eventId, bool closed, AuthData admin);
     Task<IApiResponse<object>> CancelEventAsync(string eventId, AuthData admin);
     Task<IApiResponse<object>> DeleteEventAsync(string eventId, AuthData admin);
     Task<IApiResponse<PgPagedResult<EventRsvpDto>>> GetRsvpsAsync(string eventId, BaseFilter filter, AuthData admin);

@@ -44,7 +44,7 @@ public class EventUpdateService(
             if (await ViewableEventAsync(eventId, admin) is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<List<EventUpdateDto>>("Event not found");
             var updates = await updateRepo.GetAllAsync(u => u.EventId == eventId);
-            return updates.OrderByDescending(u => u.IsPinned).ThenByDescending(u => u.CreatedAt)
+            return EventUpdateRules.InDisplayOrder(updates)
                 .Select(u => u.ToDto(includeAuthor: true)).ToList().ToOkApiResponse();
         }
         catch (Exception e)
@@ -189,6 +189,37 @@ public class EventUpdateService(
         {
             logger.LogError(e, "Error pinning update {UpdateId}", updateId);
             return ApiResponseExtensions.ToServerErrorApiResponse<EventUpdateDto>("Failed to change the update");
+        }
+    }
+
+    public async Task<IApiResponse<List<EventUpdateDto>>> ReorderAsync(string eventId, IReadOnlyList<string> orderedIds, AuthData admin)
+    {
+        try
+        {
+            if (await ModifiableEventAsync(eventId, admin) is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<List<EventUpdateDto>>("Event not found");
+            var updates = await updateRepo.GetAllAsync(u => u.EventId == eventId);
+            var byId = updates.ToDictionary(u => u.Id);
+            var ids = orderedIds.Distinct().ToList();
+            if (ids.Any(id => !byId.ContainsKey(id)))
+                return ApiResponseExtensions.ToBadRequestApiResponse<List<EventUpdateDto>>("One of those updates no longer exists. Reload and try again.");
+
+            // 1..n in the order given. An update posted after the organiser opened the page is not in the list; it keeps 0 and stays on top.
+            var changed = new List<EventUpdate>();
+            for (var i = 0; i < ids.Count; i++)
+            {
+                var update = byId[ids[i]];
+                if (update.SortOrder == i + 1) continue;
+                update.SortOrder = i + 1;
+                changed.Add(update);
+            }
+            if (changed.Count > 0) await updateRepo.UpdateRangeAsync(changed);
+            return EventUpdateRules.InDisplayOrder(updates).Select(u => u.ToDto(includeAuthor: true)).ToList().ToOkApiResponse("Order saved");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error arranging updates for event {EventId}", eventId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<EventUpdateDto>>("Failed to save the order");
         }
     }
 

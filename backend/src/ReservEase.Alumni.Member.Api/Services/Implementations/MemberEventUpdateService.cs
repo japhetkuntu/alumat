@@ -28,8 +28,7 @@ public class MemberEventUpdateService(
                     return ApiResponseExtensions.ToForbiddenApiResponse<EventUpdatesResponse>("You must be an approved member of this community to see this event");
             }
 
-            var updates = (await updateRepo.GetAllAsync(u => u.EventId == eventId))
-                .OrderByDescending(u => u.IsPinned).ThenByDescending(u => u.CreatedAt).ToList();
+            var updates = EventUpdateRules.InDisplayOrder(await updateRepo.GetAllAsync(u => u.EventId == eventId));
 
             // A seat is a confirmed RSVP or a paid ticket (both are a Confirmed row). Anything else, including a ticket still being paid for, is outside.
             var hasSeat = await rsvpRepo.CountAsync(r => r.EventId == eventId && r.MemberId == member.Id && r.Status == EventRsvpStatuses.Confirmed) > 0;

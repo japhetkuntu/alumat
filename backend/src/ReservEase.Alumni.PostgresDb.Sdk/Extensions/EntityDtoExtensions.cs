@@ -33,6 +33,7 @@ public static class EntityDtoExtensions
         Venue = data.Venue,
         Capacity = data.Capacity,
         RsvpCount = data.RsvpCount,
+        RegistrationClosed = data.RegistrationClosed,
         IsTicketed = data.IsTicketed,
         TicketPrice = data.TicketPrice,
         Status = data.Status,

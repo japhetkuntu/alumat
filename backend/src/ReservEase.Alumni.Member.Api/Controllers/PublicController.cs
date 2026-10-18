@@ -265,17 +265,8 @@ public class PublicController(
         return Ok(new ApiResponse<List<PublicNewsItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
     }
 
-    /// <summary>Strips markup and collapses whitespace on rich-text content (news posts are authored via a WYSIWYG editor) so a plain-text excerpt can be shown outside the portal, then truncates on a word boundary.</summary>
-    private static string ExcerptFromHtml(string html, int maxLength)
-    {
-        var text = WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]*>", " "));
-        text = Regex.Replace(text, @"\s+", " ").Trim();
-        if (text.Length <= maxLength) return text;
-        var cut = text[..maxLength];
-        var lastSpace = cut.LastIndexOf(' ');
-        if (lastSpace > 0) cut = cut[..lastSpace];
-        return cut.TrimEnd() + "…";
-    }
+    /// <summary>A plain-text excerpt of a description (rich text from the editor, or plain text from before it) for places outside the portal: link previews, share cards. Cut at a word.</summary>
+    private static string ExcerptFromHtml(string? html, int maxLength) => ReservEase.Alumni.Common.Sdk.Text.RichText.Excerpt(html, maxLength);
 
     /// <summary>Next institution-wide upcoming events, for the public landing page.</summary>
     [HttpGet("events")]
@@ -483,7 +474,7 @@ public class PublicController(
         var e = await eventRepo.GetOneAsync(x => x.Id == id);
         if (e is null) return null;
         if (e.CommunityId is not null) return new PublicPreviewResponse(e.Title, null, e.BannerImageUrl, Restricted: true);
-        return new PublicPreviewResponse(e.Title, e.Description, e.BannerImageUrl,
+        return new PublicPreviewResponse(e.Title, ExcerptFromHtml(e.Description, 300), e.BannerImageUrl,
             Subtitle: e.Status == "Cancelled" ? "Cancelled" : null, Date: e.StartDate, Place: e.Venue);
     }
 
@@ -493,7 +484,7 @@ public class PublicController(
         var j = await jobRepo.GetOneAsync(x => x.Id == id && x.Status == "Active");
         if (j is null) return null;
         if (j.CommunityId is not null) return new PublicPreviewResponse($"{j.Title} at {j.Company}", null, j.BannerImageUrl, Restricted: true);
-        return new PublicPreviewResponse($"{j.Title} at {j.Company}", j.Description, j.BannerImageUrl,
+        return new PublicPreviewResponse($"{j.Title} at {j.Company}", ExcerptFromHtml(j.Description, 300), j.BannerImageUrl,
             Subtitle: string.IsNullOrWhiteSpace(j.Type) ? null : j.Type, Date: j.Deadline, Place: j.Location);
     }
 
@@ -508,7 +499,7 @@ public class PublicController(
     private async Task<PublicPreviewResponse?> BuildResourcePreviewAsync(string id)
     {
         var r = await resourceRepo.GetOneAsync(x => x.Id == id);
-        return r is null ? null : new PublicPreviewResponse(r.Title, r.Description, r.BannerImageUrl);
+        return r is null ? null : new PublicPreviewResponse(r.Title, ExcerptFromHtml(r.Description, 300), r.BannerImageUrl);
     }
 
     private async Task<PublicPreviewResponse?> BuildBusinessPreviewAsync(string id)
@@ -520,19 +511,19 @@ public class PublicController(
     private async Task<PublicPreviewResponse?> BuildCommunityPreviewAsync(string id)
     {
         var c = await communityRepo.GetOneAsync(x => x.Id == id);
-        return c is null ? null : new PublicPreviewResponse(c.Name, c.Description, c.CoverImageUrl);
+        return c is null ? null : new PublicPreviewResponse(c.Name, ExcerptFromHtml(c.Description, 300), c.CoverImageUrl);
     }
 
     private async Task<PublicPreviewResponse?> BuildAlbumPreviewAsync(string id)
     {
         var a = await albumRepo.GetOneAsync(x => x.Id == id);
-        return a is null ? null : new PublicPreviewResponse(a.Title, a.Description, a.CoverImageUrl);
+        return a is null ? null : new PublicPreviewResponse(a.Title, ExcerptFromHtml(a.Description, 300), a.CoverImageUrl);
     }
 
     private async Task<PublicPreviewResponse?> BuildServicePreviewAsync(string id)
     {
         var s = await serviceTypeRepo.GetOneAsync(x => x.Id == id);
-        return s is null ? null : new PublicPreviewResponse(s.Name, s.Description, null);
+        return s is null ? null : new PublicPreviewResponse(s.Name, ExcerptFromHtml(s.Description, 300), null);
     }
 
     /// <summary>
@@ -547,15 +538,15 @@ public class PublicController(
             ? (string.IsNullOrWhiteSpace(i.PortalName) ? i.Name : i.PortalName)
             : null;
         var title = institutionName is null ? $"Join {c.Name}" : $"Join {c.Name} on {institutionName}";
-        return new PublicPreviewResponse(title, string.IsNullOrWhiteSpace(c.Description)
+        return new PublicPreviewResponse(title, string.IsNullOrWhiteSpace(ExcerptFromHtml(c.Description, 300))
             ? "You've been invited to join this community. It only takes a minute."
-            : c.Description, c.CoverImageUrl ?? (HttpContext.Items["Institution"] as Institution)?.LogoUrl);
+            : ExcerptFromHtml(c.Description, 300), c.CoverImageUrl ?? (HttpContext.Items["Institution"] as Institution)?.LogoUrl);
     }
 
     private async Task<PublicPreviewResponse?> BuildCampaignPreviewAsync(string id)
     {
         var c = await campaignRepo.GetOneAsync(x => x.Id == id);
-        return c is null ? null : new PublicPreviewResponse(c.Title, c.Description, c.BannerImageUrl);
+        return c is null ? null : new PublicPreviewResponse(c.Title, ExcerptFromHtml(c.Description, 300), c.BannerImageUrl);
     }
 }
 

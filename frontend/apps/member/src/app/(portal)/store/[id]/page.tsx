@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { RichText } from "@alumni/ui";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -163,7 +164,7 @@ export default function StoreProductDetailPage() {
           </div>
 
           {product.description && (
-            <p className="text-[13.5px] text-muted-foreground leading-relaxed">{product.description}</p>
+            <RichText className="text-[13.5px] text-muted-foreground" content={product.description} />
           )}
 
           {product.details?.length > 0 && (

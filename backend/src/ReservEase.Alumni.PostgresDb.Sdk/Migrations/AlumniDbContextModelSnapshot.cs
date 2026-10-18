@@ -367,6 +367,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<bool>("IsTicketed")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("RegistrationClosed")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("RsvpCount")
                         .HasColumnType("integer");
 
@@ -1537,6 +1540,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("PostedByStaffId")
                         .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()

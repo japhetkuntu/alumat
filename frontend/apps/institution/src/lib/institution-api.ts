@@ -1094,6 +1094,12 @@ export async function pinEventUpdate(eventId: string, updateId: string, pinned: 
   return res.data.data!;
 }
 
+/** Saves the order the organiser arranged an event's updates in (first to last). */
+export async function reorderEventUpdates(eventId: string, ids: string[]): Promise<EventUpdate[]> {
+  const res = await institutionClient.put<ApiResponse<EventUpdate[]>>(`/events/${eventId}/updates/order`, { ids });
+  return res.data.data!;
+}
+
 export async function deleteEventUpdate(eventId: string, updateId: string) {
   const res = await institutionClient.delete<ApiResponse<unknown>>(`/events/${eventId}/updates/${updateId}`);
   return res.data;
@@ -1104,6 +1110,12 @@ export interface EventTicketing { paidEventsEnabled: boolean; payoutReady: boole
 /** Whether this community may charge for event tickets (the platform decides), and whether its payout account is ready. */
 export async function getEventTicketing(): Promise<EventTicketing> {
   const res = await institutionClient.get<ApiResponse<EventTicketing>>("/events/ticketing");
+  return res.data.data!;
+}
+
+/** Stop or resume taking new RSVPs and ticket sales. Seats already taken stay; the event is not cancelled. */
+export async function setEventRegistrationClosed(id: string, closed: boolean) {
+  const res = await institutionClient.put<ApiResponse<AlumniEvent>>(`/events/${id}/registration`, null, { params: { closed } });
   return res.data.data!;
 }
 

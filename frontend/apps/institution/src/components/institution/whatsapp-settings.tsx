@@ -86,18 +86,6 @@ export function WhatsAppSettings({ enabled, onToggleEnabled, toggling }: { enabl
             </button>
           </div>
 
-          {enabled && o?.deactivatedByPlatform && (
-            <p className="border-l-2 border-destructive bg-muted/40 py-2.5 pl-3 pr-2 text-[13px]">
-              WhatsApp has been switched off for your institution by AlumUnion. Members are reached by SMS and email as before. Contact AlumUnion support to have it switched back on.
-            </p>
-          )}
-
-          {enabled && o && !o.platformEnabled && !o.deactivatedByPlatform && (
-            <p className="border-l-2 border-warning bg-muted/40 py-2.5 pl-3 pr-2 text-[13px]">
-              The WhatsApp channel isn&apos;t switched on for AlumUnion yet. You can set up groups now; nothing is sent or answered until it is.
-            </p>
-          )}
-
           {enabled && o?.assistantLink && (
             <div className="flex flex-wrap items-center gap-3 border-t border-border/50 pt-4">
               <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, Suspense } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -197,7 +198,7 @@ function MembershipCampaignCard({ campaign, email }: { campaign: Campaign; email
 
         {campaign.description && (
           <p className="text-[12.5px] leading-relaxed line-clamp-2" style={{ color: "var(--muted-foreground)" }}>
-            {campaign.description}
+            {richTextToPlain(campaign.description)}
           </p>
         )}
 
@@ -801,7 +802,7 @@ function RegisterForm() {
                     onChange={(val) => setValue("phone", val, { shouldValidate: true })} />
                   <FieldError message={errors.phone?.message} />
                   <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
-                    Used to reach you by SMS & WhatsApp for important updates.
+                    {theme?.whatsAppAssistantAvailable ? "Used to reach you by SMS & WhatsApp for important updates." : "Used to reach you by SMS for important updates."}
                   </p>
                 </div>
                 <div className="space-y-1.5">

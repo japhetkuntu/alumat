@@ -7,6 +7,7 @@ import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 import { getWhatsAppOverview, previewWhatsAppPost, publishWhatsAppPost, type WhatsAppContentType } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
+import { useWhatsApp } from "@/hooks/use-institution-features";
 
 /**
  * "Post to a WhatsApp group" for an event, job, news article or fundraiser. The administrator picks a connected group, sees the
@@ -15,7 +16,8 @@ import { useAuth } from "@/hooks/use-auth";
  */
 export function PostToWhatsAppButton({ type, contentId, size = "sm" }: { type: WhatsAppContentType; contentId: string; size?: "sm" | "default" }) {
   const { user } = useAuth();
-  const isAdmin = user?.role === "SuperAdmin";
+  const { on: whatsAppOn } = useWhatsApp();
+  const isAdmin = user?.role === "SuperAdmin" && whatsAppOn;   // no button, and no request, unless WhatsApp is on here
   const [open, setOpen] = useState(false);
   const [groupId, setGroupId] = useState("");
   const [text, setText] = useState("");

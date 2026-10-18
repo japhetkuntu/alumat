@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -302,7 +303,7 @@ export default function CommunityDetailPage() {
             </h1>
             {community.description && (
               <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-white/80">
-                {community.description}
+                {richTextToPlain(community.description)}
               </p>
             )}
 
@@ -431,10 +432,13 @@ export default function CommunityDetailPage() {
                         <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground"><MapPin size={11} /> {e.venue}</span>
                       </div>
                       <div className="mt-auto pt-3">
-                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && e.isTicketed && (
+                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && e.registrationClosed && (
+                          <span className="block w-full bg-secondary py-2 text-center text-[12.5px] font-semibold text-muted-foreground">{e.isTicketed ? "Ticket sales closed" : "RSVPs closed"}</span>
+                        )}
+                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && !e.registrationClosed && e.isTicketed && (
                           <Button size="sm" className="w-full" onClick={() => router.push(`/events/${e.id}`)}>Get ticket{e.ticketPrice ? ` · ${formatCurrency(e.ticketPrice)}` : ""}</Button>
                         )}
-                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && !e.isTicketed && (
+                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && !e.registrationClosed && !e.isTicketed && (
                           <Button size="sm" className="w-full" onClick={() => rsvpMut.mutate(e.id)} isLoading={rsvpMut.isPending && rsvpMut.variables === e.id} loadingText="RSVPing">RSVP</Button>
                         )}
                         {hasRsvp && <Badge variant="success" className="gap-1"><Check size={11} /> {e.isTicketed ? "Ticket confirmed" : "You're attending"}</Badge>}

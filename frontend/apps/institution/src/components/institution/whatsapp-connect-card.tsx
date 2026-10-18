@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MessageCircle } from "@alumni/ui";
 import { getWhatsAppOverview } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
+import { useWhatsApp } from "@/hooks/use-institution-features";
 
 const SNOOZE_DAYS = 14;
 const KEY = "institution-wa-nudge";
@@ -30,7 +31,8 @@ function useSnoozed() {
  */
 export function WhatsAppConnectCard() {
   const { user } = useAuth();
-  const enabled = user?.role === "SuperAdmin";
+  const { on: whatsAppOn } = useWhatsApp();
+  const enabled = user?.role === "SuperAdmin" && whatsAppOn;   // nothing about WhatsApp until the platform has it on and the institution wants it
   const snoozed = useSnoozed();
   const { data } = useQuery({ queryKey: ["whatsapp-overview"], queryFn: getWhatsAppOverview, enabled, staleTime: 60_000, retry: false });
 

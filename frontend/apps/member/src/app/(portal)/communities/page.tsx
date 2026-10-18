@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useRouter } from "next/navigation";
@@ -114,7 +115,7 @@ export default function CommunitiesPage() {
                   <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-snug group-hover:text-primary transition-colors">
                     {c.name}
                   </p>
-                  {c.description && <p className="text-[13px] text-muted-foreground line-clamp-2">{c.description}</p>}
+                  {c.description && <p className="text-[13px] text-muted-foreground line-clamp-2">{richTextToPlain(c.description)}</p>}
                 </div>
                 <div className="flex items-center justify-between gap-3 pt-2 mt-auto border-t border-border">
                   <span className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground pt-3">

@@ -2,6 +2,7 @@ using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Notifications.Sdk.Models;
@@ -198,10 +199,13 @@ public class StoreService(
                 deliveryInfo = institution?.DefaultStoreDeliveryInfo;
             }
 
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(RichText.TooLongMessage);
             var product = new StoreProduct
             {
                 Name = request.Name,
-                Description = request.Description,
+                Description = descriptionHtml,
                 Price = request.Price,
                 QuantityAvailable = request.QuantityAvailable,
                 DeliveryInfo = deliveryInfo,
@@ -254,7 +258,10 @@ public class StoreService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>("Quantity available cannot be negative.");
 
             product.Name = request.Name;
-            product.Description = request.Description;
+            var descriptionHtml = RichText.Sanitize(request.Description);
+            if (RichText.IsTooLong(descriptionHtml))
+                return ApiResponseExtensions.ToBadRequestApiResponse<StoreProductDto>(RichText.TooLongMessage);
+            product.Description = descriptionHtml;
             product.Price = request.Price;
             product.QuantityAvailable = request.QuantityAvailable;
             product.DeliveryInfo = request.DeliveryInfo;

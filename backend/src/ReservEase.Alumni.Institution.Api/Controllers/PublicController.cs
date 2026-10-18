@@ -15,7 +15,9 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// </summary>
 [AllowAnonymous]
 [EnableRateLimiting(RateLimitingExtensions.PublicReadPolicy)]
-public class PublicController : DefaultController
+public class PublicController(
+    IConfiguration configuration,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch platformSwitch) : DefaultController
 {
     /// <summary>
     /// Branding for the institution resolved from the request's Host header
@@ -26,7 +28,7 @@ public class PublicController : DefaultController
     [SwaggerOperation(Summary = "Get the current tenant's branding/theme")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionThemeResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public IActionResult GetInstitutionTheme()
+    public async Task<IActionResult> GetInstitutionTheme()
     {
         if (HttpContext.Items["Institution"] is not InstitutionEntity institution)
             return NotFound(new ApiResponse<object> { Message = "No institution resolved for this host", Code = 404 });
@@ -47,8 +49,16 @@ public class PublicController : DefaultController
             institution.OrganizationType,
             institution.CohortLabel,
             institution.CohortLabelPlural,
-            institution.GraduationYearMode);
+            institution.GraduationYearMode,
+            WhatsAppPlatformAvailable: await WhatsAppPlatformAvailableAsync(institution));
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }
+
+    /// <summary>The same rule the member portal uses: server set up with an assistant number, platform switch on, not deactivated for this institution.</summary>
+    private async Task<bool> WhatsAppPlatformAvailableAsync(InstitutionEntity institution)
+        => configuration.GetValue("WaSenderConfig:Enabled", false)
+           && !string.IsNullOrWhiteSpace(configuration["WaSenderConfig:AssistantNumber"])
+           && institution.WhatsAppBotEnabled
+           && await platformSwitch.IsOnAsync();
 }

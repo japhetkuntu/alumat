@@ -1,6 +1,8 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
@@ -15,11 +17,10 @@ import { FormSheet, FormSection, CheckOption, DropdownMenu, DropdownMenuTrigger,
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
-import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, formatCurrency, cn } from "@alumni/ui";
-import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommunities, getEventTicketing } from "@/lib/institution-api";
+import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommunities, getEventTicketing, setEventRegistrationClosed } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
@@ -95,8 +96,8 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
   const { data: ticketing } = useQuery({ queryKey: ["event-ticketing"], queryFn: getEventTicketing });
-  // Sold tickets freeze the price, and a paid event can never be cancelled.
-  const priceLocked = form.paidTicketCount > 0;
+  // Once tickets have sold the event stays a paid one (so no on/off choice), but its price can still change.
+  const sold = form.paidTicketCount;
   const canCharge = !!ticketing?.paidEventsEnabled && !!ticketing?.payoutReady;
   return (
     <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
@@ -104,7 +105,7 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
             <div className="space-y-2"><Label>Event title</Label>
               <Input placeholder="e.g. Annual Gathering 2027" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
             <div className="space-y-2"><Label>Description</Label>
-              <Textarea placeholder="What the event is, who should come, and what to bring." rows={4} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
+              <RichTextEditor variant="compact" placeholder="What the event is, who should come, and what to bring." minHeight={140} value={form.description} onChange={(v) => f("description", v)} /></div>
           </FormSection>
 
           <FormSection title="When and where" hint="Members see the date, time and venue on the event and in their calendar.">
@@ -129,33 +130,35 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
             title="Tickets"
             hint={form.isTicketed ? "Members pay to reserve a seat." : "Events are free to attend unless you charge for tickets."}
           >
-            {priceLocked ? (
-              <div className="space-y-1 border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">
-                <p className="font-semibold text-foreground">
-                  {form.paidTicketCount} {form.paidTicketCount === 1 ? "ticket" : "tickets"} sold at {formatCurrency(Number(form.ticketPrice))}
-                </p>
-                <p className="text-muted-foreground">The price is locked now that tickets are sold, and the event stays a paid one. You can still change its date, venue and details.</p>
-              </div>
-            ) : canCharge || form.isTicketed ? (
+            {canCharge || form.isTicketed ? (
               <>
-                <CheckOption
-                  id="event-ticketed"
-                  checked={form.isTicketed}
-                  onChange={(v) => f("isTicketed", v)}
-                  label="Charge for tickets"
-                  hint="Members pay online to reserve a seat instead of a free RSVP."
-                />
+                {/* Before any sale it is a free choice; after, the event stays a paid one. */}
+                {sold === 0 && (
+                  <CheckOption
+                    id="event-ticketed"
+                    checked={form.isTicketed}
+                    onChange={(v) => f("isTicketed", v)}
+                    label="Charge for tickets"
+                    hint="Members pay online to reserve a seat instead of a free RSVP."
+                  />
+                )}
                 {form.isTicketed && (
                   <div className="space-y-4">
                     <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Ticket price (GH₵)</Label>
                       <Input type="number" min={1} step="0.01" placeholder="e.g. 150" value={form.ticketPrice}
-                        onChange={(e) => f("ticketPrice", e.target.value)} required /></div>
+                        onChange={(e) => f("ticketPrice", e.target.value)} required />
+                      {sold > 0 && (
+                        <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                          {sold} {sold === 1 ? "ticket" : "tickets"} already sold. {sold === 1 ? "That buyer keeps" : "Those buyers keep"} what they paid; a new price applies to anyone who buys from now on.
+                        </p>
+                      )}
+                    </div>
                     <div className="space-y-1.5 border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">
-                      <p className="font-semibold text-foreground">Please read before you publish</p>
+                      <p className="font-semibold text-foreground">Good to know</p>
                       <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
                         <li><span className="text-foreground">Tickets are final.</span> Attendees can&apos;t cancel and nobody is refunded. A paid event can&apos;t be cancelled either, so no money ever has to go back.</li>
-                        <li>Once the first ticket is sold the price is locked. Check it carefully.</li>
-                        <li>A paid event can&apos;t be deleted after tickets are sold. You can still change its date, venue and details, and attendees are told.</li>
+                        <li>You can change the price whenever you like. People who already bought keep what they paid, and new buyers pay the new price.</li>
+                        <li>A paid event can&apos;t be deleted once tickets are sold, or made free. You can still change its date, venue and details, and attendees are told.</li>
                         <li>You receive the full ticket price in your payout account.</li>
                       </ul>
                     </div>
@@ -167,7 +170,7 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                 {ticketing && !ticketing.paidEventsEnabled
                   ? "Charging for tickets isn't turned on for your community yet. Contact AlumUnion support to turn it on."
                   : ticketing && !ticketing.payoutReady
-                    ? "Your payout account isn't set up yet, so ticket money has nowhere to go. Contact AlumUnion support to set it up."
+                    ? "Charging for tickets is turned on, but your payout account isn't set up yet, so ticket money has nowhere to go. Contact AlumUnion support to set it up, then you can create paid events."
                     : "Checking whether you can charge for tickets…"}
               </p>
             )}
@@ -298,6 +301,17 @@ export default function AdminEventsPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const registrationMut = useMutation({
+    mutationFn: ({ e, closed }: { e: AlumniEvent; closed: boolean }) => setEventRegistrationClosed(e.id, closed),
+    onSuccess: (_d, { e, closed }) => {
+      qc.invalidateQueries({ queryKey: ["admin-events"] });
+      toast.success(closed
+        ? (e.isTicketed ? "Ticket sales closed. People who bought keep their seats." : "RSVPs closed. People already going keep their place.")
+        : (e.isTicketed ? "Ticket sales reopened." : "RSVPs reopened."));
+    },
+    onError: (err) => toast.error(handleApiError(err)),
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-events"] }); setDeleteTarget(null); toast.success("Event deleted"); },
@@ -359,6 +373,7 @@ export default function AdminEventsPage() {
                   <div className="flex items-center gap-1.5">
                     <Badge variant={statusVariant[e.status]}>{e.status}</Badge>
                     {isPastEvent(e) && <Badge variant="secondary">Past</Badge>}
+                    {e.registrationClosed && e.status !== "Cancelled" && e.status !== "Completed" && <Badge variant="warning">{e.isTicketed ? "Sales closed" : "RSVPs closed"}</Badge>}
                   </div>
                   {e.isTicketed && e.ticketPrice && (
                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success"><Ticket size={13} />{formatCurrency(e.ticketPrice)}</span>
@@ -378,7 +393,7 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
                 <h3 className="font-semibold mb-2">{e.title}</h3>
-                {e.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{e.description}</p>}
+                {e.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{richTextToPlain(e.description)}</p>}
                 <div className="space-y-1.5 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5"><Calendar size={11} />{formatDate(e.startDate)}</div>
                   <div className="flex items-center gap-1.5">
@@ -415,6 +430,13 @@ export default function AdminEventsPage() {
                       <DropdownMenuContent align="end" className="min-w-[170px]">
                         {e.status !== "Cancelled" && e.status !== "Completed" && (
                           <DropdownMenuItem onSelect={() => setEditEvent(e)}><Pencil size={14} />Edit</DropdownMenuItem>
+                        )}
+                        {e.status !== "Cancelled" && e.status !== "Completed" && (
+                          <DropdownMenuItem onSelect={() => registrationMut.mutate({ e, closed: !e.registrationClosed })}>
+                            {e.registrationClosed
+                              ? (e.isTicketed ? "Resume ticket sales" : "Reopen RSVPs")
+                              : (e.isTicketed ? "Stop ticket sales" : "Stop taking RSVPs")}
+                          </DropdownMenuItem>
                         )}
                         {e.status !== "Cancelled" && e.status !== "Completed" && (e.isTicketed
                           ? <DropdownMenuItem disabled>Paid events can&apos;t be cancelled</DropdownMenuItem>

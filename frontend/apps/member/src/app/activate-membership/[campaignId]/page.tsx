@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore, Suspense } from "react";
+import { richTextToPlain } from "@alumni/ui";
 import { useParams, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -156,7 +157,7 @@ function ActivateMembershipContent() {
             </h1>
             {campaign.description && (
               <p className="text-primary-foreground/85 leading-relaxed line-clamp-3">
-                {campaign.description}
+                {richTextToPlain(campaign.description)}
               </p>
             )}
 

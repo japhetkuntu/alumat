@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { RichText } from "@alumni/ui";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -248,19 +249,18 @@ export default function EventDetailPage() {
             >
               About this event
             </h2>
-            <p
-              className="whitespace-pre-wrap leading-[1.85]"
-              style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
-            >
-              {event.description || "More details will be shared closer to the date. RSVP to stay informed."}
-            </p>
+            {event.description ? (
+              <RichText className="text-[15.4px]" content={event.description} />
+            ) : (
+              <p className="leading-[1.85]" style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}>More details will be shared closer to the date. RSVP to stay informed.</p>
+            )}
           </div>
 
           {/* What the organiser has posted for the people going */}
           <EventUpdates
             eventId={id}
             joinLabel={event.isTicketed ? "Buy a ticket" : "RSVP to read them"}
-            onJoin={canRsvp && !isFull ? () => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true)) : undefined}
+            onJoin={canRsvp && !isFull && !event.registrationClosed ? () => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true)) : undefined}
           />
 
           {/* Media gallery */}
@@ -383,7 +383,7 @@ function RsvpBlock({
       </div>
 
       {/* The terms, shown before buying so nobody is surprised afterwards */}
-      {paid && !hasRsvp && canRsvp && (
+      {paid && !hasRsvp && canRsvp && !event.registrationClosed && (
         <div className="p-3.5 rounded-xl space-y-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
           <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Tickets are final</p>
           <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
@@ -432,6 +432,15 @@ function RsvpBlock({
           >
             {cancelPending ? <Loader2 size={15} className="animate-spin" /> : "Cancel my RSVP"}
           </Button>
+        ) : event.registrationClosed ? (
+          <div className="p-4 rounded-xl text-center" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
+            <p className="text-[14px] font-semibold mb-0.5" style={{ color: "var(--foreground)" }}>
+              {paid ? "Ticket sales are closed" : "RSVPs are closed"}
+            </p>
+            <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+              The organiser isn&apos;t taking {paid ? "more tickets" : "new RSVPs"} for this event. Anyone already going keeps their place.
+            </p>
+          </div>
         ) : (
           <Button
             className="w-full font-bold text-[15px] gap-2"

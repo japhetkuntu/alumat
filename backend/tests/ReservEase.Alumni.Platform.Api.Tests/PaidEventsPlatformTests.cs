@@ -66,15 +66,24 @@ public class PaidEventsPlatformTests
     }
 
     [Fact]
-    public async Task Paid_events_cannot_be_turned_on_without_a_payout_account()
+    public async Task Paid_events_can_be_turned_on_at_any_time_even_before_a_payout_account_exists()
     {
+        // Like any other feature: a permission the platform gives whenever it likes. Selling tickets still needs a payout account, which
+        // the organiser's event form checks, so money never lands in the platform account.
         var (s, db) = Create(Inst(subaccount: null));
 
         var response = await s.UpdatePaidEventsAsync("i1", new UpdatePaidEventsRequest { Enabled = true }, "staff", "Staff");
 
-        Assert.Equal(400, response.Code);
-        Assert.Contains("payout account", response.Message);
-        Assert.False((await TestDb.Create(db).Institutions.SingleAsync()).PaidEventsEnabled);
+        Assert.Equal(200, response.Code);
+        Assert.True(response.Data!.PaidEventsEnabled);
+        Assert.True((await TestDb.Create(db).Institutions.SingleAsync()).PaidEventsEnabled);
+    }
+
+    [Fact]
+    public async Task Paid_events_can_be_turned_on_for_an_institution_that_has_no_events_yet()
+    {
+        var (s, _) = Create(Inst());   // nothing else seeded: no events, no members, no payments
+        Assert.Equal(200, (await s.UpdatePaidEventsAsync("i1", new UpdatePaidEventsRequest { Enabled = true }, "staff", "Staff")).Code);
     }
 
     [Fact]

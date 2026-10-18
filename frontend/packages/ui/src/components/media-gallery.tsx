@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { X, ChevronLeft, ChevronRight, ZoomIn, ImageOff } from "./icons";
+import { ZoomIn, ImageOff } from "./icons";
+import { LightboxShell, LightboxDots } from "./lightbox";
 import { cn } from "../lib/utils";
 import { YouTubeGrid } from "./youtube-embed";
 
@@ -35,7 +35,6 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
   const hasImages = allImages.length > 0;
   const hasVideos = youtubeUrls && youtubeUrls.length > 0;
 
-  // Keyboard navigation & body scroll lock
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const goNext = useCallback(() => {
     setLightboxIndex((prev) => prev !== null ? (prev + 1) % allImages.length : null);
@@ -43,26 +42,6 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
   const goPrev = useCallback(() => {
     setLightboxIndex((prev) => prev !== null ? (prev - 1 + allImages.length) % allImages.length : null);
   }, [allImages.length]);
-
-  useEffect(() => {
-    if (lightboxIndex === null) return;
-
-    // Lock body scroll
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-      else if (e.key === "ArrowRight") goNext();
-      else if (e.key === "ArrowLeft") goPrev();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = original;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [lightboxIndex, closeLightbox, goNext, goPrev]);
 
   if (!hasImages && !hasVideos) return null;
 
@@ -116,77 +95,17 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
       )}
 
       {/* Lightbox */}
-      {lightboxIndex !== null && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-          onClick={closeLightbox}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Image ${lightboxIndex + 1} of ${allImages.length}`}
+      {lightboxIndex !== null && (
+        <LightboxShell
+          label={`Image ${lightboxIndex + 1} of ${allImages.length}`}
+          onClose={closeLightbox}
+          counter={allImages.length > 1 ? `${lightboxIndex + 1} / ${allImages.length}` : undefined}
+          onPrev={allImages.length > 1 ? goPrev : undefined}
+          onNext={allImages.length > 1 ? goNext : undefined}
+          footer={allImages.length > 1 && allImages.length <= 12 ? <LightboxDots count={allImages.length} index={lightboxIndex} onSelect={setLightboxIndex} /> : undefined}
         >
-          {/* Close button */}
-          <button
-            className="absolute h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
-            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
-            onClick={closeLightbox}
-            aria-label="Close lightbox"
-          >
-            <X size={20} />
-          </button>
-
-          {/* Image counter */}
-          {allImages.length > 1 && (
-            <div className="absolute left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium tabular-nums z-10" style={{ top: "max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
-              {lightboxIndex + 1} / {allImages.length}
-            </div>
-          )}
-
-          {/* Nav buttons */}
-          {allImages.length > 1 && (
-            <>
-              <button
-                className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
-                onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                aria-label="Previous image"
-              >
-                <ChevronLeft size={22} />
-              </button>
-              <button
-                className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
-                onClick={(e) => { e.stopPropagation(); goNext(); }}
-                aria-label="Next image"
-              >
-                <ChevronRight size={22} />
-              </button>
-            </>
-          )}
-
-          {/* Main image */}
-          <img
-            src={allImages[lightboxIndex]}
-            alt={`Image ${lightboxIndex + 1}`}
-            className="max-w-full max-h-[85vh] object-contain animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* Dots */}
-          {allImages.length > 1 && allImages.length <= 12 && (
-            <div className="absolute left-1/2 -translate-x-1/2 flex gap-1.5 z-10" style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>
-              {allImages.map((_, i) => (
-                <button
-                  key={i}
-                  className={cn(
-                    "h-2 transition-all duration-150",
-                    i === lightboxIndex ? "bg-white w-4" : "bg-white/40 w-2 hover:bg-white/60"
-                  )}
-                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                  aria-label={`Go to image ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>,
-        document.body,
+          <img src={allImages[lightboxIndex]} alt={`Image ${lightboxIndex + 1}`} className="h-full w-full object-contain animate-scale-in" />
+        </LightboxShell>
       )}
     </div>
   );
@@ -210,18 +129,6 @@ interface ZoomableImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...imgProps }: ZoomableImageProps) {
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = original;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
   return (
     <>
       <div
@@ -238,28 +145,10 @@ export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...i
         </div>
       </div>
 
-      {open && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Full image"
-        >
-          <button
-            type="button"
-            className="absolute h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
-            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-          <img src={src} alt={alt} className="max-w-full max-h-[90vh] object-contain animate-scale-in" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} />
-        </div>,
-        document.body,
+      {open && (
+        <LightboxShell label="Full image" onClose={() => setOpen(false)}>
+          <img src={src} alt={alt} className="h-full w-full object-contain animate-scale-in" />
+        </LightboxShell>
       )}
     </>
   );
@@ -324,25 +213,6 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
     }
   }, [photos.length, awaitingNext, lightboxIndex]);
 
-  useEffect(() => {
-    if (lightboxIndex === null) return;
-
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-      else if (e.key === "ArrowRight") goNext();
-      else if (e.key === "ArrowLeft") goPrev();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = original;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [lightboxIndex, closeLightbox, goNext, goPrev]);
-
   if (photos.length === 0) return null;
 
   const current = lightboxIndex !== null ? photos[lightboxIndex] : null;
@@ -399,75 +269,33 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
       )}
 
       {/* Lightbox */}
-      {current && lightboxIndex !== null && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
-          onClick={closeLightbox}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Photo ${lightboxIndex + 1} of ${photos.length}${hasMore ? "+" : ""}`}
+      {current && lightboxIndex !== null && (
+        <LightboxShell
+          label={`Photo ${lightboxIndex + 1} of ${photos.length}${hasMore ? "+" : ""}`}
+          onClose={closeLightbox}
+          counter={`${lightboxIndex + 1} / ${photos.length}${hasMore ? "+" : ""}`}
+          onPrev={goPrev}
+          onNext={goNext}
+          prevDisabled={lightboxIndex === 0}
+          nextDisabled={nextDisabled}
+          nextBusy={awaitingNext}
+          footer={current.caption || (photos.length > 1 && photos.length <= 12) ? (
+            <>
+              {current.caption && (
+                <p key={`caption-${lightboxIndex}`} className="max-w-2xl px-4 text-center text-sm text-white/80 animate-in fade-in duration-300">{current.caption}</p>
+              )}
+              {photos.length > 1 && photos.length <= 12 && <LightboxDots count={photos.length} index={lightboxIndex} onSelect={setLightboxIndex} />}
+            </>
+          ) : undefined}
         >
-          <button
-            className="absolute h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
-            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
-            onClick={closeLightbox}
-            aria-label="Close lightbox"
-          >
-            <X size={20} />
-          </button>
-
-          <div className="absolute left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium tabular-nums z-10" style={{ top: "max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
-            {lightboxIndex + 1} / {photos.length}{hasMore ? "+" : ""}
-          </div>
-
-          <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10 disabled:opacity-30 disabled:cursor-not-allowed"
-            onClick={(e) => { e.stopPropagation(); goPrev(); }}
-            disabled={lightboxIndex === 0}
-            aria-label="Previous photo"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10 disabled:opacity-30 disabled:cursor-not-allowed"
-            onClick={(e) => { e.stopPropagation(); goNext(); }}
-            disabled={nextDisabled}
-            aria-label="Next photo"
-          >
-            {awaitingNext ? <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <ChevronRight size={22} />}
-          </button>
-
-          <div className="flex flex-col items-center gap-3 max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
-            {/* Keying on the index forces a remount, replaying the fade/zoom-in on every navigation for a smooth crossfade rather than a hard cut. */}
-            <img
-              key={lightboxIndex}
-              src={current.url}
-              alt={current.caption ?? `Photo ${lightboxIndex + 1}`}
-              className="max-w-full max-h-[78vh] object-contain animate-in fade-in zoom-in-95 duration-300"
-            />
-            {current.caption && (
-              <p key={`caption-${lightboxIndex}`} className="text-white/80 text-sm text-center max-w-2xl px-4 animate-in fade-in duration-300">
-                {current.caption}
-              </p>
-            )}
-            {photos.length > 1 && photos.length <= 12 && (
-              <div className="flex gap-1.5">
-                {photos.map((_, i) => (
-                  <button
-                    key={i}
-                    className={cn(
-                      "h-2 transition-all duration-150",
-                      i === lightboxIndex ? "bg-white w-4" : "bg-white/40 w-2 hover:bg-white/60"
-                    )}
-                    onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                    aria-label={`Go to photo ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body,
+          {/* Keying on the index remounts the photo, replaying the fade/zoom-in on every navigation. */}
+          <img
+            key={lightboxIndex}
+            src={current.url}
+            alt={current.caption ?? `Photo ${lightboxIndex + 1}`}
+            className="h-full w-full object-contain animate-in fade-in zoom-in-95 duration-300"
+          />
+        </LightboxShell>
       )}
     </div>
   );

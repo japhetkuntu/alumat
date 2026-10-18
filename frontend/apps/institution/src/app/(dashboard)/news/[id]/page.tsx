@@ -1,6 +1,7 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { RichText } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -175,10 +176,7 @@ export default function AdminNewsDetailPage() {
       {/* Content */}
       <Card className="border-border/40">
         <CardContent className="p-6 lg:p-8">
-          <div
-            className="prose prose-sm dark:prose-invert max-w-none leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
+          <RichText className="max-w-none" content={post.content} />
         </CardContent>
       </Card>
 

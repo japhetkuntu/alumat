@@ -1,6 +1,8 @@
 "use client";
 
 import { shareMessages } from "@alumni/ui";
+import { richTextToPlain } from "@alumni/ui";
+import { RichTextEditor } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -295,7 +297,7 @@ export default function ServicesPage() {
                       <TableRow key={s.id}>
                         <TableCell>
                           <div className="font-medium">{s.name}</div>
-                          {s.description && <div className="text-[12px] text-muted-foreground line-clamp-1">{s.description}</div>}
+                          {s.description && <div className="text-[12px] text-muted-foreground line-clamp-1">{richTextToPlain(s.description)}</div>}
                         </TableCell>
                         <TableCell className="tabular-nums">{s.price > 0 ? formatCurrency(s.price) : "Free"}</TableCell>
                         <TableCell>{s.fields.length}</TableCell>
@@ -384,7 +386,7 @@ export default function ServicesPage() {
             </div>
             <div className="space-y-2">
               <Label>Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
-              <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} placeholder="What the service is and how long it usually takes." />
+              <RichTextEditor variant="compact" value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} minHeight={110} placeholder="What the service is and how long it usually takes." />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">

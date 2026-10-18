@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RichText } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
@@ -247,12 +248,11 @@ export default function CampaignDetailPage() {
             >
               {isMembership ? "About these dues" : "About this fundraiser"}
             </h2>
-            <p
-              className="whitespace-pre-wrap leading-[1.85]"
-              style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}
-            >
-              {campaign.description || `No details have been provided for this ${isMembership ? "membership dues item" : "fundraiser"} yet. Please contact the community office for more information.`}
-            </p>
+            {campaign.description ? (
+              <RichText className="text-[15.4px]" content={campaign.description} />
+            ) : (
+              <p className="leading-[1.85]" style={{ fontSize: "0.9625rem", color: "var(--muted-foreground)" }}>{`No details have been provided for this ${isMembership ? "membership dues item" : "fundraiser"} yet. Please contact the community office for more information.`}</p>
+            )}
           </div>
 
           {/* Updates — closes the loop on what the money actually did */}
