@@ -471,6 +471,23 @@ public static class EntityDtoExtensions
         CreatedAt = p.CreatedAt,
     };
 
+    public static EventUpdateDto ToDto(this EventUpdate u, bool includeAuthor = false) => new()
+    {
+        Id = u.Id,
+        EventId = u.EventId,
+        Title = u.Title,
+        Category = u.Category,
+        IsPinned = u.IsPinned,
+        PostedByName = includeAuthor ? u.PostedByName : null,
+        CreatedAt = u.CreatedAt,
+        UpdatedAt = u.UpdatedAt,
+        Blocks = u.Blocks.Select(b => new EventUpdateBlockDto
+        {
+            Id = b.Id, Type = b.Type, Heading = b.Heading, Text = b.Text, Url = b.Url, Label = b.Label,
+            Items = b.Items.Select(i => new EventUpdateItemDto { Url = i.Url, Name = i.Name, SizeBytes = i.SizeBytes, ContentType = i.ContentType }).ToList(),
+        }).ToList(),
+    };
+
     public static EventRsvpDto ToDto(this EventRsvp r) => new()
     {
         Id = r.Id,
@@ -483,6 +500,9 @@ public static class EntityDtoExtensions
         Status = r.Status,
         CreatedAt = r.CreatedAt,
         UpdatedAt = r.UpdatedAt,
+        // The price only means something once the ticket is paid; a pending or failed attempt shows nothing.
+        AmountPaid = r.Status == EventRsvpStatuses.Confirmed ? r.AmountPaid : null,
+        PaidAt = r.Status == EventRsvpStatuses.Confirmed ? r.PaidAt : null,
     };
 
     public static DirectoryMemberDto ToDto(this Member m) => new()

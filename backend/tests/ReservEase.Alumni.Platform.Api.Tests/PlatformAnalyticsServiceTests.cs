@@ -23,7 +23,7 @@ public class PlatformAnalyticsServiceTests
         var ctx = TestDb.Create(name);
         var service = new PlatformAnalyticsService(
             new AlumniPgRepository<Institution>(ctx), new AlumniPgRepository<Member>(ctx), new AlumniPgRepository<Contribution>(ctx),
-            new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx), NullLogger<PlatformAnalyticsService>.Instance);
+            new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx), new AlumniPgRepository<EventRsvp>(ctx), NullLogger<PlatformAnalyticsService>.Instance);
         return (await service.GetAnalyticsAsync(includeMoney)).Data!;
     }
 

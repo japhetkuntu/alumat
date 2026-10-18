@@ -144,6 +144,10 @@ public class MemberEventService(
             if (existing is { Status: "Confirmed" })
                 return ApiResponseExtensions.ToConflictApiResponse<object>("Already RSVP'd for this event");
 
+            // A paid event takes seats only through a ticket payment, never a free RSVP.
+            if (ev.IsTicketed)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event needs a ticket. Buy one to reserve your seat.");
+
             // A cancelled or finished event takes no new RSVPs, and an event with a capacity stops at it.
             if (ev.Status is "Cancelled" or "Completed")
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event is no longer open for RSVPs");
@@ -202,6 +206,9 @@ public class MemberEventService(
             var rsvp = await rsvpRepo.GetOneAsync(r => r.EventId == eventId && r.MemberId == member.Id);
             if (rsvp is null || rsvp.Status != "Confirmed")
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("RSVP not found");
+            // A bought ticket is final: no cancelling, no refund.
+            if (rsvp.IsPaidTicket)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This ticket can't be cancelled. " + EventTicketRules.NoRefundNotice);
 
             rsvp.Status = "Cancelled";
             rsvp.UpdatedAt = DateTime.UtcNow;

@@ -7,6 +7,8 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
 using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using EventRsvpEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EventRsvp;
 using ServiceRequestEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.ServiceRequest;
 using CampaignEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Campaign;
 using BatchEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch;
@@ -28,6 +30,7 @@ public class PayoutService(
     IAlumniPgRepository<ContributionEntity> contributionRepo,
     IAlumniPgRepository<StoreOrderEntity> storeOrderRepo,
     IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
+    IAlumniPgRepository<EventRsvpEntity> eventRsvpRepo,
     IAlumniPgRepository<CampaignEntity> campaignRepo,
     IAlumniPgRepository<BatchEntity> batchRepo,
     ILogger<PayoutService> logger) : IPayoutService
@@ -45,20 +48,24 @@ public class PayoutService(
         var lastContribs = await ExcludeBatchSettledAsync(await FetchContributionsAsync(windows.LastWindowStart, windows.LastWindowEnd));
         var lastOrders = await FetchOrdersAsync(windows.LastWindowStart, windows.LastWindowEnd);
         var lastRequests = await FetchServiceRequestsAsync(windows.LastWindowStart, windows.LastWindowEnd);
+        var lastTickets = await FetchTicketsAsync(windows.LastWindowStart, windows.LastWindowEnd);
         var nextContribs = await ExcludeBatchSettledAsync(await FetchContributionsAsync(windows.NextWindowStart, windows.NextWindowEnd));
         var nextOrders = await FetchOrdersAsync(windows.NextWindowStart, windows.NextWindowEnd);
         var nextRequests = await FetchServiceRequestsAsync(windows.NextWindowStart, windows.NextWindowEnd);
+        var nextTickets = await FetchTicketsAsync(windows.NextWindowStart, windows.NextWindowEnd);
 
         var perInstitution = institutions.Select(inst =>
         {
             var lastAmount = lastContribs.Where(c => c.InstitutionId == inst.Id).Sum(c => c.Amount)
                             + lastOrders.Where(o => o.InstitutionId == inst.Id).Sum(o => o.TotalAmount)
-                            + lastRequests.Where(r => r.InstitutionId == inst.Id).Sum(r => r.Amount);
-            var lastCount = lastContribs.Count(c => c.InstitutionId == inst.Id) + lastOrders.Count(o => o.InstitutionId == inst.Id) + lastRequests.Count(r => r.InstitutionId == inst.Id);
+                            + lastRequests.Where(r => r.InstitutionId == inst.Id).Sum(r => r.Amount)
+                            + lastTickets.Where(t => t.InstitutionId == inst.Id).Sum(t => t.AmountPaid ?? 0m);
+            var lastCount = lastContribs.Count(c => c.InstitutionId == inst.Id) + lastOrders.Count(o => o.InstitutionId == inst.Id) + lastRequests.Count(r => r.InstitutionId == inst.Id) + lastTickets.Count(t => t.InstitutionId == inst.Id);
             var nextAmount = nextContribs.Where(c => c.InstitutionId == inst.Id).Sum(c => c.Amount)
                             + nextOrders.Where(o => o.InstitutionId == inst.Id).Sum(o => o.TotalAmount)
-                            + nextRequests.Where(r => r.InstitutionId == inst.Id).Sum(r => r.Amount);
-            var nextCount = nextContribs.Count(c => c.InstitutionId == inst.Id) + nextOrders.Count(o => o.InstitutionId == inst.Id) + nextRequests.Count(r => r.InstitutionId == inst.Id);
+                            + nextRequests.Where(r => r.InstitutionId == inst.Id).Sum(r => r.Amount)
+                            + nextTickets.Where(t => t.InstitutionId == inst.Id).Sum(t => t.AmountPaid ?? 0m);
+            var nextCount = nextContribs.Count(c => c.InstitutionId == inst.Id) + nextOrders.Count(o => o.InstitutionId == inst.Id) + nextRequests.Count(r => r.InstitutionId == inst.Id) + nextTickets.Count(t => t.InstitutionId == inst.Id);
 
             return new InstitutionPayoutForecast(
                 inst.Id, inst.Name, !string.IsNullOrWhiteSpace(inst.PaystackSubaccountCode),
@@ -89,6 +96,11 @@ public class PayoutService(
     private async Task<List<StoreOrderEntity>> FetchOrdersAsync(DateTime start, DateTime end) =>
         (await storeOrderRepo.GetAllAsync(
             o => o.Status == "Successful" && o.PaymentMethod == "Paystack" && o.ConfirmedAt != null && o.ConfirmedAt >= start && o.ConfirmedAt < end,
+            ignoreQueryFilters: true)).ToList();
+
+    private async Task<List<EventRsvpEntity>> FetchTicketsAsync(DateTime start, DateTime end) =>
+        (await eventRsvpRepo.GetAllAsync(
+            t => t.Status == EventRsvpStatuses.Confirmed && t.AmountPaid > 0 && t.PaidAt != null && t.PaidAt >= start && t.PaidAt < end,
             ignoreQueryFilters: true)).ToList();
 
     private async Task<List<ServiceRequestEntity>> FetchServiceRequestsAsync(DateTime start, DateTime end) =>

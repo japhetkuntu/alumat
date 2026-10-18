@@ -11,6 +11,7 @@ using ReservEase.Alumni.Operations.Worker.Workflows.Notifications;
 using ReservEase.Alumni.Operations.Worker.Workflows.Reports;
 using ReservEase.Alumni.Operations.Worker.Workflows.ScheduledJobs;
 using ReservEase.Alumni.Operations.Worker.Workflows.ServiceRequests;
+using ReservEase.Alumni.Operations.Worker.Workflows.EventTickets;
 using ReservEase.Alumni.Operations.Worker.Workflows.StoreOrders;
 using ReservEase.Alumni.Paystack.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
@@ -60,9 +61,11 @@ builder.Services
     .AddWorkflow<ProcessContributionCallbackWorkflow>()
     .AddWorkflow<ProcessServiceRequestCallbackWorkflow>()
     .AddWorkflow<ProcessStoreOrderCallbackWorkflow>()
+    .AddWorkflow<ProcessEventTicketCallbackWorkflow>()
     .AddScopedActivities<ContributionCallbackActivities>()
     .AddScopedActivities<ServiceRequestCallbackActivities>()
-    .AddScopedActivities<StoreOrderCallbackActivities>();
+    .AddScopedActivities<StoreOrderCallbackActivities>()
+    .AddScopedActivities<EventTicketCallbackActivities>();
 
 // Its own queue, isolated from payment-callback processing — see
 // NotificationTaskQueues' doc comment for why.

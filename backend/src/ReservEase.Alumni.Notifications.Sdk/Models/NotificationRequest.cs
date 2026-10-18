@@ -208,6 +208,8 @@ public sealed class NotificationRequest
         MemberLifecycle(NotificationKind.EventCancelled, institutionId, memberId, "Event cancelled", $"\"{title}\" has been cancelled.", eventId);
     public static NotificationRequest EventDetailsChanged(string institutionId, string memberId, string eventId, string title) =>
         MemberLifecycle(NotificationKind.EventDetailsChanged, institutionId, memberId, "Event details changed", $"The date, time, location, or capacity for \"{title}\" changed.", eventId);
+    public static NotificationRequest EventUpdatePosted(string institutionId, string memberId, string eventId, string eventTitle, string updateTitle, string category) =>
+        MemberLifecycle(NotificationKind.EventUpdatePosted, institutionId, memberId, $"{category}: {updateTitle}", $"New update for \"{eventTitle}\".", eventId);
     public static NotificationRequest EventRsvpCancelled(string institutionId, string memberId, string eventId, string title) =>
         MemberLifecycle(NotificationKind.EventRsvpCancelled, institutionId, memberId, "RSVP cancelled", $"Your RSVP for \"{title}\" was cancelled.", eventId);
 

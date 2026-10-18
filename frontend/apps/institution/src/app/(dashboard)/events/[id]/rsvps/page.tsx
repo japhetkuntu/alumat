@@ -12,7 +12,7 @@ import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Card, CardContent } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
-import { formatDate } from "@alumni/ui";
+import { formatDate, formatCurrency } from "@alumni/ui";
 import { getEventRsvps, reopenRsvp } from "@/lib/institution-api";
 import { TableSkeleton } from "@alumni/ui";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 export default function EventRsvpsPage() {
   const { id } = useParams<{ id: string }>();
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<"Confirmed" | "Cancelled" | "All">("Confirmed");
+  const [status, setStatus] = useState<string>("Confirmed");
   const pageSize = 20;
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -30,6 +30,7 @@ export default function EventRsvpsPage() {
   });
 
   const rsvps = data?.results ?? [];
+  const hasTickets = rsvps.some((r) => r.amountPaid != null);
   const totalPages = data?.totalPages ?? 1;
 
   return (
@@ -49,11 +50,13 @@ export default function EventRsvpsPage() {
           <span className="text-sm font-semibold text-muted-foreground">Show</span>
           <select
             value={status}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) => { setStatus(e.target.value as "Confirmed" | "Cancelled" | "All"); setPage(1); }}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => { setStatus(e.target.value); setPage(1); }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
           >
             <option value="Confirmed">Confirmed</option>
             <option value="Cancelled">Cancelled</option>
+            <option value="PendingPayment">Awaiting payment</option>
+            <option value="PaymentFailed">Payment failed</option>
             <option value="All">All</option>
           </select>
         </div>
@@ -70,14 +73,15 @@ export default function EventRsvpsPage() {
                 <TableHead>Member</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Changed</TableHead>
+                {hasTickets && <TableHead>Ticket</TableHead>}
+                <TableHead>{hasTickets ? "Date" : "Changed"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={4}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={5}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={4} />
+                <TableSkeleton rows={4} cols={hasTickets ? 5 : 4} />
               ) : rsvps.length === 0 ? (
                 <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title="Registrations appear here" description="Members RSVP from their portal. Once they do, you see who is coming and can plan for numbers." /></TableCell></TableRow>
               ) : rsvps.map((r) => (
@@ -89,10 +93,15 @@ export default function EventRsvpsPage() {
                     {r.memberEmail ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={r.status === "Confirmed" ? "success" : "secondary"}>{r.status}</Badge>
+                    <Badge variant={r.status === "Confirmed" ? "success" : r.status === "PaymentFailed" ? "destructive" : "secondary"}>
+                      {r.status === "PendingPayment" ? "Awaiting payment" : r.status === "PaymentFailed" ? "Payment failed" : r.status}
+                    </Badge>
                   </TableCell>
+                  {hasTickets && (
+                    <TableCell className="text-sm">{r.status === "Confirmed" && r.amountPaid != null ? formatCurrency(r.amountPaid) : "—"}</TableCell>
+                  )}
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.status === "Cancelled" ? (r.updatedAt ? formatDate(r.updatedAt) : "—") : formatDate(r.createdAt)}
+                    {r.status === "Confirmed" && r.paidAt ? formatDate(r.paidAt) : r.status === "Cancelled" ? (r.updatedAt ? formatDate(r.updatedAt) : "—") : formatDate(r.createdAt)}
                   </TableCell>
                 </TableRow>
               ))}

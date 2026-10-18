@@ -225,6 +225,18 @@ public class InstitutionsController(IInstitutionManagementService institutionSer
         return result.ToActionResult();
     }
 
+    /// <summary>Whether this institution may charge for event tickets. Billing decides, because ticket sales go through the institution's payout account.</summary>
+    [Authorize(Roles = "SuperAdmin,Billing")]
+    [HttpPatch("{id}/paid-events")]
+    [SwaggerOperation(Summary = "Allow or stop paid event tickets for an institution")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionDetailResponse>))]
+    public async Task<IActionResult> UpdatePaidEvents(string id, [FromBody] UpdatePaidEventsRequest request)
+    {
+        var acct = User.GetAccount();
+        var result = await institutionService.UpdatePaidEventsAsync(id, request, acct.Id, $"{acct.FirstName} {acct.LastName}".Trim());
+        return result.ToActionResult();
+    }
+
     /// <summary>Update this institution's platform fee % and Paystack settlement banking details — keeps the Paystack subaccount in sync.</summary>
     [Authorize(Roles = "SuperAdmin,Billing")]
     [HttpPatch("{id}/payments")]

@@ -11,6 +11,8 @@ using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Cont
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ServiceRequestEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.ServiceRequest;
 using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using EventRsvpEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EventRsvp;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
 
@@ -26,6 +28,7 @@ public class ActivationWorkService(
     IAlumniPgRepository<ContributionEntity> contributionRepo,
     IAlumniPgRepository<StoreOrderEntity> storeOrderRepo,
     IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
+    IAlumniPgRepository<EventRsvpEntity> eventRsvpRepo,
     IEmailService emailService,
     IAuditLogService auditLog,
     IConfiguration configuration,
@@ -66,7 +69,8 @@ public class ActivationWorkService(
                 var c = await contributionRepo.GetQueryable(x => x.Status == "Successful" && (x.ConfirmedAt ?? x.CreatedAt) >= since, ignoreQueryFilters: true).SumAsync(x => (decimal?)x.Amount) ?? 0;
                 var o = await storeOrderRepo.GetQueryable(x => x.Status == "Successful" && (x.ConfirmedAt ?? x.CreatedAt) >= since, ignoreQueryFilters: true).SumAsync(x => (decimal?)x.TotalAmount) ?? 0;
                 var s = await serviceRequestRepo.GetQueryable(x => x.PaymentStatus == "Successful" && (x.ConfirmedAt ?? x.CreatedAt) >= since, ignoreQueryFilters: true).SumAsync(x => (decimal?)x.Amount) ?? 0;
-                return c + o + s;
+                var t = await eventRsvpRepo.GetQueryable(x => x.Status == EventRsvpStatuses.Confirmed && x.AmountPaid > 0 && (x.PaidAt ?? x.CreatedAt) >= since, ignoreQueryFilters: true).SumAsync(x => (decimal?)x.AmountPaid) ?? 0;
+                return c + o + s + t;
             }
             default:
                 return manual ?? 0;

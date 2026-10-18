@@ -21,6 +21,27 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-18",
+    title: "Event link button only appears when the organiser added a link, and it can be a meeting link",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+    body: "The member event page always showed a Google Maps button beside the venue, and when the organiser had added no link it opened a map search for the venue name. That is gone: the button now appears only when the organiser put a link on the event. The link can be a map or, for an online event, a meeting link (Zoom, Google Meet, Teams, Webex and similar, or any web page); members see \"Open in maps\", \"Join online\" or \"Open event link\" to match. The event form's field is now \"Map or meeting link\" and says that leaving it empty means no button. The server only accepts web addresses (http or https) for this link, so a saved link can never run code when tapped. No migration needed.",
+  },
+  {
+    date: "2026-10-18",
+    title: "Event updates: organisers post text, photos, video, links and files for the people going",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "Each event now has an Updates page for the organiser (Updates button on the event card). An update has a title, a category and any mix of parts, in any order and any number: text, photos (as many as needed, with drag and drop and a preview), a YouTube video, a link with a name and a line about it, and files (PDF, Word, Excel, PowerPoint, text, CSV, RTF, ZIP). Parts can be reordered and removed, and an update can be edited later (existing photos and files are kept, and more can be added), pinned to the top, or deleted. Categories are a short standard list (Announcement, Schedule, Reminder, Photos & video, Materials, Recap) or the organiser's own label. Only people with a seat read the content: members who are going (a free RSVP or a paid ticket) see the updates on the event page, with category filters, a photo gallery with full-screen viewing, click-to-play video, link cards and file downloads, and a New marker for what was posted since their last visit. Everyone else sees a locked card saying how many updates exist and of what kind, with a button to RSVP or buy a ticket, and none of the content is sent to them. Posting an update notifies each person going in the app and by push (never SMS or email, so it costs nothing); editing does not notify again, and members who switched event reminders off are respected. Tapping the notification opens the event at its updates. Only web links are accepted, videos must be YouTube, and file types and sizes are checked before anything is uploaded. Deleting an event deletes its updates. Deployment: one new migration (AddEventUpdates) must run first.",
+  },
+  {
+    date: "2026-10-18",
+    title: "Paid event tickets, switched on per institution by the platform",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Feature",
+    body: "An institution can now charge for an event. Platform staff (SuperAdmin or Billing) turn on \"Paid events\" for an institution on its Features tab; it is off for every institution until then, and it cannot be turned on until the institution has a payout account. With it on, the event form has a Tickets section: tick \"Charge for tickets\", set a price, and the event sells seats instead of taking free RSVPs. Members see the price and the terms before paying, pay through Paystack the same way as the store (the institution receives the full ticket price and the platform fee is added to what the buyer pays), and come back to a page that confirms their seat. Tickets are final: a member cannot cancel a bought ticket and nobody is refunded, and for the same reason the institution cannot cancel a paid event or delete one that has sold tickets. Once the first ticket is sold the price is locked, and the event cannot become free; date, venue and details can still change and attendees are told. A free event with RSVPs cannot become a paid one. Seats are held for 30 minutes while someone is paying, so two people cannot both take the last one. Turning paid events off stops new paid events and new ticket sales; tickets already bought stay valid. The institution sees tickets sold and the ticket money collected (never any fee). Ticket payments appear on the platform's payments list as Event tickets and are counted in revenue, payouts and the analytics totals. Deployment: one new migration (AddPaidEventTickets) must run first.",
+  },
+  {
+    date: "2026-10-18",
     title: "Adding an institution administrator now creates a SuperAdmin only",
     scopes: ["Platform", "Institution"],
     type: "Improvement",

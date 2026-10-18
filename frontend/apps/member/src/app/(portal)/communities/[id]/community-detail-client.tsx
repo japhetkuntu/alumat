@@ -431,10 +431,13 @@ export default function CommunityDetailPage() {
                         <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground"><MapPin size={11} /> {e.venue}</span>
                       </div>
                       <div className="mt-auto pt-3">
-                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && (
+                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && e.isTicketed && (
+                          <Button size="sm" className="w-full" onClick={() => router.push(`/events/${e.id}`)}>Get ticket{e.ticketPrice ? ` · ${formatCurrency(e.ticketPrice)}` : ""}</Button>
+                        )}
+                        {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && !e.isTicketed && (
                           <Button size="sm" className="w-full" onClick={() => rsvpMut.mutate(e.id)} isLoading={rsvpMut.isPending && rsvpMut.variables === e.id} loadingText="RSVPing">RSVP</Button>
                         )}
-                        {hasRsvp && <Badge variant="success" className="gap-1"><Check size={11} /> You're attending</Badge>}
+                        {hasRsvp && <Badge variant="success" className="gap-1"><Check size={11} /> {e.isTicketed ? "Ticket confirmed" : "You're attending"}</Badge>}
                       </div>
                     </div>
                   );

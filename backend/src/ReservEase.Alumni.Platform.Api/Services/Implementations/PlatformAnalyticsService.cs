@@ -19,6 +19,7 @@ public class PlatformAnalyticsService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
     IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
+    IAlumniPgRepository<EventRsvp> eventRsvpRepo,
     ILogger<PlatformAnalyticsService> logger) : IPlatformAnalyticsService
 {
     private const int TrendMonths = 12;
@@ -74,6 +75,11 @@ public class PlatformAnalyticsService(
                 .Select(g => new { g.Key.InstitutionId, g.Key.Year, g.Key.Month, Collected = g.Sum(r => r.Amount), Earned = g.Sum(r => r.PlatformFeeAmount), Latest = g.Max(r => r.ConfirmedAt ?? r.CreatedAt) })
                 .ToListAsync()).Select(x => new Payments(x.InstitutionId, x.Year, x.Month, x.Collected, x.Earned, x.Latest)));
 
+            payments.AddRange((await eventRsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0, ignoreQueryFilters: true)
+                .GroupBy(r => new { r.InstitutionId, (r.PaidAt ?? r.CreatedAt).Year, (r.PaidAt ?? r.CreatedAt).Month })
+                .Select(g => new { g.Key.InstitutionId, g.Key.Year, g.Key.Month, Collected = g.Sum(r => r.AmountPaid ?? 0m), Earned = g.Sum(r => r.PlatformFeeAmount), Latest = g.Max(r => r.PaidAt ?? r.CreatedAt) })
+                .ToListAsync()).Select(x => new Payments(x.InstitutionId, x.Year, x.Month, x.Collected, x.Earned, x.Latest)));
+
             var lastPayment = payments.GroupBy(p => p.InstitutionId).ToDictionary(g => g.Key, g => g.Max(p => p.Latest));
             // "Last 90 days" for the leaderboard needs day precision, which the monthly rollup above doesn't have.
             var recentPayments = new Dictionary<string, (decimal Collected, decimal Earned)>();
@@ -93,6 +99,10 @@ public class PlatformAnalyticsService(
                 .ToListAsync()).Select(x => (x.Key, x.Collected, x.Earned)));
             AddRecent((await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && (r.ConfirmedAt ?? r.CreatedAt) >= last90, ignoreQueryFilters: true)
                 .GroupBy(r => r.InstitutionId).Select(g => new { g.Key, Collected = g.Sum(r => r.Amount), Earned = g.Sum(r => r.PlatformFeeAmount) })
+                .ToListAsync()).Select(x => (x.Key, x.Collected, x.Earned)));
+
+            AddRecent((await eventRsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0 && (r.PaidAt ?? r.CreatedAt) >= last90, ignoreQueryFilters: true)
+                .GroupBy(r => r.InstitutionId).Select(g => new { g.Key, Collected = g.Sum(r => r.AmountPaid ?? 0m), Earned = g.Sum(r => r.PlatformFeeAmount) })
                 .ToListAsync()).Select(x => (x.Key, x.Collected, x.Earned)));
 
             var institutionIds = institutions.Select(i => i.Id).ToHashSet();
@@ -162,8 +172,10 @@ public class PlatformAnalyticsService(
             .GroupBy(o => 1).Select(g => new { Collected = g.Sum(o => o.TotalAmount), Earned = g.Sum(o => o.PlatformFeeAmount) }).FirstOrDefaultAsync();
         var requests = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && (r.ConfirmedAt ?? r.CreatedAt) >= from && (r.ConfirmedAt ?? r.CreatedAt) <= to, ignoreQueryFilters: true)
             .GroupBy(r => 1).Select(g => new { Collected = g.Sum(r => r.Amount), Earned = g.Sum(r => r.PlatformFeeAmount) }).FirstOrDefaultAsync();
-        return ((contributions?.Collected ?? 0) + (orders?.Collected ?? 0) + (requests?.Collected ?? 0),
-                (contributions?.Earned ?? 0) + (orders?.Earned ?? 0) + (requests?.Earned ?? 0));
+        var tickets = await eventRsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0 && (r.PaidAt ?? r.CreatedAt) >= from && (r.PaidAt ?? r.CreatedAt) <= to, ignoreQueryFilters: true)
+            .GroupBy(r => 1).Select(g => new { Collected = g.Sum(r => r.AmountPaid ?? 0m), Earned = g.Sum(r => r.PlatformFeeAmount) }).FirstOrDefaultAsync();
+        return ((contributions?.Collected ?? 0) + (orders?.Collected ?? 0) + (requests?.Collected ?? 0) + (tickets?.Collected ?? 0),
+                (contributions?.Earned ?? 0) + (orders?.Earned ?? 0) + (requests?.Earned ?? 0) + (tickets?.Earned ?? 0));
     }
 
     private static IEnumerable<DateTime> Months(DateTime first) => Enumerable.Range(0, TrendMonths).Select(i => first.AddMonths(i));

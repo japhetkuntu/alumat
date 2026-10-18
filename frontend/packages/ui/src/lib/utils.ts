@@ -31,6 +31,23 @@ export function formatDateTime(date: string | Date): string {
   }).format(new Date(date));
 }
 
+/** "1.4 MB", "220 KB". */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+}
+
+/** A short kind for a file, for its label: "PDF", "Word", "Excel", "PowerPoint", or the extension in capitals. */
+export function fileKind(name: string): string {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return "PDF";
+  if (ext === "doc" || ext === "docx") return "Word";
+  if (ext === "xls" || ext === "xlsx" || ext === "csv") return ext === "csv" ? "CSV" : "Excel";
+  if (ext === "ppt" || ext === "pptx") return "PowerPoint";
+  return ext ? ext.toUpperCase() : "File";
+}
+
 export function getInitials(name: string): string {
   return name
     .split(" ")

@@ -71,6 +71,8 @@ public static class ServiceRegistrationExtensions
     {
         services.AddSwaggerGen(c =>
         {
+            // A few endpoints take the same address as JSON or as a form with files (store checkout). Document the first.
+            c.ResolveConflictingActions(actions => actions.First());
             c.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = title,

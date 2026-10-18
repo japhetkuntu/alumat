@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SegmentedControl, ConfirmModal } from "@alumni/ui";
 import { NotifyMeButton } from "@/components/member/notify-me-button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ export default function MemberEventsPage() {
   const [communityId, setCommunityId] = useState<string | null>(() => searchParams.get("communityId"));
   const pageSize = 12;
   const qc = useQueryClient();
+  const router = useRouter();
 
   const { data: eventsData, isLoading } = useQuery({
     queryKey:        ["m-events-list", page, communityId],
@@ -124,6 +125,8 @@ export default function MemberEventsPage() {
                 key={e.id} event={e} hasRsvp={hasRsvp} isPast={isPast} canRsvp={canRsvp}
                 isFull={!!isFull} isPending={isPending} detailHref={`/events/${e.id}`}
                 onRsvp={() => {
+                  // A paid event is bought on its own page, where the no-refund terms are spelled out.
+                  if (e.isTicketed) { router.push(`/events/${e.id}`); return; }
                   if (hasRsvp) { setCancelTarget({ id: e.id, title: e.title }); return; }
                   setPendingId(e.id);
                   rsvpMut.mutate(e.id);

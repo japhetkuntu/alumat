@@ -71,7 +71,7 @@ public class RepresentativeScopeTests
         var inst = new AlumniPgRepository<Institution>(ctx);
         var institutions = new InstitutionManagementService(ctx,
             inst, new AlumniPgRepository<StaffEntity>(ctx), new AlumniPgRepository<MemberEntity>(ctx),
-            new AlumniPgRepository<Contribution>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx),
+            new AlumniPgRepository<Contribution>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx), new AlumniPgRepository<EventRsvp>(ctx), new AlumniPgRepository<AlumniEvent>(ctx),
             new AlumniPgRepository<PaymentTransactionEntity>(ctx), new AlumniPgRepository<Campaign>(ctx), new AlumniPgRepository<Batch>(ctx),
             new AlumniPgRepository<ForumCategory>(ctx), new AlumniPgRepository<PlatformStaff>(ctx), Mock.Of<IAuditLogService>(), paystack.Object,
             new ConfigurationBuilder().Build(), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false),

@@ -107,7 +107,8 @@ public record InstitutionDetailResponse(
     List<RegistrationField>? RegistrationFields = null,
     // Who is responsible for onboarding it and helping it grow.
     string? OwnerStaffId = null, string? OwnerName = null,
-    bool BroadcastEmailAllowed = false, bool BroadcastSmsAllowed = false, bool BroadcastWhatsAppAllowed = false);
+    bool BroadcastEmailAllowed = false, bool BroadcastSmsAllowed = false, bool BroadcastWhatsAppAllowed = false,
+    bool PaidEventsEnabled = false);
 
 /// <summary>Which broadcast channels this institution may use. In-app is free and always on, so it is not here.</summary>
 public class UpdateBroadcastChannelsRequest
@@ -115,6 +116,12 @@ public class UpdateBroadcastChannelsRequest
     public bool Email { get; set; }
     public bool Sms { get; set; }
     public bool WhatsApp { get; set; }
+}
+
+/// <summary>Whether this institution may charge for event tickets.</summary>
+public class UpdatePaidEventsRequest
+{
+    public bool Enabled { get; set; }
 }
 
 public class UpdateInstitutionStatusRequest
@@ -266,7 +273,7 @@ public record InstitutionRevenueResponse(
 /// place to help troubleshoot a member's payment issue.
 /// </summary>
 public record PlatformPaymentDto(
-    string Id, string Source, // "Contribution" | "StoreOrder"
+    string Id, string Source, // "Contribution" | "StoreOrder" | "ServiceRequest" | "EventTicket"
     string InstitutionId,
     string? PayerName, string? PayerEmail, string Description,
     decimal Amount, string Status, string PaymentMethod, string? TransactionRef,

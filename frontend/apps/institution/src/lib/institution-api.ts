@@ -12,6 +12,8 @@ import type {
   Job,
   AlumniEvent,
   EventRegistration,
+  EventUpdate,
+  EventUpdateBlockType,
   NewsPost,
   ForumCategory,
   ForumThread,
@@ -1039,6 +1041,77 @@ export interface UpdateEventBody {
   youtubeVideoUrls?: string[];
 }
 
+// ── Event updates ────────────────────────────────────────────────────────────
+
+/** A part being edited. New photos and files carry the File; ones already saved carry their url. */
+export interface EventUpdateDraftItem { key: string; name: string; sizeBytes: number; url?: string; contentType?: string; file?: File; /** Local preview of a new photo. */ previewUrl?: string }
+export interface EventUpdateDraftBlock {
+  id: string;
+  type: EventUpdateBlockType;
+  heading: string;
+  text: string;
+  url: string;
+  label: string;
+  items: EventUpdateDraftItem[];
+}
+export interface EventUpdateDraft { title: string; category: string; blocks: EventUpdateDraftBlock[] }
+
+/** The usual kinds of update. An organiser may type their own instead. */
+export const EVENT_UPDATE_CATEGORIES = ["Announcement", "Schedule", "Reminder", "Photos & video", "Materials", "Recap"] as const;
+
+function toUpdateFormData(draft: EventUpdateDraft): FormData {
+  const fd = new FormData();
+  fd.append("title", draft.title.trim());
+  fd.append("category", draft.category.trim());
+  // The parts go as JSON; new files go beside them, each named with the id of the part it belongs to.
+  fd.append("blocksJson", JSON.stringify(draft.blocks.map((b) => ({
+    id: b.id, type: b.type,
+    heading: b.heading.trim() || undefined, text: b.text.trim() || undefined,
+    url: b.url.trim() || undefined, label: b.label.trim() || undefined,
+    items: b.items.filter((i) => !i.file).map((i) => ({ url: i.url, name: i.name, sizeBytes: i.sizeBytes, contentType: i.contentType })),
+  }))));
+  for (const b of draft.blocks) for (const i of b.items) if (i.file) fd.append(b.id, i.file);
+  return fd;
+}
+
+export async function getEventUpdates(eventId: string): Promise<EventUpdate[]> {
+  const res = await institutionClient.get<ApiResponse<EventUpdate[]>>(`/events/${eventId}/updates`);
+  return res.data.data ?? [];
+}
+
+export async function createEventUpdate(eventId: string, draft: EventUpdateDraft): Promise<EventUpdate> {
+  const res = await institutionClient.post<ApiResponse<EventUpdate>>(`/events/${eventId}/updates`, toUpdateFormData(draft), { headers: { "Content-Type": "multipart/form-data" }, timeout: 0 });
+  return res.data.data!;
+}
+
+export async function updateEventUpdate(eventId: string, updateId: string, draft: EventUpdateDraft): Promise<EventUpdate> {
+  const res = await institutionClient.put<ApiResponse<EventUpdate>>(`/events/${eventId}/updates/${updateId}`, toUpdateFormData(draft), { headers: { "Content-Type": "multipart/form-data" }, timeout: 0 });
+  return res.data.data!;
+}
+
+export async function pinEventUpdate(eventId: string, updateId: string, pinned: boolean): Promise<EventUpdate> {
+  const res = await institutionClient.put<ApiResponse<EventUpdate>>(`/events/${eventId}/updates/${updateId}/pin`, null, { params: { pinned } });
+  return res.data.data!;
+}
+
+export async function deleteEventUpdate(eventId: string, updateId: string) {
+  const res = await institutionClient.delete<ApiResponse<unknown>>(`/events/${eventId}/updates/${updateId}`);
+  return res.data;
+}
+
+export interface EventTicketing { paidEventsEnabled: boolean; payoutReady: boolean }
+
+/** Whether this community may charge for event tickets (the platform decides), and whether its payout account is ready. */
+export async function getEventTicketing(): Promise<EventTicketing> {
+  const res = await institutionClient.get<ApiResponse<EventTicketing>>("/events/ticketing");
+  return res.data.data!;
+}
+
+export async function getEvent(id: string) {
+  const res = await institutionClient.get<ApiResponse<AlumniEvent>>(`/events/${id}`);
+  return res.data.data!;
+}
+
 export async function getEvents(page = 1, pageSize = 20) {
   const res = await institutionClient.get<ApiResponse<PagedResult<AlumniEvent>>>("/events", {
     params: { page, pageSize },
@@ -1070,7 +1143,7 @@ export async function cancelEvent(id: string) {
   return res.data;
 }
 
-export async function getEventRsvps(id: string, page = 1, pageSize = 50, status = "Confirmed") {
+export async function getEventRsvps(id: string, page = 1, pageSize = 50, status: string = "Confirmed") {
   const res = await institutionClient.get<ApiResponse<PagedResult<EventRegistration>>>(`/events/${id}/rsvps`, {
     params: { page, pageSize, status },
   });

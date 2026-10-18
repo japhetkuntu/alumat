@@ -24,6 +24,8 @@ using StaffEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Institution
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using ContributionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Contribution;
 using StoreOrderEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.StoreOrder;
+using EventRsvpEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EventRsvp;
+using EventEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AlumniEvent;
 using ServiceRequestEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.ServiceRequest;
 using PaymentTransactionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.PaymentTransaction;
 
@@ -42,6 +44,8 @@ public class InstitutionManagementService(
     IAlumniPgRepository<ContributionEntity> contributionRepo,
     IAlumniPgRepository<StoreOrderEntity> storeOrderRepo,
     IAlumniPgRepository<ServiceRequestEntity> serviceRequestRepo,
+    IAlumniPgRepository<EventRsvpEntity> eventRsvpRepo,
+    IAlumniPgRepository<EventEntity> eventRepo,
     IAlumniPgRepository<PaymentTransactionEntity> paymentTransactionRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Batch> batchRepo,
@@ -137,6 +141,11 @@ public class InstitutionManagementService(
             .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(r => r.PlatformFeeAmount) })
             .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
 
+        var ticketRevenues = await eventRsvpRepo.GetQueryable(r => instIds.Contains(r.InstitutionId) && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0, ignoreQueryFilters: true)
+            .GroupBy(r => r.InstitutionId)
+            .Select(g => new { InstitutionId = g.Key, Revenue = g.Sum(r => r.PlatformFeeAmount) })
+            .ToDictionaryAsync(x => x.InstitutionId, x => x.Revenue);
+
         var ownerIds = institutions.Where(i => i.OwnerStaffId != null).Select(i => i.OwnerStaffId!).Distinct().ToList();
         var ownerNames = ownerIds.Count == 0
             ? new Dictionary<string, string>()
@@ -146,7 +155,7 @@ public class InstitutionManagementService(
             i.Id, i.Name, i.Slug, i.CustomDomain, i.ContactName, i.ContactEmail,
             i.LogoUrl, i.Status, memberCounts.GetValueOrDefault(i.Id), i.OnboardedAt,
             i.PlatformFeePercentage,
-            contributionRevenues.GetValueOrDefault(i.Id) + storeRevenues.GetValueOrDefault(i.Id) + serviceRevenues.GetValueOrDefault(i.Id),
+            contributionRevenues.GetValueOrDefault(i.Id) + storeRevenues.GetValueOrDefault(i.Id) + serviceRevenues.GetValueOrDefault(i.Id) + ticketRevenues.GetValueOrDefault(i.Id),
             MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug),
             i.OwnerStaffId, i.OwnerStaffId is null ? null : ownerNames.GetValueOrDefault(i.OwnerStaffId))).ToList();
 
@@ -591,6 +600,35 @@ public class InstitutionManagementService(
         }
     }
 
+    public async Task<IApiResponse<InstitutionDetailResponse>> UpdatePaidEventsAsync(string id, UpdatePaidEventsRequest request, string updatedBy, string actorName)
+    {
+        try
+        {
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == id);
+            if (institution is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<InstitutionDetailResponse>("Institution not found");
+
+            // Tickets are paid out through the institution's own Paystack subaccount; without one the money would land
+            // in the platform account, so paid events cannot be switched on until payouts are set up.
+            if (request.Enabled && string.IsNullOrWhiteSpace(institution.PaystackSubaccountCode))
+                return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionDetailResponse>(
+                    "Set up this institution's payout account (Payments tab) before turning on paid events.");
+
+            institution.PaidEventsEnabled = request.Enabled;
+            institution.UpdatedAt = DateTime.UtcNow;
+            institution.UpdatedBy = updatedBy;
+            await institutionRepo.UpdateAsync(institution);
+            await auditLog.LogAsync(updatedBy, actorName, request.Enabled ? "allowed paid events" : "turned off paid events", institution.Name);
+
+            return (await ToDetailDtoAsync(institution)).ToOkApiResponse(request.Enabled ? "Paid events turned on" : "Paid events turned off");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "UpdatePaidEventsAsync failed");
+            return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionDetailResponse>("Failed to update paid events");
+        }
+    }
+
     public async Task<IApiResponse<InstitutionDetailResponse>> UpdateInstitutionSlug(string id, UpdateInstitutionSlugRequest request, AuthData admin)
     {
         try
@@ -770,6 +808,7 @@ public class InstitutionManagementService(
         var confirmed = (await contributionRepo.GetAllAsync(c => c.InstitutionId == id && c.Status == "Successful", ignoreQueryFilters: true)).ToList();
         var confirmedOrders = (await storeOrderRepo.GetAllAsync(o => o.InstitutionId == id && o.Status == "Successful", ignoreQueryFilters: true)).ToList();
         var confirmedRequests = (await serviceRequestRepo.GetAllAsync(r => r.InstitutionId == id && r.PaymentStatus == "Successful", ignoreQueryFilters: true)).ToList();
+        var confirmedTickets = (await eventRsvpRepo.GetAllAsync(r => r.InstitutionId == id && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0, ignoreQueryFilters: true)).ToList();
 
         // A campaign targeting exactly one batch settles straight into that
         // batch's own Paystack subaccount once its payout setup is approved
@@ -790,11 +829,11 @@ public class InstitutionManagementService(
         // now (nothing deducted). Store orders and service requests included
         // alongside contributions — they earn the platform fee identically,
         // through the same Zero-Deduction charge.
-        var gross = institutionSettledContributions.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount);
-        var fee = confirmed.Sum(c => c.PlatformRevenueAmount) + confirmedOrders.Sum(o => o.PlatformFeeAmount) + confirmedRequests.Sum(r => r.PlatformFeeAmount);
-        var net = institutionSettledContributions.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount);
+        var gross = institutionSettledContributions.Sum(c => c.Amount) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount) + confirmedTickets.Sum(r => r.AmountPaid ?? 0m);
+        var fee = confirmed.Sum(c => c.PlatformRevenueAmount) + confirmedOrders.Sum(o => o.PlatformFeeAmount) + confirmedRequests.Sum(r => r.PlatformFeeAmount) + confirmedTickets.Sum(r => r.PlatformFeeAmount);
+        var net = institutionSettledContributions.Sum(c => c.NetAmountToInstitution) + confirmedOrders.Sum(o => o.TotalAmount) + confirmedRequests.Sum(r => r.Amount) + confirmedTickets.Sum(r => r.AmountPaid ?? 0m);
 
-        return new InstitutionRevenueResponse(id, gross, fee, net, institutionSettledContributions.Count + confirmedOrders.Count + confirmedRequests.Count).ToOkApiResponse();
+        return new InstitutionRevenueResponse(id, gross, fee, net, institutionSettledContributions.Count + confirmedOrders.Count + confirmedRequests.Count + confirmedTickets.Count).ToOkApiResponse();
 
         }
         catch (Exception e)
@@ -941,6 +980,26 @@ public class InstitutionManagementService(
                 r.PaymentStatus == "Successful" ? r.PlatformFeeAmount : 0m)));
         }
 
+        if (string.IsNullOrEmpty(source) || source == "EventTicket")
+        {
+            // Only tickets whose payment was actually started: free RSVPs are not payments.
+            var tickets = (await eventRsvpRepo.GetAllAsync(r => r.TransactionRef != null && (string.IsNullOrEmpty(id) || r.InstitutionId == id), ignoreQueryFilters: true)).ToList();
+            var eventIds = tickets.Select(t => t.EventId).Distinct().ToList();
+            var memberIds = tickets.Select(t => t.MemberId).Distinct().ToList();
+            var titles = (await eventRepo.GetAllAsync(e => eventIds.Contains(e.Id), ignoreQueryFilters: true)).ToDictionary(e => e.Id, e => e.Title);
+            var payers = (await memberRepo.GetAllAsync(m => memberIds.Contains(m.Id), ignoreQueryFilters: true)).ToDictionary(m => m.Id);
+            payments.AddRange(tickets.Select(t =>
+            {
+                payers.TryGetValue(t.MemberId, out var payer);
+                var paid = t.Status == EventRsvpStatuses.Confirmed;
+                return new PlatformPaymentDto(
+                    t.Id, "EventTicket", t.InstitutionId,
+                    payer is null ? null : $"{payer.FirstName} {payer.LastName}", payer?.Email,
+                    titles.GetValueOrDefault(t.EventId) ?? "Event ticket", t.AmountPaid ?? 0m, TicketPaymentStatus(t.Status), "Paystack", t.TransactionRef,
+                    t.CreatedAt, t.PaidAt, t.PlatformFeeAmount, t.GatewayFeeAmount, paid ? t.PlatformFeeAmount : 0m);
+            }));
+        }
+
         if (!string.IsNullOrEmpty(status))
             payments = payments.Where(p => p.Status == status).ToList();
 
@@ -968,6 +1027,14 @@ public class InstitutionManagementService(
             logger.LogError(e, "GetPaymentsAsync failed");
             return ApiResponseExtensions.ToServerErrorApiResponse<PgPagedResult<PlatformPaymentDto>>("Failed to getpayments");
         }}
+
+    /// <summary>The words every other payment source uses for a ticket's state.</summary>
+    private static string TicketPaymentStatus(string rsvpStatus) => rsvpStatus switch
+    {
+        EventRsvpStatuses.Confirmed => "Successful",
+        EventRsvpStatuses.PendingPayment => "Pending",
+        _ => "Failed",
+    };
 
     /// <summary>
     /// Full detail for a single payment — tries Contribution first, then StoreOrder,
@@ -1047,6 +1114,27 @@ public class InstitutionManagementService(
                     request.PaymentStatus, request.CreatedAt, request.ConfirmedAt,
                     request.PaymentMethod, request.Channel, request.GatewayResponse, request.TransactionRef,
                     request.PaymentStatus == "Successful" ? request.PlatformFeeAmount : 0m)
+                    .ToOkApiResponse();
+            }
+        }
+
+        if (string.IsNullOrEmpty(source) || source == "EventTicket")
+        {
+            var ticket = await eventRsvpRepo.GetOneAsync(r => r.Id == paymentId && r.InstitutionId == institutionId && r.TransactionRef != null, ignoreQueryFilters: true);
+            if (ticket is not null)
+            {
+                var payer = await memberRepo.GetOneAsync(m => m.Id == ticket.MemberId, ignoreQueryFilters: true);
+                var title = (await eventRepo.GetOneAsync(e => e.Id == ticket.EventId, ignoreQueryFilters: true))?.Title;
+                var paid = ticket.Status == EventRsvpStatuses.Confirmed;
+                return new PaymentDetailDto(
+                    ticket.Id, "EventTicket", ticket.InstitutionId,
+                    payer is null ? null : $"{payer.FirstName} {payer.LastName}", payer?.Email, payer?.MemberNumber,
+                    title, null,
+                    ticket.AmountPaid ?? 0m, ticket.PlatformFeeAmount, ticket.GatewayFeeAmount,
+                    ticket.TransactionChargeAmount, ticket.GrossChargeAmount,
+                    TicketPaymentStatus(ticket.Status), ticket.CreatedAt, ticket.PaidAt,
+                    "Paystack", ticket.Channel, ticket.GatewayResponse, ticket.TransactionRef,
+                    paid ? ticket.PlatformFeeAmount : 0m)
                     .ToOkApiResponse();
             }
         }
@@ -1150,7 +1238,9 @@ public class InstitutionManagementService(
             .SumAsync(o => o.PlatformFeeAmount);
         var serviceRevenue = await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful", ignoreQueryFilters: true)
             .SumAsync(r => r.PlatformFeeAmount);
-        var revenue = contributionRevenue + storeRevenue + serviceRevenue;
+        var ticketRevenue = await eventRsvpRepo.GetQueryable(r => r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0, ignoreQueryFilters: true)
+            .SumAsync(r => r.PlatformFeeAmount);
+        var revenue = contributionRevenue + storeRevenue + serviceRevenue + ticketRevenue;
 
         var growthCounts = new List<int>();
         var growthLabels = new List<string>();
@@ -1351,7 +1441,9 @@ public class InstitutionManagementService(
             .SumAsync(o => o.PlatformFeeAmount);
         var serviceRevenue = await serviceRequestRepo.GetQueryable(r => r.InstitutionId == i.Id && r.PaymentStatus == "Successful", ignoreQueryFilters: true)
             .SumAsync(r => r.PlatformFeeAmount);
-        var revenue = contributionRevenue + storeRevenue + serviceRevenue;
+        var ticketRevenue = await eventRsvpRepo.GetQueryable(r => r.InstitutionId == i.Id && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0, ignoreQueryFilters: true)
+            .SumAsync(r => r.PlatformFeeAmount);
+        var revenue = contributionRevenue + storeRevenue + serviceRevenue + ticketRevenue;
         return new InstitutionDetailResponse(
             i.Id, i.Name, i.Slug, i.CustomDomain,
             i.PortalName, i.Tagline, i.ContactName, i.ContactEmail, i.SupportEmail,
@@ -1368,6 +1460,6 @@ public class InstitutionManagementService(
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
             MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug), i.GraduationYearMode, i.RegistrationFields,
             i.OwnerStaffId, i.OwnerStaffId is null ? null : (await platformStaffRepo.GetOneAsync(s => s.Id == i.OwnerStaffId))?.Name,
-            i.BroadcastEmailAllowed, i.BroadcastSmsAllowed, i.BroadcastWhatsAppAllowed);
+            i.BroadcastEmailAllowed, i.BroadcastSmsAllowed, i.BroadcastWhatsAppAllowed, i.PaidEventsEnabled);
     }
 }

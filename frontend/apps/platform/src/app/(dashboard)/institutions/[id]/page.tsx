@@ -28,7 +28,7 @@ import {
   getInstitution, updateInstitutionBranding, updateInstitutionStatus, updateInstitutionName, updateInstitutionSlug, deleteInstitution, updateInstitutionMemberPolicy,
   updateInstitutionAutoApproveMembers,
   updateInstitutionOrganizationType,
-  updateInstitutionFeatures, getFeatureCatalog, updateBroadcastChannels,
+  updateInstitutionFeatures, getFeatureCatalog, updateBroadcastChannels, updatePaidEvents,
   updateInstitutionPayments, getInstitutionRevenue, getInstitutionPayments, type PlatformPayment,
   getPaymentDetail, type PaymentDetail,
   updateInstitutionLandingContent, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
@@ -183,6 +183,54 @@ function BroadcastChannelsCard({ institutionId, email, sms, whatsApp }: { instit
           </label>
         ))}
         <p className="text-[12.5px] text-muted-foreground">In-app: always on.</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Whether this institution may charge for event tickets. Ticket money goes to the institution's payout account, so that has to exist first. */
+function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId: string; enabled: boolean; payoutReady: boolean }) {
+  const qc = useQueryClient();
+  const save = useMutation({
+    mutationFn: (next: boolean) => updatePaidEvents(institutionId, next),
+    onSuccess: (_d, next) => { toast.success(next ? "Paid events turned on" : "Paid events turned off"); qc.invalidateQueries({ queryKey: ["institution", institutionId] }); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+  return (
+    <Card className="max-w-[1100px] mb-5">
+      <div className="px-5 py-4 border-b border-border">
+        <p className="text-[14px] font-semibold">Paid events</p>
+        <p className="text-[12px] text-muted-foreground mt-0.5">
+          Lets this institution charge for event tickets. Off by default. Enforced on the server.
+        </p>
+      </div>
+      <CardContent className="p-5 space-y-3">
+        <label className="flex cursor-pointer items-start justify-between gap-4 border border-border px-4 py-3">
+          <span className="min-w-0">
+            <span className="block text-[13.5px] font-semibold">Allow ticketed events</span>
+            <span className="block text-[12.5px] text-muted-foreground">
+              Members pay online to reserve a seat. Tickets are final: no cancelling and no refunds, and the institution cannot cancel a paid event.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={enabled}
+            disabled={save.isPending || (!enabled && !payoutReady)}
+            onChange={(e) => save.mutate(e.target.checked)}
+            className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
+            aria-label="Allow ticketed events"
+          />
+        </label>
+        {!payoutReady && (
+          <p className="text-[12.5px] text-muted-foreground">
+            Set up this institution&apos;s payout account on the Payments tab first. Without it, ticket money would go to the platform account.
+          </p>
+        )}
+        {!enabled ? null : (
+          <p className="text-[12.5px] text-muted-foreground">
+            Turning this off stops new paid events and new ticket sales. Tickets already bought stay valid.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -941,6 +989,9 @@ export default function InstitutionDetailPage() {
             whatsApp={!!inst.broadcastWhatsAppAllowed}
           />
         )}
+        {(isSuperAdmin || signedIn?.role === "Billing") && (
+          <PaidEventsCard institutionId={id} enabled={!!inst.paidEventsEnabled} payoutReady={!!inst.paystackSubaccountCode} />
+        )}
         <Card className="max-w-[1100px]">
           <div className="px-5 py-4 border-b border-border">
             <p className="text-[14px] font-semibold">Feature access</p>
@@ -1287,6 +1338,7 @@ export default function InstitutionDetailPage() {
                     { value: "Contribution", label: "Contributions" },
                     { value: "StoreOrder", label: "Store orders" },
                     { value: "ServiceRequest", label: "Service requests" },
+                    { value: "EventTicket", label: "Event tickets" },
                   ]}
                   className="w-[150px]"
                 />
@@ -1336,7 +1388,7 @@ export default function InstitutionDetailPage() {
                             <p className="text-[12px] text-muted-foreground">{p.payerEmail}</p>
                           </td>
                           <td className="px-5 py-3">{p.description}</td>
-                          <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : p.source === "StoreOrder" ? "Store order" : "Service request"}</td>
+                          <td className="px-5 py-3 text-muted-foreground">{p.source === "Contribution" ? "Contribution" : p.source === "StoreOrder" ? "Store order" : p.source === "EventTicket" ? "Event ticket" : "Service request"}</td>
                           <td className="px-5 py-3 font-semibold">{formatCurrency(p.amount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.platformEarnedAmount, "GHS")}</td>
                           <td className="px-5 py-3 text-muted-foreground">{formatCurrency(p.gatewayFeeAmount, "GHS")}</td>
@@ -1473,7 +1525,7 @@ export default function InstitutionDetailPage() {
               <Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
             <p className="text-[12px] text-muted-foreground">
-              They&apos;ll get an email with a link to set their own password, no temp password to relay.
+              They&apos;ll be a SuperAdmin of this institution and can add their own team from their portal. They&apos;ll get an email with a link to set their own password, no temp password to relay.
             </p>
             <FormError message={inviteError} />
           </div>

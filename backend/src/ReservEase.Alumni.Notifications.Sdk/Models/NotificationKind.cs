@@ -29,6 +29,8 @@ public enum NotificationKind
     EventCancelled,
     EventDetailsChanged,
     EventRsvpCancelled,
+    /// <summary>The organiser posted an update to an event; sent to each member who is going. In-app and push only, never SMS or email.</summary>
+    EventUpdatePosted,
     /// <summary>A member submitted something an administrator must decide (a listing, a suggestion, a story, a mentor profile).</summary>
     RequestAwaitingReview,
 }

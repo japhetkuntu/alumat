@@ -104,7 +104,14 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 mt-auto pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                    {canRsvp ? (
+                    {canRsvp && e.isTicketed && hasRsvp ? (
+                      <span
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold"
+                        style={{ background: "rgba(34,197,94,0.1)", color: "var(--success, #16a34a)" }}
+                      >
+                        <CheckCircle2 size={13} /> Ticket confirmed
+                      </span>
+                    ) : canRsvp ? (
                       <Button
                         size="sm"
                         variant={hasRsvp ? "outline" : "default"}
@@ -115,7 +122,7 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                         style={{ height: 38 }}
                         disabled={isPending || (isFull && !hasRsvp)}
                         onClick={onRsvp}
-                        aria-label={`${hasRsvp ? "Cancel RSVP for" : "RSVP for"} ${e.title}`}
+                        aria-label={`${hasRsvp ? "Cancel RSVP for" : e.isTicketed ? "Get a ticket for" : "RSVP for"} ${e.title}`}
                       >
                         {isPending ? (
                           <Loader2 size={14} className="animate-spin" />
@@ -123,6 +130,8 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                           "Cancel RSVP"
                         ) : isFull ? (
                           "Event full"
+                        ) : e.isTicketed ? (
+                          "Get ticket"
                         ) : (
                           "RSVP"
                         )}

@@ -24,6 +24,7 @@ public class PaystackCallbackController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ITemporalClientProvider _temporalProvider;
     private readonly IStoreOrderService _storeOrderService;
+    private readonly IEventTicketService _eventTicketService;
     private readonly IServiceRequestService _serviceRequestService;
     private readonly IContributionService _contributionService;
 
@@ -32,6 +33,7 @@ public class PaystackCallbackController : ControllerBase
         IConfiguration configuration,
         ITemporalClientProvider temporalProvider,
         IStoreOrderService storeOrderService,
+        IEventTicketService eventTicketService,
         IServiceRequestService serviceRequestService,
         IContributionService contributionService)
     {
@@ -39,6 +41,7 @@ public class PaystackCallbackController : ControllerBase
         _configuration = configuration;
         _temporalProvider = temporalProvider;
         _storeOrderService = storeOrderService;
+        _eventTicketService = eventTicketService;
         _serviceRequestService = serviceRequestService;
         _contributionService = contributionService;
     }
@@ -127,6 +130,9 @@ public class PaystackCallbackController : ControllerBase
 
             case PaystackReferencePrefix.StoreOrder:
                 return await StartStoreOrderWorkflowAsync(reference, rawBody);
+
+            case PaystackReferencePrefix.EventTicket:
+                return await StartEventTicketWorkflowAsync(reference, rawBody);
         }
 
         if (await _contributionService.OwnsReferenceAsync(reference))
@@ -159,6 +165,12 @@ public class PaystackCallbackController : ControllerBase
             $"payment-callback-storeorder-{reference}",
             reference,
             (IProcessStoreOrderCallbackWorkflow wf) => wf.RunAsync(new ProcessPaymentCallbackRequest("Paystack", reference, rawBody)));
+
+    private Task<IActionResult?> StartEventTicketWorkflowAsync(string reference, string rawBody) =>
+        StartWorkflowAsync(
+            $"payment-callback-eventticket-{reference}",
+            reference,
+            (IProcessEventTicketCallbackWorkflow wf) => wf.RunAsync(new ProcessPaymentCallbackRequest("Paystack", reference, rawBody)));
 
     private async Task<IActionResult?> StartWorkflowAsync<TWorkflow>(
         string workflowId, string reference, System.Linq.Expressions.Expression<Func<TWorkflow, Task>> runCall)

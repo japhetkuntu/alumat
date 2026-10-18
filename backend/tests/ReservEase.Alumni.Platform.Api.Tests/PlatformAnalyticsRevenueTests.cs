@@ -20,7 +20,7 @@ public class PlatformAnalyticsRevenueTests
         }
         var ctx = TestDb.Create(name);
         return new PlatformAnalyticsService(new AlumniPgRepository<Institution>(ctx), new AlumniPgRepository<MemberEntity>(ctx), new AlumniPgRepository<Contribution>(ctx),
-            new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx), NullLogger<PlatformAnalyticsService>.Instance);
+            new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx), new AlumniPgRepository<EventRsvp>(ctx), NullLogger<PlatformAnalyticsService>.Instance);
     }
 
     private static Contribution Paid(decimal amount, decimal platformFee, decimal revenue) => new()

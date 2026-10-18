@@ -87,6 +87,27 @@ public class EventsController(IEventService eventService) : DefaultController
         return result.ToActionResult();
     }
 
+    /// <summary>Whether this community may charge for tickets, and whether its payout account is ready. Drives the event form.</summary>
+    [HttpGet("ticketing")]
+    [SwaggerOperation(Summary = "Paid-event availability for this community")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<EventTicketingDto>))]
+    public async Task<IActionResult> GetTicketing()
+    {
+        var result = await eventService.GetTicketingAsync();
+        return result.ToActionResult();
+    }
+
+    /// <summary>One event, with its ticket sales when it is a paid one.</summary>
+    [HttpGet("{eventId}")]
+    [SwaggerOperation(Summary = "Get an event")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<AlumniEventDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetEvent(string eventId)
+    {
+        var result = await eventService.GetEventByIdAsync(eventId, User.GetAccount());
+        return result.ToActionResult();
+    }
+
     /// <summary>
     /// Get RSVPs for an event.
     /// </summary>

@@ -1422,6 +1422,15 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("AmountPaid")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("CallbackPayload")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Channel")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1433,6 +1442,18 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("FailureMessage")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("GatewayFeeAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("GatewayResponse")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("GrossChargeAmount")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("InstitutionId")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1441,8 +1462,20 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("PlatformFeeAmount")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("TransactionChargeAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("TransactionRef")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1459,10 +1492,69 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("MemberId");
 
+                    b.HasIndex("TransactionRef")
+                        .IsUnique();
+
                     b.HasIndex("EventId", "MemberId")
                         .IsUnique();
 
                     b.ToTable("EventRsvps", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.EventUpdate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Blocks")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PostedByName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PostedByStaffId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("EventId", "CreatedAt");
+
+                    b.ToTable("EventUpdates", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.ForumCategory", b =>
@@ -3757,6 +3849,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("OwnerStaffId")
                         .HasColumnType("text");
+
+                    b.Property<bool>("PaidEventsEnabled")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PayoutStatus")
                         .IsRequired()

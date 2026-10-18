@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Calendar, MapPin, Users, Ticket, ArrowLeft,
-  Loader2, CheckCircle2, Navigation,
+  Loader2, CheckCircle2, Navigation, ExternalLink,
 } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
@@ -14,11 +14,30 @@ import { ShareLinkButton, shareMessages } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { MediaGallery, ZoomableImage } from "@alumni/ui";
 import { formatCurrency, formatDate } from "@alumni/ui";
-import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps } from "@/lib/member-api";
+import { getEventById, rsvpEvent, cancelRsvp, getMyRsvps, buyEventTicket } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
+import { EventUpdates } from "@/components/member/event-updates";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
-import type { AlumniEvent } from "@/types";
+import type { AlumniEvent, EventRegistration } from "@/types";
+
+type EventPlaceLink = { href: string; kind: "map" | "online" | "link"; label: string };
+
+const MAP_HOSTS = /(^|\.)(google\.[a-z.]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|maps\.apple\.com|openstreetmap\.org|waze\.com|bing\.com\/maps)/i;
+const ONLINE_HOSTS = /(^|\.)(zoom\.us|zoom\.com|meet\.google\.com|teams\.microsoft\.com|teams\.live\.com|webex\.com|whereby\.com|skype\.com|gotomeeting\.com|bluejeans\.com|discord\.(gg|com)|meet\.jit\.si|jitsi\.org|youtube\.com|youtu\.be|facebook\.com|fb\.watch|linkedin\.com|twitch\.tv|crowdcast\.io|streamyard\.com|chime\.aws|whatsapp\.com|t\.me)/i;
+
+/** The link an organiser put on an event, and what to call it. Null when there is none, or when it isn't a web address. */
+function eventPlaceLink(raw?: string | null): EventPlaceLink | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  let url: URL;
+  try { url = new URL(value); } catch { return null; }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  const hostAndPath = url.hostname + url.pathname;
+  if (MAP_HOSTS.test(hostAndPath)) return { href: url.toString(), kind: "map", label: "Open in maps" };
+  if (ONLINE_HOSTS.test(url.hostname)) return { href: url.toString(), kind: "online", label: "Join online" };
+  return { href: url.toString(), kind: "link", label: "Open event link" };
+}
 
 const statusVariant: Record<string, "info" | "success" | "secondary" | "destructive"> = {
   Upcoming:  "info",
@@ -33,6 +52,7 @@ export default function EventDetailPage() {
   const qc      = useQueryClient();
   const [rsvpConfirmOpen, setRsvpConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [buyConfirmOpen, setBuyConfirmOpen] = useState(false);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event", id],
@@ -48,6 +68,7 @@ export default function EventDetailPage() {
     mutationFn: () => rsvpEvent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
+      qc.invalidateQueries({ queryKey: ["event-updates", id] });
       qc.invalidateQueries({ queryKey: ["event", id] });
       // rsvpCount is also shown on the events list cards.
       qc.invalidateQueries({ queryKey: ["m-events-list"] });
@@ -60,10 +81,21 @@ export default function EventDetailPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  // Paying happens on Paystack's page; we come back to the ticket-status page, which confirms the seat.
+  const buyMut = useMutation({
+    mutationFn: () => buyEventTicket(id, `${window.location.origin}/events/ticket-status`),
+    onSuccess: (checkout) => {
+      if (!checkout.authorizationUrl) { toast.error("We couldn't open the payment page. Please try again."); return; }
+      window.location.href = checkout.authorizationUrl;
+    },
+    onError: (e) => { setBuyConfirmOpen(false); toast.error(handleApiError(e)); },
+  });
+
   const cancelMut = useMutation({
     mutationFn: () => cancelRsvp(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-rsvps"] });
+      qc.invalidateQueries({ queryKey: ["event-updates", id] });
       qc.invalidateQueries({ queryKey: ["event", id] });
       qc.invalidateQueries({ queryKey: ["m-events-list"] });
       qc.invalidateQueries({ queryKey: ["cal-rsvps"] });
@@ -102,12 +134,12 @@ export default function EventDetailPage() {
     </div>
   );
 
-  const hasRsvp  = (myRsvps ?? []).some(r => r.eventId === id && r.status === "Confirmed");
+  const myRsvp   = (myRsvps ?? []).find(r => r.eventId === id && r.status === "Confirmed");
+  const hasRsvp  = !!myRsvp;
   const canRsvp  = event.status === "Upcoming" || event.status === "Ongoing";
   const isFull   = event.capacity ? event.rsvpCount >= event.capacity : false;
-  const mapUrl   = event.googleLocationUrl?.trim()
-    ? event.googleLocationUrl.trim()
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue)}`;
+  // Only what the organiser added: nothing is invented from the venue name. It may be a map or, for an online event, a meeting link.
+  const place    = eventPlaceLink(event.googleLocationUrl);
 
   const hasMedia = (event.imageUrls?.length ?? 0) > 0 || (event.youtubeVideoUrls?.length ?? 0) > 0;
   const shareUrl = typeof window !== "undefined" ? window.location.href : undefined;
@@ -199,11 +231,12 @@ export default function EventDetailPage() {
               hasRsvp={hasRsvp}
               canRsvp={canRsvp}
               isFull={isFull}
-              mapUrl={mapUrl}
-              onRsvp={() => setRsvpConfirmOpen(true)}
+              place={place}
+              ticket={myRsvp}
+              onRsvp={() => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true))}
               onCancel={() => setCancelConfirmOpen(true)}
               cancelPending={cancelMut.isPending}
-              rsvpPending={rsvpMut.isPending}
+              rsvpPending={rsvpMut.isPending || buyMut.isPending}
             />
           </div>
 
@@ -222,6 +255,13 @@ export default function EventDetailPage() {
               {event.description || "More details will be shared closer to the date. RSVP to stay informed."}
             </p>
           </div>
+
+          {/* What the organiser has posted for the people going */}
+          <EventUpdates
+            eventId={id}
+            joinLabel={event.isTicketed ? "Buy a ticket" : "RSVP to read them"}
+            onJoin={canRsvp && !isFull ? () => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true)) : undefined}
+          />
 
           {/* Media gallery */}
           {hasMedia && (
@@ -252,11 +292,12 @@ export default function EventDetailPage() {
                 hasRsvp={hasRsvp}
                 canRsvp={canRsvp}
                 isFull={isFull}
-                mapUrl={mapUrl}
-                onRsvp={() => setRsvpConfirmOpen(true)}
+                place={place}
+                ticket={myRsvp}
+                onRsvp={() => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true))}
                 onCancel={() => setCancelConfirmOpen(true)}
                 cancelPending={cancelMut.isPending}
-                rsvpPending={rsvpMut.isPending}
+                rsvpPending={rsvpMut.isPending || buyMut.isPending}
               />
             </div>
           </div>
@@ -273,6 +314,18 @@ export default function EventDetailPage() {
         isLoading={rsvpMut.isPending}
         onConfirm={() => rsvpMut.mutate()}
         onCancel={() => setRsvpConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        open={buyConfirmOpen}
+        title="Buy your ticket"
+        message={`Ticket for "${event.title}": ${event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. A small payment processing fee is added at checkout. Once you pay, your ticket can't be cancelled and isn't refunded.`}
+        confirmLabel="Continue to payment"
+        cancelLabel="Not now"
+        variant="default"
+        isLoading={buyMut.isPending}
+        onConfirm={() => buyMut.mutate()}
+        onCancel={() => setBuyConfirmOpen(false)}
       />
 
       <ConfirmModal
@@ -294,19 +347,22 @@ export default function EventDetailPage() {
    RSVP BLOCK — shared between mobile (inline) and desktop (sidebar)
    ───────────────────────────────────────────────────────────────────────── */
 function RsvpBlock({
-  event, hasRsvp, canRsvp, isFull, mapUrl,
+  event, hasRsvp, canRsvp, isFull, place, ticket,
   onRsvp, onCancel, cancelPending, rsvpPending,
 }: {
   event: AlumniEvent;
+  /** The member's own confirmed RSVP or ticket for this event, if any. */
+  ticket?: EventRegistration;
   hasRsvp: boolean;
   canRsvp: boolean;
   isFull: boolean;
-  mapUrl: string;
+  place: EventPlaceLink | null;
   onRsvp: () => void;
   onCancel: () => void;
   cancelPending: boolean;
   rsvpPending: boolean;
 }) {
+  const paid = event.isTicketed;
   return (
     <div className="space-y-5">
 
@@ -314,7 +370,7 @@ function RsvpBlock({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
-            Registration
+            {paid ? "Ticket" : "Registration"}
           </p>
           <p
             className="font-[family-name:var(--font-display)] font-bold"
@@ -326,8 +382,33 @@ function RsvpBlock({
         {event.isTicketed && <Ticket size={22} style={{ color: "var(--primary)" }} />}
       </div>
 
+      {/* The terms, shown before buying so nobody is surprised afterwards */}
+      {paid && !hasRsvp && canRsvp && (
+        <div className="p-3.5 rounded-xl space-y-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
+          <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Tickets are final</p>
+          <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+            A bought ticket can&apos;t be cancelled and isn&apos;t refunded. A small payment processing fee is added at checkout.
+          </p>
+        </div>
+      )}
+
       {/* RSVP status — if already going */}
-      {hasRsvp && (
+      {hasRsvp && paid && (
+        <div
+          className="p-3.5 rounded-xl space-y-1"
+          style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
+        >
+          <div className="flex items-center gap-3">
+            <CheckCircle2 size={18} className="text-success shrink-0" />
+            <p className="text-[13.5px] font-semibold text-success">Your ticket is confirmed.</p>
+          </div>
+          <p className="text-[12.5px] leading-relaxed pl-[30px]" style={{ color: "var(--muted-foreground)" }}>
+            {ticket?.amountPaid ? `Paid ${formatCurrency(ticket.amountPaid)}${ticket.paidAt ? ` on ${formatDate(ticket.paidAt)}` : ""}. ` : ""}
+            Tickets can&apos;t be cancelled or refunded.
+          </p>
+        </div>
+      )}
+      {hasRsvp && !paid && (
         <div
           className="flex items-center gap-3 p-3.5 rounded-xl"
           style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}
@@ -341,7 +422,7 @@ function RsvpBlock({
 
       {/* Action button */}
       {canRsvp ? (
-        hasRsvp ? (
+        hasRsvp && paid ? null : hasRsvp ? (
           <Button
             variant="outline"
             className="w-full font-semibold text-[14px] gap-2"
@@ -362,6 +443,8 @@ function RsvpBlock({
               <Loader2 size={15} className="animate-spin" />
             ) : isFull ? (
               "Event fully booked"
+            ) : paid ? (
+              <><Ticket size={16} /> Buy ticket{event.ticketPrice ? ` · ${formatCurrency(event.ticketPrice)}` : ""}</>
             ) : (
               <><Calendar size={16} /> Confirm RSVP</>
             )}
@@ -400,16 +483,19 @@ function RsvpBlock({
               {event.venue}
             </p>
           </div>
-          <a
-            href={mapUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-primary hover:text-white"
-            style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}
-            title="Open in Google Maps"
-          >
-            <Navigation size={13} />
-          </a>
+          {place && (
+            <a
+              href={place.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-primary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}
+              title={place.label}
+              aria-label={place.label}
+            >
+              {place.kind === "map" ? <Navigation size={13} /> : <ExternalLink size={13} />}
+            </a>
+          )}
         </div>
 
         {/* Date */}

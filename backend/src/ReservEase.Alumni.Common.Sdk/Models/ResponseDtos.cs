@@ -35,6 +35,10 @@ public class AlumniEventDto
     public int RsvpCount { get; set; }
     public bool IsTicketed { get; set; }
     public decimal? TicketPrice { get; set; }
+    /// <summary>Tickets bought so far. Filled in for the institution's own views; once above zero the price is locked.</summary>
+    public int? PaidTicketCount { get; set; }
+    /// <summary>The ticket money collected for this event (ticket price times tickets, no fee). Institution views only.</summary>
+    public decimal? TicketAmountCollected { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<int>? YearGroups { get; set; }
     public string? GoogleLocationUrl { get; set; }
@@ -559,6 +563,62 @@ public class EventRsvpDto
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    /// <summary>The ticket price paid, or null for a free RSVP. Never includes any fee.</summary>
+    public decimal? AmountPaid { get; set; }
+    public DateTime? PaidAt { get; set; }
+}
+
+/// <summary>One piece of an event update, as read by the institution or by a member who is going.</summary>
+public class EventUpdateBlockDto
+{
+    public string Id { get; set; } = string.Empty;
+    /// <summary>Text, Images, Video, Link or Files.</summary>
+    public string Type { get; set; } = string.Empty;
+    public string? Heading { get; set; }
+    public string? Text { get; set; }
+    public string? Url { get; set; }
+    public string? Label { get; set; }
+    public List<EventUpdateItemDto> Items { get; set; } = [];
+}
+
+public class EventUpdateItemDto
+{
+    public string Url { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public string? ContentType { get; set; }
+}
+
+public class EventUpdateDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string EventId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public bool IsPinned { get; set; }
+    public List<EventUpdateBlockDto> Blocks { get; set; } = [];
+    /// <summary>Filled in for the institution's own views only.</summary>
+    public string? PostedByName { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
+public class EventUpdateCategoryCount
+{
+    public string Category { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+/// <summary>
+/// What a member gets for one event's updates. People with a seat get the updates; everyone else gets only that updates exist
+/// (how many, and of what kind), never any content.
+/// </summary>
+public class EventUpdatesResponse
+{
+    public bool Locked { get; set; }
+    public int Count { get; set; }
+    public List<EventUpdateCategoryCount> Categories { get; set; } = [];
+    public List<EventUpdateDto> Updates { get; set; } = [];
 }
 
 public class DirectoryMemberDto

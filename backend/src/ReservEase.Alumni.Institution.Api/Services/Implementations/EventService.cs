@@ -15,6 +15,7 @@ using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Storage.Sdk.Services;
 using ReservEase.Alumni.Temporal.Sdk;
+using InstitutionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
@@ -22,6 +23,8 @@ public class EventService(
     IAlumniPgRepository<AlumniEvent> eventRepo,
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<Member> memberRepo,
+    IAlumniPgRepository<InstitutionEntity> institutionRepo,
+    IAlumniPgRepository<EventUpdate> updateRepo,
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
@@ -29,6 +32,48 @@ public class EventService(
     IInstitutionAuditLogService auditLog,
     ILogger<EventService> logger) : IEventService
 {
+    private static AlumniEventDto WithSales(AlumniEventDto dto, Dictionary<string, (int Count, decimal Amount)> sales)
+    {
+        if (!dto.IsTicketed) return dto;
+        var found = sales.TryGetValue(dto.Id, out var s);
+        dto.PaidTicketCount = found ? s.Count : 0;
+        dto.TicketAmountCollected = found ? s.Amount : 0m;
+        return dto;
+    }
+
+    private Task<int> CountPaidTicketsAsync(string eventId) =>
+        rsvpRepo.CountAsync(r => r.EventId == eventId && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0);
+
+    private async Task<string?> ValidatePricingAsync(bool isTicketed, decimal? ticketPrice, AlumniEvent? existing)
+    {
+        var institution = currentTenant.InstitutionId is { } id ? await institutionRepo.GetByIdAsync(id) : null;
+        var paidSold = existing is null ? 0 : await CountPaidTicketsAsync(existing.Id);
+        var confirmed = existing is null ? 0 : await rsvpRepo.CountAsync(r => r.EventId == existing.Id && r.Status == EventRsvpStatuses.Confirmed);
+        return EventTicketRules.ValidatePricing(isTicketed, ticketPrice, existing,
+            institution?.PaidEventsEnabled == true, !string.IsNullOrWhiteSpace(institution?.PaystackSubaccountCode), paidSold, confirmed);
+    }
+
+    /// <summary>What the event form needs to know: whether this community may charge, and whether payouts are ready.</summary>
+    public async Task<IApiResponse<EventTicketingDto>> GetTicketingAsync()
+    {
+        var institution = currentTenant.InstitutionId is { } id ? await institutionRepo.GetByIdAsync(id) : null;
+        return new EventTicketingDto(institution?.PaidEventsEnabled == true, !string.IsNullOrWhiteSpace(institution?.PaystackSubaccountCode))
+            .ToOkApiResponse();
+    }
+
+    /// <summary>
+    /// The link on an event is a map or, for an online event, a meeting link. Empty means none; anything else must be a web address, so a
+    /// saved link can never be something that runs code when a member taps it. Returns an error to show, or null when it is fine.
+    /// </summary>
+    internal static string? CleanLocationLink(string? raw, out string? cleaned)
+    {
+        cleaned = string.IsNullOrWhiteSpace(raw) ? null : raw.Trim();
+        if (cleaned is null) return null;
+        if (cleaned.Length > 1000 || !EventUpdateRules.IsWebUrl(cleaned, out _))
+            return "The map or meeting link must be a web address starting with http:// or https://.";
+        return null;
+    }
+
     private Task InvalidatePublicEventsCacheAsync()
         => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.Events(id)) : Task.CompletedTask;
 
@@ -61,6 +106,15 @@ public class EventService(
                 }
             }
 
+            var ticketedIds = result.Results.Where(e => e.IsTicketed).Select(e => e.Id).ToList();
+            var sales = ticketedIds.Count == 0
+                ? new Dictionary<string, (int Count, decimal Amount)>()
+                : (await rsvpRepo.GetQueryable(r => ticketedIds.Contains(r.EventId) && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0)
+                        .GroupBy(r => r.EventId)
+                        .Select(g => new { EventId = g.Key, Count = g.Count(), Amount = g.Sum(r => r.AmountPaid ?? 0m) })
+                        .ToListAsync())
+                    .ToDictionary(x => x.EventId, x => (x.Count, x.Amount));
+
             var dtoResult = new PgPagedResult<AlumniEventDto>
             {
                 PageIndex = result.PageIndex,
@@ -70,7 +124,7 @@ public class EventService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(e => e.ToDto()).ToList(),
+                Results = result.Results.Select(e => WithSales(e.ToDto(), sales)).ToList(),
             };
             return dtoResult.ToOkApiResponse();
         }
@@ -97,7 +151,15 @@ public class EventService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
             }
 
-            return ev.ToDto().ToOkApiResponse();
+            var dto = ev.ToDto();
+            if (ev.IsTicketed)
+            {
+                var sold = await rsvpRepo.GetQueryable(r => r.EventId == eventId && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0)
+                    .GroupBy(r => r.EventId).Select(g => new { Count = g.Count(), Amount = g.Sum(r => r.AmountPaid ?? 0m) }).FirstOrDefaultAsync();
+                dto.PaidTicketCount = sold?.Count ?? 0;
+                dto.TicketAmountCollected = sold?.Amount ?? 0m;
+            }
+            return dto.ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -111,11 +173,11 @@ public class EventService(
         try
         {
             logger.LogInformation("CreateEvent request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
-            // We currently support only free events via admin flow.
-            if (request.IsTicketed)
-                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("Paid events are not supported yet. Please create a free event.");
-            if (request.TicketPrice.HasValue && request.TicketPrice.Value > 0)
-                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("Paid events are not supported yet. Please create a free event.");
+            var pricingError = await ValidatePricingAsync(request.IsTicketed, request.TicketPrice, null);
+            if (pricingError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(pricingError);
+            if (CleanLocationLink(request.GoogleLocationUrl, out var locationLink) is { } linkError)
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(linkError);
 
             var resolvedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
             var resolvedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
@@ -129,9 +191,9 @@ public class EventService(
                 Venue = request.Venue,
                 StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
                 EndDate = request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : (DateTime?)null,
-                IsTicketed = false,
-                TicketPrice = null,
-                GoogleLocationUrl = request.GoogleLocationUrl,
+                IsTicketed = request.IsTicketed,
+                TicketPrice = request.IsTicketed ? request.TicketPrice : null,
+                GoogleLocationUrl = locationLink,
                 Capacity = request.Capacity,
                 Status = "Upcoming",
                 YearGroups = resolvedYearGroups,
@@ -184,10 +246,14 @@ public class EventService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
             }
 
-            if (request.IsTicketed)
-                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("Paid events are not supported yet. Please create a free event.");
-            if (request.TicketPrice.HasValue && request.TicketPrice.Value > 0)
-                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>("Paid events are not supported yet. Please create a free event.");
+            var pricingError = await ValidatePricingAsync(request.IsTicketed, request.TicketPrice, ev);
+            if (pricingError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(pricingError);
+            if (CleanLocationLink(request.GoogleLocationUrl, out var locationLink) is { } linkError)
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(linkError);
+            // A paid event stays on whatever it is once tickets exist, so it can't be cancelled by editing its status either.
+            if (request.IsTicketed && request.Status == "Cancelled")
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(EventTicketRules.CannotCancelMessage);
 
             var updatedCommunityId = admin.ResolveCommunityForCreation(request.CommunityId);
             var updatedYearGroups = admin.ResolveYearGroupsForCreation(request.YearGroups);
@@ -198,9 +264,9 @@ public class EventService(
             ev.Venue = request.Venue;
             ev.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
             ev.EndDate = request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : (DateTime?)null;
-            ev.IsTicketed = false;
-            ev.TicketPrice = null;
-            ev.GoogleLocationUrl = request.GoogleLocationUrl;
+            ev.IsTicketed = request.IsTicketed;
+            ev.TicketPrice = request.IsTicketed ? request.TicketPrice : null;
+            ev.GoogleLocationUrl = locationLink;
             ev.Capacity = request.Capacity;
             ev.Status = request.Status;
             ev.YearGroups = updatedYearGroups;
@@ -263,6 +329,9 @@ public class EventService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Event not found");
             }
 
+            if (!EventTicketRules.CanCancel(ev))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(EventTicketRules.CannotCancelMessage);
+
             ev.Status = "Cancelled";
             ev.UpdatedAt = DateTime.UtcNow;
             ev.UpdatedBy = admin.Id;
@@ -298,6 +367,11 @@ public class EventService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<object>("Event not found");
             }
 
+            if (ev.IsTicketed && await CountPaidTicketsAsync(ev.Id) > 0)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>(EventTicketRules.CannotDeleteMessage);
+
+            foreach (var update in await updateRepo.GetAllAsync(u => u.EventId == eventId))
+                await updateRepo.RemoveAsync(update);
             await eventRepo.RemoveAsync(ev);
             await InvalidatePublicEventsCacheAsync();
             await auditLog.LogAsync(admin, "Event Deleted", ev.Title);
@@ -412,6 +486,9 @@ public class EventService(
 
             if (rsvp.Status == "Confirmed")
                 return ApiResponseExtensions.ToConflictApiResponse<object>("RSVP is already confirmed");
+            // A seat at a paid event is only ever given by a payment, never reopened by hand.
+            if (ev.IsTicketed)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Seats at a paid event are only given by a ticket payment.");
 
             rsvp.Status = "Confirmed";
             rsvp.UpdatedAt = DateTime.UtcNow;

@@ -11,6 +11,7 @@ public static class PaystackReferencePrefix
     public const string StoreOrder = "SO";
     public const string ServiceRequest = "SR";
     public const string Contribution = "CN";
+    public const string EventTicket = "ET";
 
     public static string NewReference(string prefix) => $"{prefix}_{Guid.NewGuid():N}";
 

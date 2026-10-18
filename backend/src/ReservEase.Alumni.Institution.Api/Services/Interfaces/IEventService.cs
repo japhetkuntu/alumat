@@ -13,5 +13,6 @@ public interface IEventService
     Task<IApiResponse<object>> CancelEventAsync(string eventId, AuthData admin);
     Task<IApiResponse<object>> DeleteEventAsync(string eventId, AuthData admin);
     Task<IApiResponse<PgPagedResult<EventRsvpDto>>> GetRsvpsAsync(string eventId, BaseFilter filter, AuthData admin);
+    Task<IApiResponse<EventTicketingDto>> GetTicketingAsync();
     Task<IApiResponse<object>> ReopenRsvpAsync(string eventId, string rsvpId, AuthData admin);
 }

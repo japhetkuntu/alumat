@@ -1,3 +1,5 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+
 namespace ReservEase.Alumni.Institution.Api.Models;
 
 public class CreateEventRequest
@@ -38,4 +40,15 @@ public class UpdateEventRequest
     public List<IFormFile>? Images { get; set; }
     public List<string>? ExistingImageUrls { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
+}
+
+/// <summary>Whether this community may charge for event tickets, and whether its payout account is ready.</summary>
+public record EventTicketingDto(bool PaidEventsEnabled, bool PayoutReady);
+
+/// <summary>An event update as saved: its title, category and parts. New files travel beside this, named by the id of the part they belong to.</summary>
+public class EventUpdateSaveRequest
+{
+    public string Title { get; set; } = "";
+    public string Category { get; set; } = "";
+    public List<EventUpdateBlock> Blocks { get; set; } = [];
 }

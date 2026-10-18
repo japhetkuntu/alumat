@@ -90,6 +90,8 @@ export interface InstitutionDetail {
   broadcastEmailAllowed?: boolean;
   broadcastSmsAllowed?: boolean;
   broadcastWhatsAppAllowed?: boolean;
+  /** Whether this institution may charge for event tickets. Off until the platform allows it. */
+  paidEventsEnabled?: boolean;
   name: string;
   slug: string;
   customDomain?: string | null;
@@ -409,7 +411,7 @@ export async function rejectInstitutionPayout(institutionId: string, notes?: str
 /** One payment, normalized across both payment sources — every status, not just Successful, so support staff can see the full picture. */
 export interface PlatformPayment {
   id: string;
-  source: "Contribution" | "StoreOrder" | "ServiceRequest";
+  source: "Contribution" | "StoreOrder" | "ServiceRequest" | "EventTicket";
   institutionId: string;
   payerName?: string | null;
   payerEmail?: string | null;
@@ -444,7 +446,7 @@ export interface PaymentDetailItem {
 /** Full detail for one payment (Contribution or StoreOrder) — fee breakdown, gateway channel/response, and line items where applicable. */
 export interface PaymentDetail {
   id: string;
-  source: "Contribution" | "StoreOrder" | "ServiceRequest";
+  source: "Contribution" | "StoreOrder" | "ServiceRequest" | "EventTicket";
   institutionId: string;
   payerName?: string | null;
   payerEmail?: string | null;
@@ -541,6 +543,11 @@ export async function getFeatureCatalog() {
 
 export async function updateInstitutionFeatures(id: string, disabledFeatures: string[]) {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/features`, { disabledFeatures });
+  return res.data.data!;
+}
+
+export async function updatePaidEvents(id: string, enabled: boolean) {
+  const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/paid-events`, { enabled });
   return res.data.data!;
 }
 

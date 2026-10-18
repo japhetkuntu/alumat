@@ -61,6 +61,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         NotificationKind.EventCancelled or NotificationKind.EventDetailsChanged or
         NotificationKind.EventRsvpCancelled
             => ProcessMemberLifecycleAsync(request),
+        NotificationKind.EventUpdatePosted => ProcessEventUpdatePostedAsync(request),
         _ => LogUnhandledKindAsync(request),
     };
 
@@ -867,6 +868,40 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         // workflows already running when this shipped replaying the old way.
         if (Workflow.Patched("rsvp-cancel-no-external-alerts") && request.Kind == NotificationKind.EventRsvpCancelled) return;
         await SendMemberExternalAlertsIfEligibleAsync(request.MemberId, institution, notification.Body, notification.Title, notification.ActionUrl);
+    }
+
+    /// <summary>
+    /// The organiser posted an update to an event: an in-app notice and a push, nothing paid. SMS, WhatsApp and email are
+    /// left out on purpose, since an event can have a long list of attendees and every update would cost per message.
+    /// Members who switched event reminders off are respected.
+    /// </summary>
+    private async Task ProcessEventUpdatePostedAsync(NotificationRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.MemberId)) return;
+        var member = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(request.MemberId!),
+            NotificationActivityOptions.DatabaseRead);
+        if (member is null || !member.EventReminders) return;
+
+        var institution = await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId),
+            NotificationActivityOptions.DatabaseRead);
+        var notification = new Notification
+        {
+            RecipientId = request.MemberId,
+            RecipientType = "Member",
+            Title = request.NotificationTitle ?? "New event update",
+            Body = request.NotificationMessage ?? string.Empty,
+            Type = request.NotificationType ?? request.Kind.ToString(),
+            RelatedEntityId = request.EventId,
+            RelatedEntityType = "Event",
+            ActionUrl = MemberUrl(institution, $"/events/{request.EventId}#updates"),
+            CreatedBy = "system",
+        };
+        await Workflow.ExecuteActivityAsync(
+            (NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification),
+            NotificationActivityOptions.DatabaseWrite);
+        await SendPushIfEligibleAsync(request.MemberId, "Member", notification.Title, notification.Body, notification.ActionUrl);
     }
 
     private async Task ProcessSpotlightDecisionAsync(NotificationRequest request)

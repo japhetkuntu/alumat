@@ -88,6 +88,7 @@ builder.Services.AddScoped<IWhatsAppGroupService, WhatsAppGroupService>();
 builder.Services.AddReportJobs();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IEventUpdateService, EventUpdateService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IForumService, ForumService>();
 builder.Services.AddScoped<IMentorshipService, MentorshipService>();

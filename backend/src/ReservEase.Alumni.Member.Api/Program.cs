@@ -83,6 +83,8 @@ builder.Services.AddScoped<IClassNoteService, ClassNoteService>();
 builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();
+builder.Services.AddScoped<IEventTicketService, EventTicketService>();
+builder.Services.AddScoped<IMemberEventUpdateService, MemberEventUpdateService>();
 builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
 builder.Services.AddScoped<IAlbumService, AlbumService>();
 builder.Services.AddScoped<IBusinessDirectoryService, BusinessDirectoryService>();

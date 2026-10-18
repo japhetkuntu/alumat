@@ -6,12 +6,12 @@ import { ZoomableImage } from "@alumni/ui";
 import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Calendar, MapPin, Users, Pencil } from "@alumni/ui";
+import { Plus, Calendar, MapPin, Users, Pencil, Ticket, Bell } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { FormSheet, FormSection, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, MoreHorizontal } from "@alumni/ui";
+import { FormSheet, FormSection, CheckOption, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, MoreHorizontal } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
@@ -19,7 +19,7 @@ import { Textarea } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, formatCurrency, cn } from "@alumni/ui";
-import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommunities } from "@/lib/institution-api";
+import { getEvents, createEvent, updateEvent, cancelEvent, deleteEvent, getCommunities, getEventTicketing } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
@@ -50,6 +50,10 @@ interface FormState {
   endDate: string;
   venue: string;
   capacity: string;
+  isTicketed: boolean;
+  ticketPrice: string;
+  /** Tickets already bought. Above zero the price is locked and the event stays paid. */
+  paidTicketCount: number;
   googleLocationUrl: string;
   status: string;
   audienceMode: AudienceMode;
@@ -64,6 +68,7 @@ interface FormState {
 
 const emptyForm: FormState = {
   title: "", description: "", startDate: "", endDate: "", venue: "", capacity: "",
+  isTicketed: false, ticketPrice: "", paidTicketCount: 0,
   googleLocationUrl: "", status: "Upcoming",
   audienceMode: "everyone", yearGroups: [],
   bannerImage: null, existingBannerUrl: "", images: [], existingImageUrls: [], youtubeVideoUrls: "",
@@ -89,6 +94,10 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
   const { data: communities = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities });
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
+  const { data: ticketing } = useQuery({ queryKey: ["event-ticketing"], queryFn: getEventTicketing });
+  // Sold tickets freeze the price, and a paid event can never be cancelled.
+  const priceLocked = form.paidTicketCount > 0;
+  const canCharge = !!ticketing?.paidEventsEnabled && !!ticketing?.payoutReady;
   return (
     <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <FormSection title="The event">
@@ -106,16 +115,65 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                 <Input type="datetime-local" value={form.endDate} onChange={(e) => f("endDate", e.target.value)} /></div>
             </div>
             <div className="space-y-2"><Label>Venue</Label>
-              <Input placeholder="e.g. Main Campus, Great Hall" value={form.venue} onChange={(e) => f("venue", e.target.value)} required /></div>
+              <Input placeholder="e.g. Main Campus, Great Hall, or Online" value={form.venue} onChange={(e) => f("venue", e.target.value)} required /></div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Map link <span className="font-normal text-muted-foreground">(optional)</span></Label>
-                <Input placeholder="https://maps.app.goo.gl/..." value={form.googleLocationUrl} onChange={(e) => f("googleLocationUrl", e.target.value)} /></div>
+              <div className="space-y-2"><Label>Map or meeting link <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <Input type="url" placeholder="Google Maps, Zoom, Meet, Teams…" value={form.googleLocationUrl} onChange={(e) => f("googleLocationUrl", e.target.value)} />
+                <p className="text-[12.5px] text-muted-foreground">Members get a button beside the venue that opens it. Leave it empty and they get no button.</p></div>
               <div className="space-y-2"><Label>Capacity <span className="font-normal text-muted-foreground">(optional)</span></Label>
                 <Input type="number" min={1} placeholder="No limit" value={form.capacity} onChange={(e) => f("capacity", e.target.value)} /></div>
             </div>
           </FormSection>
 
-          <FormSection title="Who it is for" hint="Events are free to attend. Paid tickets are not supported yet.">
+          <FormSection
+            title="Tickets"
+            hint={form.isTicketed ? "Members pay to reserve a seat." : "Events are free to attend unless you charge for tickets."}
+          >
+            {priceLocked ? (
+              <div className="space-y-1 border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">
+                <p className="font-semibold text-foreground">
+                  {form.paidTicketCount} {form.paidTicketCount === 1 ? "ticket" : "tickets"} sold at {formatCurrency(Number(form.ticketPrice))}
+                </p>
+                <p className="text-muted-foreground">The price is locked now that tickets are sold, and the event stays a paid one. You can still change its date, venue and details.</p>
+              </div>
+            ) : canCharge || form.isTicketed ? (
+              <>
+                <CheckOption
+                  id="event-ticketed"
+                  checked={form.isTicketed}
+                  onChange={(v) => f("isTicketed", v)}
+                  label="Charge for tickets"
+                  hint="Members pay online to reserve a seat instead of a free RSVP."
+                />
+                {form.isTicketed && (
+                  <div className="space-y-4">
+                    <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Ticket price (GH₵)</Label>
+                      <Input type="number" min={1} step="0.01" placeholder="e.g. 150" value={form.ticketPrice}
+                        onChange={(e) => f("ticketPrice", e.target.value)} required /></div>
+                    <div className="space-y-1.5 border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">
+                      <p className="font-semibold text-foreground">Please read before you publish</p>
+                      <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                        <li><span className="text-foreground">Tickets are final.</span> Attendees can&apos;t cancel and nobody is refunded. A paid event can&apos;t be cancelled either, so no money ever has to go back.</li>
+                        <li>Once the first ticket is sold the price is locked. Check it carefully.</li>
+                        <li>A paid event can&apos;t be deleted after tickets are sold. You can still change its date, venue and details, and attendees are told.</li>
+                        <li>You receive the full ticket price in your payout account.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="border border-border bg-muted/40 p-3 text-[13px] leading-relaxed text-muted-foreground">
+                {ticketing && !ticketing.paidEventsEnabled
+                  ? "Charging for tickets isn't turned on for your community yet. Contact AlumUnion support to turn it on."
+                  : ticketing && !ticketing.payoutReady
+                    ? "Your payout account isn't set up yet, so ticket money has nowhere to go. Contact AlumUnion support to set it up."
+                    : "Checking whether you can charge for tickets…"}
+              </p>
+            )}
+          </FormSection>
+
+          <FormSection title="Who it is for">
             <AudienceScopePicker
               mode={form.audienceMode}
               onModeChange={(mode) => f("audienceMode", mode)}
@@ -131,7 +189,7 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
             {showStatus && (
               <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
                 <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
-                  options={statusOptions.map(s => ({ value: s, label: s }))} /></div>
+                  options={statusOptions.filter(s => !(form.isTicketed && s === "Cancelled")).map(s => ({ value: s, label: s }))} /></div>
             )}
           </FormSection>
 
@@ -163,6 +221,9 @@ function toFormState(e: AlumniEvent): FormState {
     startDate: e.startDate ? e.startDate.slice(0, 16) : "",
     endDate: e.endDate ? e.endDate.slice(0, 16) : "",
     capacity: e.capacity != null ? String(e.capacity) : "",
+    isTicketed: e.isTicketed,
+    ticketPrice: e.ticketPrice != null ? String(e.ticketPrice) : "",
+    paidTicketCount: e.paidTicketCount ?? 0,
     googleLocationUrl: e.googleLocationUrl ?? "",
     status: e.status,
     audienceMode: inferAudienceMode(e.communityId, e.yearGroups),
@@ -199,8 +260,8 @@ export default function AdminEventsPage() {
       title: f.title, description: f.description || undefined,
       startDate: f.startDate, endDate: f.endDate || undefined, venue: f.venue,
       capacity: f.capacity ? Number(f.capacity) : undefined,
-      isTicketed: false,
-      ticketPrice: undefined,
+      isTicketed: f.isTicketed,
+      ticketPrice: f.isTicketed ? Number(f.ticketPrice) : undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
@@ -218,8 +279,8 @@ export default function AdminEventsPage() {
       startDate: f.startDate, endDate: f.endDate || undefined, venue: f.venue,
       capacity: f.capacity ? Number(f.capacity) : undefined,
       status: f.status,
-      isTicketed: false,
-      ticketPrice: undefined,
+      isTicketed: f.isTicketed,
+      ticketPrice: f.isTicketed ? Number(f.ticketPrice) : undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       bannerImage: f.bannerImage || undefined,
@@ -260,7 +321,7 @@ export default function AdminEventsPage() {
         open={showCreate || editEvent !== null}
         onClose={() => { setShowCreate(false); setEditEvent(null); }}
         title={editEvent ? "Edit event" : "Create event"}
-        description={editEvent ? editEvent.title : "Members RSVP from their portal and you see who is coming."}
+        description={editEvent ? editEvent.title : "Members RSVP from their portal, or buy a ticket if you charge, and you see who is coming."}
         formId="event-form"
         submitLabel={editEvent ? "Save changes" : "Create event"}
         saving={createMut.isPending || updateMut.isPending}
@@ -300,7 +361,7 @@ export default function AdminEventsPage() {
                     {isPastEvent(e) && <Badge variant="secondary">Past</Badge>}
                   </div>
                   {e.isTicketed && e.ticketPrice && (
-                    <span className="text-sm font-semibold text-success">{formatCurrency(e.ticketPrice)}</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success"><Ticket size={13} />{formatCurrency(e.ticketPrice)}</span>
                   )}
                   <div className="flex items-center gap-2">
                     {e.yearGroups && e.yearGroups.length > 0 ? (
@@ -331,13 +392,21 @@ export default function AdminEventsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Users size={11} />{e.rsvpCount} RSVPs{e.capacity && ` / ${e.capacity} capacity`}
+                    <Users size={11} />{e.rsvpCount} {e.isTicketed ? (e.rsvpCount === 1 ? "ticket" : "tickets") : "RSVPs"}{e.capacity && ` / ${e.capacity} capacity`}
                   </div>
+                  {e.isTicketed && (
+                    <div className="flex items-center gap-1.5">
+                      <Ticket size={11} />{formatCurrency(e.ticketAmountCollected ?? 0)} collected
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4 space-y-2">
                   <div className="flex gap-2">
                     <Link href={`/events/${e.id}/rsvps`} className="flex-1">
-                      <Button size="sm" variant="outline" className="w-full"><Users size={12} />View RSVPs</Button>
+                      <Button size="sm" variant="outline" className="w-full"><Users size={12} />{e.isTicketed ? "View tickets" : "View RSVPs"}</Button>
+                    </Link>
+                    <Link href={`/events/${e.id}/updates`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full"><Bell size={12} />Updates</Button>
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -347,12 +416,12 @@ export default function AdminEventsPage() {
                         {e.status !== "Cancelled" && e.status !== "Completed" && (
                           <DropdownMenuItem onSelect={() => setEditEvent(e)}><Pencil size={14} />Edit</DropdownMenuItem>
                         )}
-                        {e.status !== "Cancelled" && e.status !== "Completed" && (
-                          <DropdownMenuItem destructive onSelect={() => setCancelTarget(e)}>Cancel event</DropdownMenuItem>
-                        )}
-                        {(e.status === "Cancelled" || e.status === "Completed") && (
-                          <DropdownMenuItem destructive onSelect={() => setDeleteTarget(e)}>Delete</DropdownMenuItem>
-                        )}
+                        {e.status !== "Cancelled" && e.status !== "Completed" && (e.isTicketed
+                          ? <DropdownMenuItem disabled>Paid events can&apos;t be cancelled</DropdownMenuItem>
+                          : <DropdownMenuItem destructive onSelect={() => setCancelTarget(e)}>Cancel event</DropdownMenuItem>)}
+                        {(e.status === "Cancelled" || e.status === "Completed" || e.isTicketed) && (e.isTicketed && (e.paidTicketCount ?? 0) > 0
+                          ? <DropdownMenuItem disabled>Can&apos;t delete: tickets sold</DropdownMenuItem>
+                          : <DropdownMenuItem destructive onSelect={() => setDeleteTarget(e)}>Delete</DropdownMenuItem>)}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

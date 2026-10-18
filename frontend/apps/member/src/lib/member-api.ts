@@ -1,5 +1,5 @@
 import { memberClient, publicMemberClient } from "@/lib/api-client";
-import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ReferralLeaderboardEntry, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder, ServiceType, ServiceRequest } from "@/types";
+import type { PagedResult, Campaign, Contribution, AlumniEvent, EventRegistration, Job, NewsPost, EventUpdates, ForumCategory, ForumThread, ForumPost, MentorProfile, MentorshipRequest, Resource, Member, YearGroupLeaderboardEntry, MemberBadge, Spotlight, Referral, ReferralInfo, ReferralLeaderboardEntry, ClassNote, NotificationPreference, NotificationItem, StoreProduct, StoreOrder, ServiceType, ServiceRequest } from "@/types";
 
 function toFormData(data: object): FormData {
   const fd = new FormData();
@@ -343,6 +343,25 @@ export async function rsvpEvent(eventId: string) {
 export async function cancelRsvp(eventId: string) {
   const res = await memberClient.delete(`/events/${eventId}/rsvp`);
   return res.data;
+}
+
+export async function getEventUpdates(eventId: string): Promise<EventUpdates> {
+  const res = await memberClient.get(`/events/${eventId}/updates`);
+  return res.data.data!;
+}
+
+export interface EventTicketCheckout { authorizationUrl?: string | null; reference: string }
+export interface EventTicketStatus { reference: string; eventId: string; eventTitle?: string; status: "Pending" | "Successful" | "Failed"; amount?: number; message: string }
+
+/** Start paying for a seat at a paid event. The caller sends the member to authorizationUrl. */
+export async function buyEventTicket(eventId: string, callbackUrl?: string): Promise<EventTicketCheckout> {
+  const res = await memberClient.post(`/events/${eventId}/ticket`, { callbackUrl });
+  return res.data.data!;
+}
+
+export async function getEventTicketStatus(reference: string): Promise<EventTicketStatus> {
+  const res = await memberClient.get(`/events/tickets/${reference}/status`);
+  return res.data.data!;
 }
 
 export async function getMyRsvps(status: "Confirmed" | "Cancelled" | "All" = "Confirmed"): Promise<EventRegistration[]> {

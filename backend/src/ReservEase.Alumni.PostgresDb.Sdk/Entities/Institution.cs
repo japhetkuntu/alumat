@@ -128,6 +128,12 @@ public class Institution : BaseEntity
     public bool BroadcastWhatsAppAllowed { get; set; }
 
     /// <summary>
+    /// Whether this institution may charge for event tickets. Set by the platform, off for new and existing institutions.
+    /// Turning it off stops new paid events and new ticket sales; tickets already bought stay valid.
+    /// </summary>
+    public bool PaidEventsEnabled { get; set; }
+
+    /// <summary>
     /// How "active member" status is determined for this institution.
     /// "ApprovedOnly" (default) — any approved member (Member.Status ==
     /// "Active") counts as active regardless of dues. "DuesRequired" — a

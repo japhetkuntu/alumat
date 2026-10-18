@@ -360,6 +360,10 @@ export interface AlumniEvent {
   capacity?: number;
   isTicketed: boolean;
   ticketPrice?: number;
+  /** Tickets bought so far (paid events only). Once above zero the price is locked. */
+  paidTicketCount?: number;
+  /** Ticket money collected for this event: price times tickets. */
+  ticketAmountCollected?: number;
   status: EventStatus;
   yearGroups?: number[];
   rsvpCount: number;
@@ -370,6 +374,33 @@ export interface AlumniEvent {
   googleLocationUrl?: string;
 }
 
+export type EventUpdateBlockType = "Text" | "Images" | "Video" | "Link" | "Files";
+
+export interface EventUpdateItem { url: string; name: string; sizeBytes: number; contentType?: string }
+
+/** One part of an event update. Which fields are used depends on the type. */
+export interface EventUpdateBlock {
+  id: string;
+  type: EventUpdateBlockType;
+  heading?: string;
+  text?: string;
+  url?: string;
+  label?: string;
+  items: EventUpdateItem[];
+}
+
+export interface EventUpdate {
+  id: string;
+  eventId: string;
+  title: string;
+  category: string;
+  isPinned: boolean;
+  blocks: EventUpdateBlock[];
+  postedByName?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface EventRegistration {
   id: string;
   eventId: string;
@@ -378,9 +409,12 @@ export interface EventRegistration {
   memberName?: string;
   memberEmail?: string;
   memberProfilePictureUrl?: string;
-  status: "Confirmed" | "Cancelled";
+  status: "Confirmed" | "Cancelled" | "PendingPayment" | "PaymentFailed";
   createdAt: string;
   updatedAt?: string;
+  /** Ticket price paid, for a paid event. */
+  amountPaid?: number;
+  paidAt?: string;
 }
 
 // ─── News ─────────────────────────────────────────────────────────────────────

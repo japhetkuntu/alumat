@@ -748,6 +748,42 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
     }
 
     [WorkflowFact]
+    public async Task A_new_event_update_reaches_the_attendee_in_app_and_by_push_but_never_by_sms_or_email()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("m1"), Pref("m1", sms: true), Device("m1"));
+
+        await Send(rig, NotificationRequest.EventUpdatePosted(Inst, "m1", "e1", "Gala", "Day 2 schedule", "Schedule"));
+
+        var n = Assert.Single(await rig.Notes());
+        Assert.Equal(("Schedule: Day 2 schedule", "New update for \"Gala\".", "EventUpdatePosted", "Event"), (n.Title, n.Body, n.Type, n.RelatedEntityType));
+        Assert.Equal("https://umat.members.test/events/e1#updates", n.ActionUrl);   // opens the event at its updates
+        rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), "Schedule: Day 2 schedule", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Empty(rig.SmsSent);          // an event can have hundreds of attendees: no per-message cost
+        Assert.Empty(rig.EmailsSent);
+    }
+
+    [WorkflowFact]
+    public async Task A_member_who_opted_out_of_event_reminders_is_not_told_about_event_updates()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person("m1"), Pref("m1", eventReminders: false), Device("m1"));
+
+        await Send(rig, NotificationRequest.EventUpdatePosted(Inst, "m1", "e1", "Gala", "Photos", "Photos & video"));
+
+        Assert.Empty(await rig.Notes());
+        rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [WorkflowFact]
+    public async Task An_event_update_for_an_unknown_member_does_nothing()
+    {
+        var rig = new Rig();
+        await Send(rig, NotificationRequest.EventUpdatePosted(Inst, "ghost", "e1", "Gala", "T", "Recap"));
+        Assert.Empty(await rig.Notes());
+    }
+
+    [WorkflowFact]
     public async Task A_lifecycle_notification_for_an_unknown_or_missing_member_does_nothing()
     {
         var rig = new Rig();

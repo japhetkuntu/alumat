@@ -323,6 +323,40 @@ export interface AlumniEvent {
   googleLocationUrl?: string;
 }
 
+export type EventUpdateBlockType = "Text" | "Images" | "Video" | "Link" | "Files";
+
+export interface EventUpdateItem { url: string; name: string; sizeBytes: number; contentType?: string }
+
+/** One part of an update. Which fields are used depends on the type. */
+export interface EventUpdateBlock {
+  id: string;
+  type: EventUpdateBlockType;
+  heading?: string;
+  text?: string;
+  url?: string;
+  label?: string;
+  items: EventUpdateItem[];
+}
+
+export interface EventUpdate {
+  id: string;
+  eventId: string;
+  title: string;
+  category: string;
+  isPinned: boolean;
+  blocks: EventUpdateBlock[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/** People with a seat get the updates. Everyone else gets only how many there are and of what kind, never any content. */
+export interface EventUpdates {
+  locked: boolean;
+  count: number;
+  categories: { category: string; count: number }[];
+  updates: EventUpdate[];
+}
+
 export interface EventRegistration {
   id: string;
   eventId: string;
@@ -334,6 +368,9 @@ export interface EventRegistration {
   status: "Confirmed" | "Cancelled";
   createdAt: string;
   updatedAt?: string;
+  /** The ticket price paid, or absent for a free RSVP. Never includes any fee. */
+  amountPaid?: number;
+  paidAt?: string;
 }
 
 // ─── News ─────────────────────────────────────────────────────────────────────

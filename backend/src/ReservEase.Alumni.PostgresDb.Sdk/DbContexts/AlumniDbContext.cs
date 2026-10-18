@@ -60,6 +60,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<RecurringContribution> RecurringContributions => Set<RecurringContribution>();
     public DbSet<AlumniEvent> Events => Set<AlumniEvent>();
     public DbSet<EventRsvp> EventRsvps => Set<EventRsvp>();
+    public DbSet<EventUpdate> EventUpdates => Set<EventUpdate>();
     public DbSet<Job> Jobs => Set<Job>();
     public DbSet<NewsPost> NewsPosts => Set<NewsPost>();
     public DbSet<ForumCategory> ForumCategories => Set<ForumCategory>();
@@ -144,6 +145,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // Incoming EF queries will not require these columns directly.
         modelBuilder.Entity<EventRsvp>().Ignore(r => r.Event);
         modelBuilder.Entity<EventRsvp>().Ignore(r => r.Member);
+
+        // EventUpdate: the parts of a post live in one jsonb column, replaced whole on every save.
+        var updateBlocksComparer = new ValueComparer<List<EventUpdateBlock>>(
+            (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
+            l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
+            l => l == null ? null : new List<EventUpdateBlock>(l));
+        modelBuilder.Entity<EventUpdate>().Property(u => u.Blocks).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<EventUpdateBlock>>(jsonOpts)).Metadata.SetValueComparer(updateBlocksComparer);
+        modelBuilder.Entity<EventUpdate>().HasIndex(u => new { u.EventId, u.CreatedAt });
 
         // StoreOrder: member snapshot + line-item list, same jsonb pattern as Contribution.
         modelBuilder.Entity<StoreOrder>().Property(o => o.Member).HasColumnType("jsonb").HasConversion(new JsonbConverter<MemberSnapshot>(jsonOpts));
@@ -428,6 +438,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(r => r.EventId);
         modelBuilder.Entity<EventRsvp>()
             .HasIndex(r => new { r.EventId, r.MemberId }).IsUnique();
+        // Looked up on every Paystack webhook/status poll for a paid ticket, always without a tenant (like StoreOrder).
+        modelBuilder.Entity<EventRsvp>()
+            .HasIndex(r => r.TransactionRef).IsUnique();
 
         // Job: filter by type, status
         modelBuilder.Entity<Job>()
