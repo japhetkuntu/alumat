@@ -79,12 +79,12 @@ const BRANCH_PREVIEW = 8;
 
 function Branch({ title, count, hint, children, empty, split, preview = true }: { title: string; count: number; hint: string; children: React.ReactNode; empty?: React.ReactNode; split: boolean; preview?: boolean }) {
   const storageKey = `structure-branch-open:${title}`;
-  const [open, setOpen] = useState(true);
+  // What each person left open is remembered between visits. This only renders once the structure has loaded in the
+  // browser, never on the server, so reading storage when it is first created cannot disagree with a server render.
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(storageKey) !== "0"; } catch { return true; }
+  });
   const [showAll, setShowAll] = useState(false);
-  // Remember what each person left open between visits (after mount, so server and client render the same).
-  useEffect(() => {
-    try { if (localStorage.getItem(storageKey) === "0") setOpen(false); } catch { /* storage unavailable */ }
-  }, [storageKey]);
   const toggle = () => {
     setOpen((v) => {
       try { localStorage.setItem(storageKey, v ? "0" : "1"); } catch { /* storage unavailable */ }
@@ -341,10 +341,9 @@ export default function StructurePage() {
   const isCommunityOrg = s?.organizationType === "Community";
   const [q, setQ] = useState("");
   const [needsOnly, setNeedsOnly] = useState(false);
-  const [decadeOpen, setDecadeOpen] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    try { const raw = localStorage.getItem("structure-decades"); if (raw) setDecadeOpen(JSON.parse(raw)); } catch { /* storage unavailable */ }
-  }, []);
+  const [decadeOpen, setDecadeOpen] = useState<Record<string, boolean>>(() => {
+    try { const raw = localStorage.getItem("structure-decades"); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  });
   const saveDecades = (next: Record<string, boolean>) => {
     setDecadeOpen(next);
     try { localStorage.setItem("structure-decades", JSON.stringify(next)); } catch { /* storage unavailable */ }

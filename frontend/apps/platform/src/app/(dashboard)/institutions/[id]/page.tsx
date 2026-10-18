@@ -356,7 +356,7 @@ export default function InstitutionDetailPage() {
   });
 
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ firstName: "", lastName: "", email: "", role: "Admin" });
+  const [inviteForm, setInviteForm] = useState({ firstName: "", lastName: "", email: "", role: "SuperAdmin" });
   const [inviteError, setInviteError] = useState<string | null>(null);
   const inviteMutation = useMutation({
     mutationFn: () => inviteInstitutionStaff(id, inviteForm),
@@ -364,7 +364,7 @@ export default function InstitutionDetailPage() {
       toast.success(`Invited ${created.email}. They'll get an email to set their password.`);
       queryClient.invalidateQueries({ queryKey: ["institution-staff", id] });
       setInviteOpen(false);
-      setInviteForm({ firstName: "", lastName: "", email: "", role: "Admin" });
+      setInviteForm({ firstName: "", lastName: "", email: "", role: "SuperAdmin" });
       setInviteError(null);
     },
     onError: (e) => {
@@ -1471,17 +1471,6 @@ export default function InstitutionDetailPage() {
             <div className="space-y-1.5">
               <Label>Email</Label>
               <Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Role</Label>
-              <FormSelect
-                value={inviteForm.role}
-                onValueChange={(role) => setInviteForm((f) => ({ ...f, role }))}
-                options={[
-                  { value: "Admin", label: "Admin" },
-                  ...(isSuperAdmin ? [{ value: "SuperAdmin", label: "SuperAdmin" }] : []),
-                ]}
-              />
             </div>
             <p className="text-[12px] text-muted-foreground">
               They&apos;ll get an email with a link to set their own password, no temp password to relay.

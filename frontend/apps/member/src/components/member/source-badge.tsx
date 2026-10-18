@@ -1,4 +1,5 @@
 import { Building2, UsersRound, GraduationCap } from "@alumni/ui";
+import { useCohortPhrase } from "@/components/member/member-layout";
 
 /** Deterministic hue from a string so each community reads as a consistent color across the app, without needing a color field on the Community entity. */
 function hueFor(seed: string): number {
@@ -8,12 +9,12 @@ function hueFor(seed: string): number {
 }
 
 /** "2020", "2020 & 2021", "2019, 2020 & 3 more" — never lets a long batch list blow out a one-line badge. */
-function yearGroupsLabel(years: number[]): string {
+function yearGroupsLabel(years: number[], phrase: { of: (y: number) => string; pluralOf: (ys: string) => string }): string {
   const sorted = [...years].sort((a, b) => a - b);
-  if (sorted.length === 1) return `Class of ${sorted[0]}`;
-  if (sorted.length === 2) return `Classes of ${sorted[0]} & ${sorted[1]}`;
+  if (sorted.length === 1) return phrase.of(sorted[0]);
+  if (sorted.length === 2) return phrase.pluralOf(`${sorted[0]} & ${sorted[1]}`);
   const shown = sorted.slice(0, 2).join(", ");
-  return `Classes of ${shown} & ${sorted.length - 2} more`;
+  return phrase.pluralOf(`${shown} & ${sorted.length - 2} more`);
 }
 
 /**
@@ -28,6 +29,7 @@ export function SourceBadge({ communityId, communityName, yearGroups, className 
   yearGroups?: number[] | null;
   className?: string;
 }) {
+  const phrase = useCohortPhrase();
   if (communityId && communityName) {
     const hue = hueFor(communityId);
     return (
@@ -50,7 +52,7 @@ export function SourceBadge({ communityId, communityName, yearGroups, className 
         className={`inline-flex items-center gap-1 px-2 py-0.5 text-[12px] font-semibold bg-accent/10 text-accent ${className ?? ""}`}
       >
         <GraduationCap size={10} />
-        {yearGroupsLabel(yearGroups)}
+        {yearGroupsLabel(yearGroups, phrase)}
       </span>
     );
   }

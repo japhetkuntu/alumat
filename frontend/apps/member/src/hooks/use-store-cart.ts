@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { CartItem } from "@/lib/member-api";
 import type { StoreProduct, StoreProductVariant } from "@/types";
@@ -31,23 +31,26 @@ export function clearStoredCart() {
   announceCartChange();
 }
 
+function subscribeCart(onChange: () => void) {
+  window.addEventListener(CART_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => { window.removeEventListener(CART_EVENT, onChange); window.removeEventListener("storage", onChange); };
+}
+
+/** "count|total" of the saved cart: a primitive, so React can tell when it has really changed. */
+function cartSummarySnapshot(): string {
+  const lines = loadCart();
+  const count = lines.reduce((n, l) => n + l.quantity, 0);
+  const total = lines.reduce((sum, l) => sum + lineUnitPrice(l.product, l.variant) * l.quantity, 0);
+  return `${count}|${total}`;
+}
+
 /** Count and total of the saved cart, kept current as it changes anywhere on the page. For read-only displays. */
 export function useCartSummary() {
-  const [summary, setSummary] = useState({ count: 0, total: 0 });
-  useEffect(() => {
-    const read = () => {
-      const lines = loadCart();
-      setSummary({
-        count: lines.reduce((n, l) => n + l.quantity, 0),
-        total: lines.reduce((sum, l) => sum + lineUnitPrice(l.product, l.variant) * l.quantity, 0),
-      });
-    };
-    read();
-    window.addEventListener(CART_EVENT, read);
-    window.addEventListener("storage", read);
-    return () => { window.removeEventListener(CART_EVENT, read); window.removeEventListener("storage", read); };
-  }, []);
-  return summary;
+  // The server has no cart, so it renders empty and the browser fills it in without a hydration mismatch.
+  const snapshot = useSyncExternalStore(subscribeCart, cartSummarySnapshot, () => "0|0");
+  const [count, total] = snapshot.split("|");
+  return { count: Number(count), total: Number(total) };
 }
 
 function loadCart(): CartLine[] {

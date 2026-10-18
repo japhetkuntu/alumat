@@ -26,6 +26,8 @@ import type {
   StoreProduct,
   StoreOrder,
   StoreProductTemplate,
+  StoreTemplateKind,
+  VariantOptionSet,
   StoreDetailItem,
   ServiceType,
   ServiceRequest,
@@ -1398,12 +1400,17 @@ export async function getStoreTemplates() {
   return res.data.data ?? [];
 }
 
-export async function createStoreTemplate(body: StoreProductConfigBody & { name: string; description?: string; deliveryInfo?: string }) {
+/** What is saved for a reusable set. The server keeps only what the kind is about, so the whole configuration can be sent. */
+export type StoreTemplateBody = StoreProductConfigBody & {
+  kind: StoreTemplateKind; name: string; description?: string; deliveryInfo?: string; variantOptions?: VariantOptionSet[];
+};
+
+export async function createStoreTemplate(body: StoreTemplateBody) {
   const res = await institutionClient.post<ApiResponse<StoreProductTemplate>>("/store/templates", body);
   return res.data.data!;
 }
 
-export async function updateStoreTemplate(id: string, body: StoreProductConfigBody & { name: string; description?: string; deliveryInfo?: string }) {
+export async function updateStoreTemplate(id: string, body: StoreTemplateBody) {
   const res = await institutionClient.put<ApiResponse<StoreProductTemplate>>(`/store/templates/${id}`, body);
   return res.data.data!;
 }

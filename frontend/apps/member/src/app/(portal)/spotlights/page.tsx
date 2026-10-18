@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase } from "@/components/member/member-layout";
 import { ReportButton } from "@/components/member/report-button";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -44,6 +45,7 @@ function avatarColor(name: string) {
    SPOTLIGHT CARD
    ───────────────────────────────────────────────────────────────────────── */
 function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured: boolean }) {
+  const cohortPhrase = useCohortPhrase();
   const [expanded, setExpanded] = useState(false);
   const color = avatarColor(spotlight.memberName ?? "A");
   const long  = spotlight.story.length > 200;
@@ -131,7 +133,7 @@ function SpotlightCard({ spotlight, featured }: { spotlight: Spotlight; featured
                 </p>
                 {(spotlight.memberGraduationYear ?? 0) > 0 && !(spotlight.coCelebrants && spotlight.coCelebrants.length > 0) && (
                   <p className="flex items-center gap-1 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                    <GraduationCap size={11} /> Class of {spotlight.memberGraduationYear}
+                    <GraduationCap size={11} /> {cohortPhrase.of(spotlight.memberGraduationYear ?? 0)}
                   </p>
                 )}
               </div>

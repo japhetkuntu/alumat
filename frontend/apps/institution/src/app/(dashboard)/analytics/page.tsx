@@ -8,7 +8,7 @@ import {
 } from "@alumni/ui";
 import { getAnalytics } from "@/lib/institution-api";
 import { useFeatures } from "@/hooks/use-institution-features";
-import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
+import { useInstitutionNavTheme, useCohortPhrase } from "@/components/institution/institution-layout";
 
 const PRIMARY = "var(--brand-primary-500, var(--primary))";
 const ACCENT = "var(--brand-accent-500, var(--brand-accent))";
@@ -21,6 +21,7 @@ const compactCurrency = (value: number) =>
 const OWING_SHOWN = 8;
 
 export default function AnalyticsPage() {
+  const cohortPhrase = useCohortPhrase();
   const features = useFeatures();
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
@@ -52,7 +53,7 @@ export default function AnalyticsPage() {
 
   const dues = data?.dues ?? null;
   const owing = (dues?.byYearGroup ?? [])
-    .map((g) => ({ label: `Class of ${g.yearGroup}`, value: g.eligible - g.paid }))
+    .map((g) => ({ label: cohortPhrase.of(g.yearGroup), value: g.eligible - g.paid }))
     .filter((g) => g.value > 0)
     .sort((a, b) => b.value - a.value)
     .slice(0, OWING_SHOWN);

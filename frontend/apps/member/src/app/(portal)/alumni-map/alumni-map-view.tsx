@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase } from "@/components/member/member-layout";
 import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -61,6 +62,7 @@ type Pin = { member: AlumniMapMember; position: [number, number] };
 
 /** Groups nearby pins into a count badge at low zoom, matching the app's brand color, so alumni clustered in the same city/country don't just overlap into an unreadable pile. */
 function ClusterLayer({ pins }: { pins: Pin[] }) {
+  const cohortPhrase = useCohortPhrase();
   const map = useMap();
   const groupRef = useRef<L.MarkerClusterGroup | null>(null);
 
@@ -103,7 +105,7 @@ function ClusterLayer({ pins }: { pins: Pin[] }) {
           <span class="alumni-popup__avatar">${avatar}</span>
           <div class="alumni-popup__body">
             <p class="alumni-popup__name">${member.firstName} ${member.lastName}</p>
-            <p class="alumni-popup__meta">${member.location ?? ""}${member.location && member.graduationYear > 0 ? " &middot; " : ""}${member.graduationYear > 0 ? `Class of ${member.graduationYear}` : ""}</p>
+            <p class="alumni-popup__meta">${member.location ?? ""}${member.location && member.graduationYear > 0 ? " &middot; " : ""}${member.graduationYear > 0 ? cohortPhrase.of(member.graduationYear) : ""}</p>
           </div>
         </div>`,
         { className: "alumni-popup-wrapper", closeButton: false }

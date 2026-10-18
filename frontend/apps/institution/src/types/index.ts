@@ -603,9 +603,15 @@ export interface StoreDetailItem {
   value: string;
 }
 
-/** A reusable setup imported (copied) into products. */
+/** The kinds of reusable set. A whole setup, or just one section of a product. */
+export type StoreTemplateKind = "Setup" | "Questions" | "DeliveryDetails" | "Stages" | "Details" | "Variants";
+
+export interface VariantOptionSet { name: string; values: string[] }
+
+/** A reusable set copied into products: a whole setup, or just questions, delivery details, stages, details or variants. */
 export interface StoreProductTemplate {
   id: string;
+  kind: StoreTemplateKind;
   name: string;
   description?: string;
   priceLabel?: string;
@@ -615,6 +621,8 @@ export interface StoreProductTemplate {
   fields: ServiceFieldDefinition[];
   deliveryFields: ServiceFieldDefinition[];
   stages: string[];
+  /** Only for the Variants kind. */
+  variantOptions: VariantOptionSet[];
 }
 
 export interface StoreOrderItemAnswer {

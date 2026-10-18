@@ -3440,6 +3440,12 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Setup");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3459,6 +3465,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
+
+                    b.Property<string>("VariantOptions")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 

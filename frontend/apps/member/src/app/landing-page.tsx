@@ -861,6 +861,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  const showStats = stats.length >= 2;
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
@@ -870,7 +871,8 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+    // The band only renders once the pulse has loaded, so attach when it appears.
+  }, [showStats]);
 
   return (
     <div className="institution-landing min-h-screen overflow-x-hidden" style={{ background: "var(--background)", color: "var(--foreground)" }}>
@@ -1003,7 +1005,7 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
       {/* ════════════════════════════════════════════════════════════════
           STATS — full-bleed banded row, not a card grid
       ════════════════════════════════════════════════════════════════ */}
-      {stats.length >= 2 && (
+      {showStats && (
       <div className="border-b" style={{ background: "var(--brand-primary-dark, var(--primary))", borderColor: "var(--border)" }}>
         <div className="section__inner--wide">
           <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-0 py-14">

@@ -667,4 +667,70 @@ public class StoreServiceTests
         Assert.Equal(404, (await rig.Service.DeleteTemplateAsync(id)).Code);
         Assert.Equal(new[] { "Booked" }, (await rig.Db().StoreProducts.SingleAsync()).Stages);   // products were configured from a copy
     }
+
+    // ── Reusable sets for one section of a product ───────────────────────
+
+    [Fact]
+    public async Task A_questions_set_keeps_only_the_questions()
+    {
+        var rig = new Rig();
+        var response = await rig.Service.CreateTemplateAsync(new StoreProductTemplateRequest
+        {
+            Kind = "Questions", Name = " Guest details ",
+            Fields = [new ServiceFieldDefinitionRequest { Label = "Guest name", Type = "Text", Required = true }],
+            Stages = ["Stray stage"], PriceLabel = "stray label", DeliveryInfo = "stray",   // not about questions, so dropped
+        }, rig.Admin);
+
+        Assert.Equal(201, response.Code);
+        var saved = await rig.Db().StoreProductTemplates.SingleAsync();
+        Assert.Equal(("Questions", "Guest details"), (saved.Kind, saved.Name));
+        Assert.Single(saved.Fields);
+        Assert.Empty(saved.Stages);
+        Assert.Null(saved.PriceLabel);
+        Assert.Null(saved.DeliveryInfo);
+    }
+
+    [Theory]
+    [InlineData("Questions", "question")]
+    [InlineData("DeliveryDetails", "delivery detail")]
+    [InlineData("Stages", "stage")]
+    [InlineData("Details", "detail")]
+    [InlineData("Variants", "option")]
+    public async Task A_set_with_nothing_in_it_is_refused(string kind, string what)
+    {
+        var rig = new Rig();
+        var response = await rig.Service.CreateTemplateAsync(new StoreProductTemplateRequest { Kind = kind, Name = "Empty" }, rig.Admin);
+        Assert.Equal(400, response.Code);
+        Assert.Contains(what, response.Message);
+        Assert.Equal(0, await rig.Db().StoreProductTemplates.CountAsync());
+    }
+
+    [Fact]
+    public async Task A_variants_set_checks_names_and_values()
+    {
+        var rig = new Rig();
+        var ok = await rig.Service.CreateTemplateAsync(new StoreProductTemplateRequest
+        {
+            Kind = "Variants", Name = "Apparel",
+            VariantOptions = [new VariantOptionSetRequest { Name = " Size ", Values = ["S", "M", "m", " L "] }, new VariantOptionSetRequest { Name = "Colour", Values = ["Green"] }],
+        }, rig.Admin);
+        Assert.Equal(201, ok.Code);
+        var saved = (await rig.Db().StoreProductTemplates.SingleAsync()).VariantOptions;
+        Assert.Equal(new[] { "S", "M", "L" }, saved[0].Values);   // trimmed, duplicates ignoring case removed
+        Assert.Equal("Size", saved[0].Name);
+
+        Assert.Equal(400, (await rig.Service.CreateTemplateAsync(new StoreProductTemplateRequest { Kind = "Variants", Name = "x",
+            VariantOptions = [new VariantOptionSetRequest { Name = "Size", Values = [] }] }, rig.Admin)).Code);
+        Assert.Equal(400, (await rig.Service.CreateTemplateAsync(new StoreProductTemplateRequest { Kind = "Variants", Name = "x",
+            VariantOptions = [new VariantOptionSetRequest { Name = "Size", Values = ["S"] }, new VariantOptionSetRequest { Name = "size", Values = ["M"] }] }, rig.Admin)).Code);
+    }
+
+    [Fact]
+    public async Task An_unknown_kind_is_refused_and_a_whole_setup_still_works_as_before()
+    {
+        var rig = new Rig();
+        Assert.Equal(400, (await rig.Service.CreateTemplateAsync(Template(r => r.Kind = "Wizard"), rig.Admin)).Code);
+        Assert.Equal(201, (await rig.Service.CreateTemplateAsync(Template(), rig.Admin)).Code);
+        Assert.Equal("Setup", (await rig.Db().StoreProductTemplates.SingleAsync()).Kind);
+    }
 }

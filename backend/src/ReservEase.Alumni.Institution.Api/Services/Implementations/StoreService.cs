@@ -463,21 +463,43 @@ public class StoreService(
 
     private static string? ApplyTemplate(StoreProductTemplate template, StoreProductTemplateRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Name)) return "Give this setup a name.";
+        if (string.IsNullOrWhiteSpace(request.Name)) return "Give this set a name.";
+        var kind = string.IsNullOrWhiteSpace(request.Kind) ? StoreTemplateKinds.Setup : request.Kind;
+        if (!StoreTemplateKinds.IsValid(kind)) return "That kind of set is not recognised.";
+
         var (fields, fieldError) = StoreConfigParser.MapFields(request.Fields, "order");
         if (fieldError is not null) return fieldError;
         var (deliveryFields, deliveryError) = StoreConfigParser.MapFields(request.DeliveryFields, "delivery");
         if (deliveryError is not null) return deliveryError;
+        var (variantOptions, variantError) = StoreConfigParser.MapVariantOptions(request.VariantOptions);
+        if (variantError is not null) return variantError;
+        var stages = StoreConfigParser.NormalizeStages(request.Stages);
+        var details = StoreConfigParser.MapDetails(request.Details);
 
+        // A set holds only what its kind is about, so a "Questions" set never carries stray stages around.
+        var empty = kind switch
+        {
+            StoreTemplateKinds.Questions => fields!.Count == 0 ? "Add at least one question before saving this set." : null,
+            StoreTemplateKinds.DeliveryDetails => deliveryFields!.Count == 0 && string.IsNullOrWhiteSpace(request.DeliveryInfo) ? "Add at least one delivery detail before saving this set." : null,
+            StoreTemplateKinds.Stages => stages.Count == 0 ? "Add at least one stage before saving this set." : null,
+            StoreTemplateKinds.Details => details.Count == 0 && string.IsNullOrWhiteSpace(request.PriceLabel) ? "Add at least one detail before saving this set." : null,
+            StoreTemplateKinds.Variants => variantOptions!.Count == 0 ? "Add at least one option before saving this set." : null,
+            _ => null,
+        };
+        if (empty is not null) return empty;
+
+        var whole = kind == StoreTemplateKinds.Setup;
+        template.Kind = kind;
         template.Name = request.Name.Trim();
         template.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
-        template.PriceLabel = string.IsNullOrWhiteSpace(request.PriceLabel) ? null : request.PriceLabel.Trim();
-        template.TrackStock = request.TrackStock;
-        template.DeliveryInfo = string.IsNullOrWhiteSpace(request.DeliveryInfo) ? null : request.DeliveryInfo.Trim();
-        template.Details = StoreConfigParser.MapDetails(request.Details);
-        template.Fields = fields!;
-        template.DeliveryFields = deliveryFields!;
-        template.Stages = StoreConfigParser.NormalizeStages(request.Stages);
+        template.PriceLabel = whole || kind == StoreTemplateKinds.Details ? (string.IsNullOrWhiteSpace(request.PriceLabel) ? null : request.PriceLabel.Trim()) : null;
+        template.TrackStock = whole || kind == StoreTemplateKinds.Details ? request.TrackStock : true;
+        template.DeliveryInfo = whole || kind == StoreTemplateKinds.DeliveryDetails ? (string.IsNullOrWhiteSpace(request.DeliveryInfo) ? null : request.DeliveryInfo.Trim()) : null;
+        template.Details = whole || kind == StoreTemplateKinds.Details ? details : [];
+        template.Fields = whole || kind == StoreTemplateKinds.Questions ? fields! : [];
+        template.DeliveryFields = whole || kind == StoreTemplateKinds.DeliveryDetails ? deliveryFields! : [];
+        template.Stages = whole || kind == StoreTemplateKinds.Stages ? stages : [];
+        template.VariantOptions = kind == StoreTemplateKinds.Variants ? variantOptions! : [];
         return null;
     }
 

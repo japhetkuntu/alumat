@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { shareMessages } from "@alumni/ui";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -275,16 +276,17 @@ export default function CampaignDetailPage() {
 
 
       {/* Lightbox */}
-      {lightboxOpen && campaign.bannerImageUrl && (
+      {lightboxOpen && campaign.bannerImageUrl && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setLightboxOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label="Banner image"
         >
           <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/30 rounded-full p-1.5 transition-colors"
+            className="absolute flex h-11 w-11 items-center justify-center text-white/90 hover:text-white bg-black/40 transition-colors"
+            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
             onClick={() => setLightboxOpen(false)}
             aria-label="Close lightbox"
           >
@@ -296,7 +298,8 @@ export default function CampaignDetailPage() {
             className="max-h-[90vh] max-w-[95vw] object-contain rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </div>,
+        document.body,
       )}
 
       <Card>

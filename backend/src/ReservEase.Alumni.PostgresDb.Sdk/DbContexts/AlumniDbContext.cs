@@ -344,6 +344,13 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             (l1, l2) => (l1 == null && l2 == null) || (l1 != null && l2 != null && l1.SequenceEqual(l2)),
             l => l == null ? 0 : l.Aggregate(0, (a, v) => HashCode.Combine(a, v == null ? 0 : v.GetHashCode())),
             l => l == null ? null : new List<StoreDetailItem>(l));
+        modelBuilder.Entity<StoreProductTemplate>().Property(t => t.VariantOptions).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<VariantOptionSet>>(jsonOpts))
+            .Metadata.SetValueComparer(new ValueComparer<List<VariantOptionSet>>(
+                (a, b) => JsonSerializer.Serialize(a, jsonOpts) == JsonSerializer.Serialize(b, jsonOpts),
+                l => JsonSerializer.Serialize(l, jsonOpts).GetHashCode(),
+                l => JsonSerializer.Deserialize<List<VariantOptionSet>>(JsonSerializer.Serialize(l, jsonOpts), jsonOpts) ?? new List<VariantOptionSet>()));
+        modelBuilder.Entity<StoreProductTemplate>().Property(t => t.Kind).HasDefaultValue(StoreTemplateKinds.Setup);
         foreach (var productConfig in new[] { typeof(StoreProduct), typeof(StoreProductTemplate) })
         {
             var entity = modelBuilder.Entity(productConfig);

@@ -1190,13 +1190,10 @@ public class InstitutionManagementService(
         }}
 
     /// <summary>
-    /// The three institution-staff roles a platform staffer can grant here.
-    /// Institution.Api's StaffRoles class isn't reachable from this project
-    /// (Platform.Api and Institution.Api are sibling projects, not layered),
-    /// so this list is intentionally duplicated locally rather than pulling
-    /// in a cross-project reference for three string literals.
+    /// The platform only ever creates an institution's SuperAdmin; the institution then adds its own
+    /// scoped admins. Institution.Api's StaffRoles isn't reachable from this project, so the literal is local.
     /// </summary>
-    private static bool IsValidInstitutionRole(string? role) => role is "SuperAdmin" or "Admin" or "ScopedAdmin";
+    private static bool IsValidInstitutionRole(string? role) => role is "SuperAdmin";
 
     public async Task<IApiResponse<InstitutionStaffDto>> InviteInstitutionStaffAsync(
         string institutionId, InviteInstitutionStaffRequest request, string createdBy, string actorName, string callerPlatformRole)
@@ -1205,7 +1202,7 @@ public class InstitutionManagementService(
         {
         if (!IsValidInstitutionRole(request.Role))
             return ApiResponseExtensions.ToBadRequestApiResponse<InstitutionStaffDto>(
-                "Invalid role. Must be one of: SuperAdmin, Admin, ScopedAdmin.");
+                "Invalid role. The platform can only add an institution SuperAdmin.");
 
         // Institution-level SuperAdmin is the top tier of that institution's
         // own privilege hierarchy — only a platform SuperAdmin (not Support,

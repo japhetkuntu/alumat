@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase } from "@/components/institution/institution-layout";
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -263,6 +264,7 @@ function Checklist({ d, loading, onTick }: { d?: EngagementDashboard; loading: b
 }
 
 export function CohortsSection({ data, loading, days }: { data?: CohortsData; loading: boolean; days: number }) {
+  const cohortPhrase = useCohortPhrase();
   if (!loading && (!data || data.cohorts.length === 0)) return null; // institutions without year groups never see this
   const uncovered = data ? data.cohortsWithMembers - data.cohortsCovered : 0;
   return (
@@ -281,7 +283,7 @@ export function CohortsSection({ data, loading, days }: { data?: CohortsData; lo
             {data.cohorts.map((c) => (
               <li key={c.year} className="border border-border p-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-[15px] font-bold tabular-nums">Class of {c.year}</p>
+                  <p className="text-[15px] font-bold tabular-nums">{cohortPhrase.of(c.year)}</p>
                   <p className="text-[12.5px] text-muted-foreground">{c.ambassadors.length === 0 ? (c.activeMembers >= 3 ? "No ambassador" : "Too few members") : c.ambassadors.map((x) => x.name + (x.active ? "" : " (quiet)")).join(", ")}</p>
                 </div>
                 <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">

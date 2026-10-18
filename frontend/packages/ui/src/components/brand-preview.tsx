@@ -119,7 +119,7 @@ function MemberPortalMock({ palette, name, initial }: MockProps) {
           {palette.accent ? (
             <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: palette.accent.light, color: palette.accent.dark }}>Top donor</span>
           ) : (
-            <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: "#f1f5f9", color: "#64748b" }}>Alumni</span>
+            <span style={{ borderRadius: 999, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, background: "#f1f5f9", color: "#64748b" }}>Member</span>
           )}
         </div>
         <div style={{ borderRadius: 10, border: "1px solid #eef2f1", padding: 10, fontSize: 9.5, color: "#475569", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

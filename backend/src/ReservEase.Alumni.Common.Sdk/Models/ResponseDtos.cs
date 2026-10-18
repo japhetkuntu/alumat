@@ -203,9 +203,16 @@ public class StoreProductDto
     public List<string> Stages { get; set; } = [];
 }
 
+public class VariantOptionSetDto
+{
+    public string Name { get; set; } = string.Empty;
+    public List<string> Values { get; set; } = [];
+}
+
 public class StoreProductTemplateDto
 {
     public string Id { get; set; } = string.Empty;
+    public string Kind { get; set; } = "Setup";
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? PriceLabel { get; set; }
@@ -215,6 +222,7 @@ public class StoreProductTemplateDto
     public List<ServiceFieldDefinitionDto> Fields { get; set; } = [];
     public List<ServiceFieldDefinitionDto> DeliveryFields { get; set; } = [];
     public List<string> Stages { get; set; } = [];
+    public List<VariantOptionSetDto> VariantOptions { get; set; } = [];
 }
 
 public class StoreProductVariantDto

@@ -2,7 +2,7 @@
 
 import { NextSteps } from "@/components/member/next-steps";
 import { WhatsAppConnectCard } from "@/components/member/whatsapp-connect-card";
-import { useCohortLabels, useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
+import { useCohortLabels, useCohortPhrase, useFeatures, useModuleActivity, useNavTheme } from "@/components/member/member-layout";
 import { isFeatureDisabledError } from "@/lib/feature-errors";
 import { useEffect, useRef, useState } from "react";
 import { LoadError } from "@alumni/ui";
@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import {
   CreditCard, Calendar, ChevronRight, Award,
   AlertTriangle, CheckCircle2, Clock, ArrowRight,
-  Briefcase, UsersRound,
+  Briefcase, UsersRound, ShoppingBag, FileText, FitImage,
 } from "@alumni/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
@@ -33,6 +33,8 @@ import {
   getMyCurrentYearUnpaidMembershipCampaigns,
   getMyProfile,
   getJobs,
+  getStoreProducts,
+  getServiceTypes,
   getMyCommunities,
   getHomeFeed,
   markHomeSeen,
@@ -57,6 +59,7 @@ function MembershipCard({
   isPensioner: boolean;
   getMemberAmount: (c: Campaign) => number;
 }) {
+  const cohortPhrase = useCohortPhrase();
   const [now] = useState(() => Date.now());
   const isActive = membershipStatus?.isMembershipActive;
   const expiry = membershipStatus?.membershipExpiry;
@@ -101,7 +104,7 @@ function MembershipCard({
           </p>
           {profile?.graduationYear != null && profile.graduationYear > 0 && (
             <p className="text-white/70 text-[12.5px] sm:text-[14px]">
-              Class of {profile.graduationYear}
+              {cohortPhrase.of(profile.graduationYear)}
               {profile.departmentName ? ` · ${profile.departmentName}` : ""}
             </p>
           )}
@@ -375,9 +378,10 @@ const EARLIER_SHOWN = 6;
 
 function FeedRow({ item, isNew, showCohort }: { item: HomeFeedItem; isNew: boolean; showCohort: boolean }) {
   const cohortLabel = useCohortLabels().singular.toLowerCase();
+  const cohortPhrase = useCohortPhrase();
   const cohort = !showCohort ? null
     : item.sameYearGroup ? `Your ${cohortLabel}`
-    : item.personGraduationYear ? `Class of ${item.personGraduationYear}`
+    : item.personGraduationYear ? cohortPhrase.of(item.personGraduationYear)
     : null;
   const meta = [cohort, showCohort && item.sameDepartment ? "Your department" : null].filter(Boolean).join(" · ");
 
@@ -567,6 +571,81 @@ function JobsCard() {
   );
 }
 
+/** A short, useful look at the store: what is for sale now. Left out when there is nothing to buy. */
+function StoreCard() {
+  const { data } = useQuery({ queryKey: ["m-dash-store"], queryFn: () => getStoreProducts(1, 4) });
+  const products = (data?.results ?? []).filter((p) => {
+    const tracked = p.trackStock !== false;
+    if (!tracked) return true;
+    return p.variantOptionTypes.length > 0 ? p.variants.some((v) => v.quantityAvailable > 0) : p.quantityAvailable > 0;
+  });
+  if (products.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div>
+          <CardTitle className="text-[15px] font-bold">From the store</CardTitle>
+          <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Items your community is selling</p>
+        </div>
+        <Link href="/store">
+          <Button size="sm" variant="ghost" className="text-[13px] gap-1 font-semibold">All <ChevronRight size={13} /></Button>
+        </Link>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-1">
+        {products.slice(0, 3).map((p) => {
+          const price = p.variantOptionTypes.length > 0 && p.variants.length > 0
+            ? `From ${formatCurrency(Math.min(...p.variants.map((v) => v.price)))}`
+            : formatCurrency(p.price);
+          return (
+            <Link key={p.id} href={`/store/${p.id}`} className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-secondary group">
+              <div className="w-10 h-10 shrink-0 overflow-hidden flex items-center justify-center rounded-xl" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+                {p.imageUrls?.[0] ? <FitImage src={p.imageUrls[0]} alt="" className="w-full h-full" /> : <ShoppingBag size={17} style={{ color: "var(--muted-foreground)" }} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-semibold leading-snug truncate" style={{ color: "var(--foreground)" }}>{p.name}</p>
+                <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{price}{p.priceLabel ? ` ${p.priceLabel}` : ""}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** The services a member can request, with the price. Left out when none are offered. */
+function ServicesCard() {
+  const { data } = useQuery({ queryKey: ["m-dash-services"], queryFn: () => getServiceTypes(1, 4) });
+  const services = (data?.results ?? []).filter((s) => s.status === "Active");
+  if (services.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div>
+          <CardTitle className="text-[15px] font-bold">Services you can request</CardTitle>
+          <p className="text-[13px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>Documents and help from your institution</p>
+        </div>
+        <Link href="/services">
+          <Button size="sm" variant="ghost" className="text-[13px] gap-1 font-semibold">All <ChevronRight size={13} /></Button>
+        </Link>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-1">
+        {services.slice(0, 3).map((sv) => (
+          <Link key={sv.id} href={`/services/${sv.id}`} className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-secondary group">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--muted)", border: "1px solid var(--border)" }}>
+              <FileText size={17} style={{ color: "var(--muted-foreground)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold leading-snug truncate" style={{ color: "var(--foreground)" }}>{sv.name}</p>
+              <p className="text-[12.5px] mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{sv.price > 0 ? formatCurrency(sv.price) : "Free"}</p>
+            </div>
+          </Link>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    PAGE
    ───────────────────────────────────────────────────────────────────────── */
@@ -577,6 +656,8 @@ export default function MemberDashboardPage() {
   const jobsEnabled = features.enabled("Jobs");
   const directoryEnabled = features.enabled("Directory");
   const communitiesEnabled = features.enabled("Communities");
+  const storeEnabled = features.enabled("Store");
+  const servicesEnabled = features.enabled("Services");
   const results = useQueries({
     queries: [
       { queryKey: ["m-campaigns"],             enabled: contributionsEnabled, queryFn: () => getMyCampaigns(1, 50)                    },
@@ -988,6 +1069,8 @@ export default function MemberDashboardPage() {
         </Card>}
 
         {jobsEnabled && !emptyModules.includes("Jobs") && <JobsCard />}
+        {storeEnabled && <StoreCard />}
+        {servicesEnabled && <ServicesCard />}
 
         {/* Recent contributions */}
         {contributionsEnabled && (contributionsList.length > 0 || contributions.isLoading || contributions.isError) && <Card>

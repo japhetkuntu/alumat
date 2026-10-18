@@ -172,6 +172,13 @@ export function useCohortLabels() {
   };
 }
 
+/** "Class of 2020" in whatever word the institution uses for a year group ("Batch of 2020"), falling back to "Class". */
+export function useCohortPhrase() {
+  const { data: theme } = useInstitutionNavTheme();
+  const word = theme?.cohortLabel?.trim() || "Class";
+  return { of: (year: number | string) => `${word} of ${year}`, word };
+}
+
 /** The menu this staff member can actually see: role limits, disabled features and community-only rules already applied. */
 function useNavItems() {
   const { user } = useAuth();

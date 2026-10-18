@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase } from "@/components/institution/institution-layout";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -10,6 +11,7 @@ import { getAmbassadorWorkspace, updateMyTask } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 
 export default function AmbassadorPage() {
+  const cohortPhrase = useCohortPhrase();
   const { user } = useAuth();
   const isAmbassador = user?.role === "ScopedAdmin";
   const qc = useQueryClient();
@@ -46,7 +48,7 @@ export default function AmbassadorPage() {
             <ul className="space-y-3 sm:hidden">
               {cohorts.map((c) => (
                 <li key={c.year} className="border border-border p-3">
-                  <p className="text-[15px] font-bold tabular-nums">Class of {c.year}</p>
+                  <p className="text-[15px] font-bold tabular-nums">{cohortPhrase.of(c.year)}</p>
                   <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
                     <div><dt className="text-muted-foreground">Members</dt><dd className="font-semibold tabular-nums">{c.activeMembers}</dd></div>
                     <div><dt className="text-muted-foreground">New this period</dt><dd className="font-semibold tabular-nums">{c.newMembers}</dd></div>

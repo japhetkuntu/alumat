@@ -20,6 +20,41 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-18",
+    title: "Adding an institution administrator now creates a SuperAdmin only",
+    scopes: ["Platform", "Institution"],
+    type: "Improvement",
+    body: "When platform staff add an administrator to an institution, the role choice is gone: the person is always an institution SuperAdmin, and the server refuses any other role. The institution's own SuperAdmins then add their scoped administrators from their portal. Existing administrators are not changed.",
+  },
+  {
+    date: "2026-10-16",
+    title: "Landing page \"community in numbers\" no longer shows zeros",
+    scopes: ["Member"],
+    type: "Fix",
+    body: "The \"Right now\" band on the public landing page could show every figure as 0 (for example 0 joined in the last 30 days, 0 events in the next 30 days) even when the real counts were higher. The figures load after the page opens, and the count-up animation was only wired up when the page first opened, so it never started once the band appeared. It now starts when the band comes into view, whenever the figures arrive. The counts themselves were already correct.",
+  },
+  {
+    date: "2026-10-16",
+    title: "Store: reusable sets for each part of a product",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "Saved setups used to be all or nothing, and hidden at the bottom of the product form. Each part of a product now has its own saved sets: the details shown on the product page, the questions you ask the buyer, the delivery or pickup details, the fulfilment stages, and the variant options (such as Size and Colour with their values). In any of those sections an administrator can choose a saved set and use it to fill the section in, then change anything for that product. Setting up a part once and saving it as a set makes the next product quick; an existing set can be updated with what is currently in the section, and a set can be deleted. A set is always copied into the product, so changing or deleting one never alters products that already used it, and using one over something already filled in asks before replacing it. Whole-product setups still work, now named Start from a saved setup, and existing ones are kept. A set holds only what its kind is about, and an empty one cannot be saved.",
+  },
+  {
+    date: "2026-10-16",
+    title: "Member home shows the store and services, and image viewers can always be closed on a phone",
+    scopes: ["Member", "Institution"],
+    type: "Improvement",
+    body: "Member home now has a \"From the store\" card (the first few items on sale, with prices, skipping anything sold out) and a \"Services you can request\" card (with prices, or Free), beside events, jobs and recent payments. Each appears only when that feature is on for the institution and there is something to show, and each links through to the full store or services page. On a phone, opening an event's photos could leave the close button hidden under the top bar, so the viewer could not be dismissed. The image viewers (event and album galleries, single images and the fundraiser banner) now open above everything, keep their close button and counters clear of the status bar and notch, and fit the visible screen height.",
+  },
+  {
+    date: "2026-10-16",
+    title: "No more \"alumnus\": wording follows the community, including Class of / Batch of",
+    scopes: ["Member", "Institution"],
+    type: "Fix",
+    body: "A member's directory card said \"This alumnus hasn't added more details to their profile yet\" in every kind of community. It now says \"This member\". The same sweep changed the remaining hard-coded alumni wording on the staff side (a service request note, a resource placeholder, the portal brand preview). Everywhere a year group is shown as \"Class of 2020\" (the directory, member home and membership card, spotlights, the alumni map pins, source badges on news and events, the membership certificate, and the ambassador, engagement and analytics pages) it now uses the word the institution chose for a year group, so a community that calls them batches sees \"Batch of 2020\". An institution that has not chosen a word still sees \"Class of\".",
+  },
+  {
     date: "2026-10-15",
     title: "Broadcast channels are switched on per institution, to control cost",
     scopes: ["Platform", "Institution"],

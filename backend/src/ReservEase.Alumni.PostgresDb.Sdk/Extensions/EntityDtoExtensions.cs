@@ -225,6 +225,7 @@ public static class EntityDtoExtensions
     public static StoreProductTemplateDto ToDto(this StoreProductTemplate t) => new()
     {
         Id = t.Id,
+        Kind = t.Kind,
         Name = t.Name,
         Description = t.Description,
         PriceLabel = t.PriceLabel,
@@ -234,6 +235,7 @@ public static class EntityDtoExtensions
         Fields = t.Fields.Select(f => f.ToDto()).ToList(),
         DeliveryFields = t.DeliveryFields.Select(f => f.ToDto()).ToList(),
         Stages = t.Stages,
+        VariantOptions = t.VariantOptions.Select(v => new VariantOptionSetDto { Name = v.Name, Values = v.Values }).ToList(),
     };
 
     public static StoreProductVariantDto ToDto(this StoreProductVariant v, StoreProduct parentProduct) => new()

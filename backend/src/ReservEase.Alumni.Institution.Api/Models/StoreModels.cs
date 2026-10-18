@@ -85,8 +85,16 @@ public class StoreDetailItemRequest
 }
 
 /// <summary>Create/update body for a reusable store setup (JSON, so typed lists bind directly).</summary>
+public class VariantOptionSetRequest
+{
+    public string Name { get; set; } = "";
+    public List<string> Values { get; set; } = [];
+}
+
 public class StoreProductTemplateRequest
 {
+    /// <summary>One of Setup, Questions, DeliveryDetails, Stages, Details or Variants. Defaults to a whole setup.</summary>
+    public string Kind { get; set; } = "Setup";
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public string? PriceLabel { get; set; }
@@ -96,6 +104,7 @@ public class StoreProductTemplateRequest
     public List<ServiceFieldDefinitionRequest> Fields { get; set; } = [];
     public List<ServiceFieldDefinitionRequest> DeliveryFields { get; set; } = [];
     public List<string> Stages { get; set; } = [];
+    public List<VariantOptionSetRequest> VariantOptions { get; set; } = [];
 }
 
 /// <summary>A stage change and/or note (and optionally a file handed back) for one ordered item.</summary>

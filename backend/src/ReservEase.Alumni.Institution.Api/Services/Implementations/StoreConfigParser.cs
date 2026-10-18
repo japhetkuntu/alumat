@@ -57,6 +57,22 @@ internal static class StoreConfigParser
         return (fields, null);
     }
 
+    /// <summary>Variant option types and their values: names unique ignoring case, every option with at least one distinct value.</summary>
+    public static (List<VariantOptionSet>? Options, string? Error) MapVariantOptions(IEnumerable<VariantOptionSetRequest>? requests)
+    {
+        var result = new List<VariantOptionSet>();
+        foreach (var r in requests ?? [])
+        {
+            var name = (r.Name ?? "").Trim();
+            if (name.Length == 0) return (null, "Every option needs a name, such as Size or Colour.");
+            if (result.Any(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase))) return (null, $"\"{name}\" is listed twice.");
+            var values = (r.Values ?? []).Select(v => v.Trim()).Where(v => v.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (values.Count == 0) return (null, $"Give \"{name}\" at least one value.");
+            result.Add(new VariantOptionSet { Name = name, Values = values });
+        }
+        return (result, null);
+    }
+
     public static List<string> NormalizeStages(IEnumerable<string>? stages) =>
         (stages ?? []).Select(s => s.Trim()).Where(s => s.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 

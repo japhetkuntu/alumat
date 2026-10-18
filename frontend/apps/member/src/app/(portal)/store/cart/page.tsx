@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { ArrowLeft, Minus, Package, Plus, ShoppingBag, ShoppingCart } from "@alu
 import { Button, EmptyState, FitImage, Skeleton, formatCurrency } from "@alumni/ui";
 import { checkoutStoreCart, getStoreProducts } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { lineStock, lineUnitPrice, useStoreCart, type CartLine } from "@/hooks/use-store-cart";
+import { lineStock, lineUnitPrice, useCartSummary, useStoreCart, type CartLine } from "@/hooks/use-store-cart";
 import {
   StoreItemForm, emptyItemForm, productNeedsForm, validateItemForm, type ItemFormState,
 } from "@/components/member/store-item-form";
@@ -48,8 +48,9 @@ export default function StoreCartPage() {
   const [problem, setProblem] = useState<{ key: string; message: string } | null>(null);
   const lineRefs = useRef<Record<string, HTMLLIElement | null>>({});
   // The cart is restored from storage after the first render, so tell "not loaded yet" from "empty".
-  const [ready, setReady] = useState(false);
-  useEffect(() => { setReady(true); }, []);
+  // The saved cart has something in it that this page has not loaded yet: show the skeleton instead of a flash of "empty".
+  const savedCount = useCartSummary().count;
+  const ready = !(cart.length === 0 && savedCount > 0);
 
   const checkout = useMutation({
     mutationFn: () => {

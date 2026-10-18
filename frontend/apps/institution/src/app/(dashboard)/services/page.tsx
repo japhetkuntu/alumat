@@ -546,7 +546,7 @@ export default function ServicesPage() {
                 <div className="space-y-2.5 pt-2 border-t border-border/60">
                   <Label>Post an update</Label>
                   <p className="text-[12px] text-muted-foreground -mt-1">
-                    Can&apos;t fulfill this request? Add a stage like &quot;Unable to Process&quot; under this service&apos;s Fulfillment stages, then use it here with a note explaining why — the alumnus has already paid, so there&apos;s no reject action.
+                    Can&apos;t fulfill this request? Add a stage like &quot;Unable to Process&quot; under this service&apos;s Fulfillment stages, then use it here with a note explaining why — the member has already paid, so there&apos;s no reject action.
                   </p>
                   <FormSelect
                     value={updateStage}

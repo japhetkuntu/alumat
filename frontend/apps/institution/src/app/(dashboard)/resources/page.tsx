@@ -66,7 +66,7 @@ function ResourceForm({ id, init, onSave, isSuperAdmin }: {
     <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
           <FormSection title="The resource">
             <div className="space-y-2"><Label>Title</Label>
-              <Input placeholder="e.g. Alumni handbook 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
+              <Input placeholder="e.g. Member handbook 2026" value={form.title} onChange={(e) => f("title", e.target.value)} required /></div>
             <div className="space-y-2"><Label>Description</Label>
               <Textarea placeholder="What it is and when members would use it." rows={3} value={form.description} onChange={(e) => f("description", e.target.value)} /></div>
             <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Category</Label>

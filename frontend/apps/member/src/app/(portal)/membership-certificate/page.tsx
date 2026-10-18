@@ -1,5 +1,6 @@
 "use client";
 
+import { useCohortPhrase } from "@/components/member/member-layout";
 import { useRef, useState, useCallback, useMemo, Fragment } from "react";
 import { LoadError } from "@alumni/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ interface PaidMembership {
 }
 
 export default function MembershipCertificatePage() {
+  const cohortWord = useCohortPhrase().word;
   const certRef      = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -381,7 +383,7 @@ export default function MembershipCertificatePage() {
             >
               {[
                 { label: "Member ID",  value: memberNumber                      },
-                ...(graduationYear ? [{ label: "Class of", value: String(graduationYear) }] : []),
+                ...(graduationYear ? [{ label: `${cohortWord} of`, value: String(graduationYear) }] : []),
                 { label: "Amount",    value: formatCurrency(selected.contribution.amount) },
                 { label: "Paid on",   value: paymentDate ? formatDate(paymentDate) : "—" },
               ].map((item, i, arr) => (

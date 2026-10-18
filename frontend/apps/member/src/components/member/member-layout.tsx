@@ -597,3 +597,17 @@ export function useCohortLabels() {
   };
 }
 
+/**
+ * "Class of 2020", in whatever word the institution uses for a year group ("Batch of 2020", "Set of 2020"). Falls back to
+ * "Class", which is what an alumni institution that has not chosen a word expects.
+ */
+export function useCohortPhrase() {
+  const { data: theme } = useNavTheme();
+  const word = theme?.cohortLabel?.trim() || "Class";
+  const plural = theme?.cohortLabelPlural?.trim() || "Classes";
+  return {
+    of: (year: number | string) => `${word} of ${year}`,
+    pluralOf: (years: string) => `${plural} of ${years}`,
+    word,
+  };
+}

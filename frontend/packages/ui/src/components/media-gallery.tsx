@@ -116,9 +116,9 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
       )}
 
       {/* Lightbox */}
-      {lightboxIndex !== null && (
+      {lightboxIndex !== null && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={closeLightbox}
           role="dialog"
           aria-modal="true"
@@ -126,7 +126,8 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
         >
           {/* Close button */}
           <button
-            className="absolute top-4 right-4 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            className="absolute h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
             onClick={closeLightbox}
             aria-label="Close lightbox"
           >
@@ -135,7 +136,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
 
           {/* Image counter */}
           {allImages.length > 1 && (
-            <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium tabular-nums z-10">
+            <div className="absolute left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium tabular-nums z-10" style={{ top: "max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
               {lightboxIndex + 1} / {allImages.length}
             </div>
           )}
@@ -170,7 +171,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
 
           {/* Dots */}
           {allImages.length > 1 && allImages.length <= 12 && (
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            <div className="absolute left-1/2 -translate-x-1/2 flex gap-1.5 z-10" style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>
               {allImages.map((_, i) => (
                 <button
                   key={i}
@@ -184,7 +185,8 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -238,7 +240,7 @@ export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...i
 
       {open && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}
           role="dialog"
@@ -247,7 +249,8 @@ export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...i
         >
           <button
             type="button"
-            className="absolute top-4 right-4 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            className="absolute h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); }}
             aria-label="Close"
@@ -396,23 +399,24 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
       )}
 
       {/* Lightbox */}
-      {current && lightboxIndex !== null && (
+      {current && lightboxIndex !== null && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[10010] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[10010] h-[100dvh] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={closeLightbox}
           role="dialog"
           aria-modal="true"
           aria-label={`Photo ${lightboxIndex + 1} of ${photos.length}${hasMore ? "+" : ""}`}
         >
           <button
-            className="absolute top-4 right-4 h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            className="absolute h-11 w-11 bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors duration-150 z-10"
+            style={{ top: "max(1rem, env(safe-area-inset-top))", right: "max(1rem, env(safe-area-inset-right))" }}
             onClick={closeLightbox}
             aria-label="Close lightbox"
           >
             <X size={20} />
           </button>
 
-          <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium tabular-nums z-10">
+          <div className="absolute left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium tabular-nums z-10" style={{ top: "max(1.25rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
             {lightboxIndex + 1} / {photos.length}{hasMore ? "+" : ""}
           </div>
 
@@ -462,7 +466,8 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

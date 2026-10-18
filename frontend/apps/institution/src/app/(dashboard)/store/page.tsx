@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { SavedSets } from "@/components/institution/saved-sets";
 import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
@@ -201,6 +202,23 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
                 Add option types like Size or Color to sell this product in multiple variants. Leave empty to sell it as a single simple product.
               </p>
             </div>
+            <SavedSets
+              kind="Variants"
+              noun="options set"
+              hasContent={form.optionTypes.length > 0}
+              summary={(t) => t.variantOptions.map((o) => `${o.name}: ${o.values.join(", ")}`).join(" · ")}
+              buildBody={() => ({
+                ...configToBody(form.config),
+                variantOptions: form.optionTypes.map((t) => ({ name: t, values: parseValues(form.optionValuesRaw[t] ?? "") })).filter((o) => o.values.length > 0),
+              })}
+              onUse={(t) => setForm((prev) => ({
+                ...prev,
+                optionTypes: t.variantOptions.map((o) => o.name),
+                optionValuesRaw: Object.fromEntries(t.variantOptions.map((o) => [o.name, o.values.join(", ")])),
+                // The combinations change with the options, so per-variant SKUs, price changes and quantities start fresh.
+                variantRowValues: {},
+              }))}
+            />
             <div className="flex gap-2">
               <Input
                 placeholder="Option type, e.g. Size"

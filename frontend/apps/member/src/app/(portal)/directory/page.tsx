@@ -20,7 +20,7 @@ import { ensureAbsoluteUrl } from "@alumni/ui";
 import type { Member } from "@/types";
 import { DirectoryMemberCard } from "@/components/member/directory-member-card";
 import { useVisualViewportHeight } from "@/hooks/use-visual-viewport-height";
-import { useNavTheme } from "@/components/member/member-layout";
+import { useNavTheme, useCohortPhrase } from "@/components/member/member-layout";
 
 const currentYear    = new Date().getFullYear();
 const GRAD_YEAR_START = 1952;
@@ -38,6 +38,7 @@ export default function MemberDirectoryPage() {
   const pageSize = 24;
   const vvHeight = useVisualViewportHeight();
   const { data: navTheme } = useNavTheme();
+  const cohort = useCohortPhrase();
   const isCommunity = navTheme?.organizationType === "Community";
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
@@ -90,7 +91,7 @@ export default function MemberDirectoryPage() {
             className="w-full sm:w-48"
             options={[
               { value: "__all__", label: "All graduation years" },
-              ...years.filter(y => y > 0).map(y => ({ value: String(y), label: `Class of ${y}` })),
+              ...years.filter(y => y > 0).map(y => ({ value: String(y), label: cohort.of(y) })),
             ]}
           />
         )}
@@ -203,7 +204,7 @@ export default function MemberDirectoryPage() {
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {!isCommunity && selected.graduationYear > 0 && (
                       <Badge variant="secondary" className="text-[12px] font-semibold">
-                        Class of {selected.graduationYear}
+                        {cohort.of(selected.graduationYear)}
                       </Badge>
                     )}
                     {selected.departmentName && (
@@ -247,7 +248,7 @@ export default function MemberDirectoryPage() {
                   className="text-[13px] pt-4 border-t"
                   style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
                 >
-                  This alumnus hasn&apos;t added more details to their profile yet.
+                  This member hasn&apos;t added more details to their profile yet.
                 </p>
               )}
 
