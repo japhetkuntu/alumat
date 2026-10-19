@@ -20,6 +20,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-19",
+    title: "Uploaded photos whose file names had spaces or symbols no longer fail to load; events without a photo show no empty picture area",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+    body: "A photo kept its original file name in storage, and names like \"Course Flyer C# 100%.png\" broke the picture's web address (the # cuts the address short, % and ? break it too), so event photos, and any other upload that kept the person's file name, showed as broken. Banners were not affected because they already got a generated name. Every upload now gets a clean name: letters, numbers, dashes and the original extension (accents are removed, long names shortened). Photos already uploaded under a bad name are repaired when shown, with no need to upload them again. Events with no photo no longer show a grey empty banner on the event page, and in the events list the status and date sit in a plain row instead of a grey strip. No migration needed.",
+  },
+  {
+    date: "2026-10-19",
+    title: "Paid event tickets now count in an institution's payout figures, the same way as every other payment",
+    scopes: ["Institution", "Platform"],
+    type: "Fix",
+    body: "An institution's Payouts figures (last and next payout) left out paid event tickets, so a ticket someone had paid for did not appear there, while the platform's own payout page did count it, so the two never agreed. Both now use one shared rule for what counts as a ticket settling in a window: paid, confirmed, and settled in that window, for the ticket price (the extra fee the payer covers is never part of it), exactly like contributions, store orders and service requests. The institution's figures and the platform's are computed from the same rule. A test now checks that unpaid, failed and free tickets are left out. No migration needed.",
+  },
+  {
     date: "2026-10-18",
     title: "Saved changes to an institution's branding and settings show straight away, with no refresh",
     scopes: ["Institution", "Member", "Platform"],

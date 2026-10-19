@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { Calendar, MapPin, Users, Clock, CheckCircle2, Loader2, ArrowRight, Badge, Button, formatDate, formatCurrency, cn } from "@alumni/ui";
+import { MapPin, Users, Clock, CheckCircle2, Loader2, ArrowRight, Badge, Button, formatDate, formatCurrency, cn } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
 import type { AlumniEvent, EventStatus } from "@/types";
 
@@ -27,26 +27,17 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                 )}
                 style={{ borderColor: "var(--border)", background: "var(--background)" }}
               >
-                {/* Banner */}
-                <DetailLink href={detailHref} className="block relative shrink-0 overflow-hidden" style={{ height: e.bannerImageUrl ? 180 : 96 }}>
-                  {e.bannerImageUrl ? (
-                    <img
-                      src={e.bannerImageUrl}
-                      alt={e.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div
-                      className="absolute inset-0 flex items-center justify-center"
-                      style={{ background: "var(--secondary)" }}
-                    >
-                      <Calendar size={28} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
-                    </div>
-                  )}
+                {/* With a photo, the status and date sit over it. With none there is no picture area at all: the same facts sit in a plain row. */}
+                {e.bannerImageUrl ? (
+                <DetailLink href={detailHref} className="block relative shrink-0 overflow-hidden" style={{ height: 180 }}>
+                  <img
+                    src={e.bannerImageUrl}
+                    alt={e.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                   {/* Scrim */}
                   <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
 
-                  {/* Status badge */}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5">
                     <Badge variant={statusVariant[e.status]} className="text-[12px] font-semibold uppercase tracking-wide">
                       {e.status}
@@ -58,7 +49,6 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                     )}
                   </div>
 
-                  {/* RSVP tick */}
                   {hasRsvp && (
                     <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center"
                       style={{ background: "rgba(34,197,94,0.85)", backdropFilter: "blur(4px)" }}>
@@ -66,7 +56,6 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                     </div>
                   )}
 
-                  {/* Date over image */}
                   <div className="absolute bottom-3 left-3 flex items-center gap-1.5 text-white text-[12px] font-semibold">
                     <Clock size={12} />
                     {formatDate(e.startDate)}
@@ -77,9 +66,35 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                     )}
                   </div>
                 </DetailLink>
+                ) : (
+                <div className="flex flex-col gap-2 px-4 pt-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={statusVariant[e.status]} className="text-[12px] font-semibold uppercase tracking-wide">
+                        {e.status}
+                      </Badge>
+                      {isPast && e.status !== "Completed" && e.status !== "Cancelled" && (
+                        <Badge variant="secondary" className="text-[12px] font-semibold uppercase tracking-wide">
+                          Past
+                        </Badge>
+                      )}
+                    </div>
+                    {hasRsvp && (
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.85)" }} aria-label="You're going">
+                        <CheckCircle2 size={14} color="white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "var(--muted-foreground)" }}>
+                    <Clock size={12} />
+                    {formatDate(e.startDate)}
+                    <span className="ml-2">· {e.isTicketed && e.ticketPrice ? formatCurrency(e.ticketPrice) : "Free"}</span>
+                  </div>
+                </div>
+                )}
 
                 {/* Body */}
-                <div className="flex flex-col flex-1 p-4 gap-3">
+                <div className={cn("flex flex-col flex-1 p-4 gap-3", !e.bannerImageUrl && "pt-3")}>
                   <SourceBadge communityId={e.communityId} communityName={e.communityName} yearGroups={e.yearGroups} className="self-start" />
                   <DetailLink href={detailHref}>
                     <h3

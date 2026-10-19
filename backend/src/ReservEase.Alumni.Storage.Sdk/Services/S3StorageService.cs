@@ -49,8 +49,34 @@ namespace ReservEase.Alumni.Storage.Sdk.Services
     }
 
     /// <summary>Prefixes the slug onto the object name itself too, so the file is identifiable by institution from its filename alone, not just its storage path.</summary>
-    private static string PrefixedObjectName(string objectName, string institutionSlug) =>
-        string.IsNullOrEmpty(institutionSlug) ? objectName : $"{institutionSlug}-{objectName}";
+    private static string PrefixedObjectName(string objectName, string institutionSlug)
+    {
+        var safe = SafeObjectName(objectName);
+        return string.IsNullOrEmpty(institutionSlug) ? safe : $"{institutionSlug}-{safe}";
+    }
+
+    /// <summary>
+    /// A file name that is safe inside a web address. Names come straight from people's devices ("Flyer (final) #2 100%.png"), and
+    /// spaces, #, ?, % and the like either break the address or make a CDN refuse it, so the picture never loads. Everything outside
+    /// letters, digits, dot, dash and underscore becomes a dash; the extension is kept (lower-cased); a name that ends up empty is kept short and valid.
+    /// </summary>
+    public static string SafeObjectName(string objectName)
+    {
+        var ext = Path.GetExtension(objectName ?? "");
+        var stem = Path.GetFileNameWithoutExtension(objectName ?? "");
+        static string Clean(string v)
+        {
+            // Accents drop off their letters (é -> e) before anything else is replaced.
+            var plain = new string(v.Normalize(System.Text.NormalizationForm.FormD)
+                .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray());
+            return System.Text.RegularExpressions.Regex.Replace(plain, @"[^A-Za-z0-9_-]+", "-").Trim('-');
+        }
+        var cleanStem = Clean(stem);
+        if (cleanStem.Length > 80) cleanStem = cleanStem[..80].TrimEnd('-');
+        var cleanExt = Clean(ext.TrimStart('.')).ToLowerInvariant();
+        if (cleanStem.Length == 0) cleanStem = "file";
+        return cleanExt.Length == 0 ? cleanStem : $"{cleanStem}.{cleanExt}";
+    }
 
     /// <summary>Uploaded objects get unique names and never change, so browsers and the CDN may keep images for a year.</summary>
     private const string ImmutableCacheControl = "public, max-age=31536000, immutable";

@@ -206,24 +206,17 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Banner */}
-          <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
-            {event.bannerImageUrl ? (
+          {/* Banner: only when the organiser uploaded one. No photo means no photo. */}
+          {event.bannerImageUrl && (
+            <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
               <ZoomableImage
                 src={event.bannerImageUrl}
                 alt={event.title}
                 className="w-full object-cover"
                 style={{ maxHeight: 420 }}
               />
-            ) : (
-              <div
-                className="flex items-center justify-center py-7 sm:py-16"
-                style={{ background: "var(--secondary)" }}
-              >
-                <Calendar size={48} style={{ color: "var(--muted-foreground)", opacity: 0.2 }} />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* RSVP block — mobile only */}
           <div className="lg:hidden">

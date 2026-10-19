@@ -100,8 +100,7 @@ public class PayoutService(
 
     private async Task<List<EventRsvpEntity>> FetchTicketsAsync(DateTime start, DateTime end) =>
         (await eventRsvpRepo.GetAllAsync(
-            t => t.Status == EventRsvpStatuses.Confirmed && t.AmountPaid > 0 && t.PaidAt != null && t.PaidAt >= start && t.PaidAt < end,
-            ignoreQueryFilters: true)).ToList();
+            EventTicketRules.SettledBetween(start, end), ignoreQueryFilters: true)).ToList();
 
     private async Task<List<ServiceRequestEntity>> FetchServiceRequestsAsync(DateTime start, DateTime end) =>
         (await serviceRequestRepo.GetAllAsync(

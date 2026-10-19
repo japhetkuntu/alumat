@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { webSafeUrl } from "../lib/web-safe-url";
 import { ZoomIn, ImageOff } from "./icons";
 import { LightboxShell, LightboxDots } from "./lightbox";
 import { cn } from "../lib/utils";
@@ -22,7 +23,7 @@ function GalleryImage({ src, alt = "", className, ...props }: React.ImgHTMLAttri
       </div>
     );
   }
-  return <img src={src} alt={alt} className={className} loading="lazy" onError={() => setError(true)} {...props} />;
+  return <img src={webSafeUrl(typeof src === "string" ? src : undefined)} alt={alt} className={className} loading="lazy" onError={() => setError(true)} {...props} />;
 }
 
 export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: MediaGalleryProps) {
@@ -104,7 +105,7 @@ export function MediaGallery({ bannerUrl, imageUrls, youtubeUrls, className }: M
           onNext={allImages.length > 1 ? goNext : undefined}
           footer={allImages.length > 1 && allImages.length <= 12 ? <LightboxDots count={allImages.length} index={lightboxIndex} onSelect={setLightboxIndex} /> : undefined}
         >
-          <img src={allImages[lightboxIndex]} alt={`Image ${lightboxIndex + 1}`} className="h-full w-full object-contain animate-scale-in" />
+          <img src={webSafeUrl(allImages[lightboxIndex])} alt={`Image ${lightboxIndex + 1}`} className="h-full w-full object-contain animate-scale-in" />
         </LightboxShell>
       )}
     </div>
@@ -147,7 +148,7 @@ export function ZoomableImage({ src, alt = "", className, wrapperClassName, ...i
 
       {open && (
         <LightboxShell label="Full image" onClose={() => setOpen(false)}>
-          <img src={src} alt={alt} className="h-full w-full object-contain animate-scale-in" />
+          <img src={webSafeUrl(src)} alt={alt} className="h-full w-full object-contain animate-scale-in" />
         </LightboxShell>
       )}
     </>
@@ -291,7 +292,7 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
           {/* Keying on the index remounts the photo, replaying the fade/zoom-in on every navigation. */}
           <img
             key={lightboxIndex}
-            src={current.url}
+            src={webSafeUrl(current.url)}
             alt={current.caption ?? `Photo ${lightboxIndex + 1}`}
             className="h-full w-full object-contain animate-in fade-in zoom-in-95 duration-300"
           />

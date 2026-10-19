@@ -41,6 +41,7 @@ export * from "./components/phone-input";
 export * from "./components/progress";
 export * from "./components/report-center";
 export * from "./lib/rich-text-utils";
+export * from "./lib/web-safe-url";
 export * from "./components/rich-text";
 export * from "./components/rich-text-editor";
 export * from "./components/search-modal";

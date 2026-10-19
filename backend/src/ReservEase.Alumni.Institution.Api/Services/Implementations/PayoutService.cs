@@ -18,6 +18,7 @@ public class PayoutService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<StoreOrder> storeOrderRepo,
     IAlumniPgRepository<ServiceRequest> serviceRequestRepo,
+    IAlumniPgRepository<EventRsvp> eventRsvpRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<Batch> batchRepo,
     IAlumniPgRepository<InstitutionEntity> institutionRepo,
@@ -35,16 +36,19 @@ public class PayoutService(
 
         var (lastContribs, lastOrders, lastRequests) = await FetchSuccessfulPaystackAsync(windows.LastWindowStart, windows.LastWindowEnd);
         var (nextContribs, nextOrders, nextRequests) = await FetchSuccessfulPaystackAsync(windows.NextWindowStart, windows.NextWindowEnd);
+        // Event tickets settle to the institution's own account like store orders and service requests do.
+        var lastTickets = (await eventRsvpRepo.GetAllAsync(EventTicketRules.SettledBetween(windows.LastWindowStart, windows.LastWindowEnd))).ToList();
+        var nextTickets = (await eventRsvpRepo.GetAllAsync(EventTicketRules.SettledBetween(windows.NextWindowStart, windows.NextWindowEnd))).ToList();
 
         var lastPayout = new PayoutWindowDto(
             windows.LastPayoutDate,
-            lastContribs.Sum(c => c.Amount) + lastOrders.Sum(o => o.TotalAmount) + lastRequests.Sum(r => r.Amount),
-            lastContribs.Count + lastOrders.Count + lastRequests.Count);
+            lastContribs.Sum(c => c.Amount) + lastOrders.Sum(o => o.TotalAmount) + lastRequests.Sum(r => r.Amount) + lastTickets.Sum(t => t.AmountPaid ?? 0m),
+            lastContribs.Count + lastOrders.Count + lastRequests.Count + lastTickets.Count);
 
         var nextPayout = new PayoutWindowDto(
             windows.NextPayoutDate,
-            nextContribs.Sum(c => c.Amount) + nextOrders.Sum(o => o.TotalAmount) + nextRequests.Sum(r => r.Amount),
-            nextContribs.Count + nextOrders.Count + nextRequests.Count);
+            nextContribs.Sum(c => c.Amount) + nextOrders.Sum(o => o.TotalAmount) + nextRequests.Sum(r => r.Amount) + nextTickets.Sum(t => t.AmountPaid ?? 0m),
+            nextContribs.Count + nextOrders.Count + nextRequests.Count + nextTickets.Count);
 
         return new PayoutForecastResponse(payoutsConfigured, lastPayout, nextPayout).ToOkApiResponse();
 

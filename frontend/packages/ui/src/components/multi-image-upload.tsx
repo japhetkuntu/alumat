@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useMemo, useState, useEffect, useCallback } from "react";
+import { webSafeUrl } from "../lib/web-safe-url";
 import { X, Plus, ImageIcon } from "./icons";
 import { cn } from "../lib/utils";
 import { compressImages } from "../lib/compress-image";
@@ -80,7 +81,7 @@ export function MultiImageUpload({
           >
             {existingUrls.map((url, i) => (
               <div key={`existing-${i}`} className="relative group aspect-square overflow-hidden border bg-muted/30">
-                <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img src={webSafeUrl(url)} alt="" className="w-full h-full object-cover" loading="lazy" />
                 <button
                   type="button"
                   className="absolute top-1.5 right-1.5 h-6 w-6 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"

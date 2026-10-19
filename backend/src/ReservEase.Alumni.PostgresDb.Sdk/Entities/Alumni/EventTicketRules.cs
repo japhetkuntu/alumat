@@ -7,6 +7,14 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 /// </summary>
 public static class EventTicketRules
 {
+    /// <summary>
+    /// A ticket that has been paid for and settles to the institution in the given window: the same "confirmed in this window"
+    /// test contributions, store orders and service requests use, so payout figures are computed the same way for every source.
+    /// What the institution receives is <see cref="EventRsvp.AmountPaid"/>, the ticket price: the payer's extra fee is on top of it.
+    /// </summary>
+    public static System.Linq.Expressions.Expression<Func<EventRsvp, bool>> SettledBetween(DateTime start, DateTime end) =>
+        t => t.Status == EventRsvpStatuses.Confirmed && t.AmountPaid > 0 && t.PaidAt != null && t.PaidAt >= start && t.PaidAt < end;
+
     public const decimal MaxTicketPrice = 100_000m;
 
     /// <summary>How long an unpaid ticket holds a seat while the member is paying.</summary>
