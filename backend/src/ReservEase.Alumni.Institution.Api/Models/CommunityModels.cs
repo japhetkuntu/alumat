@@ -20,6 +20,13 @@ public record CommunityMemberItem(
     string MembershipId, string MemberId, string MemberName, string MemberEmail,
     string Role, string Status, DateTime RequestedAt);
 
+/// <summary>An administrator's decision on one member of a group. The reason is optional and is shown to the member.</summary>
+public class CommunityMemberDecisionRequest
+{
+    [MaxLength(300)]
+    public string? Reason { get; set; }
+}
+
 public class CreateCommunityRequest
 {
     [Required, MaxLength(150)]

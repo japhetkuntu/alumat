@@ -585,6 +585,21 @@ export async function getCommunityMembers(id: string): Promise<CommunityMemberIt
   return res.data.data ?? [];
 }
 
+/** Lets a person into a group (also reverses a decline). They are told. */
+export async function approveCommunityRequest(id: string, memberId: string): Promise<void> {
+  await institutionClient.put(`/communities/${id}/members/${memberId}/approve`);
+}
+
+/** Declines a request to join. The reason, if given, is shown to the member. */
+export async function rejectCommunityRequest(id: string, memberId: string, reason?: string): Promise<void> {
+  await institutionClient.put(`/communities/${id}/members/${memberId}/reject`, { reason: reason?.trim() || null });
+}
+
+/** Takes an approved member out of a group. They are told, and may ask to join again. */
+export async function removeCommunityMember(id: string, memberId: string, reason?: string): Promise<void> {
+  await institutionClient.delete(`/communities/${id}/members/${memberId}`, { params: { reason: reason?.trim() || undefined } });
+}
+
 export async function setCommunityMemberRole(id: string, memberId: string, role: "Member" | "Leader"): Promise<void> {
   await institutionClient.put(`/communities/${id}/members/${memberId}/role`, { role });
 }

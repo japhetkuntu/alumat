@@ -601,12 +601,12 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             Type = "ClassNoteAlert",
             RelatedEntityId = request.NoteId,
             RelatedEntityType = "ClassNote",
-            ActionUrl = MemberUrl(institution, "/class-notes"),
+            ActionUrl = MemberUrl(institution, "/dashboard"),
             CreatedBy = "system",
         }).ToList();
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationsAsync(request.InstitutionId, notifications), NotificationActivityOptions.DatabaseWrite);
 
-        var classNoteActionUrl = MemberUrl(institution, "/class-notes");
+        var classNoteActionUrl = MemberUrl(institution, "/dashboard");
         foreach (var r in recipients)
         {
             await SendExternalAlertsAsync(r.Phone, r.SmsAlerts, r.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body, classNoteActionUrl,

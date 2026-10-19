@@ -25,7 +25,8 @@ public class CommunityChannelAdminTests
         {
             var db = TestDb.Create(DbName, Tenant);
             return Service = new CommunityService(new AlumniPgRepository<Community>(db), new AlumniPgRepository<CommunityMembership>(db),
-                new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Referral>(db), NullLogger<CommunityService>.Instance);
+                new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Referral>(db), new AlumniPgRepository<Notification>(db),
+                Moq.Mock.Of<ReservEase.Alumni.Institution.Api.Services.Interfaces.IInstitutionAuditLogService>(), NullLogger<CommunityService>.Instance);
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);

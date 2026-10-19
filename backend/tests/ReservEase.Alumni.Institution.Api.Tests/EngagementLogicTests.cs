@@ -164,7 +164,7 @@ public class RecommendationRuleTests
 
         Assert.Equal("promote-event:e1", c.DedupeKey);
         Assert.Contains("Homecoming", c.Title);
-        Assert.Equal("/events/e1", c.ActionUrl);
+        Assert.Equal("/events?focus=e1", c.ActionUrl);   // the portal has no page per event; the list opens on it
     }
 
     [Fact]

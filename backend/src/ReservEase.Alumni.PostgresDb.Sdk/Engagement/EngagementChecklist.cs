@@ -34,7 +34,7 @@ public static class EngagementChecklist
         if (On(InstitutionFeatures.Jobs))
             Add("share-opportunity", "Share an opportunity", m.JobsPostedThisWeek > 0 ? "Posted this week." : "Nothing posted this week.", "/jobs", auto: m.JobsPostedThisWeek > 0);
         if (On(InstitutionFeatures.Events) && m.UpcomingEvents.Count > 0)
-            Add("promote-event", "Promote an upcoming event", $"{m.UpcomingEvents.Count} coming up.", $"/events/{m.UpcomingEvents[0].Id}");
+            Add("promote-event", "Promote an upcoming event", $"{m.UpcomingEvents.Count} coming up.", $"/events?focus={m.UpcomingEvents[0].Id}");
         if (On(InstitutionFeatures.Spotlights))
             Add("highlight-member", "Highlight a member's achievement", "Celebrate someone's win.", "/spotlights");
         Add("check-health", "Review community health", "Read this page's score and its factors.", "/engagement");

@@ -76,7 +76,7 @@ public static class RecommendationRules
                 list.Add(new("promote-event", $"promote-event:{e.Id}",
                     $"Promote \"{e.Title}\"",
                     $"It is in {days} {(days == 1 ? "day" : "days")} with {e.Rsvps} {(e.Rsvps == 1 ? "sign-up" : "sign-ups")} so far. Sharing it into your groups usually brings the most sign-ups.",
-                    RecommendationPriorities.Medium, "Open event", $"/events/{e.Id}", e.StartDate, TimeSpan.FromDays(4)));
+                    RecommendationPriorities.Medium, "Open event", $"/events?focus={e.Id}", e.StartDate, TimeSpan.FromDays(4)));
             }
 
         if (On(InstitutionFeatures.Contributions))

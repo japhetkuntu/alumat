@@ -23,7 +23,7 @@ import { useInstitutionNavTheme } from "@/components/institution/institution-lay
 import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getNewsPosts, createNewsPost, publishNewsPost, updateNewsPost, getCommunities } from "@/lib/institution-api";
+import { getNewsPost, getNewsPosts, createNewsPost, publishNewsPost, updateNewsPost, getCommunities } from "@/lib/institution-api";
 import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
@@ -136,7 +136,13 @@ export default function AdminNewsPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
   const [showCreate, setShowCreate] = useState(false);
-  const [editPost, setEditPost] = useState<NewsPost | null>(null);
+  const [pickedPost, setEditPost] = useState<NewsPost | null>(null);
+  // "/news?edit=ID" (the Edit button on a post's own page) opens that post's editor here.
+  const [linkedEditId] = useState(() => searchParams.get("edit"));   // read once: this page rewrites its own address as filters change
+  const [closedEditId, setClosedEditId] = useState<string | null>(null);
+  const linkedActive = !!linkedEditId && closedEditId !== linkedEditId;
+  const { data: linkedPost } = useQuery({ queryKey: ["admin-news-post", linkedEditId], queryFn: () => getNewsPost(linkedEditId!), enabled: linkedActive });
+  const editPost = pickedPost ?? (linkedActive ? linkedPost ?? null : null);
   const [archiveTarget, setArchiveTarget] = useState<NewsPost | null>(null);
   const [publishTarget, setPublishTarget] = useState<NewsPost | null>(null);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
@@ -188,7 +194,7 @@ export default function AdminNewsPage() {
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,
       youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
     }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-news"] }); setEditPost(null); setEditError(""); toast.success("Post updated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-news"] }); qc.invalidateQueries({ queryKey: ["admin-news-post"] }); setEditPost(null); setClosedEditId(linkedEditId); setEditError(""); toast.success("Post updated"); },
     onError: (e) => { const msg = handleApiError(e); setEditError(msg); toast.error(msg); },
   });
 
@@ -271,7 +277,7 @@ export default function AdminNewsPage() {
 
       <FormSheet
         open={showCreate || editPost !== null}
-        onClose={() => { setShowCreate(false); setEditPost(null); setEditError(""); }}
+        onClose={() => { setShowCreate(false); setEditPost(null); setClosedEditId(linkedEditId); setEditError(""); }}
         title={editPost ? "Edit post" : "Create post"}
         description={editPost ? editPost.title : "Publish an update for your community. Save it as a draft if you are not ready."}
         formId="news-post-form"

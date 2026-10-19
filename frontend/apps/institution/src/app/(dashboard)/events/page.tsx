@@ -6,7 +6,8 @@ import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Calendar, MapPin, Users, Pencil, Ticket, Bell } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
@@ -243,6 +244,7 @@ export default function AdminEventsPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
 
+  const focusId = useSearchParams().get("focus");
   const [showCreate, setShowCreate] = useState(false);
   const [editEvent, setEditEvent] = useState<AlumniEvent | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AlumniEvent | null>(null);
@@ -319,6 +321,11 @@ export default function AdminEventsPage() {
   });
 
   const events = data?.results ?? [];
+
+  // A link from the checklist or a recommendation names one event: bring it into view.
+  useEffect(() => {
+    if (focusId) document.getElementById(`event-${focusId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [focusId, data]);
   const totalPages = data?.totalPages ?? 1;
 
   return (
@@ -342,6 +349,15 @@ export default function AdminEventsPage() {
         size="lg"
       >
         {editEvent ? (
+          <>
+          {(isPastEvent(editEvent) || editEvent.status === "Completed" || editEvent.status === "Cancelled") && (
+            <p className="mb-5 border border-border bg-muted/30 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
+              {editEvent.status === "Cancelled"
+                ? "This event was cancelled. You can still fix its details or photos; people are not told again."
+                : "This event is over. You can still add a recap, photos or fix details; people who went are not notified about edits."}
+              {" "}Moving it to a future date does notify the people going.
+            </p>
+          )}
           <EventForm
             key={editEvent.id}
             id="event-form"
@@ -350,6 +366,7 @@ export default function AdminEventsPage() {
             isSuperAdmin={isSuperAdmin}
             onSave={(f) => updateMut.mutate({ id: editEvent.id, f })}
           />
+          </>
         ) : showCreate ? (
           <EventForm id="event-form" init={emptyForm} showStatus={false} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
         ) : null}
@@ -364,7 +381,7 @@ export default function AdminEventsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {events.map((e) => (
-            <Card key={e.id} className={cn("stagger-item hover:shadow-md transition-shadow overflow-hidden", isPastEvent(e) && "opacity-70")}>
+            <Card key={e.id} id={`event-${e.id}`} className={cn("stagger-item hover:shadow-md transition-shadow overflow-hidden scroll-mt-24", isPastEvent(e) && "opacity-70", e.id === focusId && "ring-2 ring-primary")}>
               {e.bannerImageUrl && (
                 <ZoomableImage src={e.bannerImageUrl} alt={e.title} wrapperClassName="h-36" className="w-full h-full object-cover" />
               )}
@@ -428,9 +445,7 @@ export default function AdminEventsPage() {
                         <Button size="sm" variant="outline" aria-label={`More actions for ${e.title}`} className="px-3"><MoreHorizontal size={15} /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-[170px]">
-                        {e.status !== "Cancelled" && e.status !== "Completed" && (
-                          <DropdownMenuItem onSelect={() => setEditEvent(e)}><Pencil size={14} />Edit</DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem onSelect={() => setEditEvent(e)}><Pencil size={14} />Edit</DropdownMenuItem>
                         {e.status !== "Cancelled" && e.status !== "Completed" && (
                           <DropdownMenuItem onSelect={() => registrationMut.mutate({ e, closed: !e.registrationClosed })}>
                             {e.registrationClosed

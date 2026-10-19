@@ -75,6 +75,27 @@ public class CommunitiesController(ICommunityService communityService) : Default
         return result.ToActionResult();
     }
 
+    [HttpPut("{id}/members/{memberId}/approve")]
+    [Authorize(Roles = "SuperAdmin")]
+    [SwaggerOperation(Summary = "Approve a request to join a group")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ApproveJoinRequest(string id, string memberId)
+        => (await communityService.DecideJoinRequestAsync(id, memberId, true, null, User.GetAccount())).ToActionResult();
+
+    [HttpPut("{id}/members/{memberId}/reject")]
+    [Authorize(Roles = "SuperAdmin")]
+    [SwaggerOperation(Summary = "Decline a request to join a group")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> RejectJoinRequest(string id, string memberId, [FromBody] CommunityMemberDecisionRequest? request)
+        => (await communityService.DecideJoinRequestAsync(id, memberId, false, request?.Reason, User.GetAccount())).ToActionResult();
+
+    [HttpDelete("{id}/members/{memberId}")]
+    [Authorize(Roles = "SuperAdmin")]
+    [SwaggerOperation(Summary = "Remove a member from a group")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> RemoveMember(string id, string memberId, [FromQuery] string? reason)
+        => (await communityService.RemoveMemberAsync(id, memberId, reason, User.GetAccount())).ToActionResult();
+
     [HttpPut("{id}/members/{memberId}/role")]
     [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Promote or demote a community member")]

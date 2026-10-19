@@ -122,7 +122,7 @@ export default function AdminResourceDetailPage() {
               <Button variant="outline" size="sm" className="font-bold"><ExternalLink size={13} />Open</Button>
             </a>
           )}
-          <Link href={`/resources/${id}/edit`}>
+          <Link href={`/resources?edit=${id}`}>
             <Button variant="outline" size="sm" className="font-bold"><Pencil size={13} />Edit</Button>
           </Link>
         </div>

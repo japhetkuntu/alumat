@@ -700,8 +700,8 @@ public class NotificationDispatchWorkflowTests(TemporalFixture temporal)
         await Send(rig, NotificationRequest.ClassNoteAlert(Inst, "n1", "Kojo"));
 
         var n = Assert.Single(await rig.Notes());
-        Assert.Equal(("mate", "New Class Note", "Kojo posted a note to the Class of 2015 wall.", "https://umat.members.test/class-notes"), (n.RecipientId, n.Title, n.Body, n.ActionUrl));
-        Assert.Contains("0241000000|UMaT: Kojo posted a note to the Class of 2015 wall. https://umat.members.test/class-notes", rig.SmsSent);
+        Assert.Equal(("mate", "New Class Note", "Kojo posted a note to the Class of 2015 wall.", "https://umat.members.test/dashboard"), (n.RecipientId, n.Title, n.Body, n.ActionUrl));
+        Assert.Contains("0241000000|UMaT: Kojo posted a note to the Class of 2015 wall. https://umat.members.test/dashboard", rig.SmsSent);
         rig.Push.Verify(p => p.SendAsync(It.IsAny<PushSubscriptionDto>(), "New Class Note", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 

@@ -18,9 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@alumni/ui";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@alumni/ui";
 import { TableSkeleton, Skeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
-import { formatDate } from "@alumni/ui";
+import { formatDate, cn } from "@alumni/ui";
+import { Textarea } from "@alumni/ui";
 import {
-  getCommunities, getCommunityGrowth, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole,
+  getCommunities, getCommunityGrowth, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole, approveCommunityRequest, rejectCommunityRequest, removeCommunityMember,
   uploadImage, type CommunityListItem, type CommunityMemberItem,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -172,12 +173,32 @@ function CommunityForm({
   );
 }
 
+type MembersTab = "requests" | "members" | "declined";
+
+/** "3 days ago" for a recent date, the date itself after a month. */
+function ago(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days < 1) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  return formatDate(iso);
+}
+
 function MembersPanel({ community, onClose }: { community: CommunityListItem; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: members = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["community-members", community.id],
     queryFn: () => getCommunityMembers(community.id),
   });
+
+  const requests = members.filter((m) => m.status === "Pending");
+  const approved = members.filter((m) => m.status === "Approved");
+  const declined = members.filter((m) => m.status === "Rejected");
+
+  // Open on the requests when there are any: that is what an administrator opens this for.
+  const [pickedTab, setTab] = useState<MembersTab | null>(null);
+  const tab: MembersTab = pickedTab ?? (requests.length > 0 ? "requests" : "members");
+  const [search, setSearch] = useState("");
 
   // What "Promote to leader" and "Demote to member" actually do is easy to
   // misread as granting institution-admin access: it doesn't. It only
@@ -187,77 +208,160 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
   // being sure what the button does, rather than a silent one-click toggle.
   const [promoteTarget, setPromoteTarget] = useState<CommunityMemberItem | null>(null);
   const [demoteTarget, setDemoteTarget] = useState<CommunityMemberItem | null>(null);
+  const [declineTarget, setDeclineTarget] = useState<CommunityMemberItem | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<CommunityMemberItem | null>(null);
+  const [reason, setReason] = useState("");
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["community-members", community.id] });
+    qc.invalidateQueries({ queryKey: ["communities"] });
+  };
 
   const roleMut = useMutation({
     mutationFn: ({ memberId, role }: { memberId: string; role: "Member" | "Leader" }) => setCommunityMemberRole(community.id, memberId, role),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ["community-members", community.id] });
-      qc.invalidateQueries({ queryKey: ["communities"] });
+      refresh();
       toast.success(variables.role === "Leader" ? "Promoted to leader" : "Role updated");
       setPromoteTarget(null);
       setDemoteTarget(null);
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
+  const approveMut = useMutation({
+    mutationFn: (m: CommunityMemberItem) => approveCommunityRequest(community.id, m.memberId),
+    onSuccess: (_d, m) => { refresh(); toast.success(`${m.memberName} is in. They have been told.`); },
+    // Someone else may have decided it a moment ago; showing the fresh list explains why.
+    onError: (e) => { toast.error(handleApiError(e)); refresh(); },
+  });
+  const declineMut = useMutation({
+    mutationFn: (m: CommunityMemberItem) => rejectCommunityRequest(community.id, m.memberId, reason),
+    onSuccess: (_d, m) => { refresh(); toast.success(`Request from ${m.memberName} declined.`); setDeclineTarget(null); setReason(""); },
+    onError: (e) => { toast.error(handleApiError(e)); refresh(); setDeclineTarget(null); },
+  });
+  const removeMut = useMutation({
+    mutationFn: (m: CommunityMemberItem) => removeCommunityMember(community.id, m.memberId, reason),
+    onSuccess: (_d, m) => { refresh(); toast.success(`${m.memberName} was removed from ${community.name}.`); setRemoveTarget(null); setReason(""); },
+    onError: (e) => { toast.error(handleApiError(e)); refresh(); setRemoveTarget(null); },
+  });
+
+  const needle = search.trim().toLowerCase();
+  const matches = (m: CommunityMemberItem) => !needle || m.memberName.toLowerCase().includes(needle) || m.memberEmail.toLowerCase().includes(needle);
+  const shown = (tab === "requests" ? requests : tab === "members" ? approved : declined).filter(matches);
+
+  const tabs: { key: MembersTab; label: string; count: number }[] = [
+    { key: "requests", label: "Requests", count: requests.length },
+    { key: "members", label: "Members", count: approved.length },
+    ...(declined.length > 0 ? [{ key: "declined" as const, label: "Declined", count: declined.length }] : []),
+  ];
 
   return (
     <Card>
       <div className="px-4 py-3.5 border-b border-border">
         <div className="flex items-center justify-between">
-          <b className="text-[13.5px]">{community.name} members</b>
+          <b className="text-[13.5px]">{community.name}</b>
           <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
         </div>
-        <p className="text-[12px] text-muted-foreground mt-1">
-          A <b>Leader</b> is still an ordinary member (same login, same Member Portal): the role just unlocks approving join requests and removing members for this one community, from their own Member Portal. It doesn&apos;t create an admin account or grant any access here in the Institution Portal.
-        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Show">
+          {tabs.map((t) => (
+            <button key={t.key} type="button" aria-pressed={tab === t.key} onClick={() => { setTab(t.key); setSearch(""); }}
+              className={cn("min-h-10 border px-3.5 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+                tab === t.key ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/50")}>
+              {t.label}
+              <span className={cn("ml-2 tabular-nums", tab === t.key ? "text-primary-foreground/80" : "text-muted-foreground")}>{t.count}</span>
+            </button>
+          ))}
+          {(tab !== "requests" || requests.length > 6) && (members.length > 8) && (
+            <Input className="ml-auto h-10 w-full sm:w-56" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email" aria-label="Search this group" />
+          )}
+        </div>
+        {tab === "members" && (
+          <p className="text-[12px] text-muted-foreground mt-3">
+            A <b>Leader</b> is still an ordinary member (same login, same Member Portal): the role just unlocks approving join requests and removing members for this one community, from their own Member Portal. It doesn&apos;t create an admin account or grant any access here in the Institution Portal.
+          </p>
+        )}
+        {tab === "declined" && (
+          <p className="text-[12px] text-muted-foreground mt-3">These people asked to join and were told no. You can still let one in if you change your mind, and they can ask again themselves.</p>
+        )}
       </div>
       <CardContent className="p-0">
-        <Table stackOnMobile className="min-w-[600px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isError ? (
-              <TableRow><TableCell colSpan={4}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
-            ) : isLoading ? (
-              <TableSkeleton rows={4} cols={4} />
-            ) : members.length === 0 ? (
-              <TableRow><TableCell colSpan={4}><EmptyState className="py-8" title="No one has joined yet" description="When members ask to join this group, their requests show up here for you to approve." /></TableCell></TableRow>
-            ) : members.map((m: CommunityMemberItem) => (
-              <TableRow key={m.membershipId}>
-                <TableCell>
-                  <p className="font-medium">{m.memberName}</p>
-                  <p className="text-[12px] text-muted-foreground">{m.memberEmail}</p>
-                </TableCell>
-                <TableCell>{m.role === "Leader" ? <Badge variant="info" className="gap-1"><Crown size={11} /> Leader</Badge> : "Member"}</TableCell>
-                <TableCell>
-                  <Badge variant={m.status === "Approved" ? "success" : m.status === "Pending" ? "warning" : "neutral"}>{m.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  {m.status === "Approved" && (
-                    <div className="flex justify-end">
+        {isError ? (
+          <LoadError className="py-8" onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="p-4 space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+        ) : shown.length === 0 ? (
+          needle ? (
+            <EmptyState className="py-8" title="No one matches that" description="Try part of a name or an email address." />
+          ) : tab === "requests" ? (
+            <EmptyState className="py-8" title="No requests waiting" description="When someone asks to join this group, they appear here for you to approve or decline. They are told either way." />
+          ) : tab === "members" ? (
+            <EmptyState className="py-8" title="No one has joined yet" description="Approved members appear here. Make someone a Leader to let them look after requests themselves." />
+          ) : (
+            <EmptyState className="py-8" title="No declined requests" description="Requests you decline are kept here." />
+          )
+        ) : (
+          <ul className="divide-y divide-border">
+            {shown.map((m) => (
+              <li key={m.membershipId} className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-2 font-medium">
+                    <span className="truncate">{m.memberName}</span>
+                    {m.role === "Leader" && m.status === "Approved" && <Badge variant="info" className="gap-1"><Crown size={11} /> Leader</Badge>}
+                  </p>
+                  <p className="truncate text-[12px] text-muted-foreground">{m.memberEmail}</p>
+                  <p className="text-[12px] text-muted-foreground">{tab === "members" ? "Asked to join " : "Asked "}{ago(m.requestedAt)}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  {tab === "requests" && (
+                    <>
+                      <Button size="sm" onClick={() => approveMut.mutate(m)} isLoading={approveMut.isPending && approveMut.variables?.membershipId === m.membershipId} disabled={declineMut.isPending}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setReason(""); setDeclineTarget(m); }} disabled={approveMut.isPending}>Decline</Button>
+                    </>
+                  )}
+                  {tab === "members" && (
+                    <>
                       {m.role === "Leader" ? (
                         <Button size="sm" variant="outline" onClick={() => setDemoteTarget(m)}>Demote to member</Button>
                       ) : (
                         <Button size="sm" variant="secondary" onClick={() => setPromoteTarget(m)}>Promote to leader</Button>
                       )}
-                    </div>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => { setReason(""); setRemoveTarget(m); }}>Remove</Button>
+                    </>
                   )}
-                  {m.status === "Pending" && (
-                    <Button size="sm" variant="secondary" onClick={() => roleMut.mutate({ memberId: m.memberId, role: "Member" })} isLoading={roleMut.isPending}>Approve</Button>
+                  {tab === "declined" && (
+                    <Button size="sm" variant="secondary" onClick={() => approveMut.mutate(m)} isLoading={approveMut.isPending && approveMut.variables?.membershipId === m.membershipId}>Approve instead</Button>
                   )}
-                </TableCell>
-              </TableRow>
+                </div>
+              </li>
             ))}
-          </TableBody>
-        </Table>
+          </ul>
+        )}
       </CardContent>
 
+      <ConfirmModal
+        open={!!declineTarget}
+        variant="default"
+        title={`Decline ${declineTarget?.memberName ?? "this request"}?`}
+        message={`They will be told their request to join "${community.name}" was not approved. You can add a short reason, which they will see.`}
+        confirmLabel="Decline request"
+        isLoading={declineMut.isPending}
+        onConfirm={() => declineTarget && declineMut.mutate(declineTarget)}
+        onCancel={() => { setDeclineTarget(null); setReason(""); }}
+      >
+        <Label htmlFor="decline-reason" className="text-[13px]">Reason <span className="font-normal text-muted-foreground">(optional)</span></Label>
+        <Textarea id="decline-reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1.5 resize-none" placeholder="e.g. This group is for members of the 2018 cohort." />
+      </ConfirmModal>
+      <ConfirmModal
+        open={!!removeTarget}
+        title={`Remove ${removeTarget?.memberName ?? "this member"}?`}
+        message={`They lose access to "${community.name}" and what is shared in it, and they are told.${removeTarget?.role === "Leader" ? " They are a Leader, so they also lose that role." : ""} They can ask to join again later.`}
+        confirmLabel="Remove from group"
+        isLoading={removeMut.isPending}
+        onConfirm={() => removeTarget && removeMut.mutate(removeTarget)}
+        onCancel={() => { setRemoveTarget(null); setReason(""); }}
+      >
+        <Label htmlFor="remove-reason" className="text-[13px]">Reason <span className="font-normal text-muted-foreground">(optional, they will see it)</span></Label>
+        <Textarea id="remove-reason" rows={3} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1.5 resize-none" />
+      </ConfirmModal>
       <ConfirmModal
         open={!!promoteTarget}
         variant="default"

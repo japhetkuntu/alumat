@@ -21,6 +21,27 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-19",
+    title: "Events that are over or cancelled can be edited",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "An event marked Completed or Cancelled had no Edit option, so a recap, new photos or a corrected detail could not be added after the event. Edit is now always there, with a note on the form explaining what happens. Editing an event that is over does not notify the people who went. Notifications are kept for what matters to them: changed details on an event that is still ahead (including moving a past event to a future date), and a cancellation, which is sent once. Before, editing a cancelled event would have sent the cancellation notice again each time. No migration needed.",
+  },
+  {
+    date: "2026-10-19",
+    title: "Administrators can decline requests to join a group and remove people who were approved",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "In an institution's Groups, a group's member list is now organised into Requests, Members and Declined. Each request has Approve and Decline; declining opens a box for an optional reason that the person sees. A decline can be undone later with Approve instead. Each approved member has Remove, which asks for confirmation and an optional reason, works on Leaders too, and takes the person out at once. Members are told in their notifications whenever they are approved, declined or removed, and a removed member can ask to join again. If another administrator or the group's leader decides a request first, the page says so and refreshes instead of deciding twice. Each decision is recorded in the activity log. Declined people are kept in their own list so nothing disappears. The list can be searched once it is long. No migration needed.",
+  },
+  {
+    date: "2026-10-19",
+    title: "Links that opened a \"page not found\" in the institution portal now go somewhere real",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+    body: "The Engagement checklist's \"Promote an upcoming event\" link, and the \"Open event\" link in recommendations, pointed at a page for a single event that the institution portal has never had, so they showed \"page not found\". They now open the events list scrolled to that event, which is where its Share and WhatsApp buttons are, and any old link to /events/<id> does the same instead of failing. The Edit button on a news post's page and on a resource's page had the same problem and now opens that item's editor. In the member portal, the notification for a new class note linked to a page that does not exist and now opens the home page. Every link the checklist and recommendations produce was opened to check it. No migration needed.",
+  },
+  {
+    date: "2026-10-19",
     title: "Uploaded photos whose file names had spaces or symbols no longer fail to load; events without a photo show no empty picture area",
     scopes: ["Institution", "Member"],
     type: "Fix",

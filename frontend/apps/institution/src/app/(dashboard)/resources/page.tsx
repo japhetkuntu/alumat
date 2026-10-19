@@ -5,6 +5,7 @@ import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Download, Link2, FileText, Pencil, Eye } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
@@ -19,7 +20,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { SearchModal } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
 import Link from "next/link";
-import { getResources, createResource, updateResource, deleteResource, getCommunities } from "@/lib/institution-api";
+import { getResource, getResources, createResource, updateResource, deleteResource, getCommunities } from "@/lib/institution-api";
 import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
@@ -124,7 +125,13 @@ export default function AdminResourcesPage() {
   const isSuperAdmin = user?.role === "SuperAdmin";
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editResource, setEditResource] = useState<Resource | null>(null);
+  const [pickedResource, setEditResource] = useState<Resource | null>(null);
+  // "/resources?edit=ID" (the Edit button on a resource's own page) opens that resource's editor here.
+  const linkedEditId = useSearchParams().get("edit");
+  const [closedEditId, setClosedEditId] = useState<string | null>(null);
+  const linkedActive = !!linkedEditId && closedEditId !== linkedEditId;
+  const { data: linkedResource } = useQuery({ queryKey: ["admin-resource", linkedEditId], queryFn: () => getResource(linkedEditId!), enabled: linkedActive });
+  const editResource = pickedResource ?? (linkedActive ? linkedResource ?? null : null);
   const [deleteTarget, setDeleteTarget] = useState<Resource | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -171,7 +178,7 @@ export default function AdminResourcesPage() {
       file: f.type === "File" ? (f.file || undefined) : undefined,
       bannerImage: f.bannerImage || undefined,
     }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-resources"] }); setEditResource(null); toast.success("Resource updated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-resources"] }); qc.invalidateQueries({ queryKey: ["admin-resource"] }); setEditResource(null); setClosedEditId(linkedEditId); toast.success("Resource updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -248,7 +255,7 @@ export default function AdminResourcesPage() {
 
       <FormSheet
         open={showCreate || editResource !== null}
-        onClose={() => { setShowCreate(false); setEditResource(null); }}
+        onClose={() => { setShowCreate(false); setEditResource(null); setClosedEditId(linkedEditId); }}
         title={editResource ? "Edit resource" : "Add a resource"}
         description={editResource ? editResource.title : "Files, guides and links members can search and download."}
         formId="resource-form"

@@ -12,6 +12,8 @@ public class CommunityService(
     IAlumniPgRepository<CommunityMembership> membershipRepo,
     IAlumniPgRepository<Member> memberRepo,
     IAlumniPgRepository<Referral> referralRepo,
+    IAlumniPgRepository<Notification> notificationRepo,
+    IInstitutionAuditLogService auditLog,
     ILogger<CommunityService> logger) : ICommunityService
 {
     public async Task<IApiResponse<List<CommunityListItem>>> GetCommunitiesAsync()
@@ -164,6 +166,96 @@ public class CommunityService(
         {
             logger.LogError(e, "Error retrieving members for community {CommunityId}", communityId);
             return ApiResponseExtensions.ToServerErrorApiResponse<List<CommunityMemberItem>>("Failed to retrieve community members");
+        }
+    }
+
+    /// <summary>Tells a member what happened to their place in a group. Quiet if the member no longer exists.</summary>
+    private async Task TellMemberAsync(string memberId, string title, string body, string communityId, string actionUrl, string admin)
+    {
+        try
+        {
+            if (await memberRepo.GetByIdAsync(memberId) is null) return;
+            await notificationRepo.AddAsync(new Notification
+            {
+                RecipientId = memberId, RecipientType = "Member", Title = title, Body = body, Type = "CommunityMembership",
+                RelatedEntityId = communityId, RelatedEntityType = "Community", ActionUrl = actionUrl, CreatedBy = admin,
+            });
+        }
+        catch (Exception e)
+        {
+            // The decision is already saved; a missed notification must not undo it.
+            logger.LogWarning(e, "Could not notify member {MemberId} about their place in community {CommunityId}", memberId, communityId);
+        }
+    }
+
+    private static string? CleanReason(string? reason)
+    {
+        var r = reason?.Trim();
+        return string.IsNullOrEmpty(r) ? null : (r.Length > 300 ? r[..300] : r);
+    }
+
+    public async Task<IApiResponse<object>> DecideJoinRequestAsync(string communityId, string memberId, bool approve, string? reason, AuthData admin)
+    {
+        try
+        {
+            var community = await communityRepo.GetByIdAsync(communityId);
+            var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
+            if (community is null || membership is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("That request was not found");
+            // Someone else (a leader, or another administrator) may have decided it a moment ago. Say so rather than deciding twice.
+            // A request that was declined can still be approved later (the administrator changed their mind); nothing else can be decided again.
+            var decidable = membership.Status == "Pending" || (approve && membership.Status == "Rejected");
+            if (!decidable)
+                return ApiResponseExtensions.ToConflictApiResponse<object>(membership.Status == "Approved"
+                    ? "This request has already been approved."
+                    : "This request has already been declined.");
+
+            var note = CleanReason(reason);
+            membership.Status = approve ? "Approved" : "Rejected";
+            membership.DecidedAt = DateTime.UtcNow;
+            membership.DecidedBy = admin.Id;
+            membership.UpdatedAt = DateTime.UtcNow;
+            membership.UpdatedBy = admin.Id;
+            await membershipRepo.UpdateAsync(membership);
+
+            if (approve)
+                await TellMemberAsync(memberId, "You're in", $"Your request to join \"{community.Name}\" was approved.", communityId, $"/communities/{communityId}", admin.Id);
+            else
+                await TellMemberAsync(memberId, "About your request",
+                    note is null ? $"Your request to join \"{community.Name}\" was not approved this time." : $"Your request to join \"{community.Name}\" was not approved this time. {note}",
+                    communityId, "/communities", admin.Id);
+            await auditLog.LogAsync(admin, approve ? "Group Request Approved" : "Group Request Declined", community.Name);
+            return new object().ToOkApiResponse(approve ? "Request approved" : "Request declined");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error deciding join request for community {CommunityId} member {MemberId}", communityId, memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to save your decision");
+        }
+    }
+
+    public async Task<IApiResponse<object>> RemoveMemberAsync(string communityId, string memberId, string? reason, AuthData admin)
+    {
+        try
+        {
+            var community = await communityRepo.GetByIdAsync(communityId);
+            var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
+            if (community is null || membership is null || membership.Status != "Approved")
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("That member is not in this group");
+
+            var note = CleanReason(reason);
+            await membershipRepo.RemoveAsync(membership);
+
+            await TellMemberAsync(memberId, "You were removed from a group",
+                note is null ? $"You were removed from \"{community.Name}\". You can ask to join again." : $"You were removed from \"{community.Name}\". {note}",
+                communityId, "/communities", admin.Id);
+            await auditLog.LogAsync(admin, "Group Member Removed", community.Name);
+            return new object().ToOkApiResponse("Member removed");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error removing member {MemberId} from community {CommunityId}", memberId, communityId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to remove the member");
         }
     }
 

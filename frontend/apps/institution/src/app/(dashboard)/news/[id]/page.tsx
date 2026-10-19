@@ -140,7 +140,7 @@ export default function AdminNewsDetailPage() {
               toast.error(message);
             }}
           />
-          <Link href={`/news/${id}/edit`}>
+          <Link href={`/news?edit=${id}`}>
             <Button variant="outline" size="sm" className="font-bold"><Pencil size={13} />Edit</Button>
           </Link>
           {post.status === "Draft" && (

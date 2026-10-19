@@ -239,6 +239,7 @@ public class EventService(
             var ev = await eventRepo.GetByIdAsync(request.EventId);
             if (ev is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
+            var wasCancelled = ev.Status == "Cancelled";
             var detailsChanged = ev.StartDate != DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc)
                 || ev.EndDate != (request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : null)
                 || ev.Venue != request.Venue || ev.Capacity != request.Capacity;
@@ -301,7 +302,11 @@ public class EventService(
             ev.UpdatedBy = admin.Id;
             await eventRepo.UpdateAsync(ev);
             await InvalidatePublicEventsCacheAsync();
-            if (detailsChanged || ev.Status == "Cancelled")
+            // People who are going hear about a cancellation once (not every time the cancelled event is edited again), and about changed
+            // details only while the event is still ahead. Fixing a past event's description or photos is housekeeping, not news.
+            var nowCancelled = ev.Status == "Cancelled" && !wasCancelled;
+            var stillAhead = ev.Status != "Cancelled" && ev.Status != "Completed" && (ev.EndDate ?? ev.StartDate) >= DateTime.UtcNow;
+            if (nowCancelled || (detailsChanged && stillAhead))
             {
                 var recipients = await rsvpRepo.GetAllAsync(r => r.EventId == ev.Id && r.Status == "Confirmed");
                 foreach (var rsvp in recipients)
