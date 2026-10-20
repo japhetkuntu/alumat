@@ -35,7 +35,7 @@ public static class EventTicketRules
         "Some people have paid to RSVP to this event, so it can't be deleted. Paid RSVPs are not refunded.";
 
     public const string CannotBecomeFreeMessage =
-        "People have already paid to RSVP, so this event can't become free. You can still change the fee.";
+        "People have already paid to RSVP, so this event can't become free. You can still change the price.";
 
     /// <summary>
     /// Checks the pricing part of a create or edit. <paramref name="existing"/> is null when creating.
@@ -56,9 +56,9 @@ public static class EventTicketRules
         }
 
         if (ticketPrice is not > 0)
-            return "Enter the RSVP fee.";
+            return "Enter the RSVP price.";
         if (ticketPrice > MaxTicketPrice)
-            return $"The RSVP fee can't be more than {MaxTicketPrice:N0}.";
+            return $"The RSVP price can't be more than {MaxTicketPrice:N0}.";
 
         // The price can change whenever the organiser likes, even after tickets have sold: people who already bought keep what they paid
         // (it is recorded on their ticket), and anyone buying from then on pays the new price.

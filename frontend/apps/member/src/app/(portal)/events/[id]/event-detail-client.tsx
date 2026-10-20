@@ -312,7 +312,7 @@ export default function EventDetailPage() {
       <ConfirmModal
         open={buyConfirmOpen}
         title="Confirm your RSVP"
-        message={`RSVP for "${event.title}": ${event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. A small payment processing fee is added at checkout. Once you pay, your RSVP can't be cancelled and isn't refunded.`}
+        message={`RSVP for "${event.title}": ${event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. Once you pay, your RSVP can't be cancelled and isn't refunded.`}
         confirmLabel="Continue to payment"
         cancelLabel="Not now"
         variant="default"
@@ -380,7 +380,7 @@ function RsvpBlock({
         <div className="p-3.5 rounded-xl space-y-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
           <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Paid RSVPs are final</p>
           <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-            A paid RSVP can&apos;t be cancelled and isn&apos;t refunded. A small payment processing fee is added at checkout.
+            A paid RSVP can&apos;t be cancelled and isn&apos;t refunded.
           </p>
         </div>
       )}

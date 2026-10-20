@@ -144,12 +144,12 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                 )}
                 {form.isTicketed && (
                   <div className="space-y-4">
-                    <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>RSVP fee (GH₵)</Label>
+                    <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>RSVP price (GH₵)</Label>
                       <Input type="number" min={1} step="0.01" placeholder="e.g. 150" value={form.ticketPrice}
                         onChange={(e) => f("ticketPrice", e.target.value)} required />
                       {sold > 0 && (
                         <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                          {sold} paid {sold === 1 ? "RSVP" : "RSVPs"} already. {sold === 1 ? "That person keeps" : "Those people keep"} what they paid; a new fee applies to anyone who RSVPs from now on.
+                          {sold} paid {sold === 1 ? "RSVP" : "RSVPs"} already. {sold === 1 ? "That person keeps" : "Those people keep"} what they paid; a new price applies to anyone who RSVPs from now on.
                         </p>
                       )}
                     </div>
@@ -157,9 +157,9 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                       <p className="font-semibold text-foreground">Good to know</p>
                       <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
                         <li><span className="text-foreground">Paid RSVPs are final.</span> Attendees can&apos;t cancel and nobody is refunded. A paid event can&apos;t be cancelled either, so no money ever has to go back.</li>
-                        <li>You can change the price whenever you like. People who already paid keep what they paid, and new RSVPs pay the new fee.</li>
+                        <li>You can change the price whenever you like. People who already paid keep what they paid, and new RSVPs pay the new price.</li>
                         <li>A paid event can&apos;t be deleted once someone has paid to RSVP, or made free. You can still change its date, venue and details, and attendees are told.</li>
-                        <li>You receive the full RSVP fee in your payout account.</li>
+                        <li>You receive the full RSVP price in your payout account.</li>
                       </ul>
                     </div>
                   </div>
