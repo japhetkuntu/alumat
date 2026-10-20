@@ -252,7 +252,7 @@ export default function EventDetailPage() {
           {/* What the organiser has posted for the people going */}
           <EventUpdates
             eventId={id}
-            joinLabel={event.isTicketed ? "Buy a ticket" : "RSVP to read them"}
+            joinLabel="RSVP to read them"
             onJoin={canRsvp && !isFull && !event.registrationClosed ? () => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true)) : undefined}
           />
 
@@ -311,8 +311,8 @@ export default function EventDetailPage() {
 
       <ConfirmModal
         open={buyConfirmOpen}
-        title="Buy your ticket"
-        message={`Ticket for "${event.title}": ${event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. A small payment processing fee is added at checkout. Once you pay, your ticket can't be cancelled and isn't refunded.`}
+        title="Confirm your RSVP"
+        message={`RSVP for "${event.title}": ${event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. A small payment processing fee is added at checkout. Once you pay, your RSVP can't be cancelled and isn't refunded.`}
         confirmLabel="Continue to payment"
         cancelLabel="Not now"
         variant="default"
@@ -359,11 +359,11 @@ function RsvpBlock({
   return (
     <div className="space-y-5">
 
-      {/* Ticket / price */}
+      {/* RSVP / price */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--muted-foreground)" }}>
-            {paid ? "Ticket" : "Registration"}
+            Registration
           </p>
           <p
             className="font-[family-name:var(--font-display)] font-bold"
@@ -375,12 +375,12 @@ function RsvpBlock({
         {event.isTicketed && <Ticket size={22} style={{ color: "var(--primary)" }} />}
       </div>
 
-      {/* The terms, shown before buying so nobody is surprised afterwards */}
+      {/* The terms, shown before paying so nobody is surprised afterwards */}
       {paid && !hasRsvp && canRsvp && !event.registrationClosed && (
         <div className="p-3.5 rounded-xl space-y-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
-          <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Tickets are final</p>
+          <p className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Paid RSVPs are final</p>
           <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-            A bought ticket can&apos;t be cancelled and isn&apos;t refunded. A small payment processing fee is added at checkout.
+            A paid RSVP can&apos;t be cancelled and isn&apos;t refunded. A small payment processing fee is added at checkout.
           </p>
         </div>
       )}
@@ -393,11 +393,11 @@ function RsvpBlock({
         >
           <div className="flex items-center gap-3">
             <CheckCircle2 size={18} className="text-success shrink-0" />
-            <p className="text-[13.5px] font-semibold text-success">Your ticket is confirmed.</p>
+            <p className="text-[13.5px] font-semibold text-success">Your RSVP is confirmed.</p>
           </div>
           <p className="text-[12.5px] leading-relaxed pl-[30px]" style={{ color: "var(--muted-foreground)" }}>
             {ticket?.amountPaid ? `Paid ${formatCurrency(ticket.amountPaid)}${ticket.paidAt ? ` on ${formatDate(ticket.paidAt)}` : ""}. ` : ""}
-            Tickets can&apos;t be cancelled or refunded.
+            Paid RSVPs can&apos;t be cancelled or refunded.
           </p>
         </div>
       )}
@@ -428,10 +428,10 @@ function RsvpBlock({
         ) : event.registrationClosed ? (
           <div className="p-4 rounded-xl text-center" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
             <p className="text-[14px] font-semibold mb-0.5" style={{ color: "var(--foreground)" }}>
-              {paid ? "Ticket sales are closed" : "RSVPs are closed"}
+              RSVPs are closed
             </p>
             <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-              The organiser isn&apos;t taking {paid ? "more tickets" : "new RSVPs"} for this event. Anyone already going keeps their place.
+              The organiser isn&apos;t taking new RSVPs for this event. Anyone already going keeps their place.
             </p>
           </div>
         ) : (
@@ -446,7 +446,7 @@ function RsvpBlock({
             ) : isFull ? (
               "Event fully booked"
             ) : paid ? (
-              <><Ticket size={16} /> Buy ticket{event.ticketPrice ? ` · ${formatCurrency(event.ticketPrice)}` : ""}</>
+              <><Ticket size={16} /> RSVP{event.ticketPrice ? ` · ${formatCurrency(event.ticketPrice)}` : ""}</>
             ) : (
               <><Calendar size={16} /> Confirm RSVP</>
             )}

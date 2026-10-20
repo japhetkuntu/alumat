@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { generateBrandPalette, type TonalScale } from "@alumni/ui";
 
@@ -61,7 +62,8 @@ export type TenantThemeStatus = "ok" | "not-found" | "error";
 // must keep degrading to the existing generic-fallback landing page, exactly
 // as it already does today, so an outage never misclassifies a real
 // institution visitor as a marketing-site visitor).
-async function fetchTheme(): Promise<{ status: TenantThemeStatus; theme: InstitutionTheme | null }> {
+// cache(): the layout, its metadata and its viewport each ask for the theme during one page render; one API call answers all of them.
+const fetchTheme = cache(async (): Promise<{ status: TenantThemeStatus; theme: InstitutionTheme | null }> => {
   try {
     const requestHeaders = await headers();
     const host = requestHeaders.get("host") ?? "";
@@ -95,7 +97,7 @@ async function fetchTheme(): Promise<{ status: TenantThemeStatus; theme: Institu
     console.error(`[theme] fetch to ${API_URL}/public/institution/theme failed:`, err);
     return { status: "error", theme: null };
   }
-}
+});
 
 export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
   return (await fetchTheme()).theme;

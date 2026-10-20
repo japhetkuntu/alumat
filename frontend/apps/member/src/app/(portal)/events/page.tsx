@@ -101,7 +101,7 @@ export default function MemberEventsPage() {
 
       {/* ── Grid ── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))]">
           {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : events.length === 0 ? (
@@ -112,7 +112,7 @@ export default function MemberEventsPage() {
           action={<NotifyMeButton />}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))]">
           {events.map((e) => {
             const hasRsvp = rsvpSet.has(e.id);
             const isPast = new Date(e.endDate ?? e.startDate).getTime() < Date.now();

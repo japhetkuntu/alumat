@@ -9,7 +9,12 @@ import { Badge } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { StatCard, StatCardSkeleton } from "@alumni/ui";
-import { TrendChart, DonutChart } from "@alumni/ui";
+import dynamic from "next/dynamic";
+
+// The charts library is large and the charts sit below the first screen: load it after the page is up rather than before it can show.
+const chartFallback = () => <Skeleton className="h-56 w-full" />;
+const TrendChart = dynamic(() => import("@alumni/ui").then((m) => m.TrendChart), { ssr: false, loading: chartFallback });
+const DonutChart = dynamic(() => import("@alumni/ui").then((m) => m.DonutChart), { ssr: false, loading: chartFallback });
 import { formatCurrency, formatDate } from "@alumni/ui";
 import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getRevenueTrend } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";

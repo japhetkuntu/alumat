@@ -61,7 +61,7 @@ public class EventsController(IMemberEventService eventService, IEventTicketServ
 
     /// <summary>Start paying for a seat at a paid event. Returns the Paystack page to send the member to. Tickets are final: no cancelling, no refund.</summary>
     [HttpPost("{eventId}/ticket")]
-    [SwaggerOperation(Summary = "Buy a ticket", Description = "Start the payment for a seat at a paid event")]
+    [SwaggerOperation(Summary = "Pay to RSVP", Description = "Start the payment to RSVP to a paid event")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<EventTicketCheckoutResponse>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> BuyTicket(string eventId, [FromBody] EventTicketBody? body)
@@ -72,7 +72,7 @@ public class EventsController(IMemberEventService eventService, IEventTicketServ
 
     /// <summary>Poll a ticket payment's status after returning from Paystack.</summary>
     [HttpGet("tickets/{reference}/status")]
-    [SwaggerOperation(Summary = "Ticket payment status")]
+    [SwaggerOperation(Summary = "RSVP payment status")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<EventTicketStatusResponse>))]
     public async Task<IActionResult> GetTicketStatus(string reference)
     {

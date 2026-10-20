@@ -27,18 +27,19 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                 )}
                 style={{ borderColor: "var(--border)", background: "var(--background)" }}
               >
-                {/* With a photo, the status and date sit over it. With none there is no picture area at all: the same facts sit in a plain row. */}
-                {e.bannerImageUrl ? (
-                <DetailLink href={detailHref} className="block relative shrink-0 overflow-hidden" style={{ height: 180 }}>
-                  <img
-                    src={e.bannerImageUrl}
-                    alt={e.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {/* Scrim */}
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
-
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                {/* A photo is only a photo: text laid over a picture goes faint whenever the picture is bright or busy, so the status, date and price always sit in their own row. */}
+                {e.bannerImageUrl && (
+                  <DetailLink href={detailHref} className="block relative shrink-0 overflow-hidden" style={{ height: 180 }}>
+                    <img
+                      src={e.bannerImageUrl}
+                      alt={e.title}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </DetailLink>
+                )}
+                {/* One row across the card: what it is on the left, when and how much on the right, so no side is left empty. */}
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pt-4">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant={statusVariant[e.status]} className="text-[12px] font-semibold uppercase tracking-wide">
                       {e.status}
                     </Badge>
@@ -47,55 +48,23 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                         Past
                       </Badge>
                     )}
+                    <SourceBadge communityId={e.communityId} communityName={e.communityName} yearGroups={e.yearGroups} />
                   </div>
-
-                  {hasRsvp && (
-                    <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(34,197,94,0.85)", backdropFilter: "blur(4px)" }}>
-                      <CheckCircle2 size={14} color="white" />
-                    </div>
-                  )}
-
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1.5 text-white text-[12px] font-semibold">
+                  <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--muted-foreground)" }}>
                     <Clock size={12} />
-                    {formatDate(e.startDate)}
-                    {e.isTicketed && e.ticketPrice ? (
-                      <span className="ml-2 text-white/80">· {formatCurrency(e.ticketPrice)}</span>
-                    ) : (
-                      <span className="ml-2 text-white/70">· Free</span>
-                    )}
-                  </div>
-                </DetailLink>
-                ) : (
-                <div className="flex flex-col gap-2 px-4 pt-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant={statusVariant[e.status]} className="text-[12px] font-semibold uppercase tracking-wide">
-                        {e.status}
-                      </Badge>
-                      {isPast && e.status !== "Completed" && e.status !== "Cancelled" && (
-                        <Badge variant="secondary" className="text-[12px] font-semibold uppercase tracking-wide">
-                          Past
-                        </Badge>
-                      )}
-                    </div>
+                    <span>{formatDate(e.startDate)}</span>
+                    <span aria-hidden>·</span>
+                    <span>{e.isTicketed && e.ticketPrice ? formatCurrency(e.ticketPrice) : "Free"}</span>
                     {hasRsvp && (
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.85)" }} aria-label="You're going">
-                        <CheckCircle2 size={14} color="white" />
-                      </div>
+                      <span className="ml-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.85)" }} aria-label="You're going">
+                        <CheckCircle2 size={13} color="white" />
+                      </span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: "var(--muted-foreground)" }}>
-                    <Clock size={12} />
-                    {formatDate(e.startDate)}
-                    <span className="ml-2">· {e.isTicketed && e.ticketPrice ? formatCurrency(e.ticketPrice) : "Free"}</span>
                   </div>
                 </div>
-                )}
 
                 {/* Body */}
-                <div className={cn("flex flex-col flex-1 p-4 gap-3", !e.bannerImageUrl && "pt-3")}>
-                  <SourceBadge communityId={e.communityId} communityName={e.communityName} yearGroups={e.yearGroups} className="self-start" />
+                <div className="flex flex-col flex-1 p-4 pt-3 gap-3">
                   <DetailLink href={detailHref}>
                     <h3
                       className="text-[15px] font-semibold leading-snug line-clamp-2 transition-colors duration-200 hover:text-primary"
@@ -105,9 +74,10 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                     </h3>
                   </DetailLink>
 
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
-                      <MapPin size={12} style={{ color: "var(--primary)" }} />
+                  {/* Place and turnout share a line (they wrap on a narrow card), so the card reads across instead of in a short stack down the left. */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    <div className="flex min-w-0 items-center gap-1.5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+                      <MapPin size={12} className="shrink-0" style={{ color: "var(--primary)" }} />
                       <span className="line-clamp-1">{e.venue}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
@@ -124,14 +94,14 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                         className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold"
                         style={{ background: "rgba(34,197,94,0.1)", color: "var(--success, #16a34a)" }}
                       >
-                        <CheckCircle2 size={13} /> Ticket confirmed
+                        <CheckCircle2 size={13} /> RSVP confirmed
                       </span>
                     ) : canRsvp && e.registrationClosed && !hasRsvp ? (
                       <span
                         className="flex-1 text-center py-2 rounded-lg text-[12px] font-semibold"
                         style={{ background: "var(--secondary)", color: "var(--muted-foreground)" }}
                       >
-                        {e.isTicketed ? "Ticket sales closed" : "RSVPs closed"}
+                        RSVPs closed
                       </span>
                     ) : canRsvp ? (
                       <Button
@@ -144,7 +114,7 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                         style={{ height: 38 }}
                         disabled={isPending || (isFull && !hasRsvp)}
                         onClick={onRsvp}
-                        aria-label={`${hasRsvp ? "Cancel RSVP for" : e.isTicketed ? "Get a ticket for" : "RSVP for"} ${e.title}`}
+                        aria-label={`${hasRsvp ? "Cancel RSVP for" : "RSVP for"} ${e.title}`}
                       >
                         {isPending ? (
                           <Loader2 size={14} className="animate-spin" />
@@ -152,10 +122,8 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                           "Cancel RSVP"
                         ) : isFull ? (
                           "Event full"
-                        ) : e.isTicketed ? (
-                          "Get ticket"
                         ) : (
-                          "RSVP"
+                          e.isTicketed && e.ticketPrice ? `RSVP · ${formatCurrency(e.ticketPrice)}` : "RSVP"
                         )}
                       </Button>
                     ) : (

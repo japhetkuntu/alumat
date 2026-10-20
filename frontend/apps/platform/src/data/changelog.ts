@@ -20,6 +20,41 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-20",
+    title: "Event cards use the width they are given",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "Event cards stacked their details in a short column down the left, leaving the right half of each card empty, and the events page reserved room for three columns even when there were only one or two events. The status, audience, date and price now share the top of the card, the place and number attending share one line, and the cards share the available width: two events are two wide cards, a full list still fills three columns. On a phone the lines wrap and the card stays one column. No migration needed.",
+  },
+  {
+    date: "2026-10-20",
+    title: "Text on cards with a photo is easy to read whatever the photo looks like",
+    scopes: ["Member"],
+    type: "Fix",
+    body: "On event cards that had a photo, the status, date and price were written on top of the picture, so a bright or busy photo made them faint. A photo is now just a photo: the status, date, price and the \"you're going\" tick sit in their own row underneath it, the same as an event without one. The same problem is fixed where it appeared elsewhere: the Membership label on fundraiser cards, the category and type labels on resource cards (now solid), the Featured label on spotlights (solid dark), and the community page header, whose cover photo now sits under an even tint instead of one that thinned out and let a light patch show through the white text. No migration needed.",
+  },
+  {
+    date: "2026-10-20",
+    title: "Paid events use the word RSVP, not ticket",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "A paid event used a different vocabulary from a free one (Buy ticket, Get ticket, Ticket sales closed, Your ticket is confirmed, Ticket price). It now uses the same words as every other event: members see RSVP, with the fee beside it (RSVP · GH₵150), the confirmation says Your RSVP is confirmed, and a closed event says RSVPs are closed, paid or not. The terms read Paid RSVPs are final. In the institution portal the event form has Paid RSVP, Charge to RSVP and RSVP fee, the card counts RSVPs, the attendee list column is Paid, and the buttons are View RSVPs and Stop taking RSVPs for every event. The platform's switch is Allow paid RSVPs. The messages the servers send back use the same words. Nothing about how paying works changed, and the code keeps its internal names. No migration needed.",
+  },
+  {
+    date: "2026-10-20",
+    title: "Events and event updates can be duplicated",
+    scopes: ["Institution"],
+    type: "Feature",
+    body: "Each event now has Duplicate in its menu. It opens the new-event form already filled in with the original's details, description, audience, ticket price, links and photos; only the date is left blank to choose. Photos can be removed or added before saving, and nothing is uploaded again: the copy uses the original's pictures. People who RSVPed, tickets sold and updates stay with the original, and the copy starts as a fresh upcoming event. Each update on an event's Updates page also has Duplicate. It opens the editor filled in with the original's text, links, photos and files, with a Post to choice: this event or any other, so an update can be reused for the next edition of an event. The files are reused rather than uploaded again. Posting a copy notifies the people going to the event it is posted to, like any new update. A copy can only reuse the pictures and files of the thing it was copied from, and only if the administrator can see it. No migration needed.",
+  },
+  {
+    date: "2026-10-20",
+    title: "The portals' first page load is about 60% lighter, so first visits and first sign-ins are faster",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "A first visit has to download and run the portal's code before anything shows, and that code was far larger than it needed to be: the sign-in page loaded the rich-text editor and the charts library, which it never uses, because every page pulled in the whole shared component set. Measured on production builds (compressed size of what a page loads): institution sign-in 457 KB to 157 KB, institution dashboard 459 KB to 192 KB, platform dashboard 273 KB to 170 KB, member sign-in and home about 160-180 KB. The shared component package is now marked safe to trim, so each page loads only the parts it uses, and the dashboards load their charts after the page is already showing. Also, each page asked the API for the community's theme up to four times while building; it now asks once. Measured on a development machine, the API side of signing in is not the slow part (about 0.2 to 0.3 s, mostly the password check); the first request after the API restarts costs about 0.1 s more. If sign-in is still slow on the live server after this, the next things to look at are the server's own timing (the browser's Network tab shows it) and starting the APIs ahead of use. No migration needed.",
+  },
+  {
     date: "2026-10-19",
     title: "Events that are over or cancelled can be edited",
     scopes: ["Institution"],

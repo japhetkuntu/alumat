@@ -1,5 +1,8 @@
 # Paid event tickets
 
+> **Wording.** Members and institutions see this as a paid **RSVP**, not a "ticket": "RSVP · GH₵150", "Paid RSVPs are final", "RSVP fee". The words ticket and ticketed remain only in code names (`EventTicketService`, `IsTicketed`, the `ET_` payment reference).
+
+
 An institution can charge for an event. The platform decides which institutions may.
 
 ## Rules (one place: `EventTicketRules` in `PostgresDb.Sdk/Entities/Alumni`)

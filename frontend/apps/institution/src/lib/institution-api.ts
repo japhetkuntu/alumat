@@ -1035,6 +1035,10 @@ export interface CreateEventBody {
   bannerImage?: File;
   images?: File[];
   youtubeVideoUrls?: string[];
+  /** Making this event as a copy of another: the original's photos are reused by address instead of uploaded again. */
+  copyFromEventId?: string;
+  keepBanner?: boolean;
+  keepImageUrls?: string[];
 }
 
 export interface UpdateEventBody {
@@ -1094,8 +1098,11 @@ export async function getEventUpdates(eventId: string): Promise<EventUpdate[]> {
   return res.data.data ?? [];
 }
 
-export async function createEventUpdate(eventId: string, draft: EventUpdateDraft): Promise<EventUpdate> {
-  const res = await institutionClient.post<ApiResponse<EventUpdate>>(`/events/${eventId}/updates`, toUpdateFormData(draft), { headers: { "Content-Type": "multipart/form-data" }, timeout: 0 });
+/** Posts an update. Pass copyFromUpdateId when it is a copy, so the files the original holds can be reused instead of uploaded again. */
+export async function createEventUpdate(eventId: string, draft: EventUpdateDraft, copyFromUpdateId?: string): Promise<EventUpdate> {
+  const body = toUpdateFormData(draft);
+  if (copyFromUpdateId) body.append("copyFromUpdateId", copyFromUpdateId);
+  const res = await institutionClient.post<ApiResponse<EventUpdate>>(`/events/${eventId}/updates`, body, { headers: { "Content-Type": "multipart/form-data" }, timeout: 0 });
   return res.data.data!;
 }
 

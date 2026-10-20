@@ -9,7 +9,8 @@ public interface IEventUpdateService
     Task<IApiResponse<List<EventUpdateDto>>> ListAsync(string eventId, AuthData admin);
 
     /// <param name="files">New uploads, grouped by the id of the block they belong to.</param>
-    Task<IApiResponse<EventUpdateDto>> CreateAsync(string eventId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin);
+    /// <param name="copyFromUpdateId">When this is a copy of an existing update (of this event or another), the files that update holds may be reused as they are.</param>
+    Task<IApiResponse<EventUpdateDto>> CreateAsync(string eventId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin, string? copyFromUpdateId = null);
 
     Task<IApiResponse<EventUpdateDto>> UpdateAsync(string eventId, string updateId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin);
 

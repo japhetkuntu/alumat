@@ -150,7 +150,7 @@ public class MemberEventService(
 
             // A paid event takes seats only through a ticket payment, never a free RSVP.
             if (ev.IsTicketed)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event needs a ticket. Buy one to reserve your seat.");
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event charges to RSVP. Pay to confirm your place.");
 
             // A cancelled or finished event takes no new RSVPs, and an event with a capacity stops at it.
             if (ev.Status is "Cancelled" or "Completed")

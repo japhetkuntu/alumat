@@ -991,7 +991,7 @@ public class InstitutionManagementService(
                 return new PlatformPaymentDto(
                     t.Id, "EventTicket", t.InstitutionId,
                     payer is null ? null : $"{payer.FirstName} {payer.LastName}", payer?.Email,
-                    titles.GetValueOrDefault(t.EventId) ?? "Event ticket", t.AmountPaid ?? 0m, TicketPaymentStatus(t.Status), "Paystack", t.TransactionRef,
+                    titles.GetValueOrDefault(t.EventId) ?? "Event RSVP", t.AmountPaid ?? 0m, TicketPaymentStatus(t.Status), "Paystack", t.TransactionRef,
                     t.CreatedAt, t.PaidAt, t.PlatformFeeAmount, t.GatewayFeeAmount, paid ? t.PlatformFeeAmount : 0m);
             }));
         }

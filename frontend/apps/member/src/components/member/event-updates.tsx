@@ -116,7 +116,7 @@ function UpdateCard({ update, isNew }: { update: EventUpdate; isNew: boolean }) 
 
 /**
  * What the organiser has posted to an event. People who are going read the updates; everyone else sees that updates exist
- * (how many, and of what kind) and what it takes to read them. `onJoin` is the page's own RSVP or buy-a-ticket action.
+ * (how many, and of what kind) and what it takes to read them. `onJoin` is the page's own RSVP action.
  */
 export function EventUpdates({ eventId, joinLabel, onJoin }: { eventId: string; joinLabel?: string; onJoin?: () => void }) {
   const { data } = useQuery({ queryKey: ["event-updates", eventId], queryFn: () => getEventUpdates(eventId) });

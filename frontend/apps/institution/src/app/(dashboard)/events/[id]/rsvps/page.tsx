@@ -73,7 +73,7 @@ export default function EventRsvpsPage() {
                 <TableHead>Member</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                {hasTickets && <TableHead>Ticket</TableHead>}
+                {hasTickets && <TableHead>Paid</TableHead>}
                 <TableHead>{hasTickets ? "Date" : "Changed"}</TableHead>
               </TableRow>
             </TableHeader>

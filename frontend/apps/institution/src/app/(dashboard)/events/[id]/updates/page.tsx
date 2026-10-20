@@ -5,10 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowDown, ArrowLeft, ArrowUp, Bell, FileText, ImageIcon, Link2, MoreHorizontal, Pencil, Pin, Plus, Trash2, Youtube } from "@alumni/ui";
-import { Badge, Button, ConfirmModal, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, FormSheet, Input, Label, LoadError, CardSkeleton, cn, formatDateTime } from "@alumni/ui";
+import { ArrowDown, ArrowLeft, ArrowUp, Bell, Copy, FileText, ImageIcon, Link2, MoreHorizontal, Pencil, Pin, Plus, Trash2, Youtube } from "@alumni/ui";
+import { Badge, Button, ConfirmModal, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, FormSelect, FormSheet, Input, Label, LoadError, CardSkeleton, cn, formatDate, formatDateTime } from "@alumni/ui";
 import {
-  createEventUpdate, deleteEventUpdate, getEvent, getEventUpdates, pinEventUpdate, reorderEventUpdates, updateEventUpdate,
+  createEventUpdate, deleteEventUpdate, getEvent, getEvents, getEventUpdates, pinEventUpdate, reorderEventUpdates, updateEventUpdate,
   EVENT_UPDATE_CATEGORIES, type EventUpdateDraft, type EventUpdateDraftBlock,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -87,21 +87,36 @@ export default function EventUpdatesPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<EventUpdate | "new" | null>(null);
+  // An update being copied, and the event the copy will be posted to (this one unless chosen otherwise).
+  const [copying, setCopying] = useState<EventUpdate | null>(null);
+  const [targetId, setTargetId] = useState<string>("");
   const [deleting, setDeleting] = useState<EventUpdate | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data: event } = useQuery({ queryKey: ["admin-event", id], queryFn: () => getEvent(id) });
   const { data: updates, isLoading, isError, refetch } = useQuery({ queryKey: ["admin-event-updates", id], queryFn: () => getEventUpdates(id) });
 
+  const { data: eventChoices } = useQuery({ queryKey: ["admin-events-pick"], queryFn: () => getEvents(1, 100), enabled: copying !== null });
+  const target = targetId || id;
+  const targetEvent = target === id ? event : eventChoices?.results.find((e) => e.id === target);
+
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-event-updates", id] });
-  const close = () => { setEditing(null); setFormError(null); };
+  const close = () => { setEditing(null); setCopying(null); setFormError(null); };
 
   const save = useMutation({
-    mutationFn: (draft: EventUpdateDraft) => (editing && editing !== "new" ? updateEventUpdate(id, editing.id, draft) : createEventUpdate(id, draft)),
+    mutationFn: (draft: EventUpdateDraft) =>
+      copying ? createEventUpdate(target, draft, copying.id)
+      : editing && editing !== "new" ? updateEventUpdate(id, editing.id, draft)
+      : createEventUpdate(id, draft),
     onSuccess: () => {
       const wasNew = editing === "new";
-      refresh(); close();
-      toast.success(wasNew ? "Update posted. People going have been notified." : "Update saved.");
+      const wasCopy = copying !== null;
+      const elsewhere = wasCopy && target !== id;
+      const to = targetEvent?.title;
+      refresh(); qc.invalidateQueries({ queryKey: ["admin-event-updates", target] }); close();
+      toast.success(wasCopy
+        ? (elsewhere ? `Copy posted to ${to ?? "the other event"}. People going to it have been notified.` : "Copy posted. People going have been notified.")
+        : wasNew ? "Update posted. People going have been notified." : "Update saved.");
     },
     onError: (e) => setFormError(handleApiError(e)),
   });
@@ -159,18 +174,44 @@ export default function EventUpdatesPage() {
       </div>
 
       <FormSheet
-        open={editing !== null}
+        open={editing !== null || copying !== null}
         onClose={close}
-        title={editing === "new" ? "New update" : "Edit update"}
-        description={event?.title}
+        title={copying ? "Duplicate update" : editing === "new" ? "New update" : "Edit update"}
+        description={copying ? `Copied from "${copying.title}"` : event?.title}
         formId="event-update-form"
-        submitLabel={editing === "new" ? "Post update" : "Save changes"}
-        savingLabel={editing === "new" ? "Posting" : "Saving"}
+        submitLabel={copying ? "Post the copy" : editing === "new" ? "Post update" : "Save changes"}
+        savingLabel={copying || editing === "new" ? "Posting" : "Saving"}
         saving={save.isPending}
         error={formError}
         size="lg"
       >
-        {editing !== null && (
+        {copying !== null && (
+          <>
+            <div className="mb-6 space-y-2">
+              <Label>Post to</Label>
+              <FormSelect
+                className="w-full"
+                value={target}
+                onValueChange={setTargetId}
+                options={[
+                  { value: id, label: `${event?.title ?? "This event"} (this event)` },
+                  ...(eventChoices?.results ?? []).filter((e) => e.id !== id && e.status !== "Cancelled").map((e) => ({ value: e.id, label: `${e.title}, ${formatDate(e.startDate)}` })),
+                ]}
+              />
+              <p className="text-[12.5px] text-muted-foreground">
+                Photos, files and text come along without being uploaded again. Posting notifies the people going to {targetEvent?.title ?? "that event"}.
+              </p>
+            </div>
+            <UpdateForm
+              key={`copy-${copying.id}`}
+              id="event-update-form"
+              init={toDraft(copying)}
+              onSave={(d) => { setFormError(null); save.mutate(d); }}
+              error={setFormError}
+            />
+          </>
+        )}
+        {editing !== null && copying === null && (
           <UpdateForm
             key={editing === "new" ? "new" : editing.id}
             id="event-update-form"
@@ -225,6 +266,7 @@ export default function EventUpdatesPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[160px]">
                       <DropdownMenuItem onSelect={() => { setFormError(null); setEditing(u); }}><Pencil size={14} />Edit</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => { setFormError(null); setTargetId(""); setCopying(u); }}><Copy size={14} />Duplicate</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => pin.mutate({ u, pinned: !u.isPinned })}><Pin size={14} />{u.isPinned ? "Unpin" : "Pin to top"}</DropdownMenuItem>
                       <DropdownMenuItem destructive onSelect={() => setDeleting(u)}><Trash2 size={14} />Delete</DropdownMenuItem>
                     </DropdownMenuContent>

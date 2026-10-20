@@ -114,7 +114,7 @@ public class EventTicketingTests
         var rig = new Rig();
         var response = await rig.Service.CreateEventAsync(NewEvent(true, price is null ? null : (decimal)price), Admin);
         Assert.Equal(400, response.Code);
-        Assert.Equal("Enter the ticket price.", response.Message);
+        Assert.Equal("Enter the RSVP fee.", response.Message);
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class EventTicketingTests
         var rig = new Rig();
         await rig.Seed(PaidEvent(), Ticket("e1", "m1"));
 
-        Assert.Equal("Enter the ticket price.", (await rig.Service.UpdateEventAsync(Edit("e1", true, 0m), Admin)).Message);
+        Assert.Equal("Enter the RSVP fee.", (await rig.Service.UpdateEventAsync(Edit("e1", true, 0m), Admin)).Message);
         Assert.Equal(400, (await rig.Service.UpdateEventAsync(Edit("e1", true, EventTicketRules.MaxTicketPrice + 1), Admin)).Code);
         Assert.Equal(100m, (await rig.Db().Events.SingleAsync()).TicketPrice);
     }

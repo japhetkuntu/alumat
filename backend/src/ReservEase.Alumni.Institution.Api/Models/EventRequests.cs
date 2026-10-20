@@ -19,6 +19,13 @@ public class CreateEventRequest
     public IFormFile? BannerImage { get; set; }
     public List<IFormFile>? Images { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
+
+    /// <summary>Set when this event is a copy of another: the photos below are taken from that event, not uploaded again.</summary>
+    public string? CopyFromEventId { get; set; }
+    /// <summary>With <see cref="CopyFromEventId"/>: keep the original's banner (unless a new one is uploaded).</summary>
+    public bool KeepBanner { get; set; }
+    /// <summary>With <see cref="CopyFromEventId"/>: which of the original's gallery photos to keep. Anything not in the original is ignored.</summary>
+    public List<string>? KeepImageUrls { get; set; }
 }
 
 public class UpdateEventRequest

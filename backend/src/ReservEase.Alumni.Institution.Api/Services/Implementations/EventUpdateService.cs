@@ -54,13 +54,13 @@ public class EventUpdateService(
         }
     }
 
-    public Task<IApiResponse<EventUpdateDto>> CreateAsync(string eventId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin)
-        => SaveAsync(eventId, null, request, files, admin);
+    public Task<IApiResponse<EventUpdateDto>> CreateAsync(string eventId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin, string? copyFromUpdateId = null)
+        => SaveAsync(eventId, null, request, files, admin, copyFromUpdateId);
 
     public Task<IApiResponse<EventUpdateDto>> UpdateAsync(string eventId, string updateId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin)
         => SaveAsync(eventId, updateId, request, files, admin);
 
-    private async Task<IApiResponse<EventUpdateDto>> SaveAsync(string eventId, string? updateId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin)
+    private async Task<IApiResponse<EventUpdateDto>> SaveAsync(string eventId, string? updateId, EventUpdateSaveRequest request, IReadOnlyDictionary<string, List<IFormFile>> files, AuthData admin, string? copyFromUpdateId = null)
     {
         try
         {
@@ -102,6 +102,14 @@ public class EventUpdateService(
                 return Bad($"That is more than {EventUpdateRules.MaxUploadBytes / 1024 / 1024} MB in one go. Save part of it now and add the rest in a second update.");
 
             var keepable = (existing?.Blocks ?? []).SelectMany(b => b.Items).Select(i => i.Url).ToHashSet();
+            if (!string.IsNullOrWhiteSpace(copyFromUpdateId))
+            {
+                // A copy may keep the files of the update it was copied from, but only if the administrator may see that update's event.
+                var source = await updateRepo.GetByIdAsync(copyFromUpdateId);
+                if (source is null || await ViewableEventAsync(source.EventId, admin) is null)
+                    return ApiResponseExtensions.ToNotFoundApiResponse<EventUpdateDto>("The update you are copying was not found");
+                keepable.UnionWith(source.Blocks.SelectMany(b => b.Items).Select(i => i.Url));
+            }
             var newCounts = files.ToDictionary(kv => kv.Key, kv => kv.Value.Count);
             var blockError = EventUpdateRules.ValidateAndClean(blocks, keepable, newCounts);
             if (blockError is not null) return Bad(blockError);

@@ -36,11 +36,11 @@ public class EventUpdatesController(IEventUpdateService updateService) : Default
     [RequestFormLimits(MultipartBodyLengthLimit = EventUpdateRules.MaxUploadBytes + 5 * 1024 * 1024, ValueCountLimit = 4000)]
     [SwaggerOperation(Summary = "Post an event update")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<EventUpdateDto>))]
-    public async Task<IActionResult> Create(string eventId, [FromForm] string title, [FromForm] string category, [FromForm] string blocksJson)
+    public async Task<IActionResult> Create(string eventId, [FromForm] string title, [FromForm] string category, [FromForm] string blocksJson, [FromForm] string? copyFromUpdateId = null)
     {
         var request = ReadRequest(title, category, blocksJson);
         if (request is null) return BadRequest(new { message = "Could not read the update. Please try again." });
-        return (await updateService.CreateAsync(eventId, request, FilesByBlock(), User.GetAccount())).ToActionResult();
+        return (await updateService.CreateAsync(eventId, request, FilesByBlock(), User.GetAccount(), copyFromUpdateId)).ToActionResult();
     }
 
     [HttpPut("{updateId}")]

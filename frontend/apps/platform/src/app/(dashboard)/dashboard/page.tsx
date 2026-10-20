@@ -8,7 +8,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, StatCard, StatCardSkeleton } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { TrendChart } from "@alumni/ui";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@alumni/ui";
+
+// The charts library is large and the chart sits below the first screen: load it after the page is up rather than before it can show.
+const TrendChart = dynamic(() => import("@alumni/ui").then((m) => m.TrendChart), { ssr: false, loading: () => <Skeleton className="h-56 w-full" /> });
 import { formatCurrency } from "@alumni/ui";
 import { getActivationScorecard, getDashboardSummary, getInstitutions } from "@/lib/platform-api";
 import { useAuth } from "@/hooks/use-auth";

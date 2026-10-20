@@ -9,7 +9,7 @@ import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp"
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Calendar, MapPin, Users, Pencil, Ticket, Bell } from "@alumni/ui";
+import { Plus, Calendar, MapPin, Users, Pencil, Ticket, Bell, Copy } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
@@ -128,8 +128,8 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
           </FormSection>
 
           <FormSection
-            title="Tickets"
-            hint={form.isTicketed ? "Members pay to reserve a seat." : "Events are free to attend unless you charge for tickets."}
+            title="Paid RSVP"
+            hint={form.isTicketed ? "Members pay when they RSVP." : "RSVPs are free unless you charge for them."}
           >
             {canCharge || form.isTicketed ? (
               <>
@@ -139,28 +139,28 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                     id="event-ticketed"
                     checked={form.isTicketed}
                     onChange={(v) => f("isTicketed", v)}
-                    label="Charge for tickets"
-                    hint="Members pay online to reserve a seat instead of a free RSVP."
+                    label="Charge to RSVP"
+                    hint="Members pay online when they RSVP, instead of RSVPing for free."
                   />
                 )}
                 {form.isTicketed && (
                   <div className="space-y-4">
-                    <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Ticket price (GH₵)</Label>
+                    <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>RSVP fee (GH₵)</Label>
                       <Input type="number" min={1} step="0.01" placeholder="e.g. 150" value={form.ticketPrice}
                         onChange={(e) => f("ticketPrice", e.target.value)} required />
                       {sold > 0 && (
                         <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                          {sold} {sold === 1 ? "ticket" : "tickets"} already sold. {sold === 1 ? "That buyer keeps" : "Those buyers keep"} what they paid; a new price applies to anyone who buys from now on.
+                          {sold} paid {sold === 1 ? "RSVP" : "RSVPs"} already. {sold === 1 ? "That person keeps" : "Those people keep"} what they paid; a new fee applies to anyone who RSVPs from now on.
                         </p>
                       )}
                     </div>
                     <div className="space-y-1.5 border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">
                       <p className="font-semibold text-foreground">Good to know</p>
                       <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
-                        <li><span className="text-foreground">Tickets are final.</span> Attendees can&apos;t cancel and nobody is refunded. A paid event can&apos;t be cancelled either, so no money ever has to go back.</li>
-                        <li>You can change the price whenever you like. People who already bought keep what they paid, and new buyers pay the new price.</li>
-                        <li>A paid event can&apos;t be deleted once tickets are sold, or made free. You can still change its date, venue and details, and attendees are told.</li>
-                        <li>You receive the full ticket price in your payout account.</li>
+                        <li><span className="text-foreground">Paid RSVPs are final.</span> Attendees can&apos;t cancel and nobody is refunded. A paid event can&apos;t be cancelled either, so no money ever has to go back.</li>
+                        <li>You can change the price whenever you like. People who already paid keep what they paid, and new RSVPs pay the new fee.</li>
+                        <li>A paid event can&apos;t be deleted once someone has paid to RSVP, or made free. You can still change its date, venue and details, and attendees are told.</li>
+                        <li>You receive the full RSVP fee in your payout account.</li>
                       </ul>
                     </div>
                   </div>
@@ -169,10 +169,10 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
             ) : (
               <p className="border border-border bg-muted/40 p-3 text-[13px] leading-relaxed text-muted-foreground">
                 {ticketing && !ticketing.paidEventsEnabled
-                  ? "Charging for tickets isn't turned on for your community yet. Contact AlumUnion support to turn it on."
+                  ? "Charging to RSVP isn't turned on for your community yet. Contact AlumUnion support to turn it on."
                   : ticketing && !ticketing.payoutReady
-                    ? "Charging for tickets is turned on, but your payout account isn't set up yet, so ticket money has nowhere to go. Contact AlumUnion support to set it up, then you can create paid events."
-                    : "Checking whether you can charge for tickets…"}
+                    ? "Charging to RSVP is turned on, but your payout account isn't set up yet, so the money has nowhere to go. Contact AlumUnion support to set it up, then you can create paid events."
+                    : "Checking whether you can charge to RSVP…"}
               </p>
             )}
           </FormSection>
@@ -246,6 +246,7 @@ export default function AdminEventsPage() {
 
   const focusId = useSearchParams().get("focus");
   const [showCreate, setShowCreate] = useState(false);
+  const [copyFrom, setCopyFrom] = useState<AlumniEvent | null>(null);
   const [editEvent, setEditEvent] = useState<AlumniEvent | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AlumniEvent | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AlumniEvent | null>(null);
@@ -260,7 +261,7 @@ export default function AdminEventsPage() {
   });
 
   const createMut = useMutation({
-    mutationFn: (f: FormState) => createEvent({
+    mutationFn: ({ f, copyOf }: { f: FormState; copyOf?: AlumniEvent }) => createEvent({
       communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, description: f.description || undefined,
       startDate: f.startDate, endDate: f.endDate || undefined, venue: f.venue,
@@ -272,8 +273,10 @@ export default function AdminEventsPage() {
       bannerImage: f.bannerImage || undefined,
       images: f.images.length > 0 ? f.images : undefined,
       youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
+      // A copy reuses the original's photos that were left in the form.
+      ...(copyOf ? { copyFromEventId: copyOf.id, keepBanner: !f.bannerImage && !!f.existingBannerUrl, keepImageUrls: f.existingImageUrls } : {}),
     }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-events"] }); setShowCreate(false); toast.success("Event created"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-events"] }); setShowCreate(false); setCopyFrom(null); toast.success(copyFrom ? "Event duplicated" : "Event created"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -308,8 +311,8 @@ export default function AdminEventsPage() {
     onSuccess: (_d, { e, closed }) => {
       qc.invalidateQueries({ queryKey: ["admin-events"] });
       toast.success(closed
-        ? (e.isTicketed ? "Ticket sales closed. People who bought keep their seats." : "RSVPs closed. People already going keep their place.")
-        : (e.isTicketed ? "Ticket sales reopened." : "RSVPs reopened."));
+        ? "RSVPs closed. People already going keep their place."
+        : "RSVPs reopened.");
     },
     onError: (err) => toast.error(handleApiError(err)),
   });
@@ -339,12 +342,12 @@ export default function AdminEventsPage() {
       </div>
 
       <FormSheet
-        open={showCreate || editEvent !== null}
-        onClose={() => { setShowCreate(false); setEditEvent(null); }}
-        title={editEvent ? "Edit event" : "Create event"}
-        description={editEvent ? editEvent.title : "Members RSVP from their portal, or buy a ticket if you charge, and you see who is coming."}
+        open={showCreate || editEvent !== null || copyFrom !== null}
+        onClose={() => { setShowCreate(false); setEditEvent(null); setCopyFrom(null); }}
+        title={editEvent ? "Edit event" : copyFrom ? "Duplicate event" : "Create event"}
+        description={editEvent ? editEvent.title : copyFrom ? `A new event started from "${copyFrom.title}"` : "Members RSVP from their portal, paying if you charge, and you see who is coming."}
         formId="event-form"
-        submitLabel={editEvent ? "Save changes" : "Create event"}
+        submitLabel={editEvent ? "Save changes" : copyFrom ? "Create the copy" : "Create event"}
         saving={createMut.isPending || updateMut.isPending}
         size="lg"
       >
@@ -367,8 +370,22 @@ export default function AdminEventsPage() {
             onSave={(f) => updateMut.mutate({ id: editEvent.id, f })}
           />
           </>
+        ) : copyFrom ? (
+          <>
+            <p className="mb-5 border border-border bg-muted/30 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
+              Everything is copied except the date: choose when this one happens. People who RSVPed, payments and updates stay with the original.
+            </p>
+            <EventForm
+              key={`copy-${copyFrom.id}`}
+              id="event-form"
+              init={{ ...toFormState(copyFrom), startDate: "", endDate: "", status: "Upcoming", paidTicketCount: 0 }}
+              showStatus={false}
+              isSuperAdmin={isSuperAdmin}
+              onSave={(f) => createMut.mutate({ f, copyOf: copyFrom })}
+            />
+          </>
         ) : showCreate ? (
-          <EventForm id="event-form" init={emptyForm} showStatus={false} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+          <EventForm id="event-form" init={emptyForm} showStatus={false} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate({ f })} />
         ) : null}
       </FormSheet>
 
@@ -390,7 +407,7 @@ export default function AdminEventsPage() {
                   <div className="flex items-center gap-1.5">
                     <Badge variant={statusVariant[e.status]}>{e.status}</Badge>
                     {isPastEvent(e) && <Badge variant="secondary">Past</Badge>}
-                    {e.registrationClosed && e.status !== "Cancelled" && e.status !== "Completed" && <Badge variant="warning">{e.isTicketed ? "Sales closed" : "RSVPs closed"}</Badge>}
+                    {e.registrationClosed && e.status !== "Cancelled" && e.status !== "Completed" && <Badge variant="warning">RSVPs closed</Badge>}
                   </div>
                   {e.isTicketed && e.ticketPrice && (
                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success"><Ticket size={13} />{formatCurrency(e.ticketPrice)}</span>
@@ -424,7 +441,7 @@ export default function AdminEventsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Users size={11} />{e.rsvpCount} {e.isTicketed ? (e.rsvpCount === 1 ? "ticket" : "tickets") : "RSVPs"}{e.capacity && ` / ${e.capacity} capacity`}
+                    <Users size={11} />{e.rsvpCount} {e.rsvpCount === 1 ? "RSVP" : "RSVPs"}{e.capacity && ` / ${e.capacity} capacity`}
                   </div>
                   {e.isTicketed && (
                     <div className="flex items-center gap-1.5">
@@ -435,7 +452,7 @@ export default function AdminEventsPage() {
                 <div className="mt-4 space-y-2">
                   <div className="flex gap-2">
                     <Link href={`/events/${e.id}/rsvps`} className="flex-1">
-                      <Button size="sm" variant="outline" className="w-full"><Users size={12} />{e.isTicketed ? "View tickets" : "View RSVPs"}</Button>
+                      <Button size="sm" variant="outline" className="w-full"><Users size={12} />View RSVPs</Button>
                     </Link>
                     <Link href={`/events/${e.id}/updates`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full"><Bell size={12} />Updates</Button>
@@ -446,18 +463,19 @@ export default function AdminEventsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-[170px]">
                         <DropdownMenuItem onSelect={() => setEditEvent(e)}><Pencil size={14} />Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setCopyFrom(e)}><Copy size={14} />Duplicate</DropdownMenuItem>
                         {e.status !== "Cancelled" && e.status !== "Completed" && (
                           <DropdownMenuItem onSelect={() => registrationMut.mutate({ e, closed: !e.registrationClosed })}>
                             {e.registrationClosed
-                              ? (e.isTicketed ? "Resume ticket sales" : "Reopen RSVPs")
-                              : (e.isTicketed ? "Stop ticket sales" : "Stop taking RSVPs")}
+                              ? "Reopen RSVPs"
+                              : "Stop taking RSVPs"}
                           </DropdownMenuItem>
                         )}
                         {e.status !== "Cancelled" && e.status !== "Completed" && (e.isTicketed
                           ? <DropdownMenuItem disabled>Paid events can&apos;t be cancelled</DropdownMenuItem>
                           : <DropdownMenuItem destructive onSelect={() => setCancelTarget(e)}>Cancel event</DropdownMenuItem>)}
                         {(e.status === "Cancelled" || e.status === "Completed" || e.isTicketed) && (e.isTicketed && (e.paidTicketCount ?? 0) > 0
-                          ? <DropdownMenuItem disabled>Can&apos;t delete: tickets sold</DropdownMenuItem>
+                          ? <DropdownMenuItem disabled>Can&apos;t delete: paid RSVPs</DropdownMenuItem>
                           : <DropdownMenuItem destructive onSelect={() => setDeleteTarget(e)}>Delete</DropdownMenuItem>)}
                       </DropdownMenuContent>
                     </DropdownMenu>

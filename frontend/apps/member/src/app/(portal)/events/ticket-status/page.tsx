@@ -11,7 +11,7 @@ import { cn } from "@alumni/ui";
 import { getEventTicketStatus } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
 
-/** Where Paystack sends a member after paying for an event ticket. Confirms the seat, then sends them back to the event. */
+/** Where Paystack sends a member after paying to RSVP to an event. Confirms the seat, then sends them back to the event. */
 function TicketStatusContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,7 +40,7 @@ function TicketStatusContent() {
       : ticket.status === "Successful" ? "success"
       : ticket.status === "Pending" ? "pending"
       : "error";
-  const message = !reference ? "No ticket reference found" : error ? handleApiError(error) : ticket?.message ?? "";
+  const message = !reference ? "No payment reference found" : error ? handleApiError(error) : ticket?.message ?? "";
 
   const eventHref = ticket?.eventId ? `/events/${ticket.eventId}` : "/events";
 
@@ -63,19 +63,19 @@ function TicketStatusContent() {
             variant={status === "success" ? "success" : status === "error" ? "destructive" : "warning"}
             className="text-[12px] font-bold uppercase tracking-wide"
           >
-            {status === "success" ? "Ticket confirmed" : status === "error" ? "Payment failed" : status === "pending" ? "Payment is pending" : "Verifying payment..."}
+            {status === "success" ? "RSVP confirmed" : status === "error" ? "Payment failed" : status === "pending" ? "Payment is pending" : "Verifying payment..."}
           </Badge>
           <CardTitle className="text-[22px] mt-1">
             {status === "success" ? "You're going" : status === "error" ? "We couldn't confirm this payment" : "We're checking your payment"}
           </CardTitle>
           <CardDescription className="leading-relaxed">
-            {status === "success" && ticket?.eventTitle ? `Your seat at "${ticket.eventTitle}" is reserved. ` : ""}{message}
+            {status === "success" && ticket?.eventTitle ? `Your place at "${ticket.eventTitle}" is reserved. ` : ""}{message}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {status === "success" && (
             <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
-              Tickets can&apos;t be cancelled or refunded.
+              Paid RSVPs can&apos;t be cancelled or refunded.
             </p>
           )}
           <div className="flex flex-col sm:flex-row gap-2">

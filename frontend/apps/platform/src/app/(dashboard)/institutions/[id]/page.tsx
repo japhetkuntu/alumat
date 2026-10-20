@@ -188,7 +188,7 @@ function BroadcastChannelsCard({ institutionId, email, sms, whatsApp }: { instit
   );
 }
 
-/** Whether this institution may charge for event tickets. Ticket money goes to the institution's payout account, so that has to exist first. */
+/** Whether this institution may charge to RSVP to events. The money goes to the institution's payout account, so that has to exist first. */
 function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId: string; enabled: boolean; payoutReady: boolean }) {
   const qc = useQueryClient();
   const save = useMutation({
@@ -201,15 +201,15 @@ function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId
       <div className="px-5 py-4 border-b border-border">
         <p className="text-[14px] font-semibold">Paid events</p>
         <p className="text-[12px] text-muted-foreground mt-0.5">
-          Lets this institution charge for event tickets. Off by default; turn it on whenever you like. Enforced on the server.
+          Lets this institution charge members to RSVP to its events. Off by default; turn it on whenever you like. Enforced on the server.
         </p>
       </div>
       <CardContent className="p-5 space-y-3">
         <label className="flex cursor-pointer items-start justify-between gap-4 border border-border px-4 py-3">
           <span className="min-w-0">
-            <span className="block text-[13.5px] font-semibold">Allow ticketed events</span>
+            <span className="block text-[13.5px] font-semibold">Allow paid RSVPs</span>
             <span className="block text-[12.5px] text-muted-foreground">
-              Members pay online to reserve a seat. Tickets are final: no cancelling and no refunds, and the institution cannot cancel a paid event.
+              Members pay online when they RSVP. Paid RSVPs are final: no cancelling and no refunds, and the institution cannot cancel a paid event.
             </span>
           </span>
           <input
@@ -218,17 +218,17 @@ function PaidEventsCard({ institutionId, enabled, payoutReady }: { institutionId
             disabled={save.isPending}
             onChange={(e) => save.mutate(e.target.checked)}
             className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
-            aria-label="Allow ticketed events"
+            aria-label="Allow paid RSVPs"
           />
         </label>
         {!payoutReady && (
           <p className="text-[12.5px] text-muted-foreground">
-            You can turn this on now. The institution can&apos;t create a paid event until its payout account is set up on the Payments tab, so ticket money never goes to the platform account.
+            You can turn this on now. The institution can&apos;t create a paid event until its payout account is set up on the Payments tab, so the money never goes to the platform account.
           </p>
         )}
         {!enabled ? null : (
           <p className="text-[12.5px] text-muted-foreground">
-            Turning this off stops new paid events and new ticket sales. Tickets already bought stay valid.
+            Turning this off stops new paid events and new paid RSVPs. RSVPs already paid stay valid.
           </p>
         )}
       </CardContent>
@@ -1338,7 +1338,7 @@ export default function InstitutionDetailPage() {
                     { value: "Contribution", label: "Contributions" },
                     { value: "StoreOrder", label: "Store orders" },
                     { value: "ServiceRequest", label: "Service requests" },
-                    { value: "EventTicket", label: "Event tickets" },
+                    { value: "EventTicket", label: "Event RSVPs" },
                   ]}
                   className="w-[150px]"
                 />

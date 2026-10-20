@@ -75,7 +75,7 @@ public class EventTicketService(
                 existing = await rsvpRepo.GetOneAsync(r => r.EventId == ev.Id && r.MemberId == member.Id);
             }
             if (existing is { Status: EventRsvpStatuses.Confirmed })
-                return ApiResponseExtensions.ToConflictApiResponse<EventTicketCheckoutResponse>("You already have a seat at this event");
+                return ApiResponseExtensions.ToConflictApiResponse<EventTicketCheckoutResponse>("You have already RSVPed to this event");
 
             if (ev.Capacity.HasValue)
             {
@@ -135,12 +135,12 @@ public class EventTicketService(
             }
 
             return new EventTicketCheckoutResponse { AuthorizationUrl = response.Data?.AuthorizationUrl, Reference = reference }
-                .ToOkApiResponse("Ticket checkout started");
+                .ToOkApiResponse("Payment started");
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error starting ticket payment for event {EventId}, member {MemberId}", request.EventId, member.Id);
-            return ApiResponseExtensions.ToServerErrorApiResponse<EventTicketCheckoutResponse>("Failed to start the ticket payment");
+            return ApiResponseExtensions.ToServerErrorApiResponse<EventTicketCheckoutResponse>("Failed to start the payment");
         }
     }
 
@@ -166,7 +166,7 @@ public class EventTicketService(
         {
             var rsvp = await rsvpRepo.GetOneAsync(r => r.TransactionRef == reference);
             if (rsvp is null)
-                return ApiResponseExtensions.ToNotFoundApiResponse<EventTicketStatusResponse>("Ticket not found");
+                return ApiResponseExtensions.ToNotFoundApiResponse<EventTicketStatusResponse>("RSVP not found");
             if (rsvp.MemberId != member.Id)
                 return ApiResponseExtensions.ToBadRequestApiResponse<EventTicketStatusResponse>("Reference does not belong to the current member");
 
@@ -192,16 +192,16 @@ public class EventTicketService(
                 Amount = rsvp.AmountPaid,
                 Message = status switch
                 {
-                    "Successful" => "Payment confirmed. Your seat is reserved.",
+                    "Successful" => "Payment confirmed.",
                     "Pending" => "Payment has been started but not yet completed.",
                     _ => rsvp.FailureMessage ?? "Payment failed",
                 },
-            }.ToOkApiResponse("Ticket status retrieved");
+            }.ToOkApiResponse("RSVP status retrieved");
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error retrieving ticket status for reference {Reference}", reference);
-            return ApiResponseExtensions.ToServerErrorApiResponse<EventTicketStatusResponse>("Failed to retrieve ticket status");
+            return ApiResponseExtensions.ToServerErrorApiResponse<EventTicketStatusResponse>("Failed to retrieve the RSVP status");
         }
     }
 

@@ -425,4 +425,52 @@ public class EventUpdateServiceTests
         ]).Select(u => u.Id);
         Assert.Equal(["pinned", "fresh-new", "fresh-old", "arranged-1", "arranged-2"], shown);
     }
+
+    // ── Copying an update ────────────────────────────────────────────────
+
+    private static EventUpdate SavedUpdate() => new()
+    {
+        Id = "u1", EventId = "e1", Title = "Programme", Category = "Schedule",
+        Blocks = [new EventUpdateBlock { Id = "f1", Type = "Files", Items = [new EventUpdateItem { Url = "https://cdn/programme.pdf", Name = "programme.pdf", SizeBytes = 10 }] }],
+    };
+
+    private static EventUpdateBlock KeptFile(string url = "https://cdn/programme.pdf") =>
+        new() { Id = "f1", Type = "Files", Items = [new EventUpdateItem { Url = url, Name = "programme.pdf", SizeBytes = 10 }] };
+
+    [Fact]
+    public async Task An_update_can_be_copied_to_another_event_reusing_its_files_without_uploading_again()
+    {
+        var rig = new Rig();
+        await rig.Seed(Event("e1"), Event("e2"), SavedUpdate());
+
+        var response = await rig.Service.CreateAsync("e2", Save("Programme", "Schedule", KeptFile()), NoFiles, Admin, copyFromUpdateId: "u1");
+
+        Assert.Equal(201, response.Code);
+        var copy = await rig.Db().EventUpdates.SingleAsync(u => u.EventId == "e2");
+        Assert.Equal("https://cdn/programme.pdf", copy.Blocks[0].Items.Single().Url);
+        Assert.Equal(0, rig.Uploaded);
+        Assert.Equal(2, await rig.Db().EventUpdates.CountAsync());   // the original is untouched
+    }
+
+    [Fact]
+    public async Task A_copy_cannot_be_used_to_attach_a_file_the_original_does_not_have()
+    {
+        var rig = new Rig();
+        await rig.Seed(Event("e1"), Event("e2"), SavedUpdate());
+
+        var response = await rig.Service.CreateAsync("e2", Save("Programme", "Schedule", KeptFile("https://elsewhere.example/secret.pdf")), NoFiles, Admin, copyFromUpdateId: "u1");
+
+        Assert.Equal(400, response.Code);
+        Assert.Empty(await rig.Db().EventUpdates.Where(u => u.EventId == "e2").ToListAsync());
+    }
+
+    [Fact]
+    public async Task Copying_from_an_update_that_does_not_exist_is_refused_and_so_is_keeping_files_without_a_source()
+    {
+        var rig = new Rig();
+        await rig.Seed(Event("e1"), SavedUpdate());
+
+        Assert.Equal(404, (await rig.Service.CreateAsync("e1", Save("Programme", "Schedule", KeptFile()), NoFiles, Admin, copyFromUpdateId: "nope")).Code);
+        Assert.Equal(400, (await rig.Service.CreateAsync("e1", Save("Programme", "Schedule", KeptFile()), NoFiles, Admin)).Code);
+    }
 }

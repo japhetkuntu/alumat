@@ -20,22 +20,22 @@ public static class EventTicketRules
     /// <summary>How long an unpaid ticket holds a seat while the member is paying.</summary>
     public static readonly TimeSpan SeatHoldWindow = TimeSpan.FromMinutes(30);
 
-    public const string NoRefundNotice = "Tickets are final: they can't be cancelled or refunded.";
+    public const string NoRefundNotice = "Paid RSVPs are final: they can't be cancelled or refunded.";
 
     public const string PaidEventsOffMessage =
         "Paid events aren't turned on for your community. Contact AlumUnion support to turn them on.";
 
     public const string PayoutMissingMessage =
-        "Your community's payout account isn't set up yet, so ticket money has nowhere to go. Contact AlumUnion support to set it up first.";
+        "Your community's payout account isn't set up yet, so the money has nowhere to go. Contact AlumUnion support to set it up first.";
 
     public const string CannotCancelMessage =
-        "A paid event can't be cancelled, because tickets are not refunded. You can still change its date, venue and details; attendees are told.";
+        "A paid event can't be cancelled, because paid RSVPs are not refunded. You can still change its date, venue and details; attendees are told.";
 
     public const string CannotDeleteMessage =
-        "This event has sold tickets, so it can't be deleted. Tickets are not refunded.";
+        "Some people have paid to RSVP to this event, so it can't be deleted. Paid RSVPs are not refunded.";
 
     public const string CannotBecomeFreeMessage =
-        "Tickets have already been sold, so this event can't become free. You can still change the price.";
+        "People have already paid to RSVP, so this event can't become free. You can still change the fee.";
 
     /// <summary>
     /// Checks the pricing part of a create or edit. <paramref name="existing"/> is null when creating.
@@ -56,9 +56,9 @@ public static class EventTicketRules
         }
 
         if (ticketPrice is not > 0)
-            return "Enter the ticket price.";
+            return "Enter the RSVP fee.";
         if (ticketPrice > MaxTicketPrice)
-            return $"The ticket price can't be more than {MaxTicketPrice:N0}.";
+            return $"The RSVP fee can't be more than {MaxTicketPrice:N0}.";
 
         // The price can change whenever the organiser likes, even after tickets have sold: people who already bought keep what they paid
         // (it is recorded on their ticket), and anyone buying from then on pays the new price.

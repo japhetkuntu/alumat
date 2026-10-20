@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { generateBrandPalette, type TonalScale } from "@alumni/ui";
 
@@ -25,7 +26,8 @@ export interface InstitutionTheme {
 // correct tenant regardless of which URL was used to reach the service.
 const API_URL = process.env.INSTITUTION_API_INTERNAL_URL || "http://localhost:5100/api/v1";
 
-export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
+// cache(): the layout, its metadata and its viewport each ask for the theme during one page render; one API call answers all of them.
+export const getInstitutionTheme = cache(async (): Promise<InstitutionTheme | null> => {
   try {
     const requestHeaders = await headers();
     const host = requestHeaders.get("host") ?? "";
@@ -56,7 +58,7 @@ export async function getInstitutionTheme(): Promise<InstitutionTheme | null> {
     console.error(`[theme] fetch to ${API_URL}/public/institution/theme failed:`, err);
     return null;
   }
-}
+});
 
 // In :root (light mode), --primary/--info/--chart-1/--accent-sky all
 // reference var(--brand-primary), so overriding that one custom property

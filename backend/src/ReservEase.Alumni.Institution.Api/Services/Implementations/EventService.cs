@@ -216,7 +216,21 @@ public class EventService(
             if (request.Images is { Count: > 0 })
                 galleryUpload = storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
             if (bannerUpload is not null) ev.BannerImageUrl = await bannerUpload;
-            if (galleryUpload is not null) ev.ImageUrls = await galleryUpload;
+            var galleryUrls = new List<string>();
+
+            // A copy reuses the original's photos by address. Only addresses the original really has are taken, so the request
+            // cannot be used to attach some other picture, and the original must be one this administrator may see.
+            if (!string.IsNullOrWhiteSpace(request.CopyFromEventId))
+            {
+                var source = await eventRepo.GetByIdAsync(request.CopyFromEventId);
+                if (source is null || !admin.CanViewScopedItem(source.YearGroups, source.CommunityId, source.CreatedBy))
+                    return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("The event you are copying was not found");
+                if (ev.BannerImageUrl is null && request.KeepBanner) ev.BannerImageUrl = source.BannerImageUrl;
+                var original = source.ImageUrls ?? [];
+                galleryUrls.AddRange((request.KeepImageUrls ?? []).Where(original.Contains).Distinct());
+            }
+            if (galleryUpload is not null) galleryUrls.AddRange(await galleryUpload);
+            ev.ImageUrls = galleryUrls.Count > 0 ? galleryUrls : null;
 
             await eventRepo.AddAsync(ev);
             await InvalidatePublicEventsCacheAsync();
@@ -530,7 +544,7 @@ public class EventService(
                 return ApiResponseExtensions.ToConflictApiResponse<object>("RSVP is already confirmed");
             // A seat at a paid event is only ever given by a payment, never reopened by hand.
             if (ev.IsTicketed)
-                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Seats at a paid event are only given by a ticket payment.");
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Places at a paid event are only given by a payment.");
 
             rsvp.Status = "Confirmed";
             rsvp.UpdatedAt = DateTime.UtcNow;

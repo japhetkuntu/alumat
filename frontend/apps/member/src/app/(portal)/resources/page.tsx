@@ -209,12 +209,14 @@ export default function MemberResourcesPage() {
                       </div>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                   <div className="absolute top-3 left-3 flex gap-1.5">
-                    <span className={`px-2 py-0.5 text-[12px] font-black uppercase tracking-widest ${colorCls}`}>
-                      {r.category}
+                    {/* An opaque base under the tint, so the label reads on any picture. */}
+                    <span className="bg-background">
+                      <span className={`block px-2 py-0.5 text-[12px] font-black uppercase tracking-widest ${colorCls}`}>
+                        {r.category}
+                      </span>
                     </span>
-                    <span className="px-2 py-0.5 text-[12px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-sm text-white border border-white/10">
+                    <span className="px-2 py-0.5 text-[12px] font-black uppercase tracking-widest bg-foreground text-background">
                       {r.type}
                     </span>
                   </div>

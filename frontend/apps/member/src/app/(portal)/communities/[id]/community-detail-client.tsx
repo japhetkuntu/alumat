@@ -270,7 +270,7 @@ export default function CommunityDetailPage() {
               className="w-full h-full object-cover"
               wrapperClassName="absolute inset-0"
             />
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, color-mix(in oklch, var(--primary) 88%, black) 0%, color-mix(in oklch, var(--primary) 55%, transparent) 100%)" }} />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "color-mix(in oklch, color-mix(in oklch, var(--primary) 88%, black) 90%, transparent)" }}   /* even all over: a lighter patch of the cover photo would drag the white text under it down */ />
           </>
         )}
         <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
@@ -436,7 +436,7 @@ export default function CommunityDetailPage() {
                           <span className="block w-full bg-secondary py-2 text-center text-[12.5px] font-semibold text-muted-foreground">{e.isTicketed ? "Ticket sales closed" : "RSVPs closed"}</span>
                         )}
                         {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && !e.registrationClosed && e.isTicketed && (
-                          <Button size="sm" className="w-full" onClick={() => router.push(`/events/${e.id}`)}>Get ticket{e.ticketPrice ? ` · ${formatCurrency(e.ticketPrice)}` : ""}</Button>
+                          <Button size="sm" className="w-full" onClick={() => router.push(`/events/${e.id}`)}>RSVP{e.ticketPrice ? ` · ${formatCurrency(e.ticketPrice)}` : ""}</Button>
                         )}
                         {(e.status === "Upcoming" || e.status === "Ongoing") && !hasRsvp && !e.registrationClosed && !e.isTicketed && (
                           <Button size="sm" className="w-full" onClick={() => rsvpMut.mutate(e.id)} isLoading={rsvpMut.isPending && rsvpMut.variables === e.id} loadingText="RSVPing">RSVP</Button>

@@ -255,21 +255,6 @@ function CampaignCard({
             alt={c.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 55%)" }}
-          />
-          {/* Badges over image */}
-          <div className="absolute bottom-3 left-4 flex items-center gap-2">
-            {isMembership && (
-              <span
-                className="inline-flex items-center px-2.5 py-1 text-[12px] font-bold uppercase tracking-wide text-white"
-                style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)" }}
-              >
-                Membership
-              </span>
-            )}
-          </div>
         </div>
       )}
 
@@ -280,7 +265,7 @@ function CampaignCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <SourceBadge communityId={c.communityId} communityName={c.communityName} yearGroups={c.yearGroups} className="mb-1.5" />
-            {!c.bannerImageUrl && isMembership && (
+            {isMembership && (
               <p className="text-[12px] font-bold tracking-[0.1em] uppercase mb-1.5" style={{ color: "var(--primary)" }}>
                 Membership dues
               </p>
