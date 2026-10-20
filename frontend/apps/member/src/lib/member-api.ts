@@ -469,15 +469,6 @@ export interface Community {
   myRole: "Member" | "Leader" | null;
   /** What the administrators call this group (Chapter, Committee…). */
   kind?: string | null;
-  /** Connected external groups (e.g. WhatsApp). Only sent to approved members. */
-  channels?: CommunityChannel[] | null;
-}
-
-export interface CommunityChannel {
-  type: string;
-  displayName: string;
-  inviteUrl?: string | null;
-  connectedAt: string;
 }
 
 export interface CommunityInviteInfo {
@@ -488,7 +479,6 @@ export interface CommunityInviteInfo {
   pendingRequests: number;
   joinedViaInvites: number;
   joinedLast30Days: number;
-  channels: CommunityChannel[];
 }
 
 export interface CommunityMember {
@@ -525,12 +515,6 @@ export async function getCommunity(id: string): Promise<Community> {
 export async function getCommunityInvite(id: string): Promise<CommunityInviteInfo> {
   const res = await memberClient.get(`/communities/${id}/invite`);
   return res.data.data!;
-}
-
-/** Replaces the community's connected groups. An empty list disconnects them. Leaders only. */
-export async function updateCommunityChannels(id: string, channels: { type: string; displayName: string; inviteUrl?: string }[]): Promise<CommunityChannel[]> {
-  const res = await memberClient.put(`/communities/${id}/channels`, { channels });
-  return res.data.data ?? [];
 }
 
 export async function joinCommunity(id: string) {
@@ -623,7 +607,6 @@ export interface RegisterAsMentorBody {
   bio?: string;
   maxMentees?: number;
   contactLinkedInUrl?: string;
-  contactWhatsAppNumber?: string;
   contactPhoneNumber?: string;
 }
 
@@ -834,65 +817,6 @@ export async function getMyInstitutions(): Promise<SwitchTarget[]> {
 export async function startInstitutionSwitch(institutionId: string): Promise<string> {
   const res = await memberClient.post("/auth/switch", { institutionId });
   return res.data.data.url as string;
-}
-
-// ── WhatsApp ────────────────────────────────────────────────────────────────
-
-export interface WhatsAppStatus {
-  /** The assistant is switched on and has a number members can message. */
-  available: boolean;
-  connected: boolean;
-  /** "+233 24 •••• 456": enough to recognise, never enough to dial. */
-  maskedNumber?: string | null;
-  verifiedAt?: string | null;
-  /** The AlumUnion Assistant's own number (digits with country code). */
-  assistantNumber?: string | null;
-  notificationsEnabled: boolean;
-  /** A number (masked) that sent this account's code but is not the number on the account; waits for the member's approval. */
-  pendingNumber?: string | null;
-}
-
-export interface WhatsAppLinkChallenge {
-  code: string;
-  /** wa.me link that opens the assistant with the code already typed. Null when the assistant has no number configured. */
-  deepLink?: string | null;
-  expiresInSeconds: number;
-  assistantNumber?: string | null;
-}
-
-export async function getWhatsAppStatus(): Promise<WhatsAppStatus> {
-  const res = await memberClient.get("/whatsapp");
-  return res.data.data!;
-}
-
-export async function startWhatsAppLink(): Promise<WhatsAppLinkChallenge> {
-  const res = await memberClient.post("/whatsapp/link");
-  return res.data.data!;
-}
-
-export interface JoinableWhatsAppGroup {
-  name: string;
-  communityId?: string | null;
-  communityName?: string | null;
-  inviteLink: string;
-}
-
-/** WhatsApp groups an administrator has connected and shared a join link for, limited to this member's own communities. */
-export async function getWhatsAppGroups(): Promise<JoinableWhatsAppGroup[]> {
-  const res = await memberClient.get("/whatsapp/groups");
-  return res.data.data ?? [];
-}
-
-export async function approveWhatsAppNumber(): Promise<void> {
-  await memberClient.post("/whatsapp/link/approve");
-}
-
-export async function refuseWhatsAppNumber(): Promise<void> {
-  await memberClient.delete("/whatsapp/link/pending");
-}
-
-export async function disconnectWhatsApp(): Promise<void> {
-  await memberClient.delete("/whatsapp");
 }
 
 // ── In-app Notifications ────────────────────────────────────────────────────

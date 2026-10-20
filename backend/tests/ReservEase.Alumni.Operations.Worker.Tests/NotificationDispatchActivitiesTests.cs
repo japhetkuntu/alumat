@@ -12,7 +12,6 @@ using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 using ReservEase.Alumni.Sms.Sdk.Services;
 using ReservEase.Alumni.TestKit;
 using ReservEase.Alumni.WebPush.Sdk.Services;
-using ReservEase.Alumni.Whatsapp.Sdk.Services;
 using Temporalio.Exceptions;
 using MemberEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member;
 using PushSubscriptionEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.PushSubscription;
@@ -28,7 +27,6 @@ public class NotificationDispatchActivitiesTests
     {
         public string DbName { get; } = TestDb.NewName();
         public Mock<ISmsService> Sms { get; } = new();
-        public Mock<IWhatsAppService> WhatsApp { get; } = new();
         public Mock<IEmailService> Email { get; } = new();
         public Mock<IWebPushService> Push { get; } = new();
         public NotificationDispatchActivities Activities { get; private set; } = null!;
@@ -45,7 +43,7 @@ public class NotificationDispatchActivitiesTests
                 new AlumniPgRepository<AdminNotificationPreference>(db), new AlumniPgRepository<StaffEntity>(db), new AlumniPgRepository<Institution>(db),
                 new AlumniPgRepository<Job>(db), new AlumniPgRepository<Campaign>(db), new AlumniPgRepository<AlumniEvent>(db),
                 new AlumniPgRepository<Spotlight>(db), new AlumniPgRepository<ClassNote>(db), new AlumniPgRepository<PushSubscriptionEntity>(db),
-                tenant, Sms.Object, WhatsApp.Object, Email.Object, Push.Object,
+                tenant, Sms.Object, Email.Object, Push.Object,
                 new ConfigurationBuilder().AddInMemoryCollection(Config).Build(), NullLogger<NotificationDispatchActivities>.Instance);
         }
 
@@ -184,16 +182,16 @@ public class NotificationDispatchActivitiesTests
     }
 
     [Fact]
-    public async Task Recipients_carry_phone_and_sms_whatsapp_opt_ins_and_default_to_off_without_a_preference_row()
+    public async Task Recipients_carry_phone_and_sms_opt_in_and_default_to_off_without_a_preference_row()
     {
         var rig = new Rig();
         await rig.Seed(Member("a", phone: "0241"), Member("b", phone: "0551"),
-            new NotificationPreference { InstitutionId = Inst, MemberId = "a", SmsAlerts = true, WhatsAppAlerts = true });
+            new NotificationPreference { InstitutionId = Inst, MemberId = "a", SmsAlerts = true });
 
         var recipients = (await rig.Activities.ResolveSpotlightAlertRecipientsAsync(Inst)).ToDictionary(r => r.MemberId);
 
-        Assert.Equal(("0241", true, true), (recipients["a"].Phone, recipients["a"].SmsAlerts, recipients["a"].WhatsAppAlerts));
-        Assert.Equal(("0551", false, false), (recipients["b"].Phone, recipients["b"].SmsAlerts, recipients["b"].WhatsAppAlerts));
+        Assert.Equal(("0241", true), (recipients["a"].Phone, recipients["a"].SmsAlerts));
+        Assert.Equal(("0551", false), (recipients["b"].Phone, recipients["b"].SmsAlerts));
     }
 
     [Fact]
@@ -250,13 +248,13 @@ public class NotificationDispatchActivitiesTests
     {
         var rig = new Rig();
         await rig.Seed(Member("a"), Member("b"),
-            new NotificationPreference { InstitutionId = Inst, MemberId = "a", SmsAlerts = true, WhatsAppAlerts = true, EventReminders = false });
+            new NotificationPreference { InstitutionId = Inst, MemberId = "a", SmsAlerts = true, EventReminders = false });
 
         var a = (await rig.Activities.LoadMemberWithPreferenceAsync("a"))!;
         var b = (await rig.Activities.LoadMemberWithPreferenceAsync("b"))!;
 
-        Assert.Equal(("a@x.com", true, true, false), (a.Email, a.SmsAlerts, a.WhatsAppAlerts, a.EventReminders));
-        Assert.Equal((false, false, true), (b.SmsAlerts, b.WhatsAppAlerts, b.EventReminders));
+        Assert.Equal(("a@x.com", true, false), (a.Email, a.SmsAlerts, a.EventReminders));
+        Assert.Equal((false, true), (b.SmsAlerts, b.EventReminders));
         Assert.Null(await rig.Activities.LoadMemberWithPreferenceAsync("ghost"));
     }
 
@@ -340,14 +338,12 @@ public class NotificationDispatchActivitiesTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Sms_and_whatsapp_report_the_gateways_success_flag_so_retries_can_trigger(bool ok)
+    public async Task Sms_reports_the_gateways_success_flag_so_retries_can_trigger(bool ok)
     {
         var rig = new Rig();
         rig.Sms.Setup(s => s.SendSmsAsync("0241", "hi", It.IsAny<CancellationToken>())).ReturnsAsync(ok);
-        rig.WhatsApp.Setup(w => w.SendMessageAsync("0241", "hi", It.IsAny<CancellationToken>())).ReturnsAsync(ok);
 
         Assert.Equal(ok, await rig.Activities.SendSmsAsync("0241", "hi"));
-        Assert.Equal(ok, await rig.Activities.SendWhatsAppAsync("0241", "hi"));
     }
 
     [Theory]

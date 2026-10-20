@@ -56,7 +56,6 @@ public class CommunityInviteTests
 
         Assert.Equal(("AMA-111", "Mining 2018"), (info.ReferralCode, info.CommunityName));
         Assert.Equal((2, 1, 2, 1), (info.ApprovedMembers, info.PendingRequests, info.JoinedViaInvites, info.JoinedLast30Days));
-        Assert.Empty(info.Channels);
     }
 
     [Fact]
@@ -76,95 +75,11 @@ public class CommunityInviteTests
     [InlineData("Member", "Approved")]
     [InlineData("Leader", "Pending")]
     [InlineData("none", "none")]
-    public async Task Only_an_approved_leader_can_see_invitation_details_or_connect_a_group(string role, string status)
+    public async Task Only_an_approved_leader_can_see_invitation_details(string role, string status)
     {
         var rig = new Rig();
         await rig.Seed(Person("x", "X-1"), Group(), role == "none" ? new Community { Id = "other", Name = "Other" } : Link("x", role, status));
 
         Assert.Equal(404, (await rig.Service.GetInviteInfoAsync("c1", "x")).Code);
-        var save = await rig.Fresh().UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([new("WhatsApp", "Group", null)]), "x");
-        Assert.Equal(404, save.Code);
-        Assert.Null((await rig.Db().Communities.SingleAsync(c => c.Id == "c1")).ExternalChannels);
-    }
-
-    [Fact]
-    public async Task A_leader_can_connect_a_whatsapp_group_and_approved_members_then_see_it()
-    {
-        var rig = new Rig();
-        await rig.Seed(Person("lead", "L-1"), Person("m1"), Group(), Link("lead", "Leader"), Link("m1"));
-
-        var saved = await rig.Service.UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([new("WhatsApp", "  Mining 2018 chat ", "https://chat.whatsapp.com/AbC123")]), "lead");
-
-        Assert.Equal(200, saved.Code);
-        var channel = Assert.Single(saved.Data!);
-        Assert.Equal(("WhatsApp", "Mining 2018 chat", "https://chat.whatsapp.com/AbC123"), (channel.Type, channel.DisplayName, channel.InviteUrl));
-        var asMember = (await rig.Fresh().GetCommunityAsync("c1", "m1")).Data!;
-        Assert.Single(asMember.Channels!);
-    }
-
-    [Fact]
-    public async Task Someone_who_is_not_in_the_community_never_sees_the_group_link()
-    {
-        var rig = new Rig();
-        await rig.Seed(Person("lead", "L-1"), Person("outsider"), Group(), Link("lead", "Leader"));
-        await rig.Service.UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([new("WhatsApp", "Chat", "https://chat.whatsapp.com/AbC123")]), "lead");
-
-        Assert.Null((await rig.Fresh().GetCommunityAsync("c1", "outsider")).Data!.Channels);
-        Assert.Single((await rig.Fresh().GetCommunityAsync("c1", "lead")).Data!.Channels!);
-    }
-
-    [Theory]
-    [InlineData("http://chat.whatsapp.com/AbC")]
-    [InlineData("https://evil.example.com/AbC")]
-    [InlineData("https://chat.whatsapp.com.evil.com/AbC")]
-    [InlineData("javascript:alert(1)")]
-    public async Task Only_official_whatsapp_invite_links_are_accepted(string url)
-    {
-        var rig = new Rig();
-        await rig.Seed(Person("lead", "L-1"), Group(), Link("lead", "Leader"));
-
-        var response = await rig.Service.UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([new("WhatsApp", "Chat", url)]), "lead");
-
-        Assert.Equal(400, response.Code);
-        Assert.Null((await rig.Db().Communities.SingleAsync(c => c.Id == "c1")).ExternalChannels);
-    }
-
-    [Theory]
-    [InlineData("", "https://chat.whatsapp.com/AbC")]
-    [InlineData("Telegram group", "https://t.me/x")]
-    public async Task A_group_needs_a_name_and_must_be_a_whatsapp_one(string name, string url)
-    {
-        var rig = new Rig();
-        await rig.Seed(Person("lead", "L-1"), Group(), Link("lead", "Leader"));
-        var type = name == "Telegram group" ? "Telegram" : "WhatsApp";
-
-        Assert.Equal(400, (await rig.Service.UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([new(type, name, url)]), "lead")).Code);
-    }
-
-    [Fact]
-    public async Task Sending_an_empty_list_disconnects_the_group()
-    {
-        var rig = new Rig();
-        await rig.Seed(Person("lead", "L-1"), Group(), Link("lead", "Leader"));
-        await rig.Service.UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([new("WhatsApp", "Chat", "https://chat.whatsapp.com/AbC")]), "lead");
-
-        var cleared = await rig.Fresh().UpdateChannelsAsync("c1", new UpdateCommunityChannelsRequest([]), "lead");
-
-        Assert.Equal(200, cleared.Code);
-        Assert.Empty(cleared.Data!);
-        Assert.Null((await rig.Db().Communities.SingleAsync(c => c.Id == "c1")).ExternalChannels);
-    }
-
-    [Fact]
-    public async Task Re_saving_an_unchanged_group_keeps_who_connected_it_and_when()
-    {
-        var rig = new Rig();
-        await rig.Seed(Person("lead", "L-1"), Group(), Link("lead", "Leader"));
-        var req = new UpdateCommunityChannelsRequest([new("WhatsApp", "Chat", "https://chat.whatsapp.com/AbC")]);
-        var first = (await rig.Service.UpdateChannelsAsync("c1", req, "lead")).Data!.Single().ConnectedAt;
-
-        var second = (await rig.Fresh().UpdateChannelsAsync("c1", req, "lead")).Data!.Single().ConnectedAt;
-
-        Assert.Equal(first, second);
     }
 }

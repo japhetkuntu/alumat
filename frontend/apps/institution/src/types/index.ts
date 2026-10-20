@@ -492,7 +492,6 @@ export interface MentorProfile {
   createdAt: string;
   /** Only present when explicitly requested (e.g. viewing full profile detail). */
   contactLinkedInUrl?: string;
-  contactWhatsAppNumber?: string;
   contactPhoneNumber?: string;
 }
 
@@ -511,7 +510,6 @@ export interface MentorshipRequest {
   createdAt: string;
   /** Only present once this request is Accepted — the matched mentor's contact info. */
   contactLinkedInUrl?: string;
-  contactWhatsAppNumber?: string;
   contactPhoneNumber?: string;
 }
 

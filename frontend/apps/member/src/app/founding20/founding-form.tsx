@@ -22,7 +22,7 @@ export function FoundingForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form.institutionName.trim() || !form.contactName.trim() || !form.contactEmail.trim() || !form.contactPhone.trim()) {
-      setError("Enter the institution, your name, phone or WhatsApp number, and email so we can reach you."); return;
+      setError("Enter the institution, your name, phone number and email so we can reach you."); return;
     }
     if (!form.authority) { setError("Tell us whether you are authorised to represent the institution."); return; }
     setError(null); setSubmitting(true);
@@ -68,7 +68,7 @@ export function FoundingForm() {
         <div><Label htmlFor="f20-role">Your role</Label><Input id="f20-role" maxLength={150} placeholder="e.g. President, Headmaster" value={form.contactRole} onChange={(e) => set("contactRole")(e.target.value)} /></div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div><Label htmlFor="f20-phone" required>Phone or WhatsApp</Label><Input id="f20-phone" type="tel" autoComplete="tel" required maxLength={40} value={form.contactPhone} onChange={(e) => set("contactPhone")(e.target.value)} /></div>
+        <div><Label htmlFor="f20-phone" required>Phone</Label><Input id="f20-phone" type="tel" autoComplete="tel" required maxLength={40} value={form.contactPhone} onChange={(e) => set("contactPhone")(e.target.value)} /></div>
         <div><Label htmlFor="f20-email" required>Email</Label><Input id="f20-email" type="email" autoComplete="email" required maxLength={254} value={form.contactEmail} onChange={(e) => set("contactEmail")(e.target.value)} /></div>
       </div>
       <div>

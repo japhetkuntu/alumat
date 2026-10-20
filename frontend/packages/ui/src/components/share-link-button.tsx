@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button, buttonVariants, type ButtonProps } from "./button";
+import { useState } from "react";
+import { Button, type ButtonProps } from "./button";
 import { cn } from "../lib/utils";
-import { Check, MessageCircle, Share2 } from "./icons";
+import { Check, Share2 } from "./icons";
 
 type ShareResult = "shared" | "copied";
 
@@ -56,10 +56,6 @@ export function ShareLinkButton({
 }: ShareLinkButtonProps) {
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  // Where the system share sheet exists (phones) it already offers WhatsApp; where it doesn't (most desktops)
-  // Share can only copy, so a contextual message gets its own WhatsApp button. Decided after mount to stay hydration-safe.
-  const [offerWhatsApp, setOfferWhatsApp] = useState(false);
-  useEffect(() => { setOfferWhatsApp(!!message && !("share" in navigator)); }, [message]);
   const resolvedUrl = url || (typeof window !== "undefined" ? window.location.href : "");
   const shareText = message ? `${message.trimEnd()}\n${resolvedUrl}` : resolvedUrl;
 
@@ -76,12 +72,12 @@ export function ShareLinkButton({
 
       if (shareApiAvailable) {
         // Deliberately omit `text` — passing both `text` and `url` is what causes
-        // some share targets (notably WhatsApp via Android's Web Share bridge) to
+        // some share targets (messaging apps reached through Android's Web Share bridge) to
         // render the link twice: the OS-level share intent appends `url` to
         // `text` for apps that only accept plain text, so a `text` that doesn't
         // already embed the link still ends up duplicated in the final message.
         // With a contextual message, the link is embedded in `text` and `url` is left out, which keeps
-        // WhatsApp from rendering it twice.
+        // those apps from rendering it twice.
         const shareData = message ? { title: shareTitle, text: shareText } : { title: shareTitle, url: resolvedUrl };
         if (navigator.canShare && navigator.canShare(shareData)) {
           setIsSharing(true);
@@ -111,9 +107,8 @@ export function ShareLinkButton({
     }
   };
 
-  const waHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
-  // One wrapper so the two buttons travel (and wrap) together wherever a page puts this: as bare siblings they
+  // One wrapper so the buttons travel (and wrap) together wherever a page puts this: as bare siblings they
   // overflowed any narrow header row that did not itself allow wrapping.
   return (
     <div className={cn("max-w-full items-center gap-2", fill ? "flex w-full" : "inline-flex flex-wrap")}>
@@ -139,15 +134,6 @@ export function ShareLinkButton({
         </>
       )}
     </Button>
-    {offerWhatsApp && (
-      <a
-        href={waHref} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" title="Share on WhatsApp"
-        className={cn(buttonVariants({ variant, size }), fill && "flex-1", className)}
-      >
-        <MessageCircle size={14} />
-        WhatsApp
-      </a>
-    )}
     </div>
   );
 }

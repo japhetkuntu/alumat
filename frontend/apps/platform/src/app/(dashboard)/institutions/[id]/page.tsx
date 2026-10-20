@@ -145,17 +145,16 @@ function HeroImagesField({ urls, onChange, institutionSlug }: {
  * Which broadcast channels this institution may spend on. SMS and email broadcasts cost money, so they are off until switched
  * on here; in-app broadcasts are free and always available. Platform staff with access to money decisions only.
  */
-function BroadcastChannelsCard({ institutionId, email, sms, whatsApp }: { institutionId: string; email: boolean; sms: boolean; whatsApp: boolean }) {
+function BroadcastChannelsCard({ institutionId, email, sms }: { institutionId: string; email: boolean; sms: boolean }) {
   const qc = useQueryClient();
   const save = useMutation({
-    mutationFn: (next: { email: boolean; sms: boolean; whatsApp: boolean }) => updateBroadcastChannels(institutionId, next),
+    mutationFn: (next: { email: boolean; sms: boolean }) => updateBroadcastChannels(institutionId, next),
     onSuccess: () => { toast.success("Broadcast channels updated"); qc.invalidateQueries({ queryKey: ["institution", institutionId] }); },
     onError: (e) => toast.error(handleApiError(e)),
   });
-  const rows: { key: "email" | "sms" | "whatsApp"; label: string; hint: string; on: boolean }[] = [
+  const rows: { key: "email" | "sms"; label: string; hint: string; on: boolean }[] = [
     { key: "email", label: "Email", hint: "Costs per message. Needed for email broadcasts to members.", on: email },
     { key: "sms", label: "SMS", hint: "Costs per message and the most expensive channel. Sent to every member with a phone number.", on: sms },
-    { key: "whatsApp", label: "WhatsApp", hint: "Not available to send yet. Setting it now means it is ready when it ships.", on: whatsApp },
   ];
   return (
     <Card className="max-w-[1100px] mb-5">
@@ -176,7 +175,7 @@ function BroadcastChannelsCard({ institutionId, email, sms, whatsApp }: { instit
               type="checkbox"
               checked={r.on}
               disabled={save.isPending}
-              onChange={(e) => save.mutate({ email, sms, whatsApp, [r.key]: e.target.checked })}
+              onChange={(e) => save.mutate({ email, sms, [r.key]: e.target.checked })}
               className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
               aria-label={`Allow ${r.label} broadcasts`}
             />
@@ -986,7 +985,6 @@ export default function InstitutionDetailPage() {
             institutionId={id}
             email={!!inst.broadcastEmailAllowed}
             sms={!!inst.broadcastSmsAllowed}
-            whatsApp={!!inst.broadcastWhatsAppAllowed}
           />
         )}
         {(isSuperAdmin || signedIn?.role === "Billing") && (

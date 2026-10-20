@@ -223,7 +223,6 @@ public class InstitutionActivationActivities(
             }
 
             // SMS is a real per-message cost, so it follows the institution's own SMS switch.
-            // (WhatsApp stays off platform-wide — see NotificationDispatchWorkflow.WhatsAppEnabled.)
             if (institution.SmsNotificationsEnabled)
             {
                 var sms = SmsText($"{brandName}: next setup step, {item.NextStepLabel?.ToLowerInvariant()}. {item.NextStep}", actionUrl);

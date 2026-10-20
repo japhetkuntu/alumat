@@ -15,9 +15,7 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// </summary>
 [AllowAnonymous]
 [EnableRateLimiting(RateLimitingExtensions.PublicReadPolicy)]
-public class PublicController(
-    IConfiguration configuration,
-    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch platformSwitch) : DefaultController
+public class PublicController : DefaultController
 {
     /// <summary>
     /// Branding for the institution resolved from the request's Host header
@@ -49,16 +47,8 @@ public class PublicController(
             institution.OrganizationType,
             institution.CohortLabel,
             institution.CohortLabelPlural,
-            institution.GraduationYearMode,
-            WhatsAppPlatformAvailable: await WhatsAppPlatformAvailableAsync(institution));
+            institution.GraduationYearMode);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }
-
-    /// <summary>The same rule the member portal uses: server set up with an assistant number, platform switch on, not deactivated for this institution.</summary>
-    private async Task<bool> WhatsAppPlatformAvailableAsync(InstitutionEntity institution)
-        => configuration.GetValue("WaSenderConfig:Enabled", false)
-           && !string.IsNullOrWhiteSpace(configuration["WaSenderConfig:AssistantNumber"])
-           && institution.WhatsAppBotEnabled
-           && await platformSwitch.IsOnAsync();
 }

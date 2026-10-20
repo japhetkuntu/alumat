@@ -12,6 +12,7 @@ public class MentorProfileSnapshot
     public string Status { get; set; } = string.Empty;
 
     public string? ContactLinkedInUrl { get; set; }
+    /// <summary>Retired: the WhatsApp number was removed from the product. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public string? ContactWhatsAppNumber { get; set; }
     public string? ContactPhoneNumber { get; set; }
 }

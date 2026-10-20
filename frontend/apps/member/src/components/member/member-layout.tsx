@@ -14,7 +14,6 @@ import { GlobalSearch } from "@/components/member/global-search";
 import { PushNotificationPrompt } from "@/components/member/push-notification-prompt";
 import { InstallPromptBanner, useInstallPrompt } from "@/components/member/install-prompt";
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
-import { useWhatsAppStatus } from "@/components/member/whatsapp-connect-card";
 import { InstitutionSwitcher } from "@/components/member/institution-switcher";
 import { memberClient } from "@/lib/api-client";
 import { getHomeModules, getUnreadNotificationsByCategory } from "@/lib/member-api";
@@ -43,7 +42,6 @@ import {
   Building2,
   FileText,
   Share2,
-  MessageCircle,
 } from "@alumni/ui";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -55,7 +53,6 @@ const navGroups: { section: string | null; items: { href: string; label: string;
     items: [
       { href: "/dashboard", label: "Home", icon: LayoutDashboard },
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/connect-whatsapp", label: "WhatsApp", icon: MessageCircle },
     ],
   },
   {
@@ -117,7 +114,6 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/directory": "Directory",
   "/alumni-map": "AlumniMap",
   "/calendar": "Calendar",
-  "/connect-whatsapp": "WhatsApp",
   "/news": "News",
   "/forum": "Forum",
   "/mentorship": "Mentorship",
@@ -265,22 +261,17 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const unreadByCategory = useUnreadByCategory();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
-  const { data: whatsApp } = useWhatsAppStatus();
-  // Offered only where the assistant is really on, for everyone including members who connected before. When the platform or this
-  // community has it off, nothing about WhatsApp shows anywhere.
-  const whatsAppOffered = !!whatsApp && whatsApp.available;
   const visibleGroups = navGroups
     .map((g) => ({
       ...g,
       items: g.items.filter((item) => {
         const featureKey = NAV_FEATURE_KEYS[item.href];
-        if (item.href === "/connect-whatsapp" && !whatsAppOffered) return false;
         // The leaderboard ranks year groups; with no graduation years there is nothing to rank.
         if (item.href === "/leaderboard" && (navTheme?.graduationYearMode ?? (navTheme?.organizationType === "Community" ? "Off" : "Required")) === "Off") return false;
         // Every feature the institution has switched on is listed, whether or not it has content yet,
         // so members can see what their community offers and be the first to use it.
         return !(featureKey && disabledFeatures.has(featureKey));
-      }).map((item) => (item.href === "/connect-whatsapp" && whatsApp && !whatsApp.connected ? { ...item, label: "Connect WhatsApp" } : item)),
+      }),
     }))
     .filter((g) => g.items.length > 0);
   let itemIndex = 0;

@@ -37,20 +37,10 @@ export async function changePlatformPassword(currentPassword: string, newPasswor
 
 export interface PlatformSettings {
   blockOverdueCampaignPayments: boolean;
-  /** The platform switch for the WhatsApp bot. Off: the bot is silent and notifications use SMS and email. */
-  whatsAppBotEnabled?: boolean;
-  /** The channel is set up in configuration; without it the switch has no effect. */
-  whatsAppConfigured?: boolean;
 }
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   const res = await platformClient.get<ApiResponse<PlatformSettings>>("/platform-settings");
-  return res.data.data!;
-}
-
-/** Flips only the WhatsApp bot switch, keeping the other platform setting as it is. */
-export async function setWhatsAppBotEnabled(enabled: boolean, blockOverdueCampaignPayments: boolean): Promise<PlatformSettings> {
-  const res = await platformClient.patch<ApiResponse<PlatformSettings>>("/platform-settings", { blockOverdueCampaignPayments, whatsAppBotEnabled: enabled });
   return res.data.data!;
 }
 
@@ -89,7 +79,6 @@ export interface InstitutionDetail {
   /** Broadcast channels the platform has switched on for this institution. In-app is free and always on. */
   broadcastEmailAllowed?: boolean;
   broadcastSmsAllowed?: boolean;
-  broadcastWhatsAppAllowed?: boolean;
   /** Whether this institution may charge for event tickets. Off until the platform allows it. */
   paidEventsEnabled?: boolean;
   name: string;
@@ -551,7 +540,7 @@ export async function updatePaidEvents(id: string, enabled: boolean) {
   return res.data.data!;
 }
 
-export async function updateBroadcastChannels(id: string, channels: { email: boolean; sms: boolean; whatsApp: boolean }) {
+export async function updateBroadcastChannels(id: string, channels: { email: boolean; sms: boolean }) {
   const res = await platformClient.patch<ApiResponse<InstitutionDetail>>(`/institutions/${id}/broadcast-channels`, channels);
   return res.data.data!;
 }
@@ -1367,54 +1356,3 @@ export async function getInstitutionHealth(): Promise<InstitutionHealth> {
   return res.data.data!;
 }
 
-export interface WhatsAppHealth {
-  enabled: boolean;
-  apiKeyConfigured: boolean;
-  webhookSecretConfigured: boolean;
-  assistantNumberConfigured: boolean;
-  connected: boolean;
-  sessionState: string;
-  institutionsWithGroups: number;
-  activeGroups: number;
-  verifiedMembers: number;
-  institutionsOptedOut: number;
-  adoption?: WhatsAppAdoption | null;
-  /** The platform administrator's switch (see platform settings). */
-  botSwitchedOn?: boolean;
-}
-export interface WhatsAppAdoption {
-  activeMembers: number;
-  alertsOn: number;
-  months: { month: string; byWhatsApp: number; bySms: number }[];
-  /** The platform's configured cost of one SMS, when it has said. The saving below is only an estimate from it. */
-  smsUnitCost?: number | null;
-  estimatedSmsSaved?: number | null;
-  institutions: { name: string; activeMembers: number; connected: number; byWhatsAppThisMonth: number; bySmsThisMonth: number }[];
-}
-export interface WhatsAppInstitutionRow {
-  id: string;
-  name: string;
-  slug: string;
-  /** Activated by the platform for this institution. */
-  platformEnabled: boolean;
-  /** The institution also switched it off for itself. */
-  institutionOptedOut: boolean;
-  connected: number;
-  activeMembers: number;
-  activeGroups: number;
-}
-
-export async function getWhatsAppInstitutions(): Promise<WhatsAppInstitutionRow[]> {
-  const res = await platformClient.get<ApiResponse<WhatsAppInstitutionRow[]>>("/whatsapp-health/institutions");
-  return res.data.data ?? [];
-}
-
-export async function setInstitutionWhatsApp(id: string, enabled: boolean): Promise<WhatsAppInstitutionRow> {
-  const res = await platformClient.put<ApiResponse<WhatsAppInstitutionRow>>(`/whatsapp-health/institutions/${id}`, { enabled });
-  return res.data.data!;
-}
-
-export async function getWhatsAppHealth(): Promise<WhatsAppHealth> {
-  const res = await platformClient.get<ApiResponse<WhatsAppHealth>>("/whatsapp-health");
-  return res.data.data!;
-}

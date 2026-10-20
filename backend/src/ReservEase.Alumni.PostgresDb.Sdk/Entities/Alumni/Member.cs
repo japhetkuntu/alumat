@@ -11,16 +11,10 @@ public class Member : BaseEntity, ITenantScoped
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
 
-    /// <summary>
-    /// <see cref="Phone"/> reduced to digits with the country code (233XXXXXXXXX), kept in step by the DbContext on every save.
-    /// It exists so a number can be matched however it was typed ("024 412 3456", "+233244123456"). Indexed. Never edited directly.
-    /// </summary>
+    /// <summary>Retired with the WhatsApp assistant. The column and its index stay so no data is dropped; nothing reads or writes it.</summary>
     public string? PhoneNormalized { get; set; }
 
-    /// <summary>
-    /// Set when the member proved they control <see cref="PhoneNormalized"/> by messaging the assistant from it. Changing the phone
-    /// clears it. Until it is set, the number is only something the member typed, never an identity.
-    /// </summary>
+    /// <summary>Retired with the WhatsApp assistant. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public DateTime? PhoneVerifiedAt { get; set; }
     public string Password { get; set; } = string.Empty;
     public string? StudentId { get; set; }

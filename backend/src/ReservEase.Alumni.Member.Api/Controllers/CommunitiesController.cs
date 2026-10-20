@@ -93,16 +93,6 @@ public class CommunitiesController(ICommunityService communityService) : Default
         return result.ToActionResult();
     }
 
-    [HttpPut("{id}/channels")]
-    [SwaggerOperation(Summary = "Connect or disconnect the community's WhatsApp group (leaders only)")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<CommunityChannelDto>>))]
-    public async Task<IActionResult> UpdateChannels(string id, [FromBody] UpdateCommunityChannelsRequest request)
-    {
-        var member = User.GetAccount();
-        var result = await communityService.UpdateChannelsAsync(id, request, member.Id);
-        return result.ToActionResult();
-    }
-
     [HttpGet("{id}/join-requests")]
     [SwaggerOperation(Summary = "List pending join requests (leaders only)")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<JoinRequestDto>>))]

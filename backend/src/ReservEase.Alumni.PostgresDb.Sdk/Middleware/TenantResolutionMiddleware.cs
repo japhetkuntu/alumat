@@ -59,14 +59,6 @@ public class TenantResolutionMiddleware(RequestDelegate next)
         HttpContext context, AlumniDbContext db, ICurrentTenantService currentTenant,
         IConfiguration config, IWebHostEnvironment env, IRedisService<TenantResolutionCacheConfig> tenantCache)
     {
-        // An inbound WhatsApp webhook arrives from the provider on the platform's own host: there is no institution to resolve and
-        // none to fall back to (the default one could even be suspended). The assistant pins the tenant itself, per community.
-        if (IsWhatsAppCallbackPath(context.Request.Path))
-        {
-            await next(context);
-            return;
-        }
-
         var baseDomain = config["PlatformBaseDomain"];
 
         async Task<Institution?> ResolveByHostAsync(string h)
@@ -162,9 +154,6 @@ public class TenantResolutionMiddleware(RequestDelegate next)
 
         await next(context);
     }
-
-    private static bool IsWhatsAppCallbackPath(PathString path) =>
-        path.Value?.Contains("/callbacks/whatsapp", StringComparison.OrdinalIgnoreCase) == true;
 
     private static bool IsPaystackCallbackPath(PathString path) =>
         path.Value?.Contains("/callbacks/paystack", StringComparison.OrdinalIgnoreCase) == true;

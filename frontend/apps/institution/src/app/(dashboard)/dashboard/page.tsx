@@ -19,7 +19,6 @@ import { formatCurrency, formatDate } from "@alumni/ui";
 import { getCampaigns, getContributions, getMembers, getEvents, getJobs, getBatches, getStoreOrders, getServiceRequests, getPayoutForecast, getRevenueTrend } from "@/lib/institution-api";
 import { useAuth } from "@/hooks/use-auth";
 import { CommunityHealthCard } from "@/components/institution/community-health-card";
-import { WhatsAppConnectCard } from "@/components/institution/whatsapp-connect-card";
 import { WaitingForYou } from "@/components/institution/waiting-for-you";
 import { InviteKitCard } from "@/components/institution/invite-kit-card";
 import { useFeatures } from "@/hooks/use-institution-features";
@@ -182,7 +181,6 @@ export default function AdminDashboardPage() {
 
       <WaitingForYou />
       <CommunityHealthCard />
-      <WhatsAppConnectCard />
 
       {(() => {
         // Supporting tiles: only for features that are on. With money off there is no hero,

@@ -21,7 +21,7 @@ public class NotificationPreferenceServiceTests
 
     private static UpdateNotificationPreferenceRequest Request(string digest = "Weekly", bool sms = false) =>
         new(MembershipReminders: false, CampaignAlerts: false, EventReminders: true, JobAlerts: false, ClassNoteAlerts: true,
-            SpotlightAlerts: false, SmsAlerts: sms, WhatsAppAlerts: sms, DigestFrequency: digest);
+            SpotlightAlerts: false, SmsAlerts: sms, DigestFrequency: digest);
 
     [Fact]
     public async Task First_read_creates_defaults_with_everything_on_and_nothing_external()
@@ -32,7 +32,6 @@ public class NotificationPreferenceServiceTests
 
         Assert.True(prefs.MembershipReminders && prefs.CampaignAlerts && prefs.EventReminders && prefs.JobAlerts && prefs.ClassNoteAlerts && prefs.SpotlightAlerts);
         Assert.False(prefs.SmsAlerts);
-        Assert.False(prefs.WhatsAppAlerts);
         var row = await TestDb.Create(db, Tenant).NotificationPreferences.SingleAsync();
         Assert.Equal(("m1", "m1"), (row.MemberId, row.CreatedBy));
     }
@@ -66,8 +65,8 @@ public class NotificationPreferenceServiceTests
 
         Assert.Equal(200, response.Code);
         var row = await TestDb.Create(db, Tenant).NotificationPreferences.SingleAsync();
-        Assert.Equal((false, false, true, false, true, false, true, true, "Monthly", "m1"),
-            (row.MembershipReminders, row.CampaignAlerts, row.EventReminders, row.JobAlerts, row.ClassNoteAlerts, row.SpotlightAlerts, row.SmsAlerts, row.WhatsAppAlerts, row.DigestFrequency, row.UpdatedBy));
+        Assert.Equal((false, false, true, false, true, false, true, "Monthly", "m1"),
+            (row.MembershipReminders, row.CampaignAlerts, row.EventReminders, row.JobAlerts, row.ClassNoteAlerts, row.SpotlightAlerts, row.SmsAlerts, row.DigestFrequency, row.UpdatedBy));
         Assert.Equal("Monthly", response.Data!.DigestFrequency);
     }
 

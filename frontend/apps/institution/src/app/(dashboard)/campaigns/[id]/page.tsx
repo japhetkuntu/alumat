@@ -31,7 +31,6 @@ import {
 import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { EmptyState } from "@alumni/ui";
 import { ShareLinkButton } from "@alumni/ui";
-import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton, TableSkeleton } from "@alumni/ui";
@@ -183,7 +182,6 @@ export default function CampaignDetailPage() {
           </h1>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <PostToWhatsAppButton type="campaign" contentId={id} />
           <ShareLinkButton
             url={shareUrl}
             title={campaign.title}

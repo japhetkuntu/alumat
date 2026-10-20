@@ -493,7 +493,6 @@ public class MentorProfileDto
     public DateTime CreatedAt { get; set; }
     // Only populated by ToDto(includeContact: true) — see EntityDtoExtensions.
     public string? ContactLinkedInUrl { get; set; }
-    public string? ContactWhatsAppNumber { get; set; }
     public string? ContactPhoneNumber { get; set; }
 }
 
@@ -512,7 +511,6 @@ public class MentorshipRequestDto
     // Only populated for the mentee once their request is Accepted — see
     // MemberMentorshipService.GetMyRequestsAsync and EntityDtoExtensions.
     public string? ContactLinkedInUrl { get; set; }
-    public string? ContactWhatsAppNumber { get; set; }
     public string? ContactPhoneNumber { get; set; }
 }
 
@@ -796,7 +794,6 @@ public class NotificationPreferenceDto
     public bool SpotlightAlerts { get; set; }
     public bool EngagementMessages { get; set; } = true;
     public bool SmsAlerts { get; set; }
-    public bool WhatsAppAlerts { get; set; }
     public string DigestFrequency { get; set; } = "Weekly";
 }
 

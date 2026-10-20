@@ -172,9 +172,7 @@ public record UpdateSelfServiceFeaturesRequest(
     bool PromptMembershipActivationAtSignup,
     bool EmailNotificationsEnabled,
     bool SmsNotificationsEnabled,
-    bool BirthdaySpotlightEnabled,
-    // Optional so an older client that does not send it leaves the institution's WhatsApp setting as it was.
-    bool? WhatsAppEnabled = null);
+    bool BirthdaySpotlightEnabled);
 
 /// <summary>
 /// Submitted by this institution's own SuperAdmin only (unlike a batch's

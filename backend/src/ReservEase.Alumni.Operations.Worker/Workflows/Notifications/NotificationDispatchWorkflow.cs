@@ -23,11 +23,7 @@ namespace ReservEase.Alumni.Operations.Worker.Workflows.Notifications;
 [Workflow("NotificationDispatch")]
 public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 {
-    /// <summary>WhatsApp is wired end to end but switched off for the pilot, matching
-    /// PaymentCallbacks.Sdk's retired NotificationDispatcher.</summary>
-    private const bool WhatsAppEnabled = false;
-
-    /// <summary>Fast rollback lever for the whole Web Push channel, mirroring WhatsAppEnabled.</summary>
+    /// <summary>Fast rollback lever for the whole Web Push channel.</summary>
     private const bool WebPushEnabled = true;
 
     [WorkflowRun]
@@ -80,129 +76,22 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         .Replace("\u201C", "\"").Replace("\u201D", "\"")
         .Replace("\u2026", "...").Replace("\u20B5", "GHS ");
 
-    /// <summary>Fires SMS/WhatsApp for a recipient who opted in and has a phone on file —
-    /// mirrors both retired dispatchers' SendExternalAlertsAsync. Both gateways swallow
-    /// their own exceptions and report failure via their returned bool instead of
-    /// throwing, so it's logged here rather than trusted as silent success.</summary>
-    private static async Task SendExternalAlertsAsync(string? phone, bool smsAllowed, bool whatsAppAllowed, bool institutionSmsEnabled, string? institutionName, string message, string? link = null,
-        bool whatsAppVerified = false, bool whatsAppChannelOpen = false, string? institutionId = null, string? smsNudge = null)
+    /// <summary>Fires an SMS for a recipient who opted in and has a phone on file. The gateway swallows
+    /// its own exceptions and reports failure via its returned bool instead of throwing, so it is
+    /// logged here rather than trusted as silent success.</summary>
+    private static async Task SendExternalAlertsAsync(string? phone, bool smsAllowed, bool institutionSmsEnabled, string? institutionName, string message, string? link = null)
     {
         if (string.IsNullOrWhiteSpace(phone)) return;
-        var whatsAppDelivered = 0;
-        var smsSent = 0;
-        var smsAfterFailure = 0;
-        var attemptedWhatsAppFirst = false;
-
-        // WhatsApp first, where it is safe to: the channel is on for the platform and this institution, the member consented to
-        // WhatsApp alerts, and the number was proved by a WhatsApp message (an unproved number may belong to somebody else).
-        // It is cheaper than SMS, so a delivered WhatsApp message ends the matter. If it was not delivered, SMS still goes out.
-        if (whatsAppChannelOpen && whatsAppVerified && whatsAppAllowed && Workflow.Patched("whatsapp-first"))
-        {
-            var text = ToWhatsAppText(institutionName, message, link);
-            var delivered = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendWhatsAppAsync(phone, text), NotificationActivityOptions.ExternalGateway);
-            if (delivered)
-            {
-                await RecordUsageAsync(institutionId, 1, 0, 0);
-                return;
-            }
-            attemptedWhatsAppFirst = true;
-            Workflow.Logger.LogWarning("WhatsApp send reported failure for {Phone}; falling back to SMS", phone);
-        }
 
         // A text with no way to open the thing it talks about sends people hunting. The link goes on the end so the
-        // message reads first. WhatsApp is left as is.
+        // message reads first.
         var smsText = !string.IsNullOrWhiteSpace(link) && Workflow.Patched("sms-action-link") ? $"{message} {link}" : message;
         var prefixedMessage = ToSmsSafe(string.IsNullOrWhiteSpace(institutionName) ? smsText : $"{institutionName}: {smsText}");
-
-        // A nudge towards the cheaper channel rides on an SMS only when it still fits one SMS: it must never make a message cost more.
-        if (!string.IsNullOrWhiteSpace(smsNudge) && whatsAppChannelOpen && !whatsAppVerified && Workflow.Patched("whatsapp-sms-nudge"))
-        {
-            var withNudge = ToSmsSafe($"{prefixedMessage} {smsNudge}");
-            if (withNudge.Length <= 160) prefixedMessage = withNudge;
-        }
 
         if (smsAllowed && institutionSmsEnabled)
         {
             var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendSmsAsync(phone, prefixedMessage), NotificationActivityOptions.ExternalGateway);
             if (!sent) Workflow.Logger.LogWarning("SMS send reported failure for {Phone}", phone);
-            else
-            {
-                smsSent = 1;
-                if (attemptedWhatsAppFirst) smsAfterFailure = 1;
-            }
-        }
-
-        if (WhatsAppEnabled && whatsAppAllowed)
-        {
-            var sent = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendWhatsAppAsync(phone, message), NotificationActivityOptions.ExternalGateway);
-            if (!sent) Workflow.Logger.LogWarning("WhatsApp send reported failure for {Phone}", phone);
-            else whatsAppDelivered = 1;
-        }
-
-        await RecordUsageAsync(institutionId, whatsAppDelivered, smsSent, smsAfterFailure);
-    }
-
-    /// <summary>Counts for the adoption report. Skipped when there is nothing to count or the institution is not known.</summary>
-    private static async Task RecordUsageAsync(string? institutionId, int whatsAppDelivered, int smsSent, int smsAfterFailure)
-    {
-        if (string.IsNullOrEmpty(institutionId) || whatsAppDelivered + smsSent == 0) return;
-        if (!Workflow.Patched("messaging-usage")) return;
-        await Workflow.ExecuteActivityAsync(
-            (NotificationDispatchActivities a) => a.RecordMessagingUsageAsync(institutionId, whatsAppDelivered, smsSent, smsAfterFailure),
-            NotificationActivityOptions.DatabaseWrite);
-    }
-
-    /// <summary>The institution's name in bold, then the message, then the exact page it is about: WhatsApp renders the link as tappable.</summary>
-    private static string ToWhatsAppText(string? institutionName, string message, string? link)
-    {
-        var head = string.IsNullOrWhiteSpace(institutionName) ? message : $"*{institutionName}*\n{message}";
-        return string.IsNullOrWhiteSpace(link) ? head : $"{head}\n{link}";
-    }
-
-    /// <summary>
-    /// The WhatsApp copy of an in-app notice for one member: sent only if they connected WhatsApp and want alerts there, and
-    /// only on WhatsApp (never SMS: these are events the member did not pay for). Receipts and decisions are
-    /// "transactional" and always go; news honours quiet hours and the daily share.
-    /// </summary>
-    private static async Task NotifyMemberOnWhatsAppAsync(string memberId, InstitutionContactInfo? institution, string message, string? actionUrl, string priority)
-    {
-        if (institution?.WhatsAppChannelOpen != true || string.IsNullOrEmpty(memberId)) return;
-        if (!Workflow.Patched("whatsapp-events")) return;
-
-        var member = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(memberId), NotificationActivityOptions.DatabaseRead);
-        if (member is not { WhatsAppVerified: true, WhatsAppAlerts: true } || string.IsNullOrWhiteSpace(member.Phone)) return;
-
-        var phone = member.Phone!;
-        var allowed = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.ReserveWhatsAppAsync(phone, priority), NotificationActivityOptions.DatabaseRead);
-        if (!allowed) return;
-
-        var text = ToWhatsAppText(institution.Name, message, actionUrl);
-        var delivered = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendWhatsAppAsync(phone, text), NotificationActivityOptions.ExternalGateway);
-        if (delivered) await RecordUsageAsync(institution.Id, 1, 0, 0);
-    }
-
-    /// <summary>
-    /// Tells everyone who connected WhatsApp and wants alerts there, in paced batches. WhatsApp only: this never falls back to SMS
-    /// (these are news, not receipts, and SMS costs money), and each message passes quiet hours and the member's daily share.
-    /// </summary>
-    private static async Task SendWhatsAppToRecipientsAsync(
-        string institutionId, InstitutionContactInfo? institution, IEnumerable<NotificationRecipient> recipients, string text, string? link)
-    {
-        if (institution?.WhatsAppChannelOpen != true) return;
-        if (!Workflow.Patched("whatsapp-fanout")) return;
-
-        var message = ToWhatsAppText(institution.Name, text, link);
-        var items = recipients
-            .Where(r => r.WhatsAppVerified && r.WhatsAppAlerts && !string.IsNullOrWhiteSpace(r.Phone))
-            .Select(r => new WhatsAppBatchItem(r.Phone!, message))
-            .ToList();
-
-        for (var i = 0; i < items.Count; i += 25)
-        {
-            var chunk = items.Skip(i).Take(25).ToList();
-            await Workflow.ExecuteActivityAsync(
-                (NotificationDispatchActivities a) => a.SendWhatsAppBatchAsync(institutionId, WhatsAppPriority.Update, chunk),
-                NotificationActivityOptions.WhatsAppBatch);
         }
     }
 
@@ -249,8 +138,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 
         foreach (var r in recipients)
             await SendPushIfEligibleAsync(r.MemberId, "Member", "New Job Posting", $"{job.Title} at {job.Company} — {job.Location}", actionUrl);
-
-        await SendWhatsAppToRecipientsAsync(request.InstitutionId, institution, recipients, $"New job: {job.Title} at {job.Company}, {job.Location}.", actionUrl);
     }
 
     private async Task ProcessCampaignAlertAsync(NotificationRequest request)
@@ -282,8 +169,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 
         foreach (var r in recipients)
             await SendPushIfEligibleAsync(r.MemberId, "Member", "New Campaign Launched", campaign.Title, actionUrl);
-
-        await SendWhatsAppToRecipientsAsync(request.InstitutionId, institution, recipients, $"New fundraiser: {campaign.Title}.", actionUrl);
     }
 
     private async Task ProcessEventReminderAsync(NotificationRequest request)
@@ -316,8 +201,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
 
         foreach (var r in recipients)
             await SendPushIfEligibleAsync(r.MemberId, "Member", "Upcoming Event", $"{ev.Title} — {dateStr} at {ev.Venue}", actionUrl);
-
-        await SendWhatsAppToRecipientsAsync(request.InstitutionId, institution, recipients, $"Upcoming event: {ev.Title}, {dateStr} at {ev.Venue}. Reply *rsvp* in the assistant to book.", actionUrl);
     }
 
     private async Task ProcessSpotlightAlertAsync(NotificationRequest request)
@@ -450,7 +333,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Transactional);
     }
 
     private async Task ProcessStoreDeliveryStatusUpdatedAsync(NotificationRequest request)
@@ -469,7 +351,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Transactional);
     }
 
     private async Task ProcessServiceRequestUpdatedAsync(NotificationRequest request)
@@ -488,7 +369,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Transactional);
     }
 
     private async Task ProcessBroadcastAsync(NotificationRequest request)
@@ -609,8 +489,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         var classNoteActionUrl = MemberUrl(institution, "/dashboard");
         foreach (var r in recipients)
         {
-            await SendExternalAlertsAsync(r.Phone, r.SmsAlerts, r.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body, classNoteActionUrl,
-                r.WhatsAppVerified, institution?.WhatsAppChannelOpen == true, request.InstitutionId, WhatsAppNudge(institution));
+            await SendExternalAlertsAsync(r.Phone, r.SmsAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, body, classNoteActionUrl);
             await SendPushIfEligibleAsync(r.MemberId, "Member", "New Class Note", body, classNoteActionUrl);
         }
     }
@@ -631,7 +510,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Update);
     }
 
     private async Task ProcessMentorshipRequestDecisionAsync(NotificationRequest request)
@@ -652,7 +530,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Transactional);
     }
 
     private async Task ProcessForumReplyAsync(NotificationRequest request)
@@ -671,13 +548,12 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Update);
     }
 
     /// <summary>
     /// Only members whose new status is "Active"/"Reinstated" (approved, or
     /// unbanned) can actually log in to see an in-app row — everyone else
-    /// (rejected/blocked/banned) is reached by SMS/WhatsApp only here; the
+    /// (rejected/blocked/banned) is reached by SMS only here; the
     /// caller (MemberManagementService) separately sends an email for every
     /// transition, since email is the one channel that reaches a member
     /// regardless of whether they can currently sign in.
@@ -709,12 +585,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             _ => ("Account Status Updated", "Your account status has been updated."),
         };
 
-        // The one moment every new member is paying attention: tell them the assistant exists. In the in-app message only;
-        // the SMS copy is left alone unless the nudge fits (see SendExternalAlertsAsync).
         var inAppBody = body;
-        if (request.NewStatus == "Active" && institution?.WhatsAppChannelOpen == true && !string.IsNullOrEmpty(institution.MemberPortalUrl)
-            && Workflow.Patched("whatsapp-welcome-tip"))
-            inAppBody = $"{body} Connect WhatsApp in your profile to get alerts there and ask the AlumUnion assistant about dues, events and jobs.";
 
         if (request.NewStatus is "Active" or "Reinstated")
         {
@@ -809,7 +680,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Update);
     }
 
     private async Task ProcessEventRsvpConfirmedAsync(NotificationRequest request)
@@ -864,14 +734,14 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             (NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification),
             NotificationActivityOptions.DatabaseWrite);
         // A member who cancels their own RSVP just did it themselves. They get the in-app record, but no
-        // SMS, WhatsApp, push or email telling them what they already know. The patch marker keeps
+        // SMS, push or email telling them what they already know. The patch marker keeps
         // workflows already running when this shipped replaying the old way.
         if (Workflow.Patched("rsvp-cancel-no-external-alerts") && request.Kind == NotificationKind.EventRsvpCancelled) return;
         await SendMemberExternalAlertsIfEligibleAsync(request.MemberId, institution, notification.Body, notification.Title, notification.ActionUrl);
     }
 
     /// <summary>
-    /// The organiser posted an update to an event: an in-app notice and a push, nothing paid. SMS, WhatsApp and email are
+    /// The organiser posted an update to an event: an in-app notice and a push, nothing paid. SMS and email are
     /// left out on purpose, since an event can have a long list of attendees and every update would cost per message.
     /// Members who switched event reminders off are respected.
     /// </summary>
@@ -924,7 +794,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
-        await NotifyMemberOnWhatsAppAsync(notification.RecipientId, institution, notification.Body, notification.ActionUrl, WhatsAppPriority.Transactional);
     }
 
     private async Task ProcessBirthdayShoutoutAsync(NotificationRequest request)
@@ -958,33 +827,6 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
     {
         var context = request.EmailContext ?? "notification-dispatch";
 
-        // WhatsApp first, where the member has connected it and wants alerts there: the same message goes to the chat they
-        // actually read, and the email is not sent. Anything that stops it (not connected, no consent, quiet hours, the
-        // daily limit, or a failed send) leaves the email to go exactly as before.
-        if (request.WhatsApp is { } alt && Workflow.Patched("email-whatsapp-first"))
-        {
-            var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(alt.InstitutionId), NotificationActivityOptions.DatabaseRead);
-            if (institution?.WhatsAppChannelOpen == true)
-            {
-                var member = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(alt.MemberId), NotificationActivityOptions.DatabaseRead);
-                if (member is { WhatsAppVerified: true, WhatsAppAlerts: true } && !string.IsNullOrWhiteSpace(member.Phone))
-                {
-                    var phone = member.Phone!;
-                    var allowed = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.ReserveWhatsAppAsync(phone, alt.Priority), NotificationActivityOptions.DatabaseRead);
-                    if (allowed)
-                    {
-                        var text = ToWhatsAppText(institution.Name, alt.Text, alt.ActionUrl);
-                        var delivered = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.SendWhatsAppAsync(phone, text), NotificationActivityOptions.ExternalGateway);
-                        if (delivered)
-                        {
-                            await RecordUsageAsync(alt.InstitutionId, 1, 0, 0);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
         var sent = await Workflow.ExecuteActivityAsync(
             (NotificationDispatchActivities a) => a.SendEmailAsync(request.EmailRequest!, context),
             NotificationActivityOptions.ExternalGateway);
@@ -996,16 +838,9 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         var member = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadMemberWithPreferenceAsync(memberId), NotificationActivityOptions.DatabaseRead);
         if (member is null) return;
 
-        await SendExternalAlertsAsync(member.Phone, member.SmsAlerts, member.WhatsAppAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, message, actionUrl,
-            member.WhatsAppVerified, institution?.WhatsAppChannelOpen == true, institution?.Id, WhatsAppNudge(institution));
+        await SendExternalAlertsAsync(member.Phone, member.SmsAlerts, institution?.SmsNotificationsEnabled != false, institution?.Name, message, actionUrl);
         await SendPushIfEligibleAsync(memberId, "Member", title, message, actionUrl);
     }
-
-    /// <summary>The short invitation that rides on an SMS that has room for it. Empty when WhatsApp is not on for this community.</summary>
-    private static string? WhatsAppNudge(InstitutionContactInfo? institution)
-        => institution?.WhatsAppChannelOpen == true && !string.IsNullOrEmpty(institution.MemberPortalUrl)
-            ? $"WhatsApp alerts: {institution.MemberPortalUrl}/connect-whatsapp"
-            : null;
 
     private static string MemberUrl(InstitutionContactInfo? institution, string path) =>
         string.IsNullOrEmpty(institution?.MemberPortalUrl) ? string.Empty : $"{institution.MemberPortalUrl}{path}";

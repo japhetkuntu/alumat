@@ -249,7 +249,6 @@ public class InstitutionController(
         Set(InstitutionFeatures.Digest, request.DigestEnabled);
         Set(InstitutionFeatures.RecurringGiving, request.RecurringGivingEnabled);
         Set(InstitutionFeatures.BirthdaySpotlight, request.BirthdaySpotlightEnabled);
-        if (request.WhatsAppEnabled is { } whatsAppEnabled) Set(InstitutionFeatures.WhatsApp, whatsAppEnabled);
 
         institution.DisabledFeatures = disabled.ToList();
         institution.PromptMembershipActivationAtSignup = request.PromptMembershipActivationAtSignup;

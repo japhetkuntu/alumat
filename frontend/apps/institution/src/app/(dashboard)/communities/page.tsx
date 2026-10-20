@@ -28,7 +28,7 @@ import { handleApiError } from "@/lib/api-client";
 import { LinkOrUpload } from "@alumni/ui";
 import { MemberShareButton } from "@/components/institution/member-share-button";
 
-const SOURCE_LABEL: Record<string, string> = { whatsapp: "WhatsApp", link: "Shared link", qr: "QR code", sms: "SMS", email: "Email" };
+const SOURCE_LABEL: Record<string, string> = { whatsapp: "Chat message", link: "Shared link", qr: "QR code", sms: "SMS", email: "Email" };
 
 /** How members have been joining through leaders' invitations. Quiet when there is nothing yet. */
 function GrowthCard() {
@@ -49,12 +49,12 @@ function GrowthCard() {
       <CardContent className="space-y-5 p-5">
         <div>
           <h2 className="text-[15px] font-semibold">Joining through invitations</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">When a group leader shares their invitation into a group chat, the people who join through it are counted here.</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">When a group leader shares their invitation with their group, the people who join through it are counted here.</p>
         </div>
         {data.totalViaInvites === 0 ? (
           <div className="border border-dashed border-border px-4 py-5 text-[13.5px] text-muted-foreground">
             <p className="font-semibold text-foreground">No one has joined through an invitation yet.</p>
-            <p className="mt-1">Make someone a Leader of a group and ask them to open it. They will find an invitation to share into their WhatsApp group.</p>
+            <p className="mt-1">Make someone a Leader of a group and ask them to open it. They will find an invitation to share with their group.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-[auto_1fr] md:gap-12">
@@ -93,7 +93,7 @@ function CommunityForm({
   id: string;
   initial?: CommunityListItem;
   onUploadingChange?: (v: boolean) => void;
-  onSave: (data: { name: string; kind?: string; description?: string; coverImageUrl?: string; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => void;
+  onSave: (data: { name: string; kind?: string; description?: string; coverImageUrl?: string }) => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [kind, setKind] = useState(initial?.kind ?? "");
@@ -102,9 +102,6 @@ function CommunityForm({
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [uploading, setUploadingState] = useState(false);
   const setUploading = (v: boolean) => { setUploadingState(v); onUploadingChange?.(v); };
-  const existingGroup = initial?.channels?.find((c) => c.type === "WhatsApp");
-  const [groupName, setGroupName] = useState(existingGroup?.displayName ?? "");
-  const [groupUrl, setGroupUrl] = useState(existingGroup?.inviteUrl ?? "");
 
   return (
     <form
@@ -125,11 +122,7 @@ function CommunityForm({
               }
               setUploading(false);
             }
-            // A filled-in group connects it; clearing it disconnects one that was there; otherwise channels stay as they are.
-            const externalChannels = groupName.trim()
-              ? [{ type: "WhatsApp", displayName: groupName.trim(), inviteUrl: groupUrl.trim() || undefined }]
-              : existingGroup ? [] : undefined;
-            onSave({ name: name.trim(), kind: kind.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined, externalChannels });
+            onSave({ name: name.trim(), kind: kind.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined });
           }}
         >
           <FormSection title="The group">
@@ -155,19 +148,6 @@ function CommunityForm({
               file={coverImageFile}
               onFileChange={setCoverImageFile}
             />
-          </FormSection>
-
-          <FormSection title="WhatsApp group" hint="Optional. Members of this group see a link to the chat. Clear the name to disconnect it.">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Group name</Label>
-                <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="e.g. Kumasi chapter chat" maxLength={100} />
-              </div>
-              <div className="space-y-2">
-                <Label>Invite link</Label>
-                <Input type="url" inputMode="url" value={groupUrl} onChange={(e) => setGroupUrl(e.target.value)} placeholder="https://chat.whatsapp.com/…" />
-              </div>
-            </div>
           </FormSection>
         </form>
   );
@@ -406,7 +386,7 @@ export default function CommunitiesPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }) => updateCommunity(id, body),
+    mutationFn: ({ id, ...body }: { id: string; name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean }) => updateCommunity(id, body),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); qc.invalidateQueries({ queryKey: ["community-growth"] }); setEditing(null); setDeactivateTarget(null); toast.success("Community updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -493,12 +473,8 @@ export default function CommunitiesPage() {
                       <div className="min-w-0">
                         <p className="font-medium truncate">{c.name}{c.kind && <span className="ml-2 align-middle rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{c.kind}</span>}</p>
                         {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{richTextToPlain(c.description)}</p>}
-                        {(c.channels?.length || (c.joinedViaInvites ?? 0) > 0) && (
-                          <p className="mt-0.5 text-[12px] text-muted-foreground">
-                            {c.channels?.length ? "WhatsApp group connected" : ""}
-                            {c.channels?.length && (c.joinedViaInvites ?? 0) > 0 ? " · " : ""}
-                            {(c.joinedViaInvites ?? 0) > 0 ? `${c.joinedViaInvites} joined by invitation` : ""}
-                          </p>
+                        {(c.joinedViaInvites ?? 0) > 0 && (
+                          <p className="mt-0.5 text-[12px] text-muted-foreground">{c.joinedViaInvites} joined by invitation</p>
                         )}
                       </div>
                     </div>

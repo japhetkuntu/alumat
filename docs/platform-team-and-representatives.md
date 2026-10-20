@@ -30,7 +30,7 @@ incentive ledger, evidence capture on meetings, blockers.
 | Work leads (notes, stage, follow-up) | All | Only leads assigned within their branch | `Sales` all |
 | Hand institutions/leads to someone | Anyone | Only to themselves or someone beneath them | n/a |
 | Change who reports to whom | Yes | No | No |
-| See platform money, revenue, support, WhatsApp health | Yes | No | By role |
+| See platform money, revenue, support | Yes | No | By role |
 
 `Representative` is added alongside the existing roles. `Sales` keeps working exactly as before; whether to retire it in
 favour of `Representative` is a decision for the business (section 6).

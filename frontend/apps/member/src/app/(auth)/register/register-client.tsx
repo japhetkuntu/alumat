@@ -331,7 +331,7 @@ function RegisterForm() {
   // navigation elsewhere and back). This is also what the register?ref= link the invite kit and
   // referral emails generate actually gets used for — previously this page never read the
   // param at all, so no referral tracking or gamification ever recorded a single link-based signup.
-  // Where the member was headed (e.g. an event link opened from WhatsApp); carried back to sign-in after registering.
+  // Where the member was headed (e.g. an event link opened from a message); carried back to sign-in after registering.
   const destination = searchParams.get("redirect");
   const [referralCode] = useState(() => searchParams.get("ref")?.trim() || "");
   // A community invitation (from a leader sharing into their group): the group and where it was shared.
@@ -413,7 +413,7 @@ function RegisterForm() {
       const res = await publicMemberClient.get<{ data: {
         requireStudentId: boolean; promptMembershipActivationAtSignup: boolean;
         programOfStudyEnabled: boolean; programsOfStudy: string[];
-        organizationType: "Alumni" | "Community"; graduationYearMode?: "Off" | "Optional" | "Required"; collectMemberId?: boolean; registrationFields?: { id: string; label: string; type: "text" | "select"; required: boolean; options: string[] }[]; disabledFeatures?: string[]; whatsAppAssistantAvailable?: boolean;
+        organizationType: "Alumni" | "Community"; graduationYearMode?: "Off" | "Optional" | "Required"; collectMemberId?: boolean; registrationFields?: { id: string; label: string; type: "text" | "select"; required: boolean; options: string[] }[]; disabledFeatures?: string[];
       } }>("/public/institution/theme");
       return res.data.data;
     },
@@ -802,7 +802,7 @@ function RegisterForm() {
                     onChange={(val) => setValue("phone", val, { shouldValidate: true })} />
                   <FieldError message={errors.phone?.message} />
                   <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
-                    {theme?.whatsAppAssistantAvailable ? "Used to reach you by SMS & WhatsApp for important updates." : "Used to reach you by SMS for important updates."}
+                    Used to reach you by SMS for important updates.
                   </p>
                 </div>
                 <div className="space-y-1.5">
@@ -1107,14 +1107,6 @@ function RegisterForm() {
               </div>
             </div>
           </div>
-
-          {/* The assistant, only where it is really switched on. Connecting needs a signed-in session, so this just says where. */}
-          {theme?.whatsAppAssistantAvailable && (
-            <p className="text-[12.5px] leading-relaxed rounded-xl border p-4" style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}>
-              <span className="font-semibold" style={{ color: "var(--foreground)" }}>Tip: </span>
-              once you&apos;re in, connect WhatsApp from your profile to ask about dues, events and jobs, and get reminders there instead of by SMS.
-            </p>
-          )}
 
           {/* Membership activation — opt-in per institution, see Settings > Re-engagement & giving */}
           {promptMembershipActivation && (

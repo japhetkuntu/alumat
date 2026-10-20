@@ -234,7 +234,7 @@ public class InstitutionActivationService(
             $"{pending:N0} member{(pending == 1 ? " is" : "s are")} waiting for approval under Members. Approve them so they can get into the portal.",
         Members => members < minMembers
             ? $"You have {members:N0} of {minMembers:N0} members on the portal. Upload the rest of your roster from Members → Bulk upload so everyone can be reached in one place."
-            : $"{Math.Round(share * 100)}% of your members have signed in. Share the portal link in your WhatsApp groups and send a broadcast inviting them to log in.",
+            : $"{Math.Round(share * 100)}% of your members have signed in. Share the portal link with your members and send a broadcast inviting them to log in.",
         Payments => "Launch your first campaign (this year's dues or a fundraising drive) and share it with members, so the first online payment comes through.",
         StaffActivity => "Invite at least one more executive under Staff, and have your team check the portal each week to approve members and follow up on payments.",
         _ => string.Empty,

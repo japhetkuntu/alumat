@@ -21,7 +21,6 @@ using ReservEase.Alumni.Sms.Sdk.Extensions;
 using ReservEase.Alumni.Storage.Sdk.Extensions;
 using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.WebPush.Sdk.Extensions;
-using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 using Temporalio.Client;
 using Temporalio.Extensions.Hosting;
 
@@ -36,16 +35,14 @@ builder.Configuration
 // service classes registered here anymore (IStoreOrderService/IServiceRequestService/
 // IContributionService and their large, mostly-unrelated method surfaces belong to
 // Member.Api; this worker's activities talk to repositories/DbContext/Paystack/Redis
-// directly). Sms/WhatsApp/Email are registered here now, not in each web API project —
+// directly). Sms/Email are registered here now, not in each web API project —
 // NotificationDispatchActivities is the only thing in the whole solution that still
 // sends any of them, since every other notification call site now just signals the
 // NotificationDispatch workflow instead.
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");
 builder.Services.AddRedisDatabase<MemberRedisConfig>(builder.Configuration);
-builder.Services.AddScoped<ReservEase.Alumni.Operations.Worker.Services.IWhatsAppDeliveryPolicy, ReservEase.Alumni.Operations.Worker.Services.WhatsAppDeliveryPolicy>();
 builder.Services.AddPaystackService(builder.Configuration);
 builder.Services.AddArkeselSmsService(builder.Configuration);
-builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
 builder.Services.AddMailtrapEmailService(builder.Configuration);
 builder.Services.AddWebPushService(builder.Configuration);
 builder.Services.AddStorageService(builder.Configuration);
@@ -73,13 +70,6 @@ builder.Services
     .AddHostedTemporalWorker(NotificationTaskQueues.Dispatch)
     .AddWorkflow<NotificationDispatchWorkflow>()
     .AddScopedActivities<NotificationDispatchActivities>();
-
-// WhatsApp sends get their own queue with a single activity slot: one shared session must not be driven in parallel.
-builder.Services
-    .AddHostedTemporalWorker(WhatsAppTaskQueues.Send)
-    .ConfigureOptions(options => options.MaxConcurrentActivities = 1)
-    .AddWorkflow<WhatsAppSendWorkflow>()
-    .AddScopedActivities<WhatsAppSendActivities>();
 
 // Periodic jobs — digest emails, birthday spotlights, recurring giving charges —
 // driven by Temporal Schedules (see ScheduledJobsRegistration) instead of Member.Api's

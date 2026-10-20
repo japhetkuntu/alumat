@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useWhatsApp } from "@/hooks/use-institution-features";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, Send, MessageSquare, Bell, Lock, Mail, ImageUpload } from "@alumni/ui";
 import { toast } from "sonner";
@@ -76,7 +75,6 @@ export default function BroadcastPage() {
     enabled: isSuperAdmin,
     staleTime: 60 * 1000,
   });
-  const { on: whatsAppOn } = useWhatsApp();
   const { data: platformChannels } = useQuery({ queryKey: ["broadcast-channels"], queryFn: getBroadcastChannels, enabled: isSuperAdmin });
   // SMS and email broadcasts cost money, so the platform switches each on per institution. Until we know, treat them as off.
   const smsPlatformAllowed = platformChannels?.sms ?? false;
@@ -187,16 +185,6 @@ export default function BroadcastPage() {
               >
                 <Mail size={14} />Email
               </button>
-              {whatsAppOn && (
-                <button
-                  type="button"
-                  disabled
-                  title="Coming soon"
-                  className="flex items-center gap-2 px-3 py-2 border text-[12.5px] font-semibold opacity-50 cursor-not-allowed bg-white text-muted-foreground border-border"
-                >
-                  <MessageSquare size={14} />WhatsApp (coming soon)
-                </button>
-              )}
             </div>
             {!smsPlatformAllowed && platformChannels && (
               <p className="text-[12px] text-muted-foreground">

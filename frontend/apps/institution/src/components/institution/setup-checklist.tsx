@@ -72,12 +72,17 @@ export function InstitutionSetupChecklist() {
   const groupsDone = isCommunity ? (communities.data?.length ?? 0) > 0 : (batches.data?.length ?? 0) > 0;
   const payoutPending = institution.payoutStatus === "Pending";
 
-  // The first invite should be one tap: a ready-written WhatsApp message with the portal link in it.
+  // The first invite should be one tap: a ready-written message with the portal link in it, copied to send wherever members are reached.
   const portalUrl = institution.memberPortalUrl;
-  const inviteOnWhatsApp = () => {
+  const copyInvite = async () => {
     const name = institution.portalName || institution.name;
     const text = `You're invited to join ${name} online. Register here: ${portalUrl}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Invitation copied. Paste it wherever you reach your members.");
+    } catch {
+      toast.error("Could not copy. Select the registration link on your dashboard instead.");
+    }
   };
   const contentIsEmpty = (newsEnabled ? (news.data?.totalCount ?? 0) === 0 : true) && (eventsOn ? (events.data?.totalCount ?? 0) === 0 : true);
 
@@ -134,12 +139,12 @@ export function InstitutionSetupChecklist() {
       onAction: () => removeSample.mutate(),
     }] : []),
     ...(portalUrl ? [{
-      id: "invite-whatsapp",
+      id: "invite-members",
       title: "Invite your first members",
-      description: "Send the registration link to your WhatsApp group in one tap. Members sign up themselves and you approve them.",
+      description: "Copy the registration link and send it to your members however you reach them. They sign up themselves and you approve them.",
       done: (members?.met ?? false),
-      actionLabel: "Share on WhatsApp",
-      onAction: inviteOnWhatsApp,
+      actionLabel: "Copy invitation",
+      onAction: copyInvite,
     }] : []),
     ...(newsEnabled && news.isSuccess ? [{
       id: "welcome",

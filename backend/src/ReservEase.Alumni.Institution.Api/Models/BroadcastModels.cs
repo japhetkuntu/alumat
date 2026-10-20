@@ -60,7 +60,7 @@ public class SendBroadcastRequest
 public record BroadcastResult(int RecipientCount, List<string> Channels);
 
 /// <summary>Which broadcast channels the platform has switched on for this institution. In-app is free, so it is always on.</summary>
-public record BroadcastChannelsDto(bool InApp, bool Email, bool Sms, bool WhatsApp);
+public record BroadcastChannelsDto(bool InApp, bool Email, bool Sms);
 
 /// <summary>
 /// The rule for what an institution may broadcast on. SMS and email cost the platform money, so each is off until platform
@@ -71,17 +71,16 @@ public static class BroadcastChannelRules
     public const string InApp = "InApp";
     public const string Email = "Email";
     public const string Sms = "Sms";
-    public const string WhatsApp = "WhatsApp";
 
     /// <summary>The requested channels this institution is not allowed to use, by their display names. Empty when all are fine.</summary>
-    public static List<string> Blocked(IEnumerable<string> requested, bool emailAllowed, bool smsAllowed, bool whatsAppAllowed)
+    public static List<string> Blocked(IEnumerable<string> requested, bool emailAllowed, bool smsAllowed)
     {
         var blocked = new List<string>();
         foreach (var c in requested.Select(c => c.Trim()).Where(c => c.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (c.Equals(Email, StringComparison.OrdinalIgnoreCase) && !emailAllowed) blocked.Add("email");
             else if (c.Equals(Sms, StringComparison.OrdinalIgnoreCase) && !smsAllowed) blocked.Add("SMS");
-            else if (c.Equals(WhatsApp, StringComparison.OrdinalIgnoreCase) && !whatsAppAllowed) blocked.Add("WhatsApp");
+            else if (!c.Equals(InApp, StringComparison.OrdinalIgnoreCase) && !c.Equals(Email, StringComparison.OrdinalIgnoreCase) && !c.Equals(Sms, StringComparison.OrdinalIgnoreCase)) blocked.Add(c);   // not a channel that exists
         }
         return blocked;
     }

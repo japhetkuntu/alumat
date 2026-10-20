@@ -228,10 +228,7 @@ public class EngagementActivities(
                 brand_name = string.IsNullOrWhiteSpace(institution.PortalName) ? institution.Name : institution.PortalName,
                 brand_color = institution.PrimaryColorHex, brand_secondary_color = institution.SecondaryColorHex, brand_logo = institution.LogoUrl,
             },
-        }, context, memberId is null ? null : new WhatsAppAlternative
-        {
-            InstitutionId = institution.Id, MemberId = memberId, Text = $"{title} {body}".Trim(), ActionUrl = actionUrl, Priority = WhatsAppPriority.Update,
-        }), logger);
+        }, context), logger);
 
     private static async Task<T> Wrap<T>(Func<Task<T>> action, string what, string context)
     {

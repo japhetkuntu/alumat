@@ -14,7 +14,6 @@ COPY src/ReservEase.Alumni.Mailtrap.Sdk/ReservEase.Alumni.Mailtrap.Sdk.csproj sr
 COPY src/ReservEase.Alumni.Mailhog.Sdk/ReservEase.Alumni.Mailhog.Sdk.csproj src/ReservEase.Alumni.Mailhog.Sdk/
 COPY src/ReservEase.Alumni.Paystack.Sdk/ReservEase.Alumni.Paystack.Sdk.csproj src/ReservEase.Alumni.Paystack.Sdk/
 COPY src/ReservEase.Alumni.Sms.Sdk/ReservEase.Alumni.Sms.Sdk.csproj src/ReservEase.Alumni.Sms.Sdk/
-COPY src/ReservEase.Alumni.Whatsapp.Sdk/ReservEase.Alumni.Whatsapp.Sdk.csproj src/ReservEase.Alumni.Whatsapp.Sdk/
 COPY src/ReservEase.Alumni.Admin.Api/ReservEase.Alumni.Admin.Api.csproj src/ReservEase.Alumni.Admin.Api/
 COPY src/ReservEase.Alumni.Member.Api/ReservEase.Alumni.Member.Api.csproj src/ReservEase.Alumni.Member.Api/
 

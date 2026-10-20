@@ -77,9 +77,7 @@ export default function PrivacyPage() {
             receive what is needed to complete a transaction (amount, email, payment method details you enter
             directly with them);</li>
           <li><strong style={{ color: "var(--foreground)" }}>Arkesel</strong>: delivers SMS notifications when
-            you have opted in; they receive your phone number and the message content, nothing more. (We also
-            integrate with a WhatsApp provider for a future release; it is not active during the current
-            pilot, and this policy will be updated before it is turned on.)</li>
+            you have opted in; they receive your phone number and the message content, nothing more.</li>
           <li><strong style={{ color: "var(--foreground)" }}>Cloud hosting and storage providers</strong>{" "}
             (including DigitalOcean): store the Platform&apos;s database and uploaded files (like profile photos
             and fundraiser banners) securely;</li>

@@ -29,7 +29,7 @@ public class BroadcastController(IBroadcastService broadcastService) : DefaultCo
 
     /// <summary>Which channels the platform has switched on for this institution (in-app is always on).</summary>
     [HttpGet("channels")]
-    [SwaggerOperation(Summary = "Broadcast channels available", Description = "SMS, email and WhatsApp broadcasts are switched on per institution by the platform; in-app is always available.")]
+    [SwaggerOperation(Summary = "Broadcast channels available", Description = "SMS and email broadcasts are switched on per institution by the platform; in-app is always available.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<BroadcastChannelsDto>))]
     public async Task<IActionResult> GetChannels() => (await broadcastService.GetChannelsAsync()).ToActionResult();
 

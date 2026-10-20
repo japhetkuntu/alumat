@@ -124,8 +124,8 @@ export default function TermsPage() {
           event updates, or membership renewal notices, using the phone number and preferences you provide in
           your profile. You can turn SMS notifications off at any time from your notification settings; some
           account-critical emails (like password resets or payment receipts) cannot be turned off, since they
-          exist to protect your account and give you a record of transactions. We may add further channels,
-          such as WhatsApp, in the future. This policy will be updated before that happens.
+          exist to protect your account and give you a record of transactions. We may add further channels
+          in the future. This policy will be updated before that happens.
         </p>
       </Section>
 

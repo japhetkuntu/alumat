@@ -708,38 +708,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         }
     }
 
-    /// <summary>
-    /// Keeps <see cref="Member.PhoneNormalized"/> in step with <see cref="Member.Phone"/> for every write path (registration,
-    /// Google sign-up, profile edit, admin import) without each one remembering to. Changing the number also clears
-    /// <see cref="Member.PhoneVerifiedAt"/>, because the proof was for the old number. Setting the verification in the same
-    /// save (the WhatsApp link flow does) is left alone.
-    /// </summary>
-    private void SyncMemberPhones()
-    {
-        foreach (var entry in ChangeTracker.Entries<Member>())
-        {
-            if (entry.State is not (EntityState.Added or EntityState.Modified)) continue;
-            var phone = entry.Entity.Phone;
-            var phoneChanged = entry.State == EntityState.Added || entry.Property(m => m.Phone).IsModified;
-            if (!phoneChanged) continue;
-
-            entry.Entity.PhoneNormalized = ReservEase.Alumni.Common.Sdk.Services.PhoneNumbers.Normalize(phone);
-            if (entry.State == EntityState.Modified && !entry.Property(m => m.PhoneVerifiedAt).IsModified)
-                entry.Entity.PhoneVerifiedAt = null;
-        }
-    }
-
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         StampTenantIds();
-        SyncMemberPhones();
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         StampTenantIds();
-        SyncMemberPhones();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 }

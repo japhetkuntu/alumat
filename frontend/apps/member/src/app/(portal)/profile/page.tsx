@@ -25,7 +25,6 @@ import { PageHeader } from "@alumni/ui";
 import {
   getMyProfile, updateMyProfile, changePassword, getMyBadges, getCurrentMembershipCampaign,
   getNotificationPreferences, updateNotificationPreferences,
-  getWhatsAppStatus,
 } from "@/lib/member-api";
 import { getRoundedLocation } from "@/lib/geolocation";
 import { formatCurrency } from "@alumni/ui";
@@ -158,13 +157,6 @@ export default function MemberProfilePage() {
     queryKey: ["m-notif-prefs"],
     queryFn:  getNotificationPreferences,
     enabled: profileQueriesEnabled,
-  });
-
-  const { data: whatsAppStatus } = useQuery({
-    queryKey: ["m-whatsapp-status"],
-    queryFn:  getWhatsAppStatus,
-    enabled: profileQueriesEnabled,
-    retry: false,
   });
 
   const { data: navTheme } = useNavTheme();
@@ -373,7 +365,6 @@ export default function MemberProfilePage() {
       classNoteAlerts: notifPrefs.classNoteAlerts,
       spotlightAlerts: notifPrefs.spotlightAlerts,
       smsAlerts: notifPrefs.smsAlerts,
-      whatsAppAlerts: notifPrefs.whatsAppAlerts,
       digestFrequency: notifPrefs.digestFrequency,
       engagementMessages: notifPrefs.engagementMessages ?? true,
       [key]: value,
@@ -390,7 +381,6 @@ export default function MemberProfilePage() {
       classNoteAlerts: notifPrefs.classNoteAlerts,
       spotlightAlerts: notifPrefs.spotlightAlerts,
       smsAlerts: notifPrefs.smsAlerts,
-      whatsAppAlerts: notifPrefs.whatsAppAlerts,
       digestFrequency: frequency,
       engagementMessages: notifPrefs.engagementMessages ?? true,
     });
@@ -1033,21 +1023,6 @@ export default function MemberProfilePage() {
                     : "Get browser notifications for jobs, events, and updates"
                 }
               />
-            )}
-            {whatsAppStatus?.available && (
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4">
-                <div className="min-w-0">
-                  <p className="text-[14.5px] font-semibold">WhatsApp</p>
-                  <p className="text-[13px] text-muted-foreground">
-                    {whatsAppStatus.connected
-                      ? `Connected · ${whatsAppStatus.maskedNumber}${whatsAppStatus.notificationsEnabled ? " · notifications on" : ""}`
-                      : "Ask the assistant about your dues, events and jobs, and get alerts there."}
-                  </p>
-                </div>
-                <Link href="/connect-whatsapp">
-                  <Button variant="outline" size="sm">{whatsAppStatus.connected ? "Manage" : "Connect"}</Button>
-                </Link>
-              </div>
             )}
           </CardContent>
         </Card>

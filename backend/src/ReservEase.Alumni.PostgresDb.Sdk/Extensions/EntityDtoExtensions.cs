@@ -410,7 +410,6 @@ public static class EntityDtoExtensions
         YearGroups = p.YearGroups,
         CreatedAt = p.CreatedAt,
         ContactLinkedInUrl = includeContact ? p.ContactLinkedInUrl : null,
-        ContactWhatsAppNumber = includeContact ? p.ContactWhatsAppNumber : null,
         ContactPhoneNumber = includeContact ? p.ContactPhoneNumber : null,
     };
 
@@ -432,7 +431,6 @@ public static class EntityDtoExtensions
         Status = r.Status,
         CreatedAt = r.CreatedAt,
         ContactLinkedInUrl = includeContact ? r.MentorProfile?.ContactLinkedInUrl : null,
-        ContactWhatsAppNumber = includeContact ? r.MentorProfile?.ContactWhatsAppNumber : null,
         ContactPhoneNumber = includeContact ? r.MentorProfile?.ContactPhoneNumber : null,
     };
 
@@ -600,7 +598,6 @@ public static class EntityDtoExtensions
         SpotlightAlerts = np.SpotlightAlerts,
         EngagementMessages = np.EngagementMessages,
         SmsAlerts = np.SmsAlerts,
-        WhatsAppAlerts = np.WhatsAppAlerts,
         DigestFrequency = np.DigestFrequency,
     };
 

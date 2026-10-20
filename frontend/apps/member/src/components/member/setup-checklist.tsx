@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { GetStartedChecklist, type ChecklistItem } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatures } from "@/components/member/member-layout";
-import { getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps, getWhatsAppStatus } from "@/lib/member-api";
+import { getCommunities, getEvents, getCurrentMembershipCampaign, getMyCommunities, getMyProfile, getMyRsvps } from "@/lib/member-api";
 
 function subscribeDirectoryVisits(notify: () => void) {
   window.addEventListener("storage", notify);
@@ -40,10 +40,6 @@ export function MemberSetupChecklist() {
   const allCommunities = useQuery({ queryKey: ["m-communities"], queryFn: getCommunities, enabled: communitiesEnabled, staleTime: 5 * 60 * 1000 });
   const myCommunities = useQuery({ queryKey: ["m-my-communities"], queryFn: getMyCommunities, enabled: communitiesEnabled });
   const rsvps = useQuery({ queryKey: ["m-rsvps"], queryFn: () => getMyRsvps(), enabled: eventsEnabled });
-
-  // Only offered where the assistant is actually switched on for the platform and this community.
-  const whatsAppEnabled = features.enabled("WhatsApp");
-  const whatsApp = useQuery({ queryKey: ["m-whatsapp-status"], queryFn: getWhatsAppStatus, enabled: whatsAppEnabled, staleTime: 5 * 60 * 1000, retry: false });
 
   const upcoming = useQuery({ queryKey: ["m-setup-upcoming-events"], queryFn: () => getEvents(1, 10, "Upcoming"), enabled: eventsEnabled, staleTime: 5 * 60 * 1000 });
 
@@ -117,16 +113,6 @@ export function MemberSetupChecklist() {
           done: (rsvps.data?.length ?? 0) > 0,
           actionLabel: "See upcoming events",
           onAction: () => router.push("/events"),
-        }]
-      : []),
-    ...(whatsAppEnabled && whatsApp.data && whatsApp.data.available
-      ? [{
-          id: "whatsapp",
-          title: "Get your alerts on WhatsApp",
-          description: "Ask the assistant about your dues, events and jobs, and get reminders there instead of by SMS.",
-          done: whatsApp.data.connected,
-          actionLabel: "Connect WhatsApp",
-          onAction: () => router.push("/connect-whatsapp"),
         }]
       : []),
   ];

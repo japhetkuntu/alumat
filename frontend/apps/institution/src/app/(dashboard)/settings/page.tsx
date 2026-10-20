@@ -25,8 +25,6 @@ import { LinkOrUpload } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
-import { WhatsAppSettings } from "@/components/institution/whatsapp-settings";
-import { useWhatsApp } from "@/hooks/use-institution-features";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers, updateRegistrationFields, type RegistrationField,
   updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateGraduationYears, getInstitutionTemplates, applyInstitutionTemplate, type GraduationYearMode,
@@ -210,7 +208,7 @@ function PayoutSetupCard({ institution }: { institution: InstitutionProfileRespo
   );
 }
 
-const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "WhatsApp", "Security"] as const;
+const TABS = ["Institution profile", "Landing content", "Domain", "Notifications", "Security"] as const;
 
 /**
  * The community's own extra registration questions. Edited as a list and saved as a whole; existing questions keep their
@@ -305,17 +303,13 @@ export default function BrandingSettingsPage() {
   const { user, logout, isScopedAdmin } = useAuth();
   const searchParams = useSearchParams();
   const [chosenTab, setTab] = useState<(typeof TABS)[number]>(() => {
-    // ?tab=landing, ?tab=whatsapp, ?tab=domain ... (a tab's name, case-insensitive; "landing" is short for Landing content).
+    // ?tab=landing, ?tab=domain ... (a tab's name, case-insensitive; "landing" is short for Landing content).
     const wanted = (searchParams.get("tab") ?? "").toLowerCase();
     if (wanted === "landing") return "Landing content";
     return TABS.find((t) => t.toLowerCase() === wanted) ?? "Institution profile";
   });
   const queryClient = useQueryClient();
-  // The WhatsApp tab exists only while AlumUnion has WhatsApp on for this institution. (If the institution turned it off itself the
-  // tab stays, so it can be switched back on.)
-  const { platformOn: whatsAppPlatformOn } = useWhatsApp();
-  const whatsAppTabHidden = !whatsAppPlatformOn || isScopedAdmin;
-  const tab = chosenTab === "WhatsApp" && whatsAppTabHidden ? "Institution profile" : chosenTab;
+  const tab = chosenTab;
 
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" });
   const [showPw, setShowPw] = useState(false);
@@ -608,7 +602,6 @@ export default function BrandingSettingsPage() {
       emailNotificationsEnabled: institution?.emailNotificationsEnabled ?? true,
       smsNotificationsEnabled: institution?.smsNotificationsEnabled ?? true,
       birthdaySpotlightEnabled: !institution?.disabledFeatures?.includes("BirthdaySpotlight"),
-      whatsAppEnabled: !institution?.disabledFeatures?.includes("WhatsApp"),
       ...patch,
     });
   }
@@ -675,7 +668,7 @@ export default function BrandingSettingsPage() {
       </header>
 
       <ChipRow label="Settings sections" activeKey={tab} className="gap-6 border-b border-border mb-6 pb-0 sm:gap-6">
-        {TABS.filter((t) => !(isScopedAdmin && t === "Landing content") && !(t === "WhatsApp" && whatsAppTabHidden)).map((t) => (
+        {TABS.filter((t) => !(isScopedAdmin && t === "Landing content")).map((t) => (
           <button
             key={t}
             aria-pressed={tab === t}
@@ -1485,14 +1478,6 @@ export default function BrandingSettingsPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {tab === "WhatsApp" && (
-        <WhatsAppSettings
-          enabled={!institution?.disabledFeatures?.includes("WhatsApp")}
-          toggling={featuresMutation.isPending}
-          onToggleEnabled={(on) => patchFeatures({ whatsAppEnabled: on })}
-        />
       )}
 
       {tab === "Security" && (

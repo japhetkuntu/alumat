@@ -1,4 +1,3 @@
-using ReservEase.Alumni.Whatsapp.Sdk.Extensions;
 using Serilog;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Options;
@@ -90,17 +89,6 @@ builder.Services.AddScoped<IAlbumService, AlbumService>();
 builder.Services.AddScoped<IBusinessDirectoryService, BusinessDirectoryService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 
-// WhatsApp assistant. The provider (WaSender) also binds WaSenderConfig, which this API reads for the webhook secret.
-builder.Services.AddWaSenderWhatsAppService(builder.Configuration);
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.IAssistantStateStore, ReservEase.Alumni.Member.Api.Services.Assistant.AssistantStateStore>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.IAssistantDirectory, ReservEase.Alumni.Member.Api.Services.Assistant.AssistantDirectory>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.IAssistantContent, ReservEase.Alumni.Member.Api.Services.Assistant.AssistantContent>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.WhatsAppLinkService>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.IAssistantLinker>(sp => sp.GetRequiredService<ReservEase.Alumni.Member.Api.Services.Assistant.WhatsAppLinkService>());
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.IAssistantActions, ReservEase.Alumni.Member.Api.Services.Assistant.AssistantActions>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.WhatsAppGroupDirectory>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.AssistantEngine>();
-builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Assistant.GroupCommandHandler>();
 // Request body size limit (50 MB)
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 50 * 1024 * 1024);
 

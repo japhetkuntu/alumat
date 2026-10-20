@@ -2,22 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Copy, MessageSquare, Share2 } from "@alumni/ui";
+import { Check, Copy, Share2 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
 import { getInstitutionProfile } from "@/lib/institution-api";
 
 /**
  * The single highest-leverage fix for "members are reluctant to sign up": admins currently
- * have to write their own pitch from scratch and drop it into the WhatsApp group they already
- * use — most don't bother, and what little gets said is generic ("check out our new
- * platform!"), which gives a member nothing concrete to react to. This hands them a message
- * that's both ready to send AND specific — real, live numbers for their own institution
- * ("47 members, 3 events this month") rather than a vague pitch — one tap from being pasted
- * into that same WhatsApp group. See also the standing "why fight WhatsApp" positioning on
- * the member marketing site (why-not-whatsapp/page.tsx): the fix here is the same instinct
- * applied to distribution, not just messaging — meet admins in the channel they already use
- * instead of asking them to run a "campaign."
+ * have to write their own pitch from scratch — most don't bother, and what little gets said is
+ * generic ("check out our new platform!"), which gives a member nothing concrete to react to.
+ * This hands them a message that's both ready to send AND specific — real, live numbers for
+ * their own institution ("47 members, 3 events this month") rather than a vague pitch — one
+ * tap from being copied into whichever channel they already use.
  */
 export function InviteKitCard({
   totalMembers, upcomingEvents, activeCampaignCount,
@@ -56,7 +52,6 @@ export function InviteKitCard({
 
   if (!profile) return null;
 
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   const qrUrl = link ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(link)}` : null;
 
   const copyMessage = async () => {
@@ -94,14 +89,7 @@ export function InviteKitCard({
             className="text-[13px]"
           />
           <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="font-semibold text-[12.5px] gap-1.5"
-              onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
-            >
-              <MessageSquare size={13} />Share to WhatsApp
-            </Button>
-            <Button variant="outline" size="sm" onClick={copyMessage} className="font-semibold text-[12.5px] gap-1.5">
+            <Button size="sm" onClick={copyMessage} className="font-semibold text-[12.5px] gap-1.5">
               {copied ? <Check size={13} /> : <Copy size={13} />}
               {copied ? "Copied" : "Copy message"}
             </Button>

@@ -16,8 +16,4 @@ public record InstitutionThemeResponse(
     string OrganizationType,
     string? CohortLabel,
     string? CohortLabelPlural,
-    string GraduationYearMode = "Required",
-    // Whether the platform has the WhatsApp assistant on for this institution (the server is set up for it, the platform switch is on
-    // and it is not deactivated here). The institution's own on/off choice is separate and arrives in DisabledFeatures. When this is
-    // false the portal shows nothing about WhatsApp at all.
-    bool WhatsAppPlatformAvailable = false);
+    string GraduationYearMode = "Required");

@@ -39,18 +39,7 @@ public static class NotificationActivityOptions
         },
     };
 
-    /// <summary>
-    /// A paced run of WhatsApp messages to many people. Never retried as a whole (a retry would send the first part again);
-    /// it heartbeats between messages so a stuck run is noticed, and a failed recipient is skipped inside the activity.
-    /// </summary>
-    public static readonly ActivityOptions WhatsAppBatch = new()
-    {
-        StartToCloseTimeout = TimeSpan.FromMinutes(15),
-        HeartbeatTimeout = TimeSpan.FromMinutes(2),
-        RetryPolicy = new RetryPolicy { MaximumAttempts = 1 },
-    };
-
-    /// <summary>SMS/WhatsApp/email gateway calls — same swallow-and-log contract the
+    /// <summary>SMS/email gateway calls — same swallow-and-log contract the
     /// gateways already have, but a slow provider shouldn't hold up the queue forever.</summary>
     public static readonly ActivityOptions ExternalGateway = new()
     {

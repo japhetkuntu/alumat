@@ -13,7 +13,7 @@ interface MemberShareButtonProps extends Omit<ShareLinkButtonProps, "url" | "onS
 
 /**
  * "Share" for an administrator. The link always opens the item's page in the member portal (where members can RSVP,
- * give, read and so on), never the admin console, so it can be pasted into WhatsApp, social media or an email. Those
+ * give, read and so on), never the admin console, so it can be pasted into a message, social media or an email. Those
  * member pages also carry a link preview (title, description and picture) for chat apps.
  */
 export function MemberShareButton({ memberPath, title, variant = "outline", size = "sm", ...props }: MemberShareButtonProps) {

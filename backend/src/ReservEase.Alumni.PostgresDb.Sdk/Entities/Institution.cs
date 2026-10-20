@@ -124,7 +124,7 @@ public class Institution : BaseEntity
     /// <summary>Whether this institution may send a broadcast by SMS. Set by the platform, off for new institutions.</summary>
     public bool BroadcastSmsAllowed { get; set; }
 
-    /// <summary>Whether this institution may send a broadcast by WhatsApp. Set by the platform, off for new institutions.</summary>
+    /// <summary>Retired: WhatsApp broadcasts were removed from the product. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public bool BroadcastWhatsAppAllowed { get; set; }
 
     /// <summary>
@@ -175,21 +175,11 @@ public class Institution : BaseEntity
     /// </summary>
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
 
-    /// <summary>
-    /// WhatsApp groups connected to the AlumUnion Assistant (see <see cref="WhatsAppGroupLink"/>). Empty by default.
-    /// Managed by this institution's SuperAdmins; the assistant fills in the group id when it hears the one-time code.
-    /// </summary>
+    /// <summary>Retired with the WhatsApp assistant. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public List<WhatsAppGroupLink> WhatsAppGroups { get; set; } = [];
 
-    /// <summary>
-    /// The platform administrator's switch for WhatsApp for THIS institution. It sits between the platform-wide switch
-    /// (PlatformSettings.WhatsAppBotEnabled, which blocks everyone when off) and the institution's own choice (the WhatsApp entry
-    /// in DisabledFeatures). WhatsApp works for an institution only when all three allow it. On by default.
-    /// </summary>
+    /// <summary>Retired with the WhatsApp assistant. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public bool WhatsAppBotEnabled { get; set; } = true;
-
-    /// <summary>Whether WhatsApp may run for this institution: the platform has not deactivated it and the institution has not turned it off itself.</summary>
-    public bool IsWhatsAppAllowed() => WhatsAppBotEnabled && !DisabledFeatures.Contains(InstitutionFeatures.WhatsApp);
 
     /// <summary>Messages sent to members this institution's notifications reached, per month ("2026-10"), by channel. See <see cref="MessagingUsageMonth"/>.</summary>
     public Dictionary<string, MessagingUsageMonth> MessagingUsage { get; set; } = [];

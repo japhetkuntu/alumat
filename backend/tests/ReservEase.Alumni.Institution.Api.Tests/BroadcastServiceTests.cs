@@ -66,7 +66,7 @@ public class BroadcastServiceTests
         var temporalProvider = Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false); // never actually reaches Temporal in tests
         // By default the platform has switched every channel on, so tests about audiences are not about channel gating.
         institution ??= new ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution
-            { Id = "inst-1", BroadcastEmailAllowed = true, BroadcastSmsAllowed = true, BroadcastWhatsAppAllowed = true };
+            { Id = "inst-1", BroadcastEmailAllowed = true, BroadcastSmsAllowed = true };
         var institutionRepo = new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution>>();
         institutionRepo.Setup(r => r.GetOneAsync(It.IsAny<Expression<Func<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution, bool>>>(), It.IsAny<bool>()))
             .ReturnsAsync(institution);
@@ -227,6 +227,5 @@ public class BroadcastServiceTests
         Assert.True(c.InApp);
         Assert.True(c.Email);
         Assert.False(c.Sms);
-        Assert.False(c.WhatsApp);
     }
 }

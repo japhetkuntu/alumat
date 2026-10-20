@@ -1,5 +1,5 @@
 import { platformClient } from './api-client';
-export const CHANNELS = ['Facebook','Instagram','LinkedIn','WhatsApp','X','TikTok','YouTube','Other'];
+export const CHANNELS = ['Facebook','Instagram','LinkedIn','X','TikTok','YouTube','Other'];
 export interface Campaign { id:string; title:string; description:string; status:string; postCount?:number; shareCount?:number; enquiries?:number }
 export interface Asset { id:string; name:string; url:string; contentType:string; size:number }
 export interface LandingPageStory { audience:string; problem:string; promisedValue:string; proof:string; nextAction:string }

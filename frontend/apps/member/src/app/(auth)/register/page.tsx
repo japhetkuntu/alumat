@@ -3,7 +3,7 @@ import { buildEntityMetadata } from "@/lib/entity-og";
 import RegisterClient from "./register-client";
 
 /**
- * A community invitation link (`/register?ref=…&community=…`) is pasted into WhatsApp groups, so it needs its own
+ * A community invitation link (`/register?ref=…&community=…`) is shared in group chats, so it needs its own
  * preview card ("Join Mining Engineering 2018 on …") rather than the generic portal title. The client form below is
  * unchanged. Anything else (a plain /register, an unknown community) keeps the default metadata.
  */

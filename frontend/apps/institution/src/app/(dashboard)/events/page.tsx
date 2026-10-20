@@ -5,7 +5,6 @@ import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
-import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -483,7 +482,6 @@ export default function AdminEventsPage() {
                   {e.status !== "Cancelled" && (
                     <MemberShareButton fill memberPath={`/events/${e.id}`} title={e.title} message={shareMessages.event({ title: e.title, startDate: e.startDate, venue: e.venue, description: e.description })} />
                   )}
-                  {e.status === "Upcoming" && <PostToWhatsAppButton type="event" contentId={e.id} />}
                 </div>
               </CardContent>
             </Card>

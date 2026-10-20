@@ -28,8 +28,6 @@ public record InstitutionThemeResponse(
     string OrganizationType,
     string? CohortLabel,
     string? CohortLabelPlural,
-    /// <summary>The WhatsApp assistant is on for the platform and this community. Lets signed-out pages (registration) mention it only when it is real.</summary>
-    bool WhatsAppAssistantAvailable = false,
     /// <summary>Off, Optional or Required: whether registration and the portal use graduation years.</summary>
     string GraduationYearMode = "Required",
     /// <summary>Whether registration shows the member or student ID field at all.</summary>

@@ -21,6 +21,7 @@ public class MentorProfile : BaseEntity, ITenantScoped
     // exposed to a mentee once their specific request is Accepted — see
     // EntityDtoExtensions' ToDto(includeContact:) overloads.
     public string? ContactLinkedInUrl { get; set; }
+    /// <summary>Retired: the WhatsApp number was removed from the product. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public string? ContactWhatsAppNumber { get; set; }
     public string? ContactPhoneNumber { get; set; }
 }

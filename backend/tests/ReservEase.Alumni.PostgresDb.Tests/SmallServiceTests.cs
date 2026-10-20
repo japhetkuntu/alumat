@@ -106,7 +106,8 @@ public class MarketingRulesTests
     [Fact]
     public void Channels_and_statuses_are_the_documented_sets()
     {
-        Assert.Contains("WhatsApp", MarketingRules.Channels);
+        Assert.Contains("LinkedIn", MarketingRules.Channels);
+        Assert.DoesNotContain("WhatsApp", MarketingRules.Channels);
         Assert.Contains("Other", MarketingRules.Channels);
         Assert.Equal(new[] { "Draft", "Ready", "Archived" }, MarketingRules.Statuses);
         Assert.Equal(MarketingRules.Channels.Length, MarketingRules.Channels.Distinct().Count());

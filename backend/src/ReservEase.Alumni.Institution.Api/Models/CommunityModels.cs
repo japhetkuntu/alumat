@@ -5,11 +5,7 @@ namespace ReservEase.Alumni.Institution.Api.Models;
 public record CommunityListItem(
     string Id, string Name, string? Description, string? CoverImageUrl, bool IsActive,
     int ApprovedCount, int PendingCount, int LeaderCount, DateTime CreatedAt,
-    List<CommunityChannelItem>? Channels = null, int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null);
-
-public record CommunityChannelItem(string Type, string DisplayName, string? InviteUrl, DateTime ConnectedAt);
-
-public record CommunityChannelInputItem(string? Type, string? DisplayName, string? InviteUrl);
+    int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null);
 
 /// <summary>How members have been joining through invitations, across the institution.</summary>
 public record CommunityGrowthSummary(int TotalViaInvites, int Last30Days, List<GrowthSourceItem> BySource, List<GrowthCommunityItem> ByCommunity);
@@ -55,9 +51,6 @@ public class UpdateCommunityRequest
     [MaxLength(40)]
     public string? Kind { get; set; }
     public bool IsActive { get; set; } = true;
-
-    /// <summary>Connected external groups. Null leaves them unchanged; an empty list disconnects them all.</summary>
-    public List<CommunityChannelInputItem>? ExternalChannels { get; set; }
 }
 
 public class SetCommunityMemberRoleRequest

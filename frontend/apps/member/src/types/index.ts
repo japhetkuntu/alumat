@@ -451,7 +451,6 @@ export interface MentorProfile {
   createdAt: string;
   /** Only present when explicitly requested (e.g. viewing your own mentor profile). */
   contactLinkedInUrl?: string;
-  contactWhatsAppNumber?: string;
   contactPhoneNumber?: string;
 }
 
@@ -470,7 +469,6 @@ export interface MentorshipRequest {
   createdAt: string;
   /** Only present once this request is Accepted — the matched mentor's contact info. */
   contactLinkedInUrl?: string;
-  contactWhatsAppNumber?: string;
   contactPhoneNumber?: string;
 }
 
@@ -614,7 +612,6 @@ export interface NotificationPreference {
   spotlightAlerts: boolean;
   engagementMessages?: boolean;
   smsAlerts: boolean;
-  whatsAppAlerts: boolean;
   digestFrequency: "None" | "Weekly" | "Monthly";
 }
 

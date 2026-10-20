@@ -39,7 +39,7 @@ public class CommunityService(
             var items = communities.OrderByDescending(c => c.Name).Select(c =>
             {
                 myMemberships.TryGetValue(c.Id, out var mine);
-                return new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), mine?.Status, mine?.Status == "Approved" ? mine.Role : null, null, c.Kind);
+                return new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), mine?.Status, mine?.Status == "Approved" ? mine.Role : null, c.Kind);
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -68,7 +68,7 @@ public class CommunityService(
             foreach (var m in myMemberships)
             {
                 if (!communities.TryGetValue(m.CommunityId, out var c)) continue;
-                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), m.Status, m.Role, null, c.Kind));
+                items.Add(new CommunityDto(c.Id, c.Name, c.Description, c.CoverImageUrl, approvedCounts.GetValueOrDefault(c.Id), m.Status, m.Role, c.Kind));
             }
             return items.OrderByDescending(i => i.Name).ToList().ToOkApiResponse();
         }
@@ -89,8 +89,7 @@ public class CommunityService(
 
             var mine = await membershipRepo.GetOneAsync(m => m.CommunityId == id && m.MemberId == memberId);
             var approvedCount = await membershipRepo.CountAsync(m => m.CommunityId == id && m.Status == "Approved");
-            var channels = mine?.Status == "Approved" ? ToChannelDtos(community.ExternalChannels) : null;
-            return new CommunityDto(community.Id, community.Name, community.Description, community.CoverImageUrl, approvedCount, mine?.Status, mine?.Status == "Approved" ? mine.Role : null, channels, community.Kind)
+            return new CommunityDto(community.Id, community.Name, community.Description, community.CoverImageUrl, approvedCount, mine?.Status, mine?.Status == "Approved" ? mine.Role : null, community.Kind)
                 .ToOkApiResponse();
         }
         catch (Exception e)
@@ -99,9 +98,6 @@ public class CommunityService(
             return ApiResponseExtensions.ToServerErrorApiResponse<CommunityDto>("Failed to retrieve community");
         }
     }
-
-    private static List<CommunityChannelDto> ToChannelDtos(List<CommunityChannel>? channels) =>
-        (channels ?? []).Select(c => new CommunityChannelDto(c.Type, c.DisplayName, c.InviteUrl, c.ConnectedAt)).ToList();
 
     /// <summary>A leader's own invite code plus a live read on how their community is growing. Leaders only, checked live.</summary>
     public async Task<IApiResponse<CommunityInviteInfoDto>> GetInviteInfoAsync(string id, string memberId)
@@ -126,38 +122,13 @@ public class CommunityService(
             var pending = await membershipRepo.CountAsync(m => m.CommunityId == id && m.Status == "Pending");
             var viaInvites = await referralRepo.CountAsync(r => r.CommunityId == id);
             var recent = await referralRepo.CountAsync(r => r.CommunityId == id && r.CreatedAt >= since);
-            return new CommunityInviteInfoDto(id, community.Name, me.ReferralCode, approved, pending, viaInvites, recent, ToChannelDtos(community.ExternalChannels))
+            return new CommunityInviteInfoDto(id, community.Name, me.ReferralCode, approved, pending, viaInvites, recent)
                 .ToOkApiResponse();
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error retrieving invite info for community {CommunityId}", id);
             return ApiResponseExtensions.ToServerErrorApiResponse<CommunityInviteInfoDto>("Failed to load invitation details");
-        }
-    }
-
-    public async Task<IApiResponse<List<CommunityChannelDto>>> UpdateChannelsAsync(string id, UpdateCommunityChannelsRequest request, string memberId)
-    {
-        try
-        {
-            var community = await communityRepo.GetByIdAsync(id);
-            if (community is null || !community.IsActive || await GetLeaderMembershipAsync(id, memberId) is null)
-                return ApiResponseExtensions.ToNotFoundApiResponse<List<CommunityChannelDto>>("Community not found");
-
-            var parsed = CommunityChannelRules.Parse(request.Channels?.Select(c => (c.Type, c.DisplayName, c.InviteUrl)), community.ExternalChannels, memberId, out var error);
-            if (parsed is null)
-                return ApiResponseExtensions.ToBadRequestApiResponse<List<CommunityChannelDto>>(error!);
-
-            community.ExternalChannels = parsed.Count == 0 ? null : parsed;
-            community.UpdatedAt = DateTime.UtcNow;
-            community.UpdatedBy = memberId;
-            await communityRepo.UpdateAsync(community);
-            return ToChannelDtos(community.ExternalChannels).ToOkApiResponse("Saved");
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error updating channels for community {CommunityId}", id);
-            return ApiResponseExtensions.ToServerErrorApiResponse<List<CommunityChannelDto>>("Failed to save");
         }
     }
 

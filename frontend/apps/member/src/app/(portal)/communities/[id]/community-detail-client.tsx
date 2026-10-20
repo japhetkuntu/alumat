@@ -30,11 +30,10 @@ import {
   getForumThreads, createThread,
   getEvents, rsvpEvent, getMyRsvps,
   getResources,
-  getMyCampaigns, getWhatsAppGroups,
-  type CommunityChannel, type JoinableWhatsAppGroup,
+  getMyCampaigns,
 } from "@/lib/member-api";
 import { handleApiError } from "@/lib/api-client";
-import { CommunityInvitePanel, CommunityGroupLink } from "@/components/member/community-invite-panel";
+import { CommunityInvitePanel } from "@/components/member/community-invite-panel";
 
 function safeDate(value: string | null | undefined): string {
   if (!value) return "";
@@ -83,17 +82,6 @@ function SectionEmpty({ icon: Icon, children }: { icon: React.ElementType; child
   );
 }
 
-/**
- * The community's own WhatsApp group link, or, when its leaders have not added one, the group an administrator connected to the
- * assistant for this community and shared a join link for. A leader's own link always wins.
- */
-function withAssistantGroup(channels: CommunityChannel[] | null | undefined, communityId: string, groups: JoinableWhatsAppGroup[] | undefined): CommunityChannel[] | null | undefined {
-  if (channels?.some((c) => c.type === "WhatsApp" && c.inviteUrl)) return channels;
-  const g = groups?.find((x) => x.communityId === communityId);
-  if (!g) return channels;
-  return [...(channels ?? []), { type: "WhatsApp", displayName: g.name, inviteUrl: g.inviteLink, connectedAt: new Date(0).toISOString() }];
-}
-
 export default function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -108,7 +96,6 @@ export default function CommunityDetailPage() {
     queryKey: ["m-community", id],
     queryFn: () => getCommunity(id),
   });
-  const assistantGroups = useQuery({ queryKey: ["m-whatsapp-groups"], queryFn: getWhatsAppGroups, staleTime: 5 * 60_000, retry: false });
 
   const isApproved = community?.myStatus === "Approved";
   const isLeader = community?.myRole === "Leader";
@@ -370,11 +357,7 @@ export default function CommunityDetailPage() {
         />
       ) : (
         <div className="space-y-8">
-          {isLeader ? (
-            <CommunityInvitePanel communityId={id} communityName={community.name} description={community.description} />
-          ) : (
-            <CommunityGroupLink channels={withAssistantGroup(community.channels, community.id, assistantGroups.data)} />
-          )}
+          {isLeader && <CommunityInvitePanel communityId={id} communityName={community.name} />}
 
           {/* ── Fundraisers ── */}
           <section>

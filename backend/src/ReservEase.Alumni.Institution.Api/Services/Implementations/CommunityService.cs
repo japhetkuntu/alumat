@@ -39,7 +39,7 @@ public class CommunityService(
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                     memberships.Count(m => m.Status == "Pending"),
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                    c.CreatedAt, ToChannelItems(c.ExternalChannels), invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind);
+                    c.CreatedAt, invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind);
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -49,9 +49,6 @@ public class CommunityService(
             return ApiResponseExtensions.ToServerErrorApiResponse<List<CommunityListItem>>("Failed to retrieve communities");
         }
     }
-
-    private static List<CommunityChannelItem>? ToChannelItems(List<CommunityChannel>? channels) =>
-        channels is { Count: > 0 } ? channels.Select(c => new CommunityChannelItem(c.Type, c.DisplayName, c.InviteUrl, c.ConnectedAt)).ToList() : null;
 
     public async Task<IApiResponse<CommunityGrowthSummary>> GetGrowthAsync()
     {
@@ -119,13 +116,6 @@ public class CommunityService(
             // Null leaves the kind as it is (so toggling a group on or off never wipes it); a blank clears it.
             if (request.Kind is not null) community.Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim();
             community.IsActive = request.IsActive;
-            if (request.ExternalChannels is not null)
-            {
-                var parsed = CommunityChannelRules.Parse(request.ExternalChannels.Select(c => (c.Type, c.DisplayName, c.InviteUrl)), community.ExternalChannels, updatedBy, out var channelError);
-                if (parsed is null)
-                    return ApiResponseExtensions.ToBadRequestApiResponse<CommunityListItem>(channelError!);
-                community.ExternalChannels = parsed.Count == 0 ? null : parsed;
-            }
             community.UpdatedAt = DateTime.UtcNow;
             community.UpdatedBy = updatedBy;
             await communityRepo.UpdateAsync(community);
@@ -136,7 +126,7 @@ public class CommunityService(
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                 memberships.Count(m => m.Status == "Pending"),
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                community.CreatedAt, ToChannelItems(community.ExternalChannels), Kind: community.Kind).ToOkApiResponse("Community updated");
+                community.CreatedAt, Kind: community.Kind).ToOkApiResponse("Community updated");
         }
         catch (Exception e)
         {

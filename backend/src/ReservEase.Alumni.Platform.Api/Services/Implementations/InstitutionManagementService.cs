@@ -582,12 +582,11 @@ public class InstitutionManagementService(
 
             institution.BroadcastEmailAllowed = request.Email;
             institution.BroadcastSmsAllowed = request.Sms;
-            institution.BroadcastWhatsAppAllowed = request.WhatsApp;
             institution.UpdatedAt = DateTime.UtcNow;
             institution.UpdatedBy = updatedBy;
             await institutionRepo.UpdateAsync(institution);
 
-            var on = new[] { request.Email ? "email" : null, request.Sms ? "SMS" : null, request.WhatsApp ? "WhatsApp" : null }.Where(x => x != null).ToList();
+            var on = new[] { request.Email ? "email" : null, request.Sms ? "SMS" : null }.Where(x => x != null).ToList();
             await auditLog.LogAsync(updatedBy, actorName,
                 on.Count == 0 ? "set broadcasts to in-app only" : $"allowed broadcasts by {string.Join(", ", on)}", institution.Name);
 
@@ -1456,6 +1455,6 @@ public class InstitutionManagementService(
             i.SettlementAccountNumber, i.SettlementAccountName, revenue,
             MemberPortalUrl(i.Slug, i.CustomDomain), InstitutionPortalUrl(i.Slug), i.GraduationYearMode, i.RegistrationFields,
             i.OwnerStaffId, i.OwnerStaffId is null ? null : (await platformStaffRepo.GetOneAsync(s => s.Id == i.OwnerStaffId))?.Name,
-            i.BroadcastEmailAllowed, i.BroadcastSmsAllowed, i.BroadcastWhatsAppAllowed, i.PaidEventsEnabled);
+            i.BroadcastEmailAllowed, i.BroadcastSmsAllowed, i.PaidEventsEnabled);
     }
 }

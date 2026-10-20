@@ -84,7 +84,6 @@ builder.Services.AddScoped<EngagementEngine>();
 builder.Services.AddScoped<IEngagementService, EngagementService>();
 builder.Services.AddScoped<IPendingWorkService, PendingWorkService>();
 builder.Services.AddScoped<IOpportunitySuggestionService, OpportunitySuggestionService>();
-builder.Services.AddScoped<IWhatsAppGroupService, WhatsAppGroupService>();
 builder.Services.AddReportJobs();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddScoped<IEventService, EventService>();

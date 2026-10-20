@@ -61,19 +61,6 @@ public class TenantResolutionMiddlewareTests
     }
 
     [Fact]
-    public async Task The_whatsapp_webhook_is_passed_through_with_no_tenant_even_when_the_default_institution_is_suspended()
-    {
-        var h = new Harness();
-        h.Config["DefaultInstitutionSlug"] = "susp";   // the fallback that would otherwise lock the webhook out with a 403
-
-        var ctx = await h.Send("api.alumunion.test", "/api/v1/callbacks/whatsapp");
-
-        Assert.True(h.NextCalled);
-        Assert.Equal(StatusCodes.Status200OK, ctx.Response.StatusCode);
-        Assert.Null(h.Tenant.InstitutionId);
-    }
-
-    [Fact]
     public async Task Resolves_by_custom_domain()
     {
         var h = new Harness();

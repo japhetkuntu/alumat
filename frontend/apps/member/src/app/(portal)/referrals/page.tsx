@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Check, Copy, MessageSquare, Share2, Trophy, Medal, Award, Send, Loader2,
+  Check, Copy, Share2, Trophy, Medal, Award, Send, Loader2,
 } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
@@ -68,8 +68,6 @@ export default function ReferralsPage() {
       setLink(`${window.location.origin}/register?ref=${info.referralCode}`);
     }
   }, [info?.referralCode]);
-
-  const shareMessage = `Join me in our community — ${link}`;
 
   const inviteMut = useMutation({
     mutationFn: () => sendReferralInvite(inviteEmail.trim()),
@@ -148,14 +146,7 @@ export default function ReferralsPage() {
         <div className="flex flex-col sm:flex-row gap-2">
           <Input readOnly value={link} className="text-[13px] font-mono" onFocus={(e) => e.target.select()} />
           <div className="flex gap-2 shrink-0">
-            <Button
-              size="sm"
-              className="font-semibold text-[12.5px] gap-1.5"
-              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, "_blank", "noopener,noreferrer")}
-            >
-              <MessageSquare size={13} />WhatsApp
-            </Button>
-            <Button variant="outline" size="sm" onClick={copyLink} className="font-semibold text-[12.5px] gap-1.5">
+            <Button size="sm" onClick={copyLink} className="font-semibold text-[12.5px] gap-1.5">
               {copied ? <Check size={13} /> : <Copy size={13} />}
               {copied ? "Copied" : "Copy"}
             </Button>

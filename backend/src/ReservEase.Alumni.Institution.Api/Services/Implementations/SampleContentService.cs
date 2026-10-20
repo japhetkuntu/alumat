@@ -67,7 +67,7 @@ public class SampleContentService(
                     Title = "How to get the most from this portal", Category = "Guide", Status = "Published", PublishedAt = now.AddMinutes(-1),
                     AuthorId = adminId, CreatedBy = Marker,
                     Content = "This is an example post. Complete your profile, find other members in the directory, RSVP to events and "
-                        + "follow the groups that matter to you. You can also connect WhatsApp to get updates without opening the portal.",
+                        + "follow the groups that matter to you.",
                 },
             ]);
 

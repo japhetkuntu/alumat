@@ -5,7 +5,7 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Marketing;
 public record MarketingSnapshot(string CampaignTitle, string Title, string Content, string DestinationPath, bool UseLandingPage, List<MarketingAsset> Assets);
 public static class MarketingRules
 {
-    public static readonly string[] Channels = ["Facebook", "Instagram", "LinkedIn", "WhatsApp", "X", "TikTok", "YouTube", "Other"];
+    public static readonly string[] Channels = ["Facebook", "Instagram", "LinkedIn", "X", "TikTok", "YouTube", "Other"];
     public static readonly string[] Statuses = ["Draft", "Ready", "Archived"];
     // Only our own marketing destinations, never an arbitrary redirect or login route.
     public static bool ValidDestination(string path) => path is "/" or "/#onboard" or "/#features" or "/#product" or "/#costs" or "/why-not-whatsapp";

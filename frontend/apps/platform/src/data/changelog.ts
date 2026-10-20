@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-20",
+    title: "WhatsApp is removed from the product: the assistant, group posting, WhatsApp alerts and every WhatsApp button",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "Everything built around WhatsApp is gone from all three portals and the servers. Removed: the AlumUnion assistant and its link flow (the Connect WhatsApp page, menu entry, profile row, home card and setup step), linked WhatsApp groups and posting to them, the WhatsApp tab in institution settings and the platform's WhatsApp health page, WhatsApp as a notification channel (alerts are SMS, email and push as before, so members who had chosen WhatsApp alerts simply stop getting them), the WhatsApp broadcast option and the platform switches for it, a community's own WhatsApp chat link and the leader tool that connected it, every Share on WhatsApp button (events, jobs, news, fundraisers, invitations, referrals, the setup checklist), the mentor WhatsApp number field, and the WhatsApp wording on registration. The shared invitation link for community leaders stays; the setup checklist's invite step now copies the message instead. The servers no longer need any WhatsApp provider keys or the webhook route. Left in place on purpose: the database columns the WhatsApp work added (phone verification, group lists, switches, alert preference, mentor number). Nothing reads or writes them, and no migration runs, so no data is lost; they can be dropped later in one cleanup migration. The public marketing pages that compare AlumUnion with WhatsApp groups are unchanged. No migration needed.",
+  },
+  {
+    date: "2026-10-20",
     title: "Event cards use the width they are given",
     scopes: ["Member"],
     type: "Improvement",

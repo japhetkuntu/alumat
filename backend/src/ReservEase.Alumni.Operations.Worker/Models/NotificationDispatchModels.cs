@@ -1,22 +1,16 @@
 namespace ReservEase.Alumni.Operations.Worker.Models;
 
 /// <summary>One member fan-out row, resolved in a single DB round trip so the workflow
-/// doesn't need a second read per recipient to decide whether to also send SMS/WhatsApp.</summary>
+/// doesn't need a second read per recipient to decide whether to also send an SMS.</summary>
 public sealed class NotificationRecipient
 {
     public required string MemberId { get; init; }
     public string? Phone { get; init; }
     public bool SmsAlerts { get; init; }
-    public bool WhatsAppAlerts { get; init; }
-    /// <summary>The number was proved by a WhatsApp message (Member.PhoneVerifiedAt). Only then is WhatsApp preferred over SMS.</summary>
-    public bool WhatsAppVerified { get; init; }
 }
 
 /// <summary>The common single-recipient case: a member's contact fields bundled with
 /// their NotificationPreference flags in one read.</summary>
-/// <summary>One message in a WhatsApp batch: where it goes and what it says.</summary>
-public sealed record WhatsAppBatchItem(string Phone, string Text);
-
 public sealed class MemberWithPreference
 {
     public required string MemberId { get; init; }
@@ -24,8 +18,6 @@ public sealed class MemberWithPreference
     public string? FirstName { get; init; }
     public string? Phone { get; init; }
     public bool SmsAlerts { get; init; }
-    public bool WhatsAppAlerts { get; init; }
-    public bool WhatsAppVerified { get; init; }
     public bool EventReminders { get; init; } = true;
 }
 
@@ -44,8 +36,6 @@ public sealed class InstitutionContactInfo
     public string? LogoUrl { get; init; }
     public bool SmsNotificationsEnabled { get; init; } = true;
     public bool EmailNotificationsEnabled { get; init; } = true;
-    /// <summary>The WhatsApp channel is switched on for the platform and not switched off by this institution.</summary>
-    public bool WhatsAppChannelOpen { get; init; }
 
     /// <summary>Fully-built "https://{slug}.{domain}" URLs, computed once in the activity
     /// (which alone may read IConfiguration — workflow code must stay deterministic).

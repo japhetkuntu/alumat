@@ -1,6 +1,6 @@
 import { richTextToPlain } from "./rich-text-utils";
 /**
- * Ready-to-send wording for sharing an item into a chat (WhatsApp and similar). Each builder returns the text
+ * Ready-to-send wording for sharing an item into a chat. Each builder returns the text
  * that goes ABOVE the link; ShareLinkButton appends the link itself. Wording is deliberately generic
  * ("our community", "members"): the same text has to suit a school, a church or an association.
  */

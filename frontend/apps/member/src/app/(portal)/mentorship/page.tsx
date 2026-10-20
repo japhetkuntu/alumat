@@ -6,7 +6,7 @@ import { ChipRow } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   UserCheck, Plus, CheckCircle, XCircle, Clock,
-  Inbox, Users, ChevronDown, Linkedin, MessageCircle, Phone,
+  Inbox, Users, ChevronDown, Linkedin, Phone,
   Sparkles, GraduationCap, HeartHandshake,
 } from "@alumni/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@alumni/ui";
@@ -155,7 +155,7 @@ export default function MemberMentorshipPage() {
   const [requestForm,   setRequestForm]   = useState({ mentorProfileId: "", area: "", message: "" });
   const [mentorForm,    setMentorForm]    = useState({
     area: "", bio: "", maxMentees: "3",
-    contactLinkedInUrl: "", contactWhatsAppNumber: "", contactPhoneNumber: "",
+    contactLinkedInUrl: "", contactPhoneNumber: "",
   });
   const [confirmAction, setConfirmAction] = useState<{ type: "accept" | "reject"; id: string } | null>(null);
   const qc = useQueryClient();
@@ -203,12 +203,11 @@ export default function MemberMentorshipPage() {
       bio:                   mentorForm.bio || undefined,
       maxMentees:            Number(mentorForm.maxMentees),
       contactLinkedInUrl:    mentorForm.contactLinkedInUrl || undefined,
-      contactWhatsAppNumber: mentorForm.contactWhatsAppNumber || undefined,
       contactPhoneNumber:    mentorForm.contactPhoneNumber || undefined,
     }),
     onSuccess: () => {
       toast.success("Application submitted. You'll be notified once approved.");
-      setMentorForm({ area: "", bio: "", maxMentees: "3", contactLinkedInUrl: "", contactWhatsAppNumber: "", contactPhoneNumber: "" });
+      setMentorForm({ area: "", bio: "", maxMentees: "3", contactLinkedInUrl: "", contactPhoneNumber: "" });
       qc.invalidateQueries({ queryKey: ["m-my-mentor-profile"] });
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -455,7 +454,7 @@ export default function MemberMentorshipPage() {
                       &ldquo;{r.message}&rdquo;
                     </p>
                   )}
-                  {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactWhatsAppNumber || r.contactPhoneNumber) && (
+                  {r.status === "Accepted" && (r.contactLinkedInUrl || r.contactPhoneNumber) && (
                     <div
                       className="p-3 rounded-xl space-y-2"
                       style={{ background: "var(--card)", border: "1px solid var(--border-emphasis, var(--border))" }}
@@ -473,17 +472,6 @@ export default function MemberMentorshipPage() {
                             style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
                           >
                             <Linkedin size={13} /> LinkedIn
-                          </a>
-                        )}
-                        {r.contactWhatsAppNumber && (
-                          <a
-                            href={`https://wa.me/${r.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border"
-                            style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
-                          >
-                            <MessageCircle size={13} /> WhatsApp
                           </a>
                         )}
                         {r.contactPhoneNumber && (
@@ -689,12 +677,6 @@ export default function MemberMentorshipPage() {
                    
                     value={mentorForm.contactLinkedInUrl}
                     onChange={e => setMentorForm(f => ({ ...f, contactLinkedInUrl: e.target.value }))}
-                    className="h-11 text-[14px]"
-                  /></div>
-                  <div className="space-y-1.5"><Label>WhatsApp number</Label><Input
-                   
-                    value={mentorForm.contactWhatsAppNumber}
-                    onChange={e => setMentorForm(f => ({ ...f, contactWhatsAppNumber: e.target.value }))}
                     className="h-11 text-[14px]"
                   /></div>
                   <div className="space-y-1.5"><Label>Phone number</Label><Input type="tel"

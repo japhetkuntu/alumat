@@ -39,9 +39,7 @@ public class PublicController(
     IAlumniPgRepository<PhotoAlbum> albumRepo,
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
-    IRedisService<PublicContentCacheConfig> publicCache,
-    Microsoft.Extensions.Options.IOptions<ReservEase.Alumni.Whatsapp.Sdk.Options.WaSenderConfig> whatsApp,
-    ReservEase.Alumni.PostgresDb.Sdk.Services.IPlatformWhatsAppSwitch platformSwitch) : DefaultController
+    IRedisService<PublicContentCacheConfig> publicCache) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
     private const int MaxCacheableItems = 12;
@@ -96,9 +94,6 @@ public class PublicController(
             institution.OrganizationType,
             institution.CohortLabel,
             institution.CohortLabelPlural,
-            whatsApp.Value.Enabled && !string.IsNullOrWhiteSpace(whatsApp.Value.AssistantNumber)
-                && institution.IsWhatsAppAllowed()
-                && await platformSwitch.IsOnAsync(),
             institution.GraduationYearMode,
             institution.CollectMemberId,
             institution.RegistrationFields);
@@ -435,7 +430,7 @@ public class PublicController(
 
     /// <summary>
     /// Title/description/image for a single entity, used to render real Open Graph tags
-    /// on a shared detail-page link (e.g. the WhatsApp/link-unfurl preview when a member
+    /// on a shared detail-page link (e.g. the link-unfurl preview when a member
     /// shares an event) instead of falling back to the institution's generic branding.
     /// Deliberately not year/community-restricted like the landing-page lists above: a
     /// caller here already has a specific id from a link someone shared with them — this

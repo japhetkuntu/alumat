@@ -109,7 +109,7 @@ public class BroadcastService(
         {
             var institution = await LoadInstitutionAsync();
             if (institution is null) return ApiResponseExtensions.ToNotFoundApiResponse<BroadcastChannelsDto>("Institution not found");
-            return new BroadcastChannelsDto(true, institution.BroadcastEmailAllowed, institution.BroadcastSmsAllowed, institution.BroadcastWhatsAppAllowed).ToOkApiResponse();
+            return new BroadcastChannelsDto(true, institution.BroadcastEmailAllowed, institution.BroadcastSmsAllowed).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -145,7 +145,7 @@ public class BroadcastService(
             // server, so it cannot be bypassed by calling the endpoint directly.
             var institution = await LoadInstitutionAsync();
             if (institution is null) return ApiResponseExtensions.ToNotFoundApiResponse<BroadcastResult>("Institution not found");
-            var blocked = BroadcastChannelRules.Blocked(channels, institution.BroadcastEmailAllowed, institution.BroadcastSmsAllowed, institution.BroadcastWhatsAppAllowed);
+            var blocked = BroadcastChannelRules.Blocked(channels, institution.BroadcastEmailAllowed, institution.BroadcastSmsAllowed);
             if (blocked.Count > 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<BroadcastResult>(
                     $"Broadcasts by {string.Join(" and ", blocked)} are not switched on for your institution. In-app broadcasts are always available; contact AlumUnion to switch on the others.");

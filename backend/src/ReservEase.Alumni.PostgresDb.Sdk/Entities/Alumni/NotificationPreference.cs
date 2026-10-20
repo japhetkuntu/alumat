@@ -17,9 +17,10 @@ public class NotificationPreference : BaseEntity, ITenantScoped
     public bool EngagementMessages { get; set; } = true;
 
     // Opt-in (default false), unlike the in-app/email alerts above — SMS and
-    // WhatsApp cost money per message and are more intrusive, so a member has
-    // to explicitly turn these on rather than explicitly turn them off.
+    // SMS costs money per message and is more intrusive, so a member has
+    // to explicitly turn it on rather than explicitly turn it off.
     public bool SmsAlerts { get; set; } = false;
+    /// <summary>Retired with the WhatsApp assistant. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public bool WhatsAppAlerts { get; set; } = false;
 
     /// <summary>"None", "Weekly", or "Monthly" — how often the re-engagement digest email goes out. Defaults to Weekly so new members are opted in.</summary>

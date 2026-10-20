@@ -12,7 +12,7 @@ import { Badge } from "@alumni/ui";
 import { Progress } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@alumni/ui";
 import {
-  Copy, Check, Share2, MessageCircle, Twitter, Facebook, Send, Linkedin, Mail, MessageSquare,
+  Copy, Check, Share2, Twitter, Facebook, Send, Linkedin, Mail, MessageSquare,
   Users, Target, Calendar, ChevronDown, ChevronUp,
   Loader2, Lock, ArrowRight, ExternalLink, RefreshCcw, CheckCircle2, XCircle,
 } from "@alumni/ui";
@@ -180,12 +180,6 @@ export default function PublicCampaignContributionPage() {
   const shareTextPlain = `Support "${campaign.title}": every contribution counts!`;
 
   const sharePlatforms = [
-    {
-      name: "WhatsApp",
-      icon: MessageCircle,
-      href: `https://wa.me/?text=${shareText}%20${encodedShare}`,
-      hover: "hover:bg-[#25D366]/10 hover:border-[#25D366]/30 hover:text-[#25D366]",
-    },
     {
       name: "Telegram",
       icon: Send,

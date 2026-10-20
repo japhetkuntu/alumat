@@ -27,7 +27,6 @@ import {
   Layers,
   Users2,
   Radio,
-  MessageCircle,
   Sitemap,
   ShoppingBag,
   Images,
@@ -40,7 +39,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@alumni/ui";
 import { InstitutionSwitcher } from "@/components/institution/institution-switcher";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
-import { useFeatures, useWhatsApp } from "@/hooks/use-institution-features";
+import { useFeatures } from "@/hooks/use-institution-features";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
@@ -71,7 +70,6 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/services": "Services",
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",
-  "/settings?tab=whatsapp": "WhatsApp",
 };
 
 // Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
@@ -124,7 +122,6 @@ const baseNavItems = [
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/broadcast", label: "Broadcast", icon: Radio },
   { href: "/automations", label: "Automatic messages", icon: Activity },
-  { href: "/settings?tab=whatsapp", label: "WhatsApp", icon: MessageCircle },
   { label: "Institution", isHeader: true },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/audit-log", label: "Audit Log", icon: ClipboardList },
@@ -186,12 +183,9 @@ function useNavItems() {
   const disabledFeatures = useMemo(() => new Set(theme?.disabledFeatures ?? []), [theme]);
   const isCommunity = theme?.organizationType === "Community";
   const cohortPlural = theme?.cohortLabelPlural?.trim() || DEFAULT_COHORT_LABEL_PLURAL;
-  const { on: whatsAppOn } = useWhatsApp();
 
   return useMemo(() => {
     const items = baseNavItems.filter((item) => {
-      // The WhatsApp menu entry exists only while the platform has it on and the institution has not turned it off.
-      if (item.href === "/settings?tab=whatsapp" && !whatsAppOn) return false;
       // Forum, Business Directory, Broadcast, and Spotlights stay
       // SuperAdmin-only (matches ForumController/BusinessDirectoryController/
       // BroadcastController/SpotlightsController's [Authorize(Roles = "SuperAdmin")]
@@ -200,7 +194,7 @@ function useNavItems() {
       // place). Mentorship and Albums are partially available to a
       // ScopedAdmin too (scoped to their own batch/community) — see
       // MentorshipController/AlbumsController.
-      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement" || item.href === "/settings?tab=whatsapp") {
+      if (item.href === "/forum" || item.href === "/business-directory" || item.href === "/broadcast" || item.href === "/spotlights" || item.href === "/flagged-content" || item.href === "/engagement") {
         if (user?.role !== "SuperAdmin") return false;
       }
       if (item.href === "/mentorship" || item.href === "/albums") {
@@ -234,7 +228,7 @@ function useNavItems() {
       const next = items[idx + 1];
       return !!next && !next.isHeader;
     });
-  }, [user?.role, disabledFeatures, isCommunity, cohortPlural, whatsAppOn]);
+  }, [user?.role, disabledFeatures, isCommunity, cohortPlural]);
 }
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {

@@ -92,7 +92,6 @@ public class MemberMentorshipService(
                     existing.Bio = request.Bio;
                     existing.MaxMentees = request.MaxMentees;
                     existing.ContactLinkedInUrl = request.ContactLinkedInUrl;
-                    existing.ContactWhatsAppNumber = request.ContactWhatsAppNumber;
                     existing.ContactPhoneNumber = request.ContactPhoneNumber;
                     existing.Status = "Pending";
                     existing.UpdatedAt = DateTime.UtcNow;
@@ -118,7 +117,6 @@ public class MemberMentorshipService(
                 Bio = request.Bio,
                 MaxMentees = request.MaxMentees,
                 ContactLinkedInUrl = request.ContactLinkedInUrl,
-                ContactWhatsAppNumber = request.ContactWhatsAppNumber,
                 ContactPhoneNumber = request.ContactPhoneNumber,
                 Status = "Pending",
                 CreatedBy = member.Id,
@@ -172,7 +170,6 @@ public class MemberMentorshipService(
                     CurrentMenteeCount = mentor.CurrentMenteeCount,
                     Status = mentor.Status,
                     ContactLinkedInUrl = mentor.ContactLinkedInUrl,
-                    ContactWhatsAppNumber = mentor.ContactWhatsAppNumber,
                     ContactPhoneNumber = mentor.ContactPhoneNumber,
                 },
                 MenteeId = member.Id,
@@ -350,7 +347,6 @@ public class MemberMentorshipService(
             if (request.MentorProfile is not null)
             {
                 request.MentorProfile.ContactLinkedInUrl = profile.ContactLinkedInUrl;
-                request.MentorProfile.ContactWhatsAppNumber = profile.ContactWhatsAppNumber;
                 request.MentorProfile.ContactPhoneNumber = profile.ContactPhoneNumber;
             }
             await requestRepo.UpdateAsync(request);

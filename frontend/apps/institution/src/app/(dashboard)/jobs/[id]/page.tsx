@@ -28,7 +28,6 @@ import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
 import { ShareLinkButton } from "@alumni/ui";
-import { PostToWhatsAppButton } from "@/components/institution/post-to-whatsapp";
 import { useState } from "react";
 import type { Job } from "@/types";
 
@@ -189,7 +188,6 @@ export default function AdminJobDetailPage() {
           <span className="text-[13px] font-semibold text-foreground/70 truncate max-w-[200px] sm:max-w-xs">{job.title}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <PostToWhatsAppButton type="job" contentId={id} />
           <ShareLinkButton
             url={shareUrl}
             title={job.title}

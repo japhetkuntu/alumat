@@ -219,13 +219,13 @@ public class EntityDtoMappingTests
 
     private static MentorProfile Mentor() => new()
     {
-        Area = "Engineering", MaxMentees = 3, ContactLinkedInUrl = "https://li/m", ContactWhatsAppNumber = "0551", ContactPhoneNumber = "0241",
+        Area = "Engineering", MaxMentees = 3, ContactLinkedInUrl = "https://li/m", ContactPhoneNumber = "0241",
         Member = new MemberSnapshot { FirstName = "Yaw", LastName = "A", ProfilePictureUrl = "https://p" },
     };
 
     private static MentorProfileSnapshot MentorSnapshot() => new()
     {
-        Area = "Engineering", ContactLinkedInUrl = "https://li/m", ContactWhatsAppNumber = "0551", ContactPhoneNumber = "0241",
+        Area = "Engineering", ContactLinkedInUrl = "https://li/m", ContactPhoneNumber = "0241",
         Member = new MemberSnapshot { FirstName = "Yaw", LastName = "A" },
     };
 
@@ -234,7 +234,6 @@ public class EntityDtoMappingTests
     {
         var dto = Mentor().ToDto();
         Assert.Null(dto.ContactLinkedInUrl);
-        Assert.Null(dto.ContactWhatsAppNumber);
         Assert.Null(dto.ContactPhoneNumber);
         Assert.Equal("Yaw A", dto.MemberName);
     }
@@ -243,7 +242,7 @@ public class EntityDtoMappingTests
     public void Mentor_contact_details_are_included_only_when_asked_for()
     {
         var dto = Mentor().ToDto(includeContact: true);
-        Assert.Equal(("https://li/m", "0551", "0241"), (dto.ContactLinkedInUrl, dto.ContactWhatsAppNumber, dto.ContactPhoneNumber));
+        Assert.Equal(("https://li/m", "0241"), (dto.ContactLinkedInUrl, dto.ContactPhoneNumber));
     }
 
     [Fact]
@@ -253,7 +252,6 @@ public class EntityDtoMappingTests
 
         var hidden = request.ToDto();
         Assert.Null(hidden.ContactPhoneNumber);
-        Assert.Null(hidden.ContactWhatsAppNumber);
         Assert.Null(hidden.ContactLinkedInUrl);
         Assert.Equal("Esi O", hidden.MenteeName);
         Assert.Equal("Yaw A", hidden.MentorProfileName);
@@ -346,10 +344,10 @@ public class EntityDtoMappingTests
         var member = new NotificationPreference
         {
             MembershipReminders = false, CampaignAlerts = false, EventReminders = true, JobAlerts = false,
-            ClassNoteAlerts = true, SpotlightAlerts = false, SmsAlerts = true, WhatsAppAlerts = true, DigestFrequency = "Weekly",
+            ClassNoteAlerts = true, SpotlightAlerts = false, SmsAlerts = true, DigestFrequency = "Weekly",
         }.ToDto();
         Assert.Equal((false, false, true, false), (member.MembershipReminders, member.CampaignAlerts, member.EventReminders, member.JobAlerts));
-        Assert.Equal((true, false, true, true, "Weekly"), (member.ClassNoteAlerts, member.SpotlightAlerts, member.SmsAlerts, member.WhatsAppAlerts, member.DigestFrequency));
+        Assert.Equal((true, false, true, "Weekly"), (member.ClassNoteAlerts, member.SpotlightAlerts, member.SmsAlerts, member.DigestFrequency));
 
         var admin = new AdminNotificationPreference { PaymentReceivedAlerts = false, NewMemberRegistrationAlerts = true, PendingApprovalAlerts = false, SystemAlerts = true }.ToDto();
         Assert.Equal((false, true, false, true), (admin.PaymentReceivedAlerts, admin.NewMemberRegistrationAlerts, admin.PendingApprovalAlerts, admin.SystemAlerts));

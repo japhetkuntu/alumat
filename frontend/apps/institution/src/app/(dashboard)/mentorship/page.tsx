@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, XCircle, UserCheck, Lock, Eye, Linkedin, MessageCircle, Phone } from "@alumni/ui";
+import { CheckCircle, XCircle, UserCheck, Lock, Eye, Linkedin, Phone } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -359,7 +359,7 @@ export default function AdminMentorshipPage() {
                   </div>
                 </div>
 
-                {(viewMentor.contactLinkedInUrl || viewMentor.contactWhatsAppNumber || viewMentor.contactPhoneNumber) && (
+                {(viewMentor.contactLinkedInUrl || viewMentor.contactPhoneNumber) && (
                   <div>
                     <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Contact</p>
                     <div className="flex flex-wrap gap-2">
@@ -367,12 +367,6 @@ export default function AdminMentorshipPage() {
                         <a href={viewMentor.contactLinkedInUrl} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border border-primary text-primary">
                           <Linkedin size={13} /> LinkedIn
-                        </a>
-                      )}
-                      {viewMentor.contactWhatsAppNumber && (
-                        <a href={`https://wa.me/${viewMentor.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border border-primary text-primary">
-                          <MessageCircle size={13} /> WhatsApp
                         </a>
                       )}
                       {viewMentor.contactPhoneNumber && (
@@ -439,7 +433,7 @@ export default function AdminMentorshipPage() {
                   </div>
                 )}
 
-                {viewRequest.status === "Accepted" && (viewRequest.contactLinkedInUrl || viewRequest.contactWhatsAppNumber || viewRequest.contactPhoneNumber) && (
+                {viewRequest.status === "Accepted" && (viewRequest.contactLinkedInUrl || viewRequest.contactPhoneNumber) && (
                   <div>
                     <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Mentor contact</p>
                     <div className="flex flex-wrap gap-2">
@@ -447,12 +441,6 @@ export default function AdminMentorshipPage() {
                         <a href={viewRequest.contactLinkedInUrl} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border border-primary text-primary">
                           <Linkedin size={13} /> LinkedIn
-                        </a>
-                      )}
-                      {viewRequest.contactWhatsAppNumber && (
-                        <a href={`https://wa.me/${viewRequest.contactWhatsAppNumber.replace(/[^\d+]/g, "").replace(/^\+/, "")}`} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[12.5px] font-semibold px-3 py-1.5 border border-primary text-primary">
-                          <MessageCircle size={13} /> WhatsApp
                         </a>
                       )}
                       {viewRequest.contactPhoneNumber && (
