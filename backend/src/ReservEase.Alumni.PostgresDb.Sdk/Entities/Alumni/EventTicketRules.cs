@@ -15,6 +15,11 @@ public static class EventTicketRules
     public static System.Linq.Expressions.Expression<Func<EventRsvp, bool>> SettledBetween(DateTime start, DateTime end) =>
         t => t.Status == EventRsvpStatuses.Confirmed && t.AmountPaid > 0 && t.PaidAt != null && t.PaidAt >= start && t.PaidAt < end;
 
+    /// <summary>The same rule for two windows at once, so a forecast reads both in one query.</summary>
+    public static System.Linq.Expressions.Expression<Func<EventRsvp, bool>> SettledInEither(DateTime start1, DateTime end1, DateTime start2, DateTime end2) =>
+        t => t.Status == EventRsvpStatuses.Confirmed && t.AmountPaid > 0 && t.PaidAt != null
+            && ((t.PaidAt >= start1 && t.PaidAt < end1) || (t.PaidAt >= start2 && t.PaidAt < end2));
+
     public const decimal MaxTicketPrice = 100_000m;
 
     /// <summary>How long an unpaid ticket holds a seat while the member is paying.</summary>

@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-21",
+    title: "Faster across the board: services form, payouts forecast, audience counts and the servers under heavy load",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "Aim: every request answers in half a second or less, and stays that way when many people use it at once. Findings from load tests with 200 people at a time: writes and lists were already quick (5 to 35 ms), but the database ran out of connections (error 53300) and framework logging cost as much as the work itself. Fixed: each API now caps its database connections (Postgres:MaxPoolSize, default 20, so three APIs fit inside the server's 100); framework and database chatter is logged at Warning only, the file log is buffered, and any request slower than 500 ms is logged as a Warning so slow spots are easy to find. Counting was moved into the database for the broadcast recipient count, the audience preview and the payouts forecast (it now includes event RSVPs), instead of loading every row and counting in memory. Monthly engagement figures are cached (2 minutes for the current month, 6 hours for past months). On the institution portal, the Member Services form no longer redraws the whole page on every keystroke: each question and the stage list redraw on their own, so adding many questions stays smooth. No migration needed. Config: Postgres:MaxPoolSize can be raised if the database server allows more connections.",
+  },
+  {
     date: "2026-10-20",
     title: "WhatsApp is removed from the product: the assistant, group posting, WhatsApp alerts and every WhatsApp button",
     scopes: ["Platform", "Institution", "Member"],

@@ -19,8 +19,9 @@ public static class PostgresExtensionService
         this IServiceCollection services, IConfiguration config, string connectionName = "AlumniConnection")
     {
         services.AddScoped<TenantCacheInvalidationInterceptor>();
+        var connectionString = WithBoundedPool(config.GetConnectionString(connectionName), config);
         services.AddDbContext<AlumniDbContext>((sp, opts) =>
-            opts.UseNpgsql(config.GetConnectionString(connectionName),
+            opts.UseNpgsql(connectionString,
                 b => b.MigrationsHistoryTable("__EFMigrationsHistory", "alumni"))
                 .AddInterceptors(sp.GetRequiredService<TenantCacheInvalidationInterceptor>()));
 
@@ -30,6 +31,35 @@ public static class PostgresExtensionService
         services.AddScoped<IStaffActivityRecorder, StaffActivityRecorder>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Every process (three APIs and the worker) keeps its own pool of Postgres connections, and the pool's default ceiling of 100
+    /// is the whole server's default <c>max_connections</c>: a burst of traffic to one process, or a few busy at once, used up every
+    /// connection and the rest of the requests failed with "too many clients" instead of waiting their turn. A small ceiling per
+    /// process keeps the total inside what the server allows, and a request that finds the pool busy waits a moment for a free
+    /// connection (queries take a few milliseconds) rather than failing. Set <c>Postgres:MaxPoolSize</c> to change it, or put
+    /// "Maximum Pool Size" in the connection string itself, which wins. Returned unchanged when the string is empty or unreadable.
+    /// </summary>
+    internal static string? WithBoundedPool(string? connectionString, IConfiguration config)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString)) return connectionString;
+        try
+        {
+            var builder = new NpgsqlConnectionStringBuilder(connectionString);
+            var setByHand = connectionString.Contains("Maximum Pool Size", StringComparison.OrdinalIgnoreCase)
+                || connectionString.Contains("MaxPoolSize", StringComparison.OrdinalIgnoreCase);
+            if (!setByHand) builder.MaxPoolSize = Math.Max(5, config.GetValue("Postgres:MaxPoolSize", 20));
+            // Keep a few connections warm so the first requests after a quiet spell don't each pay to open one.
+            if (!connectionString.Contains("Minimum Pool Size", StringComparison.OrdinalIgnoreCase)
+                && !connectionString.Contains("MinPoolSize", StringComparison.OrdinalIgnoreCase))
+                builder.MinPoolSize = Math.Min(builder.MaxPoolSize, 2);
+            return builder.ConnectionString;
+        }
+        catch (ArgumentException)
+        {
+            return connectionString;
+        }
     }
 
     /// <summary>

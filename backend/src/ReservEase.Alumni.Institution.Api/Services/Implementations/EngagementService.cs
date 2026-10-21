@@ -128,8 +128,8 @@ public class EngagementService(
             }
 
             var shared = await GetSharedAsync(30, disabledFeatures.ToHashSet(), usesYearGroups, now);
-            var current = await engine.ComputeMonthAsync(start);
-            var previous = await engine.ComputeMonthAsync(start.AddMonths(-1));
+            var current = await MonthFiguresAsync(start, thisMonth);
+            var previous = await MonthFiguresAsync(start.AddMonths(-1), thisMonth);
             var next = await recommendationRepo.GetQueryable(r => r.Status == RecommendationStatuses.Open)
                 .OrderBy(r => r.Priority == RecommendationPriorities.High ? 0 : r.Priority == RecommendationPriorities.Medium ? 1 : 2).ThenByDescending(r => r.CreatedAt).Take(5).ToListAsync();
             var weakest = shared.Health.Factors.Where(f => f.Score is < 60).OrderBy(f => f.Score).Take(3).ToList();
@@ -143,6 +143,21 @@ public class EngagementService(
             logger.LogError(e, "Monthly report failed for {InstitutionId}", currentTenant.InstitutionId);
             return ApiResponseExtensions.ToServerErrorApiResponse<MonthlyReportDto>("Failed to build the monthly report");
         }
+    }
+
+    /// <summary>
+    /// One month's figures, remembered. A month that is over never changes, so it is kept for hours; the current month moves with
+    /// every payment and sign-in, so it is kept for a couple of minutes. Building a month is a couple of dozen queries, and the
+    /// report asks for two of them every time it opens.
+    /// </summary>
+    private async Task<MonthFigures> MonthFiguresAsync(DateTime monthStart, DateTime thisMonth)
+    {
+        var key = $"engagement-month:{currentTenant.InstitutionId}:{monthStart:yyyy-MM}";
+        var cached = await cache.GetAsync<MonthFigures>(key);
+        if (cached is not null) return cached;
+        var figures = await engine.ComputeMonthAsync(monthStart);
+        await cache.SetAsync(key, figures, monthStart < thisMonth ? TimeSpan.FromHours(6) : TimeSpan.FromMinutes(2));
+        return figures;
     }
 
     public async Task<IApiResponse<CohortsDto>> GetCohortsAsync(AuthData admin, int days, IReadOnlyCollection<string> disabledFeatures, bool usesYearGroups = true)

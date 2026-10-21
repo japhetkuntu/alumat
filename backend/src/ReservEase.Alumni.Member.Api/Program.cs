@@ -1,4 +1,5 @@
 using Serilog;
+using Serilog.Events;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.Mailtrap.Sdk.Extensions;
@@ -25,9 +26,16 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 // Serilog
+// The framework and the database layer narrate every request at Information level, several lines each, and every line is written
+// to the console and the file while the request waits. That was costing as much as the work itself under load (the same traffic
+// served twice as fast with it quiet), so only their warnings and errors are kept. Our own messages stay, and the request line
+// below says which requests are slow. appsettings can still raise any of this.
 builder.Host.UseSerilog((ctx, lc) => lc
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
     .WriteTo.Console()
-    .WriteTo.File("logs/member-api.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/member-api.log", rollingInterval: RollingInterval.Day, buffered: true, flushToDiskInterval: TimeSpan.FromSeconds(2))
     .ReadFrom.Configuration(ctx.Configuration));
 
 // Token config
@@ -124,7 +132,12 @@ if (!app.Environment.IsDevelopment())
 // Global exception handler — never expose server errors to the frontend
 app.UseExceptionHandler(!app.Environment.IsProduction());
 
-app.UseSerilogRequestLogging();
+// One line per request, but only the ones worth reading: failures, and anything slower than the half second we aim for.
+app.UseSerilogRequestLogging(o => o.GetLevel = (http, elapsedMs, ex) =>
+    ex is not null || http.Response.StatusCode >= 500 ? LogEventLevel.Error
+    : elapsedMs > 500 ? LogEventLevel.Warning
+    : http.Response.StatusCode >= 400 ? LogEventLevel.Information
+    : LogEventLevel.Debug);
 app.UseRouting();
 app.UseCors();
 app.UseRateLimiter();

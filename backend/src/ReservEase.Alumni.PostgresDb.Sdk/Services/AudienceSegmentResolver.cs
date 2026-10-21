@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
@@ -87,6 +88,77 @@ public class AudienceSegmentResolver(
             members = await ApplyDuesAsync(members, criteria.DuesStatus!, at.Year, institutionId);
 
         return members;
+    }
+
+    /// <summary>
+    /// How many people a rule describes, and a few of them to show, without loading every member. Counting thousands of members by
+    /// reading each one (with all their profile fields) just to look at <c>.Count</c> is what made previewing an audience take a
+    /// third of a second; the database counts in a few milliseconds. The two filters that can only be judged in memory (a written
+    /// answer, and paid or unpaid dues) still take the full route, so the numbers are always the same as <see cref="ResolveAsync"/>.
+    /// </summary>
+    public async Task<(int Count, List<Member> Sample)> CountAsync(SegmentCriteria criteria, SegmentScope scope, int sampleSize = 5, DateTime? now = null, string? institutionId = null)
+    {
+        if (!string.IsNullOrWhiteSpace(criteria.AnswerContains) || !string.IsNullOrEmpty(criteria.DuesStatus))
+        {
+            var all = await ResolveAsync(criteria, scope, now, institutionId);
+            return (all.Count, all.Take(sampleSize).ToList());
+        }
+
+        var explicitTenant = !string.IsNullOrEmpty(institutionId);
+        var at = now ?? DateTime.UtcNow;
+        var status = string.IsNullOrWhiteSpace(criteria.Status) ? null : criteria.Status;
+        var dormantBefore = at.AddDays(-DormantDays);
+        var joinedAfter = criteria.JoinedWithinDays is > 0 ? at.AddDays(-criteria.JoinedWithinDays.Value) : (DateTime?)null;
+        var dormantOnly = criteria.DormantOnly;
+        var from = criteria.GraduationYearFrom;
+        var to = criteria.GraduationYearTo;
+        var dept = string.IsNullOrWhiteSpace(criteria.DepartmentId) ? null : criteria.DepartmentId;
+
+        var query = memberRepo.GetQueryable(m =>
+            (!explicitTenant || m.InstitutionId == institutionId)
+            && (status == null ? m.Status != "Deleted" : m.Status == status)
+            && (dept == null || m.DepartmentId == dept)
+            && (!from.HasValue || m.GraduationYear >= from.Value)
+            && (!to.HasValue || m.GraduationYear <= to.Value)
+            && (!dormantOnly || m.LastLoginAt == null || m.LastLoginAt < dormantBefore)
+            && (!joinedAfter.HasValue || m.CreatedAt >= joinedAfter.Value), explicitTenant);
+
+        if (!scope.Unrestricted)
+        {
+            var years = scope.YearGroups.ToList();
+            if (scope.CommunityIds.Count > 0)
+            {
+                var communityIds = scope.CommunityIds.ToList();
+                var inScope = membershipRepo.GetQueryable(m => (!explicitTenant || m.InstitutionId == institutionId) && communityIds.Contains(m.CommunityId) && m.Status == "Approved", explicitTenant)
+                    .Select(m => m.MemberId);
+                query = query.Where(m => years.Contains(m.GraduationYear) || inScope.Contains(m.Id));
+            }
+            else
+            {
+                query = query.Where(m => years.Contains(m.GraduationYear));
+            }
+        }
+
+        var groupIds = criteria.GroupIds.ToHashSet();
+        if (criteria.GroupKinds.Count > 0)
+        {
+            var kinds = criteria.GroupKinds.Select(k => k.Trim().ToLower()).ToHashSet();
+            foreach (var c in await communityRepo.GetQueryable(c => (!explicitTenant || c.InstitutionId == institutionId) && c.Kind != null, explicitTenant)
+                         .Select(c => new { c.Id, c.Kind }).ToListAsync())
+                if (c.Kind is not null && kinds.Contains(c.Kind.Trim().ToLower())) groupIds.Add(c.Id);
+        }
+        if (criteria.GroupIds.Count > 0 || criteria.GroupKinds.Count > 0)
+        {
+            if (groupIds.Count == 0) return (0, []);
+            var ids = groupIds.ToList();
+            var inGroups = membershipRepo.GetQueryable(m => (!explicitTenant || m.InstitutionId == institutionId) && ids.Contains(m.CommunityId) && m.Status == "Approved", explicitTenant)
+                .Select(m => m.MemberId);
+            query = query.Where(m => inGroups.Contains(m.Id));
+        }
+
+        var count = await query.CountAsync();
+        var sample = sampleSize > 0 && count > 0 ? await query.OrderBy(m => m.Id).Take(sampleSize).ToListAsync() : [];
+        return (count, sample);
     }
 
     /// <summary>

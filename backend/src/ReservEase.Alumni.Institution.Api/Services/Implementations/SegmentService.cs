@@ -110,9 +110,9 @@ public class SegmentService(
             return ApiResponseExtensions.ToBadRequestApiResponse<SegmentPreview>("Dues status must be Paid or Unpaid.");
         try
         {
-            var members = await resolver.ResolveAsync(Clean(criteria), ScopeFor(admin));
-            var sample = members.Take(5).Select(m => new SegmentPreviewMember(m.Id, $"{m.FirstName} {m.LastName}".Trim(), m.Email)).ToList();
-            return new SegmentPreview(members.Count, sample).ToOkApiResponse();
+            var (count, members) = await resolver.CountAsync(Clean(criteria), ScopeFor(admin));
+            var sample = members.Select(m => new SegmentPreviewMember(m.Id, $"{m.FirstName} {m.LastName}".Trim(), m.Email)).ToList();
+            return new SegmentPreview(count, sample).ToOkApiResponse();
         }
         catch (Exception e)
         {

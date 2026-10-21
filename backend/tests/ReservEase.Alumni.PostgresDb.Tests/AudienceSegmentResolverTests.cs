@@ -105,4 +105,57 @@ public class AudienceSegmentResolverTests
         var r = Create(Person("ama"));
         Assert.Empty(await Ids(r, new SegmentCriteria { GroupKinds = ["Nothing like this"] }));
     }
+
+    // ── The quick count must always agree with the full route ───────────
+
+    public static IEnumerable<object[]> Rules() =>
+    [
+        [new SegmentCriteria()],
+        [new SegmentCriteria { Status = "Pending" }],
+        [new SegmentCriteria { GraduationYearFrom = 2010, GraduationYearTo = 2015 }],
+        [new SegmentCriteria { DormantOnly = true }],
+        [new SegmentCriteria { JoinedWithinDays = 90 }],
+        [new SegmentCriteria { GroupIds = ["kumasi"] }],
+        [new SegmentCriteria { GroupKinds = ["chapter"] }],
+        [new SegmentCriteria { GroupKinds = ["Nothing"] }],
+        [new SegmentCriteria { DuesStatus = "Unpaid" }],
+        [new SegmentCriteria { AnswerContains = "Tema" }],
+    ];
+
+    [Theory]
+    [MemberData(nameof(Rules))]
+    public async Task The_quick_count_matches_resolving_everyone_for_every_kind_of_rule(SegmentCriteria rule)
+    {
+        var r = Create(
+            Person("a", 2008, lastLogin: Now.AddDays(-5), created: Now.AddDays(-400)), Person("b", 2011, lastLogin: Now.AddDays(-200), created: Now.AddDays(-30)),
+            Person("c", 2013, status: "Pending", created: Now.AddDays(-10)), Person("d", 2015, answers: new() { ["home"] = "Tema" }),
+            Person("e", 2020, lastLogin: Now.AddDays(-1)), Person("f", 2012, status: "Deleted"),
+            new Community { Id = "kumasi", InstitutionId = Tenant, Name = "Kumasi", Kind = "Chapter" },
+            In("kumasi", "b"), In("kumasi", "d"), In("kumasi", "e", status: "Pending"),
+            new Campaign { Id = "dues", InstitutionId = Tenant, Title = "Dues", IsMembershipCampaign = true, MembershipYear = 2026 },
+            new Contribution { Id = "c1", InstitutionId = Tenant, CampaignId = "dues", MemberId = "a", Status = "Successful" });
+
+        var full = await Ids(r, rule);
+        var (count, sample) = await r.CountAsync(rule, SegmentScope.Everyone, 3, Now);
+
+        Assert.Equal(full.Count, count);
+        Assert.Equal(Math.Min(3, full.Count), sample.Count);
+        Assert.All(sample, m => Assert.Contains(m.Id, full));
+    }
+
+    [Fact]
+    public async Task The_quick_count_respects_what_a_scoped_administrator_may_reach()
+    {
+        var r = Create(
+            Person("a", 2010), Person("b", 2011), Person("c", 2012),
+            new Community { Id = "g1", InstitutionId = Tenant, Name = "G1" },
+            In("g1", "c"));
+        var scope = new SegmentScope(false, [2010], ["g1"]);
+
+        var full = await Ids(r, new SegmentCriteria(), scope);
+        var (count, _) = await r.CountAsync(new SegmentCriteria(), scope, 0, Now);
+
+        Assert.Equal(["a", "c"], full);
+        Assert.Equal(2, count);
+    }
 }

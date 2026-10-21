@@ -122,6 +122,10 @@ public class BroadcastService(
     {
         try
         {
+            // The usual case, a plain filter with no engagement segment, is just a count in the database; reading every
+            // matching member to count them was the slow part of this screen.
+            if (string.IsNullOrWhiteSpace(filter.SegmentId) && string.IsNullOrWhiteSpace(filter.EngagementSegment))
+                return (await memberRepo.CountAsync(BuildPredicate(filter, admin))).ToOkApiResponse();
             var members = await ResolveRecipientsAsync(filter, admin);
             return members.Count.ToOkApiResponse();
         }
