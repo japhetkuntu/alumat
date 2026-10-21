@@ -1,0 +1,24 @@
+name: Connect to the server
+description: Loads the deploy key and the server's host key so ssh and rsync can reach it.
+inputs:
+  key:
+    description: Private deploy key
+    required: true
+  known_hosts:
+    description: Output of ssh-keyscan for the server
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        KEY: ${{ inputs.key }}
+        KNOWN_HOSTS: ${{ inputs.known_hosts }}
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        printf '%s\n' "$KEY" > ~/.ssh/id_deploy
+        chmod 600 ~/.ssh/id_deploy
+        printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        printf 'Host *\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n  ServerAliveInterval 30\n' > ~/.ssh/config
+        chmod 600 ~/.ssh/config

@@ -1,0 +1,211 @@
+# Fast deploy: GitHub builds, the server only swaps and restarts.
+#
+# Building on the small server is what made deploys slow (four .NET services and three Next.js apps compiled one after
+# another on a machine with little memory). Here every changed service is built IN PARALLEL on GitHub's runners, the
+# finished builds are copied to the server (rsync only sends what changed), and deploy/activate.sh swaps them in.
+# Only what a change affects is built, using the same rules as deploy/deploy.sh.
+#
+# One-time setup is in deploy/README.md ("Fast deploys from GitHub"). The server's own `deploy.sh` still works as a fallback.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "Designs/**", "design-plans/**", "marketing/**", "**/*.md", "backend/tests/**"]
+  workflow_dispatch:
+    inputs:
+      force_all:
+        description: "Build and deploy every service, even if unchanged"
+        type: boolean
+        default: false
+
+# A second push waits for the running deploy instead of racing it.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  STAGE_DIR: /var/www/alumunion/.staging
+
+jobs:
+  plan:
+    name: Work out what changed
+    runs-on: ubuntu-latest
+    outputs:
+      dotnet: ${{ steps.select.outputs.dotnet }}
+      frontend: ${{ steps.select.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Connect to the server
+        uses: ./.github/actions/server-ssh
+        with:
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known_hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+      - name: Select what to build
+        id: select
+        env:
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          FORCE_ALL: ${{ inputs.force_all && '1' || '' }}
+        run: |
+          # The revision that is live now, recorded by activate.sh. Missing or unknown means build everything.
+          LIVE="$(ssh "$DEPLOY_TARGET" 'cat /var/www/alumunion/.last-deployed-rev 2>/dev/null || true')"
+          echo "Live revision: ${LIVE:-none}"
+          bash deploy/select-targets.sh "$LIVE" | tee -a "$GITHUB_OUTPUT"
+
+  build-dotnet:
+    name: Build ${{ matrix.service }}
+    needs: plan
+    if: needs.plan.outputs.dotnet != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        service: ${{ fromJSON(needs.plan.outputs.dotnet) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Publish
+        run: |
+          case "${{ matrix.service }}" in
+            institution-api) P=ReservEase.Alumni.Institution.Api ;;
+            member-api) P=ReservEase.Alumni.Member.Api ;;
+            platform-api) P=ReservEase.Alumni.Platform.Api ;;
+            operations-worker) P=ReservEase.Alumni.Operations.Worker ;;
+          esac
+          dotnet publish "backend/src/$P/$P.csproj" -c Release -o "build/${{ matrix.service }}"
+          tar -czf "${{ matrix.service }}.tgz" -C build "${{ matrix.service }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.service }}
+          path: ${{ matrix.service }}.tgz
+          retention-days: 3
+          compression-level: 0
+
+  build-frontend:
+    name: Build frontend ${{ matrix.app }}
+    needs: plan
+    if: needs.plan.outputs.frontend != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.frontend) }}
+    env:
+      # Baked into the browser bundle at build time, so they must match the server's frontend env files
+      # (see the *.env.production.local.example files). Set them as repository Variables; none are secret.
+      NEXT_PUBLIC_BASE_DOMAIN: ${{ vars.NEXT_PUBLIC_BASE_DOMAIN }}
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+      NEXT_PUBLIC_GOOGLE_AUTO_REDIRECT: ${{ vars.NEXT_PUBLIC_GOOGLE_AUTO_REDIRECT }}
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      # The pnpm version comes from "packageManager" in frontend/package.json, the same one the server uses.
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Cache the Next.js and Turborepo build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/apps/${{ matrix.app }}/.next/cache
+            frontend/.turbo
+          key: next-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            next-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}-
+            next-${{ matrix.app }}-${{ runner.os }}-
+
+      - name: Install
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: frontend
+        run: pnpm exec turbo run build --filter="@alumni/${{ matrix.app }}"
+
+      - name: Assemble the standalone server
+        run: |
+          APP=frontend/apps/${{ matrix.app }}
+          OUT=build/frontend-${{ matrix.app }}
+          mkdir -p "$OUT/apps/${{ matrix.app }}/.next"
+          cp -a "$APP/.next/standalone/." "$OUT/"
+          cp -a "$APP/.next/static" "$OUT/apps/${{ matrix.app }}/.next/static"
+          if [ -d "$APP/public" ]; then cp -a "$APP/public" "$OUT/apps/${{ matrix.app }}/public"; fi
+          # tar keeps the symlinks pnpm puts in node_modules, which a plain artifact upload would lose
+          tar -czf "frontend-${{ matrix.app }}.tgz" -C build "frontend-${{ matrix.app }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-frontend-${{ matrix.app }}
+          path: frontend-${{ matrix.app }}.tgz
+          retention-days: 3
+          compression-level: 0
+
+  deploy:
+    name: Copy to the server and restart
+    needs: [plan, build-dotnet, build-frontend]
+    # Runs when every build that was needed succeeded (a skipped build job just means nothing of that kind changed).
+    if: >-
+      always() && needs.plan.result == 'success' &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') &&
+      (needs.plan.outputs.dotnet != '[]' || needs.plan.outputs.frontend != '[]')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect to the server
+        uses: ./.github/actions/server-ssh
+        with:
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known_hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Copy the builds to the server
+        env:
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          SERVICES=()
+          mkdir -p extracted
+          for tgz in artifacts/*/*.tgz; do
+            name="$(basename "$tgz" .tgz)"
+            tar -xzf "$tgz" -C extracted
+            # Into the server's staging area. The previous build stays there, so rsync only sends what changed.
+            rsync -az --delete "extracted/$name/" "$DEPLOY_TARGET:$STAGE_DIR/$name/"
+            SERVICES+=("$name")
+            echo "Copied $name"
+          done
+          echo "SERVICES=${SERVICES[*]}" >> "$GITHUB_ENV"
+
+      - name: Swap in and restart
+        env:
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: ssh "$DEPLOY_TARGET" "sudo bash /opt/alumunion-src/deploy/activate.sh ${GITHUB_SHA} ${SERVICES}"

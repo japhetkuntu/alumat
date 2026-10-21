@@ -90,7 +90,8 @@ DO_ANY_FRONTEND=0
 [[ "$DO_FRONTEND_INSTITUTION$DO_FRONTEND_MEMBER$DO_FRONTEND_PLATFORM" == *1* ]] && DO_ANY_FRONTEND=1
 
 wait_healthy() {
-  local url="$1" name="$2" tries=30
+  # A cold start on a small server (JIT, EF migrations) can take over a minute, so wait up to 3 minutes before reporting it.
+  local url="$1" name="$2" tries=90
   echo "Waiting for $name to report healthy at $url ..."
   for ((i = 1; i <= tries; i++)); do
     if curl -fs --connect-timeout 2 --max-time 3 "$url" >/dev/null 2>&1; then
@@ -100,6 +101,7 @@ wait_healthy() {
     sleep 2
   done
   echo "$name did not become healthy after $((tries * 2))s — check: journalctl -u $name -n 100 --no-pager"
+  echo "(It may simply still be starting. The new build is installed; running this deploy again will not rebuild it.)"
   return 1
 }
 
@@ -350,11 +352,25 @@ fi
 
 # Publish into staging. After the first project, the shared libraries are already built
 # (obj is kept), so the later publishes only compile their own code.
+#
+# A build is remembered per commit. If a deploy is stopped halfway (the terminal closed, Ctrl-C, a dropped SSH
+# session) and run again, every service already built for this same commit is reused instead of built again, so each
+# retry carries on where the last one stopped rather than starting over. CLEAN_BUILD=1 or FORCE_ALL=1 ignore this.
+HEAD_REV="$(git -C "$SRC_DIR" rev-parse HEAD)"
+already_built() {
+  [[ -z "${CLEAN_BUILD:-}${FORCE_ALL:-}" && -d "$STAGE/$1" && -f "$STAGE/.built-$1" && "$(cat "$STAGE/.built-$1")" == "$HEAD_REV" ]]
+}
 publish_dotnet() {
   local name="$1" project="$2"
+  if already_built "$name"; then
+    echo "== ${name}: already built for ${HEAD_REV:0:8}, reusing it =="
+    return 0
+  fi
   echo "== building ${name} =="
+  rm -f "$STAGE/.built-${name}"
   rm -rf "${STAGE:?}/${name:?}"
   dotnet publish "$BACKEND_SRC/src/${project}/${project}.csproj" -c Release -o "$STAGE/${name}"
+  echo "$HEAD_REV" > "$STAGE/.built-${name}"
   lap "build ${name}"
 }
 
@@ -425,6 +441,13 @@ lap "copy builds into place"
 echo "== starting: ${STOP_LIST[*]} =="
 systemctl start "${STOP_LIST[@]}"
 
+# The new version is now installed and started, so record it here rather than after the health checks. A service that
+# is slow to come up (migrations, a cold start on a small server) makes the checks below give up, and that used to
+# leave no record of the deploy: the next run then rebuilt everything again for code that was already live.
+if [[ "$TARGET" == "all" ]]; then
+  git -C "$SRC_DIR" rev-parse HEAD > "$REV_FILE"
+fi
+
 if [[ "$DO_INSTITUTION_API" == 1 ]]; then
   wait_healthy "http://127.0.0.1:5001/health" alumni-institution-api
 fi
@@ -455,10 +478,6 @@ fi
 
 lap "services healthy"
 
-# Remember what is live, so the next `all` can skip whatever did not change. Only a full ("all")
-# deploy records it: a single-service deploy leaves the other parts as they were, so they must not be
-# marked as up to date.
-if [[ "$TARGET" == "all" ]]; then
-  git -C "$SRC_DIR" rev-parse HEAD > "$REV_FILE"
-fi
+# (The live revision was recorded above, right after the start. Only a full "all" deploy records it: a
+# single-service deploy leaves the other parts as they were, so they must not be marked as up to date.)
 echo "Deploy complete (target: $TARGET) in $(( SECONDS - STARTED_AT ))s."
