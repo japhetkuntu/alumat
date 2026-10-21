@@ -12,6 +12,8 @@ public class CreateJobRequest
     public string? ApplyUrl { get; set; }
     public DateTime? Deadline { get; set; }
     public List<int>? YearGroups { get; set; }
+    /// <summary>Show this in full to people who are not signed in.</summary>
+    public bool IsPublic { get; set; }
     public IFormFile? BannerImage { get; set; }
 }
 
@@ -28,5 +30,7 @@ public class UpdateJobRequest
     public DateTime? Deadline { get; set; }
     public string Status { get; set; } = "";
     public List<int>? YearGroups { get; set; }
+    /// <summary>Show this in full to people who are not signed in.</summary>
+    public bool IsPublic { get; set; }
     public IFormFile? BannerImage { get; set; }
 }

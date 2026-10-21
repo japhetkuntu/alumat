@@ -8,7 +8,7 @@ import {
   CheckCircle2, CreditCard, Loader2, RefreshCcw,
   XCircle, Award, TrendingUp, AlertCircle,
 } from "@alumni/ui";
-import { Pagination } from "@alumni/ui";
+import { Pagination, richTextToPlain } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
@@ -278,7 +278,7 @@ function CampaignCard({
             </h3>
             {c.description && (
               <p className="text-[13px] mt-1.5 line-clamp-2 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-                {c.description}
+                {richTextToPlain(c.description)}
               </p>
             )}
           </div>

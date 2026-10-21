@@ -83,6 +83,7 @@ public class CampaignService(
                     eligibleCountsByYear[year] = count;
                 }
                 dto.TotalEligibleMembers = count;
+                dto.TargetAmount = MembershipTarget.For(dto.AmountPerMember, count);
             }
 
             await EnrichCommunityNamesAsync(dtos);
@@ -130,6 +131,7 @@ public class CampaignService(
             {
                 var year = dto.MembershipYear.Value;
                 dto.TotalEligibleMembers = await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= year);
+                dto.TargetAmount = MembershipTarget.For(dto.AmountPerMember, dto.TotalEligibleMembers.Value);
             }
 
             return dto.ToOkApiResponse();

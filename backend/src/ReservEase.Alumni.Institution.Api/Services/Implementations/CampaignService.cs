@@ -64,6 +64,7 @@ public class CampaignService(
                     eligibleCountsByYear[year] = count;
                 }
                 dto.TotalEligibleMembers = count;
+                dto.TargetAmount = MembershipTarget.For(dto.AmountPerMember, count);
             }
 
             var dtoResult = new PgPagedResult<CampaignDto>
@@ -108,6 +109,7 @@ public class CampaignService(
             {
                 var year = dto.MembershipYear.Value;
                 dto.TotalEligibleMembers = await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= year);
+                dto.TargetAmount = MembershipTarget.For(dto.AmountPerMember, dto.TotalEligibleMembers.Value);
             }
 
             return dto.ToOkApiResponse();
@@ -189,6 +191,9 @@ public class CampaignService(
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
                 campaign.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+
+            if (campaign.IsMembershipCampaign && campaign.MembershipYear is int dueYear)
+                campaign.TargetAmount = MembershipTarget.For(campaign.AmountPerMember, await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= dueYear));
 
             await campaignRepo.AddAsync(campaign);
 
@@ -310,6 +315,10 @@ public class CampaignService(
                 var name = $"{Guid.NewGuid():N}{Path.GetExtension(request.BannerImage.FileName)}";
                 campaign.BannerImageUrl = await storageService.UploadFileAsync(request.BannerImage, name, institutionSlug: currentTenant.InstitutionSlug ?? "");
             }
+
+            // Dues aim to collect the fee from every eligible member, so a new fee moves the target with it.
+            if (campaign.IsMembershipCampaign && campaign.MembershipYear is int dueYear)
+                campaign.TargetAmount = MembershipTarget.For(campaign.AmountPerMember, await memberRepo.CountAsync(m => m.Status == "Active" && m.GraduationYear <= dueYear));
 
             campaign.UpdatedAt = DateTime.UtcNow;
             campaign.UpdatedBy = admin.Id;

@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import type { NewsPost } from "@/types";
+import { PublicOption } from "@/components/institution/public-option";
 
 const categories = ["Announcement", "Achievement", "News", "Event", "Opportunity", "Other"];
 
@@ -40,6 +41,7 @@ interface FormState {
   category: string;
   status: string;
   isPinned: string;
+  isPublic: boolean;
   audienceMode: AudienceMode;
   yearGroups: number[];
   communityId: string;
@@ -48,7 +50,7 @@ interface FormState {
   youtubeVideoUrls: string;
 }
 
-const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", audienceMode: "everyone", yearGroups: [], communityId: "", images: [], existingImageUrls: [], youtubeVideoUrls: "" };
+const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", isPublic: false, audienceMode: "everyone", yearGroups: [], communityId: "", images: [], existingImageUrls: [], youtubeVideoUrls: "" };
 
 function commaToArray(s: string): string[] | undefined {
   const arr = s.split(",").map(x => x.trim()).filter(Boolean);
@@ -125,6 +127,7 @@ function PostForm({ id, init, onSave, isSuperAdmin }: {
               hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. Posts are restricted to your assigned group, chapter, or community." } : undefined}
             />
+            <PublicOption id="news-public" checked={form.isPublic} onChange={(v) => setForm((prev) => ({ ...prev, isPublic: v }))} forEveryone={isSuperAdmin && form.audienceMode === "everyone"} noun="story" />
           </FormSection>
         </form>
   );
@@ -177,6 +180,7 @@ export default function AdminNewsPage() {
       communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, content: f.content, category: f.category, status: f.status,
       isPinned: f.isPinned === "true",
+      isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       images: f.images.length > 0 ? f.images : undefined, youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
     }),
@@ -189,6 +193,7 @@ export default function AdminNewsPage() {
       communityId: isSuperAdmin && f.audienceMode === "community" ? f.communityId || undefined : undefined,
       title: f.title, content: f.content, category: f.category, status: f.status,
       isPinned: f.isPinned === "true",
+      isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       images: f.images.length > 0 ? f.images : undefined,
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,
@@ -296,6 +301,7 @@ export default function AdminNewsPage() {
               category: editPost.category || "News",
               status: editPost.status || "Draft",
               isPinned: editPost.isPinned ? "true" : "false",
+              isPublic: !!editPost.isPublic,
               audienceMode: inferAudienceMode(editPost.communityId, editPost.yearGroups),
               yearGroups: editPost.yearGroups ?? [],
               communityId: editPost.communityId ?? "",

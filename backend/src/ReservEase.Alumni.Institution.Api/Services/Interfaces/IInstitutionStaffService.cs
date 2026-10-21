@@ -8,5 +8,6 @@ public interface IInstitutionStaffService
 {
     Task<IApiResponse<PgPagedResult<InstitutionStaffListItem>>> GetInstitutionStaffAsync(InstitutionStaffFilter filter);
     Task<IApiResponse<InstitutionStaffListItem>> CreateInstitutionStaffAsync(CreateInstitutionStaffRequest request, AuthData createdBy);
+    Task<IApiResponse<object>> ResendInviteAsync(string adminId, AuthData actor);
     Task<IApiResponse<InstitutionStaffListItem>> UpdateInstitutionStaffAsync(string adminId, UpdateInstitutionStaffRequest request, AuthData updatedBy);
 }

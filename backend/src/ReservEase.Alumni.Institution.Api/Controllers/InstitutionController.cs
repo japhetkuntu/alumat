@@ -125,6 +125,37 @@ public class InstitutionController(
         return Ok(new ApiResponse<InstitutionResponse> { Message = "Landing content updated", Code = 200, Data = ToDto(institution) });
     }
 
+    /// <summary>The contact details and leaders shown on the public landing page. Only what an administrator types in is ever shown.</summary>
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpPatch("me/public-profile")]
+    [SwaggerOperation(Summary = "Update the public contact details and leaders")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<InstitutionResponse>))]
+    public async Task<IActionResult> UpdatePublicProfile([FromBody] UpdatePublicProfileRequest request)
+    {
+        var institution = await GetResolvedInstitutionAsync();
+        if (institution is null)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this request", Code = 404 });
+
+        static string? Clean(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+        var leaders = request.Leaders
+            .Where(l => !string.IsNullOrWhiteSpace(l.Name))
+            .Select(l => new PublicLeader
+            {
+                Name = l.Name.Trim(), Role = l.Role?.Trim() ?? string.Empty, PhotoUrl = Clean(l.PhotoUrl),
+                Email = Clean(l.Email), Phone = Clean(l.Phone),
+            }).ToList();
+        var profile = new PublicProfile
+        {
+            ContactEmail = Clean(request.ContactEmail), ContactPhone = Clean(request.ContactPhone),
+            Address = Clean(request.Address), Leaders = leaders,
+        };
+        institution.PublicProfile = profile.ContactEmail is null && profile.ContactPhone is null && profile.Address is null && leaders.Count == 0 ? null : profile;
+        institution.UpdatedAt = DateTime.UtcNow;
+        await institutionRepo.UpdateAsync(institution);
+
+        return Ok(new ApiResponse<InstitutionResponse> { Message = "Public details updated", Code = 200, Data = ToDto(institution) });
+    }
+
     /// <summary>Which automatic messages this community sends and how often.</summary>
     [Authorize(Roles = "SuperAdmin")]
     [HttpGet("me/automations")]
@@ -467,6 +498,6 @@ public class InstitutionController(
             i.HeroImageUrls, i.HeroHeadline,
             i.OrganizationType, i.CohortLabel, i.CohortLabelPlural,
             i.Status, memberPortalUrl,
-            i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName, i.GraduationYearMode, i.CollectMemberId, i.RegistrationFields);
+            i.PayoutStatus, i.SettlementBankName, i.SettlementAccountNumber, i.SettlementAccountName, i.GraduationYearMode, i.CollectMemberId, i.RegistrationFields, i.PublicProfile);
     }
 }

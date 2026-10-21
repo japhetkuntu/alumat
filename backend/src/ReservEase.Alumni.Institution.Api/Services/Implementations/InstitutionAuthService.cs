@@ -75,6 +75,15 @@ public class InstitutionAuthService(
             $"reset password email to {email}"), logger);
     }
 
+    public async Task SendPasswordSetupLinkAsync(StaffEntity staff)
+    {
+        var token = GenerateUrlToken("reset");
+        staff.PasswordResetToken = token;
+        staff.PasswordResetSentAt = DateTime.UtcNow;
+        await adminRepo.UpdateAsync(staff);
+        await SendResetPasswordEmailAsync(staff.FirstName, staff.Email, token, GetRequestBaseUrl());
+    }
+
     public async Task<IApiResponse<object>> ForgotPasswordAsync(ForgotPasswordRequest request)
     {
         try

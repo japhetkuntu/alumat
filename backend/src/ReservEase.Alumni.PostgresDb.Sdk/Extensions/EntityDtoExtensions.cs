@@ -18,6 +18,7 @@ public static class EntityDtoExtensions
         Deadline = job.Deadline,
         Status = job.Status,
         YearGroups = job.YearGroups,
+        IsPublic = job.IsPublic,
         BannerImageUrl = job.BannerImageUrl,
         CreatedAt = job.CreatedAt,
     };
@@ -38,6 +39,7 @@ public static class EntityDtoExtensions
         TicketPrice = data.TicketPrice,
         Status = data.Status,
         YearGroups = data.YearGroups,
+        IsPublic = data.IsPublic,
         GoogleLocationUrl = data.GoogleLocationUrl,
         BannerImageUrl = data.BannerImageUrl,
         ImageUrls = data.ImageUrls,
@@ -60,6 +62,7 @@ public static class EntityDtoExtensions
         ImageUrls = post.ImageUrls,
         YoutubeVideoUrls = post.YoutubeVideoUrls,
         YearGroups = post.YearGroups,
+        IsPublic = post.IsPublic,
         CreatedAt = post.CreatedAt,
     };
 

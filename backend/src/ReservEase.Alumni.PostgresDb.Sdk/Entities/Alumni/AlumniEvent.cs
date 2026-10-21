@@ -25,6 +25,8 @@ public class AlumniEvent : BaseEntity, ITenantScoped
     public decimal? TicketPrice { get; set; }
     public string Status { get; set; } = "Upcoming"; // Upcoming, Ongoing, Completed, Cancelled
     public List<int>? YearGroups { get; set; }
+    /// <summary>The institution chose to show this in full to people who are not signed in. Off means guests see only a short preview.</summary>
+    public bool IsPublic { get; set; }
     public string? GoogleLocationUrl { get; set; }
     public string? BannerImageUrl { get; set; }
     public List<string>? ImageUrls { get; set; }

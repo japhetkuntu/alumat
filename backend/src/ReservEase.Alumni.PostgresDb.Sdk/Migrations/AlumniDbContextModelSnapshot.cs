@@ -364,6 +364,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsTicketed")
                         .HasColumnType("boolean");
 
@@ -882,6 +885,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Kind")
@@ -1930,6 +1936,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2400,6 +2409,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("PublishedAt")
@@ -3895,6 +3907,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<bool>("PromptMembershipActivationAtSignup")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("PublicProfile")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("RegistrationFields")
                         .IsRequired()

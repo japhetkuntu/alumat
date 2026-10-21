@@ -16,6 +16,8 @@ public class CreateEventRequest
     public decimal? TicketPrice { get; set; }
     public string? GoogleLocationUrl { get; set; }
     public List<int>? YearGroups { get; set; }
+    /// <summary>Show this in full to people who are not signed in.</summary>
+    public bool IsPublic { get; set; }
     public IFormFile? BannerImage { get; set; }
     public List<IFormFile>? Images { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
@@ -43,6 +45,8 @@ public class UpdateEventRequest
     public string? GoogleLocationUrl { get; set; }
     public string Status { get; set; } = "";
     public List<int>? YearGroups { get; set; }
+    /// <summary>Show this in full to people who are not signed in.</summary>
+    public bool IsPublic { get; set; }
     public IFormFile? BannerImage { get; set; }
     public List<IFormFile>? Images { get; set; }
     public List<string>? ExistingImageUrls { get; set; }

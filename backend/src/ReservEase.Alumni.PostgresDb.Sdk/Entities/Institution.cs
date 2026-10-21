@@ -175,6 +175,9 @@ public class Institution : BaseEntity
     /// </summary>
     public List<LandingPageStory> LandingPageStories { get; set; } = [];
 
+    /// <summary>Public contact details and the leaders the institution chose to show on its landing page. Null until set.</summary>
+    public PublicProfile? PublicProfile { get; set; }
+
     /// <summary>Retired with the WhatsApp assistant. The column stays so no data is dropped; nothing reads or writes it.</summary>
     public List<WhatsAppGroupLink> WhatsAppGroups { get; set; } = [];
 

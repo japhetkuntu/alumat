@@ -3,7 +3,11 @@ using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using ReservEase.Alumni.Common.Sdk.Extensions;
+using ReservEase.Alumni.Common.Sdk.Options;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
+using ReservEase.Alumni.Redis.Sdk.Services;
 
 namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
@@ -13,9 +17,15 @@ public class CommunityService(
     IAlumniPgRepository<Member> memberRepo,
     IAlumniPgRepository<Referral> referralRepo,
     IAlumniPgRepository<Notification> notificationRepo,
+    ICurrentTenantService currentTenant,
+    IRedisService<PublicContentCacheConfig> publicCache,
     IInstitutionAuditLogService auditLog,
     ILogger<CommunityService> logger) : ICommunityService
 {
+    /// <summary>The landing page lists the groups marked public, with a head count, so anything that changes a group or its membership clears that list.</summary>
+    private Task InvalidatePublicGroupsCacheAsync()
+        => currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.Communities(id)) : Task.CompletedTask;
+
     public async Task<IApiResponse<List<CommunityListItem>>> GetCommunitiesAsync()
     {
         try
@@ -39,7 +49,7 @@ public class CommunityService(
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                     memberships.Count(m => m.Status == "Pending"),
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                    c.CreatedAt, invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind);
+                    c.CreatedAt, invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind, c.IsPublic);
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -84,12 +94,14 @@ public class CommunityService(
                 Description = descriptionHtml,
                 CoverImageUrl = request.CoverImageUrl,
                 Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim(),
+                IsPublic = request.IsPublic,
                 CreatedBy = createdBy,
             };
             await communityRepo.AddAsync(community);
+            await InvalidatePublicGroupsCacheAsync();
 
             logger.LogInformation("Community {CommunityId} created by {CreatorId}", community.Id, createdBy);
-            return new CommunityListItem(community.Id, community.Name, community.Description, community.CoverImageUrl, community.IsActive, 0, 0, 0, community.CreatedAt, Kind: community.Kind)
+            return new CommunityListItem(community.Id, community.Name, community.Description, community.CoverImageUrl, community.IsActive, 0, 0, 0, community.CreatedAt, Kind: community.Kind, IsPublic: community.IsPublic)
                 .ToCreatedApiResponse("Community created");
         }
         catch (Exception e)
@@ -116,9 +128,11 @@ public class CommunityService(
             // Null leaves the kind as it is (so toggling a group on or off never wipes it); a blank clears it.
             if (request.Kind is not null) community.Kind = string.IsNullOrWhiteSpace(request.Kind) ? null : request.Kind.Trim();
             community.IsActive = request.IsActive;
+            if (request.IsPublic is not null) community.IsPublic = request.IsPublic.Value;
             community.UpdatedAt = DateTime.UtcNow;
             community.UpdatedBy = updatedBy;
             await communityRepo.UpdateAsync(community);
+            await InvalidatePublicGroupsCacheAsync();
 
             var memberships = (await membershipRepo.GetAllAsync(m => m.CommunityId == id)).ToList();
             return new CommunityListItem(
@@ -126,7 +140,7 @@ public class CommunityService(
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                 memberships.Count(m => m.Status == "Pending"),
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                community.CreatedAt, Kind: community.Kind).ToOkApiResponse("Community updated");
+                community.CreatedAt, Kind: community.Kind, IsPublic: community.IsPublic).ToOkApiResponse("Community updated");
         }
         catch (Exception e)
         {
@@ -207,6 +221,7 @@ public class CommunityService(
             membership.UpdatedAt = DateTime.UtcNow;
             membership.UpdatedBy = admin.Id;
             await membershipRepo.UpdateAsync(membership);
+            await InvalidatePublicGroupsCacheAsync();
 
             if (approve)
                 await TellMemberAsync(memberId, "You're in", $"Your request to join \"{community.Name}\" was approved.", communityId, $"/communities/{communityId}", admin.Id);
@@ -235,6 +250,7 @@ public class CommunityService(
 
             var note = CleanReason(reason);
             await membershipRepo.RemoveAsync(membership);
+            await InvalidatePublicGroupsCacheAsync();
 
             await TellMemberAsync(memberId, "You were removed from a group",
                 note is null ? $"You were removed from \"{community.Name}\". You can ask to join again." : $"You were removed from \"{community.Name}\". {note}",
@@ -273,6 +289,7 @@ public class CommunityService(
             membership.UpdatedAt = DateTime.UtcNow;
             membership.UpdatedBy = updatedBy;
             await membershipRepo.UpdateAsync(membership);
+            await InvalidatePublicGroupsCacheAsync();
 
             logger.LogInformation("Community {CommunityId} member {MemberId} role set to {Role} by {UpdaterId}", communityId, memberId, request.Role, updatedBy);
             return new object().ToOkApiResponse($"Role updated to {request.Role}");

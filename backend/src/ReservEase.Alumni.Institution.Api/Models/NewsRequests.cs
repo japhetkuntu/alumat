@@ -12,6 +12,8 @@ public class CreateNewsPostRequest
     public List<IFormFile>? Images { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
     public List<int>? YearGroups { get; set; }
+    /// <summary>Show this in full to people who are not signed in.</summary>
+    public bool IsPublic { get; set; }
 }
 
 public class UpdateNewsPostRequest
@@ -27,4 +29,6 @@ public class UpdateNewsPostRequest
     public List<string>? ExistingImageUrls { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
     public List<int>? YearGroups { get; set; }
+    /// <summary>Show this in full to people who are not signed in.</summary>
+    public bool IsPublic { get; set; }
 }

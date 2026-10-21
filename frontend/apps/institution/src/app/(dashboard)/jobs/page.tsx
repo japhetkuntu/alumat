@@ -25,6 +25,7 @@ import { ImageUpload } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
+import { PublicOption } from "@/components/institution/public-option";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
@@ -57,12 +58,13 @@ interface FormState {
   applyUrl: string;
   deadline: string;
   audienceMode: AudienceMode;
+  isPublic: boolean;
   yearGroups: number[];
   communityId: string;
   bannerImage: File | null;
   existingBannerUrl: string;
 }
-const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", yearGroups: [], communityId: "", bannerImage: null, existingBannerUrl: "" };
+const emptyForm: FormState = { title: "", company: "", location: "", type: "Full-time", description: "", applyUrl: "", deadline: "", audienceMode: "everyone", isPublic: false, yearGroups: [], communityId: "", bannerImage: null, existingBannerUrl: "" };
 const statusOptions = ["Active", "Closed", "Draft", "Pending"];
 
 function JobForm({ id, init, onSave, showStatus, isSuperAdmin }: {
@@ -122,6 +124,7 @@ function JobForm({ id, init, onSave, showStatus, isSuperAdmin }: {
               hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience; this job will use your year group or community automatically." } : undefined}
             />
+            <PublicOption id="job-public" checked={form.isPublic} onChange={(v) => setForm((prev) => ({ ...prev, isPublic: v }))} forEveryone={isSuperAdmin && form.audienceMode === "everyone"} noun="posting" />
             {showStatus && (
               <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
                 <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
@@ -171,6 +174,7 @@ export default function AdminJobsPage() {
       title: f.title, company: f.company, location: f.location, type: f.type,
       description: f.description || undefined, applyUrl: f.applyUrl || undefined,
       deadline: f.deadline || undefined, yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
+      isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
       bannerImage: f.bannerImage || undefined,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-jobs"] }); setShowCreate(false); toast.success("Job posted"); },
@@ -184,6 +188,7 @@ export default function AdminJobsPage() {
       description: f.description || undefined, applyUrl: f.applyUrl || undefined,
       deadline: f.deadline || undefined, status: f.status,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
+      isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
       bannerImage: f.bannerImage || undefined,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-jobs"] }); setEditJob(null); toast.success("Job updated"); },
@@ -235,7 +240,7 @@ export default function AdminJobsPage() {
             id="job-form"
             init={{ title: editJob.title, company: editJob.company, location: editJob.location, type: editJob.type,
               description: editJob.description ?? "", applyUrl: editJob.applyUrl ?? "",
-              deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(editJob.communityId, editJob.yearGroups), yearGroups: editJob.yearGroups ?? [], communityId: editJob.communityId ?? "", bannerImage: null,
+              deadline: editJob.deadline ? editJob.deadline.split("T")[0] : "", audienceMode: inferAudienceMode(editJob.communityId, editJob.yearGroups), isPublic: !!editJob.isPublic, yearGroups: editJob.yearGroups ?? [], communityId: editJob.communityId ?? "", bannerImage: null,
               existingBannerUrl: editJob.bannerImageUrl ?? "",
               status: editJob.status }}
             showStatus isSuperAdmin={isSuperAdmin}

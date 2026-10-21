@@ -470,9 +470,9 @@ export function MemberLayout({ children }: { children: ReactNode }) {
 
   // A shared event, job or news link opened without a session shows a read-only summary with a way in,
   // instead of bouncing straight to the login screen.
-  const guestMatch = /^\/(events|jobs|news)\/([^/]+)$/.exec(pathname);
+  const guestMatch = /^\/(events|jobs|news|communities)\/([^/]+)$/.exec(pathname);
   const guestTarget = guestMatch
-    ? { type: ({ events: "event", jobs: "job", news: "news" } as const)[guestMatch[1] as "events" | "jobs" | "news"] as GuestEntityType, id: guestMatch[2] }
+    ? { type: ({ events: "event", jobs: "job", news: "news", communities: "community" } as const)[guestMatch[1] as "events" | "jobs" | "news" | "communities"] as GuestEntityType, id: guestMatch[2] }
     : null;
 
   useEffect(() => {

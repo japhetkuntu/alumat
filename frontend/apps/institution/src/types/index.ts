@@ -146,6 +146,8 @@ export interface InstitutionStaffUser {
   communityIds?: string[];
   isDisabled?: boolean;
   createdAt: string;
+  /** Added but has not signed in yet, so they may still be waiting on the email to choose a password. */
+  invitePending?: boolean;
 }
 
 export interface CreateInstitutionStaffRequest {
@@ -153,7 +155,6 @@ export interface CreateInstitutionStaffRequest {
   lastName: string;
   email: string;
   phone?: string;
-  password: string;
   role: UserRole;
   yearGroups?: number[];
   communityIds?: string[];
@@ -333,6 +334,7 @@ export interface Job {
   deadline?: string;
   status: JobStatus;
   yearGroups?: number[];
+  isPublic?: boolean;
   createdAt: string;
   bannerImageUrl?: string;
   /** For a member's suggestion awaiting review: who suggested it. */
@@ -366,6 +368,7 @@ export interface AlumniEvent {
   ticketAmountCollected?: number;
   status: EventStatus;
   yearGroups?: number[];
+  isPublic?: boolean;
   rsvpCount: number;
   /** The organiser stopped taking new RSVPs and ticket sales. Seats already taken stay. */
   registrationClosed?: boolean;
@@ -434,6 +437,7 @@ export interface NewsPost {
   isPinned: boolean;
   status: NewsStatus;
   yearGroups?: number[];
+  isPublic?: boolean;
   publishedAt?: string;
   createdAt: string;
   imageUrls?: string[];

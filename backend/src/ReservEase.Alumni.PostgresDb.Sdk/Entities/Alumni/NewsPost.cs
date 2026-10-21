@@ -20,4 +20,6 @@ public class NewsPost : BaseEntity, ITenantScoped
     public List<string>? ImageUrls { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
     public List<int>? YearGroups { get; set; }
+    /// <summary>The institution chose to show this in full to people who are not signed in. Off means guests see only a short preview.</summary>
+    public bool IsPublic { get; set; }
 }

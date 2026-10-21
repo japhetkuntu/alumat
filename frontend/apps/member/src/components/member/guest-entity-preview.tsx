@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, MapPin, ArrowRight, ZoomableImage } from "@alumni/ui";
+import { CalendarDays, MapPin, ArrowRight, ZoomableImage, RichText } from "@alumni/ui";
 import { memberClient, publicMemberClient } from "@/lib/api-client";
 import { withRedirect } from "@/lib/redirect";
 
-export type GuestEntityType = "event" | "job" | "news";
+export type GuestEntityType = "event" | "job" | "news" | "community";
 
 interface Preview {
   title: string;
@@ -16,6 +16,11 @@ interface Preview {
   date?: string | null;
   place?: string | null;
   restricted?: boolean;
+  /** The institution chose to show this in full to guests. */
+  isPublic?: boolean;
+  html?: string | null;
+  images?: string[] | null;
+  facts?: { label: string; value: string }[] | null;
 }
 
 interface Theme { displayName?: string | null; iconUrl?: string | null; logoUrl?: string | null }
@@ -24,6 +29,15 @@ const COPY: Record<GuestEntityType, { dateLabel: string; cta: string; note: stri
   event: { dateLabel: "When", cta: "Sign in to RSVP", note: "Members RSVP and see who is going." },
   job: { dateLabel: "Apply by", cta: "Sign in to see the full posting", note: "Members see the full details and how to apply." },
   news: { dateLabel: "Posted", cta: "Sign in to read the full story", note: "Members read the full post." },
+  community: { dateLabel: "Since", cta: "Sign in to ask to join", note: "Members ask to join and the group's leaders approve." },
+};
+
+/** What the button says once the whole item is already on the page: the account is only for acting on it. */
+const PUBLIC_COPY: Record<GuestEntityType, { cta: string; note: string }> = {
+  event: { cta: "Sign in to RSVP", note: "You have read the whole event. An account is only needed to RSVP." },
+  job: { cta: "Sign in to apply", note: "An account is only needed to apply or contact the poster." },
+  news: { cta: "Join the community", note: "Members also get comments, other news and everything else here." },
+  community: { cta: "Sign in to ask to join", note: "Members ask to join and the group's leaders approve." },
 };
 
 function formatWhen(iso: string, withTime: boolean) {
@@ -92,16 +106,34 @@ export function GuestEntityPreview({ type, id, path }: { type: GuestEntityType; 
               </dl>
             )}
 
-            {!preview.restricted && preview.description && (
+            {!preview.restricted && preview.isPublic && preview.facts && preview.facts.length > 0 && (
+              <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-[15px]">
+                {preview.facts.map((f) => (
+                  <div key={f.label}><dt className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">{f.label}</dt><dd>{f.value}</dd></div>
+                ))}
+              </dl>
+            )}
+
+            {!preview.restricted && preview.isPublic && preview.html ? (
+              <RichText content={preview.html} className="mt-6 text-[16px] leading-relaxed" />
+            ) : !preview.restricted && preview.description && (
               <p className="mt-6 line-clamp-6 whitespace-pre-line text-[16px] leading-relaxed text-muted-foreground">{preview.description}</p>
+            )}
+
+            {!preview.restricted && preview.isPublic && preview.images && preview.images.length > 0 && (
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {preview.images.map((src) => (
+                  <ZoomableImage key={src} src={src} alt="" wrapperClassName="aspect-square bg-muted" className="h-full w-full object-cover" />
+                ))}
+              </div>
             )}
 
             <div className="mt-8 border-t border-border pt-6">
               <Link href={withRedirect("/login", path)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 bg-primary px-7 text-[15px] font-semibold text-primary-foreground hover:opacity-90 sm:w-auto">
-                {copy.cta} <ArrowRight size={16} />
+                {preview.isPublic ? PUBLIC_COPY[type].cta : copy.cta} <ArrowRight size={16} />
               </Link>
               <p className="mt-3 text-[13px] text-muted-foreground">
-                {preview.restricted ? "This is shared with a specific group in the community." : copy.note}{" "}
+                {preview.restricted ? "This is shared with a specific group in the community." : preview.isPublic ? PUBLIC_COPY[type].note : copy.note}{" "}
                 New here? <Link href={withRedirect("/register", path)} className="font-semibold text-foreground underline underline-offset-2">Join {org}</Link>.
               </p>
             </div>

@@ -26,6 +26,7 @@ import { MultiImageUpload } from "@alumni/ui";
 import { YouTubePreview } from "@alumni/ui";
 import { AudienceScopePicker, inferAudienceMode, type AudienceMode } from "@alumni/ui";
 import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
+import { PublicOption } from "@/components/institution/public-option";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -58,6 +59,7 @@ interface FormState {
   googleLocationUrl: string;
   status: string;
   audienceMode: AudienceMode;
+  isPublic: boolean;
   yearGroups: number[];
   bannerImage: File | null;
   existingBannerUrl: string;
@@ -71,7 +73,7 @@ const emptyForm: FormState = {
   title: "", description: "", startDate: "", endDate: "", venue: "", capacity: "",
   isTicketed: false, ticketPrice: "", paidTicketCount: 0,
   googleLocationUrl: "", status: "Upcoming",
-  audienceMode: "everyone", yearGroups: [],
+  audienceMode: "everyone", isPublic: false, yearGroups: [],
   bannerImage: null, existingBannerUrl: "", images: [], existingImageUrls: [], youtubeVideoUrls: "",
   communityId: "",
 };
@@ -189,6 +191,7 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
               hideYearGroups={isCommunity}
               restricted={!isSuperAdmin ? { reason: "Regular admins cannot choose an audience. This event will be restricted to your assigned year group or community." } : undefined}
             />
+            <PublicOption id="event-public" checked={form.isPublic} onChange={(v) => f("isPublic", v)} forEveryone={isSuperAdmin && form.audienceMode === "everyone"} noun="event" />
             {showStatus && (
               <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
                 <FormSelect className="w-full" value={form.status} onValueChange={(v) => f("status", v)}
@@ -230,6 +233,7 @@ function toFormState(e: AlumniEvent): FormState {
     googleLocationUrl: e.googleLocationUrl ?? "",
     status: e.status,
     audienceMode: inferAudienceMode(e.communityId, e.yearGroups),
+    isPublic: !!e.isPublic,
     yearGroups: e.yearGroups ?? [],
     bannerImage: null,
     existingBannerUrl: e.bannerImageUrl ?? "",
@@ -269,6 +273,7 @@ export default function AdminEventsPage() {
       ticketPrice: f.isTicketed ? Number(f.ticketPrice) : undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
+      isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
       bannerImage: f.bannerImage || undefined,
       images: f.images.length > 0 ? f.images : undefined,
       youtubeVideoUrls: commaToArray(f.youtubeVideoUrls),
@@ -290,6 +295,7 @@ export default function AdminEventsPage() {
       ticketPrice: f.isTicketed ? Number(f.ticketPrice) : undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
+      isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
       bannerImage: f.bannerImage || undefined,
       images: f.images.length > 0 ? f.images : undefined,
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,

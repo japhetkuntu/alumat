@@ -630,6 +630,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             d => JsonSerializer.Deserialize<Dictionary<string, MessagingUsageMonth>>(JsonSerializer.Serialize(d, jsonOpts), jsonOpts)!);
         modelBuilder.Entity<Institution>().Property(i => i.MessagingUsage).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<Dictionary<string, MessagingUsageMonth>>(jsonOpts)).Metadata.SetValueComparer(messagingUsageComparer);
+        modelBuilder.Entity<Institution>().Property(i => i.PublicProfile).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<PublicProfile>(jsonOpts));
         modelBuilder.Entity<Institution>().Property(i => i.NewsBanner).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<NewsBanner>(jsonOpts));
 

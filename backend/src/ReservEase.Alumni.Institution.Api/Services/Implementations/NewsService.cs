@@ -151,6 +151,7 @@ public class NewsService(
                     ProfilePictureUrl = null,
                 },
                 YearGroups = resolvedYearGroups,
+                IsPublic = PublicVisibility.IsFullyPublic(request.IsPublic, resolvedCommunityId, resolvedYearGroups),
                 YoutubeVideoUrls = request.YoutubeVideoUrls,
                 CreatedBy = admin.Id,
             };
@@ -202,6 +203,7 @@ public class NewsService(
                 post.PublishedAt = DateTime.UtcNow;
             post.Status = request.Status;
             post.YearGroups = updatedYearGroups;
+            post.IsPublic = PublicVisibility.IsFullyPublic(request.IsPublic, updatedCommunityId, updatedYearGroups);
             post.YoutubeVideoUrls = request.YoutubeVideoUrls;
 
             var imageUrls = new List<string>();

@@ -49,7 +49,8 @@ public record InstitutionResponse(
     /// <summary>Off, Optional or Required: whether this community uses graduation years at all.</summary>
     string GraduationYearMode = "Required",
     bool CollectMemberId = true,
-    List<RegistrationField>? RegistrationFields = null);
+    List<RegistrationField>? RegistrationFields = null,
+    PublicProfile? PublicProfile = null);
 
 /// <summary>
 /// Deliberate carve-out from the "institution staff can't edit branding"
@@ -57,6 +58,14 @@ public record InstitutionResponse(
 /// Portal landing page's Stories and news banner are meant to be editable by
 /// the institution's own admins, not just platform staff.
 /// </summary>
+public class UpdatePublicProfileRequest
+{
+    [System.ComponentModel.DataAnnotations.MaxLength(200)] public string? ContactEmail { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(40)] public string? ContactPhone { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(300)] public string? Address { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(24)] public List<PublicLeader> Leaders { get; set; } = [];
+}
+
 public class UpdateLandingContentRequest
 {
     public List<LandingPageStory> LandingPageStories { get; set; } = [];

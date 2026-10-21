@@ -123,6 +123,9 @@ export const STORY_ICON_OPTIONS = [
   "Bell", "GraduationCap", "Shield", "MapPin", "Zap", "Star", "Award",
 ] as const;
 
+export interface PublicLeader { name: string; role: string; photoUrl?: string | null; email?: string | null; phone?: string | null }
+export interface PublicProfile { contactEmail?: string | null; contactPhone?: string | null; address?: string | null; leaders: PublicLeader[] }
+
 export interface InstitutionProfileResponse {
   id: string;
   name: string;
@@ -170,6 +173,8 @@ export interface InstitutionProfileResponse {
   heroHeadline?: string | null;
   /** Shareable Member Portal URL for this institution — null if the backend has no MemberPortalBaseDomain configured. */
   memberPortalUrl?: string | null;
+  /** Contact details and leaders shown on the public landing page. Null until set. */
+  publicProfile?: PublicProfile | null;
   /** None (never submitted) — Pending (awaiting platform review) — Approved (settlement fields below are live) — Rejected. */
   payoutStatus: "None" | "Pending" | "Approved" | "Rejected";
   settlementBankName?: string | null;
@@ -231,6 +236,12 @@ export async function updateLandingContent(
     throw new Error("Institution profile response missing data");
   }
   return profile;
+}
+
+/** The contact details and leaders shown on the public landing page. SuperAdmin only. Only what is typed here is ever shown. */
+export async function updatePublicProfile(profile: PublicProfile): Promise<InstitutionProfileResponse> {
+  const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/public-profile", profile);
+  return res.data.data!;
 }
 
 /** This institution's own branding: display name, tagline, support email, colors, logo/icon, and both portals' auth copy. SuperAdmin only, takes effect immediately. */
@@ -528,6 +539,8 @@ export interface CommunityListItem {
   createdAt: string;
   /** What this group is called here (Chapter, Committee…). Null reads as a plain group. */
   kind?: string | null;
+  /** Shown on the public landing page. */
+  isPublic?: boolean;
   /** Members who joined this community through a leader's invitation. */
   joinedViaInvites?: number;
   joinedLast30Days?: number;
@@ -560,12 +573,12 @@ export async function getCommunities(): Promise<CommunityListItem[]> {
   return res.data.data ?? [];
 }
 
-export async function createCommunity(body: { name: string; kind?: string; description?: string; coverImageUrl?: string }): Promise<CommunityListItem> {
+export async function createCommunity(body: { name: string; kind?: string; description?: string; coverImageUrl?: string; isPublic?: boolean }): Promise<CommunityListItem> {
   const res = await institutionClient.post<ApiResponse<CommunityListItem>>("/communities", body);
   return res.data.data!;
 }
 
-export async function updateCommunity(id: string, body: { name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }): Promise<CommunityListItem> {
+export async function updateCommunity(id: string, body: { name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean; isPublic?: boolean; externalChannels?: { type: string; displayName: string; inviteUrl?: string }[] }): Promise<CommunityListItem> {
   const res = await institutionClient.put<ApiResponse<CommunityListItem>>(`/communities/${id}`, body);
   return res.data.data!;
 }
@@ -626,6 +639,12 @@ export async function getInstitutionStaff(page = 1, pageSize = 20, search?: stri
 export async function createInstitutionStaff(body: CreateInstitutionStaffRequest) {
   const res = await institutionClient.post<ApiResponse<InstitutionStaffUser>>('/staff', body);
   return res.data.data!;
+}
+
+/** Emails a staff member who has not signed in yet a new link to choose their password. */
+export async function resendStaffInvite(adminId: string) {
+  const res = await institutionClient.post<ApiResponse<unknown>>(`/staff/${adminId}/resend-invite`);
+  return res.data;
 }
 
 export async function updateInstitutionStaff(adminId: string, body: UpdateInstitutionStaffRequest) {
@@ -936,6 +955,8 @@ export interface CreateJobBody {
   applyUrl?: string;
   deadline?: string;
   yearGroups?: number[];
+  /** Show it in full to people who are not signed in (institution-wide items only). */
+  isPublic?: boolean;
   bannerImage?: File;
 }
 
@@ -950,6 +971,8 @@ export interface UpdateJobBody {
   deadline?: string;
   status: string;
   yearGroups?: number[];
+  /** Show it in full to people who are not signed in (institution-wide items only). */
+  isPublic?: boolean;
   bannerImage?: File;
 }
 
@@ -1022,6 +1045,8 @@ export interface CreateEventBody {
   ticketPrice?: number;
   googleLocationUrl?: string;
   yearGroups?: number[];
+  /** Show it in full to people who are not signed in (institution-wide items only). */
+  isPublic?: boolean;
   bannerImage?: File;
   images?: File[];
   youtubeVideoUrls?: string[];
@@ -1044,6 +1069,8 @@ export interface UpdateEventBody {
   googleLocationUrl?: string;
   status: string;
   yearGroups?: number[];
+  /** Show it in full to people who are not signed in (institution-wide items only). */
+  isPublic?: boolean;
   bannerImage?: File;
   images?: File[];
   existingImageUrls?: string[];
@@ -1189,6 +1216,8 @@ export interface CreateNewsPostBody {
   isPinned: boolean;
   status: string;
   yearGroups?: number[];
+  /** Show it in full to people who are not signed in (institution-wide items only). */
+  isPublic?: boolean;
   images?: File[];
   youtubeVideoUrls?: string[];
 }
@@ -1201,6 +1230,8 @@ export interface UpdateNewsPostBody {
   isPinned: boolean;
   status: string;
   yearGroups?: number[];
+  /** Show it in full to people who are not signed in (institution-wide items only). */
+  isPublic?: boolean;
   images?: File[];
   existingImageUrls?: string[];
   youtubeVideoUrls?: string[];

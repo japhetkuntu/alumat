@@ -33,4 +33,6 @@ public record InstitutionThemeResponse(
     /// <summary>Whether registration shows the member or student ID field at all.</summary>
     bool CollectMemberId = true,
     /// <summary>The community's own extra registration questions, in order.</summary>
-    List<RegistrationField>? RegistrationFields = null);
+    List<RegistrationField>? RegistrationFields = null,
+    /// <summary>Contact details and leaders the institution chose to show publicly.</summary>
+    PublicProfile? PublicProfile = null);

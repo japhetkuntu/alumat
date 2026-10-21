@@ -2,7 +2,7 @@ using ReservEase.Alumni.Common.Sdk.Models;
 
 namespace ReservEase.Alumni.Institution.Api.Models;
 
-public record InstitutionStaffListItem(string Id, string FirstName, string LastName, string Email, string? Phone, string Role, List<int>? YearGroups, List<string>? CommunityIds, bool IsDisabled, DateTime CreatedAt);
+public record InstitutionStaffListItem(string Id, string FirstName, string LastName, string Email, string? Phone, string Role, List<int>? YearGroups, List<string>? CommunityIds, bool IsDisabled, DateTime CreatedAt, bool InvitePending = false);
 
 public class CreateInstitutionStaffRequest
 {
@@ -10,7 +10,6 @@ public class CreateInstitutionStaffRequest
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string Password { get; set; } = string.Empty;
     public string Role { get; set; } = "SuperAdmin";
     public List<int>? YearGroups { get; set; }
     public List<string>? CommunityIds { get; set; }

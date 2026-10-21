@@ -18,7 +18,7 @@ import { SearchModal } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { YearGroupPicker } from "@alumni/ui";
 import { FormSelect } from "@alumni/ui";
-import { getInstitutionStaff, createInstitutionStaff, updateInstitutionStaff, getCommunities, type CommunityListItem } from "@/lib/institution-api";
+import { getInstitutionStaff, createInstitutionStaff, updateInstitutionStaff, resendStaffInvite, getCommunities, type CommunityListItem } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@alumni/ui";
@@ -59,7 +59,6 @@ function NewAdminForm({ id, onSave }: { id: string; onSave: (data: CreateInstitu
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<typeof roles[number]>("SuperAdmin");
   const [yearGroups, setYearGroups] = useState<number[]>([]);
   const [communityIds, setCommunityIds] = useState<string[]>([]);
@@ -71,7 +70,7 @@ function NewAdminForm({ id, onSave }: { id: string; onSave: (data: CreateInstitu
   });
 
   return (
-    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, phone: phone.trim() || undefined, password, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
+    <form id={id} className="space-y-5" onSubmit={(e) => { e.preventDefault(); onSave({ firstName, lastName, email, phone: phone.trim() || undefined, role, yearGroups: role === "ScopedAdmin" ? yearGroups : undefined, communityIds: role === "ScopedAdmin" ? communityIds : undefined }); }}>
           <FormSection title="Who they are">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -94,11 +93,10 @@ function NewAdminForm({ id, onSave }: { id: string; onSave: (data: CreateInstitu
             </div>
           </FormSection>
 
-          <FormSection title="Sign-in" hint="Share this password with them securely. They can change it after signing in.">
-            <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
-              <Label>Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
+          <FormSection title="Sign-in">
+            <p className="border border-border bg-muted/40 p-3 text-[13.5px] leading-relaxed">
+              You do not set a password. We email {email.trim() || "them"} a link to choose their own, and they sign in with it. The link works for 24 hours; you can send a new one from this page.
+            </p>
           </FormSection>
           <div className="space-y-2">
             <Label>Role</Label>
@@ -219,7 +217,13 @@ export default function AdminsPage() {
 
   const createMut = useMutation({
     mutationFn: (req: CreateInstitutionStaffRequest) => createInstitutionStaff(req),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-admins"] }); setShowCreate(false); toast.success("Institution admin added"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-admins"] }); setShowCreate(false); toast.success("Admin added. We emailed them a link to choose their password."); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const resendMut = useMutation({
+    mutationFn: (id: string) => resendStaffInvite(id),
+    onSuccess: () => toast.success("A new link has been emailed."),
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -275,9 +279,9 @@ export default function AdminsPage() {
         open={showCreate || editingAdmin !== null}
         onClose={() => { setShowCreate(false); setEditingAdmin(null); }}
         title={editingAdmin ? "Edit admin" : "Add institution admin"}
-        description={editingAdmin ? `${editingAdmin.firstName} ${editingAdmin.lastName}` : "They sign in with the email and password you set here."}
+        description={editingAdmin ? `${editingAdmin.firstName} ${editingAdmin.lastName}` : "We email them a link to choose their own password."}
         formId="admin-form"
-        submitLabel={editingAdmin ? "Save changes" : "Create admin"}
+        submitLabel={editingAdmin ? "Save changes" : "Add and send invite"}
         savingLabel={editingAdmin ? "Saving" : "Creating"}
         saving={createMut.isPending || updateMut.isPending}
       >
@@ -363,13 +367,18 @@ export default function AdminsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={a.isDisabled ? "neutral" : "success"}>
-                      {a.isDisabled ? "Disabled" : "Active"}
+                    <Badge variant={a.isDisabled ? "neutral" : a.invitePending ? "warning" : "success"}>
+                      {a.isDisabled ? "Disabled" : a.invitePending ? "Invited" : "Active"}
                     </Badge>
                   </TableCell>
                   <TableCell>{formatDate(a.createdAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 justify-end">
+                      {a.invitePending && !a.isDisabled && (
+                        <Button size="sm" variant="outline" onClick={() => resendMut.mutate(a.id)} isLoading={resendMut.isPending && resendMut.variables === a.id}>
+                          Resend invite
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" onClick={() => setEditingAdmin(a)}>
                         Edit
                       </Button>

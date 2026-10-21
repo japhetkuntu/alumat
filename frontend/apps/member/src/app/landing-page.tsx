@@ -18,6 +18,8 @@ import { Button } from "@alumni/ui";
 import { cn } from "@alumni/ui";
 import { ensureAbsoluteUrl, FitImage } from "@alumni/ui";
 import { publicMemberClient } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
+import { GroupsSection, LeadershipSection, PrivacySection, hasPublicProfile, type PublicCommunityItem, type PublicProfileData } from "./landing-public-sections";
 
 /* ─────────────────────────────────────────────────────────────────────────
    DYNAMIC CONTENT — Stories and the news banner are editable by both the
@@ -69,6 +71,8 @@ interface LandingContent {
   tagline?: string | null;
   disabledFeatures?: string[] | null;
   socialLinks?: Record<string, string> | null;
+  /** Contact details and the leaders the institution chose to show. */
+  publicProfile?: PublicProfileData | null;
 }
 
 function useLandingContent(initialContent?: LandingContent | null) {
@@ -97,8 +101,8 @@ function useLandingContent(initialContent?: LandingContent | null) {
    context). This is what makes the homepage read as this institution's own
    site rather than a generic product marketing page.
    ───────────────────────────────────────────────────────────────────────── */
-interface PublicNewsItem { id: string; title: string; excerpt: string; imageUrl?: string | null; publishedAt?: string | null; category: string; }
-interface PublicEventItem { id: string; title: string; startDate: string; venue: string; bannerImageUrl?: string | null; }
+interface PublicNewsItem { id: string; title: string; excerpt: string; imageUrl?: string | null; publishedAt?: string | null; category: string; isPublic?: boolean; }
+interface PublicEventItem { id: string; title: string; startDate: string; venue: string; bannerImageUrl?: string | null; isPublic?: boolean; }
 interface PublicSpotlightItem { id: string; title: string; story: string; imageUrl?: string | null; memberName: string; featuredMonth?: string | null; }
 interface PublicBusinessItem { id: string; businessName: string; description: string; logoUrl?: string | null; bannerUrl?: string | null; location: string; websiteUrl?: string | null; externalLinkUrl?: string | null; }
 
@@ -136,6 +140,15 @@ function usePublicSpotlight(enabled = true) {
     staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
   });
   return { ...query, item: query.data?.[0] };
+}
+function usePublicCommunities(enabled = true) {
+  const query = useQuery({
+    enabled,
+    queryKey: ["public-communities"],
+    queryFn: async () => (await publicMemberClient.get<{ data: PublicCommunityItem[] }>("/public/communities", { params: { take: 6 } })).data.data,
+    staleTime: 5 * 60 * 1000, retry: false, refetchInterval: PUBLIC_CONTENT_REFETCH_INTERVAL,
+  });
+  return { ...query, items: query.data ?? [] };
 }
 function usePublicBusinesses(enabled = true) {
   const query = useQuery({
@@ -222,6 +235,8 @@ const NAV_LINKS = [
   { label: "News",         href: "#news"         },
   { label: "Events",       href: "#events"       },
   { label: "Businesses",   href: "#businesses"   },
+  { label: "Groups",       href: "#groups"       },
+  { label: "Leadership",   href: "#leadership"   },
   { label: "Features",     href: "#features"     },
   { label: "Stories",      href: "#stories"      },
   { label: "How it works", href: "#how-it-works" },
@@ -545,7 +560,7 @@ function AgendaRow({ item }: { item: PublicEventItem }) {
         </p>
       </div>
       <span className="hidden sm:flex shrink-0 items-center gap-1 text-[16px] font-semibold transition-transform group-hover:translate-x-0.5" style={{ color: "var(--primary)" }}>
-        Sign in to RSVP <ArrowRight size={12} />
+        {item.isPublic ? "View details" : "Sign in to RSVP"} <ArrowRight size={12} />
       </span>
     </Link>
   );
@@ -821,6 +836,11 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
   const eventsQuery = usePublicEvents(enabled("Events"));
   const spotlightQuery = usePublicSpotlight(enabled("Spotlights"));
   const businessesQuery = usePublicBusinesses(enabled("BusinessDirectory"));
+  const communitiesQuery = usePublicCommunities(enabled("Communities"));
+  // Someone already signed in has no use for "Request to join": the page points them straight back into the portal.
+  const { isMember } = useAuth();
+  const joinHref = isMember ? "/dashboard" : "/register";
+  const joinLabel = isMember ? "Go to your portal" : "Request to join";
   const contentQueries = [
     ...(enabled("News") ? [newsQuery] : []),
     ...(enabled("Events") ? [eventsQuery] : []),
@@ -836,7 +856,9 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
   const navLinks = NAV_LINKS.filter(link =>
     link.href === "#news" ? (enabled("News") && newsQuery.items.length > 0) || (enabled("Spotlights") && !!spotlightQuery.item) :
     link.href === "#events" ? enabled("Events") && eventsQuery.items.length > 0 :
-    link.href === "#businesses" ? enabled("BusinessDirectory") && businessesQuery.items.length > 0 : true);
+    link.href === "#businesses" ? enabled("BusinessDirectory") && businessesQuery.items.length > 0 :
+    link.href === "#groups" ? enabled("Communities") && communitiesQuery.items.length > 0 :
+    link.href === "#leadership" ? hasPublicProfile(content?.publicProfile) : true);
   const stats = useMemo(() => buildStats(pulse ? {
     ...pulse,
     eventsNext30Days: content?.disabledFeatures?.includes("Events") ? null : pulse.eventsNext30Days,
@@ -905,8 +927,8 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link href="/login"><Button variant="ghost" size="sm" className="text-[16px] font-medium">Sign in</Button></Link>
-            <Link href="/register"><Button size="sm" className="text-[16px] font-semibold gap-1.5">Request to join <ArrowRight size={12} /></Button></Link>
+            {!isMember && <Link href="/login"><Button variant="ghost" size="sm" className="text-[16px] font-medium">Sign in</Button></Link>}
+            <Link href={joinHref}><Button size="sm" className="text-[16px] font-semibold gap-1.5">{joinLabel} <ArrowRight size={12} /></Button></Link>
           </div>
 
           <button className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border transition-colors hover:bg-secondary"
@@ -927,9 +949,9 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               </button>
             ))}
             <div className="mt-4 pt-4 flex flex-col gap-2.5" style={{ borderTop: "1px solid var(--border)" }}>
-              <Link href="/login" onClick={() => setMenuOpen(false)}><Button variant="outline" className="w-full font-medium">Sign in</Button></Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)}>
-                <Button className="w-full font-semibold gap-2">Request to join <ArrowRight size={14} /></Button>
+              {!isMember && <Link href="/login" onClick={() => setMenuOpen(false)}><Button variant="outline" className="w-full font-medium">Sign in</Button></Link>}
+              <Link href={joinHref} onClick={() => setMenuOpen(false)}>
+                <Button className="w-full font-semibold gap-2">{joinLabel} <ArrowRight size={14} /></Button>
               </Link>
             </div>
           </div>
@@ -961,15 +983,17 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
               style={{ fontSize: "clamp(2.2rem,5.6vw,4.4rem)", fontWeight: 700, lineHeight: 1.08, letterSpacing: "-0.025em", color: "white" }}>
               {content?.heroHeadline || content?.tagline || "Every member, one community, wherever they are."}
             </h1>
-            <Link href="/register">
+            <Link href={joinHref}>
               <Button size="lg" className="h-12 px-9 text-[18px] font-semibold gap-2 tracking-wide" style={{ background: "white", color: "var(--primary)" }}>
-                Request to join <ArrowRight size={15} />
+                {joinLabel} <ArrowRight size={15} />
               </Button>
             </Link>
-            <p className="mt-5 text-[16px]" style={{ color: "rgba(255,255,255,0.8)" }}>
-              Already a member?{" "}
-              <Link href="/login" className="font-semibold underline underline-offset-4 hover:opacity-90">Sign in</Link>
-            </p>
+            {!isMember && (
+              <p className="mt-5 text-[16px]" style={{ color: "rgba(255,255,255,0.8)" }}>
+                Already a member?{" "}
+                <Link href="/login" className="font-semibold underline underline-offset-4 hover:opacity-90">Sign in</Link>
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -1000,6 +1024,10 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           Hidden entirely when the institution has no approved listings.
       ════════════════════════════════════════════════════════════════ */}
       {enabled("BusinessDirectory") && <BusinessDirectorySection />}
+
+      {/* Groups the institution chose to show, and the people who run it with a way to reach them. Each renders nothing until the institution has added something. */}
+      {enabled("Communities") && <GroupsSection items={communitiesQuery.items} />}
+      <LeadershipSection profile={content?.publicProfile} />
 
 
       {/* ════════════════════════════════════════════════════════════════
@@ -1081,8 +1109,8 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
           </div>
 
           <div className="mt-10 flex justify-center">
-            <Link href="/register">
-              <Button className="h-11 px-8 font-semibold gap-2">Request to join <ArrowRight size={14} /></Button>
+            <Link href={joinHref}>
+              <Button className="h-11 px-8 font-semibold gap-2">{joinLabel} <ArrowRight size={14} /></Button>
             </Link>
           </div>
         </div>
@@ -1111,6 +1139,8 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
         </div>
       </Section>
 
+      {!isMember && <PrivacySection />}
+
       {/* Closing call to action — one, at the end, once the page has said what this community is. */}
       <Section style={{ background: "var(--primary)" }}>
         <div className="relative overflow-hidden">
@@ -1134,18 +1164,20 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row lg:flex-col items-stretch gap-3 shrink-0">
-                <Link href="/register">
+                <Link href={joinHref}>
                   <Button size="lg" className="w-full h-12 px-10 text-[18px] font-semibold gap-2"
                     style={{ background: "white", color: "var(--primary)" }}>
-                    Create my account <ChevronRight size={16} />
+                    {isMember ? "Go to your portal" : "Create my account"} <ChevronRight size={16} />
                   </Button>
                 </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[18px] font-medium"
-                    style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
-                    Sign in instead
-                  </Button>
-                </Link>
+                {!isMember && (
+                  <Link href="/login">
+                    <Button size="lg" variant="outline" className="w-full h-12 px-9 text-[18px] font-medium"
+                      style={{ borderColor: "rgba(255,255,255,0.35)", color: "white", background: "transparent" }}>
+                      Sign in instead
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -1168,8 +1200,10 @@ export default function LandingPage({ initialContent }: { initialContent?: Landi
 
           <nav className="flex flex-wrap items-center justify-center gap-5" aria-label="Footer links">
             {[
-              { label: "Sign in",   href: "/login"    },
-              { label: "Request to join",  href: "/register" },
+              ...(isMember ? [{ label: "Go to your portal", href: "/dashboard" }] : [
+                { label: "Sign in",   href: "/login"    },
+                { label: "Request to join",  href: "/register" },
+              ]),
               { label: "Terms",     href: "/terms"    },
               { label: "Privacy",   href: "/privacy"  },
             ].map(link => (

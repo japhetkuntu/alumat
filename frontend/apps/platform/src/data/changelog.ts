@@ -21,6 +21,41 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-21",
+    title: "Store templates have their own tab; the product form only uses them",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "Saving a template used to happen inside the product form, with save-as-new, update and delete controls repeated under five sections, and it only made sense once a product was filled in, so admins saved a product and came back to find the option. Templates now live in a Templates tab on the Store page. There, 'New template' asks for a name and what it holds (a whole product setup, product details, questions for the buyer, delivery or pickup details, fulfilment stages, or variant options), shows only the fields for that type, and the list lets admins edit or delete each one. The product form now only picks from them: one 'Use it' picker per section, shown only when a template of that kind exists, plus a note at the top when the store has none. 'Manage templates' opens the tab in a new browser tab so a half-filled product is not lost. Templates are still copies: using one fills the form and changing or deleting one never alters products that already used it. A template's type can't be changed after saving. Existing templates appear in the new tab unchanged. No migration and no API change.",
+  },
+  {
+    date: "2026-10-21",
+    title: "Institution admins are invited by email and choose their own password",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "When an institution admin added a staff member, they typed a password for them and had to pass it on. That is gone, on both the Institution Admins page and the Structure page. The new admin is emailed a link to choose their own password, the same link and email the platform portal sends when it adds an institution admin and the same one 'Forgot password' sends. Until they sign in, the page shows 'Invited' with a 'Resend invite' button; the link works for 24 hours. Resending is refused once the person has signed in (they can use Forgot password) or if they are disabled. No password is stored for the person at creation: the account holds a random value nobody can sign in with. The password field was removed from the API request, so older callers that still send one have it ignored. Not changed: the platform portal's own staff page still has a temporary-password field for platform staff. No migration.",
+  },
+  {
+    date: "2026-10-21",
+    title: "Dues: the target and progress bar now follow the fee",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+    body: "On a dues campaign, changing the fee left the 'collected of target' figure and the progress bar unchanged, because the target was a number saved once at creation (fee times members at that moment) and editing the fee never recalculated it. The target for dues is now always the current fee times the number of active eligible members (at least one), worked out when the campaign is read and saved again when it is created or edited. So a new fee, or new members joining, moves the target and the percentage straight away, for existing campaigns as well, with no need to re-save them. Fundraisers are unchanged, since their target is a goal an admin sets. Collected amounts stay what members actually paid, so a fee change does not rewrite past payments. Pensioner amounts are not part of the target (as before). No migration.",
+  },
+  {
+    date: "2026-10-21",
+    title: "Store variants: stock is set per variant, and the product total follows",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "On a product with variants (for example colour and size), the product-level 'Quantity available' box did nothing, because stock is kept on each variant and the server overwrote the total with their sum. The box is now a read-only total that says so, and the variants table is where stock is entered. Quantities start blank instead of 0, so an admin has to answer for every variant (0 shows 'Sold out'). A 'Set every variant' field fills them all at once, and a line under the table shows the total and how many variants are sold out. For products that do not track stock, the stock column is hidden. No migration, no backend change.",
+  },
+  {
+    date: "2026-10-21",
+    title: "Institution websites: show chosen news, events, jobs and groups in full to visitors, plus leadership, contact and a data note",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "Institution admins now choose, record by record, what a visitor who is not signed in can read in full. News stories, events and jobs have a 'Show in full on the public website' option, and groups have 'Show on the public website'. Off is the default, so nothing changes until an admin turns it on, and visitors still see the short preview they saw before. Only items for everyone qualify: anything for a group or year group stays private even if flagged, and the server enforces this (so does reading, in case the audience is changed later). Signing in is still needed to RSVP, apply, join a group or see contact details. Public groups also appear on the landing page as cards with a head count, never a member list. New in Settings, Landing content: Contact and leadership. Admins type the contact email, phone and address and add the leaders they want shown (name, role, photo, optional email and phone); nobody appears automatically. The landing page shows these as a Leadership section, adds a 'Your information' note that states how member details are handled (directory for approved members only, email and phone hidden by default, map opt-in) and repeats a short version beside the join form. Members who are already signed in now see 'Go to your portal' instead of Sign in and Request to join. Two behaviour changes: a news item, event or job meant for year groups no longer shows even a short excerpt to guests, and the public group preview shows only the group name unless the group is public. Needs migration AddPublicVisibility (four IsPublic columns and one PublicProfile column, all defaults off or empty). Public pages are still marked noindex, so search engines do not list them yet.",
+  },
+  {
+    date: "2026-10-21",
     title: "Faster across the board: services form, payouts forecast, audience counts and the servers under heavy load",
     scopes: ["Platform", "Institution", "Member"],
     type: "Improvement",

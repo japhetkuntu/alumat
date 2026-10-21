@@ -1,9 +1,9 @@
 namespace ReservEase.Alumni.Member.Api.Models;
 
 /// <summary>Institution-wide (unscoped) news for the public landing page — never includes community/year-restricted posts, since an anonymous visitor has no membership context to check against.</summary>
-public record PublicNewsItemResponse(string Id, string Title, string Excerpt, string? ImageUrl, DateTime? PublishedAt, string Category);
+public record PublicNewsItemResponse(string Id, string Title, string Excerpt, string? ImageUrl, DateTime? PublishedAt, string Category, bool IsPublic = false);
 
-public record PublicEventItemResponse(string Id, string Title, DateTime StartDate, string Venue, string? BannerImageUrl);
+public record PublicEventItemResponse(string Id, string Title, DateTime StartDate, string Venue, string? BannerImageUrl, bool IsPublic = false);
 
 public record PublicSpotlightItemResponse(string Id, string Title, string Story, string? ImageUrl, string MemberName, DateTime? FeaturedMonth);
 public record PublicBusinessListingItemResponse(string Id, string BusinessName, string Description, string? LogoUrl, string? BannerUrl, string Location, string? WebsiteUrl, string? ExternalLinkUrl);
@@ -28,3 +28,6 @@ public record ReferralPreviewResponse(
     decimal? OpenFundraiserCollected,
     decimal? OpenFundraiserTarget,
     string? CommunityName = null);
+
+/// <summary>A group the institution chose to show on its public landing page. Counts only, never members.</summary>
+public record PublicCommunityItemResponse(string Id, string Name, string? Kind, string Description, string? CoverImageUrl, int MemberCount);

@@ -43,6 +43,18 @@ public class InstitutionStaffController(IInstitutionStaffService staffService) :
     }
 
     /// <summary>
+    /// Email a staff member who has not signed in yet a new link to choose their password.
+    /// </summary>
+    [HttpPost("{staffId}/resend-invite")]
+    [SwaggerOperation(Summary = "Resend the set-your-password link")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ResendInvite(string staffId)
+    {
+        var result = await staffService.ResendInviteAsync(staffId, User.GetAccount());
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Update an existing institution staff member.
     /// </summary>
     [HttpPut("{staffId}")]

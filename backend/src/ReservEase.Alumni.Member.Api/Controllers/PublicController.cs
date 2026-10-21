@@ -36,6 +36,7 @@ public class PublicController(
     IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Member> memberRepo,
     IAlumniPgRepository<Resource> resourceRepo,
     IAlumniPgRepository<Community> communityRepo,
+    IAlumniPgRepository<CommunityMembership> communityMembershipRepo,
     IAlumniPgRepository<PhotoAlbum> albumRepo,
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
@@ -96,7 +97,8 @@ public class PublicController(
             institution.CohortLabelPlural,
             institution.GraduationYearMode,
             institution.CollectMemberId,
-            institution.RegistrationFields);
+            institution.RegistrationFields,
+            institution.PublicProfile);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
     }
@@ -254,7 +256,8 @@ public class PublicController(
 
             return items.Select(n => new PublicNewsItemResponse(
                 n.Id, n.Title, ExcerptFromHtml(n.Content, 180),
-                n.ImageUrls?.FirstOrDefault(), n.PublishedAt, n.Category)).ToList();
+                n.ImageUrls?.FirstOrDefault(), n.PublishedAt, n.Category,
+                PublicVisibility.IsFullyPublic(n.IsPublic, n.CommunityId, n.YearGroups))).ToList();
         });
 
         return Ok(new ApiResponse<List<PublicNewsItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
@@ -281,7 +284,8 @@ public class PublicController(
                 .Take(MaxCacheableItems)
                 .ToListAsync();
 
-            return items.Select(e => new PublicEventItemResponse(e.Id, e.Title, e.StartDate, e.Venue, e.BannerImageUrl)).ToList();
+            return items.Select(e => new PublicEventItemResponse(e.Id, e.Title, e.StartDate, e.Venue, e.BannerImageUrl,
+                PublicVisibility.IsFullyPublic(e.IsPublic, e.CommunityId, e.YearGroups))).ToList();
         });
 
         // A cached list can go slightly stale on time alone (an event tips into the past) between
@@ -428,6 +432,33 @@ public class PublicController(
         return Ok(new ApiResponse<List<PublicBusinessListingItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
     }
 
+    /// <summary>Groups the institution chose to show on its landing page: name, description, cover and a head count, never who is in them.</summary>
+    [HttpGet("communities")]
+    [SwaggerOperation(Summary = "Get the groups the institution shows publicly")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<PublicCommunityItemResponse>>))]
+    public async Task<IActionResult> GetPublicCommunities([FromQuery] int take = 6)
+    {
+        if (HttpContext.Items["Institution"] is not Institution institution)
+            return Ok(new ApiResponse<List<PublicCommunityItemResponse>> { Message = "Success", Code = 200, Data = [] });
+
+        var all = await GetOrCacheAsync(PublicContentCacheKeys.Communities(institution.Id), async () =>
+        {
+            var groups = await communityRepo.GetQueryable(c => c.IsActive && c.IsPublic)
+                .OrderBy(c => c.Name)
+                .Take(MaxCacheableItems)
+                .ToListAsync();
+            var ids = groups.Select(g => g.Id).ToList();
+            var counts = await communityMembershipRepo.GetQueryable(m => ids.Contains(m.CommunityId) && m.Status == "Approved")
+                .GroupBy(m => m.CommunityId)
+                .Select(g => new { Id = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Id, x => x.Count);
+            return groups.Select(g => new PublicCommunityItemResponse(
+                g.Id, g.Name, g.Kind, ExcerptFromHtml(g.Description, 160), g.CoverImageUrl, counts.GetValueOrDefault(g.Id))).ToList();
+        });
+
+        return Ok(new ApiResponse<List<PublicCommunityItemResponse>> { Message = "Success", Code = 200, Data = all.Take(Math.Clamp(take, 1, MaxCacheableItems)).ToList() });
+    }
+
     /// <summary>
     /// Title/description/image for a single entity, used to render real Open Graph tags
     /// on a shared detail-page link (e.g. the link-unfurl preview when a member
@@ -468,9 +499,18 @@ public class PublicController(
     {
         var e = await eventRepo.GetOneAsync(x => x.Id == id);
         if (e is null) return null;
-        if (e.CommunityId is not null) return new PublicPreviewResponse(e.Title, null, e.BannerImageUrl, Restricted: true);
+        if (e.CommunityId is not null || e.YearGroups is { Count: > 0 }) return new PublicPreviewResponse(e.Title, null, e.BannerImageUrl, Restricted: true);
+        var isPublic = PublicVisibility.IsFullyPublic(e.IsPublic, e.CommunityId, e.YearGroups);
+        var facts = new List<PublicFact>();
+        if (isPublic)
+        {
+            if (e.IsTicketed && e.TicketPrice is > 0) facts.Add(new PublicFact("RSVP", $"GH₵{e.TicketPrice:0.##}"));
+            else facts.Add(new PublicFact("RSVP", "Free"));
+            if (e.Capacity is > 0) facts.Add(new PublicFact("Places", e.Capacity.Value.ToString()));
+        }
         return new PublicPreviewResponse(e.Title, ExcerptFromHtml(e.Description, 300), e.BannerImageUrl,
-            Subtitle: e.Status == "Cancelled" ? "Cancelled" : null, Date: e.StartDate, Place: e.Venue);
+            Subtitle: e.Status == "Cancelled" ? "Cancelled" : null, Date: e.StartDate, Place: e.Venue,
+            IsPublic: isPublic, Html: isPublic ? e.Description : null, Images: isPublic ? e.ImageUrls : null, Facts: isPublic ? facts : null);
     }
 
     private async Task<PublicPreviewResponse?> BuildJobPreviewAsync(string id)
@@ -478,17 +518,23 @@ public class PublicController(
         // Only live postings: a draft, closed, or member-suggested one still awaiting review is not shown to anyone signed out.
         var j = await jobRepo.GetOneAsync(x => x.Id == id && x.Status == "Active");
         if (j is null) return null;
-        if (j.CommunityId is not null) return new PublicPreviewResponse($"{j.Title} at {j.Company}", null, j.BannerImageUrl, Restricted: true);
+        if (j.CommunityId is not null || j.YearGroups is { Count: > 0 }) return new PublicPreviewResponse($"{j.Title} at {j.Company}", null, j.BannerImageUrl, Restricted: true);
+        var isPublic = PublicVisibility.IsFullyPublic(j.IsPublic, j.CommunityId, j.YearGroups);
         return new PublicPreviewResponse($"{j.Title} at {j.Company}", ExcerptFromHtml(j.Description, 300), j.BannerImageUrl,
-            Subtitle: string.IsNullOrWhiteSpace(j.Type) ? null : j.Type, Date: j.Deadline, Place: j.Location);
+            Subtitle: string.IsNullOrWhiteSpace(j.Type) ? null : j.Type, Date: j.Deadline, Place: j.Location,
+            IsPublic: isPublic, Html: isPublic ? j.Description : null,
+            Facts: isPublic ? new List<PublicFact> { new("Company", j.Company) } : null);
     }
 
     private async Task<PublicPreviewResponse?> BuildNewsPreviewAsync(string id)
     {
         var n = await newsRepo.GetOneAsync(x => x.Id == id);
         if (n is null || n.Status != "Published") return null; // a draft must never unfurl or show to a guest
-        if (n.CommunityId is not null) return new PublicPreviewResponse(n.Title, null, n.ImageUrls?.FirstOrDefault(), Restricted: true);
-        return new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault(), Date: n.PublishedAt ?? n.CreatedAt);
+        if (n.CommunityId is not null || n.YearGroups is { Count: > 0 }) return new PublicPreviewResponse(n.Title, null, n.ImageUrls?.FirstOrDefault(), Restricted: true);
+        var isPublic = PublicVisibility.IsFullyPublic(n.IsPublic, n.CommunityId, n.YearGroups);
+        return new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault(), Date: n.PublishedAt ?? n.CreatedAt,
+            Subtitle: isPublic && !string.IsNullOrWhiteSpace(n.Category) ? n.Category : null,
+            IsPublic: isPublic, Html: isPublic ? n.Content : null, Images: isPublic ? n.ImageUrls : null);
     }
 
     private async Task<PublicPreviewResponse?> BuildResourcePreviewAsync(string id)
@@ -505,8 +551,12 @@ public class PublicController(
 
     private async Task<PublicPreviewResponse?> BuildCommunityPreviewAsync(string id)
     {
-        var c = await communityRepo.GetOneAsync(x => x.Id == id);
-        return c is null ? null : new PublicPreviewResponse(c.Name, ExcerptFromHtml(c.Description, 300), c.CoverImageUrl);
+        var c = await communityRepo.GetOneAsync(x => x.Id == id && x.IsActive);
+        if (c is null) return null;
+        // Only a group the institution chose to show gets its description to a guest; any other is a title and a way in.
+        if (!c.IsPublic) return new PublicPreviewResponse(c.Name, null, c.CoverImageUrl, Restricted: true);
+        return new PublicPreviewResponse(c.Name, ExcerptFromHtml(c.Description, 300), c.CoverImageUrl,
+            Subtitle: c.Kind, IsPublic: true, Html: c.Description);
     }
 
     private async Task<PublicPreviewResponse?> BuildAlbumPreviewAsync(string id)
@@ -550,4 +600,8 @@ public class PublicController(
 /// community: those carry only the title, so a guest gets a sign-in prompt rather than the content.
 /// </summary>
 public record PublicPreviewResponse(string Title, string? Description, string? ImageUrl,
-    string? Subtitle = null, DateTime? Date = null, string? Place = null, bool Restricted = false);
+    string? Subtitle = null, DateTime? Date = null, string? Place = null, bool Restricted = false,
+    bool IsPublic = false, string? Html = null, List<string>? Images = null, List<PublicFact>? Facts = null);
+
+/// <summary>One labelled detail of a fully public item (price, company, group type…).</summary>
+public record PublicFact(string Label, string Value);

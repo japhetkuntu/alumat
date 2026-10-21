@@ -3,12 +3,13 @@
 import { ChipRow, ZoomableImage } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { SavedSets } from "@/components/institution/saved-sets";
+import { TemplatePicker } from "@/components/institution/template-picker";
+import { StoreTemplatesPanel } from "@/components/institution/store-templates-panel";
 import { FormSheet, FormSection } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
@@ -54,7 +55,8 @@ interface RowValues {
   quantityAvailable: string;
 }
 
-const defaultRowValues: RowValues = { sku: "", priceAdjustment: "", quantityAvailable: "0" };
+// Quantity starts empty rather than 0 so an admin has to say how many of each variant there are; 0 is a real answer (sold out).
+const defaultRowValues: RowValues = { sku: "", priceAdjustment: "", quantityAvailable: "" };
 
 interface FormState {
   name: string;
@@ -112,8 +114,8 @@ function buildOptionValuesRaw(optionTypes: string[], variants: StoreProductVaria
   return raw;
 }
 
-function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
-  id: string; init: FormState; onSave: (f: FormState) => void; defaultDeliveryInfo?: string;
+function ProductForm({ id, init, onSave, defaultDeliveryInfo, manageTemplatesHref }: {
+  id: string; init: FormState; onSave: (f: FormState) => void; defaultDeliveryInfo?: string; manageTemplatesHref?: string;
 }) {
   const [form, setForm] = useState(init);
   const [newOptionType, setNewOptionType] = useState("");
@@ -124,6 +126,25 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
     [form.optionTypes, form.optionValuesRaw]
   );
   const combos = useMemo(() => cartesianCombos(form.optionTypes, optionValues), [form.optionTypes, optionValues]);
+  const hasVariants = combos.length > 0;
+  // With variants, stock lives on each variant and the product's own total is just their sum.
+  const variantQty = (key: string) => Number(form.variantRowValues[key]?.quantityAvailable) || 0;
+  const variantStockTotal = combos.reduce((sum, options) => sum + variantQty(comboKey(form.optionTypes, options)), 0);
+  const soldOutVariants = combos.filter((options) => variantQty(comboKey(form.optionTypes, options)) === 0).length;
+  const [bulkQty, setBulkQty] = useState("");
+  const applyBulkQty = () => {
+    if (bulkQty.trim() === "" || Number(bulkQty) < 0) return;
+    setForm((prev) => ({
+      ...prev,
+      variantRowValues: {
+        ...prev.variantRowValues,
+        ...Object.fromEntries(combos.map((options) => {
+          const key = comboKey(prev.optionTypes, options);
+          return [key, { ...(prev.variantRowValues[key] ?? defaultRowValues), quantityAvailable: String(Number(bulkQty)) }];
+        })),
+      },
+    }));
+  };
 
   const addOptionType = () => {
     const name = newOptionType.trim();
@@ -158,9 +179,14 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
               {form.optionTypes.length > 0 && (
                 <p className="text-[12.5px] text-muted-foreground">Each option adds its extra amount to this price.</p>
               )}</div>
-            {form.config.trackStock && (
+            {form.config.trackStock && !hasVariants && (
               <div className="space-y-2"><Label>Quantity available</Label>
                 <Input type="number" min="0" placeholder="50" value={form.quantityAvailable} onChange={(e) => f("quantityAvailable", e.target.value)} required /></div>
+            )}
+            {form.config.trackStock && hasVariants && (
+              <div className="space-y-2"><Label>Quantity available</Label>
+                <p className="flex h-10 items-center border border-border bg-muted/40 px-3 text-[14px] font-semibold tabular-nums">{variantStockTotal.toLocaleString()}</p>
+                <p className="text-[12.5px] text-muted-foreground">Added up from the variants below. Set the quantity for each variant there.</p></div>
             )}
           </div>
           <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>Status</Label>
@@ -195,24 +221,22 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
             onChange={(config) => setForm((prev) => ({ ...prev, config }))}
             deliveryInfo={form.deliveryInfo}
             onApplyTemplate={(t) => setForm((prev) => ({ ...prev, deliveryInfo: t.deliveryInfo ?? prev.deliveryInfo }))}
+            manageTemplatesHref={manageTemplatesHref}
           />
 
           <div className="space-y-3 pt-2 border-t border-border/40">
             <div>
               <Label>Variants (optional)</Label>
               <p className="text-[12px] text-muted-foreground mt-0.5">
-                Add option types like Size or Color to sell this product in multiple variants. Leave empty to sell it as a single simple product.
+                Add option types like Size or Color to sell this product in multiple variants. Leave empty to sell it as a single simple product.{form.config.trackStock ? " When a product has variants, you set the quantity for each one." : ""}
               </p>
             </div>
-            <SavedSets
+            <TemplatePicker
               kind="Variants"
-              noun="options set"
+              noun="variant options template"
               hasContent={form.optionTypes.length > 0}
               summary={(t) => t.variantOptions.map((o) => `${o.name}: ${o.values.join(", ")}`).join(" · ")}
-              buildBody={() => ({
-                ...configToBody(form.config),
-                variantOptions: form.optionTypes.map((t) => ({ name: t, values: parseValues(form.optionValuesRaw[t] ?? "") })).filter((o) => o.values.length > 0),
-              })}
+              manageHref={manageTemplatesHref}
               onUse={(t) => setForm((prev) => ({
                 ...prev,
                 optionTypes: t.variantOptions.map((o) => o.name),
@@ -257,14 +281,26 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
 
             {combos.length > 0 && (
               <div className="space-y-2 pt-1">
-                <Label className="text-[12.5px]">Variant combinations ({combos.length})</Label>
+                <Label className="text-[12.5px]">Variants ({combos.length})</Label>
+                {form.config.trackStock && (
+                  <div className="space-y-2 border border-border bg-muted/30 p-3">
+                    <p className="text-[13px] leading-relaxed">
+                      Your options make <span className="font-semibold">{combos.length} variants</span>. Enter how many of each you have in stock. Buyers can only order a variant that has stock.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input type="number" min="0" placeholder="Same for all" value={bulkQty} onChange={(e) => setBulkQty(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyBulkQty(); } }} className="h-9 w-40" aria-label="Quantity to give every variant" />
+                      <Button type="button" size="sm" variant="outline" onClick={applyBulkQty} disabled={bulkQty.trim() === "" || Number(bulkQty) < 0}>Set every variant</Button>
+                    </div>
+                  </div>
+                )}
                 <Table stackOnMobile>
                   <TableHeader>
                     <TableRow>
                       {form.optionTypes.map((t) => <TableHead key={t}>{t}</TableHead>)}
                       <TableHead>SKU</TableHead>
                       <TableHead>Extra price (added to base)</TableHead>
-                      <TableHead>Qty available</TableHead>
+                      {form.config.trackStock && <TableHead>In stock</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -284,15 +320,26 @@ function ProductForm({ id, init, onSave, defaultDeliveryInfo }: {
                               Sells at {formatCurrency((Number(form.price) || 0) + (Number(row.priceAdjustment) || 0))}
                             </p>
                           </TableCell>
-                          <TableCell>
-                            <Input type="number" min="0" value={row.quantityAvailable} onChange={(e) => updateRow(key, { quantityAvailable: e.target.value })}
-                              required className="h-9 min-w-[6rem]" />
-                          </TableCell>
+                          {form.config.trackStock && (
+                            <TableCell>
+                              <Input type="number" min="0" placeholder="Qty" value={row.quantityAvailable} onChange={(e) => updateRow(key, { quantityAvailable: e.target.value })}
+                                required className="h-9 min-w-[6rem]" aria-label={`Quantity in stock for ${Object.values(options).join(" ")}`} />
+                              {row.quantityAvailable !== "" && Number(row.quantityAvailable) === 0 && (
+                                <p className="mt-1 text-[12px] font-medium text-destructive whitespace-nowrap">Sold out</p>
+                              )}
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })}
                   </TableBody>
                 </Table>
+                {form.config.trackStock && (
+                  <p className="text-[13px] text-muted-foreground">
+                    <span className="font-semibold text-foreground tabular-nums">{variantStockTotal.toLocaleString()}</span> in stock across {combos.length} variants
+                    {soldOutVariants > 0 && <> · <span className="font-medium text-destructive">{soldOutVariants} sold out</span></>}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -372,7 +419,11 @@ function OrderItemRow({ orderId, item, index, paid }: { orderId: string; item: S
 }
 
 export default function AdminStorePage() {
-  const [tab, setTab] = useState<"Products" | "Orders">("Products");
+  const [tab, setTab] = useState<"Products" | "Orders" | "Templates">("Products");
+  // The product form links here to manage templates (in a new browser tab, so a half-filled product is kept).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "templates") setTab("Templates");
+  }, []);
   const [showCreate, setShowCreate] = useState(false);
   const [editProduct, setEditProduct] = useState<StoreProduct | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StoreProduct | null>(null);
@@ -424,6 +475,15 @@ export default function AdminStorePage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  /** A product with variants holds its stock on the variants, so its own figure is their sum. */
+  const stockFor = (f: FormState) => {
+    if (!f.config.trackStock) return 0;
+    const optionValues = Object.fromEntries(f.optionTypes.map((t) => [t, parseValues(f.optionValuesRaw[t] ?? "")]));
+    const combos = cartesianCombos(f.optionTypes, optionValues);
+    if (f.optionTypes.length === 0 || combos.length === 0) return Number(f.quantityAvailable);
+    return combos.reduce((sum, options) => sum + (Number(f.variantRowValues[comboKey(f.optionTypes, options)]?.quantityAvailable) || 0), 0);
+  };
+
   const buildVariantFields = (f: FormState) => {
     const optionValues = Object.fromEntries(f.optionTypes.map((t) => [t, parseValues(f.optionValuesRaw[t] ?? "")]));
     const combos = cartesianCombos(f.optionTypes, optionValues);
@@ -448,7 +508,7 @@ export default function AdminStorePage() {
   const createMut = useMutation({
     mutationFn: (f: FormState) => createStoreProduct({
       name: f.name, description: f.description || undefined, price: Number(f.price),
-      quantityAvailable: f.config.trackStock ? Number(f.quantityAvailable) : 0, deliveryInfo: f.deliveryInfo || undefined,
+      quantityAvailable: stockFor(f), deliveryInfo: f.deliveryInfo || undefined,
       status: f.status, images: f.images.length > 0 ? f.images : undefined,
       config: configToBody(f.config),
       ...buildVariantFields(f),
@@ -460,7 +520,7 @@ export default function AdminStorePage() {
   const updateMut = useMutation({
     mutationFn: ({ id, f }: { id: string; f: FormState }) => updateStoreProduct(id, {
       name: f.name, description: f.description || undefined, price: Number(f.price),
-      quantityAvailable: f.config.trackStock ? Number(f.quantityAvailable) : 0, deliveryInfo: f.deliveryInfo || undefined,
+      quantityAvailable: stockFor(f), deliveryInfo: f.deliveryInfo || undefined,
       status: f.status, images: f.images.length > 0 ? f.images : undefined,
       existingImageUrls: f.existingImageUrls.length > 0 ? f.existingImageUrls : undefined,
       config: configToBody(f.config),
@@ -496,7 +556,7 @@ export default function AdminStorePage() {
       </header>
 
       <div className="flex gap-6 border-b border-border">
-        {(["Products", "Orders"] as const).map((t) => (
+        {(["Products", "Orders", "Templates"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -623,10 +683,11 @@ export default function AdminStorePage() {
                 }}
                 onSave={(f) => updateMut.mutate({ id: editProduct.id, f })}
                 defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined}
+                manageTemplatesHref="/store?tab=templates"
               />
             ) : showCreate ? (
               <ProductForm id="product-form" init={emptyForm} onSave={(f) => createMut.mutate(f)}
-                defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined} />
+                defaultDeliveryInfo={settings?.defaultDeliveryInfo ?? undefined} manageTemplatesHref="/store?tab=templates" />
             ) : null}
           </FormSheet>
 
@@ -694,6 +755,8 @@ export default function AdminStorePage() {
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
+
+      {tab === "Templates" && <StoreTemplatesPanel />}
 
       {tab === "Orders" && (
         <>

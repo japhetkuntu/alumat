@@ -201,6 +201,7 @@ public class EventService(
                 Capacity = request.Capacity,
                 Status = "Upcoming",
                 YearGroups = resolvedYearGroups,
+                IsPublic = PublicVisibility.IsFullyPublic(request.IsPublic, resolvedCommunityId, resolvedYearGroups),
                 YoutubeVideoUrls = request.YoutubeVideoUrls,
                 CreatedBy = admin.Id,
             };
@@ -292,6 +293,7 @@ public class EventService(
             ev.Capacity = request.Capacity;
             if (!string.IsNullOrWhiteSpace(request.Status)) ev.Status = request.Status;   // an edit that does not say keeps the current status
             ev.YearGroups = updatedYearGroups;
+            ev.IsPublic = PublicVisibility.IsFullyPublic(request.IsPublic, updatedCommunityId, updatedYearGroups);
             ev.YoutubeVideoUrls = request.YoutubeVideoUrls;
 
             Task<string>? bannerUpload = null;

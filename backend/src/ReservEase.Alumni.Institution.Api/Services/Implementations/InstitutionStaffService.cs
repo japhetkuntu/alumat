@@ -11,6 +11,7 @@ namespace ReservEase.Alumni.Institution.Api.Services.Implementations;
 
 public class InstitutionStaffService(
     IAlumniPgRepository<StaffEntity> adminRepo,
+    IInstitutionAuthService authService,
     IInstitutionAuditLogService auditLog,
     ILogger<InstitutionStaffService> logger) : IInstitutionStaffService
 {
@@ -36,7 +37,8 @@ public class InstitutionStaffService(
                 a.YearGroups,
                 a.CommunityIds,
                 a.IsDisabled,
-                a.CreatedAt));
+                a.CreatedAt,
+                a.LastLoginAt == null));
 
             return new PgPagedResult<InstitutionStaffListItem>
             {
@@ -78,7 +80,9 @@ public class InstitutionStaffService(
                 LastName = request.LastName.Trim(),
                 Email = email,
                 Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim(),
-                Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                // Nobody types a password for someone else: this random hash can never be used to sign in, and the
+                // person is emailed a link to choose their own (the same one "Forgot password" sends).
+                Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
                 Role = role,
                 YearGroups = role == StaffRoles.ScopedAdmin ? request.YearGroups : null,
                 CommunityIds = role == StaffRoles.ScopedAdmin ? request.CommunityIds : null,
@@ -87,16 +91,40 @@ public class InstitutionStaffService(
             };
 
             await adminRepo.AddAsync(admin);
+            await authService.SendPasswordSetupLinkAsync(admin);
             await auditLog.LogAsync(createdBy, "Staff Created", $"{admin.FirstName} {admin.LastName} ({admin.Email}) — {admin.Role}");
 
             logger.LogInformation("Admin {AdminId} created by {CreatorId}", admin.Id, createdBy.Id);
-            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Phone, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
-            return listItem.ToCreatedApiResponse("Admin created");
+            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Phone, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt, true);
+            return listItem.ToCreatedApiResponse("Admin added. We emailed them a link to choose their password.");
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error creating admin — email: {Email} by admin {AdminId}", request.Email, createdBy.Id);
             return ApiResponseExtensions.ToServerErrorApiResponse<InstitutionStaffListItem>("Failed to create admin");
+        }
+    }
+
+    public async Task<IApiResponse<object>> ResendInviteAsync(string adminId, AuthData actor)
+    {
+        try
+        {
+            var admin = await adminRepo.GetByIdAsync(adminId);
+            if (admin is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Admin not found");
+            if (admin.IsDisabled)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This admin is disabled. Enable them before sending a new link.");
+            if (admin.LastLoginAt is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("They have already signed in. If they forgot their password, they can use Forgot password on the sign-in page.");
+
+            await authService.SendPasswordSetupLinkAsync(admin);
+            await auditLog.LogAsync(actor, "Staff Invite Resent", $"{admin.FirstName} {admin.LastName} ({admin.Email})");
+            return new object().ToOkApiResponse("A new link has been emailed.");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error resending invite for admin {AdminId}", adminId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to send the link");
         }
     }
 
@@ -137,7 +165,7 @@ public class InstitutionStaffService(
             if (previousDisabled != admin.IsDisabled)
                 await auditLog.LogAsync(updatedBy, admin.IsDisabled ? "Staff Disabled" : "Staff Re-enabled", $"{admin.FirstName} {admin.LastName} ({admin.Email})");
 
-            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Phone, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt);
+            var listItem = new InstitutionStaffListItem(admin.Id, admin.FirstName, admin.LastName, admin.Email, admin.Phone, admin.Role, admin.YearGroups, admin.CommunityIds, admin.IsDisabled, admin.CreatedAt, admin.LastLoginAt == null);
             return listItem.ToOkApiResponse();
         }
         catch (Exception e)

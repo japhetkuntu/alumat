@@ -40,6 +40,8 @@ export interface InstitutionTheme {
   newsBanner?: { enabled: boolean; text: string; linkText?: string | null; linkUrl?: string | null } | null;
   heroImageUrls?: string[] | null;
   heroHeadline?: string | null;
+  /** Contact details and leaders the institution chose to show on its landing page. */
+  publicProfile?: { contactEmail?: string | null; contactPhone?: string | null; address?: string | null; leaders?: { name: string; role: string; photoUrl?: string | null; email?: string | null; phone?: string | null }[] | null } | null;
 }
 
 // Server-side only (never sent to the browser, unlike api-client.ts's

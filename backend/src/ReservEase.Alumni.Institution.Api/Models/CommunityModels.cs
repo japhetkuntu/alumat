@@ -5,7 +5,7 @@ namespace ReservEase.Alumni.Institution.Api.Models;
 public record CommunityListItem(
     string Id, string Name, string? Description, string? CoverImageUrl, bool IsActive,
     int ApprovedCount, int PendingCount, int LeaderCount, DateTime CreatedAt,
-    int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null);
+    int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null, bool IsPublic = false);
 
 /// <summary>How members have been joining through invitations, across the institution.</summary>
 public record CommunityGrowthSummary(int TotalViaInvites, int Last30Days, List<GrowthSourceItem> BySource, List<GrowthCommunityItem> ByCommunity);
@@ -36,6 +36,8 @@ public class CreateCommunityRequest
     /// <summary>What this group is, in the community's own words (Chapter, Committee, Team…).</summary>
     [MaxLength(40)]
     public string? Kind { get; set; }
+    /// <summary>Show this group on the public landing page.</summary>
+    public bool IsPublic { get; set; }
 }
 
 public class UpdateCommunityRequest
@@ -51,6 +53,8 @@ public class UpdateCommunityRequest
     [MaxLength(40)]
     public string? Kind { get; set; }
     public bool IsActive { get; set; } = true;
+    /// <summary>Show this group on the public landing page. Left out, it stays as it is (so toggling a group on or off never changes it).</summary>
+    public bool? IsPublic { get; set; }
 }
 
 public class SetCommunityMemberRoleRequest

@@ -170,7 +170,7 @@ function ManageDialog({
   const candidates = s.admins.filter((a) => a.role === "ScopedAdmin" && !a.isDisabled && !assigned.some((x) => x.id === a.id));
   const [pick, setPick] = useState("");
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "" });
   const [error, setError] = useState<string | null>(null);
 
   const withScope = (a: StructureAdmin, years: number[], communities: string[]) => updateInstitutionStaff(a.id, {
@@ -203,7 +203,7 @@ function ManageDialog({
       yearGroups: node.kind === "cohort" ? [node.data.year] : [],
       communityIds: node.kind === "community" ? [node.data.id] : [],
     }),
-    onSuccess: () => { toast.success("Administrator added"); setCreating(false); setForm({ firstName: "", lastName: "", email: "", password: "" }); onChanged(); },
+    onSuccess: () => { toast.success("Administrator added. We emailed them a link to choose their password."); setCreating(false); setForm({ firstName: "", lastName: "", email: "" }); onChanged(); },
     onError: (e) => setError(handleApiError(e)),
   });
 
@@ -266,7 +266,7 @@ function ManageDialog({
                 <div className="space-y-1.5"><Label htmlFor="n-last">Last name</Label><Input id="n-last" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
               </div>
               <div className="space-y-1.5"><Label htmlFor="n-email">Email</Label><Input id="n-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label htmlFor="n-pass">Temporary password</Label><Input id="n-pass" type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="At least 8 characters" /></div>
+              <p className="border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">We email them a link to choose their own password. You do not set one.</p>
             </section>
           )}
           <FormError message={error} />
@@ -277,7 +277,7 @@ function ManageDialog({
             <>
               <Button variant="outline" onClick={() => setCreating(false)}>Back</Button>
               <Button
-                disabled={!form.firstName.trim() || !form.lastName.trim() || !form.email.includes("@") || form.password.length < 8}
+                disabled={!form.firstName.trim() || !form.lastName.trim() || !form.email.includes("@")}
                 isLoading={invite.isPending} loadingText="Adding" onClick={() => invite.mutate()}
               >Add administrator</Button>
             </>

@@ -93,6 +93,7 @@ public class JobService(
                 PostedBy = admin.Id,
                 CreatedBy = admin.Id,
                 YearGroups = resolvedYearGroups,
+                IsPublic = PublicVisibility.IsFullyPublic(request.IsPublic, resolvedCommunityId, resolvedYearGroups),
             };
 
             if (request.BannerImage is not null)
@@ -146,6 +147,7 @@ public class JobService(
             job.Deadline = request.Deadline.HasValue ? DateTime.SpecifyKind(request.Deadline.Value, DateTimeKind.Utc) : (DateTime?)null;
             job.Status = request.Status;
             job.YearGroups = updatedYearGroups;
+            job.IsPublic = PublicVisibility.IsFullyPublic(request.IsPublic, updatedCommunityId, updatedYearGroups);
 
             if (request.BannerImage is not null)
             {

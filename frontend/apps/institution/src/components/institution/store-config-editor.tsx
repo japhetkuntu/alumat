@@ -2,7 +2,7 @@
 
 import { Plus, X, ArrowUp, ArrowDown } from "@alumni/ui";
 import { Button, Input, Label, FormSelect } from "@alumni/ui";
-import { SavedSets } from "@/components/institution/saved-sets";
+import { TemplatePicker } from "@/components/institution/template-picker";
 import type { StoreProductConfigBody } from "@/lib/institution-api";
 import type { ServiceFieldDefinition, StoreDetailItem, StoreProduct, StoreProductTemplate } from "@/types";
 
@@ -97,7 +97,7 @@ function move<T>(list: T[], i: number, dir: -1 | 1): T[] {
   return next;
 }
 
-function QuestionList({ rows, onChange, addLabel, emptyHint }: { rows: FieldRow[]; onChange: (rows: FieldRow[]) => void; addLabel: string; emptyHint: string }) {
+export function QuestionList({ rows, onChange, addLabel, emptyHint }: { rows: FieldRow[]; onChange: (rows: FieldRow[]) => void; addLabel: string; emptyHint: string }) {
   const patch = (i: number, p: Partial<FieldRow>) => onChange(rows.map((r, idx) => (idx === i ? { ...r, ...p } : r)));
   return (
     <div className="space-y-3">
@@ -132,6 +132,53 @@ function QuestionList({ rows, onChange, addLabel, emptyHint }: { rows: FieldRow[
   );
 }
 
+/** The price label, the stock setting and the list of details shown on the product page. */
+export function DetailsEditor({ value, onChange }: { value: ConfigDraft; onChange: (next: ConfigDraft) => void }) {
+  const set = <K extends keyof ConfigDraft>(k: K, v: ConfigDraft[K]) => onChange({ ...value, [k]: v });
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-[12.5px]">Price label</Label>
+          <Input placeholder="e.g. per night, per person" value={value.priceLabel} onChange={(e) => set("priceLabel", e.target.value)} />
+        </div>
+        <label className="flex items-center gap-2 text-[13px] self-end pb-2.5">
+          <input type="checkbox" checked={!value.trackStock} onChange={(e) => set("trackStock", !e.target.checked)} />
+          Unlimited availability (no stock count)
+        </label>
+      </div>
+      <div className="space-y-2">
+        <Label className="text-[12.5px]">Details</Label>
+        {value.details.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input aria-label="Detail name" placeholder="e.g. Location" value={d.label} onChange={(e) => set("details", value.details.map((x, idx) => (idx === i ? { ...x, label: e.target.value } : x)))} />
+            <Input aria-label="Detail value" placeholder="e.g. Block A, ground floor" value={d.value} onChange={(e) => set("details", value.details.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} />
+            <Button type="button" size="sm" variant="destructive" aria-label="Remove detail" onClick={() => set("details", value.details.filter((_, idx) => idx !== i))}><X size={13} /></Button>
+          </div>
+        ))}
+        <Button type="button" size="sm" variant="outline" onClick={() => set("details", [...value.details, { label: "", value: "" }])}><Plus size={13} />Add detail</Button>
+      </div>
+    </>
+  );
+}
+
+/** An ordered list of fulfilment stages. */
+export function StagesEditor({ stages, onChange }: { stages: string[]; onChange: (stages: string[]) => void }) {
+  return (
+    <div className="space-y-2">
+      {stages.map((stage, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Input aria-label={`Stage ${i + 1}`} placeholder={`Stage ${i + 1}`} value={stage} onChange={(e) => onChange(stages.map((x, idx) => (idx === i ? e.target.value : x)))} />
+          <Button type="button" size="sm" variant="ghost" disabled={i === 0} onClick={() => onChange(move(stages, i, -1))} aria-label="Move up"><ArrowUp size={13} /></Button>
+          <Button type="button" size="sm" variant="ghost" disabled={i === stages.length - 1} onClick={() => onChange(move(stages, i, 1))} aria-label="Move down"><ArrowDown size={13} /></Button>
+          <Button type="button" size="sm" variant="destructive" aria-label="Remove stage" onClick={() => onChange(stages.filter((_, idx) => idx !== i))}><X size={13} /></Button>
+        </div>
+      ))}
+      <Button type="button" size="sm" variant="outline" onClick={() => onChange([...stages, ""])}><Plus size={13} />Add stage</Button>
+    </div>
+  );
+}
+
 function Section({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
     <div className="space-y-3 pt-4 border-t border-border/40">
@@ -145,112 +192,97 @@ function Section({ title, hint, children }: { title: string; hint: string; child
 }
 
 /**
- * What to show, what to ask and how to fulfil one product. Used by the product form; a saved setup
- * (template) is a copy of this same configuration, so importing one fills these sections in and the
- * product can then be changed freely.
+ * What to show, what to ask and how to fulfil one product. Used by the product form. A template is a copy of part of this
+ * same configuration, so choosing one fills a section in and the product can then be changed freely. Templates themselves
+ * are made and edited in the store's Templates tab, not here.
  */
-export function StoreConfigEditor({ value, onChange, deliveryInfo, onApplyTemplate }: {
+export function StoreConfigEditor({ value, onChange, deliveryInfo, onApplyTemplate, manageTemplatesHref }: {
   value: ConfigDraft;
   onChange: (next: ConfigDraft) => void;
   deliveryInfo: string;
-  /** Called when a saved setup is imported, so the parent can also take over its delivery instructions. */
+  /** Called when a template is used, so the parent can also take over its delivery instructions. */
   onApplyTemplate: (t: StoreProductTemplate) => void;
+  /** Where the Templates tab is, opened in a new browser tab so a half-filled product is kept. */
+  manageTemplatesHref?: string;
 }) {
   const set = <K extends keyof ConfigDraft>(k: K, v: ConfigDraft[K]) => onChange({ ...value, [k]: v });
-  // A saved set is a copy: the product keeps nothing linking it back, so it can be changed freely.
+  // A template is a copy: the product keeps nothing linking it back, so it can be changed freely.
   const stripKeys = (rows: ServiceFieldDefinition[]) => toRows(rows).map(({ key: _key, ...rest }) => rest);
-  const wholeBody = () => ({ ...configToBody(value), deliveryInfo: deliveryInfo.trim() || undefined });
 
   return (
     <div className="space-y-1">
-      <Section title="Start from a saved setup" hint="A whole setup in one go: details, questions, delivery details and stages. Use one, then change anything for this product.">
-        <SavedSets
+      <Section title="Start from a template" hint="A whole setup in one go: details, questions, delivery details and stages. Use one, then change anything for this product.">
+        <TemplatePicker
           kind="Setup"
-          noun="setup"
+          noun="product template"
           hasContent={value.details.length + value.fields.length + value.deliveryFields.length + value.stages.length > 0}
-          summary={(t) => `${t.details.length} detail${t.details.length === 1 ? "" : "s"} · ${t.fields.length} question${t.fields.length === 1 ? "" : "s"} · ${t.deliveryFields.length} delivery detail${t.deliveryFields.length === 1 ? "" : "s"} · ${t.stages.length} stage${t.stages.length === 1 ? "" : "s"}`}
-          buildBody={wholeBody}
+          summary={(t) => summarizeTemplate(t)}
           onUse={(t) => { onChange(configFromTemplate(t)); onApplyTemplate(t); }}
+          manageHref={manageTemplatesHref}
         />
       </Section>
 
       <Section title="What members see" hint="Shown on the product page, beside the description.">
-        <SavedSets
+        <TemplatePicker
           kind="Details"
-          noun="details set"
+          noun="details template"
           hasContent={value.details.length > 0 || value.priceLabel.trim() !== ""}
-          summary={(t) => `${t.details.length} detail${t.details.length === 1 ? "" : "s"}${t.priceLabel ? ` · price label "${t.priceLabel}"` : ""}${t.trackStock ? "" : " · unlimited availability"}`}
-          buildBody={wholeBody}
+          summary={(t) => summarizeTemplate(t)}
           onUse={(t) => onChange({ ...value, priceLabel: t.priceLabel ?? "", trackStock: t.trackStock, details: t.details.map((d) => ({ ...d })) })}
+          manageHref={manageTemplatesHref}
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-[12.5px]">Price label</Label>
-            <Input placeholder="e.g. per night, per person" value={value.priceLabel} onChange={(e) => set("priceLabel", e.target.value)} />
-          </div>
-          <label className="flex items-center gap-2 text-[13px] self-end pb-2.5">
-            <input type="checkbox" checked={!value.trackStock} onChange={(e) => set("trackStock", !e.target.checked)} />
-            Unlimited availability (no stock count)
-          </label>
-        </div>
-        <div className="space-y-2">
-          <Label className="text-[12.5px]">Details</Label>
-          {value.details.map((d, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Input aria-label="Detail name" placeholder="e.g. Location" value={d.label} onChange={(e) => set("details", value.details.map((x, idx) => (idx === i ? { ...x, label: e.target.value } : x)))} />
-              <Input aria-label="Detail value" placeholder="e.g. Block A, ground floor" value={d.value} onChange={(e) => set("details", value.details.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))} />
-              <Button type="button" size="sm" variant="destructive" aria-label="Remove detail" onClick={() => set("details", value.details.filter((_, idx) => idx !== i))}><X size={13} /></Button>
-            </div>
-          ))}
-          <Button type="button" size="sm" variant="outline" onClick={() => set("details", [...value.details, { label: "", value: "" }])}><Plus size={13} />Add detail</Button>
-        </div>
+        <DetailsEditor value={value} onChange={onChange} />
       </Section>
 
       <Section title="What you ask the buyer" hint="Questions the buyer answers for this item before paying, such as dates, guests, size or a name for the order.">
-        <SavedSets
+        <TemplatePicker
           kind="Questions"
-          noun="question set"
+          noun="question template"
           hasContent={value.fields.some((f) => f.label.trim() !== "")}
-          summary={(t) => `${t.fields.length} question${t.fields.length === 1 ? "" : "s"}: ${t.fields.slice(0, 3).map((f) => f.label).join(", ")}${t.fields.length > 3 ? "…" : ""}`}
-          buildBody={wholeBody}
+          summary={(t) => summarizeTemplate(t)}
           onUse={(t) => set("fields", stripKeys(t.fields))}
+          manageHref={manageTemplatesHref}
         />
         <QuestionList rows={value.fields} onChange={(rows) => set("fields", rows)} addLabel="Add question" emptyHint="No questions. Buyers just pick a quantity." />
       </Section>
 
       <Section title="Delivery or pickup details" hint="What you need to deliver this item, such as an address, phone number or preferred time.">
-        <SavedSets
+        <TemplatePicker
           kind="DeliveryDetails"
-          noun="delivery set"
+          noun="delivery template"
           hasContent={value.deliveryFields.some((f) => f.label.trim() !== "") || deliveryInfo.trim() !== ""}
-          summary={(t) => `${t.deliveryFields.length} delivery detail${t.deliveryFields.length === 1 ? "" : "s"}${t.deliveryInfo ? " and instructions for buyers" : ""}`}
-          buildBody={wholeBody}
+          summary={(t) => summarizeTemplate(t)}
           onUse={(t) => { set("deliveryFields", stripKeys(t.deliveryFields)); onApplyTemplate(t); }}
+          manageHref={manageTemplatesHref}
         />
         <QuestionList rows={value.deliveryFields} onChange={(rows) => set("deliveryFields", rows)} addLabel="Add delivery detail" emptyHint="No delivery details are collected." />
       </Section>
 
       <Section title="Fulfilment stages" hint="The steps each ordered item moves through, in order (for example Confirmed, Preparing, Ready, Delivered). Leave empty to use your store's default delivery stages.">
-        <SavedSets
+        <TemplatePicker
           kind="Stages"
-          noun="stage set"
+          noun="stages template"
           hasContent={value.stages.some((x) => x.trim() !== "")}
-          summary={(t) => t.stages.join(" → ")}
-          buildBody={wholeBody}
+          summary={(t) => summarizeTemplate(t)}
           onUse={(t) => set("stages", [...t.stages])}
+          manageHref={manageTemplatesHref}
         />
-        <div className="space-y-2">
-          {value.stages.map((stage, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Input aria-label={`Stage ${i + 1}`} placeholder={`Stage ${i + 1}`} value={stage} onChange={(e) => set("stages", value.stages.map((s, idx) => (idx === i ? e.target.value : s)))} />
-              <Button type="button" size="sm" variant="ghost" disabled={i === 0} onClick={() => set("stages", move(value.stages, i, -1))} aria-label="Move up"><ArrowUp size={13} /></Button>
-              <Button type="button" size="sm" variant="ghost" disabled={i === value.stages.length - 1} onClick={() => set("stages", move(value.stages, i, 1))} aria-label="Move down"><ArrowDown size={13} /></Button>
-              <Button type="button" size="sm" variant="destructive" aria-label="Remove stage" onClick={() => set("stages", value.stages.filter((_, idx) => idx !== i))}><X size={13} /></Button>
-            </div>
-          ))}
-          <Button type="button" size="sm" variant="outline" onClick={() => set("stages", [...value.stages, ""])}><Plus size={13} />Add stage</Button>
-        </div>
+        <StagesEditor stages={value.stages} onChange={(stages) => set("stages", stages)} />
       </Section>
     </div>
   );
+}
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** One line saying what a template holds, shown in the Templates tab and when one is picked on a product. */
+export function summarizeTemplate(t: StoreProductTemplate): string {
+  switch (t.kind ?? "Setup") {
+    case "Questions": return `${plural(t.fields.length, "question")}: ${t.fields.slice(0, 3).map((f) => f.label).join(", ")}${t.fields.length > 3 ? "…" : ""}`;
+    case "DeliveryDetails": return `${plural(t.deliveryFields.length, "delivery detail")}${t.deliveryInfo ? " and instructions for buyers" : ""}`;
+    case "Stages": return t.stages.join(" → ");
+    case "Details": return `${plural(t.details.length, "detail")}${t.priceLabel ? ` · price label "${t.priceLabel}"` : ""}${t.trackStock ? "" : " · unlimited availability"}`;
+    case "Variants": return (t.variantOptions ?? []).map((o) => `${o.name}: ${o.values.join(", ")}`).join(" · ");
+    default: return `${plural(t.details.length, "detail")} · ${plural(t.fields.length, "question")} · ${plural(t.deliveryFields.length, "delivery detail")} · ${plural(t.stages.length, "stage")}`;
+  }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { DataPromise } from "@/components/member/data-promise";
 import { useState, useRef, useEffect, useMemo, Suspense } from "react";
 import { richTextToPlain } from "@alumni/ui";
 import { useForm } from "react-hook-form";
@@ -806,6 +807,10 @@ function RegisterForm() {
                   </p>
                 </div>
                 <div className="space-y-1.5">
+                  <div className="border p-3" style={{ borderColor: "var(--border)", background: "var(--muted)" }}>
+                    <p className="mb-2 text-[12.5px] font-semibold" style={{ color: "var(--foreground)" }}>How your details are used</p>
+                    <DataPromise compact />
+                  </div>
                   <label className="flex cursor-pointer items-start gap-2.5 text-[12.5px] leading-snug" style={{ color: "var(--foreground)" }}>
                     <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-primary" {...register("acceptedTerms")} />
                     <span>

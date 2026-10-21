@@ -36,6 +36,8 @@ public class Community : BaseEntity, ITenantScoped
     public string? Description { get; set; }
     public string? CoverImageUrl { get; set; }
     public bool IsActive { get; set; } = true;
+    /// <summary>The institution chose to show this in full to people who are not signed in. Off means guests see only a short preview.</summary>
+    public bool IsPublic { get; set; }
 
     /// <summary>
     /// What this group is called in this community: "Chapter", "Committee", "Department", "Ministry", "Team"… Free text the

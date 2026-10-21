@@ -15,6 +15,7 @@ public class JobDto
     public DateTime? Deadline { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<int>? YearGroups { get; set; }
+    public bool IsPublic { get; set; }
     public string? BannerImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     /// <summary>For an opportunity a member suggested and an administrator has not yet reviewed: who suggested it. Admin portal only.</summary>
@@ -43,6 +44,7 @@ public class AlumniEventDto
     public decimal? TicketAmountCollected { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<int>? YearGroups { get; set; }
+    public bool IsPublic { get; set; }
     public string? GoogleLocationUrl { get; set; }
     public string? BannerImageUrl { get; set; }
     public List<string>? ImageUrls { get; set; }
@@ -66,6 +68,7 @@ public class NewsPostDto
     public List<string>? ImageUrls { get; set; }
     public List<string>? YoutubeVideoUrls { get; set; }
     public List<int>? YearGroups { get; set; }
+    public bool IsPublic { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

@@ -2,7 +2,7 @@
 
 import { shareMessages } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
-import { RichTextEditor } from "@alumni/ui";
+import { RichTextEditor, CheckOption } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
@@ -93,12 +93,13 @@ function CommunityForm({
   id: string;
   initial?: CommunityListItem;
   onUploadingChange?: (v: boolean) => void;
-  onSave: (data: { name: string; kind?: string; description?: string; coverImageUrl?: string }) => void;
+  onSave: (data: { name: string; kind?: string; description?: string; coverImageUrl?: string; isPublic: boolean }) => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [kind, setKind] = useState(initial?.kind ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [coverImageUrl, setCoverImageUrl] = useState(initial?.coverImageUrl ?? "");
+  const [isPublic, setIsPublic] = useState(!!initial?.isPublic);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [uploading, setUploadingState] = useState(false);
   const setUploading = (v: boolean) => { setUploadingState(v); onUploadingChange?.(v); };
@@ -122,7 +123,7 @@ function CommunityForm({
               }
               setUploading(false);
             }
-            onSave({ name: name.trim(), kind: kind.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined });
+            onSave({ name: name.trim(), kind: kind.trim(), description: description.trim() || undefined, coverImageUrl: resolvedCoverUrl || undefined, isPublic });
           }}
         >
           <FormSection title="The group">
@@ -147,6 +148,13 @@ function CommunityForm({
               onUrlChange={setCoverImageUrl}
               file={coverImageFile}
               onFileChange={setCoverImageFile}
+            />
+            <CheckOption
+              id="community-public"
+              checked={isPublic}
+              onChange={setIsPublic}
+              label="Show on the public website"
+              hint="Visitors see the group's name, description, cover image and how many members it has, never who they are. Joining still needs an account."
             />
           </FormSection>
         </form>
@@ -386,7 +394,7 @@ export default function CommunitiesPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean }) => updateCommunity(id, body),
+    mutationFn: ({ id, ...body }: { id: string; name: string; kind?: string; description?: string; coverImageUrl?: string; isActive: boolean; isPublic?: boolean }) => updateCommunity(id, body),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); qc.invalidateQueries({ queryKey: ["community-growth"] }); setEditing(null); setDeactivateTarget(null); toast.success("Community updated"); },
     onError: (e) => toast.error(handleApiError(e)),
   });

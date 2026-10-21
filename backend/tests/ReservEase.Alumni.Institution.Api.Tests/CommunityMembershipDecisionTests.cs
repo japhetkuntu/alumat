@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using ReservEase.Alumni.Common.Sdk.Models;
+using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Institution.Api.Services.Implementations;
 using ReservEase.Alumni.PostgresDb.Sdk.DbContexts;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
@@ -30,7 +32,7 @@ public class CommunityMembershipDecisionTests
             var db = TestDb.Create(DbName, Tenant);
             return Service = new CommunityService(new AlumniPgRepository<Community>(db), new AlumniPgRepository<CommunityMembership>(db),
                 new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Referral>(db), new AlumniPgRepository<Notification>(db),
-                Audit.Object, NullLogger<CommunityService>.Instance);
+                TestDb.Tenant(Tenant, "umat"), Mock.Of<IRedisService<PublicContentCacheConfig>>(), Audit.Object, NullLogger<CommunityService>.Instance);
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);

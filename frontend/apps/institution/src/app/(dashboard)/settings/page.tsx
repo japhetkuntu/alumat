@@ -21,6 +21,7 @@ import { getInitials, cn } from "@alumni/ui";
 import { BrandPreview } from "@alumni/ui";
 import { ColorPicker } from "@alumni/ui";
 import { MultiImageUpload } from "@alumni/ui";
+import { PublicDetailsPanel } from "@/components/institution/public-details-panel";
 import { LinkOrUpload } from "@alumni/ui";
 import { CardSkeleton } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
@@ -1361,6 +1362,8 @@ export default function BrandingSettingsPage() {
           <Button onClick={() => contentMutation.mutate()} disabled={contentMutation.isPending}>
             {contentMutation.isPending ? "Saving…" : "Save content"}
           </Button>
+
+          <PublicDetailsPanel initial={institution?.publicProfile} />
         </div>
       )}
 
