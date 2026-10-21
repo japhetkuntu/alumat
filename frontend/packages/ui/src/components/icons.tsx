@@ -141,6 +141,7 @@ import {
   faCircleUser,
   faCircleXmark,
   faEnvelope,
+  faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -211,6 +212,7 @@ export const AlignRight = makeIcon(faAlignRight);
 export const Archive = makeIcon(faBoxArchive);
 export const ArchiveRestore = makeIcon(faBoxOpen);
 export const Armchair = makeIcon(faChair);
+export const LogOut = makeIcon(faRightFromBracket);
 export const ArrowDown = makeIcon(faArrowDown);
 export const ArrowLeft = makeIcon(faArrowLeft);
 export const ArrowRight = makeIcon(faArrowRight);

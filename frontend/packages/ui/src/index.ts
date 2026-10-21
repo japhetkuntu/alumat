@@ -57,6 +57,7 @@ export * from "./components/tag-input";
 export * from "./components/textarea";
 export * from "./components/tooltip";
 export * from "./components/user-avatar";
+export * from "./components/user-menu";
 export * from "./components/year-group-picker";
 export * from "./components/youtube-embed";
 export * from "./components/fit-image";

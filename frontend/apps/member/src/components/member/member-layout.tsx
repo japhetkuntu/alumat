@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
+import { UserMenu, Settings as SettingsIcon, UserCircle as ProfileIcon } from "@alumni/ui";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
 import { GuestEntityPreview, type GuestEntityType } from "@/components/member/guest-entity-preview";
 import { NotificationPanel } from "@/components/member/notification-panel";
@@ -16,7 +17,7 @@ import { InstallPromptBanner, useInstallPrompt } from "@/components/member/insta
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
 import { InstitutionSwitcher } from "@/components/member/institution-switcher";
 import { memberClient } from "@/lib/api-client";
-import { getHomeModules, getUnreadNotificationsByCategory } from "@/lib/member-api";
+import { getHomeModules, getMyProfile, getUnreadNotificationsByCategory } from "@/lib/member-api";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   LayoutDashboard,
@@ -426,10 +427,12 @@ function useCurrentPageTitle() {
 
 export function MemberLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isLoading, isMember } = useAuth();
+  const { isLoading, isMember, user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
+  // Shared with the profile page, so a new photo shows in the header straight away.
+  const { data: myProfile } = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile, enabled: isMember, staleTime: 5 * 60 * 1000 });
   const disabledForSearch = useDisabledFeatures();
   const searchPages = useMemo(
     () => navGroups.flatMap((g) => g.items).filter((i) => {
@@ -487,6 +490,22 @@ export function MemberLayout({ children }: { children: ReactNode }) {
 
   if (isLoading || !isMember) return <PortalShellSkeleton sidebarWidth={240} />;
 
+  const displayName =
+    [myProfile?.firstName ?? user?.firstName, myProfile?.lastName ?? user?.lastName].filter(Boolean).join(" ") || user?.name || "Member";
+  const accountMenu = (showName: boolean) => (
+    <UserMenu
+      name={displayName}
+      email={user?.email}
+      avatarUrl={myProfile?.profilePictureUrl}
+      showName={showName}
+      links={[
+        { label: "My profile", icon: ProfileIcon, onSelect: () => router.push("/profile") },
+        { label: "Settings", icon: SettingsIcon, onSelect: () => router.push("/settings") },
+      ]}
+      onLogout={logout}
+    />
+  );
+
   return (
     <div className="flex h-dvh bg-background overflow-hidden overscroll-none selection:bg-accent/10">
       {/* Desktop sidebar */}
@@ -517,6 +536,8 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-1">
             <GlobalSearch pages={searchPages} hotkey />
             <NotificationPanel />
+            <span className="mx-1.5 h-5 w-px bg-border" aria-hidden />
+            {accountMenu(true)}
           </div>
         </div>
 
@@ -560,6 +581,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
           <div className="flex shrink-0 items-center gap-1">
             <GlobalSearch pages={searchPages} />
             <NotificationPanel />
+            {accountMenu(false)}
           </div>
         </div>
 

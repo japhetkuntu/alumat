@@ -43,6 +43,7 @@ import { useFeatures } from "@/hooks/use-institution-features";
 import { useAuth } from "@/hooks/use-auth";
 import { useHostname } from "@/hooks/use-hostname";
 import { Button } from "@alumni/ui";
+import { UserMenu, Settings as SettingsIcon } from "@alumni/ui";
 import { GlobalSearch } from "@/components/institution/global-search";
 import { AgreementGate } from "@/components/institution/agreement-gate";
 import { NotificationPanel } from "@/components/institution/notification-panel";
@@ -340,7 +341,7 @@ function useCurrentPageTitle() {
 
 export function InstitutionLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isLoading, isAdmin, user } = useAuth();
+  const { isLoading, isAdmin, user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
@@ -383,6 +384,17 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading || !isAdmin) return <PortalShellSkeleton sidebarWidth={248} />;
 
+  const accountMenu = (showName: boolean) => (
+    <UserMenu
+      name={user?.name ?? "Staff"}
+      email={user?.email}
+      role={user?.role ?? "SuperAdmin"}
+      showName={showName}
+      links={[{ label: "Profile and settings", icon: SettingsIcon, onSelect: () => router.push("/settings") }]}
+      onLogout={logout}
+    />
+  );
+
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-accent/10">
       {/* Desktop sidebar */}
@@ -407,9 +419,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4 shrink-0">
             <GlobalSearch pages={searchPages} hotkey />
             <NotificationPanel />
-            <span className="text-[13px] font-semibold">
-              {user?.name ?? "Staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
-            </span>
+            {accountMenu(true)}
           </div>
         </div>
 
@@ -435,9 +445,7 @@ export function InstitutionLayout({ children }: { children: React.ReactNode }) {
           <div className="flex shrink-0 items-center gap-2">
             <GlobalSearch pages={searchPages} />
             <NotificationPanel />
-            <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
-              <span className="text-[12px] font-bold text-accent">AD</span>
-            </div>
+            {accountMenu(false)}
           </div>
         </div>
 

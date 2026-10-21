@@ -41,6 +41,9 @@ export interface AuthData {
   id: string;
   email: string;
   name: string;
+  /** The API returns these two, not a combined name, so `name` is often empty: read them through the layout's display name. */
+  firstName?: string;
+  lastName?: string;
   role: UserRole;
   graduationYear?: number;
 }

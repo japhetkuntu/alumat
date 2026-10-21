@@ -29,7 +29,7 @@ import { PortalShellSkeleton } from "@alumni/ui";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { getInitials } from "@alumni/ui";
+import { getInitials, UserMenu, Settings as SettingsIcon } from "@alumni/ui";
 import { NotificationPanel } from "./notification-panel";
 import { PlatformSetupChecklist } from "./setup-checklist";
 
@@ -137,7 +137,7 @@ function useCurrentPageTitle() {
 
 export function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isLoading, isPlatformStaff, user } = useAuth();
+  const { isLoading, isPlatformStaff, user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const pageTitle = useCurrentPageTitle();
@@ -155,6 +155,17 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
   }, [isLoading, isPlatformStaff, pathname, router]);
 
   if (isLoading || !isPlatformStaff) return <PortalShellSkeleton sidebarWidth={248} />;
+
+  const accountMenu = (showName: boolean) => (
+    <UserMenu
+      name={user?.name ?? "Platform staff"}
+      email={user?.email}
+      role={user?.role ?? "SuperAdmin"}
+      showName={showName}
+      links={[{ label: "Profile and settings", icon: SettingsIcon, onSelect: () => router.push("/settings") }]}
+      onLogout={logout}
+    />
+  );
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -176,9 +187,7 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
           <p className="text-[14px] font-semibold text-foreground tracking-tight truncate">{pageTitle}</p>
           <div className="flex items-center gap-4 shrink-0">
             <NotificationPanel />
-            <span className="text-[13px] font-semibold">
-              {user?.name ?? "Platform staff"} <span className="text-muted-foreground font-normal">&middot; {user?.role ?? "SuperAdmin"}</span>
-            </span>
+            {accountMenu(true)}
           </div>
         </div>
 
@@ -189,7 +198,10 @@ export function PlatformLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <span className="font-bold text-[15px] tracking-tight truncate">{pageTitle}</span>
           </div>
-          <NotificationPanel />
+          <div className="flex shrink-0 items-center gap-2">
+            <NotificationPanel />
+            {accountMenu(false)}
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto bg-background relative">

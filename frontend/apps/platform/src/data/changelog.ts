@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-21",
+    title: "Account menu at the top right of all three portals, with profile, settings and sign out",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "Signing out used to be buried at the bottom of a settings or profile page, and the top right of the institution and platform portals showed the name as plain text (the institution phone header had a fixed 'AD' circle). The signed-in person is now a button at the top right of every portal: their avatar, with name and role beside it on wide screens, and avatar only on phones. It opens a menu with their name, email and role, a link to their profile and settings (Profile and settings in the institution and platform portals; My profile and Settings in the member portal), and Sign out. Sign out is one click on any page. The member portal shows their uploaded photo when they have one and initials otherwise; a new photo appears straight away. It is one shared component, so the three behave the same: keyboard accessible, closes on Escape or an outside click. The member portal also now reads the member's first and last name for display, since the sign-in response carries those rather than a single name. No migration, no API change.",
+  },
+  {
+    date: "2026-10-21",
     title: "Store templates have their own tab; the product form only uses them",
     scopes: ["Institution"],
     type: "Improvement",
