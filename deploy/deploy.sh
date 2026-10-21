@@ -33,6 +33,19 @@
 #     Use it for a quiet moment:   STOP_FIRST=1 sudo -E bash deploy.sh
 set -euo pipefail
 
+# This is the OLD way: it compiles on the server, which is slow, and it does not leave the marker pull-deploy.sh compares,
+# so a later pull-deploy.sh would put an older GitHub build back over what this installs. Use deploy/pull-deploy.sh.
+# Only continue when GitHub is unavailable and you mean to build here.
+if [[ -z "${ALLOW_SERVER_BUILD:-}" ]]; then
+  echo "Use the fast deploy instead:"
+  echo "  sudo bash /opt/alumunion-src/deploy/pull-deploy.sh --wait"
+  echo
+  echo "If GitHub is down and you really must build on this server:"
+  echo "  sudo env ALLOW_SERVER_BUILD=1 bash /opt/alumunion-src/deploy/deploy.sh <target>"
+  echo "and afterwards, once GitHub is back, run a full Build and pull-deploy.sh so the two agree."
+  exit 1
+fi
+
 SRC_DIR="/opt/alumunion-src"
 BACKEND_SRC="$SRC_DIR/backend"
 FRONTEND_SRC="$SRC_DIR/frontend"

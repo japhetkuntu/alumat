@@ -1,12 +1,13 @@
-# Fast deploy: GitHub builds, the server only swaps and restarts.
+# Builds the services on GitHub and stores the finished builds in this repository, so the server never compiles anything:
+# it just pulls them and restarts (deploy/pull-deploy.sh).
 #
-# Building on the small server is what made deploys slow (four .NET services and three Next.js apps compiled one after
-# another on a machine with little memory). Here every changed service is built IN PARALLEL on GitHub's runners, the
-# finished builds are copied to the server (rsync only sends what changed), and deploy/activate.sh swaps them in.
-# Only what a change affects is built, using the same rules as deploy/deploy.sh.
+# The builds live on their own branch, deploy-builds, and main stays the development branch. Every run replaces that
+# branch with a single commit, carrying forward the services that did not change, so it never grows. It is a real branch,
+# so it is visible on GitHub; see deploy/README.md for keeping it out of your laptop's `git fetch`.
 #
-# One-time setup is in deploy/README.md ("Fast deploys from GitHub"). The server's own `deploy.sh` still works as a fallback.
-name: Deploy
+# Only what a change affects is rebuilt, using the same rules as deploy/deploy.sh. Each service folder records the commit
+# it was built from (.built-sha), which is how the next run, and the server, tell what is current.
+name: Build
 
 on:
   push:
@@ -15,21 +16,24 @@ on:
   workflow_dispatch:
     inputs:
       force_all:
-        description: "Build and deploy every service, even if unchanged"
+        description: "Rebuild every service, even if unchanged"
         type: boolean
         default: false
 
-# A second push waits for the running deploy instead of racing it.
+# A second push waits for the running build instead of racing it for the shared ref.
 concurrency:
-  group: deploy-production
+  group: build-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 env:
-  STAGE_DIR: /var/www/alumunion/.staging
+  BUILDS_REF: refs/heads/deploy-builds
 
 jobs:
   plan:
-    name: Work out what changed
+    name: Work out what to build
     runs-on: ubuntu-latest
     outputs:
       dotnet: ${{ steps.select.outputs.dotnet }}
@@ -39,22 +43,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Connect to the server
-        uses: ./.github/actions/server-ssh
-        with:
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          known_hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-
-      - name: Select what to build
+      - name: Read what the last build contains
         id: select
         env:
-          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
           FORCE_ALL: ${{ inputs.force_all && '1' || '' }}
         run: |
-          # The revision that is live now, recorded by activate.sh. Missing or unknown means build everything.
-          LIVE="$(ssh "$DEPLOY_TARGET" 'cat /var/www/alumunion/.last-deployed-rev 2>/dev/null || true')"
-          echo "Live revision: ${LIVE:-none}"
-          bash deploy/select-targets.sh "$LIVE" | tee -a "$GITHUB_OUTPUT"
+          : > state.txt
+          if git fetch --depth 1 origin "+$BUILDS_REF:refs/remotes/builds/latest" 2>/dev/null; then
+            for svc in institution-api member-api platform-api operations-worker frontend-institution frontend-member frontend-platform; do
+              sha="$(git show "refs/remotes/builds/latest:$svc/.built-sha" 2>/dev/null || true)"
+              name="${svc#frontend-}"
+              [ -n "$sha" ] && echo "$name $sha" >> state.txt
+            done
+          else
+            echo "No earlier build found: building everything."
+          fi
+          cat state.txt
+          bash deploy/select-targets.sh state.txt | tee -a "$GITHUB_OUTPUT"
 
   build-dotnet:
     name: Build ${{ matrix.service }}
@@ -87,14 +92,16 @@ jobs:
             platform-api) P=ReservEase.Alumni.Platform.Api ;;
             operations-worker) P=ReservEase.Alumni.Operations.Worker ;;
           esac
-          dotnet publish "backend/src/$P/$P.csproj" -c Release -o "build/${{ matrix.service }}"
+          # linux-x64 only: the server is Linux, and without this the output also carries every other platform's native
+          # libraries (about 260 MB instead of 65 MB).
+          dotnet publish "backend/src/$P/$P.csproj" -c Release -r linux-x64 --no-self-contained -o "build/${{ matrix.service }}"
           tar -czf "${{ matrix.service }}.tgz" -C build "${{ matrix.service }}"
 
       - uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.service }}
           path: ${{ matrix.service }}.tgz
-          retention-days: 3
+          retention-days: 2
           compression-level: 0
 
   build-frontend:
@@ -107,11 +114,6 @@ jobs:
       matrix:
         app: ${{ fromJSON(needs.plan.outputs.frontend) }}
     env:
-      # Baked into the browser bundle at build time, so they must match the server's frontend env files
-      # (see the *.env.production.local.example files). Set them as repository Variables; none are secret.
-      NEXT_PUBLIC_BASE_DOMAIN: ${{ vars.NEXT_PUBLIC_BASE_DOMAIN }}
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
-      NEXT_PUBLIC_GOOGLE_AUTO_REDIRECT: ${{ vars.NEXT_PUBLIC_GOOGLE_AUTO_REDIRECT }}
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
@@ -139,6 +141,16 @@ jobs:
             next-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}-
             next-${{ matrix.app }}-${{ runner.os }}-
 
+      - name: Load the public build settings
+        run: |
+          # NEXT_PUBLIC_* values are written into the browser bundle at build time. They are public, so they are kept in the
+          # repository (deploy/public-env/<app>.env) and mirror the server's frontend env file for this app.
+          f="deploy/public-env/${{ matrix.app }}.env"
+          [ -f "$f" ] || { echo "::error::Missing $f"; exit 1; }
+          if grep -q 'CHANGE_ME' "$f"; then echo "::error::$f still has CHANGE_ME. Put the real NEXT_PUBLIC_ values from the server's env file in it."; exit 1; fi
+          grep -E '^NEXT_PUBLIC_[A-Z0-9_]+=' "$f" >> "$GITHUB_ENV" || true
+          grep -E '^NEXT_PUBLIC_' "$f" | cut -d= -f1 | sed 's/^/Using /'
+
       - name: Install
         working-directory: frontend
         run: pnpm install --frozen-lockfile
@@ -162,11 +174,11 @@ jobs:
         with:
           name: build-frontend-${{ matrix.app }}
           path: frontend-${{ matrix.app }}.tgz
-          retention-days: 3
+          retention-days: 2
           compression-level: 0
 
-  deploy:
-    name: Copy to the server and restart
+  publish:
+    name: Publish the builds to the repository
     needs: [plan, build-dotnet, build-frontend]
     # Runs when every build that was needed succeeded (a skipped build job just means nothing of that kind changed).
     if: >-
@@ -174,38 +186,43 @@ jobs:
       !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') &&
       (needs.plan.outputs.dotnet != '[]' || needs.plan.outputs.frontend != '[]')
     runs-on: ubuntu-latest
-    environment: production
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Connect to the server
-        uses: ./.github/actions/server-ssh
-        with:
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          known_hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Copy the builds to the server
+      - name: Replace the changed services and push
         env:
-          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_URL: https://github.com/${{ github.repository }}.git
         run: |
           set -euo pipefail
-          SERVICES=()
-          mkdir -p extracted
-          for tgz in artifacts/*/*.tgz; do
-            name="$(basename "$tgz" .tgz)"
-            tar -xzf "$tgz" -C extracted
-            # Into the server's staging area. The previous build stays there, so rsync only sends what changed.
-            rsync -az --delete "extracted/$name/" "$DEPLOY_TARGET:$STAGE_DIR/$name/"
-            SERVICES+=("$name")
-            echo "Copied $name"
-          done
-          echo "SERVICES=${SERVICES[*]}" >> "$GITHUB_ENV"
+          mkdir builds && cd builds
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config "http.https://github.com/.extraheader" "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git remote add origin "$REPO_URL"
 
-      - name: Swap in and restart
-        env:
-          DEPLOY_TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
-        run: ssh "$DEPLOY_TARGET" "sudo bash /opt/alumunion-src/deploy/activate.sh ${GITHUB_SHA} ${SERVICES}"
+          # Start from the previous builds so services that did not change carry over untouched.
+          if git fetch -q --depth 1 origin "+$BUILDS_REF:refs/remotes/builds/latest"; then
+            git checkout -q --detach refs/remotes/builds/latest
+          fi
+
+          for tgz in ../artifacts/*/*.tgz; do
+            name="$(basename "$tgz" .tgz)"
+            rm -rf "$name"
+            tar -xzf "$tgz" -C .
+            echo "${{ github.sha }}" > "$name/.built-sha"
+            echo "Updated $name"
+          done
+
+          # One commit each time, with no parent, so the stored history never grows. Content that did not change is
+          # the same objects as before, so only what changed is uploaded.
+          git checkout -q --orphan next
+          git add -A
+          git commit -q -m "Builds at ${{ github.sha }}"
+          git push -q --force origin "HEAD:$BUILDS_REF"
+          echo "Published builds for ${{ github.sha }}"
