@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-22",
+    title: "Resource previews work: PDF, Word, PowerPoint, Excel, video, audio and YouTube show in the page instead of needing a download",
+    scopes: ["Institution", "Member"],
+    type: "Fix",
+    body: "On the live site the preview area of a resource stayed empty and people had to download the file. The cause was the server's Nginx security policy, which only allowed embedded frames from Google sign-in, so the browser silently blocked the frame that shows a PDF or a YouTube video (images were unaffected, because images were allowed). The policy now also allows frames from YouTube, Google's PDF viewer, Microsoft's Office viewer and the file storage (digitaloceanspaces.com), and media from the file storage; it is still limited to those named hosts, not any website. In both portals the preview is now one shared component that also handles Word, PowerPoint and Excel files (through Microsoft's viewer), video and audio files, and uses a PDF viewer that works on phones, where a PDF in a plain frame is usually downloaded. Every preview has a 'Not showing? Open it in a new tab' link underneath, and the institution page no longer shows raw HTML in an external resource's description. To apply the server part, run once on the server: sudo bash /opt/alumunion-src/deploy/update-nginx-csp.sh (it backs up the live config, tests it, and only then reloads). The nginx templates in the repo are updated too. No migration.",
+  },
+  {
     date: "2026-10-21",
     title: "Account menu at the top right of all three portals, with profile, settings and sign out",
     scopes: ["Platform", "Institution", "Member"],

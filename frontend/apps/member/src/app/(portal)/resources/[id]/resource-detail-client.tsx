@@ -15,7 +15,7 @@ import { formatDate } from "@alumni/ui";
 import { getResource, getResources, trackResourceDownload } from "@/lib/member-api";
 import { SourceBadge } from "@/components/member/source-badge";
 import { EmptyState } from "@alumni/ui";
-import { YouTubeEmbed } from "@alumni/ui";
+import { ResourcePreview, resourcePreviewKind, webSafeUrl } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { toast } from "sonner";
 
@@ -44,9 +44,7 @@ export default function MemberResourceDetailPage() {
   });
 
   const href = resource?.externalUrl ?? resource?.fileUrl;
-  const isPdf = !!href && /\.pdf(\?|$)/i.test(href);
-  const isImageLink = !!href && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(href);
-  const isYouTube = !!href && /(youtube\.com|youtu\.be)/i.test(href);
+  const previewable = resourcePreviewKind(href) !== "none";
   const related = (relatedData?.results ?? []).filter((r) => r.id !== id).slice(0, 3);
 
   const queryClient = useQueryClient();
@@ -193,14 +191,11 @@ export default function MemberResourceDetailPage() {
           {href && (
             <div className="space-y-2">
               <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/50">Preview</p>
+              {previewable ? (
+                <ResourcePreview url={webSafeUrl(href)} title={resource.title} />
+              ) : (
               <div className="rounded-xl border border-border/40 overflow-hidden bg-muted/20">
-                {isYouTube ? (
-                  <YouTubeEmbed url={href} />
-                ) : isPdf ? (
-                  <iframe src={href} className="w-full h-[360px]" title="PDF Preview" />
-                ) : isImageLink ? (
-                  <ZoomableImage src={href} alt={resource.title} className="w-full max-h-[420px] object-contain bg-background" />
-                ) : resource.externalUrl ? (
+                {resource.externalUrl ? (
                   <div className="p-4 space-y-1">
                     <p className="text-sm font-semibold line-clamp-1">{resource.title}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2">{richTextToPlain(resource.description) || "External resource link"}</p>
@@ -210,6 +205,7 @@ export default function MemberResourceDetailPage() {
                   <div className="p-4 text-sm text-muted-foreground">Preview unavailable for this resource type.</div>
                 )}
               </div>
+              )}
             </div>
           )}
 

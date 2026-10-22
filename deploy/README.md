@@ -26,6 +26,7 @@ Rules that keep it safe:
 - **A broken build never replaces a good one silently.** A failed build on GitHub publishes nothing, so the server
   keeps what it has. A build that starts badly on the server is rolled back automatically (database changes that the new
   version already made are not undone, so keep migrations backward compatible).
+- **After a deploy that changes `nginx` templates**, apply it once by hand: `sudo bash /opt/alumunion-src/deploy/update-nginx-csp.sh` is the current one (resource previews). It backs up, tests with `nginx -t`, and only then reloads.
 - **Server settings stay on the server.** Nginx, the systemd unit files and `/etc/alumunion/*.env` are changed by hand
   there, as before. Database migrations still run when the APIs start.
 

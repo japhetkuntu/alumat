@@ -14,7 +14,7 @@ import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
 import { getInstitutionProfile, getResource, getResources } from "@/lib/institution-api";
 import { EmptyState } from "@alumni/ui";
 import { ShareLinkButton } from "@alumni/ui";
-import { YouTubeEmbed } from "@alumni/ui";
+import { ResourcePreview, resourcePreviewKind, webSafeUrl, richTextToPlain } from "@alumni/ui";
 import { ZoomableImage } from "@alumni/ui";
 import { toast } from "sonner";
 
@@ -47,9 +47,7 @@ export default function AdminResourceDetailPage() {
 
   const href = resource?.externalUrl ?? resource?.fileUrl;
   const isFile = resource?.type === "File";
-  const isPdf = !!href && /\.pdf(\?|$)/i.test(href);
-  const isImageLink = !!href && /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(href);
-  const isYouTube = !!href && /(youtube\.com|youtu\.be)/i.test(href);
+  const previewable = resourcePreviewKind(href) !== "none";
   const related = (relatedData?.results ?? []).filter((r) => r.id !== id).slice(0, 3);
 
   const hostName = (() => {
@@ -182,23 +180,21 @@ export default function AdminResourceDetailPage() {
           {href && (
             <div className="space-y-2">
               <p className="text-[12px] font-black uppercase tracking-widest text-muted-foreground/50">Preview</p>
+              {previewable ? (
+                <ResourcePreview url={webSafeUrl(href)} title={resource.title} />
+              ) : (
               <div className="rounded-xl border border-border/40 overflow-hidden bg-muted/20">
-                {isYouTube ? (
-                  <YouTubeEmbed url={href} />
-                ) : isPdf ? (
-                  <iframe src={href} className="w-full h-[360px]" title="PDF Preview" />
-                ) : isImageLink ? (
-                  <img src={href} alt={resource.title} className="w-full max-h-[420px] object-contain bg-background" loading="lazy" />
-                ) : resource.externalUrl ? (
+                {resource.externalUrl ? (
                   <div className="p-4 space-y-1">
                     <p className="text-sm font-bold line-clamp-1">{resource.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{resource.description ?? "External resource link"}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{richTextToPlain(resource.description) || "External resource link"}</p>
                     {hostName && <p className="text-[12px] text-primary font-semibold">{hostName}</p>}
                   </div>
                 ) : (
                   <div className="p-4 text-sm text-muted-foreground">Preview unavailable for this resource type.</div>
                 )}
               </div>
+              )}
             </div>
           )}
 
