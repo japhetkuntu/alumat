@@ -13,4 +13,6 @@ public record MemberProfileResponse(
     string? ConnectionType, List<string>? Skills, List<string>? Interests,
     bool ShowEmailOnDirectory, bool ShowPhoneOnDirectory, bool ShowCompanyOnDirectory, bool ShowBioOnDirectory,
     // Answers to the community's own registration questions, keyed by question id.
-    Dictionary<string, string>? CustomFields = null);
+    Dictionary<string, string>? CustomFields = null,
+    // Set for a while after registering through a partner onboarding link: where to send them back to, and what to tell them.
+    ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationBanner? IntegrationBanner = null);

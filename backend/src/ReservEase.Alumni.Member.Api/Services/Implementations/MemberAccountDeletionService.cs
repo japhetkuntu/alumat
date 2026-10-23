@@ -30,6 +30,7 @@ public class MemberAccountDeletionService(
     IAlumniPgRepository<ClassNote> classNoteRepo,
     IAlumniPgRepository<ClassNoteLike> classNoteLikeRepo,
     IAlumniPgRepository<Referral> referralRepo,
+    ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationStatusCache integrationCache,
     ILogger<MemberAccountDeletionService> logger) : IMemberAccountDeletionService
 {
     public const string ConfirmationWord = "DELETE";
@@ -135,6 +136,8 @@ public class MemberAccountDeletionService(
             member.Email = $"deleted-{id}@removed.invalid";
             member.Phone = null;
             member.Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N"));
+            // A partner asking about this student ID must no longer be told it belongs to a member.
+            await integrationCache.ForgetAsync(member.InstitutionId, member.StudentId);
             member.StudentId = null;
             member.DateOfBirth = null;
             member.Program = null;

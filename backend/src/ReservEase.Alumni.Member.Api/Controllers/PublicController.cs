@@ -104,6 +104,26 @@ public class PublicController(
     }
 
     /// <summary>
+    /// Whether a partner onboarding link can still be used, for the register page to show before anything is typed. A good link
+    /// reveals the student ID it was issued for and where to send the student back to; every other state says why it cannot be used.
+    /// </summary>
+    [HttpGet("onboarding-link/{token}")]
+    [SwaggerOperation(Summary = "Check a partner onboarding link")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<OnboardingLinkInfo>))]
+    public async Task<IActionResult> GetOnboardingLink(string token, [FromServices] ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationService integrations)
+    {
+        Response.Headers.CacheControl = "no-store";
+        var lookup = await integrations.LookupLinkAsync(token);
+        var valid = lookup.State == ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkState.Valid;
+        var info = new OnboardingLinkInfo(
+            lookup.State.ToString().ToLowerInvariant(),
+            valid ? lookup.Link!.StudentId : null,
+            lookup.Settings?.PortalName,
+            lookup.Settings?.RedirectUrl);
+        return info.ToOkApiResponse().ToActionResult();
+    }
+
+    /// <summary>
     /// A prospective institution's request to be onboarded, from the public
     /// marketing site. Spam-worthy like login, so this overrides the class's
     /// read-only rate limit with the stricter auth policy.

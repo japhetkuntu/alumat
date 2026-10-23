@@ -9,6 +9,8 @@ public class CachedRegistration
     public string PasswordHash { get; set; } = string.Empty;
     public string? Phone { get; set; }
     public string? StudentId { get; set; }
+    /// <summary>The partner onboarding link this registration came through; checked again when the code is verified.</summary>
+    public string? OnboardingToken { get; set; }
     public int? GraduationYear { get; set; }
     public string? DepartmentId { get; set; }
     public string? Program { get; set; }

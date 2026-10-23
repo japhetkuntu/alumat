@@ -2050,6 +2050,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("IntegrationBannerUntil")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<List<string>>("Interests")
                         .HasColumnType("text[]");
 
@@ -2095,6 +2098,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<int>("MembershipYearsPaid")
                         .HasColumnType("integer");
+
+                    b.Property<string>("OnboardingLinkId")
+                        .HasColumnType("text");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -2188,6 +2194,8 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Members_InstitutionId_PhoneNormalized_Verified")
                         .HasFilter("\"PhoneVerifiedAt\" IS NOT NULL");
+
+                    b.HasIndex("InstitutionId", "StudentId");
 
                     b.ToTable("Members", "alumni");
                 });
@@ -2594,6 +2602,60 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsUnique();
 
                     b.ToTable("NotificationPreferences", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.OnboardingLink", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MemberId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SupersededAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("InstitutionId", "StudentId");
+
+                    b.ToTable("OnboardingLinks", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.PaymentTransaction", b =>
@@ -4041,6 +4103,110 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsUnique();
 
                     b.ToTable("InstitutionActivitySnapshots", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.InstitutionIntegration", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<int>("BannerHours")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BannerMessage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("LinkExpiryHours")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PortalName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RedirectUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("StatusCacheDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId")
+                        .IsUnique();
+
+                    b.ToTable("InstitutionIntegrations", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.IntegrationApiKey", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("KeyPrefix")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.ToTable("IntegrationApiKeys", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.MarketingAsset", b =>

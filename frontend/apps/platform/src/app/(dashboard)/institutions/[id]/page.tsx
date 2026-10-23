@@ -41,8 +41,9 @@ import { getBanks, resolveAccount, getTeamAssignees, reassignWork } from "@/lib/
 import { useAuth } from "@/hooks/use-auth";
 import { InstitutionActivationCard } from "@/components/platform/institution-activation-card";
 import { InstitutionNotifyTab } from "@/components/platform/institution-notify-tab";
+import { InstitutionIntegrationsTab } from "@/components/platform/institution-integrations-tab";
 
-const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments", "Notify"] as const;
+const TABS = ["Overview", "Branding", "Features", "Content", "Admins", "Payments", "Notify", "Integrations"] as const;
 
 const EMPTY_STORY: LandingPageStory = { icon: "Briefcase", eyebrow: "", scenario: "", description: "", imageUrl: "" };
 const EMPTY_BANNER: NewsBanner = { enabled: false, text: "", linkText: "", linkUrl: "" };
@@ -282,7 +283,7 @@ export default function InstitutionDetailPage() {
   const { isSuperAdmin, user: signedIn } = useAuth();
   // A representative follows an institution's growth. Branding, features, payments and the rest belong to the team.
   const isRepresentative = signedIn?.role === "Representative";
-  const visibleTabs = isRepresentative ? TABS.filter((t) => t === "Overview") : TABS;
+  const visibleTabs = isRepresentative ? TABS.filter((t) => t === "Overview") : TABS.filter((t) => t !== "Integrations" || isSuperAdmin);
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -977,6 +978,8 @@ export default function InstitutionDetailPage() {
           </Button>
         </div>
       )}
+
+      {tab === "Integrations" && isSuperAdmin && <InstitutionIntegrationsTab institutionId={id} apiBaseUrl={inst.institutionPortalUrl || undefined} />}
 
       {tab === "Features" && disabledFeatures && (
         <>

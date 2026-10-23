@@ -545,6 +545,43 @@ export async function updateBroadcastChannels(id: string, channels: { email: boo
   return res.data.data!;
 }
 
+// ─── Integrations (partner onboarding) ─────────────────────────────────────
+
+export interface IntegrationKey { id: string; name: string; keyPrefix: string; createdAt: string; lastUsedAt?: string | null; revokedAt?: string | null }
+export interface IntegrationSettings {
+  enabled: boolean;
+  portalName: string;
+  redirectUrl: string;
+  bannerMessage: string;
+  bannerHours: number;
+  linkExpiryHours: number;
+  statusCacheDays: number;
+  keys: IntegrationKey[];
+  linksIssued: number;
+  linksUsed: number;
+}
+export type IntegrationSettingsBody = Omit<IntegrationSettings, "keys" | "linksIssued" | "linksUsed">;
+
+export async function getInstitutionIntegration(institutionId: string) {
+  const res = await platformClient.get<ApiResponse<IntegrationSettings>>(`/institution-integrations/${institutionId}`);
+  return res.data.data!;
+}
+
+export async function saveInstitutionIntegration(institutionId: string, body: IntegrationSettingsBody) {
+  const res = await platformClient.put<ApiResponse<IntegrationSettings>>(`/institution-integrations/${institutionId}`, body);
+  return res.data.data!;
+}
+
+/** The only response that ever contains the full key. */
+export async function createIntegrationKey(institutionId: string, name: string) {
+  const res = await platformClient.post<ApiResponse<{ key: IntegrationKey; apiKey: string }>>(`/institution-integrations/${institutionId}/keys`, { name });
+  return res.data.data!;
+}
+
+export async function revokeIntegrationKey(institutionId: string, keyId: string) {
+  await platformClient.delete(`/institution-integrations/${institutionId}/keys/${keyId}`);
+}
+
 // Landing page content — Stories and the news banner shown on the Member
 // Portal's public landing page. Editable here AND by the institution's own
 // admins (Institution Portal settings) — see backend InstitutionController.

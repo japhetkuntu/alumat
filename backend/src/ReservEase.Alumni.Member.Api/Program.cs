@@ -70,6 +70,8 @@ builder.Services.AddSwagger("Member API");
 builder.Services.AddMemberControllers();
 
 // Application services
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationService>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationStatusCache>();
 builder.Services.AddScoped<IMemberAuthService, MemberAuthService>();
 builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Implementations.IInstitutionSwitchService, ReservEase.Alumni.Member.Api.Services.Implementations.InstitutionSwitchService>();
 builder.Services.AddScoped<IMemberAccountDeletionService, MemberAccountDeletionService>();

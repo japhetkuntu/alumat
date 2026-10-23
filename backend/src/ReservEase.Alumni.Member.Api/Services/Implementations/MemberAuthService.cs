@@ -42,6 +42,7 @@ public class MemberAuthService(
     ITemporalClientProvider temporalProvider,
     IStorageService storageService,
     IGoogleTokenVerifier googleTokenVerifier,
+    ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationService integrations,
     ILogger<MemberAuthService> logger) : IMemberAuthService
 {
     private const string PictureClaimType = "picture";
@@ -207,6 +208,43 @@ public class MemberAuthService(
         return year is null || year < 1950 || year > DateTime.UtcNow.Year + 8;
     }
 
+    /// <summary>
+    /// A partner onboarding link, checked for use at registration. Null error means the link is good, and the returned lookup carries
+    /// the student ID the member must be created with and the settings for the banner. Also refuses when a member with that student ID
+    /// already exists, since the same student may have registered the ordinary way in the meantime.
+    /// </summary>
+    private async Task<(string? Error, int ErrorCode, ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkLookup? Lookup)> CheckOnboardingLinkAsync(string? token)
+    {
+        var lookup = await integrations.LookupLinkAsync(token);
+        var portal = string.IsNullOrWhiteSpace(lookup.Settings?.PortalName) ? "the portal you came from" : lookup.Settings!.PortalName;
+        switch (lookup.State)
+        {
+            case ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkState.NotFound:
+                return ("This registration link is not valid.", 400, null);
+            case ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkState.Expired:
+                return ($"This registration link has expired. Go back to {portal} and start again.", 400, null);
+            case ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkState.Replaced:
+                return ($"This registration link has been replaced by a newer one. Go back to {portal} and start again.", 400, null);
+            case ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkState.Used:
+                return ("This registration link has already been used. Please sign in instead.", 409, null);
+        }
+
+        if (await integrations.StudentExistsAsync(lookup.Link!.InstitutionId, lookup.Link.StudentId))
+            return ("A member with your student ID already exists. Please sign in instead.", 409, null);
+        return (null, 0, lookup);
+    }
+
+    private static IApiResponse<object> OnboardingError(string message, int code) =>
+        code == 409 ? ApiResponseExtensions.ToConflictApiResponse<object>(message) : ApiResponseExtensions.ToBadRequestApiResponse<object>(message);
+
+    /// <summary>Spends the link for a member just created from it. If another request spent it first, the member is removed again and the caller is told.</summary>
+    private async Task<bool> SpendOnboardingLinkAsync(MemberEntity member, string linkId)
+    {
+        if (await integrations.TryConsumeLinkAsync(linkId, member.Id)) return true;
+        await memberRepo.RemoveAsync(member);
+        return false;
+    }
+
     public async Task<IApiResponse<object>> RegisterAsync(RegisterRequest request)
     {
         try
@@ -223,6 +261,15 @@ public class MemberAuthService(
             var (customFields, customError) = await ValidateCustomFieldsAsync(request.CustomFields);
             if (customError is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>(customError);
+
+            // A partner link fixes the student ID: it is the one the link was issued for, whatever the form sent.
+            var studentId = request.StudentId;
+            if (!string.IsNullOrWhiteSpace(request.OnboardingToken))
+            {
+                var (linkError, linkCode, linkLookup) = await CheckOnboardingLinkAsync(request.OnboardingToken);
+                if (linkError is not null) return OnboardingError(linkError, linkCode);
+                studentId = linkLookup!.Link!.StudentId;
+            }
 
             var email = request.Email.ToLower().Trim();
             var existing = await memberRepo.GetOneAsync(m => m.Email == email);
@@ -246,7 +293,8 @@ public class MemberAuthService(
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Phone = request.Phone,
-                StudentId = request.StudentId,
+                StudentId = studentId,
+                OnboardingToken = string.IsNullOrWhiteSpace(request.OnboardingToken) ? null : request.OnboardingToken.Trim(),
                 GraduationYear = request.GraduationYear,
                 DepartmentId = request.DepartmentId,
                 Program = request.Program?.Trim(),
@@ -314,6 +362,15 @@ public class MemberAuthService(
                 : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
             var autoApprove = institution?.AutoApproveMembers == true;
 
+            ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkLookup? onboarding = null;
+            if (!string.IsNullOrWhiteSpace(request.OnboardingToken))
+            {
+                var (linkError, linkCode, linkLookup) = await CheckOnboardingLinkAsync(request.OnboardingToken);
+                if (linkError is not null) return OnboardingError(linkError, linkCode);
+                onboarding = linkLookup;
+                autoApprove = true;
+            }
+
             // No OTP staging in Redis — Google already proved this email is
             // real and reachable, so the member row is created immediately
             // instead of waiting on a code the member would type back in.
@@ -325,7 +382,9 @@ public class MemberAuthService(
                 // Random, never-typed hash — this account only ever signs in via Google.
                 Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
                 Phone = request.Phone,
-                StudentId = request.StudentId,
+                StudentId = onboarding?.Link!.StudentId ?? request.StudentId,
+                OnboardingLinkId = onboarding?.Link!.Id,
+                IntegrationBannerUntil = onboarding is null ? null : DateTime.UtcNow.AddHours(onboarding.Settings!.BannerHours),
                 GraduationYear = request.GraduationYear ?? 0,
                 DepartmentId = request.DepartmentId ?? string.Empty,
                 Program = request.Program?.Trim(),
@@ -347,6 +406,9 @@ public class MemberAuthService(
 
             await memberRepo.AddAsync(member);
 
+            if (onboarding is not null && !await SpendOnboardingLinkAsync(member, onboarding.Link!.Id))
+                return ApiResponseExtensions.ToConflictApiResponse<object>("This registration link has already been used. Please sign in instead.");
+
             if (autoApprove)
             {
                 member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
@@ -362,7 +424,7 @@ public class MemberAuthService(
                 logger);
 
             logger.LogInformation("Member {MemberId} registered via Google ({Status})", member.Id, member.Status);
-            return new RegistrationResultResponse(autoApprove).ToCreatedApiResponse<object>(
+            return new RegistrationResultResponse(autoApprove, onboarding?.Settings?.PortalName, onboarding?.Settings?.RedirectUrl).ToCreatedApiResponse<object>(
                 autoApprove ? "Welcome! Your account is ready — you can sign in now." : "Registration submitted. Your account is pending admin approval.");
         }
         catch (Exception e)
@@ -392,6 +454,16 @@ public class MemberAuthService(
                 : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
             var autoApprove = institution?.AutoApproveMembers == true;
 
+            // A member who came through a partner link is approved on the spot, whatever the institution's own setting says.
+            ReservEase.Alumni.PostgresDb.Sdk.Integrations.LinkLookup? onboarding = null;
+            if (!string.IsNullOrWhiteSpace(cached.OnboardingToken))
+            {
+                var (linkError, linkCode, linkLookup) = await CheckOnboardingLinkAsync(cached.OnboardingToken);
+                if (linkError is not null) return OnboardingError(linkError, linkCode);
+                onboarding = linkLookup;
+                autoApprove = true;
+            }
+
             // OTP valid — save member to DB. Normally for admin approval (member
             // number assigned by admin later); if this institution has
             // AutoApproveMembers on, skip straight to "Active" with a member
@@ -403,7 +475,9 @@ public class MemberAuthService(
                 Email = cached.Email,
                 Password = cached.PasswordHash,
                 Phone = cached.Phone,
-                StudentId = cached.StudentId,
+                StudentId = onboarding?.Link!.StudentId ?? cached.StudentId,
+                OnboardingLinkId = onboarding?.Link!.Id,
+                IntegrationBannerUntil = onboarding is null ? null : DateTime.UtcNow.AddHours(onboarding.Settings!.BannerHours),
                 GraduationYear = cached.GraduationYear ?? 0,
                 DepartmentId = cached.DepartmentId ?? string.Empty,
                 Program = cached.Program,
@@ -426,6 +500,9 @@ public class MemberAuthService(
 
             await memberRepo.AddAsync(member);
 
+            if (onboarding is not null && !await SpendOnboardingLinkAsync(member, onboarding.Link!.Id))
+                return ApiResponseExtensions.ToConflictApiResponse<object>("This registration link has already been used. Please sign in instead.");
+
             if (autoApprove)
             {
                 member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
@@ -444,7 +521,7 @@ public class MemberAuthService(
             await redis.RemoveAsync($"reg:otp:{email}");
 
             logger.LogInformation("Member {MemberId} registered successfully after OTP verification ({Status})", member.Id, member.Status);
-            return new RegistrationResultResponse(autoApprove).ToCreatedApiResponse<object>(
+            return new RegistrationResultResponse(autoApprove, onboarding?.Settings?.PortalName, onboarding?.Settings?.RedirectUrl).ToCreatedApiResponse<object>(
                 autoApprove ? "Email verified! Your account is ready — you can sign in now." : "Email verified successfully. Your account is pending admin approval.");
         }
         catch (Exception e)
@@ -794,7 +871,7 @@ public class MemberAuthService(
             if (member is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<MemberProfileResponse>("Member not found");
 
-            return ToProfile(member).ToOkApiResponse();
+            return (await WithBannerAsync(ToProfile(member), member)).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -900,7 +977,7 @@ public class MemberAuthService(
             await memberRepo.UpdateAsync(member);
 
             logger.LogInformation("Profile updated for member {MemberId}", auth.Id);
-            return ToProfile(member).ToOkApiResponse("Profile updated");
+            return (await WithBannerAsync(ToProfile(member), member)).ToOkApiResponse("Profile updated");
         }
         catch (Exception e)
         {
@@ -1081,6 +1158,9 @@ public class MemberAuthService(
             return null;
         }
     }
+
+    private async Task<MemberProfileResponse> WithBannerAsync(MemberProfileResponse profile, MemberEntity m) =>
+        m.IntegrationBannerUntil is null ? profile : profile with { IntegrationBanner = await integrations.BannerAsync(m.InstitutionId, m.IntegrationBannerUntil) };
 
     private static MemberProfileResponse ToProfile(MemberEntity m) => new(
         m.Id, m.FirstName, m.LastName, m.Email,

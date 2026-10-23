@@ -99,4 +99,10 @@ public class Member : BaseEntity, ITenantScoped
     public bool ShowPhoneOnDirectory { get; set; } = false;
     public bool ShowCompanyOnDirectory { get; set; } = true;
     public bool ShowBioOnDirectory { get; set; } = true;
+
+    /// <summary>The partner onboarding link this member registered through, if any. Such members are approved on registration.</summary>
+    public string? OnboardingLinkId { get; set; }
+
+    /// <summary>Until when the member portal shows the "continue to your partner portal" banner. Null when they did not come from a partner link.</summary>
+    public DateTime? IntegrationBannerUntil { get; set; }
 }

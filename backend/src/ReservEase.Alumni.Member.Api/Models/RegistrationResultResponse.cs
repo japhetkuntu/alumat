@@ -7,4 +7,8 @@ namespace ReservEase.Alumni.Member.Api.Models;
 /// each rather than always claiming "your account is pending approval",
 /// which would be wrong when a member is actually already active.
 /// </summary>
-public record RegistrationResultResponse(bool Approved);
+/// <param name="PortalName">Set when the member came through a partner link: where they can return to, so the success screen can offer it.</param>
+public record RegistrationResultResponse(bool Approved, string? PortalName = null, string? RedirectUrl = null);
+
+/// <summary>State is valid, expired, used, replaced or notfound. StudentId is only given for a valid link.</summary>
+public record OnboardingLinkInfo(string State, string? StudentId, string? PortalName, string? RedirectUrl);

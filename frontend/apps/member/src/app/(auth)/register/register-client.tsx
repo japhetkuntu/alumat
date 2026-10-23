@@ -339,6 +339,29 @@ function RegisterForm() {
   // The server checks both; they only add context, never trust.
   const [communityId] = useState(() => searchParams.get("community")?.trim() || "");
   const [inviteChannel] = useState(() => searchParams.get("src")?.trim().toLowerCase() || "");
+  // A partner onboarding link (?ob=): it fixes the student ID and gets the member approved on registering. Kept in session storage as
+  // well, since signing up with Google leaves this page and comes back without the original query string.
+  const [onboardingToken] = useState(() => {
+    const fromUrl = searchParams.get("ob")?.trim() || "";
+    try {
+      if (fromUrl) { sessionStorage.setItem("onboarding-token", fromUrl); return fromUrl; }
+      return sessionStorage.getItem("onboarding-token") || "";
+    } catch { return fromUrl; }
+  });
+  const onboardingLink = useQuery({
+    queryKey: ["onboarding-link", onboardingToken],
+    queryFn: async () => {
+      const res = await publicMemberClient.get<{ data: { state: "valid" | "expired" | "used" | "replaced" | "notfound"; studentId?: string | null; portalName?: string | null; redirectUrl?: string | null } }>(
+        `/public/onboarding-link/${encodeURIComponent(onboardingToken)}`);
+      return res.data.data;
+    },
+    enabled: !!onboardingToken,
+    staleTime: 0,
+    retry: false,
+  });
+  const linkIsValid = onboardingLink.data?.state === "valid";
+  // Where the success screen sends someone who registered through a partner link.
+  const [partner, setPartner] = useState<{ portalName?: string | null; redirectUrl?: string | null }>({});
   const { data: googleBridgeTheme } = useGoogleBridgeTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -470,8 +493,8 @@ function RegisterForm() {
   // The student ID is collected on the membership-details sub-step, which communities without graduation years skip, so
   // requiring it there would block the form on a field nobody can fill in.
   const schema = useMemo(
-    () => buildSchema(requireStudentId && collectMemberId && !isCommunity, !!googleIdToken, yearMode),
-    [requireStudentId, collectMemberId, googleIdToken, yearMode, isCommunity],
+    () => buildSchema(requireStudentId && collectMemberId && !isCommunity && !onboardingToken, !!googleIdToken, yearMode),
+    [requireStudentId, collectMemberId, googleIdToken, yearMode, isCommunity, onboardingToken],
   );
   const totalSteps = isCommunity ? 2 : 3;
   // formSubStep stays 1|2|3 internally (Community orgs just skip 2); this is
@@ -513,9 +536,14 @@ function RegisterForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The link decides the student ID, so the form never asks for it: it is filled in here and only shown as text.
+  useEffect(() => {
+    if (linkIsValid && onboardingLink.data?.studentId) setValue("studentId", onboardingLink.data.studentId);
+  }, [linkIsValid, onboardingLink.data?.studentId, setValue]);
+
   async function onSubmit(data: FormData) {
     try {
-      await memberClient.post("/auth/register", { ...data, customFields: customAnswers, ...(referralCode ? { referralCode, ...(communityId ? { communityId } : {}), ...(inviteChannel ? { channel: inviteChannel } : {}) } : {}) });
+      await memberClient.post("/auth/register", { ...data, customFields: customAnswers, ...(onboardingToken ? { onboardingToken } : {}), ...(referralCode ? { referralCode, ...(communityId ? { communityId } : {}), ...(inviteChannel ? { channel: inviteChannel } : {}) } : {}) });
       setEmail(data.email);
       setStep("otp");
       setResendsLeft(3);
@@ -530,8 +558,9 @@ function RegisterForm() {
     if (!googleIdToken) return;
     setSubmittingGoogle(true);
     try {
-      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean } }>("/auth/google-register", {
+      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean; portalName?: string | null; redirectUrl?: string | null } }>("/auth/google-register", {
         idToken: googleIdToken,
+        ...(onboardingToken ? { onboardingToken } : {}),
         phone: data.phone,
         studentId: data.studentId,
         graduationYear: data.graduationYear,
@@ -545,6 +574,8 @@ function RegisterForm() {
       });
       setEmail(data.email);
       setApproved(!!res.data?.data?.approved);
+      setPartner({ portalName: res.data?.data?.portalName, redirectUrl: res.data?.data?.redirectUrl });
+      if (onboardingToken) try { sessionStorage.removeItem("onboarding-token"); } catch { /* nothing to clear */ }
       setStep("pending");
       toast.success(res.data?.message ?? "Registration submitted. Your account is pending admin approval.");
     } catch (err) {
@@ -584,8 +615,10 @@ function RegisterForm() {
     if (code.length !== 6) { toast.error("Enter the complete 6-digit code"); return; }
     setVerifying(true);
     try {
-      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean } }>("/auth/verify-otp", { email, otp: code });
+      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean; portalName?: string | null; redirectUrl?: string | null } }>("/auth/verify-otp", { email, otp: code });
       setApproved(!!res.data?.data?.approved);
+      setPartner({ portalName: res.data?.data?.portalName, redirectUrl: res.data?.data?.redirectUrl });
+      if (onboardingToken) try { sessionStorage.removeItem("onboarding-token"); } catch { /* nothing to clear */ }
       toast.success(res.data?.message ?? "Email verified! Your account is pending admin approval.");
       setStep("pending");
     } catch (err) {
@@ -633,6 +666,35 @@ function RegisterForm() {
     // entirely — submit straight from here instead of advancing to step 3.
     if (googleIdToken) { await handleSubmit(onSubmitGoogle)(); return; }
     setFormSubStep(3);
+  }
+
+  if (onboardingToken && !linkIsValid) {
+    const info = onboardingLink.data;
+    const portal = info?.portalName || "the portal you came from";
+    const message =
+      onboardingLink.isLoading ? "Checking your registration link…"
+      : onboardingLink.isError ? "We could not check your registration link. Check your connection and try again."
+      : info?.state === "expired" ? `This registration link has expired. Go back to ${portal} and start again.`
+      : info?.state === "replaced" ? `This registration link has been replaced by a newer one. Go back to ${portal} and start again.`
+      : info?.state === "used" ? "This registration link has already been used. Sign in to your account instead."
+      : "This registration link is not valid.";
+    return (
+      <div className="w-full space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500" role="status">
+        <h1 className="font-[family-name:var(--font-display)]" style={{ fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.02em", color: "var(--foreground)", lineHeight: 1.2 }}>
+          {onboardingLink.isLoading ? "One moment" : onboardingLink.isError ? "Something went wrong" : info?.state === "used" ? "Already registered" : "This link can't be used"}
+        </h1>
+        <p className="text-[13.5px]" style={{ color: "var(--muted-foreground)" }}>{message}</p>
+        {!onboardingLink.isLoading && (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {onboardingLink.isError && <Button className="flex-1" style={{ height: 42 }} onClick={() => onboardingLink.refetch()}>Try again</Button>}
+            {info?.state === "used" && <Button className="flex-1" style={{ height: 42 }} onClick={() => router.push("/login")}>Go to sign in</Button>}
+            {info && info.state !== "used" && info.redirectUrl && (
+              <Button className="flex-1" style={{ height: 42 }} onClick={() => window.location.assign(info.redirectUrl!)}>Back to {portal}</Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -832,7 +894,13 @@ function RegisterForm() {
             {/* ── Sub-step 2: Membership details ── */}
             {formSubStep === 2 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-3 duration-250">
-                {collectMemberId && <div className="space-y-1.5">
+                {linkIsValid && (
+                  <div className="space-y-1 border-l-2 border-primary bg-muted/40 py-2.5 pl-3.5 pr-3">
+                    <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Student ID</p>
+                    <p className="text-[14px] font-semibold">{onboardingLink.data?.studentId}</p>
+                  </div>
+                )}
+                {collectMemberId && !onboardingToken && <div className="space-y-1.5">
                   <Label htmlFor="studentId" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                     Member or student ID{!requireStudentId && <span className="font-normal text-muted-foreground"> (optional)</span>}
                   </Label>
@@ -1112,6 +1180,18 @@ function RegisterForm() {
               </div>
             </div>
           </div>
+
+          {/* Back to the partner portal the member came from, when they registered through its link */}
+          {partner.redirectUrl && (
+            <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: "var(--border)" }}>
+              <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+                Finish what you started on {partner.portalName || "your portal"}. You can come back here any time.
+              </p>
+              <Button className="w-full text-[13.5px] font-semibold" style={{ height: 42 }} onClick={() => window.location.assign(partner.redirectUrl!)}>
+                Continue to {partner.portalName || "your portal"}
+              </Button>
+            </div>
+          )}
 
           {/* Membership activation — opt-in per institution, see Settings > Re-engagement & giving */}
           {promptMembershipActivation && (

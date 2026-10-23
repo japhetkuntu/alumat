@@ -9,7 +9,9 @@ public record RegisterRequest(
     // Set when the person arrived through a community invitation link; verified server-side, never trusted.
     string? CommunityId = null, string? Channel = null,
     // Answers to the community's own registration questions, keyed by question id.
-    Dictionary<string, string>? CustomFields = null);
+    Dictionary<string, string>? CustomFields = null,
+    // The token from a partner onboarding link. When valid, the student ID is the link's and the member is approved on registration.
+    string? OnboardingToken = null);
 
 /// <summary>
 /// Registration via a verified Google identity — skips the OTP step entirely
@@ -22,4 +24,5 @@ public record GoogleRegisterRequest(
     string IdToken, string Phone, string? StudentId, int? GraduationYear, string? DepartmentId,
     string? ReferralCode = null, string? Program = null, bool AcceptedTerms = false,
     string? CommunityId = null, string? Channel = null,
-    Dictionary<string, string>? CustomFields = null);
+    Dictionary<string, string>? CustomFields = null,
+    string? OnboardingToken = null);

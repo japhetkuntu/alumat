@@ -66,6 +66,9 @@ public class MemberAuthServiceTests
             memberRepo.Object, referralRepo.Object, new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community>>().Object, new Mock<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership>>().Object, institutionRepo.Object, currentTenant.Object,
             httpContextAccessor.Object, redis.Object, tokenOptions, mailtrapOptions,
             temporalProvider, storageService.Object, googleTokenVerifier.Object,
+            new ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationService(
+                Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.IntegrationApiKey>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.InstitutionIntegration>>(),
+                institutionRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.OnboardingLink>>(), memberRepo.Object),
             new NullLogger<MemberAuthService>());
     }
 

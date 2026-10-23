@@ -63,8 +63,12 @@ public class MemberAuthFlowTests : IDisposable
         return service = new MemberAuthService(
             new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Referral>(db), new AlumniPgRepository<Community>(db), new AlumniPgRepository<CommunityMembership>(db), new AlumniPgRepository<Institution>(db), tenant,
             Mock.Of<IHttpContextAccessor>(a => a.HttpContext == http), redis, Options.Create(tokens), Options.Create(new MailtrapConfig()),
-            provider.Object, storage.Object, google.Object, log);
+            provider.Object, storage.Object, google.Object, Integrations(db), log);
     }
+
+    private static ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationService Integrations(AlumniDbContext db) => new(
+        new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.IntegrationApiKey>(db), new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.InstitutionIntegration>(db),
+        new AlumniPgRepository<Institution>(db), new AlumniPgRepository<OnboardingLink>(db), new AlumniPgRepository<MemberEntity>(db));
 
     private AlumniDbContext Db() => TestDb.OpenRelational(connection, Tenant);
 
@@ -892,5 +896,143 @@ public class MemberAuthFlowTests : IDisposable
         Assert.Equal(("m1", "Ama", "ama@x.com", "Active"), (profile.Id, profile.FirstName, profile.Email, profile.Status));
         Assert.Equal(404, (await service.GetProfileAsync(new AuthData { Id = "ghost" })).Code);
         Assert.Equal(404, (await service.UpdateProfileAsync(new UpdateProfileRequest(), new AuthData { Id = "ghost" })).Code);
+    }
+
+    // ── Partner onboarding links ────────────────────────────────────────
+
+    private async Task<string> SeedLink(string studentId = "STU-9", int expiresInHours = 48, bool enabled = true, bool superseded = false, bool settings = true)
+    {
+        var (token, hash) = ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationSecrets.NewLinkToken();
+        var rows = new List<object> { new OnboardingLink { StudentId = studentId, TokenHash = hash, ExpiresAt = DateTime.UtcNow.AddHours(expiresInHours), SupersededAt = superseded ? DateTime.UtcNow : null } };
+        if (settings && !Db().InstitutionIntegrations.Any())
+            rows.Add(new InstitutionIntegration { InstitutionId = Tenant, Enabled = enabled, PortalName = "Off-boarding", RedirectUrl = "https://offboard.example.edu", BannerMessage = "Finish there", BannerHours = 72 });
+        await Seed(rows.ToArray());
+        return token;
+    }
+
+    private RegisterRequest ViaLink(string token, string email = "new.user@example.com") =>
+        Register(email) with { StudentId = "SOMETHING-ELSE", OnboardingToken = token };
+
+    [Fact]
+    public async Task A_valid_link_makes_the_student_an_active_member_with_the_links_student_id_without_any_approval()
+    {
+        var token = await SeedLink("STU-9");
+        Assert.False(Db().Institutions.IgnoreQueryFilters().Single().AutoApproveMembers);
+
+        Assert.Equal(200, (await service.RegisterAsync(ViaLink(token))).Code);
+        Assert.Equal("STU-9", Staged()!.StudentId);                                  // the form's own ID is ignored
+        var response = await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp));
+
+        Assert.Equal(201, response.Code);
+        var result = (RegistrationResultResponse)response.Data!;
+        Assert.True(result.Approved);
+        Assert.Equal(("Off-boarding", "https://offboard.example.edu"), (result.PortalName, result.RedirectUrl));
+        var m = await Db().Members.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(("Active", "STU-9"), (m.Status, m.StudentId));
+        Assert.NotNull(m.MemberNumber);
+        Assert.InRange(m.IntegrationBannerUntil!.Value, DateTime.UtcNow.AddHours(72).AddMinutes(-1), DateTime.UtcNow.AddHours(72).AddMinutes(1));
+        var link = await Db().OnboardingLinks.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal((m.Id, m.OnboardingLinkId), (link.MemberId, link.Id));
+        Assert.NotNull(link.ConsumedAt);
+    }
+
+    [Fact]
+    public async Task A_link_works_once_and_a_second_registration_with_it_is_refused()
+    {
+        var token = await SeedLink();
+        await service.RegisterAsync(ViaLink(token));
+        await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp));
+
+        var second = await service.RegisterAsync(ViaLink(token, "second@example.com"));
+
+        Assert.Equal(409, second.Code);
+        Assert.Contains("already been used", second.Message);
+    }
+
+    [Fact]
+    public async Task Two_registrations_started_from_one_link_only_complete_once()
+    {
+        var token = await SeedLink();
+        await service.RegisterAsync(ViaLink(token, "a@example.com"));
+        await service.RegisterAsync(ViaLink(token, "b@example.com"));
+        var otpA = Staged("a@example.com")!.Otp;
+        var otpB = Staged("b@example.com")!.Otp;
+
+        var first = await service.VerifyOtpAsync(new VerifyOtpRequest("a@example.com", otpA));
+        var second = await service.VerifyOtpAsync(new VerifyOtpRequest("b@example.com", otpB));
+
+        Assert.Equal(201, first.Code);
+        Assert.Equal(409, second.Code);
+        Assert.Equal("a@example.com", (await Db().Members.IgnoreQueryFilters().SingleAsync()).Email);
+    }
+
+    [Theory]
+    [InlineData("expired")]
+    [InlineData("replaced")]
+    [InlineData("disabled")]
+    [InlineData("unknown")]
+    public async Task A_link_that_cannot_be_used_is_refused_with_a_reason(string kind)
+    {
+        var token = kind switch
+        {
+            "expired" => await SeedLink(expiresInHours: -1),
+            "replaced" => await SeedLink(superseded: true),
+            "disabled" => await SeedLink(enabled: false),
+            _ => "not-a-real-token",
+        };
+
+        var response = await service.RegisterAsync(ViaLink(token));
+
+        Assert.Equal(400, response.Code);
+        Assert.Null(Staged());
+        if (kind is "expired" or "replaced") Assert.Contains("Off-boarding", response.Message);
+    }
+
+    [Fact]
+    public async Task A_student_id_that_already_belongs_to_a_member_cannot_register_again_through_a_link()
+    {
+        var existing = Person(); existing.StudentId = "stu-9";
+        await Seed(existing);
+        var token = await SeedLink("STU-9");
+
+        var response = await service.RegisterAsync(ViaLink(token));
+
+        Assert.Equal(409, response.Code);
+        Assert.Contains("sign in", response.Message);
+    }
+
+    [Fact]
+    public async Task Registering_through_google_with_a_link_is_approved_straight_away_too()
+    {
+        var token = await SeedLink("STU-9");
+        google.Setup(g => g.VerifyAsync("idtoken")).ReturnsAsync(new GoogleIdentity("g@example.com", "Kofi", "Boateng", null));
+
+        var response = await service.GoogleRegisterAsync(new GoogleRegisterRequest("idtoken", "0241", "IGNORED", 2018, "dept1", AcceptedTerms: true, OnboardingToken: token));
+
+        Assert.Equal(201, response.Code);
+        var m = await Db().Members.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(("Active", "STU-9"), (m.Status, m.StudentId));
+        Assert.NotNull(m.IntegrationBannerUntil);
+    }
+
+    [Fact]
+    public async Task The_banner_shows_on_the_profile_only_while_it_has_not_run_out()
+    {
+        await SeedLink();
+        var member = Person(); member.IntegrationBannerUntil = DateTime.UtcNow.AddHours(5);
+        await Seed(member);
+        var auth = new ReservEase.Alumni.Common.Sdk.Models.AuthData { Id = "m1" };
+
+        var live = (await service.GetProfileAsync(auth)).Data!;
+        Assert.Equal(("Off-boarding", "https://offboard.example.edu", "Finish there"), (live.IntegrationBanner!.PortalName, live.IntegrationBanner.RedirectUrl, live.IntegrationBanner.Message));
+
+        using (var db = Db()) { var m = await db.Members.IgnoreQueryFilters().SingleAsync(); m.IntegrationBannerUntil = DateTime.UtcNow.AddMinutes(-1); db.Update(m); await db.SaveChangesAsync(); }
+        Fresh();
+        Assert.Null((await service.GetProfileAsync(auth)).Data!.IntegrationBanner);
+
+        using (var db = Db()) { var m = await db.Members.IgnoreQueryFilters().SingleAsync(); m.IntegrationBannerUntil = DateTime.UtcNow.AddHours(5); db.Update(m); await db.SaveChangesAsync(); }
+        using (var db = Db()) { var s = await db.InstitutionIntegrations.SingleAsync(); s.Enabled = false; db.Update(s); await db.SaveChangesAsync(); }
+        Fresh();
+        Assert.Null((await service.GetProfileAsync(auth)).Data!.IntegrationBanner);   // switched off means no banner either
     }
 }

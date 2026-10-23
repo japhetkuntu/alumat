@@ -9,6 +9,7 @@ import { cn, getInitials } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { UserMenu, Settings as SettingsIcon, UserCircle as ProfileIcon } from "@alumni/ui";
 import { PortalShellSkeleton, Skeleton } from "@alumni/ui";
+import { PartnerBanner } from "@/components/member/partner-banner";
 import { GuestEntityPreview, type GuestEntityType } from "@/components/member/guest-entity-preview";
 import { NotificationPanel } from "@/components/member/notification-panel";
 import { GlobalSearch } from "@/components/member/global-search";
@@ -588,6 +589,7 @@ export function MemberLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-y-auto overscroll-none bg-background selection:bg-accent/20 relative pt-14 sm:pt-16 lg:pt-0 pb-24 lg:pb-0 scroll-touch">
           <div className="w-full min-h-full max-w-[1800px] mx-auto px-0 sm:px-4 lg:px-8 py-0 sm:py-3 lg:py-6">
             <div className="w-full min-w-0">
+              {myProfile?.integrationBanner && <PartnerBanner {...myProfile.integrationBanner} />}
               <PortalNudge />
               {holdPage ? <div className="p-4 sm:p-6 space-y-4" aria-busy="true"><Skeleton className="h-8 w-56" /><Skeleton className="h-40 w-full" /></div> : children}
             </div>

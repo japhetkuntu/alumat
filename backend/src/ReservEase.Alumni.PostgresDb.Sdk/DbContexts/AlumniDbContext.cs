@@ -31,6 +31,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<MarketingShare> MarketingShares => Set<MarketingShare>();
     public DbSet<MarketingVisit> MarketingVisits => Set<MarketingVisit>();
     public DbSet<Institution> Institutions => Set<Institution>();
+    public DbSet<InstitutionIntegration> InstitutionIntegrations => Set<InstitutionIntegration>();
+    public DbSet<IntegrationApiKey> IntegrationApiKeys => Set<IntegrationApiKey>();
+    public DbSet<OnboardingLink> OnboardingLinks => Set<OnboardingLink>();
     public DbSet<PlatformSettings> PlatformSettings => Set<PlatformSettings>();
     public DbSet<PlatformStaff> PlatformStaff => Set<PlatformStaff>();
     public DbSet<RepresentativeIncentiveEntry> RepresentativeIncentiveEntries => Set<RepresentativeIncentiveEntry>();
@@ -348,6 +351,17 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // a leading-wildcard Contains) a plain btree index serves directly.
         modelBuilder.Entity<Member>()
             .HasIndex(m => m.MemberNumber);
+
+        // Integrations: a partner portal checks whether a student ID is already a member. One settings row per institution,
+        // keys found by hash, links found by token hash, and the newest link per student ID found by (institution, ID).
+        modelBuilder.Entity<InstitutionIntegration>().HasIndex(i => i.InstitutionId).IsUnique();
+        modelBuilder.Entity<IntegrationApiKey>().HasIndex(k => k.KeyHash).IsUnique();
+        modelBuilder.Entity<IntegrationApiKey>().HasIndex(k => k.InstitutionId);
+        modelBuilder.Entity<OnboardingLink>().HasIndex(l => l.TokenHash).IsUnique();
+        modelBuilder.Entity<OnboardingLink>().HasIndex(l => new { l.InstitutionId, l.StudentId });
+        // The status check looks a student ID up per institution. The migration also adds a lower-cased expression index for it
+        // (EF cannot model that one), which is what serves the case-insensitive match.
+        modelBuilder.Entity<Member>().HasIndex(m => new { m.InstitutionId, m.StudentId });
         // Store products and templates: per-product configuration (display details, buyer questions,
         // delivery questions, stages) — jsonb lists, same pattern as ServiceType above.
         var storeDetailListComparer = new ValueComparer<List<StoreDetailItem>>(

@@ -35,6 +35,13 @@ public static class RateLimitingExtensions
     /// <summary>Unauthenticated read endpoints (public theme lookups, etc.) — generous, since a shared-NAT institution can easily have thousands of concurrent members hitting these.</summary>
     public const string PublicReadPolicy = "public-read";
 
+    /// <summary>
+    /// The partner status check. A partner's server shares one IP and makes many calls, so a well-formed API key gets its own generous
+    /// bucket (a key is 256 random bits, so guessing one is hopeless however fast); anything else falls back to a small per-IP
+    /// bucket. A wide per-IP cap on the whole /integrations path keeps made-up keys from creating buckets without end.
+    /// </summary>
+    public const string IntegrationPolicy = "integration";
+
     public static IServiceCollection AddAlumniRateLimiting(this IServiceCollection services)
     {
         services.AddRateLimiter(options =>
@@ -50,6 +57,19 @@ public static class RateLimitingExtensions
                     QueueLimit = 5,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 }));
+
+            options.AddPolicy(IntegrationPolicy, httpContext =>
+            {
+                var key = httpContext.Request.Headers["X-Api-Key"].ToString().Trim();
+                return key.StartsWith("alk_", StringComparison.Ordinal) && key.Length is >= 20 and <= 100
+                    ? RateLimitPartition.GetFixedWindowLimiter($"integration-key:{key}", _ => new FixedWindowRateLimiterOptions { PermitLimit = 600, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })
+                    : RateLimitPartition.GetFixedWindowLimiter($"integration-ip:{PartitionKey(httpContext)}", _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 });
+            });
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                httpContext.Request.Path.StartsWithSegments("/api/v1/integrations")
+                    ? RateLimitPartition.GetFixedWindowLimiter($"integration-cap:{PartitionKey(httpContext)}", _ => new FixedWindowRateLimiterOptions { PermitLimit = 1800, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 })
+                    : RateLimitPartition.GetNoLimiter("other"));
 
             options.AddPolicy(PublicReadPolicy, httpContext => RateLimitPartition.GetFixedWindowLimiter(
                 PartitionKey(httpContext),

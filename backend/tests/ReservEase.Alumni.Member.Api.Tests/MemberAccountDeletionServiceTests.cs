@@ -1,3 +1,4 @@
+using Moq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -32,7 +33,9 @@ public class MemberAccountDeletionServiceTests
                 new AlumniPgRepository<Pledge>(db), new AlumniPgRepository<Contribution>(db), new AlumniPgRepository<PaymentTransaction>(db),
                 new AlumniPgRepository<StoreOrder>(db), new AlumniPgRepository<ServiceRequest>(db),
                 new AlumniPgRepository<ForumThread>(db), new AlumniPgRepository<ForumPost>(db), new AlumniPgRepository<ClassNote>(db),
-                new AlumniPgRepository<ClassNoteLike>(db), new AlumniPgRepository<Referral>(db), NullLogger<MemberAccountDeletionService>.Instance);
+                new AlumniPgRepository<ClassNoteLike>(db), new AlumniPgRepository<Referral>(db),
+                new ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationStatusCache(Mock.Of<ReservEase.Alumni.Redis.Sdk.Services.IRedisService<ReservEase.Alumni.Common.Sdk.Options.PublicContentCacheConfig>>()),
+                NullLogger<MemberAccountDeletionService>.Instance);
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);

@@ -91,6 +91,8 @@ export interface MemberProfileResponse {
   showBioOnDirectory?: boolean;
   /** Answers to the community's own registration questions, keyed by question id. */
   customFields?: Record<string, string> | null;
+  /** Set for a while after registering through a partner onboarding link: where to send them back to, and what to tell them. */
+  integrationBanner?: { portalName: string; redirectUrl: string; message: string; expiresAt: string } | null;
 }
 
 export interface MembershipStatusResponse {
