@@ -167,8 +167,7 @@ alongside `free -h` and `nproc` on the server: it distinguishes package/network
 waits, expensive compilation and a machine that lacks memory. Compilation checks
 and analyzers remain enabled; deployment does not run unit tests.
 
-The root `deploy.sh` is the older Docker Compose deployment path. These targets
-and cache improvements apply to `deploy/deploy.sh`.
+These targets and cache improvements apply to `deploy/deploy.sh`.
 
 ## Frontend deployments
 

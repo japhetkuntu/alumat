@@ -17,8 +17,8 @@
   <ItemGroup>
     <!-- Explicit copy (not relying on default content globbing) so the
          .html templates are reliably present next to the published DLL,
-         including in the Docker image — GetTemplatePath() falls back to
-         AppContext.BaseDirectory precisely because a container's working
+         including in the published output — GetTemplatePath() falls back to
+         AppContext.BaseDirectory precisely because a service's working
          directory isn't guaranteed to be the project source directory. -->
     <None Include="Templates\**\*.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -754,6 +754,14 @@ public class MemberAuthFlowTests : IDisposable
         Assert.Equal(400, (await service.VerifyEmailAsync("reset_abc", "b@x.com")).Code);
     }
 
+    [Theory]
+    [InlineData(null, "ama@x.com")]
+    [InlineData("verify_good", null)]
+    [InlineData("", "")]
+    [InlineData("  ", "  ")]
+    public async Task A_verification_link_missing_its_token_or_email_is_a_bad_request_not_a_server_error(string? token, string? email)
+        => Assert.Equal(400, (await service.VerifyEmailAsync(token!, email!)).Code);
+
     // ── Profile ─────────────────────────────────────────────────────────
 
     private static IFormFile Upload(string name, long length = 100) =>

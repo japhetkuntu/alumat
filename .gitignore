@@ -43,10 +43,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ── Docker ────────────────────────────────────────────────────────────────────
-docker/certbot/conf/
-docker/certbot/www/
-
 # ── OS generated ──────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?

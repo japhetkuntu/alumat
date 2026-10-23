@@ -47,8 +47,8 @@ export interface InstitutionTheme {
 // Server-side only (never sent to the browser, unlike api-client.ts's
 // same-origin relative URL): this fetch runs inside the Next.js server
 // process, which has no implicit "current origin" to resolve a relative URL
-// against, so it needs a real address for member-api. Inside Docker Compose
-// that's the internal service DNS name; outside Docker (local `pnpm dev`)
+// against, so it needs a real address for member-api. On the server that's
+// the API's loopback port (set by MEMBER_API_INTERNAL_URL); in local `pnpm dev`
 // it's the API's local dev port. Either way we still forward the browser's
 // original Host header below, so TenantResolutionMiddleware resolves the
 // correct tenant regardless of which URL was used to reach the service.

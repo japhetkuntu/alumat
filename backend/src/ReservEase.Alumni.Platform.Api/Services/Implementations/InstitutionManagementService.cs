@@ -1177,6 +1177,8 @@ public class InstitutionManagementService(
     {
         try
         {
+        if (string.IsNullOrWhiteSpace(slug))
+            return ApiResponseExtensions.ToBadRequestApiResponse<SlugAvailabilityResponse>("Enter a subdomain to check.");
         var normalized = slug.Trim().ToLowerInvariant();
         var taken = await institutionRepo.GetOneAsync(i => i.Slug == normalized) is not null;
         return new SlugAvailabilityResponse(normalized, !taken).ToOkApiResponse();

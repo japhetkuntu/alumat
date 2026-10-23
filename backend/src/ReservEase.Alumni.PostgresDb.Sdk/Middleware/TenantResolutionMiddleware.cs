@@ -27,27 +27,19 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Middleware;
 ///
 /// Separately, an "X-Internal-Tenant-Host" header is honored in every
 /// environment, but ONLY from requests originating on a private/internal
-/// address (loopback, or Docker's own bridge-network ranges) — this exists
+/// address (loopback, or a private network range) — this exists
 /// because Node's fetch() (used by each frontend's server-side tenant-theme
 /// fetch, see apps/*/src/lib/theme.ts) silently ignores any caller-supplied
 /// "Host" header and always sends the request URL's own host instead, so the
 /// browser's real subdomain has to be forwarded some other way for that
-/// internal call. In the actual docker-compose deployment this call is
-/// frontend-container-to-api-container over the "alumni-net" bridge network
-/// (not loopback — loopback only covers same-machine/same-container calls,
-/// e.g. local dev with everything on one host), so loopback-only trust never
-/// actually matched in production and every such request silently fell
-/// through to DefaultInstitutionSlug instead — this is what made every
-/// institution's login page render one fixed institution's branding
-/// regardless of which one was actually being visited. Safe to trust the
-/// wider private range unconditionally because institution-api/member-api
-/// publish no host ports at all ("nginx routes all external traffic
-/// internally" — see docker-compose.yml) — nothing outside our own
-/// containers can ever reach these services to forge this header.
+/// internal call. On the server the frontends call the APIs over loopback.
+/// The header is only consulted when the Host header matched no tenant, and
+/// all it can do is pick a tenant by host name, which a visitor can already
+/// do by sending that Host header, so forging it gains nothing.
 ///
 /// Falls back to a configured "DefaultInstitutionSlug" when nothing else
 /// matches — this is what keeps every existing request (today's fixed
-/// production hostnames, docker-internal calls) behaving exactly as a
+/// production hostnames and internal calls) behaving exactly as a
 /// single-tenant app until wildcard DNS/SSL is live.
 /// </summary>
 public class TenantResolutionMiddleware(RequestDelegate next)

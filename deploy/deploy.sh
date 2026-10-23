@@ -395,7 +395,7 @@ publish_dotnet() {
 # ---------------------------------------------------------------------------
 # Frontends — each `next build` (output: "standalone") produces a self-contained server tree at
 # apps/<app>/.next/standalone/, mirroring the monorepo layout (apps/<app>/server.js) because of
-# outputFileTracingRoot — same three-directory copy as each app's own Dockerfile does.
+# outputFileTracingRoot — same three-directory copy the Build workflow does.
 # ---------------------------------------------------------------------------
 # `next build` writes into the source tree (apps/<app>/.next), not into the live folder, so it is
 # safe to run while the old version serves. Copying into $OUT happens later, during the swap.

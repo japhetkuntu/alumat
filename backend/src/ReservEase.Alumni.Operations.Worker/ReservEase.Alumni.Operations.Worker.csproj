@@ -10,8 +10,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
-    <PackageReference Include="Temporalio" Version="1.*" />
-    <PackageReference Include="Temporalio.Extensions.Hosting" Version="1.*" />
+    <PackageReference Include="Temporalio" Version="1.21.0" />
+    <PackageReference Include="Temporalio.Extensions.Hosting" Version="1.21.0" />
   </ItemGroup>
 
   <ItemGroup>

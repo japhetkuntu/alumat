@@ -913,6 +913,10 @@ public class MemberAuthService(
     {
         try
         {
+            // A link with its token or email cut off is a bad request, not a server error.
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Invalid or expired verification link");
+
             logger.LogInformation("VerifyEmail request for email: {Email}", email);
 
             var member = await memberRepo.GetOneAsync(m => m.Email == email.ToLower().Trim());
