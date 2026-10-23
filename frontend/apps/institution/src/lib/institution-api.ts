@@ -2075,9 +2075,15 @@ export interface PayoutForecast {
 }
 
 export interface PayoutSourceTotal { source: string; amount: number; count: number }
-export interface PayoutDay { date: string; amount: number; transactionCount: number; sources: PayoutSourceTotal[] }
+export interface PayoutAccount { key: string; name: string; detail?: string | null }
+export interface PayoutAccountTotal { key: string; name: string; amount: number; count: number }
+export interface PayoutDay { date: string; amount: number; transactionCount: number; sources: PayoutSourceTotal[]; accounts: PayoutAccountTotal[] }
 export interface PayoutHistory {
   payoutsConfigured: boolean;
+  /** The main account plus every year group with its own approved account. */
+  accountOptions: PayoutAccount[];
+  /** "all", or the key of the one account the list is narrowed to. */
+  account: string;
   days: PayoutDay[];
   totalAmount: number;
   /** There are payments from before this range, so a longer range would show more. */
@@ -2085,18 +2091,18 @@ export interface PayoutHistory {
   from: string;
   to: string;
 }
-export interface PayoutItem { source: string; title: string; payerName?: string | null; amount: number; confirmedAt: string }
+export interface PayoutItem { source: string; account: string; title: string; payerName?: string | null; amount: number; confirmedAt: string }
 export interface PayoutDayDetail { date: string; amount: number; items: PayoutItem[] }
 
 /** SuperAdmin-only: what was paid out on each past payout day (newest first), over the last `days` calendar days. */
-export async function getPayoutHistory(days = 30, to?: string): Promise<PayoutHistory> {
-  const res = await institutionClient.get<ApiResponse<PayoutHistory>>("/payouts/history", { params: { days, to } });
+export async function getPayoutHistory(days = 30, account?: string, to?: string): Promise<PayoutHistory> {
+  const res = await institutionClient.get<ApiResponse<PayoutHistory>>("/payouts/history", { params: { days, to, account: account && account !== "all" ? account : undefined } });
   return res.data.data!;
 }
 
 /** SuperAdmin-only: the individual payments that made up one payout day. */
-export async function getPayoutDay(date: string): Promise<PayoutDayDetail> {
-  const res = await institutionClient.get<ApiResponse<PayoutDayDetail>>(`/payouts/history/${date}`);
+export async function getPayoutDay(date: string, account?: string): Promise<PayoutDayDetail> {
+  const res = await institutionClient.get<ApiResponse<PayoutDayDetail>>(`/payouts/history/${date}`, { params: { account: account && account !== "all" ? account : undefined } });
   return res.data.data!;
 }
 

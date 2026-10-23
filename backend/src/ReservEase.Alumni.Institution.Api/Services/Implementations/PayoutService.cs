@@ -48,7 +48,7 @@ public class PayoutService(
                 .GroupBy(c => new { c.CampaignId, IsNext = c.ConfirmedAt >= nextStart })
                 .Select(g => new { g.Key.CampaignId, g.Key.IsNext, Amount = g.Sum(c => c.Amount), Count = g.Count() })
                 .ToListAsync();
-            var batchSettled = await BatchSettledCampaignIdsAsync(contributionTotals.Select(c => c.CampaignId).Distinct().ToList());
+            var batchSettled = (await ResolveAccountsAsync(contributionTotals.Select(c => c.CampaignId).Distinct().ToList())).Where(kv => kv.Value is not null).Select(kv => kv.Key).ToHashSet();
 
             var orderTotals = await storeOrderRepo.GetQueryable(o =>
                     o.Status == "Successful" && o.PaymentMethod == "Paystack" && o.ConfirmedAt != null
@@ -92,7 +92,7 @@ public class PayoutService(
         }
     }
 
-    public async Task<IApiResponse<PayoutHistoryResponse>> GetHistoryAsync(DateOnly? to, int days)
+    public async Task<IApiResponse<PayoutHistoryResponse>> GetHistoryAsync(DateOnly? to, int days, string? account)
     {
         try
         {
@@ -116,7 +116,7 @@ public class PayoutService(
                 .Select(g => new { g.Key.CampaignId, g.Key.Day, Amount = g.Sum(c => c.Amount), Count = g.Count() })
                 .ToListAsync();
             var campaignIds = contributionDays.Select(c => c.CampaignId).Distinct().ToList();
-            var batchSettled = await BatchSettledCampaignIdsAsync(campaignIds);
+            var accountOf = await ResolveAccountsAsync(campaignIds);
             var membershipIds = campaignIds.Count == 0 ? [] : (await campaignRepo.GetQueryable(c => campaignIds.Contains(c.Id) && c.IsMembershipCampaign)
                 .Select(c => c.Id).ToListAsync()).ToHashSet();
 
@@ -135,27 +135,39 @@ public class PayoutService(
                 .Select(g => new { Day = g.Key, Amount = g.Sum(t => t.AmountPaid ?? 0m), Count = g.Count() })
                 .ToListAsync();
 
-            var byDay = new Dictionary<DateOnly, Dictionary<string, (decimal Amount, int Count)>>();
-            void Add(DateTime day, string source, decimal amount, int count)
+            var accounts = await AccountOptionsAsync(institution);
+            account = NormaliseAccount(account, accounts);
+            var accountNames = accounts.ToDictionary(a => a.Key, a => a.Name);
+
+            // Every payment is filed under the day it is paid out on and the account it is paid into, so the same morning can
+            // have several payouts (the main account plus year groups with their own).
+            var byDay = new Dictionary<DateOnly, Dictionary<(string Account, string Source), (decimal Amount, int Count)>>();
+            void Add(DateTime day, string accountKey, string source, decimal amount, int count)
             {
+                if (account is not null && accountKey != account) return;
                 var payout = PayoutWindowCalculator.NextWorkingDayAfter(DateOnly.FromDateTime(day));
                 if (payout < from || payout > end) return;
-                if (!byDay.TryGetValue(payout, out var sources)) byDay[payout] = sources = [];
-                sources.TryGetValue(source, out var cur);
-                sources[source] = (cur.Amount + amount, cur.Count + count);
+                if (!byDay.TryGetValue(payout, out var parts)) byDay[payout] = parts = [];
+                parts.TryGetValue((accountKey, source), out var cur);
+                parts[(accountKey, source)] = (cur.Amount + amount, cur.Count + count);
             }
-            foreach (var c in contributionDays.Where(c => !batchSettled.Contains(c.CampaignId)))
-                Add(c.Day, membershipIds.Contains(c.CampaignId) ? PayoutSources.Dues : PayoutSources.Fundraisers, c.Amount, c.Count);
-            foreach (var o in orderDays) Add(o.Day, PayoutSources.Store, o.Amount, o.Count);
-            foreach (var r in requestDays) Add(r.Day, PayoutSources.Services, r.Amount, r.Count);
-            foreach (var t in ticketDays) Add(t.Day, PayoutSources.EventRsvps, t.Amount, t.Count);
+            foreach (var c in contributionDays)
+                Add(c.Day, accountOf.GetValueOrDefault(c.CampaignId) ?? MainAccount, membershipIds.Contains(c.CampaignId) ? PayoutSources.Dues : PayoutSources.Fundraisers, c.Amount, c.Count);
+            foreach (var o in orderDays) Add(o.Day, MainAccount, PayoutSources.Store, o.Amount, o.Count);
+            foreach (var r in requestDays) Add(r.Day, MainAccount, PayoutSources.Services, r.Amount, r.Count);
+            foreach (var t in ticketDays) Add(t.Day, MainAccount, PayoutSources.EventRsvps, t.Amount, t.Count);
 
             var result = byDay
                 .Where(d => d.Value.Values.Sum(v => v.Amount) > 0)
                 .OrderByDescending(d => d.Key)
                 .Select(d => new PayoutDayDto(
                     d.Key, d.Value.Values.Sum(v => v.Amount), d.Value.Values.Sum(v => v.Count),
-                    d.Value.OrderByDescending(v => v.Value.Amount).Select(v => new PayoutSourceTotalDto(v.Key, v.Value.Amount, v.Value.Count)).ToList()))
+                    d.Value.GroupBy(v => v.Key.Source)
+                        .Select(g => new PayoutSourceTotalDto(g.Key, g.Sum(v => v.Value.Amount), g.Sum(v => v.Value.Count)))
+                        .OrderByDescending(v => v.Amount).ToList(),
+                    d.Value.GroupBy(v => v.Key.Account)
+                        .Select(g => new PayoutAccountTotalDto(g.Key, accountNames.GetValueOrDefault(g.Key) ?? "Year group account", g.Sum(v => v.Value.Amount), g.Sum(v => v.Value.Count)))
+                        .OrderByDescending(v => v.Key == MainAccount).ThenByDescending(v => v.Amount).ToList()))
                 .ToList();
 
             // Anything confirmed before this range would be paid out earlier than it, so there is more to see by going back.
@@ -165,7 +177,7 @@ public class PayoutService(
                 || await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && r.PaymentMethod == "Paystack" && r.ConfirmedAt != null && r.ConfirmedAt < start).AnyAsync()
                 || await eventRsvpRepo.GetQueryable(EventTicketRules.SettledBetween(DateTime.UnixEpoch, start)).AnyAsync();
 
-            return new PayoutHistoryResponse(payoutsConfigured, result, result.Sum(d => d.Amount), hasOlder, from, end).ToOkApiResponse();
+            return new PayoutHistoryResponse(payoutsConfigured, accounts, account ?? "all", result, result.Sum(d => d.Amount), hasOlder, from, end).ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -174,40 +186,48 @@ public class PayoutService(
         }
     }
 
-    public async Task<IApiResponse<PayoutDayDetailDto>> GetDayAsync(DateOnly date)
+    public async Task<IApiResponse<PayoutDayDetailDto>> GetDayAsync(DateOnly date, string? account)
     {
         try
         {
             if (!PayoutWindowCalculator.IsWorkingDay(date))
                 return new PayoutDayDetailDto(date, 0m, []).ToOkApiResponse();
 
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == currentTenant.InstitutionId);
+            var accounts = await AccountOptionsAsync(institution);
+            account = NormaliseAccount(account, accounts);
+            var accountNames = accounts.ToDictionary(a => a.Key, a => a.Name);
+
             var (start, end) = PayoutWindowCalculator.WindowFor(date);
             var items = new List<PayoutItemDto>();
+            var mainName = accountNames.GetValueOrDefault(MainAccount) ?? "Main account";
             static string? NameOf(MemberSnapshot? m) => m is null ? null : $"{m.FirstName} {m.LastName}".Trim();
 
             var contributions = await contributionRepo.GetQueryable(c =>
                     c.Status == "Successful" && c.PaymentMethod == "Paystack" && c.ConfirmedAt != null && c.ConfirmedAt >= start && c.ConfirmedAt < end)
                 .Select(c => new { c.CampaignId, c.Amount, c.ConfirmedAt, c.Member }).ToListAsync();
             var campaignIds = contributions.Select(c => c.CampaignId).Distinct().ToList();
-            var batchSettled = await BatchSettledCampaignIdsAsync(campaignIds);
+            var accountOf = await ResolveAccountsAsync(campaignIds);
             var campaigns = campaignIds.Count == 0 ? [] : await campaignRepo.GetQueryable(c => campaignIds.Contains(c.Id))
                 .Select(c => new { c.Id, c.Title, c.IsMembershipCampaign }).ToDictionaryAsync(c => c.Id);
-            foreach (var c in contributions.Where(c => !batchSettled.Contains(c.CampaignId)))
+            foreach (var c in contributions)
             {
+                var key = accountOf.GetValueOrDefault(c.CampaignId) ?? MainAccount;
+                if (account is not null && key != account) continue;
                 campaigns.TryGetValue(c.CampaignId, out var campaign);
                 items.Add(new PayoutItemDto(campaign?.IsMembershipCampaign == true ? PayoutSources.Dues : PayoutSources.Fundraisers,
-                    campaign?.Title ?? "Payment", NameOf(c.Member), c.Amount, c.ConfirmedAt!.Value));
+                    accountNames.GetValueOrDefault(key) ?? "Year group account", campaign?.Title ?? "Payment", NameOf(c.Member), c.Amount, c.ConfirmedAt!.Value));
             }
 
             var orders = await storeOrderRepo.GetQueryable(o =>
                     o.Status == "Successful" && o.PaymentMethod == "Paystack" && o.ConfirmedAt != null && o.ConfirmedAt >= start && o.ConfirmedAt < end)
                 .Select(o => new { o.OrderNumber, o.TotalAmount, o.ConfirmedAt, o.Member }).ToListAsync();
-            items.AddRange(orders.Select(o => new PayoutItemDto(PayoutSources.Store, $"Order {o.OrderNumber}", NameOf(o.Member), o.TotalAmount, o.ConfirmedAt!.Value)));
+            items.AddRange(orders.Select(o => new PayoutItemDto(PayoutSources.Store, mainName, $"Order {o.OrderNumber}", NameOf(o.Member), o.TotalAmount, o.ConfirmedAt!.Value)));
 
             var requests = await serviceRequestRepo.GetQueryable(r =>
                     r.PaymentStatus == "Successful" && r.PaymentMethod == "Paystack" && r.ConfirmedAt != null && r.ConfirmedAt >= start && r.ConfirmedAt < end)
                 .Select(r => new { r.ServiceTypeName, r.Amount, r.ConfirmedAt, r.Member }).ToListAsync();
-            items.AddRange(requests.Select(r => new PayoutItemDto(PayoutSources.Services, r.ServiceTypeName, NameOf(r.Member), r.Amount, r.ConfirmedAt!.Value)));
+            items.AddRange(requests.Select(r => new PayoutItemDto(PayoutSources.Services, mainName, r.ServiceTypeName, NameOf(r.Member), r.Amount, r.ConfirmedAt!.Value)));
 
             var tickets = await eventRsvpRepo.GetQueryable(EventTicketRules.SettledBetween(start, end))
                 .Select(t => new { t.EventId, t.MemberId, t.AmountPaid, t.PaidAt }).ToListAsync();
@@ -217,8 +237,10 @@ public class PayoutService(
             var people = memberIds.Count == 0 ? [] : await memberRepo.GetQueryable(m => memberIds.Contains(m.Id))
                 .Select(m => new { m.Id, m.FirstName, m.LastName }).ToDictionaryAsync(m => m.Id, m => $"{m.FirstName} {m.LastName}".Trim());
             var titles = eventIds.Count == 0 ? [] : await eventRepo.GetQueryable(e => eventIds.Contains(e.Id)).Select(e => new { e.Id, e.Title }).ToDictionaryAsync(e => e.Id, e => e.Title);
-            items.AddRange(tickets.Select(t => new PayoutItemDto(PayoutSources.EventRsvps, titles.GetValueOrDefault(t.EventId) ?? "RSVP", people.GetValueOrDefault(t.MemberId), t.AmountPaid ?? 0m, t.PaidAt!.Value)));
+            items.AddRange(tickets.Select(t => new PayoutItemDto(PayoutSources.EventRsvps, mainName, titles.GetValueOrDefault(t.EventId) ?? "RSVP", people.GetValueOrDefault(t.MemberId), t.AmountPaid ?? 0m, t.PaidAt!.Value)));
 
+            // Store orders, services and event tickets always settle to the main account.
+            if (account is not null) items = items.Where(i => i.Account == accountNames.GetValueOrDefault(account)).ToList();
             var ordered = items.OrderByDescending(i => i.ConfirmedAt).Take(500).ToList();
             return new PayoutDayDetailDto(date, items.Sum(i => i.Amount), ordered).ToOkApiResponse();
         }
@@ -229,13 +251,41 @@ public class PayoutService(
         }
     }
 
+    public const string MainAccount = "main";
+
     /// <summary>
-    /// A campaign targeting exactly one batch settles straight into THAT batch's own Paystack subaccount once its payout setup is
-    /// approved (see ContributionService.ResolveSubaccountAsync, which this mirrors) — money that never reaches this institution's
-    /// own account, so it must never be counted as if it will. Store orders and service requests never resolve a batch subaccount,
-    /// so only contributions need this. Returns the ids of the campaigns whose money goes elsewhere.
+    /// The accounts this institution is paid into: its own, plus every year group whose dedicated account has been approved.
+    /// Year groups that use the institution's account are not listed, since their money lands in the main one.
     /// </summary>
-    private async Task<HashSet<string>> BatchSettledCampaignIdsAsync(List<string> campaignIds)
+    private async Task<List<PayoutAccountDto>> AccountOptionsAsync(InstitutionEntity? institution)
+    {
+        var accounts = new List<PayoutAccountDto> { new(MainAccount, "Main account", BankLine(institution?.SettlementBankName, institution?.SettlementAccountNumber)) };
+        var batches = await batchRepo.GetQueryable(b => b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null)
+            .OrderByDescending(b => b.Year)
+            .Select(b => new { b.Id, b.Name, b.SettlementBankName, b.SettlementAccountNumber }).ToListAsync();
+        accounts.AddRange(batches.Select(b => new PayoutAccountDto(b.Id, b.Name, BankLine(b.SettlementBankName, b.SettlementAccountNumber))));
+        return accounts;
+    }
+
+    private static string? BankLine(string? bank, string? number)
+    {
+        if (string.IsNullOrWhiteSpace(bank) && string.IsNullOrWhiteSpace(number)) return null;
+        var tail = string.IsNullOrWhiteSpace(number) ? null : "ending " + number[^Math.Min(4, number.Length)..];
+        return string.Join(" ", new[] { bank, tail }.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    /// <summary>An unknown or empty account means all of them; a known one narrows the page to it.</summary>
+    private static string? NormaliseAccount(string? account, List<PayoutAccountDto> accounts) =>
+        !string.IsNullOrWhiteSpace(account) && account != "all" && accounts.Any(a => a.Key == account) ? account : null;
+
+    /// <summary>
+    /// A campaign targeting exactly one year group settles straight into THAT group's own Paystack subaccount once its payout
+    /// setup is approved (see ContributionService.ResolveSubaccountAsync, which this mirrors); everything else settles to the
+    /// institution's own account. Store orders, service requests and event tickets never resolve a year-group account, so only
+    /// contributions need this. Returns, per campaign, the id of the year group it settles into; a campaign with no entry (or null)
+    /// settles to the main account.
+    /// </summary>
+    private async Task<Dictionary<string, string?>> ResolveAccountsAsync(List<string> campaignIds)
     {
         if (campaignIds.Count == 0) return [];
 
@@ -244,11 +294,11 @@ public class PayoutService(
         if (singleYear.Count == 0) return [];
 
         var years = singleYear.Values.Distinct().ToList();
-        var approvedYears = (await batchRepo.GetQueryable(b =>
+        var approved = (await batchRepo.GetQueryable(b =>
                 years.Contains(b.Year) && b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null)
-            .Select(b => b.Year).ToListAsync()).ToHashSet();
+            .Select(b => new { b.Year, b.Id }).ToListAsync()).GroupBy(b => b.Year).ToDictionary(g => g.Key, g => g.First().Id);
 
-        return singleYear.Where(kv => approvedYears.Contains(kv.Value)).Select(kv => kv.Key).ToHashSet();
+        return singleYear.Where(kv => approved.ContainsKey(kv.Value)).ToDictionary(kv => kv.Key, kv => (string?)approved[kv.Value]);
     }
 }
 

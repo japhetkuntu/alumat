@@ -21,20 +21,21 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** The payments inside one payout, loaded only when the day is opened. */
-function DayDetail({ date }: { date: string }) {
-  const { data, isLoading, isError } = useQuery({ queryKey: ["payout-day", date], queryFn: () => getPayoutDay(date) });
+function DayDetail({ date, account, showAccount }: { date: string; account: string; showAccount: boolean }) {
+  const { data, isLoading, isError } = useQuery({ queryKey: ["payout-day", date, account], queryFn: () => getPayoutDay(date, account) });
   if (isLoading) return <p className="px-4 py-3 text-[13px] text-muted-foreground">Loading the payments…</p>;
   if (isError || !data) return <p className="px-4 py-3 text-[13px] text-destructive">Could not load this payout. Try again.</p>;
   if (data.items.length === 0) return <p className="px-4 py-3 text-[13px] text-muted-foreground">No payments found for this day.</p>;
   return (
     <ul className="divide-y divide-border/60">
       {data.items.map((item, i) => (
-        <li key={i} className="flex items-center gap-3 px-4 py-2.5 text-[13.5px]">
-          <Badge variant="secondary" size="sm" className="shrink-0">{item.source}</Badge>
+        <li key={i} className="flex items-start gap-3 px-4 py-2.5 text-[13.5px]">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">{item.title}</p>
-            <p className="truncate text-[12.5px] text-muted-foreground">{item.payerName || "Member"} · {formatDate(item.confirmedAt)}, {time(item.confirmedAt)}</p>
+            <p className="font-medium sm:truncate">{item.title}</p>
+            <p className="text-[12.5px] text-muted-foreground sm:truncate">{showAccount && <>{item.account} · </>}{item.payerName || "Member"} · {formatDate(item.confirmedAt)}, {time(item.confirmedAt)}</p>
+            <Badge variant="secondary" size="sm" className="mt-1.5 sm:hidden">{item.source}</Badge>
           </div>
+          <Badge variant="secondary" size="sm" className="hidden shrink-0 sm:inline-flex">{item.source}</Badge>
           <span className="shrink-0 font-semibold tabular-nums">{formatCurrency(item.amount)}</span>
         </li>
       ))}
@@ -42,7 +43,7 @@ function DayDetail({ date }: { date: string }) {
   );
 }
 
-function DayRow({ day }: { day: PayoutDay }) {
+function DayRow({ day, account }: { day: PayoutDay; account: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border-t border-border first:border-t-0">
@@ -59,19 +60,28 @@ function DayRow({ day }: { day: PayoutDay }) {
             <span>{plural(day.transactionCount, "payment")}</span>
             {day.sources.map((s) => <span key={s.source}>{s.source} {formatCurrency(s.amount)}</span>)}
           </p>
+          {day.accounts.length > 1 && (
+            <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px] font-medium">
+              {day.accounts.map((a) => <span key={a.key}>{a.name}: {formatCurrency(a.amount)}</span>)}
+            </p>
+          )}
         </div>
         <span className="shrink-0 text-[16px] font-bold tabular-nums">{formatCurrency(day.amount)}</span>
       </button>
-      {open && <div className="border-t border-border/60 bg-muted/20"><DayDetail date={day.date} /></div>}
+      {open && <div className="border-t border-border/60 bg-muted/20"><DayDetail date={day.date} account={account} showAccount={day.accounts.length > 1} /></div>}
     </div>
   );
 }
 
 export default function PayoutsPage() {
   const [range, setRange] = useState("30");
+  const [account, setAccount] = useState("all");
   const forecast = useQuery({ queryKey: ["payout-forecast"], queryFn: getPayoutForecast, staleTime: 5 * 60 * 1000 });
-  const history = useQuery({ queryKey: ["payout-history", range], queryFn: () => getPayoutHistory(Number(range)), placeholderData: (prev) => prev });
+  const history = useQuery({ queryKey: ["payout-history", range, account], queryFn: () => getPayoutHistory(Number(range), account), placeholderData: (prev) => prev });
   const data = history.data;
+  const accounts = data?.accountOptions ?? [];
+  const accountChoices = [{ value: "all", label: "All accounts" }, ...accounts.map((a) => ({ value: a.key, label: a.name }))];
+  const selected = accounts.find((a) => a.key === account);
 
   return (
     <div className="mx-auto max-w-[980px] space-y-6 p-4 sm:p-[26px]">
@@ -79,7 +89,7 @@ export default function PayoutsPage() {
         <h1 className="m-0 text-[20px] font-bold sm:text-[25px]">Payouts</h1>
         <p className="max-w-[62ch] text-[13px] leading-relaxed text-muted-foreground">
           Paystack pays your online collections into your bank account every working morning. Each day below is one of those payouts,
-          with what it was made of. Open a day to see the payments.
+          with what it was made of. Year groups that have their own payout account are paid separately, so a day can have more than one payout. Open a day to see the payments.
         </p>
       </header>
 
@@ -115,8 +125,12 @@ export default function PayoutsPage() {
               </p>
             )}
           </div>
-          <FormSelect className="w-[180px]" value={range} onValueChange={setRange} options={RANGES} />
+          <div className="flex flex-wrap gap-2">
+            {accounts.length > 1 && <FormSelect className="w-[200px]" value={account} onValueChange={setAccount} options={accountChoices} />}
+            <FormSelect className="w-[180px]" value={range} onValueChange={setRange} options={RANGES} />
+          </div>
         </div>
+        {selected?.detail && <p className="text-[12.5px] text-muted-foreground">{selected.name} pays into {selected.detail}.</p>}
 
         {history.isLoading ? (
           <CardSkeleton />
@@ -131,7 +145,7 @@ export default function PayoutsPage() {
         ) : (
           <>
             <Card className={cn("overflow-hidden border-border/60", history.isFetching && "opacity-70 transition-opacity")}>
-              <CardContent className="p-0">{data.days.map((day) => <DayRow key={day.date} day={day} />)}</CardContent>
+              <CardContent className="p-0">{data.days.map((day) => <DayRow key={day.date} day={day} account={account} />)}</CardContent>
             </Card>
             {data.hasOlder && range !== "365" && <p className="text-[12.5px] text-muted-foreground">There are older payouts too. Choose a longer period to see them.</p>}
           </>
