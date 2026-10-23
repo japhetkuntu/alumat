@@ -2074,6 +2074,32 @@ export interface PayoutForecast {
   nextPayout: PayoutWindow;
 }
 
+export interface PayoutSourceTotal { source: string; amount: number; count: number }
+export interface PayoutDay { date: string; amount: number; transactionCount: number; sources: PayoutSourceTotal[] }
+export interface PayoutHistory {
+  payoutsConfigured: boolean;
+  days: PayoutDay[];
+  totalAmount: number;
+  /** There are payments from before this range, so a longer range would show more. */
+  hasOlder: boolean;
+  from: string;
+  to: string;
+}
+export interface PayoutItem { source: string; title: string; payerName?: string | null; amount: number; confirmedAt: string }
+export interface PayoutDayDetail { date: string; amount: number; items: PayoutItem[] }
+
+/** SuperAdmin-only: what was paid out on each past payout day (newest first), over the last `days` calendar days. */
+export async function getPayoutHistory(days = 30, to?: string): Promise<PayoutHistory> {
+  const res = await institutionClient.get<ApiResponse<PayoutHistory>>("/payouts/history", { params: { days, to } });
+  return res.data.data!;
+}
+
+/** SuperAdmin-only: the individual payments that made up one payout day. */
+export async function getPayoutDay(date: string): Promise<PayoutDayDetail> {
+  const res = await institutionClient.get<ApiResponse<PayoutDayDetail>>(`/payouts/history/${date}`);
+  return res.data.data!;
+}
+
 /** SuperAdmin-only — what Paystack should have already settled this working day, and what's accumulating toward the next one. */
 export async function getPayoutForecast(): Promise<PayoutForecast> {
   const res = await institutionClient.get<ApiResponse<PayoutForecast>>("/payouts/forecast");

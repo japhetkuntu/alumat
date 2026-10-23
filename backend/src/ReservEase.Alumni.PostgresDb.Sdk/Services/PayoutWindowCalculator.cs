@@ -44,6 +44,17 @@ public static class PayoutWindowCalculator
         return d;
     }
 
+    /// <summary>The working day a payment confirmed at <paramref name="confirmedUtc"/> is paid out on: the next working day after the day it was confirmed.</summary>
+    public static DateOnly PayoutDateFor(DateTime confirmedUtc) => NextWorkingDayAfter(DateOnly.FromDateTime(confirmedUtc));
+
+    /// <summary>
+    /// Everything paid out on <paramref name="payoutDate"/>: payments confirmed from the previous working day's start up to the
+    /// start of the payout day (so Monday's payout also holds the weekend). Start is inclusive, end is exclusive.
+    /// </summary>
+    public static (DateTime Start, DateTime End) WindowFor(DateOnly payoutDate) => (
+        PreviousWorkingDayBefore(payoutDate).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+        payoutDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+
     public readonly record struct PayoutWindows(
         DateOnly LastPayoutDate, DateTime LastWindowStart, DateTime LastWindowEnd,
         DateOnly NextPayoutDate, DateTime NextWindowStart, DateTime NextWindowEnd);

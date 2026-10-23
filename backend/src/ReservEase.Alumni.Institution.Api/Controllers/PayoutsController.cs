@@ -26,4 +26,24 @@ public class PayoutsController(IPayoutService payoutService) : DefaultController
         var result = await payoutService.GetForecastAsync();
         return result.ToActionResult();
     }
+
+    /// <summary>What was paid out on each past payout day, newest first.</summary>
+    [HttpGet("history")]
+    [SwaggerOperation(Summary = "Get payout history by day")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PayoutHistoryResponse>))]
+    public async Task<IActionResult> GetHistory([FromQuery] DateOnly? to, [FromQuery] int days = 30)
+    {
+        var result = await payoutService.GetHistoryAsync(to, days);
+        return result.ToActionResult();
+    }
+
+    /// <summary>The payments that made up one payout day.</summary>
+    [HttpGet("history/{date}")]
+    [SwaggerOperation(Summary = "Get the payments in one payout day")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PayoutDayDetailDto>))]
+    public async Task<IActionResult> GetDay(DateOnly date)
+    {
+        var result = await payoutService.GetDayAsync(date);
+        return result.ToActionResult();
+    }
 }

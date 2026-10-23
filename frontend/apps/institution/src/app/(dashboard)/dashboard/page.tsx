@@ -83,7 +83,10 @@ function PayoutPanel() {
           Expected {formatDate(data.nextPayout.date)} morning &middot; still accumulating &middot; {data.nextPayout.transactionCount} transaction{data.nextPayout.transactionCount === 1 ? "" : "s"}
         </p>
       </div>
-      <p className="sm:col-span-2 text-[12px] text-muted-foreground -mt-2">Estimated from your confirmed transactions, not a bank-confirmed figure.</p>
+      <p className="sm:col-span-2 -mt-2 flex flex-wrap items-center justify-between gap-2 text-[12px] text-muted-foreground">
+        <span>Estimated from your confirmed transactions, not a bank-confirmed figure.</span>
+        <Link href="/payouts" className="font-semibold text-accent hover:underline">See every payout, day by day</Link>
+      </p>
     </div>
   );
 }

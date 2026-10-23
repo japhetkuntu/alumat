@@ -6,4 +6,10 @@ namespace ReservEase.Alumni.Institution.Api.Services.Interfaces;
 public interface IPayoutService
 {
     Task<IApiResponse<PayoutForecastResponse>> GetForecastAsync();
+
+    /// <summary>Past payout days that fall in the last <paramref name="days"/> calendar days up to <paramref name="to"/> (default: the latest payout).</summary>
+    Task<IApiResponse<PayoutHistoryResponse>> GetHistoryAsync(DateOnly? to, int days);
+
+    /// <summary>The individual payments that made up one payout day.</summary>
+    Task<IApiResponse<PayoutDayDetailDto>> GetDayAsync(DateOnly date);
 }

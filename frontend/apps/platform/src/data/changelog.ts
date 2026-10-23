@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-23",
+    title: "Payouts page: every day's payout to the institution, with what it was made of. The wrong 'Disbursed / Outstanding' block is gone from dues",
+    scopes: ["Institution"],
+    type: "Feature",
+    body: "A dues page showed 'Disbursed GH₵0.00' and 'Outstanding' even after Paystack had paid the money out, because those numbers came from a button an admin had to press by hand, which has nothing to do with the real payout. They are removed from the dues page, together with the 'Mark online payments as disbursed' button. Instead the institution admin portal has a new Payouts page (SuperAdmin only, under Money, also linked from the dashboard payout panel and the dues page). It lists every past payout day, newest first, with the total and a split by Dues, Fundraisers, Store, Services and Event RSVPs, and each day opens to show the individual payments with who paid. Days are worked out the same way as the dashboard forecast (Paystack pays the next working morning, weekends roll into Monday, batch-settled campaigns are left out), so they are estimates and the bank statement is the final record. No fees are shown. No migration; the old paystack-disburse and paystack-summary endpoints and the IsPaystackDisbursed fields stay in the backend, unused.",
+  },
+  {
     date: "2026-10-22",
     title: "Resource previews work: PDF, Word, PowerPoint, Excel, video, audio and YouTube show in the page instead of needing a download",
     scopes: ["Institution", "Member"],

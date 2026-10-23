@@ -25,7 +25,7 @@ import { useFeatureEnabled } from "@/hooks/use-institution-features";
 import { PledgesPanel } from "@/components/institution/pledges-panel";
 import { PublicPagePanel } from "@/components/institution/public-page-panel";
 import {
-  getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, markCampaignPaystackDisbursed, updateCampaign, paymentMethodLabel,
+  getCampaign, getCampaignPaystackSummary, getContributions, confirmContribution, rejectContribution, updateCampaign, paymentMethodLabel,
   getCampaignUpdates, createCampaignUpdate, deleteCampaignUpdate, getInstitutionProfile,
 } from "@/lib/institution-api";
 import { buildMemberPortalShareUrl } from "@/lib/member-portal-share";
@@ -101,8 +101,6 @@ export default function CampaignDetailPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
-  const [confirmCampaignDisburseOpen, setConfirmCampaignDisburseOpen] = useState(false);
-
   const rejectMut = useMutation({
     mutationFn: (cid: string) => rejectContribution(cid),
     onSuccess: () => {
@@ -111,18 +109,6 @@ export default function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setRejectTarget(null);
       toast.success("Contribution rejected.");
-    },
-    onError: (e) => toast.error(handleApiError(e)),
-  });
-
-  const campaignDisburseMut = useMutation({
-    mutationFn: () => markCampaignPaystackDisbursed(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-campaign", id] });
-      qc.invalidateQueries({ queryKey: ["admin-contributions", id] });
-      qc.invalidateQueries({ queryKey: ["admin-campaign-paystack-summary", id] });
-      setConfirmCampaignDisburseOpen(false);
-      toast.success(`${campaign?.isMembershipCampaign ? "Membership dues" : "Fundraiser"} online payment contributions marked as disbursed.`);
     },
     onError: (e) => toast.error(handleApiError(e)),
   });
@@ -240,19 +226,11 @@ export default function CampaignDetailPage() {
             <Stat label="Successful payments" value={paystackSummary ? String(paystackSummary.confirmedCount) : "–"} />
             <Stat label="Online, collected" value={paystackSummary ? formatCurrency(paystackSummary.totalPaidToPaystack) : "–"} />
           </dl>
-
-          {paystackSummary && (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border/60 pt-6 sm:grid-cols-4">
-              <Stat label="Disbursed" value={formatCurrency(paystackSummary.totalDisbursed)} hint={`${paystackSummary.disbursedCount} payment${paystackSummary.disbursedCount === 1 ? "" : "s"}`} />
-              <Stat label="Outstanding" value={formatCurrency(paystackSummary.totalOutstanding)} hint="Yours to receive" />
-            </dl>
-          )}
-          {!loadingPaystackSummary && !paystackSummary && <p className="text-sm text-muted-foreground">No online payment summary available.</p>}
-
-          {user?.role === "SuperAdmin" && campaign.status === "Closed" && paystackSummary && paystackSummary.totalOutstanding > 0 && (
-            <Button variant="destructive" onClick={() => setConfirmCampaignDisburseOpen(true)} isLoading={campaignDisburseMut.isPending}>
-              Mark online payments as disbursed
-            </Button>
+          {isSuperAdmin && (
+            <p className="text-[12.5px] text-muted-foreground">
+              Online payments reach your bank account every working morning.{" "}
+              <Link href="/payouts" className="font-semibold text-accent hover:underline">See what was paid out each day</Link>
+            </p>
           )}
 
           {isSuperAdmin && showDeadlineReminder && (
@@ -386,16 +364,6 @@ export default function CampaignDetailPage() {
         isLoading={rejectMut.isPending}
         onConfirm={() => rejectTarget && rejectMut.mutate(rejectTarget)}
         onCancel={() => setRejectTarget(null)}
-      />
-      <ConfirmModal
-        open={confirmCampaignDisburseOpen}
-        title="Mark online payments as disbursed"
-        message="This will mark all confirmed online payment contributions for this fundraiser as disbursed. Continue?"
-        confirmLabel="Mark as disbursed"
-        variant="destructive"
-        isLoading={campaignDisburseMut.isPending}
-        onConfirm={() => campaignDisburseMut.mutate()}
-        onCancel={() => setConfirmCampaignDisburseOpen(false)}
       />
     </div>
   );

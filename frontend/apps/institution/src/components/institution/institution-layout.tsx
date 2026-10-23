@@ -33,6 +33,7 @@ import {
   Store,
   FileText,
   Filter,
+  Landmark,
 } from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,6 +99,7 @@ const baseNavItems = [
   { href: "/campaigns", label: "Fundraisers", icon: Megaphone },
   { href: "/membership", label: "Dues", icon: CreditCard },
   { href: "/contributions", label: "Contributions", icon: CreditCard },
+  { href: "/payouts", label: "Payouts", icon: Landmark },
   { href: "/store", label: "Store", icon: ShoppingBag },
   { href: "/services", label: "Member Services", icon: FileText },
   { label: "People", isHeader: true },
@@ -201,7 +203,7 @@ function useNavItems() {
       if (item.href === "/mentorship" || item.href === "/albums") {
         if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
-      if ((item.href === "/store" || item.href === "/services" || item.href === "/audit-log") && user?.role !== "SuperAdmin") return false;
+      if ((item.href === "/store" || item.href === "/services" || item.href === "/audit-log" || item.href === "/payouts") && user?.role !== "SuperAdmin") return false;
       // Community institutions have no graduation years — Batches has nothing
       // to manage for them (they organize via Communities instead).
       if (item.href === "/batches" && isCommunity) return false;
