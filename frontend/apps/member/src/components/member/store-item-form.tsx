@@ -56,6 +56,7 @@ function FieldInput({
         <FormSelect
           value={value}
           onValueChange={onValue}
+          fullWidth
           placeholder="Select"
           options={(field.options ?? []).map((o) => ({ value: o, label: o }))}
         />

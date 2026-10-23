@@ -142,12 +142,19 @@ interface FormSelectProps {
   error?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Fill the field like a text input does, at every screen width. Without it a select is content-width from `sm` up, which suits filters but looks half-finished beside inputs in a form. */
+  fullWidth?: boolean;
 }
 
-export function FormSelect({ value, onValueChange, placeholder, options, error, disabled, className }: FormSelectProps) {
+// The trigger is capped at 22rem so a lone filter does not stretch. A select that asks for full width (by prop, or by passing a
+// w-full class as many forms already do) is meant to match the inputs around it, so the cap is lifted for it.
+const WANTS_FULL_WIDTH = /(^|\s)(?:[a-z]+:)?w-full(\s|$)/;
+
+export function FormSelect({ value, onValueChange, placeholder, options, error, disabled, className, fullWidth }: FormSelectProps) {
+  const full = fullWidth || (className ? WANTS_FULL_WIDTH.test(className) : false);
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger error={error} className={cn("w-full sm:w-auto", className)}>
+      <SelectTrigger error={error} className={cn("w-full sm:w-auto", full && "max-w-none sm:w-full", className)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

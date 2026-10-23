@@ -197,7 +197,8 @@ export default function ServiceDetailPage() {
                       <FormSelect
                         value={answers[field.key] ?? ""}
                         onValueChange={(v) => setAnswers((a) => ({ ...a, [field.key]: v }))}
-                        placeholder="Select"
+                        fullWidth
+                      placeholder="Select"
                         options={(field.options ?? []).map((o) => ({ value: o, label: o }))}
                       />
                     ) : field.type === "File" ? (

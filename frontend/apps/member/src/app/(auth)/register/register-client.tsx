@@ -687,7 +687,7 @@ function RegisterForm() {
         {!onboardingLink.isLoading && (
           <div className="flex flex-col gap-3 sm:flex-row">
             {onboardingLink.isError && <Button className="flex-1" style={{ height: 42 }} onClick={() => onboardingLink.refetch()}>Try again</Button>}
-            {info?.state === "used" && <Button className="flex-1" style={{ height: 42 }} onClick={() => router.push("/login")}>Go to sign in</Button>}
+            {(info?.state === "used" || info?.state === "notfound") && <Button className="flex-1" style={{ height: 42 }} onClick={() => router.push("/login")}>Go to sign in</Button>}
             {info && info.state !== "used" && info.redirectUrl && (
               <Button className="flex-1" style={{ height: 42 }} onClick={() => window.location.assign(info.redirectUrl!)}>Back to {portal}</Button>
             )}
@@ -908,7 +908,7 @@ function RegisterForm() {
                     className="h-11 text-[14px]" {...register("studentId")} />
                   <FieldError message={errors.studentId?.message} />
                 </div>}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {yearMode !== "Off" && <div className="space-y-1.5">
                     <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                       Graduation year{yearMode === "Optional" && <span className="font-normal text-muted-foreground"> (optional)</span>}
@@ -917,6 +917,7 @@ function RegisterForm() {
                       value={watch("graduationYear") ? String(watch("graduationYear")) : ""}
                       onValueChange={(v) => setValue("graduationYear", Number(v) as unknown as number, { shouldValidate: true })}
                       placeholder="Select year"
+                      fullWidth
                       options={graduationYearOptions}
                     />
                     <FieldError message={errors.graduationYear?.message} />
@@ -931,12 +932,13 @@ function RegisterForm() {
                         value={watch("departmentId") ?? ""}
                         onValueChange={(v) => setValue("departmentId", v, { shouldValidate: true })}
                         placeholder="Select"
+                        fullWidth
                         options={departments.map((d) => ({ value: d.id, label: d.name }))}
                       />
                     </div>
                   )}
                   {programOfStudyEnabled && (
-                    <div className={cn("space-y-1.5", programMode === "custom" && "col-span-2")}>
+                    <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
                         Program / course of study{" "}
                         <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
@@ -953,13 +955,14 @@ function RegisterForm() {
                             }
                           }}
                           placeholder="Select your program"
+                          fullWidth
                           options={[
                             ...programsOfStudy.map((p) => ({ value: p, label: p })),
                             { value: CUSTOM_PROGRAM_VALUE, label: "Not listed — let me type it" },
                           ]}
                         />
                       ) : (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row">
                           <Input
                             className="h-11 text-[14px]"
                             placeholder="Type your program"
@@ -989,7 +992,7 @@ function RegisterForm() {
                         value={customAnswers[q.id] ?? ""}
                         onValueChange={(v) => setCustomAnswers((a) => ({ ...a, [q.id]: v }))}
                         placeholder="Select"
-                        className="sm:w-full"
+                        fullWidth
                         options={q.options.map((o) => ({ value: o, label: o }))}
                       />
                     ) : (
@@ -1208,10 +1211,13 @@ function RegisterForm() {
 
           {/* Footer actions */}
           <div className="flex flex-col sm:flex-row gap-3 pt-1">
-            <Button variant="outline" className="flex-1 text-[13.5px] font-medium" style={{ height: 42 }}
-              onClick={() => { setStep("form"); setFormSubStep(1); setOtp(["", "", "", "", "", ""]); }}>
-              Register another account
-            </Button>
+            {/* A partner link is spent and fixed to one student ID, so there is nothing to start over with. */}
+            {!onboardingToken && (
+              <Button variant="outline" className="flex-1 text-[13.5px] font-medium" style={{ height: 42 }}
+                onClick={() => { setStep("form"); setFormSubStep(1); setOtp(["", "", "", "", "", ""]); }}>
+                Register another account
+              </Button>
+            )}
             <Button className="flex-1 text-[13.5px] font-semibold" style={{ height: 42 }}
               onClick={() => router.push(withRedirect("/login", destination))}>
               Go to sign in

@@ -128,6 +128,7 @@ export default function MemberForumPage() {
           <div className="space-y-1.5">
             <Label className="text-[13px] font-semibold">Category</Label>
             <FormSelect
+              fullWidth
               placeholder="Select a category"
               value={form.categoryId || categories[0]?.id || ""}
               onValueChange={v => setForm({ ...form, categoryId: v })}
