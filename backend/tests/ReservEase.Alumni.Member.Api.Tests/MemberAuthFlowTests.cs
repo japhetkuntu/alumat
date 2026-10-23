@@ -1035,4 +1035,68 @@ public class MemberAuthFlowTests : IDisposable
         Fresh();
         Assert.Null((await service.GetProfileAsync(auth)).Data!.IntegrationBanner);   // switched off means no banner either
     }
+
+    // ── Signed in on registering ────────────────────────────────────────
+
+    [Fact]
+    public async Task A_member_approved_on_the_spot_is_signed_in_with_working_tokens_instead_of_being_sent_to_sign_in()
+    {
+        await SetInstitution(i => i.AutoApproveMembers = true);
+        await service.RegisterAsync(Register());
+
+        var response = await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp));
+
+        var result = (RegistrationResultResponse)response.Data!;
+        Assert.True(result.Approved);
+        var session = result.Session!;
+        Assert.Equal(("new.user@example.com", "Kofi", "Member"), (session.User.Email, session.User.FirstName, session.User.Role));
+        var member = await Db().Members.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(member.Id, session.User.Id);
+        Assert.NotNull(member.LastLoginAt);
+        // The access token carries this member, and the refresh token is the one the server will accept.
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(session.Tokens.AccessToken);
+        Assert.Contains(jwt.Claims, c => c.Value == member.Id);
+        Assert.Equal(session.Tokens.RefreshToken, await redis.GetAsync<string>($"member:refresh:{member.Id}"));
+        var refreshed = await service.RefreshTokenAsync(new RefreshTokenRequest(session.Tokens.RefreshToken, session.Tokens.AccessToken));
+        Assert.Equal(200, refreshed.Code);
+    }
+
+    [Fact]
+    public async Task A_member_waiting_for_approval_is_not_signed_in()
+    {
+        await service.RegisterAsync(Register());
+
+        var result = (RegistrationResultResponse)(await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp))).Data!;
+
+        Assert.False(result.Approved);
+        Assert.Null(result.Session);
+        Assert.Null(await redis.GetAsync<string>($"member:refresh:{(await Db().Members.IgnoreQueryFilters().SingleAsync()).Id}"));
+    }
+
+    [Fact]
+    public async Task Registering_through_google_or_a_partner_link_signs_the_approved_member_in_too()
+    {
+        google.Setup(g => g.VerifyAsync("idtoken")).ReturnsAsync(new GoogleIdentity("g@example.com", "Kofi", "Boateng", null));
+        await SetInstitution(i => i.AutoApproveMembers = true);
+        var viaGoogle = (RegistrationResultResponse)(await service.GoogleRegisterAsync(new GoogleRegisterRequest("idtoken", "0241", "S1", 2018, "dept1", AcceptedTerms: true))).Data!;
+        Assert.NotNull(viaGoogle.Session);
+
+        await SetInstitution(i => i.AutoApproveMembers = false);
+        var token = await SeedLink("STU-9");
+        await service.RegisterAsync(ViaLink(token));
+        var viaLink = (RegistrationResultResponse)(await service.VerifyOtpAsync(new VerifyOtpRequest("new.user@example.com", Staged()!.Otp))).Data!;
+        Assert.NotNull(viaLink.Session);
+        Assert.Equal("new.user@example.com", viaLink.Session!.User.Email);
+    }
+
+    [Fact]
+    public async Task A_google_registration_waiting_for_approval_is_not_signed_in()
+    {
+        google.Setup(g => g.VerifyAsync("idtoken")).ReturnsAsync(new GoogleIdentity("g@example.com", "Kofi", "Boateng", null));
+
+        var result = (RegistrationResultResponse)(await service.GoogleRegisterAsync(new GoogleRegisterRequest("idtoken", "0241", "S1", 2018, "dept1", AcceptedTerms: true))).Data!;
+
+        Assert.False(result.Approved);
+        Assert.Null(result.Session);
+    }
 }

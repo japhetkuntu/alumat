@@ -245,6 +245,14 @@ public class MemberAuthService(
         return false;
     }
 
+    /// <summary>A signed-in session for a member just approved at registration, or null when they are not approved (they cannot sign in yet) or it could not be made.</summary>
+    private async Task<MemberTokenResponse?> SessionForNewMemberAsync(MemberEntity member)
+    {
+        if (member.Status != "Active") return null;
+        var session = await CreateSessionAsync(member);
+        return session.Code == 200 ? session.Data : null;
+    }
+
     public async Task<IApiResponse<object>> RegisterAsync(RegisterRequest request)
     {
         try
@@ -424,7 +432,7 @@ public class MemberAuthService(
                 logger);
 
             logger.LogInformation("Member {MemberId} registered via Google ({Status})", member.Id, member.Status);
-            return new RegistrationResultResponse(autoApprove, onboarding?.Settings?.PortalName, onboarding?.Settings?.RedirectUrl).ToCreatedApiResponse<object>(
+            return new RegistrationResultResponse(autoApprove, onboarding?.Settings?.PortalName, onboarding?.Settings?.RedirectUrl, await SessionForNewMemberAsync(member)).ToCreatedApiResponse<object>(
                 autoApprove ? "Welcome! Your account is ready — you can sign in now." : "Registration submitted. Your account is pending admin approval.");
         }
         catch (Exception e)
@@ -521,7 +529,7 @@ public class MemberAuthService(
             await redis.RemoveAsync($"reg:otp:{email}");
 
             logger.LogInformation("Member {MemberId} registered successfully after OTP verification ({Status})", member.Id, member.Status);
-            return new RegistrationResultResponse(autoApprove, onboarding?.Settings?.PortalName, onboarding?.Settings?.RedirectUrl).ToCreatedApiResponse<object>(
+            return new RegistrationResultResponse(autoApprove, onboarding?.Settings?.PortalName, onboarding?.Settings?.RedirectUrl, await SessionForNewMemberAsync(member)).ToCreatedApiResponse<object>(
                 autoApprove ? "Email verified! Your account is ready — you can sign in now." : "Email verified successfully. Your account is pending admin approval.");
         }
         catch (Exception e)
@@ -800,7 +808,7 @@ public class MemberAuthService(
 
             var user = new AuthUserResponse(member.Id, member.Email, member.FirstName, member.LastName, "Member", member.GraduationYear, member.ProfilePictureUrl);
             var tokens = new AuthTokensResponse(accessToken, refreshToken, tokenConfig.AccessTokenLifetime * 3600);
-            logger.LogInformation("Member {MemberId} signed in by switching communities", member.Id);
+            logger.LogInformation("Member {MemberId} signed in without a password (community switch or new registration)", member.Id);
             return new MemberTokenResponse(user, tokens).ToOkApiResponse("Login successful");
         }
         catch (Exception e)

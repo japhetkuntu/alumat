@@ -10,6 +10,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { withRedirect } from "@/lib/redirect";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import {
   Eye, EyeOff, ArrowLeft, CheckCircle2, Clock,
@@ -323,6 +324,11 @@ function PasswordInput({
 /* ─────────────────────────────────────────────────────────────────────────
    REGISTER FORM
    ───────────────────────────────────────────────────────────────────────── */
+interface RegistrationSession {
+  user: Parameters<ReturnType<typeof useAuth>["setSession"]>[0];
+  tokens: Parameters<ReturnType<typeof useAuth>["setSession"]>[1];
+}
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -362,6 +368,10 @@ function RegisterForm() {
   const linkIsValid = onboardingLink.data?.state === "valid";
   // Where the success screen sends someone who registered through a partner link.
   const [partner, setPartner] = useState<{ portalName?: string | null; redirectUrl?: string | null }>({});
+  const { setSession } = useAuth();
+  // A member approved on registering comes back from the server already signed in. They go straight to the app, unless the
+  // community asks new members to activate their membership first: then the session waits here until they press the button.
+  const [heldSession, setHeldSession] = useState<RegistrationSession | null>(null);
   const { data: googleBridgeTheme } = useGoogleBridgeTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -558,7 +568,7 @@ function RegisterForm() {
     if (!googleIdToken) return;
     setSubmittingGoogle(true);
     try {
-      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean; portalName?: string | null; redirectUrl?: string | null } }>("/auth/google-register", {
+      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean; portalName?: string | null; redirectUrl?: string | null; session?: RegistrationSession | null } }>("/auth/google-register", {
         idToken: googleIdToken,
         ...(onboardingToken ? { onboardingToken } : {}),
         phone: data.phone,
@@ -577,7 +587,8 @@ function RegisterForm() {
       setPartner({ portalName: res.data?.data?.portalName, redirectUrl: res.data?.data?.redirectUrl });
       if (onboardingToken) try { sessionStorage.removeItem("onboarding-token"); } catch { /* nothing to clear */ }
       setStep("pending");
-      toast.success(res.data?.message ?? "Registration submitted. Your account is pending admin approval.");
+      toast.success(res.data?.data?.session ? "Welcome, you're signed in!" : (res.data?.message ?? "Registration submitted. Your account is pending admin approval."));
+      signInOrHold(res.data?.data?.session);
     } catch (err) {
       const appliedToField = applyServerFieldErrors<FormData>(err, setError);
       if (!appliedToField) toast.error(handleApiError(err));
@@ -610,17 +621,24 @@ function RegisterForm() {
     inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   }
 
+  function signInOrHold(session: RegistrationSession | null | undefined) {
+    if (!session) return;   // waiting for approval: they cannot sign in yet
+    if (promptMembershipActivation) { setHeldSession(session); return; }
+    setSession(session.user, session.tokens);   // the sign-in pages send a signed-in member to their destination
+  }
+
   async function verifyOtp() {
     const code = otp.join("");
     if (code.length !== 6) { toast.error("Enter the complete 6-digit code"); return; }
     setVerifying(true);
     try {
-      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean; portalName?: string | null; redirectUrl?: string | null } }>("/auth/verify-otp", { email, otp: code });
+      const res = await memberClient.post<{ message?: string; data?: { approved?: boolean; portalName?: string | null; redirectUrl?: string | null; session?: RegistrationSession | null } }>("/auth/verify-otp", { email, otp: code });
       setApproved(!!res.data?.data?.approved);
       setPartner({ portalName: res.data?.data?.portalName, redirectUrl: res.data?.data?.redirectUrl });
       if (onboardingToken) try { sessionStorage.removeItem("onboarding-token"); } catch { /* nothing to clear */ }
-      toast.success(res.data?.message ?? "Email verified! Your account is pending admin approval.");
+      toast.success(res.data?.data?.session ? "Email verified. Welcome, you're signed in!" : (res.data?.message ?? "Email verified! Your account is pending admin approval."));
       setStep("pending");
+      signInOrHold(res.data?.data?.session);
     } catch (err) {
       toast.error(handleApiError(err));
     } finally {
@@ -1218,10 +1236,17 @@ function RegisterForm() {
                 Register another account
               </Button>
             )}
-            <Button className="flex-1 text-[13.5px] font-semibold" style={{ height: 42 }}
-              onClick={() => router.push(withRedirect("/login", destination))}>
-              Go to sign in
-            </Button>
+            {heldSession ? (
+              <Button className="flex-1 text-[13.5px] font-semibold" style={{ height: 42 }}
+                onClick={() => setSession(heldSession.user, heldSession.tokens)}>
+                Go to my dashboard
+              </Button>
+            ) : (
+              <Button className="flex-1 text-[13.5px] font-semibold" style={{ height: 42 }}
+                onClick={() => router.push(withRedirect("/login", destination))}>
+                Go to sign in
+              </Button>
+            )}
           </div>
         </div>
       )}

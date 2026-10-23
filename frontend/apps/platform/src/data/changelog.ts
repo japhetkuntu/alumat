@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-23",
+    title: "Members are signed in as soon as they register, instead of being sent to the sign-in page",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "Anyone who is approved the moment they register now lands signed in. That covers communities with automatic approval, members who register through a partner onboarding link, and Google sign-up. After the email code (or Google) is accepted, the server returns a session along with the result, the portal stores it exactly as a normal sign-in does, and the member goes to where they were headed (the redirect in the link if there is one, otherwise the dashboard). Members who still wait for an admin to approve them are not signed in, since sign-in refuses pending accounts; they see the same 'almost in' screen as before with a button to sign in later. A community that asks new members to activate their membership at sign-up keeps that screen, and the member is signed in when they press 'Go to my dashboard'. The sign-in pages now also respect a redirect in the address for someone who is already signed in. No migration.",
+  },
+  {
+    date: "2026-10-23",
     title: "Integrations: a school's own portal can check whether a student ID is already a member, and send new graduates to register with a one-use link that approves them on the spot",
     scopes: ["Platform", "Institution", "Member"],
     type: "Feature",
