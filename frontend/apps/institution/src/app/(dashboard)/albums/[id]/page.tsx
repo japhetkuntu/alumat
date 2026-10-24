@@ -1,6 +1,6 @@
 "use client";
 
-import { compressImages, ZoomableImage } from "@alumni/ui";
+import { compressImages, PhotoViewer, ZoomIn } from "@alumni/ui";
 import { RichText } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
@@ -167,6 +167,8 @@ export default function AdminAlbumDetailPage() {
   }, []);
 
   const knownPhotos = useMemo(() => photos ?? [], [photos]);
+  // The photo open in the viewer, so the whole album can be paged through without closing and reopening.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const shareUrl = buildMemberPortalShareUrl(`/albums/${id}`, institution?.memberPortalUrl);
 
   if (isLoading) {
@@ -263,7 +265,18 @@ export default function AdminAlbumDetailPage() {
             const isCover = album.coverImageUrl === p.url;
             return (
               <div key={p.id} className="relative group aspect-square overflow-hidden border border-border/40 bg-muted/30">
-                <ZoomableImage src={p.url} alt={p.caption ?? ""} wrapperClassName="h-full w-full" className="w-full h-full object-cover" />
+                {/* Opens the whole album in one viewer: move through every photo without closing it. */}
+                <button
+                  type="button"
+                  onClick={() => setViewerIndex(knownPhotos.findIndex((x) => x.id === p.id))}
+                  aria-label={`View photo ${knownPhotos.findIndex((x) => x.id === p.id) + 1} of ${knownPhotos.length}`}
+                  className="group/photo block h-full w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+                >
+                  <img src={p.url} alt={p.caption ?? ""} loading="lazy" className="h-full w-full object-cover" />
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/photo:bg-black/20">
+                    <ZoomIn size={20} className="text-white opacity-0 drop-shadow-lg transition-opacity group-hover/photo:opacity-100" />
+                  </span>
+                </button>
                 {isCover && (
                   <div className="pointer-events-none absolute top-1.5 left-1.5 flex items-center gap-1 bg-primary text-primary-foreground text-[12px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-sm shadow">
                     <Star size={10} className="fill-current" />Cover
@@ -369,6 +382,8 @@ export default function AdminAlbumDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PhotoViewer photos={knownPhotos} index={viewerIndex} onIndexChange={setViewerIndex} onClose={() => setViewerIndex(null)} />
 
       <ConfirmModal
         open={!!deletePhotoTarget}

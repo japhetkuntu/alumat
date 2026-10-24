@@ -1,11 +1,13 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
+import { DetailSection, FactList, QuestionView, StageList, VariantTable } from "@/components/institution/config-details";
 import { ChipRow, ZoomableImage } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown } from "@alumni/ui";
+import { Plus, Package, Pencil, Trash2, ShoppingBag, X, ArrowUp, ArrowDown, ChevronDown } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
 import { TemplatePicker } from "@/components/institution/template-picker";
@@ -426,6 +428,9 @@ export default function AdminStorePage() {
   }, []);
   const [showCreate, setShowCreate] = useState(false);
   const [editProduct, setEditProduct] = useState<StoreProduct | null>(null);
+  // The products opened to read their options, questions and stages in place, without going into edit.
+  const [openProducts, setOpenProducts] = useState<Set<string>>(new Set());
+  const toggleProduct = (pid: string) => setOpenProducts((cur) => { const next = new Set(cur); if (next.has(pid)) next.delete(pid); else next.add(pid); return next; });
   const [deleteTarget, setDeleteTarget] = useState<StoreProduct | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -738,8 +743,42 @@ export default function AdminStorePage() {
                       {(p.fields?.length ?? 0) > 0 && ` · ${p.fields!.length} question${p.fields!.length === 1 ? "" : "s"}`}
                       {(p.stages?.length ?? 0) > 0 && ` · ${p.stages!.length} stages`}
                     </p>
-                    {p.description && <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(p.description)}</p>}
+                    {p.description && <ReadMore lines={2} className="text-[12px] text-muted-foreground">{richTextToPlain(p.description)}</ReadMore>}
+                    {openProducts.has(p.id) && (
+                      <div id={`product-${p.id}`} className="space-y-4 border-t border-border/40 pt-3">
+                        {p.variants && p.variants.length > 0 && (
+                          <DetailSection title="Options and prices">
+                            <VariantTable optionTypes={p.variantOptionTypes ?? []} variants={p.variants} trackStock={p.trackStock !== false} />
+                          </DetailSection>
+                        )}
+                        {(p.details?.length ?? 0) > 0 && (
+                          <DetailSection title="Details shown to buyers"><FactList items={p.details!} /></DetailSection>
+                        )}
+                        {(p.fields?.length ?? 0) > 0 && (
+                          <DetailSection title="What buyers are asked"><QuestionView fields={p.fields!} /></DetailSection>
+                        )}
+                        {(p.deliveryFields?.length ?? 0) > 0 && (
+                          <DetailSection title="Delivery or pickup details collected"><QuestionView fields={p.deliveryFields!} /></DetailSection>
+                        )}
+                        {p.deliveryInfo && (
+                          <DetailSection title="Delivery or pickup instructions"><ReadMore lines={3} className="text-[13px] text-muted-foreground">{richTextToPlain(p.deliveryInfo)}</ReadMore></DetailSection>
+                        )}
+                        {(p.stages?.length ?? 0) > 0 && (
+                          <DetailSection title="How an order moves" hint="This product's own stages."><StageList stages={p.stages!} /></DetailSection>
+                        )}
+                        {!(p.variants?.length || p.details?.length || p.fields?.length || p.deliveryFields?.length || p.deliveryInfo || p.stages?.length) && (
+                          <p className="text-[12.5px] text-muted-foreground">A simple product: no options, questions or extra details.</p>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 pt-2 mt-auto border-t border-border/40">
+                      <Button
+                        size="sm" variant="ghost" className="h-9 gap-1 px-2 text-[12px] font-bold"
+                        aria-expanded={openProducts.has(p.id)} aria-controls={`product-${p.id}`} onClick={() => toggleProduct(p.id)}
+                      >
+                        {openProducts.has(p.id) ? "Hide" : "Details"}
+                        <ChevronDown size={13} className={cn("transition-transform", openProducts.has(p.id) && "rotate-180")} />
+                      </Button>
                       <Button size="sm" variant="outline" className="flex-1 h-9 text-[12px] font-bold gap-1" onClick={() => setEditProduct(p)}>
                         <Pencil size={12} />Edit
                       </Button>

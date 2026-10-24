@@ -21,6 +21,20 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-24",
+    title: "Photos open in one viewer you can move through: an admin's album, a store product, and public previews",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+    body: "In an admin's photo album, tapping a photo used to open just that one, so each next photo meant closing it and tapping another. Now it opens the whole album in the full-screen viewer: next and previous buttons, the left and right arrow keys, dots to jump to a photo (for albums of up to 12), the photo's caption, and a swipe sideways on a phone or tablet. Set-as-cover and delete stay on each photo in the grid. The swipe is now part of the shared viewer, so it also works everywhere members already had next and previous (albums, event photos, update galleries). Member store product pages open all the product's photos in the viewer instead of only the one showing, and the photo set on a public preview page does the same. No migration."
+  },
+  {
+    date: "2026-10-24",
+    title: "Admins can read what they have set up without opening the editor: event updates, services, store products and templates, and long text",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+    body: "Event updates: each update on an event's Updates page now has a 'View update' bar that opens the whole update right in the list, drawn exactly as the people going see it (text with clickable web addresses, photo gallery, YouTube video, link cards and downloadable files), with 'Expand all' and 'Collapse all' above the list and an 'Edit this update' button at the end. The drawing of an update's content now lives in one shared piece used by both the member portal and this admin view, so the two always match. Services: each service has a 'Details' button that opens the questions members are asked (with the kind of answer, whether it is required, the dropdown choices and the help text) and the stages a request moves through. Store products and store templates: 'Details' opens the option prices and stock, the details shown to buyers, the questions asked, the delivery or pickup questions and instructions, and the stages. Text that was cut off after two or three lines with no way to read the rest (event, job, community, dues, store and service descriptions, business listings, mentor bios and requests, spotlight stories) now has a 'Read more' that opens it in place, and only appears when the text is actually cut. Everything works at phone width. No migration."
+  },
+  {
+    date: "2026-10-24",
     title: "Speed and memory: the busiest pages and background jobs do far less database work, with the same results",
     scopes: ["Platform", "Institution", "Member"],
     type: "Improvement",

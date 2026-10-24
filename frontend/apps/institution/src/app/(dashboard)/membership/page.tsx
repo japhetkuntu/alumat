@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
@@ -359,7 +360,7 @@ function MembershipCampaignCard({ campaign: c, totalMembers: fallbackTotal, isCu
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <h3 className="font-bold text-lg leading-tight">{c.title}</h3>
-            {c.description && <p className="text-sm text-muted-foreground line-clamp-2">{richTextToPlain(c.description)}</p>}
+            {c.description && <ReadMore lines={2} className="text-sm text-muted-foreground">{richTextToPlain(c.description)}</ReadMore>}
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <Badge variant={c.status === "Active" ? "success" : "secondary"} className="font-bold uppercase tracking-widest text-[12px]">{c.status}</Badge>

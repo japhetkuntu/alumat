@@ -46,6 +46,21 @@ export function LightboxShell({ label, onClose, counter, onPrev, onNext, prevDis
     return () => { document.body.style.overflow = original; window.removeEventListener("keydown", onKey); };
   }, []);
 
+  // Swiping the photo sideways moves to the next or previous one, like a phone's own gallery. A mostly-vertical drag is left alone.
+  const touchStart = React.useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) latest.current.onNext?.(); else latest.current.onPrev?.();
+  };
+
   if (typeof document === "undefined") return null;
 
   const arrow = "pointer-events-auto flex size-12 items-center justify-center bg-black/80 text-white ring-1 ring-white/50 shadow-lg transition-colors hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-30 disabled:cursor-not-allowed";
@@ -81,7 +96,7 @@ export function LightboxShell({ label, onClose, counter, onPrev, onNext, prevDis
 
       {/* The photo gets everything the bars leave. */}
       <div className="relative min-h-0 flex-1 px-4" style={{ paddingLeft: "max(1rem, env(safe-area-inset-left))", paddingRight: "max(1rem, env(safe-area-inset-right))" }}>
-        <div className="flex h-full w-full items-center justify-center" onClick={(e) => e.stopPropagation()}>{children}</div>
+        <div className="flex h-full w-full items-center justify-center" onClick={(e) => e.stopPropagation()} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>{children}</div>
 
         {(onPrev || onNext) && (
           <div className="pointer-events-none absolute inset-y-0 left-2 right-2 flex items-center justify-between sm:left-4 sm:right-4">

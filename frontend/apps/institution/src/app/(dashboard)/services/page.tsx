@@ -1,12 +1,14 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
+import { DetailSection, QuestionView, StageList } from "@/components/institution/config-details";
 import { shareMessages } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Plus, Pencil, Trash2, FileText, Link2, Download,
+  Plus, Pencil, Trash2, FileText, Link2, Download, ChevronDown,
 } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -56,6 +58,9 @@ function paymentLabel(status: string) {
 export default function ServicesPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("Service types");
+  // The services opened to read what members are asked and how a request moves, without going into edit.
+  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set());
+  const toggleType = (id: string) => setOpenTypes((cur) => { const next = new Set(cur); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
   // ── Service types ──
   const [typePage, setTypePage] = useState(1);
@@ -195,21 +200,49 @@ export default function ServicesPage() {
                   </TableHeader>
                   <TableBody>
                     {typesResult.results.map((s) => (
-                      <TableRow key={s.id}>
+                      <Fragment key={s.id}>
+                      <TableRow>
                         <TableCell>
                           <div className="font-medium">{s.name}</div>
-                          {s.description && <div className="text-[12px] text-muted-foreground line-clamp-1">{richTextToPlain(s.description)}</div>}
+                          {s.description && <ReadMore lines={2} className="text-[12px] text-muted-foreground">{richTextToPlain(s.description)}</ReadMore>}
                         </TableCell>
                         <TableCell className="tabular-nums">{s.price > 0 ? formatCurrency(s.price) : "Free"}</TableCell>
                         <TableCell>{s.fields.length}</TableCell>
                         <TableCell className="text-[12.5px] text-muted-foreground">{s.stages.join(" → ")}</TableCell>
                         <TableCell><Badge variant={statusVariant[s.status]}>{s.status}</Badge></TableCell>
                         <TableCell className="text-right">
+                          <Button
+                            size="sm" variant="ghost" className="gap-1 px-2 text-[12.5px] font-semibold"
+                            aria-expanded={openTypes.has(s.id)} aria-controls={`service-${s.id}`} onClick={() => toggleType(s.id)}
+                          >
+                            {openTypes.has(s.id) ? "Hide" : "Details"}
+                            <ChevronDown size={14} className={cn("transition-transform", openTypes.has(s.id) && "rotate-180")} />
+                          </Button>
                           {s.status === "Active" && <MemberShareButton memberPath={`/services/${s.id}`} title={s.name} message={shareMessages.service({ name: s.name, description: s.description })} variant="ghost" />}
-                          <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil size={14} /></Button>
-                          <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(s)}><Trash2 size={14} className="text-destructive" /></Button>
+                          <Button size="icon" variant="ghost" aria-label={`Edit ${s.name}`} onClick={() => openEdit(s)}><Pencil size={14} /></Button>
+                          <Button size="icon" variant="ghost" aria-label={`Delete ${s.name}`} onClick={() => setDeleteTarget(s)}><Trash2 size={14} className="text-destructive" /></Button>
                         </TableCell>
                       </TableRow>
+                      {openTypes.has(s.id) && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={6} className="bg-muted/20">
+                            <div id={`service-${s.id}`} className="space-y-5 py-2">
+                              <DetailSection title="What members are asked" hint="In this order, when they request it.">
+                                {s.fields.length > 0
+                                  ? <QuestionView fields={s.fields} />
+                                  : <p className="text-[13px] text-muted-foreground">No questions. Members just press request.</p>}
+                              </DetailSection>
+                              <DetailSection title="How a request moves" hint="Every new request starts at the first stage.">
+                                <StageList stages={s.stages} />
+                              </DetailSection>
+                              <div className="flex justify-end">
+                                <Button size="sm" variant="outline" onClick={() => openEdit(s)}><Pencil size={13} />Edit this service</Button>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </Fragment>
                     ))}
                   </TableBody>
                 </Table>

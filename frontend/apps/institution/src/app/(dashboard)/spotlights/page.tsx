@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
@@ -251,7 +252,7 @@ export default function AdminSpotlightsPage() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 mb-3">{s.story}</p>
+                    <div className="mb-3"><ReadMore lines={3} className="text-sm text-muted-foreground leading-relaxed">{s.story}</ReadMore></div>
 
                     {s.imageUrl && (
                       <div className="relative w-full rounded-xl mb-3 border border-border/30 overflow-hidden" style={{ height: 192 }}>

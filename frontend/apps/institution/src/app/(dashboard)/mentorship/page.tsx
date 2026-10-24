@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -204,7 +205,7 @@ export default function AdminMentorshipPage() {
                       </div>
 
                       {m.bio && (
-                        <p className="text-[12px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">{m.bio}</p>
+                        <div className="mb-3"><ReadMore lines={2} className="text-[12px] text-muted-foreground leading-relaxed">{m.bio}</ReadMore></div>
                       )}
 
                       {m.status === "Approved" && (
@@ -271,7 +272,7 @@ export default function AdminMentorshipPage() {
                     {r.menteeName ?? "Unknown"} &rarr; {r.mentorProfileName ?? "Mentor Profile"}
                   </p>
                   <p className="text-xs text-muted-foreground">{r.area} · Submitted {formatDate(r.createdAt)}</p>
-                  {r.message && <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2">&quot;{r.message}&quot;</p>}
+                  {r.message && <div className="mt-1"><ReadMore lines={2} className="text-xs text-muted-foreground italic">{`"${r.message}"`}</ReadMore></div>}
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <Badge variant={requestStatusVariant[r.status]}>{r.status}</Badge>

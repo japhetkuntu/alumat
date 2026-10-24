@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowDown, ArrowLeft, ArrowUp, Bell, Copy, FileText, ImageIcon, Link2, MoreHorizontal, Pencil, Pin, Plus, Trash2, Youtube } from "@alumni/ui";
-import { Badge, Button, ConfirmModal, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, FormSelect, FormSheet, Input, Label, LoadError, CardSkeleton, cn, formatDate, formatDateTime } from "@alumni/ui";
+import { ArrowDown, ArrowLeft, ArrowUp, Bell, ChevronDown, Copy, FileText, ImageIcon, Link2, MoreHorizontal, Pencil, Pin, Plus, Trash2, Youtube } from "@alumni/ui";
+import { Badge, Button, ConfirmModal, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, EmptyState, EventUpdateBlockView, FormSelect, FormSheet, Input, Label, LoadError, CardSkeleton, cn, formatDate, formatDateTime } from "@alumni/ui";
 import {
   createEventUpdate, deleteEventUpdate, getEvent, getEvents, getEventUpdates, pinEventUpdate, reorderEventUpdates, updateEventUpdate,
   EVENT_UPDATE_CATEGORIES, type EventUpdateDraft, type EventUpdateDraftBlock,
@@ -92,6 +92,9 @@ export default function EventUpdatesPage() {
   const [targetId, setTargetId] = useState<string>("");
   const [deleting, setDeleting] = useState<EventUpdate | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  // The updates opened to read in full, right on the list, without going into edit.
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggle = (uid: string) => setOpen((cur) => { const next = new Set(cur); if (next.has(uid)) next.delete(uid); else next.add(uid); return next; });
 
   const { data: event } = useQuery({ queryKey: ["admin-event", id], queryFn: () => getEvent(id) });
   const { data: updates, isLoading, isError, refetch } = useQuery({ queryKey: ["admin-event-updates", id], queryFn: () => getEventUpdates(id) });
@@ -165,7 +168,14 @@ export default function EventUpdatesPage() {
             <p className="text-[13px] text-muted-foreground">{event?.title ?? "Event"}</p>
           </div>
         </div>
-        <Button onClick={() => { setFormError(null); setEditing("new"); }}><Plus size={14} />New update</Button>
+        <div className="flex items-center gap-2">
+          {updates && updates.length > 1 && (
+            <Button size="sm" variant="ghost" onClick={() => setOpen(open.size === updates.length ? new Set() : new Set(updates.map((u) => u.id)))}>
+              {open.size === updates.length ? "Collapse all" : "Expand all"}
+            </Button>
+          )}
+          <Button onClick={() => { setFormError(null); setEditing("new"); }}><Plus size={14} />New update</Button>
+        </div>
       </div>
 
       <div className="flex items-start gap-2.5 border border-border bg-muted/30 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
@@ -238,6 +248,7 @@ export default function EventUpdatesPage() {
           {updates.map((u) => {
             const sameGroup = updates.filter((x) => x.isPinned === u.isPinned);
             const place = sameGroup.findIndex((x) => x.id === u.id);
+            const isOpen = open.has(u.id);
             const firstText = u.blocks.find((b) => b.type === "Text")?.text;
             const photos = u.blocks.filter((b) => b.type === "Images").flatMap((b) => b.items).slice(0, 4);
             return (
@@ -273,7 +284,7 @@ export default function EventUpdatesPage() {
                   </DropdownMenu>
                   </div>
                 </div>
-                {(firstText || photos.length > 0) && (
+                {!isOpen && (firstText || photos.length > 0) && (
                   <div className="space-y-3 border-t border-border px-4 py-3">
                     {firstText && <p className="line-clamp-2 whitespace-pre-line text-[13.5px] text-muted-foreground">{firstText}</p>}
                     {photos.length > 0 && (
@@ -283,15 +294,36 @@ export default function EventUpdatesPage() {
                     )}
                   </div>
                 )}
-                <div className="flex items-center gap-3 border-t border-border bg-muted/20 px-4 py-2 text-[12.5px] text-muted-foreground">
+                {isOpen && (
+                  <div id={`update-${u.id}`} className="space-y-5 border-t border-border p-4 sm:p-5">
+                    {u.blocks.length === 0
+                      ? <p className="text-[13.5px] text-muted-foreground">This update has no content yet.</p>
+                      : u.blocks.map((b) => <EventUpdateBlockView key={b.id} block={b} />)}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-[12.5px] text-muted-foreground">
+                      <span>This is how people going see it.</span>
+                      <Button size="sm" variant="outline" onClick={() => { setFormError(null); setEditing(u); }}><Pencil size={13} />Edit this update</Button>
+                    </div>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => toggle(u.id)}
+                  aria-expanded={isOpen}
+                  aria-controls={`update-${u.id}`}
+                  className="flex w-full items-center gap-3 border-t border-border bg-muted/20 px-4 py-2.5 text-left text-[12.5px] text-muted-foreground transition-colors hover:bg-muted/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
                   <span className="flex items-center gap-1.5">
                     {u.blocks.some((b) => b.type === "Images") && <ImageIcon size={12} />}
                     {u.blocks.some((b) => b.type === "Video") && <Youtube size={12} />}
                     {u.blocks.some((b) => b.type === "Link") && <Link2 size={12} />}
                     {u.blocks.some((b) => b.type === "Files") && <FileText size={12} />}
                   </span>
-                  {summarize(u)}
-                </div>
+                  <span className="min-w-0 flex-1 truncate">{summarize(u)}</span>
+                  <span className="flex shrink-0 items-center gap-1 font-semibold text-foreground">
+                    {isOpen ? "Hide" : "View update"}
+                    <ChevronDown size={14} className={cn("transition-transform", isOpen && "rotate-180")} />
+                  </span>
+                </button>
               </li>
             );
           })}

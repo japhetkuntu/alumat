@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor, CheckOption } from "@alumni/ui";
@@ -480,7 +481,7 @@ export default function CommunitiesPage() {
                       )}
                       <div className="min-w-0">
                         <p className="font-medium truncate">{c.name}{c.kind && <span className="ml-2 align-middle rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{c.kind}</span>}</p>
-                        {c.description && <p className="text-[12px] text-muted-foreground line-clamp-1">{richTextToPlain(c.description)}</p>}
+                        {c.description && <ReadMore lines={2} className="text-[12px] text-muted-foreground">{richTextToPlain(c.description)}</ReadMore>}
                         {(c.joinedViaInvites ?? 0) > 0 && (
                           <p className="mt-0.5 text-[12px] text-muted-foreground">{c.joinedViaInvites} joined by invitation</p>
                         )}

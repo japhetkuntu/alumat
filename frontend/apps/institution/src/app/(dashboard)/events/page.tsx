@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
@@ -432,7 +433,7 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
                 <h3 className="font-semibold mb-2">{e.title}</h3>
-                {e.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{richTextToPlain(e.description)}</p>}
+                {e.description && <div className="mb-3"><ReadMore lines={2} className="text-sm text-muted-foreground">{richTextToPlain(e.description)}</ReadMore></div>}
                 <div className="space-y-1.5 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5"><Calendar size={11} />{formatDate(e.startDate)}</div>
                   <div className="flex items-center gap-1.5">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { useSearchParams } from "next/navigation";
 import { richTextToPlain } from "@alumni/ui";
 import { RichTextEditor } from "@alumni/ui";
@@ -367,7 +368,7 @@ export default function AdminJobsPage() {
                 </div>
 
                 {j.description && (
-                  <p className="text-[12px] text-muted-foreground line-clamp-2">{richTextToPlain(j.description)}</p>
+                  <ReadMore lines={2} className="text-[12px] text-muted-foreground">{richTextToPlain(j.description)}</ReadMore>
                 )}
 
                 {j.status === "Pending" && (

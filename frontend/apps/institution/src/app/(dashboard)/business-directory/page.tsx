@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadMore } from "@alumni/ui";
 import { shareMessages } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { ChipRow } from "@alumni/ui";
@@ -415,7 +416,7 @@ export default function AdminBusinessDirectoryPage() {
                   </div>
                 </div>
 
-                {l.description && <p className="text-[12.5px] text-muted-foreground line-clamp-2">{l.description}</p>}
+                {l.description && <ReadMore lines={2} className="text-[12.5px] text-muted-foreground">{l.description}</ReadMore>}
 
                 <div className="flex flex-wrap gap-3 text-[12px] text-muted-foreground">
                   {l.phoneNumber && <span className="flex items-center gap-1"><Phone size={11} />{l.phoneNumber}</span>}

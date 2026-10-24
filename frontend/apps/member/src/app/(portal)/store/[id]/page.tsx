@@ -11,7 +11,7 @@ import { Card, CardContent } from "@alumni/ui";
 import { Skeleton } from "@alumni/ui";
 import { formatCurrency } from "@alumni/ui";
 import { cn } from "@alumni/ui";
-import { ZoomableImage } from "@alumni/ui";
+import { PhotoViewer } from "@alumni/ui";
 import { getStoreProduct } from "@/lib/member-api";
 import { useStoreCart } from "@/hooks/use-store-cart";
 import { StoreCartBar } from "@/components/member/store-cart-bar";
@@ -42,6 +42,8 @@ export default function StoreProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [activeImage, setActiveImage] = useState(0);
+  // The photo open full size: the whole set can be paged through without closing it.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
 
   const { data: product, isLoading, isError } = useQuery({
@@ -66,6 +68,9 @@ export default function StoreProductDetailPage() {
 
   const displayImage = (hasVariants && selectedVariant?.imageUrl) || undefined;
   const images = product?.imageUrls?.length ? product.imageUrls : [];
+  // What shows now, and every photo of the product (a chosen option's own photo first when it is not already among them).
+  const shown = displayImage ?? images[activeImage];
+  const allImages = displayImage && !images.includes(displayImage) ? [displayImage, ...images] : images;
 
   if (isLoading) {
     return (
@@ -107,16 +112,20 @@ export default function StoreProductDetailPage() {
         )}
       </div>
 
+      <PhotoViewer photos={allImages.map((url, i) => ({ id: String(i), url }))} index={viewerIndex} onIndexChange={setViewerIndex} onClose={() => setViewerIndex(null)} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <div className="space-y-2">
           <div className="w-full aspect-square rounded-xl overflow-hidden bg-muted/40 flex items-center justify-center">
             {displayImage || images[activeImage] ? (
-              <ZoomableImage
-                src={displayImage ?? images[activeImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                wrapperClassName="w-full h-full"
-              />
+              <button
+                type="button"
+                onClick={() => setViewerIndex(Math.max(0, allImages.indexOf(shown)))}
+                aria-label={`View ${product.name} photos full size`}
+                className="h-full w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+              >
+                <img src={shown} alt={product.name} className="h-full w-full object-cover" />
+              </button>
             ) : (
               <Package size={48} className="text-muted-foreground" />
             )}

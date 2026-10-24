@@ -301,3 +301,50 @@ export function PhotoAlbumGallery({ photos, hasMore = false, isLoadingMore = fal
     </div>
   );
 }
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PHOTO VIEWER — the full-screen viewer on its own, for a grid that has its
+   own controls on each photo (an admin's album with "set as cover" and
+   "delete"). Open it at a photo and move through the whole set with the
+   arrows, the keyboard, the dots or a swipe, without closing it.
+   ───────────────────────────────────────────────────────────────────────── */
+
+export function PhotoViewer({ photos, index, onIndexChange, onClose }: {
+  photos: AlbumLightboxPhoto[];
+  /** The photo showing, or null for closed. */
+  index: number | null;
+  onIndexChange: (index: number) => void;
+  onClose: () => void;
+}) {
+  const goNext = useCallback(() => { if (index !== null && index + 1 < photos.length) onIndexChange(index + 1); }, [index, photos.length, onIndexChange]);
+  const goPrev = useCallback(() => { if (index !== null && index > 0) onIndexChange(index - 1); }, [index, onIndexChange]);
+
+  const current = index !== null ? photos[index] : null;
+  if (!current || index === null) return null;
+
+  return (
+    <LightboxShell
+      label={`Photo ${index + 1} of ${photos.length}`}
+      onClose={onClose}
+      counter={`${index + 1} / ${photos.length}`}
+      onPrev={photos.length > 1 ? goPrev : undefined}
+      onNext={photos.length > 1 ? goNext : undefined}
+      prevDisabled={index === 0}
+      nextDisabled={index === photos.length - 1}
+      footer={current.caption || (photos.length > 1 && photos.length <= 12) ? (
+        <>
+          {current.caption && <p key={`caption-${index}`} className="max-w-2xl px-4 text-center text-sm text-white/80 animate-in fade-in duration-300">{current.caption}</p>}
+          {photos.length > 1 && photos.length <= 12 && <LightboxDots count={photos.length} index={index} onSelect={onIndexChange} />}
+        </>
+      ) : undefined}
+    >
+      <img
+        key={index}
+        src={webSafeUrl(current.url)}
+        alt={current.caption ?? `Photo ${index + 1}`}
+        className="h-full w-full object-contain animate-in fade-in zoom-in-95 duration-300"
+      />
+    </LightboxShell>
+  );
+}

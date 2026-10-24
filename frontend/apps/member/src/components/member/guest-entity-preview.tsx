@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, MapPin, ArrowRight, ZoomableImage, RichText } from "@alumni/ui";
+import { CalendarDays, MapPin, ArrowRight, MediaGallery, ZoomableImage, RichText } from "@alumni/ui";
 import { memberClient, publicMemberClient } from "@/lib/api-client";
 import { withRedirect } from "@/lib/redirect";
 
@@ -121,11 +121,8 @@ export function GuestEntityPreview({ type, id, path }: { type: GuestEntityType; 
             )}
 
             {!preview.restricted && preview.isPublic && preview.images && preview.images.length > 0 && (
-              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {preview.images.map((src) => (
-                  <ZoomableImage key={src} src={src} alt="" wrapperClassName="aspect-square bg-muted" className="h-full w-full object-cover" />
-                ))}
-              </div>
+              // One viewer for the whole set: open a photo, then move through the rest without closing it.
+              <MediaGallery imageUrls={preview.images} className="mt-6" />
             )}
 
             <div className="mt-8 border-t border-border pt-6">

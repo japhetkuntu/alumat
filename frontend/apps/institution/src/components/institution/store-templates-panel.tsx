@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X } from "@alumni/ui";
-import { Badge, Button, Card, CardContent, ConfirmModal, EmptyState, FormSection, FormSelect, FormSheet, Input, Label, Textarea } from "@alumni/ui";
+import { ChevronDown, Plus, Pencil, Trash2, X } from "@alumni/ui";
+import { Badge, Button, Card, CardContent, ConfirmModal, EmptyState, FormSection, FormSelect, FormSheet, Input, Label, Textarea, cn } from "@alumni/ui";
+import { DetailSection, FactList, QuestionView, StageList } from "@/components/institution/config-details";
 import { createStoreTemplate, deleteStoreTemplate, getStoreTemplates, updateStoreTemplate, type StoreTemplateBody } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import {
@@ -127,6 +128,9 @@ function TemplateForm({ id, draft, setDraft, editing, onSubmit }: { id: string; 
 export function StoreTemplatesPanel() {
   const qc = useQueryClient();
   const { data: templates = [], isLoading } = useQuery({ queryKey: ["admin-store-templates"], queryFn: getStoreTemplates });
+  // The templates opened to read what is in them, without going into edit.
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const toggleOpen = (tid: string) => setOpenIds((cur) => { const next = new Set(cur); if (next.has(tid)) next.delete(tid); else next.add(tid); return next; });
   const [editing, setEditing] = useState<StoreProductTemplate | null>(null);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -184,18 +188,45 @@ export function StoreTemplatesPanel() {
         <Card className="border-border/60">
           <CardContent className="divide-y divide-border p-0">
             {templates.map((t) => (
-              <div key={t.id} className="flex flex-wrap items-center gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[14.5px] font-semibold">{t.name}</p>
-                    <Badge variant="secondary" size="sm">{kindLabel(t.kind ?? "Setup")}</Badge>
+              <div key={t.id}>
+                <div className="flex flex-wrap items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[14.5px] font-semibold">{t.name}</p>
+                      <Badge variant="secondary" size="sm">{kindLabel(t.kind ?? "Setup")}</Badge>
+                    </div>
+                    <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">{summarizeTemplate(t) || "Empty"}</p>
                   </div>
-                  <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">{summarizeTemplate(t) || "Empty"}</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm" variant="ghost" className="gap-1 px-2 text-[12.5px] font-semibold"
+                      aria-expanded={openIds.has(t.id)} aria-controls={`template-${t.id}`} onClick={() => toggleOpen(t.id)}
+                    >
+                      {openIds.has(t.id) ? "Hide" : "Details"}
+                      <ChevronDown size={14} className={cn("transition-transform", openIds.has(t.id) && "rotate-180")} />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setDraft(draftFromTemplate(t)); setError(null); setEditing(t); }}><Pencil size={13} />Edit</Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" aria-label={`Delete ${t.name}`} onClick={() => setDeleteTarget(t)}><Trash2 size={14} /></Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={() => { setDraft(draftFromTemplate(t)); setError(null); setEditing(t); }}><Pencil size={13} />Edit</Button>
-                  <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10" aria-label={`Delete ${t.name}`} onClick={() => setDeleteTarget(t)}><Trash2 size={14} /></Button>
-                </div>
+                {openIds.has(t.id) && (
+                  <div id={`template-${t.id}`} className="space-y-4 border-t border-border/60 bg-muted/20 p-4">
+                    {t.description && <p className="text-[13px] text-muted-foreground">{t.description}</p>}
+                    {(t.variantOptions?.length ?? 0) > 0 && (
+                      <DetailSection title="Options">
+                        <ul className="space-y-1.5 text-[13px]">
+                          {t.variantOptions.map((o) => <li key={o.name}><span className="font-semibold">{o.name}:</span> {o.values.join(", ")}</li>)}
+                        </ul>
+                      </DetailSection>
+                    )}
+                    {(t.details?.length ?? 0) > 0 && <DetailSection title="Details shown to buyers"><FactList items={t.details} /></DetailSection>}
+                    {(t.fields?.length ?? 0) > 0 && <DetailSection title="What buyers are asked"><QuestionView fields={t.fields} /></DetailSection>}
+                    {(t.deliveryFields?.length ?? 0) > 0 && <DetailSection title="Delivery or pickup details collected"><QuestionView fields={t.deliveryFields} /></DetailSection>}
+                    {t.deliveryInfo && <DetailSection title="Delivery or pickup instructions"><p className="whitespace-pre-line text-[13px] text-muted-foreground">{t.deliveryInfo}</p></DetailSection>}
+                    {(t.stages?.length ?? 0) > 0 && <DetailSection title="How an order moves"><StageList stages={t.stages} /></DetailSection>}
+                    {t.priceLabel && <p className="text-[13px]"><span className="font-semibold">Price label:</span> {t.priceLabel}</p>}
+                  </div>
+                )}
               </div>
             ))}
           </CardContent>
