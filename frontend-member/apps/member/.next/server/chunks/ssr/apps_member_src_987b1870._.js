@@ -1,0 +1,3 @@
+module.exports=[66726,a=>{"use strict";function b(a){return!!a&&a.startsWith("/")&&"/"!==a[1]&&"\\"!==a[1]}function c(a,c){return b(c)?`${a}${a.includes("?")?"&":"?"}redirect=${encodeURIComponent(c)}`:a}a.s(["isSafeRedirectPath",()=>b,"withRedirect",()=>c])},20217,a=>{"use strict";var b=a.i(567),c=a.i(80657);function d(){let{user:a}=(0,c.useAuth)(),[d,e]=(0,b.useState)("denied"),[f,g]=(0,b.useState)(!1),[h,i]=(0,b.useState)(!1);return(0,b.useEffect)(()=>{},[!1,a]),{isSupported:!1,permission:d,isSubscribed:f,isBusy:h,subscribe:(0,b.useCallback)(async()=>{},[!1]),unsubscribe:(0,b.useCallback)(async()=>{},[!1])}}a.i(44081),a.s(["usePushNotifications",()=>d])}];
+
+//# sourceMappingURL=apps_member_src_987b1870._.js.map

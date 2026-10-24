@@ -1,0 +1,14 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/apps/member/src/app/(portal)/jobs/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}

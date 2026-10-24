@@ -1,0 +1,427 @@
+{
+  "app": {
+    "[project]/apps/member/src/app/(auth)/forgot-password/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(auth)/login/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(auth)/register/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(auth)/reset-password/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/albums/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/albums/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/alumni-map/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/business-directory/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/business-directory/mine/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/business-directory/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/calendar/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/communities/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/communities/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/contributions/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/contributions/callback/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/contributions/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/dashboard/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/directory/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/events/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/events/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/events/ticket-status/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/forum/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/forum/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/jobs/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/jobs/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/leaderboard/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/membership-certificate/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/mentorship/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/news/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/news/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/notifications/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/profile/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/referrals/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/resources/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/resources/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/services/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/services/callback/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/services/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/services/requests/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/settings/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/spotlights/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/store/[id]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/store/callback/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/store/cart/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/store/orders/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/(portal)/store/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/_not-found/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/activate-membership/[campaignId]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/activate-membership/callback/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/campaigns/[token]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/founding20/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/fundraiser/[campaignId]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/google-auth/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/institution-agreement/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/payment-campaign/[campaignId]/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/privacy/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/switch/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/terms/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ],
+    "[project]/apps/member/src/app/why-not-whatsapp/page": [
+      "static/media/ibm_plex_sans_300-s.p.496bf781.woff2",
+      "static/media/ibm_plex_sans_400-s.p.d4d28424.woff2",
+      "static/media/ibm_plex_sans_500-s.p.37f1bff6.woff2",
+      "static/media/ibm_plex_sans_600-s.p.4f57b3e5.woff2",
+      "static/media/ibm_plex_sans_700-s.p.07630039.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

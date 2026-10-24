@@ -1,0 +1,225 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/activation/targets/[id]",
+      "regex": "^/activation/targets/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/activation/targets/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/institutions/[id]",
+      "regex": "^/institutions/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/institutions/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/marketing-campaigns/[id]",
+      "regex": "^/marketing\\-campaigns/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/marketing\\-campaigns/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/activation",
+      "regex": "^/activation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/activation(?:/)?$"
+    },
+    {
+      "page": "/analytics",
+      "regex": "^/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/analytics(?:/)?$"
+    },
+    {
+      "page": "/announcements",
+      "regex": "^/announcements(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/announcements(?:/)?$"
+    },
+    {
+      "page": "/audit-log",
+      "regex": "^/audit\\-log(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/audit\\-log(?:/)?$"
+    },
+    {
+      "page": "/billing",
+      "regex": "^/billing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/billing(?:/)?$"
+    },
+    {
+      "page": "/changelog",
+      "regex": "^/changelog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/changelog(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/icon.svg",
+      "regex": "^/icon\\.svg(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.svg(?:/)?$"
+    },
+    {
+      "page": "/incentives",
+      "regex": "^/incentives(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/incentives(?:/)?$"
+    },
+    {
+      "page": "/institution-health",
+      "regex": "^/institution\\-health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/institution\\-health(?:/)?$"
+    },
+    {
+      "page": "/institutions",
+      "regex": "^/institutions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/institutions(?:/)?$"
+    },
+    {
+      "page": "/institutions/new",
+      "regex": "^/institutions/new(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/institutions/new(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/marketing-campaigns",
+      "regex": "^/marketing\\-campaigns(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/marketing\\-campaigns(?:/)?$"
+    },
+    {
+      "page": "/members",
+      "regex": "^/members(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/members(?:/)?$"
+    },
+    {
+      "page": "/onboarding-leads",
+      "regex": "^/onboarding\\-leads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding\\-leads(?:/)?$"
+    },
+    {
+      "page": "/reports",
+      "regex": "^/reports(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reports(?:/)?$"
+    },
+    {
+      "page": "/reset-password",
+      "regex": "^/reset\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/reset\\-password(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    },
+    {
+      "page": "/staff",
+      "regex": "^/staff(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/staff(?:/)?$"
+    },
+    {
+      "page": "/support",
+      "regex": "^/support(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/support(?:/)?$"
+    },
+    {
+      "page": "/team",
+      "regex": "^/team(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/team(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

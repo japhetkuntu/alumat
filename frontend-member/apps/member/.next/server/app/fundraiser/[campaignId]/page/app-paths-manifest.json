@@ -1,0 +1,3 @@
+{
+  "/fundraiser/[campaignId]/page": "app/fundraiser/[campaignId]/page.js"
+}

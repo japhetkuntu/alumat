@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[11477,["/_next/static/chunks/f9a598658e6f1655.js","/_next/static/chunks/1be1a8a939d3fbd0.js","/_next/static/chunks/fa3c233dfcf43d84.js","/_next/static/chunks/6433982818427536.js","/_next/static/chunks/07bbfac87c063692.js","/_next/static/chunks/b8603a9adb9cb65a.js"],""]
+3:I[15013,["/_next/static/chunks/f26331e1ba25782b.js","/_next/static/chunks/60945bffe5ed8548.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"GEnHkeYw5Z8s30DDw-Cc2","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen flex items-center justify-center bg-background","children":["$","div",null,{"className":"text-center space-y-4 px-4","children":[["$","h1",null,{"className":"text-6xl font-bold tracking-tight text-foreground","children":"404"}],["$","p",null,{"className":"text-lg text-muted-foreground","children":"The page you're looking for doesn't exist."}],["$","$L2",null,{"href":"/dashboard","className":"inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90","children":"Back to Dashboard"}]]}]}],[["$","script","script-0",{"src":"/_next/static/chunks/b8603a9adb9cb65a.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"loading":null,"isPartial":false}
+5:null
