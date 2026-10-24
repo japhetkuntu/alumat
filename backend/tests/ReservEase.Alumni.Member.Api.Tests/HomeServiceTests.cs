@@ -310,4 +310,41 @@ public class HomeServiceTests
 
         static MemberEntity Stamp(MemberEntity m) { m.InstitutionId = Tenant; return m; }
     }
+
+    [Fact]
+    public async Task Which_modules_are_empty_is_reused_for_a_minute_but_store_orders_are_always_current()
+    {
+        var name = TestDb.NewName();
+        using (var db = TestDb.Create(name, Tenant)) { db.Add(Person(Me, 2014, daysAgo: 400)); await db.SaveChangesAsync(); }
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        HomeService Make(Microsoft.Extensions.Caching.Memory.IMemoryCache? c)
+        {
+            var ctx = TestDb.Create(name, Tenant);
+            return new HomeService(
+                new AlumniPgRepository<MemberEntity>(ctx), new AlumniPgRepository<CommunityMembership>(ctx), new AlumniPgRepository<Community>(ctx),
+                new AlumniPgRepository<Spotlight>(ctx), new AlumniPgRepository<ForumThread>(ctx), new AlumniPgRepository<MentorProfile>(ctx),
+                new AlumniPgRepository<BusinessListing>(ctx), new AlumniPgRepository<Job>(ctx), new AlumniPgRepository<AlumniEvent>(ctx),
+                new AlumniPgRepository<NewsPost>(ctx), new AlumniPgRepository<Resource>(ctx), new AlumniPgRepository<PhotoAlbum>(ctx),
+                new AlumniPgRepository<StoreProduct>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceType>(ctx),
+                new AlumniPgRepository<EventRsvp>(ctx), NullLogger<HomeService>.Instance, c);
+        }
+
+        var before = (await Make(cache).GetModulesAsync(Me, NothingDisabled)).Data!;
+        Assert.Contains("Jobs", before.Empty);
+        Assert.False(before.HasStoreOrders);
+
+        using (var db = TestDb.Create(name, Tenant))
+        {
+            db.Add(new Job { Id = "j1", Title = "Engineer", Status = "Active", InstitutionId = Tenant });
+            db.Add(new StoreOrder { Id = "o1", MemberId = Me, InstitutionId = Tenant });
+            await db.SaveChangesAsync();
+        }
+
+        var cached = (await Make(cache).GetModulesAsync(Me, NothingDisabled)).Data!;
+        Assert.Contains("Jobs", cached.Empty);          // reused within the minute
+        Assert.True(cached.HasStoreOrders);             // never reused: "My orders" shows at once
+        Assert.DoesNotContain("Jobs", (await Make(null).GetModulesAsync(Me, NothingDisabled)).Data!.Empty);
+        // A different set of switched-off features is a different answer, not the cached one.
+        Assert.DoesNotContain("Jobs", (await Make(cache).GetModulesAsync(Me, ["Events"])).Data!.Empty);
+    }
 }

@@ -1,5 +1,7 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.Member.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Models;
@@ -34,8 +36,12 @@ public class HomeService(
     IAlumniPgRepository<StoreOrder> orderRepo,
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
     IAlumniPgRepository<EventRsvp> rsvpRepo,
-    ILogger<HomeService> logger) : IHomeService
+    ILogger<HomeService> logger,
+    Microsoft.Extensions.Caching.Memory.IMemoryCache? cache = null) : IHomeService
 {
+    /// <summary>Whether a module has anything in it changes rarely, but working it out is a dozen queries on the page every member opens first.</summary>
+    private static readonly TimeSpan ModulesCacheFor = TimeSpan.FromSeconds(60);
+
     /// <summary>How far back the feed reaches. Older than this is history, not news.</summary>
     private const int WindowDays = 60;
     /// <summary>Cap per kind of activity, so one busy module (a bulk member import, say) can't crowd out the rest.</summary>
@@ -121,7 +127,7 @@ public class HomeService(
             // Names and photos come from the live Member rows, not the snapshots frozen on each record,
             // and anyone who is no longer an active member drops out of the feed with their activity.
             var personIds = activities.Select(a => a.PersonId).Where(id => id != memberId).Distinct().ToList();
-            var people = (await memberRepo.GetAllAsync(m => personIds.Contains(m.Id) && m.Status == "Active")).ToDictionary(m => m.Id);
+            var people = (await memberRepo.GetQueryable(m => personIds.Contains(m.Id) && m.Status == "Active").Card().ToListAsync()).ToDictionary(m => m.Id);
 
             var items = activities
                 .Where(a => people.ContainsKey(a.PersonId))
@@ -156,6 +162,46 @@ public class HomeService(
         }
     }
 
+    /// <summary>The modules this member's portal should treat as empty: switched-on features with nothing in them that this member could see.</summary>
+    private async Task<List<string>> FindEmptyModulesAsync(MemberEntity me, string memberId, IReadOnlyCollection<string> disabledFeatures)
+    {
+        var myYear = me.GraduationYear;
+        var communityIds = await GetApprovedCommunityIdsAsync(memberId);
+
+        // A switched-off feature is neither empty nor full — the portal already hides it.
+        var checks = new (string Feature, Func<Task<bool>> HasContent)[]
+        {
+            (InstitutionFeatures.Jobs, () => jobRepo.GetQueryable(j => j.Status == "Active"
+                && (j.CommunityId == null || communityIds.Contains(j.CommunityId))
+                && (j.YearGroups == null || j.YearGroups.Count == 0 || j.YearGroups.Contains(myYear))).AnyAsync()),
+            (InstitutionFeatures.Events, () => eventRepo.GetQueryable(e => e.Status != "Cancelled"
+                && (e.CommunityId == null || communityIds.Contains(e.CommunityId))
+                && (e.YearGroups == null || e.YearGroups.Count == 0 || e.YearGroups.Contains(myYear))).AnyAsync()),
+            (InstitutionFeatures.News, () => newsRepo.GetQueryable(p => p.Status == "Published"
+                && (p.CommunityId == null || communityIds.Contains(p.CommunityId))
+                && (p.YearGroups == null || p.YearGroups.Count == 0 || p.YearGroups.Contains(myYear))).AnyAsync()),
+            (InstitutionFeatures.Forum, () => threadRepo.GetQueryable(t => !t.IsClosed
+                && (t.CommunityId == null || communityIds.Contains(t.CommunityId))).AnyAsync()),
+            (InstitutionFeatures.Mentorship, () => mentorRepo.GetQueryable(p => p.Status == "Approved").AnyAsync()),
+            (InstitutionFeatures.Resources, () => resourceRepo.GetQueryable(r => r.CommunityId == null || communityIds.Contains(r.CommunityId)).AnyAsync()),
+            (InstitutionFeatures.PhotoAlbums, () => albumRepo.GetQueryable(a => (a.CommunityId == null && a.YearGroups == null)
+                || (a.CommunityId != null && communityIds.Contains(a.CommunityId))
+                || (a.YearGroups != null && a.YearGroups.Contains(myYear))).AnyAsync()),
+            (InstitutionFeatures.BusinessDirectory, () => listingRepo.GetQueryable(l => l.Status == "Approved" && !l.IsHiddenByMember).AnyAsync()),
+            (InstitutionFeatures.Spotlights, () => spotlightRepo.GetQueryable(s => s.Status == "Approved").AnyAsync()),
+            (InstitutionFeatures.Store, () => productRepo.GetQueryable(p => p.Status == "Active").AnyAsync()),
+            (InstitutionFeatures.Services, () => serviceTypeRepo.GetQueryable(s => s.Status == "Active").AnyAsync()),
+            (InstitutionFeatures.Communities, () => communityRepo.GetQueryable(c => c.IsActive).AnyAsync()),
+        };
+
+        var empty = new List<string>();
+        foreach (var (feature, hasContent) in checks)
+            if (!disabledFeatures.Contains(feature) && !await hasContent())
+                empty.Add(feature);
+
+        return empty;
+    }
+
     public async Task<IApiResponse<HomeModulesDto>> GetModulesAsync(string memberId, IReadOnlyCollection<string> disabledFeatures)
     {
         try
@@ -164,39 +210,14 @@ public class HomeService(
             if (me is null)
                 return ApiResponseExtensions.ToNotFoundApiResponse<HomeModulesDto>("Member not found");
 
-            var myYear = me.GraduationYear;
-            var communityIds = await GetApprovedCommunityIdsAsync(memberId);
-
-            // A switched-off feature is neither empty nor full — the portal already hides it.
-            var checks = new (string Feature, Func<Task<bool>> HasContent)[]
+            // The emptiness check is the same for a minute at a time, so it is reused instead of running a dozen queries on every home page load.
+            // Store orders are checked fresh below: someone who has just bought something should see "My orders" at once.
+            var cacheKey = $"home-modules:{memberId}:{string.Join(',', disabledFeatures.OrderBy(f => f, StringComparer.Ordinal))}";
+            if (cache is null || !cache.TryGetValue(cacheKey, out List<string>? empty) || empty is null)
             {
-                (InstitutionFeatures.Jobs, () => jobRepo.GetQueryable(j => j.Status == "Active"
-                    && (j.CommunityId == null || communityIds.Contains(j.CommunityId))
-                    && (j.YearGroups == null || j.YearGroups.Count == 0 || j.YearGroups.Contains(myYear))).AnyAsync()),
-                (InstitutionFeatures.Events, () => eventRepo.GetQueryable(e => e.Status != "Cancelled"
-                    && (e.CommunityId == null || communityIds.Contains(e.CommunityId))
-                    && (e.YearGroups == null || e.YearGroups.Count == 0 || e.YearGroups.Contains(myYear))).AnyAsync()),
-                (InstitutionFeatures.News, () => newsRepo.GetQueryable(p => p.Status == "Published"
-                    && (p.CommunityId == null || communityIds.Contains(p.CommunityId))
-                    && (p.YearGroups == null || p.YearGroups.Count == 0 || p.YearGroups.Contains(myYear))).AnyAsync()),
-                (InstitutionFeatures.Forum, () => threadRepo.GetQueryable(t => !t.IsClosed
-                    && (t.CommunityId == null || communityIds.Contains(t.CommunityId))).AnyAsync()),
-                (InstitutionFeatures.Mentorship, () => mentorRepo.GetQueryable(p => p.Status == "Approved").AnyAsync()),
-                (InstitutionFeatures.Resources, () => resourceRepo.GetQueryable(r => r.CommunityId == null || communityIds.Contains(r.CommunityId)).AnyAsync()),
-                (InstitutionFeatures.PhotoAlbums, () => albumRepo.GetQueryable(a => (a.CommunityId == null && a.YearGroups == null)
-                    || (a.CommunityId != null && communityIds.Contains(a.CommunityId))
-                    || (a.YearGroups != null && a.YearGroups.Contains(myYear))).AnyAsync()),
-                (InstitutionFeatures.BusinessDirectory, () => listingRepo.GetQueryable(l => l.Status == "Approved" && !l.IsHiddenByMember).AnyAsync()),
-                (InstitutionFeatures.Spotlights, () => spotlightRepo.GetQueryable(s => s.Status == "Approved").AnyAsync()),
-                (InstitutionFeatures.Store, () => productRepo.GetQueryable(p => p.Status == "Active").AnyAsync()),
-                (InstitutionFeatures.Services, () => serviceTypeRepo.GetQueryable(s => s.Status == "Active").AnyAsync()),
-                (InstitutionFeatures.Communities, () => communityRepo.GetQueryable(c => c.IsActive).AnyAsync()),
-            };
-
-            var empty = new List<string>();
-            foreach (var (feature, hasContent) in checks)
-                if (!disabledFeatures.Contains(feature) && !await hasContent())
-                    empty.Add(feature);
+                empty = await FindEmptyModulesAsync(me, memberId, disabledFeatures);
+                cache?.Set(cacheKey, empty, ModulesCacheFor);
+            }
 
             var hasStoreOrders = !disabledFeatures.Contains(InstitutionFeatures.Store)
                 && await orderRepo.GetQueryable(o => o.MemberId == memberId).AnyAsync();

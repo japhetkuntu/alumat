@@ -85,7 +85,7 @@ public class ScheduledJobsActivities(
                 return 0;
 
             var now = DateTime.UtcNow;
-            var activeMembers = (await memberRepo.GetAllAsync(m => m.InstitutionId == institutionId && m.Status == "Active" && !string.IsNullOrEmpty(m.Email), ignoreQueryFilters: true)).ToList();
+            var activeMembers = await memberRepo.GetQueryable(m => m.InstitutionId == institutionId && m.Status == "Active" && !string.IsNullOrEmpty(m.Email), ignoreQueryFilters: true).Light().ToListAsync();
             if (activeMembers.Count == 0)
                 return 0;
 
@@ -174,12 +174,13 @@ public class ScheduledJobsActivities(
                 .ToList();
             if (membershipCampaigns.Count == 0) return 0;
 
-            var activeMembers = (await memberRepo.GetAllAsync(m => m.InstitutionId == institutionId && m.Status == "Active", ignoreQueryFilters: true)).ToList();
+            var activeMembers = await memberRepo.GetQueryable(m => m.InstitutionId == institutionId && m.Status == "Active", ignoreQueryFilters: true).Light().ToListAsync();
             if (activeMembers.Count == 0) return 0;
 
             var campaignIds = membershipCampaigns.Select(c => c.Id).ToHashSet();
-            var paidByMember = (await contributionRepo.GetAllAsync(
-                    c => c.InstitutionId == institutionId && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), ignoreQueryFilters: true))
+            var paidByMember = (await contributionRepo.GetQueryable(
+                    c => c.InstitutionId == institutionId && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), ignoreQueryFilters: true)
+                .Select(c => new { c.MemberId, c.CampaignId }).Distinct().ToListAsync())
                 .GroupBy(c => c.MemberId)
                 .ToDictionary(g => g.Key, g => g.Select(c => c.CampaignId).ToHashSet());
 
@@ -384,7 +385,7 @@ public class ScheduledJobsActivities(
             var campaignIds = open.Select(p => p.CampaignId).Distinct().ToList();
             var memberIds = open.Select(p => p.MemberId).Distinct().ToList();
             var campaigns = (await campaignRepo.GetAllAsync(c => c.InstitutionId == institutionId && campaignIds.Contains(c.Id), ignoreQueryFilters: true)).ToDictionary(c => c.Id);
-            var members = (await memberRepo.GetAllAsync(m => m.InstitutionId == institutionId && memberIds.Contains(m.Id), ignoreQueryFilters: true)).ToDictionary(m => m.Id);
+            var members = (await memberRepo.GetQueryable(m => m.InstitutionId == institutionId && memberIds.Contains(m.Id), ignoreQueryFilters: true).Light().ToListAsync()).ToDictionary(m => m.Id);
             var contributions = (await contributionRepo.GetAllAsync(
                 c => c.InstitutionId == institutionId && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), ignoreQueryFilters: true)).ToList();
             var prefsByMember = (await prefRepo.GetAllAsync(p => p.InstitutionId == institutionId, ignoreQueryFilters: true)).ToDictionary(p => p.MemberId);
@@ -505,7 +506,8 @@ public class ScheduledJobsActivities(
                 var rsvps = (await eventRsvpRepo.GetAllAsync(r => r.EventId == ev.Id && r.Status == "Confirmed", ignoreQueryFilters: true)).ToList();
                 if (rsvps.Count == 0) { ev.DayBeforeReminderSentAt = now; continue; }
 
-                var members = (await memberRepo.GetAllAsync(m => rsvps.Select(r => r.MemberId).Contains(m.Id), ignoreQueryFilters: true))
+                var rsvpMemberIds = rsvps.Select(r => r.MemberId).ToList();
+                var members = (await memberRepo.GetQueryable(m => rsvpMemberIds.Contains(m.Id), ignoreQueryFilters: true).Light().ToListAsync())
                     .ToDictionary(m => m.Id);
                 var actionUrl = string.IsNullOrEmpty(portalUrl) ? string.Empty : $"{portalUrl}/events/{ev.Id}";
 
@@ -674,9 +676,13 @@ public class ScheduledJobsActivities(
                 s => s.InstitutionId == institutionId && s.Type == "Birthday" && s.FeaturedMonth == today, ignoreQueryFilters: true) is not null;
             if (alreadyRanToday) return [];
 
-            return (await memberRepo.GetAllAsync(m =>
-                    m.InstitutionId == institutionId && m.DateOfBirth != null && m.Status == "Active", ignoreQueryFilters: true))
-                .Where(m => m.DateOfBirth!.Value.Month == today.Month && m.DateOfBirth.Value.Day == today.Day)
+            // Today's month and day are matched in the database, so only the few people with a birthday today are read.
+            var month = today.Month;
+            var day = today.Day;
+            return (await memberRepo.GetQueryable(m =>
+                    m.InstitutionId == institutionId && m.DateOfBirth != null && m.Status == "Active"
+                    && m.DateOfBirth.Value.Month == month && m.DateOfBirth.Value.Day == day, ignoreQueryFilters: true)
+                .Light().ToListAsync())
                 .OrderByDescending(m => m.FirstName)
                 .Select(m => new BirthdayCelebrant
                 {

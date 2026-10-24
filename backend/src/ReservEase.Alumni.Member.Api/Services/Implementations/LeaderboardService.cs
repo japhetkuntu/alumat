@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Services.Interfaces;
@@ -13,12 +14,22 @@ public class LeaderboardService(
     IAlumniPgRepository<Contribution> contributionRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<EventRsvp> rsvpRepo,
-    ILogger<LeaderboardService> logger) : ILeaderboardService
+    ILogger<LeaderboardService> logger,
+    Microsoft.Extensions.Caching.Memory.IMemoryCache? cache = null,
+    ReservEase.Alumni.PostgresDb.Sdk.Services.ICurrentTenantService? currentTenant = null) : ILeaderboardService
 {
+    /// <summary>The standings add up the whole institution's contributions and RSVPs, which is the same for every member. A couple of minutes old is not noticeable on a leaderboard.</summary>
+    private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(2);
+
     public async Task<IApiResponse<List<YearGroupLeaderboardEntryDto>>> GetLeaderboardAsync()
     {
         try
         {
+            var cacheKey = string.IsNullOrEmpty(currentTenant?.InstitutionId) ? null : $"leaderboard:{currentTenant!.InstitutionId}";
+            if (cache is not null && cacheKey is not null
+                && cache.TryGetValue(cacheKey, out List<YearGroupLeaderboardEntryDto>? hit) && hit is not null)
+                return hit.ToOkApiResponse();
+
             var currentYear = DateTime.UtcNow.Year;
 
             // Members with no graduation year (optional or off for this community) have no year group to rank.
@@ -78,6 +89,7 @@ public class LeaderboardService(
             .ThenByDescending(e => e.TotalContributed)
             .ToList();
 
+            if (cache is not null && cacheKey is not null) cache.Set(cacheKey, leaderboard, CacheFor);
             return leaderboard.ToOkApiResponse();
         }
         catch (Exception e)

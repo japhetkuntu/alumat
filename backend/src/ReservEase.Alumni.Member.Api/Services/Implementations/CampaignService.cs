@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -18,8 +20,14 @@ public class CampaignService(
     IAlumniPgRepository<Community> communityRepo,
     IAlumniPgRepository<CampaignUpdate> updateRepo,
     IAlumniPgRepository<Contribution> contributionRepo,
-    ILogger<CampaignService> logger) : ICampaignService
+    ILogger<CampaignService> logger,
+    Microsoft.Extensions.Caching.Memory.IMemoryCache? cache = null) : ICampaignService
 {
+    /// <summary>How long the numbers and names on a public fundraiser page are reused. Short enough that a gift shows up almost at once, long enough that a shared link going viral costs one set of queries every few seconds instead of one per visitor.</summary>
+    private static readonly TimeSpan PublicPageCacheFor = TimeSpan.FromSeconds(10);
+
+    private sealed record FundraiserTotals(decimal Raised, int ContributorCount, List<string> Names);
+
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
     {
         var membership = await membershipRepo.GetOneAsync(m => m.CommunityId == communityId && m.MemberId == memberId);
@@ -186,8 +194,10 @@ public class CampaignService(
     {
         try
         {
-            var contributions = (await contributionRepo.GetAllAsync(
-                c => c.CampaignId == campaignId && c.Status == "Successful" && c.ShowOnWallOfSupport))
+            // Only the few columns the wall shows are read, not whole contribution rows.
+            var contributions = (await contributionRepo.GetQueryable(c => c.CampaignId == campaignId && c.Status == "Successful" && c.ShowOnWallOfSupport)
+                    .Select(c => new { c.MemberId, c.Member, At = c.ConfirmedAt ?? c.CreatedAt })
+                    .ToListAsync())
                 .Where(c => c.Member is not null)
                 .ToList();
 
@@ -196,16 +206,16 @@ public class CampaignService(
             // lookup, not one query per row) so a later name change actually shows
             // up. Falls back to the snapshot if the member has since been deleted.
             var contributorIds = contributions.Select(c => c.MemberId).Distinct().ToList();
-            var contributors = (await memberRepo.GetAllAsync(m => contributorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var contributors = await LiveNamesAsync(contributorIds);
 
             var entries = contributions
-                .OrderByDescending(c => c.ConfirmedAt ?? c.CreatedAt)
+                .OrderByDescending(c => c.At)
                 .Select(c => new WallOfSupportEntryDto
                 {
                     Name = (contributors.TryGetValue(c.MemberId, out var m)
                         ? $"{m.FirstName} {m.LastName}"
                         : $"{c.Member!.FirstName} {c.Member.LastName}").Trim(),
-                    ContributedAt = c.ConfirmedAt ?? c.CreatedAt,
+                    ContributedAt = c.At,
                 })
                 .ToList();
             return entries.ToOkApiResponse();
@@ -233,25 +243,8 @@ public class CampaignService(
                 || campaign.Status == CampaignStatus.Archived)
                 return ApiResponseExtensions.ToNotFoundApiResponse<PublicFundraiserDto>("This fundraiser page isn't available.");
 
-            var successful = (await contributionRepo.GetAllAsync(c => c.CampaignId == campaignId && c.Status == "Successful")).ToList();
-            var named = (page.NamePolicy == PublicNamePolicy.Everyone ? successful : successful.Where(c => c.ShowOnWallOfSupport))
-                .Where(c => c.Member is not null)
-                .ToList();
-
-            var ids = named.Select(c => c.MemberId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
-            var live = (await memberRepo.GetAllAsync(m => ids.Contains(m.Id))).ToDictionary(m => m.Id);
-
-            // One entry per person, oldest giver first so the page reads as the order people showed up.
-            var names = named
-                .OrderBy(c => c.ConfirmedAt ?? c.CreatedAt)
-                .Select(c => (Key: string.IsNullOrEmpty(c.MemberId) ? $"{c.Member!.FirstName} {c.Member.LastName}" : c.MemberId,
-                              Name: (live.TryGetValue(c.MemberId, out var m) ? $"{m.FirstName} {m.LastName}" : $"{c.Member!.FirstName} {c.Member.LastName}").Trim()))
-                .Where(x => x.Name.Length > 0)
-                .DistinctBy(x => x.Key)
-                .Select(x => x.Name)
-                .ToList();
-
-            var raised = successful.Sum(c => c.Amount);
+            var totals = await GetFundraiserTotalsAsync(campaign.Id, page.NamePolicy);
+            var raised = totals.Raised;
             var dto = new PublicFundraiserDto
             {
                 Id = campaign.Id,
@@ -265,9 +258,9 @@ public class CampaignService(
                 TargetAmount = page.ShowTarget ? campaign.TargetAmount : null,
                 ProgressPercent = page.ShowProgress && campaign.TargetAmount > 0
                     ? (int)Math.Min(100, Math.Floor(raised / campaign.TargetAmount * 100)) : null,
-                ContributorCount = page.ShowContributorCount ? successful.Select(c => string.IsNullOrEmpty(c.MemberId) ? c.Id : c.MemberId).Distinct().Count() : null,
+                ContributorCount = page.ShowContributorCount ? totals.ContributorCount : null,
                 Deadline = page.ShowDeadline ? campaign.Deadline : null,
-                Contributors = names,
+                Contributors = totals.Names,
             };
             return dto.ToOkApiResponse();
         }
@@ -276,5 +269,51 @@ public class CampaignService(
             logger.LogError(e, "Error retrieving public fundraiser {CampaignId}", campaignId);
             return ApiResponseExtensions.ToServerErrorApiResponse<PublicFundraiserDto>("Failed to load this fundraiser page");
         }
+    }
+
+    /// <summary>Live first and last names for a set of members: only those two columns, not whole member rows.</summary>
+    private async Task<Dictionary<string, (string FirstName, string LastName)>> LiveNamesAsync(List<string> ids)
+    {
+        if (ids.Count == 0) return [];
+        var rows = await memberRepo.GetQueryable(m => ids.Contains(m.Id)).Select(m => new { m.Id, m.FirstName, m.LastName }).ToListAsync();
+        return rows.ToDictionary(m => m.Id, m => (m.FirstName, m.LastName));
+    }
+
+    /// <summary>
+    /// What a public fundraiser page shows that comes from the gifts: the total, how many people gave, and the names. The total and the
+    /// count are worked out in the database, so a campaign with thousands of gifts does not pull thousands of rows to add them up, and
+    /// the result is reused for a few seconds so many visitors at once share one set of queries.
+    /// </summary>
+    private async Task<FundraiserTotals> GetFundraiserTotalsAsync(string campaignId, string policy)
+    {
+        var key = $"public-fundraiser:{campaignId}:{policy}";
+        if (cache is not null && cache.TryGetValue(key, out FundraiserTotals? hit) && hit is not null) return hit;
+
+        var successful = contributionRepo.GetQueryable(c => c.CampaignId == campaignId && c.Status == "Successful");
+        var raised = await successful.SumAsync(c => (decimal?)c.Amount) ?? 0m;
+        var contributorCount = await successful.Select(c => string.IsNullOrEmpty(c.MemberId) ? c.Id : c.MemberId).Distinct().CountAsync();
+
+        var named = (await (policy == PublicNamePolicy.Everyone ? successful : successful.Where(c => c.ShowOnWallOfSupport))
+                .OrderBy(c => c.ConfirmedAt ?? c.CreatedAt).ThenBy(c => c.Id)
+                .Select(c => new { c.MemberId, c.Member })
+                .ToListAsync())
+            .Where(c => c.Member is not null)
+            .ToList();
+
+        var ids = named.Select(c => c.MemberId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+        var live = await LiveNamesAsync(ids);
+
+        // One entry per person, oldest giver first so the page reads as the order people showed up.
+        var names = named
+            .Select(c => (Key: string.IsNullOrEmpty(c.MemberId) ? $"{c.Member!.FirstName} {c.Member.LastName}" : c.MemberId,
+                          Name: (live.TryGetValue(c.MemberId, out var m) ? $"{m.FirstName} {m.LastName}" : $"{c.Member!.FirstName} {c.Member.LastName}").Trim()))
+            .Where(x => x.Name.Length > 0)
+            .DistinctBy(x => x.Key)
+            .Select(x => x.Name)
+            .ToList();
+
+        var totals = new FundraiserTotals(raised, contributorCount, names);
+        cache?.Set(key, totals, PublicPageCacheFor);
+        return totals;
     }
 }

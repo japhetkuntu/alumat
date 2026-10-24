@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -180,12 +181,24 @@ public class MemberAuthService(
         // No year segment when the community has no years, or this member simply has none (Optional mode): never a "-0-".
         var prefix = isCommunity || graduationYear <= 0 ? $"{slug}-" : $"{slug}-{graduationYear}-";
 
-        var existing = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
-        var maxSeq = existing
-            .Select(m => int.TryParse(m.MemberNumber![prefix.Length..], out var n) ? n : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-        return $"{prefix}{(maxSeq + 1):D4}";
+        return await MemberNumbers.NextAsync(memberRepo.GetQueryable(), prefix);
+    }
+
+    /// <summary>
+    /// Two members approved in the same instant can both read the same highest number and pick the same next one. After a number is saved,
+    /// the oldest member holding it keeps it and any other takes the next free one, so a rush of registrations never leaves two members
+    /// with one number.
+    /// </summary>
+    private async Task EnsureMemberNumberUniqueAsync(MemberEntity member, Institution? institution)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var number = member.MemberNumber;
+            var owner = await memberRepo.GetQueryable(m => m.MemberNumber == number).OrderBy(m => m.CreatedAt).ThenBy(m => m.Id).Select(m => m.Id).FirstAsync();
+            if (owner == member.Id) return;
+            member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
+            await memberRepo.UpdateAsync(member);
+        }
     }
 
     /// <summary>True when this community requires a graduation year and the person has not given a believable one.</summary>
@@ -421,6 +434,7 @@ public class MemberAuthService(
             {
                 member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
                 await memberRepo.UpdateAsync(member);
+                await EnsureMemberNumberUniqueAsync(member, institution);
             }
 
             await LinkReferralAsync(member, identity.Email, request.CommunityId, request.Channel);
@@ -515,6 +529,7 @@ public class MemberAuthService(
             {
                 member.MemberNumber = await GenerateMemberNumberAsync(institution, member.GraduationYear);
                 await memberRepo.UpdateAsync(member);
+                await EnsureMemberNumberUniqueAsync(member, institution);
             }
 
             await LinkReferralAsync(member, cached.Email, cached.CommunityId, cached.Channel);
@@ -700,6 +715,17 @@ public class MemberAuthService(
             logger);
     }
 
+    /// <summary>
+    /// Notes when a member signed in. Only that one column is written: saving the whole member row for this (the password hash, the
+    /// profile text and every list on it) made every sign-in a heavy write on the busiest path.
+    /// </summary>
+    private async Task RecordLoginAsync(MemberEntity member)
+    {
+        var now = DateTime.UtcNow;
+        await memberRepo.ExecuteUpdateAsync(m => m.Id == member.Id, s => s.SetProperty(m => m.LastLoginAt, now));
+        member.LastLoginAt = now;
+    }
+
     public async Task<IApiResponse<MemberTokenResponse>> LoginAsync(LoginRequest request)
     {
         try
@@ -719,8 +745,7 @@ public class MemberAuthService(
             if (member.Status is "Suspended")
                 return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>("Your registration was rejected. You may submit a new registration request.");
 
-            member.LastLoginAt = DateTime.UtcNow;
-            await memberRepo.UpdateAsync(member);
+            await RecordLoginAsync(member);
 
             var claimData = BuildClaimData(member);
             var accessToken = GenerateJwtToken(claimData);
@@ -770,8 +795,7 @@ public class MemberAuthService(
             if (member.Status is "Suspended")
                 return ApiResponseExtensions.ToBadRequestApiResponse<MemberTokenResponse>("Your registration was rejected. You may submit a new registration request.");
 
-            member.LastLoginAt = DateTime.UtcNow;
-            await memberRepo.UpdateAsync(member);
+            await RecordLoginAsync(member);
 
             var claimData = BuildClaimData(member);
             var accessToken = GenerateJwtToken(claimData);
@@ -799,8 +823,7 @@ public class MemberAuthService(
             if (member.Status != "Active")
                 return ApiResponseExtensions.ToUnauthorizedApiResponse<MemberTokenResponse>("This account cannot sign in.");
 
-            member.LastLoginAt = DateTime.UtcNow;
-            await memberRepo.UpdateAsync(member);
+            await RecordLoginAsync(member);
 
             var accessToken = GenerateJwtToken(BuildClaimData(member));
             var refreshToken = GenerateRefreshToken();

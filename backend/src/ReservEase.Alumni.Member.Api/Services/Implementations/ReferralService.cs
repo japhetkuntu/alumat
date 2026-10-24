@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -57,6 +58,14 @@ public class ReferralService(
         "MembershipPaid" => ReferralPoints.Registered + ReferralPoints.MembershipBonus,
         _ => 0,
     };
+    /// <summary>
+    /// How many referrals each referrer has in each status, counted in the database. The rank and the leaderboard only need these
+    /// counts, so they no longer read every referral row of the institution into memory on each request.
+    /// </summary>
+    private async Task<List<(string ReferrerId, string Status, int Count)>> ReferralCountsAsync() =>
+        (await referralRepo.GetQueryable().GroupBy(r => new { r.ReferrerId, r.Status })
+            .Select(g => new { g.Key.ReferrerId, g.Key.Status, Count = g.Count() }).ToListAsync())
+        .Select(x => (x.ReferrerId, x.Status, x.Count)).ToList();
 
     public async Task<IApiResponse<ReferralInfoDto>> GetMyReferralInfoAsync(AuthData member)
     {
@@ -79,11 +88,10 @@ public class ReferralService(
 
             var hasBadge = await badgeRepo.GetOneAsync(b => b.MemberId == member.Id && b.BadgeType == "Referrer");
 
-            // Rank among every referrer institution-wide with at least one point — a plain
-            // count query per referrer would be one query per member; instead pull just the
-            // (ReferrerId, Status) pairs once and aggregate in memory, same pattern GetLeaderboardAsync uses.
-            var allReferrals = await referralRepo.GetAllAsync();
-            var pointsByReferrer = allReferrals.GroupBy(r => r.ReferrerId).ToDictionary(g => g.Key, g => g.Sum(r => PointsFor(r.Status)));
+            // Rank among every referrer institution-wide with at least one point. The counts per referrer and status come
+            // from one grouped query; the points are worked out from those.
+            var counts = await ReferralCountsAsync();
+            var pointsByReferrer = counts.GroupBy(c => c.ReferrerId).ToDictionary(g => g.Key, g => g.Sum(c => PointsFor(c.Status) * c.Count));
             int? rank = null;
             if (points > 0)
             {
@@ -116,15 +124,14 @@ public class ReferralService(
         try
         {
             const int top = 20;
-            var allReferrals = (await referralRepo.GetAllAsync()).ToList();
-            var byReferrer = allReferrals
-                .GroupBy(r => r.ReferrerId)
+            var byReferrer = (await ReferralCountsAsync())
+                .GroupBy(c => c.ReferrerId)
                 .Select(g => new
                 {
                     ReferrerId = g.Key,
-                    Points = g.Sum(r => PointsFor(r.Status)),
-                    TotalReferrals = g.Count(r => r.Status is "Registered" or "MembershipPaid"),
-                    MembershipPaidReferrals = g.Count(r => r.Status == "MembershipPaid"),
+                    Points = g.Sum(c => PointsFor(c.Status) * c.Count),
+                    TotalReferrals = g.Where(c => c.Status is "Registered" or "MembershipPaid").Sum(c => c.Count),
+                    MembershipPaidReferrals = g.Where(c => c.Status == "MembershipPaid").Sum(c => c.Count),
                 })
                 .Where(x => x.Points > 0)
                 .OrderByDescending(x => x.Points)
@@ -134,8 +141,9 @@ public class ReferralService(
 
             var referrerIds = byReferrer.Select(x => x.ReferrerId).ToList();
             var referrers = referrerIds.Count > 0
-                ? (await memberRepo.GetAllAsync(m => referrerIds.Contains(m.Id))).ToDictionary(m => m.Id)
-                : new Dictionary<string, MemberEntity>();
+                ? (await memberRepo.GetQueryable(m => referrerIds.Contains(m.Id))
+                    .Select(m => new { m.Id, m.FirstName, m.LastName, m.ProfilePictureUrl }).ToListAsync()).ToDictionary(m => m.Id)
+                : [];
 
             var leaderboard = byReferrer
                 .Select((x, i) =>

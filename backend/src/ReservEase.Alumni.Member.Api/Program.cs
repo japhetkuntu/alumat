@@ -48,6 +48,7 @@ builder.Services.Configure<WebPushConfig>(
     builder.Configuration.GetSection(nameof(WebPushConfig)));
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 
 // Data + cache + external services
 builder.Services.AddAlumniPostgresSdk(builder.Configuration, "AlumniConnection");

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -123,7 +124,7 @@ public class MemberForumService(
             // name/photo change actually shows up. Falls back to the snapshot if the
             // author has since been deleted.
             var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();
-            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var authors = (await memberRepo.GetQueryable(m => authorIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtoResult.Results)
             {
                 if (authors.TryGetValue(dto.AuthorId, out var author))
@@ -256,7 +257,7 @@ public class MemberForumService(
 
             // Same staleness fix as GetThreadsAsync above — batched, not per-row.
             var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();
-            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var authors = (await memberRepo.GetQueryable(m => authorIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtoResult.Results)
             {
                 if (authors.TryGetValue(dto.AuthorId, out var author))

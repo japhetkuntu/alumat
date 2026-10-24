@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-24",
+    title: "Speed and memory: the busiest pages and background jobs do far less database work, with the same results",
+    scopes: ["Platform", "Institution", "Member"],
+    type: "Improvement",
+    body: "A pass over the code that would have slowed down as data grew, with no change to what anyone sees. Public fundraiser page: the total, the number of givers and the names are added up in the database instead of loading every gift, and shared for 10 seconds between visitors (a fundraiser with 20,000 gifts now answers in about 60 ms). Member home: the 'which modules are empty' check, a dozen queries, is reused for a minute per member; store orders are still checked fresh. Leaderboards: the year-group standings are reused for 2 minutes; the referral rank and leaderboard count referrals in the database instead of loading every referral. Member numbers: the next number is found from the highest few instead of reading every member in that year (the same for bulk import, which now reads once per year group instead of once per row), and two members approved at the same instant can no longer end up with one number. Sign-in only writes the last-login time instead of saving the whole member row. Payout and analytics figures: the admin analytics totals are summed in the database instead of loading every payment, and four small indexes (confirmed contributions, store orders, service requests and paid RSVPs, per institution) make the payout forecast, history and analytics read only the window they need. Background jobs (digests, dues and pledge reminders, event reminders, birthdays) and broadcasts and saved audiences read only the columns they use, not whole member rows with every profile field and the password hash, and birthdays are matched by month and day in the database. Lists that only show a name and photo (forum, mentorship, class notes, spotlights, business directory, referral leaderboard, home feed) read just those columns. One migration (AddPaymentConfirmedIndexes) creates the indexes on start. Not changed on purpose: the password hashing cost and search-box matching.",
+  },
+  {
     date: "2026-10-23",
     title: "Members are signed in as soon as they register, instead of being sent to the sign-in page",
     scopes: ["Member"],

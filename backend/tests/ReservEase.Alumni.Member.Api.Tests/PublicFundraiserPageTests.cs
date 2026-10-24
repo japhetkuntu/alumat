@@ -178,4 +178,43 @@ public class PublicFundraiserPageTests
         var open = (await (await Create(Fundraiser())).GetPublicFundraiserAsync("c1")).Data!;
         Assert.True(open.IsOpenForGiving);
     }
+
+    [Fact]
+    public async Task Totals_and_names_are_reused_for_a_few_seconds_so_a_busy_page_costs_one_set_of_queries()
+    {
+        var name = TestDb.NewName();
+        using (var db = TestDb.Create(name, Tenant))
+        {
+            var c = Fundraiser(p => { p.NamePolicy = PublicNamePolicy.Everyone; });
+            c.InstitutionId = Tenant;
+            db.Add(c);
+            var g = Gift("g1", "m1", "Ama", 100m, true); g.InstitutionId = Tenant;
+            db.Add(g);
+            await db.SaveChangesAsync();
+        }
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        CampaignService Make(Microsoft.Extensions.Caching.Memory.IMemoryCache? c)
+        {
+            var ctx = TestDb.Create(name, Tenant);
+            return new CampaignService(new AlumniPgRepository<Campaign>(ctx), new AlumniPgRepository<MemberEntity>(ctx),
+                new AlumniPgRepository<CommunityMembership>(ctx), new AlumniPgRepository<Community>(ctx), new AlumniPgRepository<CampaignUpdate>(ctx),
+                new AlumniPgRepository<Contribution>(ctx), NullLogger<CampaignService>.Instance, c);
+        }
+
+        var first = (await Make(cache).GetPublicFundraiserAsync("c1")).Data!;
+        Assert.Equal((100m, 1), (first.TotalRaised, first.ContributorCount));
+
+        using (var db = TestDb.Create(name, Tenant))
+        {
+            var g2 = Gift("g2", "m2", "Kofi", 50m, true); g2.InstitutionId = Tenant;
+            db.Add(g2);
+            await db.SaveChangesAsync();
+        }
+
+        var cached = (await Make(cache).GetPublicFundraiserAsync("c1")).Data!;
+        Assert.Equal((100m, 1), (cached.TotalRaised, cached.ContributorCount));      // within the few seconds: the earlier answer
+        var fresh = (await Make(null).GetPublicFundraiserAsync("c1")).Data!;
+        Assert.Equal((150m, 2), (fresh.TotalRaised, fresh.ContributorCount));        // no cache: always current
+        Assert.Equal(["Ama Doe", "Kofi Doe"], fresh.Contributors);
+    }
 }

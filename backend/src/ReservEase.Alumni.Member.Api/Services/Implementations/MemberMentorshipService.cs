@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -52,7 +53,7 @@ public class MemberMentorshipService(
             // change actually shows up. Falls back to the snapshot if the member has
             // since been deleted.
             var mentorMemberIds = dtoResult.Results.Select(d => d.MemberId).Distinct().ToList();
-            var mentorMembers = (await memberRepo.GetAllAsync(m => mentorMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var mentorMembers = (await memberRepo.GetQueryable(m => mentorMemberIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtoResult.Results)
             {
                 if (mentorMembers.TryGetValue(dto.MemberId, out var m))
@@ -225,7 +226,7 @@ public class MemberMentorshipService(
             var mentorProfileIds = dtoResult.Results.Select(d => d.MentorProfileId).Distinct().ToList();
             var mentorProfiles = (await profileRepo.GetAllAsync(p => mentorProfileIds.Contains(p.Id))).ToDictionary(p => p.Id);
             var mentorMemberIds = mentorProfiles.Values.Select(p => p.MemberId).Distinct().ToList();
-            var mentorMembers = (await memberRepo.GetAllAsync(m => mentorMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var mentorMembers = (await memberRepo.GetQueryable(m => mentorMemberIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtoResult.Results)
             {
                 if (mentorProfiles.TryGetValue(dto.MentorProfileId, out var mp) && mentorMembers.TryGetValue(mp.MemberId, out var m))
@@ -299,7 +300,7 @@ public class MemberMentorshipService(
             // here (one batched lookup, not one query per row) so a later name/photo
             // change actually shows up.
             var menteeIds = dtoResult.Results.Select(d => d.MenteeId).Distinct().ToList();
-            var mentees = (await memberRepo.GetAllAsync(m => menteeIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var mentees = (await memberRepo.GetQueryable(m => menteeIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtoResult.Results)
             {
                 if (mentees.TryGetValue(dto.MenteeId, out var m))

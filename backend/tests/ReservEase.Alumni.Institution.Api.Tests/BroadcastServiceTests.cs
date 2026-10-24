@@ -18,48 +18,26 @@ namespace ReservEase.Alumni.Institution.Api.Tests;
 
 /// <summary>
 /// Covers the two engagement segments that need cross-entity computation (Dormant is a
-/// plain Member-field predicate and isn't separately re-tested here). Repository mocks
-/// compile and apply the real predicate against an in-memory list, so these exercise the
-/// actual Expression<Func<...>> BuildPredicate builds, not just a hand-written substitute.
+/// plain Member-field predicate and isn't separately re-tested here). The repositories are real ones over an
+/// in-memory database, so these exercise the actual queries BuildPredicate and the service build.
 /// </summary>
 public class BroadcastServiceTests
 {
-    private static Mock<IAlumniPgRepository<MemberEntity>> MemberRepoReturning(List<MemberEntity> members)
-    {
-        var repo = new Mock<IAlumniPgRepository<MemberEntity>>();
-        repo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<MemberEntity, bool>>>(), It.IsAny<bool>()))
-            .ReturnsAsync((Expression<Func<MemberEntity, bool>>? predicate, bool _) =>
-                predicate is null ? members : members.Where(predicate.Compile()));
-        return repo;
-    }
-
-    private static Mock<IAlumniPgRepository<ContributionEntity>> ContributionRepoReturning(List<ContributionEntity> contributions)
-    {
-        var repo = new Mock<IAlumniPgRepository<ContributionEntity>>();
-        repo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<ContributionEntity, bool>>>(), It.IsAny<bool>()))
-            .ReturnsAsync((Expression<Func<ContributionEntity, bool>>? predicate, bool _) =>
-                predicate is null ? contributions : contributions.Where(predicate.Compile()));
-        return repo;
-    }
-
-    private static Mock<IAlumniPgRepository<CampaignEntity>> CampaignRepoReturning(List<CampaignEntity> campaigns)
-    {
-        var repo = new Mock<IAlumniPgRepository<CampaignEntity>>();
-        repo.Setup(r => r.GetAllAsync(It.IsAny<Expression<Func<CampaignEntity, bool>>>(), It.IsAny<bool>()))
-            .ReturnsAsync((Expression<Func<CampaignEntity, bool>>? predicate, bool _) =>
-                predicate is null ? campaigns : campaigns.Where(predicate.Compile()));
-        return repo;
-    }
-
     private static AuthData SuperAdmin() => new() { Id = "admin-1", Role = "SuperAdmin", FirstName = "A", LastName = "Dmin" };
 
     private static BroadcastService MakeService(
         List<MemberEntity> members, List<ContributionEntity>? contributions = null, List<CampaignEntity>? campaigns = null,
         Mock<IStorageService>? storage = null, ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution? institution = null)
     {
-        var memberRepo = MemberRepoReturning(members);
-        var contributionRepo = ContributionRepoReturning(contributions ?? []);
-        var campaignRepo = CampaignRepoReturning(campaigns ?? []);
+        // Real repositories over an in-memory database, so the predicates and projections the service builds are the ones that run.
+        var db = ReservEase.Alumni.TestKit.TestDb.Create(ReservEase.Alumni.TestKit.TestDb.NewName(), "inst-1");
+        db.AddRange(members);
+        db.AddRange(contributions ?? []);
+        db.AddRange(campaigns ?? []);
+        db.SaveChanges();
+        var memberRepo = new AlumniPgRepository<MemberEntity>(db);
+        var contributionRepo = new AlumniPgRepository<ContributionEntity>(db);
+        var campaignRepo = new AlumniPgRepository<CampaignEntity>(db);
         var currentTenant = new Mock<ICurrentTenantService>();
         currentTenant.SetupGet(c => c.InstitutionId).Returns("inst-1");
         currentTenant.SetupGet(c => c.InstitutionSlug).Returns("demo");
@@ -72,10 +50,10 @@ public class BroadcastServiceTests
             .ReturnsAsync(institution);
 
         return new BroadcastService(
-            memberRepo.Object, contributionRepo.Object, campaignRepo.Object,
+            memberRepo, contributionRepo, campaignRepo,
             Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AudienceSegment>>(),
             institutionRepo.Object,
-            new ReservEase.Alumni.PostgresDb.Sdk.Services.AudienceSegmentResolver(memberRepo.Object, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community>>(), contributionRepo.Object, campaignRepo.Object),
+            new ReservEase.Alumni.PostgresDb.Sdk.Services.AudienceSegmentResolver(memberRepo, Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.CommunityMembership>>(), Mock.Of<IAlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community>>(), contributionRepo, campaignRepo),
             (storage ?? new Mock<IStorageService>()).Object,
             temporalProvider, currentTenant.Object, new NullLogger<BroadcastService>());
     }

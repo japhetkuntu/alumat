@@ -141,20 +141,35 @@ public class AnalyticsService(
                 var lastYearToday = now.AddYears(-1);
                 var earliest = trendStart < lastYearStart ? trendStart : lastYearStart;
 
-                // One pass per source over everything since the earlier of the two windows; split into the trend and the two totals in memory.
-                var contributionMonths = contributionsOn
-                    ? await Contributions().Where(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= earliest)
-                        .Select(c => new { At = c.ConfirmedAt ?? c.CreatedAt, c.Amount }).ToListAsync()
-                    : [];
-                var storeMonths = storeOn
-                    ? await storeOrderRepo.GetQueryable(o => o.Status == "Successful" && (o.ConfirmedAt ?? o.CreatedAt) >= earliest)
-                        .Select(o => new { At = o.ConfirmedAt ?? o.CreatedAt, Amount = o.TotalAmount }).ToListAsync()
-                    : [];
-                var serviceMonths = servicesOn
-                    ? await serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful" && (r.ConfirmedAt ?? r.CreatedAt) >= earliest)
-                        .Select(r => new { At = r.ConfirmedAt ?? r.CreatedAt, r.Amount }).ToListAsync()
-                    : [];
-                var all = contributionMonths.Concat(storeMonths).Concat(serviceMonths).ToList();
+                // Each source is added up in the database: a sum per month for the trend, and one sum for each of the two year windows.
+                // Only a few small rows come back per source, however many payments there are.
+                async Task<(List<(int Year, int Month, decimal Total)> Months, decimal ThisYear, decimal LastYear)> Summarise(IQueryable<PaymentPoint> points)
+                {
+                    var months = (await points.Where(p => p.At >= earliest)
+                            .GroupBy(p => new { p.At.Year, p.At.Month })
+                            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(p => p.Amount) })
+                            .ToListAsync())
+                        .Select(m => (m.Year, m.Month, m.Total)).ToList();
+                    var thisYear = await points.Where(p => p.At >= yearStart).SumAsync(p => (decimal?)p.Amount) ?? 0m;
+                    var lastYear = await points.Where(p => p.At >= lastYearStart && p.At <= lastYearToday).SumAsync(p => (decimal?)p.Amount) ?? 0m;
+                    return (months, thisYear, lastYear);
+                }
+
+                var contributionSums = contributionsOn
+                    ? await Summarise(Contributions().Where(c => c.Status == "Successful")
+                        .Select(c => new PaymentPoint { At = c.ConfirmedAt ?? c.CreatedAt, Amount = c.Amount }))
+                    : ([], 0m, 0m);
+                var storeSums = storeOn
+                    ? await Summarise(storeOrderRepo.GetQueryable(o => o.Status == "Successful")
+                        .Select(o => new PaymentPoint { At = o.ConfirmedAt ?? o.CreatedAt, Amount = o.TotalAmount }))
+                    : ([], 0m, 0m);
+                var serviceSums = servicesOn
+                    ? await Summarise(serviceRequestRepo.GetQueryable(r => r.PaymentStatus == "Successful")
+                        .Select(r => new PaymentPoint { At = r.ConfirmedAt ?? r.CreatedAt, Amount = r.Amount }))
+                    : ([], 0m, 0m);
+
+                decimal MonthTotal(List<(int Year, int Month, decimal Total)> rows, int year, int month) =>
+                    rows.Where(r => r.Year == year && r.Month == month).Sum(r => r.Total);
 
                 var payers = contributionsOn
                     ? await Contributions().Where(c => c.Status == "Successful" && (c.ConfirmedAt ?? c.CreatedAt) >= yearStart)
@@ -162,13 +177,13 @@ public class AnalyticsService(
                     : 0;
 
                 money = new AnalyticsMoneyDto(
-                    all.Where(p => p.At >= yearStart).Sum(p => p.Amount),
-                    all.Where(p => p.At >= lastYearStart && p.At <= lastYearToday).Sum(p => p.Amount),
+                    contributionSums.ThisYear + storeSums.ThisYear + serviceSums.ThisYear,
+                    contributionSums.LastYear + storeSums.LastYear + serviceSums.LastYear,
                     payers,
                     Months(trendStart).Select(m => new AnalyticsMoneyMonthDto(m.Year, m.Month,
-                        contributionMonths.Where(p => p.At.Year == m.Year && p.At.Month == m.Month).Sum(p => p.Amount),
-                        storeMonths.Where(p => p.At.Year == m.Year && p.At.Month == m.Month).Sum(p => p.Amount),
-                        serviceMonths.Where(p => p.At.Year == m.Year && p.At.Month == m.Month).Sum(p => p.Amount))).ToList());
+                        MonthTotal(contributionSums.Months, m.Year, m.Month),
+                        MonthTotal(storeSums.Months, m.Year, m.Month),
+                        MonthTotal(serviceSums.Months, m.Year, m.Month))).ToList());
             }
 
             // ── Composition ──────────────────────────────────────────────────
@@ -236,4 +251,11 @@ public class AnalyticsService(
 
     /// <summary>The trend's calendar months, oldest first, this month last — so a month in which nothing happened still has its place on the chart.</summary>
     private static IEnumerable<DateTime> Months(DateTime first) => Enumerable.Range(0, TrendMonths).Select(i => first.AddMonths(i));
+
+    /// <summary>One payment reduced to when it counts (confirmed time, else created time) and how much it was.</summary>
+    private sealed class PaymentPoint
+    {
+        public DateTime At { get; init; }
+        public decimal Amount { get; init; }
+    }
 }

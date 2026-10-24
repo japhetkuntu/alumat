@@ -1200,6 +1200,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("TransactionRef");
 
+                    b.HasIndex("InstitutionId", "ConfirmedAt")
+                        .HasFilter("\"Status\" = 'Successful'");
+
                     b.HasIndex("InstitutionId", "CreatedAt");
 
                     b.ToTable("Contributions", "alumni");
@@ -1506,6 +1509,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("EventId", "MemberId")
                         .IsUnique();
+
+                    b.HasIndex("InstitutionId", "PaidAt")
+                        .HasFilter("\"PaidAt\" IS NOT NULL");
 
                     b.ToTable("EventRsvps", "alumni");
                 });
@@ -3264,6 +3270,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("TransactionRef")
                         .IsUnique();
 
+                    b.HasIndex("InstitutionId", "ConfirmedAt")
+                        .HasFilter("\"PaymentStatus\" = 'Successful'");
+
                     b.HasIndex("InstitutionId", "CreatedAt");
 
                     b.ToTable("ServiceRequests", "alumni");
@@ -3494,6 +3503,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.HasIndex("TransactionRef")
                         .IsUnique();
+
+                    b.HasIndex("InstitutionId", "ConfirmedAt")
+                        .HasFilter("\"Status\" = 'Successful'");
 
                     b.HasIndex("InstitutionId", "CreatedAt");
 

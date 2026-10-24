@@ -309,12 +309,7 @@ public class MemberManagementService(
             {
                 // Find the max existing sequence for this year to prevent race conditions
                 var prefix = await GetMemberNumberPrefixAsync(member.GraduationYear);
-                var existing = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
-                var maxSeq = existing
-                    .Select(m => int.TryParse(m.MemberNumber![(prefix.Length)..], out var n) ? n : 0)
-                    .DefaultIfEmpty(0)
-                    .Max();
-                member.MemberNumber = $"{prefix}{(maxSeq + 1):D4}";
+                member.MemberNumber = await MemberNumbers.NextAsync(memberRepo.GetQueryable(), prefix);
             }
 
             member.Status = "Active";
@@ -517,6 +512,9 @@ public class MemberManagementService(
                 ? null
                 : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
             var isCommunityOrg = institution?.OrganizationType == OrganizationTypes.Community;
+            // The highest member number used so far per prefix in this file. It is read from the database once per prefix, then
+            // carried forward, instead of reading every existing member number again for each row.
+            var lastSequenceByPrefix = new Dictionary<string, int>();
 
             foreach (var item in request.Members)
             {
@@ -552,11 +550,9 @@ public class MemberManagementService(
 
                     // Generate member number
                     var prefix = await GetMemberNumberPrefixAsync(item.GraduationYear);
-                    var existingMembers = await memberRepo.GetAllAsync(m => m.MemberNumber != null && m.MemberNumber.StartsWith(prefix));
-                    var maxSeq = existingMembers
-                        .Select(m => int.TryParse(m.MemberNumber![(prefix.Length)..], out var n) ? n : 0)
-                        .DefaultIfEmpty(0)
-                        .Max();
+                    var maxSeq = lastSequenceByPrefix.TryGetValue(prefix, out var lastSeq)
+                        ? lastSeq
+                        : await MemberNumbers.MaxSequenceAsync(memberRepo.GetQueryable(), prefix);
 
                     var member = new Member
                     {
@@ -579,6 +575,7 @@ public class MemberManagementService(
                         CreatedBy = admin.Id,
                     };
                     await memberRepo.AddAsync(member);
+                    lastSequenceByPrefix[prefix] = maxSeq + 1;
 
                     if (institution is not null)
                         await SendMemberWelcomeEmailAsync(member, institution);

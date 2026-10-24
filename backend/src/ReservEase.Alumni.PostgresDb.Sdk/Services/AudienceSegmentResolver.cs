@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni;
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
 using ReservEase.Alumni.PostgresDb.Sdk.Repositories;
 
 namespace ReservEase.Alumni.PostgresDb.Sdk.Services;
@@ -51,15 +52,17 @@ public class AudienceSegmentResolver(
         var to = criteria.GraduationYearTo;
         var dept = string.IsNullOrWhiteSpace(criteria.DepartmentId) ? null : criteria.DepartmentId;
 
-        var members = (await memberRepo.GetAllAsync(m =>
+        var matching = memberRepo.GetQueryable(m =>
                 (!explicitTenant || m.InstitutionId == institutionId)
                 && (status == null ? m.Status != "Deleted" : m.Status == status)
                 && (dept == null || m.DepartmentId == dept)
                 && (!from.HasValue || m.GraduationYear >= from.Value)
                 && (!to.HasValue || m.GraduationYear <= to.Value)
                 && (!dormantOnly || m.LastLoginAt == null || m.LastLoginAt < dormantBefore)
-                && (!joinedAfter.HasValue || m.CreatedAt >= joinedAfter.Value), explicitTenant))
-            .ToList();
+                && (!joinedAfter.HasValue || m.CreatedAt >= joinedAfter.Value), explicitTenant);
+
+        // Only the columns messages and lists use are read, plus the written answers when the rule filters on them.
+        var members = await (string.IsNullOrEmpty(answer) ? matching.Light() : matching.LightWithAnswers()).ToListAsync();
 
         if (!unrestricted)
             members = members.Where(m => years.Contains(m.GraduationYear) || (scopeMemberIds?.Contains(m.Id) ?? false)).ToList();
@@ -172,8 +175,9 @@ public class AudienceSegmentResolver(
             .Select(c => c.Id).ToList();
         if (campaignIds.Count == 0) return [];
 
-        var paid = (await contributionRepo.GetAllAsync(c => (!explicitTenant || c.InstitutionId == institutionId) && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), explicitTenant))
-            .Select(c => c.MemberId).ToHashSet();
+        var paid = (await contributionRepo.GetQueryable(c => (!explicitTenant || c.InstitutionId == institutionId) && c.Status == "Successful" && campaignIds.Contains(c.CampaignId), explicitTenant)
+                .Select(c => c.MemberId).Distinct().ToListAsync())
+            .ToHashSet();
 
         return status == SegmentDuesStatuses.Paid
             ? members.Where(m => paid.Contains(m.Id)).ToList()

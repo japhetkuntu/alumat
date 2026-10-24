@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Common.Sdk.Extensions;
@@ -39,7 +40,7 @@ public class SpotlightService(
             // member's later name/photo change actually shows up. Falls back
             // to the snapshot if the member has since been deleted.
             var memberIds = dtos.Select(d => d.MemberId).Distinct().ToList();
-            var members = (await memberRepo.GetAllAsync(m => memberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var members = (await memberRepo.GetQueryable(m => memberIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtos)
             {
                 if (members.TryGetValue(dto.MemberId, out var m))

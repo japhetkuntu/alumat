@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Notifications.Sdk;
 using ReservEase.Alumni.Temporal.Sdk;
 using ReservEase.Alumni.Common.Sdk.Models;
@@ -52,7 +53,7 @@ public class BusinessDirectoryService(
             // member has since been deleted (or the listing is admin-created, with no
             // MemberId at all).
             var listingMemberIds = dtoResult.Results.Where(d => d.MemberId != null).Select(d => d.MemberId!).Distinct().ToList();
-            var listingMembers = (await memberRepo.GetAllAsync(m => listingMemberIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var listingMembers = (await memberRepo.GetQueryable(m => listingMemberIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtoResult.Results)
             {
                 if (dto.MemberId != null && listingMembers.TryGetValue(dto.MemberId, out var m))

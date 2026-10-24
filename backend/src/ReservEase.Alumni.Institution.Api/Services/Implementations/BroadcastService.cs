@@ -1,3 +1,5 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Extensions;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -60,8 +62,7 @@ public class BroadcastService(
 
         if (segment == EngagementSegments.NoContributionsEver)
         {
-            var contributedIds = (await contributionRepo.GetAllAsync(c => c.Status == "Successful"))
-                .Select(c => c.MemberId).ToHashSet();
+            var contributedIds = (await contributionRepo.GetQueryable(c => c.Status == "Successful").Select(c => c.MemberId).Distinct().ToListAsync()).ToHashSet();
             return members.Where(m => !contributedIds.Contains(m.Id)).ToList();
         }
 
@@ -76,9 +77,9 @@ public class BroadcastService(
             // meaningless (and confusing) rather than merely broad.
             if (openFundraiserIds.Count == 0) return [];
 
-            var contributedIds = (await contributionRepo.GetAllAsync(c =>
-                    c.Status == "Successful" && openFundraiserIds.Contains(c.CampaignId)))
-                .Select(c => c.MemberId).ToHashSet();
+            var contributedIds = (await contributionRepo.GetQueryable(c =>
+                    c.Status == "Successful" && openFundraiserIds.Contains(c.CampaignId))
+                .Select(c => c.MemberId).Distinct().ToListAsync()).ToHashSet();
             return members.Where(m => !contributedIds.Contains(m.Id)).ToList();
         }
 
@@ -95,8 +96,9 @@ public class BroadcastService(
             return await segmentResolver.ResolveAsync(segment.Criteria, SegmentService.ScopeFor(admin));
         }
 
-        var members = await memberRepo.GetAllAsync(BuildPredicate(filter, admin));
-        return await ApplyEngagementSegmentAsync(members.ToList(), filter.EngagementSegment);
+        // A broadcast needs who to reach and when they last signed in, not whole member rows.
+        var members = await memberRepo.GetQueryable(BuildPredicate(filter, admin)).Light().ToListAsync();
+        return await ApplyEngagementSegmentAsync(members, filter.EngagementSegment);
     }
 
     private async Task<ReservEase.Alumni.PostgresDb.Sdk.Entities.Institution?> LoadInstitutionAsync()

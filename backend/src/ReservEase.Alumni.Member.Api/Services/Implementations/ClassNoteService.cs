@@ -110,7 +110,7 @@ public class ClassNoteService(
             // name/photo change actually shows up. Falls back to the snapshot if the
             // author has since been deleted.
             var authorIds = dtos.Select(d => d.AuthorId).Distinct().ToList();
-            var authors = (await memberRepo.GetAllAsync(m => authorIds.Contains(m.Id))).ToDictionary(m => m.Id);
+            var authors = (await memberRepo.GetQueryable(m => authorIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
             foreach (var dto in dtos)
             {
                 if (authors.TryGetValue(dto.AuthorId, out var author))

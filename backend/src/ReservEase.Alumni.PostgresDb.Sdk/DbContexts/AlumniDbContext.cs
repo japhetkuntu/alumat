@@ -352,6 +352,14 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         modelBuilder.Entity<Member>()
             .HasIndex(m => m.MemberNumber);
 
+        // Payout figures (the dashboard forecast, the payout history, the analytics totals) ask "what was confirmed in this window" for
+        // one institution. Without these they read every payment the institution has ever had, on every load. Only confirmed payments are
+        // in the index, so it stays small and costs almost nothing on writes.
+        modelBuilder.Entity<Contribution>().HasIndex(c => new { c.InstitutionId, c.ConfirmedAt }).HasFilter("\"Status\" = 'Successful'");
+        modelBuilder.Entity<StoreOrder>().HasIndex(o => new { o.InstitutionId, o.ConfirmedAt }).HasFilter("\"Status\" = 'Successful'");
+        modelBuilder.Entity<ServiceRequest>().HasIndex(r => new { r.InstitutionId, r.ConfirmedAt }).HasFilter("\"PaymentStatus\" = 'Successful'");
+        modelBuilder.Entity<EventRsvp>().HasIndex(r => new { r.InstitutionId, r.PaidAt }).HasFilter("\"PaidAt\" IS NOT NULL");
+
         // Integrations: a partner portal checks whether a student ID is already a member. One settings row per institution,
         // keys found by hash, links found by token hash, and the newest link per student ID found by (institution, ID).
         modelBuilder.Entity<InstitutionIntegration>().HasIndex(i => i.InstitutionId).IsUnique();

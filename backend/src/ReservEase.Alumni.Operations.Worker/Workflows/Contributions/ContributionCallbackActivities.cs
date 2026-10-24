@@ -162,14 +162,8 @@ public class ContributionCallbackActivities(
             var slug = !string.IsNullOrWhiteSpace(institution?.Slug) ? institution.Slug.ToUpperInvariant() : "MEMBER";
             var prefix = $"{slug}-{graduationYear}-";
 
-            var existingWithNumber = await memberRepo.GetQueryable(
-                m => m.InstitutionId == institutionId && m.MemberNumber != null && m.MemberNumber.StartsWith(prefix),
-                ignoreQueryFilters: true).ToListAsync();
-            var maxSeq = existingWithNumber
-                .Select(m => int.TryParse(m.MemberNumber![prefix.Length..], out var n) ? n : 0)
-                .DefaultIfEmpty(0)
-                .Max();
-            return $"{prefix}{(maxSeq + 1):D4}";
+            return await MemberNumbers.NextAsync(
+                memberRepo.GetQueryable(m => m.InstitutionId == institutionId, ignoreQueryFilters: true), prefix);
         }, "get next member number", institutionId);
 
     [Activity("ContributionCallback.UpdateMemberMembership")]
