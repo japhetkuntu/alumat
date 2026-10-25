@@ -1,3 +1,4 @@
+using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Common.Sdk.Text;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -49,7 +50,8 @@ public class CommunityService(
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                     memberships.Count(m => m.Status == "Pending"),
                     memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                    c.CreatedAt, invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind, c.IsPublic);
+                    c.CreatedAt, invited[c.Id].Count(), invited[c.Id].Count(r => r.CreatedAt >= since), c.Kind, c.IsPublic,
+                    c.PayoutStatus, c.UseInstitutionAccount, c.SettlementBankName, c.SettlementAccountNumber, c.SettlementAccountName);
             }).ToList();
             return items.ToOkApiResponse();
         }
@@ -140,12 +142,64 @@ public class CommunityService(
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Member"),
                 memberships.Count(m => m.Status == "Pending"),
                 memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"),
-                community.CreatedAt, Kind: community.Kind, IsPublic: community.IsPublic).ToOkApiResponse("Community updated");
+                community.CreatedAt, Kind: community.Kind, IsPublic: community.IsPublic,
+                PayoutStatus: community.PayoutStatus, UseInstitutionAccount: community.UseInstitutionAccount,
+                SettlementBankName: community.SettlementBankName, SettlementAccountNumber: community.SettlementAccountNumber, SettlementAccountName: community.SettlementAccountName).ToOkApiResponse("Community updated");
         }
         catch (Exception e)
         {
             logger.LogError(e, "Error updating community {CommunityId}", id);
             return ApiResponseExtensions.ToServerErrorApiResponse<CommunityListItem>("Failed to update community");
+        }
+    }
+
+    /// <summary>
+    /// A group's payout account, submitted for platform review exactly like a year group's: either "use the institution's account" or the
+    /// group's own bank details. Never takes effect here; only platform approval writes the live account. A SuperAdmin can set up any
+    /// group, and a group's own scoped admin only theirs.
+    /// </summary>
+    public async Task<IApiResponse<CommunityListItem>> SubmitPayoutSetupAsync(string id, SubmitBatchPayoutSetupRequest request, AuthData actor)
+    {
+        try
+        {
+            var community = await communityRepo.GetByIdAsync(id);
+            if (community is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<CommunityListItem>("Group not found");
+
+            if (actor.Role == StaffRoles.ScopedAdmin && actor.CommunityIds?.Contains(community.Id) != true)
+                return ApiResponseExtensions.ToForbiddenApiResponse<CommunityListItem>("You can only set up payouts for a group you look after");
+
+            if (!request.UseInstitutionAccount &&
+                (string.IsNullOrWhiteSpace(request.SettlementBankCode) || string.IsNullOrWhiteSpace(request.SettlementAccountNumber)))
+                return ApiResponseExtensions.ToBadRequestApiResponse<CommunityListItem>("Bank and account number are required unless using the institution's own account");
+
+            community.PendingPayoutChanges = new BatchPayoutPendingChanges
+            {
+                UseInstitutionAccount = request.UseInstitutionAccount,
+                SettlementBankCode = request.UseInstitutionAccount ? null : request.SettlementBankCode,
+                SettlementBankName = request.UseInstitutionAccount ? null : request.SettlementBankName,
+                SettlementAccountNumber = request.UseInstitutionAccount ? null : request.SettlementAccountNumber,
+                SettlementAccountName = request.UseInstitutionAccount ? null : request.SettlementAccountName,
+            };
+            community.PayoutStatus = "Pending";
+            community.UpdatedAt = DateTime.UtcNow;
+            community.UpdatedBy = actor.Id;
+            await communityRepo.UpdateAsync(community);
+
+            logger.LogInformation("Group {CommunityId} payout setup submitted by {ActorId}, awaiting platform approval", community.Id, actor.Id);
+            var memberships = (await membershipRepo.GetAllAsync(m => m.CommunityId == id)).ToList();
+            return new CommunityListItem(
+                community.Id, community.Name, community.Description, community.CoverImageUrl, community.IsActive,
+                memberships.Count(m => m.Status == "Approved" && m.Role == "Member"), memberships.Count(m => m.Status == "Pending"),
+                memberships.Count(m => m.Status == "Approved" && m.Role == "Leader"), community.CreatedAt, Kind: community.Kind, IsPublic: community.IsPublic,
+                PayoutStatus: community.PayoutStatus, UseInstitutionAccount: community.UseInstitutionAccount,
+                SettlementBankName: community.SettlementBankName, SettlementAccountNumber: community.SettlementAccountNumber, SettlementAccountName: community.SettlementAccountName)
+                .ToOkApiResponse("Payout setup submitted for platform review");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error submitting payout setup for group {CommunityId}", id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<CommunityListItem>("Failed to submit payout setup");
         }
     }
 

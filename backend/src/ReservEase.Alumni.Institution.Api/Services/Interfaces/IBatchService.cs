@@ -7,6 +7,7 @@ public interface IBatchService
 {
     Task<IApiResponse<List<BatchListItem>>> GetBatchesAsync();
     Task<IApiResponse<BatchListItem>> CreateBatchAsync(CreateBatchRequest request, string createdBy);
+    Task<IApiResponse<CreateBatchRangeResult>> CreateBatchRangeAsync(CreateBatchRangeRequest request, string createdBy);
     Task<IApiResponse<BatchListItem>> UpdateBatchAsync(string id, UpdateBatchRequest request, string updatedBy);
     Task<IApiResponse<object>> DeleteBatchAsync(string id);
     Task<IApiResponse<BatchListItem>> SubmitPayoutSetupAsync(string id, SubmitBatchPayoutSetupRequest request, AuthData actor);

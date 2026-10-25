@@ -257,6 +257,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // Batch: payout-setup proposal awaiting platform approval, same jsonb pending-changes pattern as BusinessListing.
         modelBuilder.Entity<Batch>().Property(b => b.PendingPayoutChanges).HasColumnType("jsonb").HasConversion(new JsonbConverter<BatchPayoutPendingChanges>(jsonOpts));
         modelBuilder.Entity<Batch>().HasIndex(b => b.PayoutStatus);
+        // Community: the same arrangement for a group's own payout account.
+        modelBuilder.Entity<Community>().Property(c => c.PendingPayoutChanges).HasColumnType("jsonb").HasConversion(new JsonbConverter<BatchPayoutPendingChanges>(jsonOpts));
+        modelBuilder.Entity<Community>().HasIndex(c => c.PayoutStatus);
 
         // ── JSONB array columns ──────────────────────────────────────────────
         // YearGroups stored as integer array to allow efficient filtering by member graduation year.

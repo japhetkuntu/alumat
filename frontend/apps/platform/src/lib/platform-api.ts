@@ -374,6 +374,32 @@ export async function rejectBatchPayout(batchId: string, notes?: string): Promis
   await platformClient.put(`/batch-payouts/${batchId}/reject`, { notes });
 }
 
+/** A group whose payout setup (see Institution.Api's CommunitiesController.SubmitPayoutSetup) is awaiting review. */
+export interface PendingGroupPayout {
+  communityId: string;
+  groupName: string;
+  institutionId: string;
+  institutionName: string;
+  useInstitutionAccount: boolean;
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
+  submittedAt: string;
+}
+
+export async function getPendingGroupPayouts(): Promise<PendingGroupPayout[]> {
+  const res = await platformClient.get<ApiResponse<PendingGroupPayout[]>>("/group-payouts/pending");
+  return res.data.data ?? [];
+}
+
+export async function approveGroupPayout(communityId: string): Promise<void> {
+  await platformClient.put(`/group-payouts/${communityId}/approve`);
+}
+
+export async function rejectGroupPayout(communityId: string, notes?: string): Promise<void> {
+  await platformClient.put(`/group-payouts/${communityId}/reject`, { notes });
+}
+
 /** An institution whose own payout setup (see Institution.Api's InstitutionController.SubmitPayoutSetup) is awaiting review. */
 export interface PendingInstitutionPayout {
   institutionId: string;

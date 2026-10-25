@@ -5,7 +5,9 @@ namespace ReservEase.Alumni.Institution.Api.Models;
 public record CommunityListItem(
     string Id, string Name, string? Description, string? CoverImageUrl, bool IsActive,
     int ApprovedCount, int PendingCount, int LeaderCount, DateTime CreatedAt,
-    int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null, bool IsPublic = false);
+    int JoinedViaInvites = 0, int JoinedLast30Days = 0, string? Kind = null, bool IsPublic = false,
+    string PayoutStatus = "None", bool UseInstitutionAccount = false,
+    string? SettlementBankName = null, string? SettlementAccountNumber = null, string? SettlementAccountName = null);
 
 /// <summary>How members have been joining through invitations, across the institution.</summary>
 public record CommunityGrowthSummary(int TotalViaInvites, int Last30Days, List<GrowthSourceItem> BySource, List<GrowthCommunityItem> ByCommunity);

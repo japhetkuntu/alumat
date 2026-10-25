@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -58,6 +59,51 @@ public class BatchService(
             logger.LogError(e, "Error creating batch for year {Year}", request.Year);
             return ApiResponseExtensions.ToServerErrorApiResponse<BatchListItem>("Failed to create batch");
         }
+    }
+
+    public async Task<IApiResponse<CreateBatchRangeResult>> CreateBatchRangeAsync(CreateBatchRangeRequest request, string createdBy)
+    {
+        try
+        {
+            if (request.ToYear < request.FromYear || request.ToYear - request.FromYear + 1 > CreateBatchRangeRequest.MaxYears)
+                return ApiResponseExtensions.ToBadRequestApiResponse<CreateBatchRangeResult>("Choose a range of at most 150 years, with the last year not before the first.");
+            var pattern = request.NamePattern.Trim();
+            if (pattern.Length == 0)
+                return ApiResponseExtensions.ToBadRequestApiResponse<CreateBatchRangeResult>("Say how each one should be named, for example \"Class of\".");
+
+            var from = request.FromYear;
+            var to = request.ToYear;
+            var existing = (await batchRepo.GetQueryable(b => b.Year >= from && b.Year <= to).Select(b => b.Year).ToListAsync()).ToHashSet();
+
+            var added = Enumerable.Range(from, to - from + 1)
+                .Where(year => !existing.Contains(year))
+                .Select(year => new Batch
+                {
+                    Name = NameFor(pattern, year),
+                    Year = year,
+                    CreatedBy = createdBy,
+                })
+                .ToList();
+            if (added.Count > 0) await batchRepo.AddRangeAsync(added);
+
+            var skipped = Enumerable.Range(from, to - from + 1).Where(existing.Contains).ToList();
+            logger.LogInformation("{Count} batches ({From}-{To}) created by {CreatorId}, {Skipped} already existed", added.Count, from, to, createdBy, skipped.Count);
+            return new CreateBatchRangeResult(added.Count, skipped).ToCreatedApiResponse(added.Count == 0 ? "Every year in that range already has a year group" : "Year groups created");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error creating batches for {From}-{To}", request.FromYear, request.ToYear);
+            return ApiResponseExtensions.ToServerErrorApiResponse<CreateBatchRangeResult>("Failed to create the year groups");
+        }
+    }
+
+    /// <summary>"Class of {year}" becomes "Class of 2016"; a name without {year} gets the year added after it.</summary>
+    public static string NameFor(string pattern, int year)
+    {
+        var name = pattern.Contains("{year}", StringComparison.OrdinalIgnoreCase)
+            ? pattern.Replace("{year}", year.ToString(), StringComparison.OrdinalIgnoreCase)
+            : $"{pattern.TrimEnd()} {year}";
+        return name.Length > 100 ? name[..100] : name;
     }
 
     public async Task<IApiResponse<BatchListItem>> UpdateBatchAsync(string id, UpdateBatchRequest request, string updatedBy)

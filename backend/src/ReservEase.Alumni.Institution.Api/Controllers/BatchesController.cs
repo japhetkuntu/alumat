@@ -39,6 +39,18 @@ public class BatchesController(IBatchService batchService, IPaystackService pays
         return result.ToActionResult();
     }
 
+    [HttpPost("range")]
+    [Authorize(Roles = "SuperAdmin")]
+    [SwaggerOperation(Summary = "Create a batch for every year in a range that does not have one yet")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ApiResponse<CreateBatchRangeResult>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> CreateBatchRange([FromBody] CreateBatchRangeRequest request)
+    {
+        var actor = User.GetAccount();
+        var result = await batchService.CreateBatchRangeAsync(request, actor.Id);
+        return result.ToActionResult();
+    }
+
     [HttpPut("{id}")]
     [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "Update a batch")]

@@ -23,7 +23,7 @@ public class PayoutHistoryTests
         return new PayoutService(
             new AlumniPgRepository<Contribution>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx),
             new AlumniPgRepository<EventRsvp>(ctx), new AlumniPgRepository<AlumniEvent>(ctx), new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>(ctx), new AlumniPgRepository<Campaign>(ctx), new AlumniPgRepository<Batch>(ctx),
-            new AlumniPgRepository<InstitutionEntity>(ctx), TestDb.Tenant(Tenant, "umat"), NullLogger<PayoutService>.Instance);
+            new AlumniPgRepository<InstitutionEntity>(ctx), TestDb.Tenant(Tenant, "umat"), NullLogger<PayoutService>.Instance, new AlumniPgRepository<Community>(ctx));
     }
 
     private static Contribution Paid(string campaignId, decimal amount, DateTime at, string member = "m1") => new()
@@ -119,6 +119,43 @@ public class PayoutHistoryTests
     }
 
     [Fact]
+    public async Task A_group_with_its_own_account_is_paid_out_separately_for_its_fundraisers_and_its_events()
+    {
+        var mon = Monday; var tue = mon.AddDays(1);
+        var service = Create(db =>
+        {
+            db.Add(new Community { Id = "g1", Name = "Accra Chapter", PayoutStatus = "Approved", UseInstitutionAccount = false, PaystackSubaccountCode = "ACCT_g", InstitutionId = Tenant });
+            db.Add(new Community { Id = "g2", Name = "Quiet Group", PayoutStatus = "Pending", InstitutionId = Tenant });
+            db.Add(new Campaign { Id = "gc", Title = "Chapter hall", CommunityId = "g1", InstitutionId = Tenant });
+            db.Add(new Campaign { Id = "pc", Title = "Pending group fund", CommunityId = "g2", InstitutionId = Tenant });
+            db.Add(new Campaign { Id = "mc", Title = "General", InstitutionId = Tenant });
+            db.Add(new AlumniEvent { Id = "ge", Title = "Chapter dinner", CommunityId = "g1", InstitutionId = Tenant });
+            db.Add(new AlumniEvent { Id = "me", Title = "Homecoming", InstitutionId = Tenant });
+            db.Add(Paid("gc", 300m, At(mon)));       // the group's account
+            db.Add(Paid("pc", 20m, At(mon)));        // group not approved yet: main
+            db.Add(Paid("mc", 10m, At(mon)));        // main
+            db.Add(new EventRsvp { EventId = "ge", MemberId = "m4", Status = EventRsvpStatuses.Confirmed, AmountPaid = 50m, PaidAt = At(mon, 12) });   // group's account
+            db.Add(new EventRsvp { EventId = "me", MemberId = "m5", Status = EventRsvpStatuses.Confirmed, AmountPaid = 5m, PaidAt = At(mon, 12) });    // main
+        });
+
+        var all = (await service.GetHistoryAsync(tue, 7, null)).Data!;
+        Assert.Equal(385m, all.TotalAmount);
+        Assert.Equal(["main", "group:g1"], all.AccountOptions.Select(a => a.Key));
+        var day = Assert.Single(all.Days);
+        Assert.Equal(35m, day.Accounts.Single(a => a.Key == "main").Amount);
+        Assert.Equal(350m, day.Accounts.Single(a => a.Key == "group:g1").Amount);
+
+        Assert.Equal(350m, (await service.GetHistoryAsync(tue, 7, "group:g1")).Data!.TotalAmount);
+        Assert.Equal(35m, (await service.GetHistoryAsync(tue, 7, "main")).Data!.TotalAmount);
+
+        var detail = (await service.GetDayAsync(tue, "group:g1")).Data!;
+        Assert.Equal(350m, detail.Amount);
+        Assert.Equal(2, detail.Items.Count);
+        Assert.All(detail.Items, i => Assert.Equal("Accra Chapter", i.Account));
+        Assert.Equal(35m, (await service.GetDayAsync(tue, "main")).Data!.Amount);
+    }
+
+    [Fact]
     public async Task A_days_detail_lists_each_payment_with_who_paid_and_for_what()
     {
         var mon = Monday; var tue = mon.AddDays(1);
@@ -149,5 +186,27 @@ public class PayoutHistoryTests
         var history = (await service.GetHistoryAsync(DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30), 30, null)).Data!;
         Assert.DoesNotContain(history.Days, d => d.Date > PayoutWindowCalculator.GetWindows(DateTime.UtcNow).LastPayoutDate);
         Assert.Equal(0m, history.TotalAmount);
+    }
+
+    [Fact]
+    public async Task A_busy_day_lists_only_the_newest_payments_but_its_total_and_count_cover_them_all()
+    {
+        var mon = Monday; var tue = mon.AddDays(1);
+        var service = Create(db =>
+        {
+            db.Add(new Campaign { Id = "dues", Title = "2026 Dues", IsMembershipCampaign = true, InstitutionId = Tenant });
+            for (var i = 0; i < PayoutService.DayItemLimit + 20; i++)
+                db.Add(Paid("dues", 10m, At(mon, 9).AddMinutes(i)));
+            db.Add(new StoreOrder { OrderNumber = "A1", TotalAmount = 40m, Status = "Successful", PaymentMethod = "Paystack", ConfirmedAt = At(mon, 20) });
+        });
+
+        var detail = (await service.GetDayAsync(tue, null)).Data!;
+
+        Assert.Equal(PayoutService.DayItemLimit, detail.Items.Count);
+        Assert.Equal(PayoutService.DayItemLimit + 21, detail.TotalCount);
+        Assert.Equal((PayoutService.DayItemLimit + 20) * 10m + 40m, detail.Amount);
+        Assert.Equal("Order A1", detail.Items[0].Title);                                  // newest first
+        var storeOnly = (await service.GetDayAsync(tue, "nope")).Data!;                   // an unknown account means all
+        Assert.Equal(detail.TotalCount, storeOnly.TotalCount);
     }
 }

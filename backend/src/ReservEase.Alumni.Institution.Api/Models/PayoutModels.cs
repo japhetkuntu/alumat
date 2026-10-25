@@ -29,4 +29,5 @@ public record PayoutHistoryResponse(bool PayoutsConfigured, List<PayoutAccountDt
 /// <summary>One payment inside a payout day.</summary>
 public record PayoutItemDto(string Source, string Account, string Title, string? PayerName, decimal Amount, DateTime ConfirmedAt);
 
-public record PayoutDayDetailDto(DateOnly Date, decimal Amount, List<PayoutItemDto> Items);
+/// <param name="TotalCount">How many payments the day holds. Larger than <c>Items.Count</c> when only the newest are listed.</param>
+public record PayoutDayDetailDto(DateOnly Date, decimal Amount, List<PayoutItemDto> Items, int TotalCount = 0);

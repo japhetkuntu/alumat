@@ -13,6 +13,7 @@ import { Landmark, Clock3 } from "@alumni/ui";
 import {
   getInstitutions, getRevenueTrend, getPayoutForecast,
   getPendingBatchPayouts, approveBatchPayout, rejectBatchPayout,
+  getPendingGroupPayouts, approveGroupPayout, rejectGroupPayout,
   getPendingInstitutionPayouts, approveInstitutionPayout, rejectInstitutionPayout,
 } from "@/lib/platform-api";
 import { handleApiError } from "@/lib/api-client";
@@ -61,6 +62,24 @@ export default function BillingPage() {
   const rejectMut = useMutation({
     mutationFn: (batchId: string) => rejectBatchPayout(batchId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-batch-payouts"] }); toast.success("Batch payout rejected"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const { data: pendingGroupPayouts = [], isLoading: pendingGroupPayoutsLoading } = useQuery({
+    queryKey: ["platform-pending-group-payouts"],
+    queryFn: getPendingGroupPayouts,
+    staleTime: 60 * 1000,
+  });
+
+  const approveGroupMut = useMutation({
+    mutationFn: (communityId: string) => approveGroupPayout(communityId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-group-payouts"] }); toast.success("Group payout approved"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const rejectGroupMut = useMutation({
+    mutationFn: (communityId: string) => rejectGroupPayout(communityId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platform-pending-group-payouts"] }); toast.success("Group payout rejected"); },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -211,6 +230,50 @@ export default function BillingPage() {
           </Table>
         </Card>
         <p className="text-[12px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the batch over immediately, same platform fee percentage as its institution.</p>
+      </div>
+
+      <div className="mb-5">
+        <p className="text-[14px] font-semibold mb-3">Group payout approvals</p>
+        <Card>
+          <Table stackOnMobile>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Institution</TableHead>
+                <TableHead>Group</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingGroupPayoutsLoading ? (
+                <TableRow><TableCell colSpan={5}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+              ) : pendingGroupPayouts.length === 0 ? (
+                <TableEmpty title="No pending group payout setups" colSpan={5} />
+              ) : pendingGroupPayouts.map((p) => (
+                <TableRow key={p.communityId}>
+                  <TableCell className="font-semibold">{p.institutionName}</TableCell>
+                  <TableCell>{p.groupName}</TableCell>
+                  <TableCell>
+                    {p.useInstitutionAccount ? (
+                      <Badge variant="secondary">Institution's own account</Badge>
+                    ) : (
+                      <span className="text-[13px]">{p.settlementBankName} · {p.settlementAccountNumber} · {p.settlementAccountName}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-[13px] text-muted-foreground">{formatDate(p.submittedAt)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button size="sm" variant="outline" isLoading={rejectGroupMut.isPending && rejectGroupMut.variables === p.communityId} onClick={() => rejectGroupMut.mutate(p.communityId)}>Reject</Button>
+                      <Button size="sm" isLoading={approveGroupMut.isPending && approveGroupMut.variables === p.communityId} onClick={() => approveGroupMut.mutate(p.communityId)}>Approve</Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+        <p className="text-[12px] text-muted-foreground mt-2">Approving creates (or links) the Paystack subaccount and switches the group over immediately. It covers the group's fundraisers and paid event tickets, same platform fee percentage as its institution.</p>
       </div>
 
       <div className="mb-5">

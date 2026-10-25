@@ -201,7 +201,16 @@ public class RecurringGivingWorkflow
         BuildZeroDeductionChargeAsync(decimal schoolAmount, RecurringInstitutionInfo institution, RecurringCampaignInfo campaign)
     {
         string? subaccount = institution.PaystackSubaccountCode;
-        if (campaign.YearGroups is { Count: 1 })
+        // Patched: gifts already in flight before groups could have accounts keep replaying exactly as they ran.
+        if (!string.IsNullOrEmpty(campaign.CommunityId) && Workflow.Patched("group-subaccount"))
+        {
+            var groupSubaccount = await Workflow.ExecuteActivityAsync(
+                (ScheduledJobsActivities a) => a.ResolveGroupSubaccountAsync(campaign.InstitutionId, campaign.CommunityId),
+                ScheduledJobsActivityOptions.DatabaseRead);
+            if (!string.IsNullOrEmpty(groupSubaccount))
+                subaccount = groupSubaccount;
+        }
+        else if (campaign.YearGroups is { Count: 1 })
         {
             var batchSubaccount = await Workflow.ExecuteActivityAsync(
                 (ScheduledJobsActivities a) => a.ResolveBatchSubaccountAsync(campaign.InstitutionId, campaign.YearGroups[0]),

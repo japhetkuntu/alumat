@@ -9,6 +9,7 @@ public interface ICommunityService
     Task<IApiResponse<CommunityGrowthSummary>> GetGrowthAsync();
     Task<IApiResponse<CommunityListItem>> CreateCommunityAsync(CreateCommunityRequest request, string createdBy);
     Task<IApiResponse<CommunityListItem>> UpdateCommunityAsync(string id, UpdateCommunityRequest request, string updatedBy);
+    Task<IApiResponse<CommunityListItem>> SubmitPayoutSetupAsync(string id, SubmitBatchPayoutSetupRequest request, AuthData actor);
     Task<IApiResponse<List<CommunityMemberItem>>> GetCommunityMembersAsync(string communityId);
     /// <summary>Approves or declines a member's request to join. The member is told, with the reason if one is given.</summary>
     Task<IApiResponse<object>> DecideJoinRequestAsync(string communityId, string memberId, bool approve, string? reason, AuthData admin);

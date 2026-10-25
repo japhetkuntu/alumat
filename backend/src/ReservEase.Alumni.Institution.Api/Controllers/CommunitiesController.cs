@@ -65,6 +65,23 @@ public class CommunitiesController(ICommunityService communityService) : Default
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// Submit (or resubmit) this group's payout setup for platform review: either the institution's own account or bank details of the
+    /// group's own. Never takes effect immediately. The bank list and account-name lookup are the ones under batches/payout-setup.
+    /// </summary>
+    [HttpPost("{id}/payout-setup")]
+    [Authorize(Roles = "SuperAdmin,ScopedAdmin")]
+    [SwaggerOperation(Summary = "Submit a group's payout setup for platform approval")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<CommunityListItem>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> SubmitPayoutSetup(string id, [FromBody] SubmitBatchPayoutSetupRequest request)
+    {
+        var result = await communityService.SubmitPayoutSetupAsync(id, request, User.GetAccount());
+        return result.ToActionResult();
+    }
+
     [HttpGet("{id}/members")]
     [Authorize(Roles = "SuperAdmin")]
     [SwaggerOperation(Summary = "List a community's members and pending requests")]

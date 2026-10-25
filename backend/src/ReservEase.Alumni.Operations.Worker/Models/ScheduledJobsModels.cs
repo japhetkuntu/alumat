@@ -44,6 +44,8 @@ public sealed class RecurringCampaignInfo
     public required string Title { get; init; }
     public required bool IsActive { get; init; }
     public List<int>? YearGroups { get; init; }
+    /// <summary>Set when the fundraiser is aimed at one group, whose own account (if it has an approved one) the gift is charged to.</summary>
+    public string? CommunityId { get; init; }
 }
 
 public sealed class RecurringInstitutionInfo

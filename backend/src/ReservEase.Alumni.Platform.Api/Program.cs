@@ -74,6 +74,7 @@ builder.Services.AddScoped<IMarketingCampaignService, MarketingCampaignService>(
 builder.Services.AddScoped<IPayoutService, PayoutService>();
 builder.Services.AddScoped<IInstitutionHealthService, InstitutionHealthService>();
 builder.Services.AddScoped<IBatchPayoutService, BatchPayoutService>();
+builder.Services.AddScoped<IGroupPayoutService, GroupPayoutService>();
 builder.Services.AddScoped<IInstitutionPayoutService, InstitutionPayoutService>();
 builder.Services.AddScoped<IStaffScope, StaffScope>();
 builder.Services.AddScoped<ITeamService, TeamService>();

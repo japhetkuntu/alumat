@@ -27,6 +27,7 @@ function DayDetail({ date, account, showAccount }: { date: string; account: stri
   if (isError || !data) return <p className="px-4 py-3 text-[13px] text-destructive">Could not load this payout. Try again.</p>;
   if (data.items.length === 0) return <p className="px-4 py-3 text-[13px] text-muted-foreground">No payments found for this day.</p>;
   return (
+    <>
     <ul className="divide-y divide-border/60">
       {data.items.map((item, i) => (
         <li key={i} className="flex items-start gap-3 px-4 py-2.5 text-[13.5px]">
@@ -40,6 +41,12 @@ function DayDetail({ date, account, showAccount }: { date: string; account: stri
         </li>
       ))}
     </ul>
+    {data.totalCount > data.items.length && (
+      <p className="border-t border-border/60 px-4 py-2.5 text-[12.5px] text-muted-foreground">
+        Showing the newest {data.items.length.toLocaleString()} of {data.totalCount.toLocaleString()} payments. The total for the day covers all of them.
+      </p>
+    )}
+    </>
   );
 }
 
@@ -89,13 +96,13 @@ export default function PayoutsPage() {
         <h1 className="m-0 text-[20px] font-bold sm:text-[25px]">Payouts</h1>
         <p className="max-w-[62ch] text-[13px] leading-relaxed text-muted-foreground">
           Paystack pays your online collections into your bank account every working morning. Each day below is one of those payouts,
-          with what it was made of. Year groups that have their own payout account are paid separately, so a day can have more than one payout. Open a day to see the payments.
+          with what it was made of. Year groups and groups that have their own payout account are paid separately, so a day can have more than one payout. Open a day to see the payments.
         </p>
       </header>
 
       {forecast.data && !forecast.data.payoutsConfigured && (
         <div className="border-l-2 border-primary bg-muted/40 py-3 pl-4 pr-3 text-[13px]">
-          Your payout account isn&apos;t set up yet, so nothing is being paid out.{" "}
+          Your institution&apos;s own payout account isn&apos;t set up yet, so money paid into it isn&apos;t being paid out.{" "}
           <Link href="/settings" className="font-semibold text-accent hover:underline">Set up payouts</Link>
         </div>
       )}

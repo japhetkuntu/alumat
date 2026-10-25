@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState } from "@alumni/ui";
+import { EmptyState, cn } from "@alumni/ui";
 import { FormError } from "@alumni/ui";
 import { LoadError } from "@alumni/ui";
 import { useState } from "react";
@@ -19,7 +19,7 @@ import { ConfirmModal } from "@alumni/ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
-  getBatches, createBatch, updateBatch, deleteBatch, submitBatchPayoutSetup,
+  getBatches, createBatch, createBatchRange, updateBatch, deleteBatch, submitBatchPayoutSetup,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type Batch,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
@@ -104,37 +104,140 @@ function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => voi
   );
 }
 
+type CreateMode = "one" | "range";
+
+const MAX_RANGE = 150;
+
 function BatchForm({
-  id, initial, onSave, cohortLabel,
+  id, initial, onSave, onSaveRange, cohortLabel, cohortLabelPlural, mode, onModeChange, existingYears,
 }: {
   id: string;
   initial?: Batch;
   onSave: (data: { name: string; year: number }) => void;
+  onSaveRange?: (data: { fromYear: number; toYear: number; namePattern: string }) => void;
   cohortLabel: string;
+  cohortLabelPlural: string;
+  mode: CreateMode;
+  onModeChange?: (mode: CreateMode) => void;
+  /** Years that already have one, so the range can say what it will add and what it will keep. */
+  existingYears: number[];
 }) {
+  const thisYear = new Date().getFullYear();
   const [name, setName] = useState(initial?.name ?? "");
-  const [year, setYear] = useState(initial ? String(initial.year) : String(new Date().getFullYear()));
+  const [year, setYear] = useState(initial ? String(initial.year) : String(thisYear));
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState(String(thisYear));
+  const [pattern, setPattern] = useState(`${cohortLabel} of {year}`);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  // What the range would do, worked out as the years are typed.
+  const fromN = Number(from);
+  const toN = Number(to);
+  const rangeValid = Number.isInteger(fromN) && Number.isInteger(toN) && fromN >= 1900 && toN <= 2200 && toN >= fromN && toN - fromN + 1 <= MAX_RANGE;
+  const inRange = rangeValid ? Array.from({ length: toN - fromN + 1 }, (_, k) => fromN + k) : [];
+  const kept = inRange.filter((y) => existingYears.includes(y));
+  const toAdd = inRange.length - kept.length;
+  const sample = (y: number) => (pattern.toLowerCase().includes("{year}") ? pattern.replace(/\{year\}/gi, String(y)) : `${pattern.trim()} ${y}`).trim();
+
+  function rangeProblem(): string | null {
+    if (!from || !to) return "Enter the first and last year.";
+    if (!rangeValid) {
+      if (toN < fromN) return "The last year can't be before the first.";
+      if (toN - fromN + 1 > MAX_RANGE) return `Add at most ${MAX_RANGE} years at a time.`;
+      return "Use years between 1900 and 2200.";
+    }
+    if (!pattern.trim()) return `Say how each one should be named, for example "${cohortLabel} of {year}".`;
+    return null;
+  }
 
   return (
     <form
-          id={id}
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSave({ name: name.trim(), year: Number(year) });
-          }}
-        >
+      id={id}
+      className="space-y-5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (mode === "range") {
+          const p = rangeProblem();
+          setProblem(p);
+          if (!p) onSaveRange?.({ fromYear: fromN, toYear: toN, namePattern: pattern.trim() });
+          return;
+        }
+        onSave({ name: name.trim(), year: Number(year) });
+      }}
+    >
+      {onModeChange && (
+        <div className="inline-flex border border-border" role="group" aria-label="How many to add">
+          {([["one", "One year"], ["range", "Several years"]] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={mode === value}
+              onClick={() => { setProblem(null); onModeChange(value); }}
+              className={cn(
+                "px-4 py-2 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+                mode === value ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {mode === "one" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`${cohortLabel} of 2020`} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Year</Label>
+            <Input type="number" min={1900} max={2200} value={year} onChange={(e) => setYear(e.target.value)} required />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted-foreground">
+            Add every year in a range at once. Years that already have a {cohortLabel.toLowerCase()} are skipped and left exactly as they are.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`${cohortLabel} of 2020`} required />
+              <Label>First year</Label>
+              <Input type="number" min={1900} max={2200} value={from} placeholder="e.g. 1989" onChange={(e) => { setFrom(e.target.value); setProblem(null); }} />
             </div>
             <div className="space-y-2">
-              <Label>Year</Label>
-              <Input type="number" min={1900} max={2200} value={year} onChange={(e) => setYear(e.target.value)} required />
+              <Label>Last year</Label>
+              <Input type="number" min={1900} max={2200} value={to} onChange={(e) => { setTo(e.target.value); setProblem(null); }} />
             </div>
           </div>
-          </form>
+          <div className="space-y-2">
+            <Label>Name each one</Label>
+            <Input value={pattern} maxLength={100} onChange={(e) => { setPattern(e.target.value); setProblem(null); }} placeholder={`${cohortLabel} of {year}`} />
+            <p className="text-[12.5px] text-muted-foreground">{"{year}"} is replaced by each year. Without it, the year is added to the end.</p>
+          </div>
+
+          <div className="border-l-2 border-primary bg-muted/40 px-4 py-3 text-[13px]" aria-live="polite">
+            {rangeValid ? (
+              <>
+                <p className="font-semibold">
+                  {toAdd === 0
+                    ? `Nothing to add: every year from ${fromN} to ${toN} already has a ${cohortLabel.toLowerCase()}.`
+                    : `Will add ${toAdd} ${toAdd === 1 ? cohortLabel.toLowerCase() : cohortLabelPlural.toLowerCase()}, from ${sample(inRange.find((y) => !existingYears.includes(y))!)} on.`}
+                </p>
+                {kept.length > 0 && (
+                  <p className="mt-0.5 text-muted-foreground">
+                    Keeps {kept.length === 1 ? "the one" : `the ${kept.length}`} that already {kept.length === 1 ? "exists" : "exist"}: {kept.length > 8 ? `${kept.slice(0, 8).join(", ")} and ${kept.length - 8} more` : kept.join(", ")}.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-muted-foreground">Enter the first and last year to see what will be added.</p>
+            )}
+          </div>
+          {problem && <p role="alert" className="text-[13px] font-medium text-destructive">{problem}</p>}
+        </div>
+      )}
+    </form>
   );
 }
 
@@ -142,6 +245,7 @@ export default function BatchesPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
   const [showCreate, setShowCreate] = useState(false);
+  const [createMode, setCreateMode] = useState<CreateMode>("one");
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Batch | null>(null);
   const [payoutTarget, setPayoutTarget] = useState<Batch | null>(null);
@@ -161,6 +265,21 @@ export default function BatchesPage() {
   const createMut = useMutation({
     mutationFn: createBatch,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["batches"] }); setShowCreate(false); toast.success("Batch created"); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
+  const rangeMut = useMutation({
+    mutationFn: createBatchRange,
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["batches"] });
+      setShowCreate(false);
+      const kept = r.skippedYears.length;
+      toast.success(
+        r.created === 0
+          ? `Nothing to add: every year in that range already had one.`
+          : `Added ${r.created} ${r.created === 1 ? cohortLabel.toLowerCase() : cohortLabelPlural.toLowerCase()}${kept > 0 ? `. ${kept} already existed and ${kept === 1 ? "was" : "were"} left as ${kept === 1 ? "it was" : "they were"}.` : "."}`,
+      );
+    },
     onError: (e) => toast.error(handleApiError(e)),
   });
 
@@ -188,7 +307,7 @@ export default function BatchesPage() {
           </p>
         </div>
         {isSuperAdmin && (
-          <Button onClick={() => setShowCreate(true)}>
+          <Button onClick={() => { setCreateMode("one"); setShowCreate(true); }}>
             <Plus size={16} />Add {cohortLabel.toLowerCase()}
           </Button>
         )}
@@ -200,8 +319,8 @@ export default function BatchesPage() {
         title={editingBatch ? `Edit ${cohortLabel.toLowerCase()}` : `Add ${cohortLabel.toLowerCase()}`}
         description={editingBatch ? editingBatch.name : undefined}
         formId="batch-form"
-        submitLabel={editingBatch ? "Save changes" : `Create ${cohortLabel.toLowerCase()}`}
-        saving={createMut.isPending || updateMut.isPending}
+        submitLabel={editingBatch ? "Save changes" : createMode === "range" ? `Add ${cohortLabelPlural.toLowerCase()}` : `Create ${cohortLabel.toLowerCase()}`}
+        saving={createMut.isPending || rangeMut.isPending || updateMut.isPending}
       >
         {editingBatch ? (
           <BatchForm
@@ -209,10 +328,22 @@ export default function BatchesPage() {
             id="batch-form"
             initial={editingBatch}
             cohortLabel={cohortLabel}
+            cohortLabelPlural={cohortLabelPlural}
+            mode="one"
+            existingYears={batches.map((b) => b.year)}
             onSave={(d) => updateMut.mutate({ id: editingBatch.id, ...d, isActive: editingBatch.isActive })}
           />
         ) : showCreate ? (
-          <BatchForm id="batch-form" cohortLabel={cohortLabel} onSave={(d) => createMut.mutate(d)} />
+          <BatchForm
+            id="batch-form"
+            cohortLabel={cohortLabel}
+            cohortLabelPlural={cohortLabelPlural}
+            mode={createMode}
+            onModeChange={setCreateMode}
+            existingYears={batches.map((b) => b.year)}
+            onSave={(d) => createMut.mutate(d)}
+            onSaveRange={(d) => rangeMut.mutate(d)}
+          />
         ) : null}
       </FormSheet>
 

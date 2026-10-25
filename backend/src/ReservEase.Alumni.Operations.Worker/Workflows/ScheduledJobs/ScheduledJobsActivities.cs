@@ -58,7 +58,8 @@ public class ScheduledJobsActivities(
     ITemporalClientProvider temporalProvider,
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     IConfiguration configuration,
-    ILogger<ScheduledJobsActivities> logger)
+    ILogger<ScheduledJobsActivities> logger,
+    IAlumniPgRepository<Community>? communityRepo = null)
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     private const int MaxFailedRecurringAttempts = 3;
@@ -863,6 +864,7 @@ public class ScheduledJobsActivities(
                 Title = campaign.Title,
                 IsActive = campaign.Status == CampaignStatus.Active,
                 YearGroups = campaign.YearGroups,
+                CommunityId = campaign.CommunityId,
             };
         }, "load campaign for recurring giving", campaignId);
 
@@ -889,6 +891,12 @@ public class ScheduledJobsActivities(
                 ? batch.PaystackSubaccountCode
                 : null;
         }, "resolve batch subaccount", institutionId);
+
+    /// <summary>A group's own account for a recurring gift to a fundraiser aimed at that group, or null when it has no live account of its own.</summary>
+    [Activity("ScheduledJobs.ResolveGroupSubaccount")]
+    public virtual Task<string?> ResolveGroupSubaccountAsync(string institutionId, string communityId) =>
+        Wrap(() => SettlementAccounts.ForAudienceAsync(null, communityRepo, institutionId, null, communityId),
+            "resolve group subaccount", institutionId);
 
     [Activity("ScheduledJobs.PauseRecurringGiving")]
     public virtual Task PauseRecurringGivingAsync(string recurringId, string reason) =>

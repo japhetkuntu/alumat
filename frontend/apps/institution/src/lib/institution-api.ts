@@ -493,6 +493,12 @@ export async function createBatch(body: { name: string; year: number }): Promise
   return res.data.data!;
 }
 
+/** Adds a year group for every year from `fromYear` to `toYear` that does not have one yet; existing ones are left as they are. */
+export async function createBatchRange(body: { fromYear: number; toYear: number; namePattern: string }): Promise<{ created: number; skippedYears: number[] }> {
+  const res = await institutionClient.post<ApiResponse<{ created: number; skippedYears: number[] }>>("/batches/range", body);
+  return res.data.data!;
+}
+
 export async function updateBatch(id: string, body: { name: string; year: number; isActive: boolean }): Promise<Batch> {
   const res = await institutionClient.put<ApiResponse<Batch>>(`/batches/${id}`, body);
   return res.data.data!;
@@ -544,6 +550,24 @@ export interface CommunityListItem {
   /** Members who joined this community through a leader's invitation. */
   joinedViaInvites?: number;
   joinedLast30Days?: number;
+  /** Where this group's own payments settle: None until set up, then Pending → Approved/Rejected by the platform. */
+  payoutStatus: "None" | "Pending" | "Approved" | "Rejected";
+  useInstitutionAccount: boolean;
+  settlementBankName?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
+}
+
+/** Submit a group's own settlement details for platform review. Banks/account-resolve reuse the batch Paystack proxy. */
+export async function submitCommunityPayoutSetup(id: string, body: {
+  useInstitutionAccount: boolean;
+  settlementBankCode?: string;
+  settlementBankName?: string;
+  settlementAccountNumber?: string;
+  settlementAccountName?: string;
+}): Promise<CommunityListItem> {
+  const res = await institutionClient.post<ApiResponse<CommunityListItem>>(`/communities/${id}/payout-setup`, body);
+  return res.data.data!;
 }
 
 export interface CommunityGrowthSummary {
@@ -2092,7 +2116,8 @@ export interface PayoutHistory {
   to: string;
 }
 export interface PayoutItem { source: string; account: string; title: string; payerName?: string | null; amount: number; confirmedAt: string }
-export interface PayoutDayDetail { date: string; amount: number; items: PayoutItem[] }
+/** `totalCount` is every payment in the day; `items` is the newest of them (up to 500). */
+export interface PayoutDayDetail { date: string; amount: number; items: PayoutItem[]; totalCount: number }
 
 /** SuperAdmin-only: what was paid out on each past payout day (newest first), over the last `days` calendar days. */
 export async function getPayoutHistory(days = 30, account?: string, to?: string): Promise<PayoutHistory> {

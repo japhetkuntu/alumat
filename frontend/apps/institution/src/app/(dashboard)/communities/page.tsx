@@ -21,12 +21,16 @@ import { TableSkeleton, Skeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
 import { Textarea } from "@alumni/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@alumni/ui";
+import { FormError } from "@alumni/ui";
+import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getCommunities, getCommunityGrowth, createCommunity, updateCommunity, getCommunityMembers, setCommunityMemberRole, approveCommunityRequest, rejectCommunityRequest, removeCommunityMember,
-  uploadImage, type CommunityListItem, type CommunityMemberItem,
+  uploadImage, submitCommunityPayoutSetup, getBatchPayoutBanks, resolveBatchPayoutAccount, type CommunityListItem, type CommunityMemberItem,
 } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { LinkOrUpload } from "@alumni/ui";
+import { useAuth } from "@/hooks/use-auth";
 import { MemberShareButton } from "@/components/institution/member-share-button";
 
 const SOURCE_LABEL: Record<string, string> = { whatsapp: "Chat message", link: "Shared link", qr: "QR code", sms: "SMS", email: "Email" };
@@ -375,7 +379,73 @@ function MembersPanel({ community, onClose }: { community: CommunityListItem; on
   );
 }
 
+const payoutStatusVariant: Record<CommunityListItem["payoutStatus"], "neutral" | "warning" | "success" | "destructive"> = {
+  None: "neutral",
+  Pending: "warning",
+  Approved: "success",
+  Rejected: "destructive",
+};
+
+/** Where the money for this group's fundraisers and paid events goes. Needs platform approval, so nothing changes until then. */
+function PayoutSetupModal({ group, onClose }: { group: CommunityListItem; onClose: () => void }) {
+  const [useOwn, setUseOwn] = useState(!group.useInstitutionAccount);
+  const [value, setValue] = useState<SettlementAccountValue>({
+    settlementBankCode: "",
+    settlementBankName: group.settlementBankName ?? "",
+    settlementAccountNumber: group.settlementAccountNumber ?? "",
+    settlementAccountName: group.settlementAccountName ?? "",
+  });
+  const [formError, setFormError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const submitMut = useMutation({
+    onMutate: () => setFormError(null),
+    mutationFn: () => submitCommunityPayoutSetup(group.id, {
+      useInstitutionAccount: !useOwn,
+      settlementBankCode: useOwn ? value.settlementBankCode : undefined,
+      settlementBankName: useOwn ? value.settlementBankName : undefined,
+      settlementAccountNumber: useOwn ? value.settlementAccountNumber : undefined,
+      settlementAccountName: useOwn ? value.settlementAccountName : undefined,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["communities"] }); toast.success("Submitted for platform review"); onClose(); },
+    onError: (e) => { const message = handleApiError(e); setFormError(message); toast.error(message); },
+  });
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Payout setup: {group.name}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted-foreground">
+            Choose where money paid to this group goes: its fundraisers and its paid event tickets. It can settle into the institution's account, or into one of its own. Either way, the platform approves it first. Until then, this group keeps using the institution's account.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant={!useOwn ? "default" : "outline"} onClick={() => setUseOwn(false)}>Use institution's account</Button>
+            <Button type="button" size="sm" variant={useOwn ? "default" : "outline"} onClick={() => setUseOwn(true)}>This group's own account</Button>
+          </div>
+          {useOwn && (
+            <SettlementAccountFields value={value} onChange={setValue} getBanks={getBatchPayoutBanks} resolveAccount={resolveBatchPayoutAccount} />
+          )}
+        </div>
+        <FormError message={formError} className="mt-3" />
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={useOwn && (!value.settlementBankCode || !value.settlementAccountNumber || !value.settlementAccountName)}
+            isLoading={submitMut.isPending}
+            onClick={() => submitMut.mutate()}
+          >
+            Submit for review
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function CommunitiesPage() {
+  const { user } = useAuth();
+  const [payoutTarget, setPayoutTarget] = useState<CommunityListItem | null>(null);
+  const canSetUpPayout = (c: CommunityListItem) => user?.role === "SuperAdmin" || (user?.role === "ScopedAdmin" && !!user.communityIds?.includes(c.id));
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<CommunityListItem | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -457,17 +527,18 @@ export default function CommunitiesPage() {
                 <TableHead>Pending</TableHead>
                 <TableHead>Leaders</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payout</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={7}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={8}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={7} />
+                <TableSkeleton rows={4} cols={8} />
               ) : communities.length === 0 ? (
-                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={8}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
@@ -492,6 +563,14 @@ export default function CommunitiesPage() {
                   <TableCell>{c.pendingCount > 0 ? <Badge variant="warning">{c.pendingCount}</Badge> : 0}</TableCell>
                   <TableCell>{c.leaderCount}</TableCell>
                   <TableCell><Badge variant={c.isActive ? "success" : "neutral"}>{c.isActive ? "Active" : "Inactive"}</Badge></TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={payoutStatusVariant[c.payoutStatus]}>{c.payoutStatus === "None" ? "Institution account" : c.payoutStatus}</Badge>
+                      {canSetUpPayout(c) && (
+                        <Button size="sm" variant="outline" onClick={() => setPayoutTarget(c)}>{c.payoutStatus === "None" ? "Set up" : "Edit"}</Button>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{formatDate(c.createdAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 justify-end">
@@ -525,6 +604,7 @@ export default function CommunitiesPage() {
         onConfirm={() => { if (deactivateTarget) toggleActive(deactivateTarget); }}
         onCancel={() => setDeactivateTarget(null)}
       />
+      {payoutTarget && <PayoutSetupModal group={payoutTarget} onClose={() => setPayoutTarget(null)} />}
     </div>
   );
 }

@@ -33,6 +33,7 @@ public class ContributionService : IContributionService
     private readonly IAlumniPgRepository<PaymentTransaction> paymentTransactionRepo;
     private readonly IAlumniPgRepository<Institution> institutionRepo;
     private readonly IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Batch> batchRepo;
+    private readonly IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Community>? communityRepo;
     private readonly IAlumniPgRepository<RecurringContribution> recurringRepo;
     private readonly IAlumniPgRepository<PlatformSettings> platformSettingsRepo;
     private readonly ICurrentTenantService currentTenant;
@@ -70,28 +71,14 @@ public class ContributionService : IContributionService
     }
 
     /// <summary>
-    /// A campaign targeting exactly one batch (YearGroups with a single
-    /// entry) settles into that batch's own Paystack subaccount instead of
-    /// the institution's, once the batch's payout setup has been approved —
-    /// see BatchesController.SubmitPayoutSetup / Platform.Api's
-    /// BatchPayoutsController. A campaign with no year groups, more than one,
-    /// or a community-only audience always falls back to the institution's
-    /// account (unambiguous only for a single-batch audience). The platform
-    /// fee percentage is always the institution's — batches never have their
-    /// own.
+    /// A fundraiser aimed at one group settles into that group's own Paystack subaccount, and one aimed at exactly one year group into
+    /// that year group's, once platform staff have approved the account (see SettlementAccounts). A fundraiser for several year groups
+    /// or for everyone, or for a group or year group without a live account of its own, settles into the institution's account. The
+    /// platform fee percentage is always the institution's: groups and year groups never have their own.
     /// </summary>
-    private async Task<string?> ResolveSubaccountAsync(Campaign? campaign, Institution? institution)
-    {
-        if (campaign?.YearGroups is { Count: 1 } && !string.IsNullOrEmpty(currentTenant.InstitutionId))
-        {
-            var year = campaign.YearGroups[0];
-            var batch = await batchRepo.GetOneAsync(b => b.InstitutionId == currentTenant.InstitutionId && b.Year == year);
-            if (batch is { PayoutStatus: "Approved", UseInstitutionAccount: false } && !string.IsNullOrEmpty(batch.PaystackSubaccountCode))
-                return batch.PaystackSubaccountCode;
-        }
-
-        return institution?.PaystackSubaccountCode;
-    }
+    private async Task<string?> ResolveSubaccountAsync(Campaign? campaign, Institution? institution) =>
+        await SettlementAccounts.ForAudienceAsync(batchRepo, communityRepo, currentTenant.InstitutionId, campaign?.YearGroups, campaign?.CommunityId)
+        ?? institution?.PaystackSubaccountCode;
 
     private async Task<Institution?> GetCurrentInstitutionAsync() =>
         string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
@@ -244,8 +231,10 @@ public class ContributionService : IContributionService
         IRedisService<MemberRedisConfig> redis,
         ITemporalClientProvider temporalProvider,
         IConfiguration configuration,
-        ILogger<ContributionService> logger)
+        ILogger<ContributionService> logger,
+        IAlumniPgRepository<PostgresDb.Sdk.Entities.Alumni.Community>? communityRepo = null)
     {
+        this.communityRepo = communityRepo;
         this.contributionRepo = contributionRepo;
         this.campaignRepo = campaignRepo;
         this.memberRepo = memberRepo;

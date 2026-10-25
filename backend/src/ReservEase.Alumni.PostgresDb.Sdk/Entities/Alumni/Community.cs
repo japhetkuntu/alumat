@@ -47,4 +47,24 @@ public class Community : BaseEntity, ITenantScoped
 
     /// <summary>Optional external channels (e.g. the community's WhatsApp group). Null = none connected.</summary>
     public List<CommunityChannel>? ExternalChannels { get; set; }
+
+    // ── Payout account ───────────────────────────────────────────────────────
+    // The same arrangement as a year group (see Batch): a group can be paid into its own account instead of the institution's. What
+    // the group's admin submits waits in PendingPayoutChanges until platform staff approve it; only approval writes the live fields.
+
+    /// <summary>None (never set up), Pending (awaiting platform review), Approved (live), or Rejected (the institution's account is used).</summary>
+    public string PayoutStatus { get; set; } = "None";
+
+    /// <summary>True: this group settles into the institution's own account. False, once Approved: it has its own, below.</summary>
+    public bool UseInstitutionAccount { get; set; }
+
+    /// <summary>The live Paystack subaccount, only set once Approved. The platform fee percentage is always the institution's.</summary>
+    public string? PaystackSubaccountCode { get; set; }
+    public string? SettlementBankCode { get; set; }
+    public string? SettlementBankName { get; set; }
+    public string? SettlementAccountNumber { get; set; }
+    public string? SettlementAccountName { get; set; }
+
+    /// <summary>The latest submission, held until platform staff approve or reject it. Cleared by either.</summary>
+    public BatchPayoutPendingChanges? PendingPayoutChanges { get; set; }
 }

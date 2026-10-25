@@ -897,15 +897,42 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PayoutStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaystackSubaccountCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PendingPayoutChanges")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("SettlementAccountName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementAccountNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementBankCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SettlementBankName")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
+                    b.Property<bool>("UseInstitutionAccount")
+                        .HasColumnType("boolean");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InstitutionId");
+
+                    b.HasIndex("PayoutStatus");
 
                     b.ToTable("Communities", "alumni");
                 });

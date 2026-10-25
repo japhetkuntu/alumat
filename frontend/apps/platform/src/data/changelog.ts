@@ -20,6 +20,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-25",
+    title: "Groups can have their own payout account, like year groups",
+    scopes: ["Institution", "Platform", "Member"],
+    type: "Feature",
+    body: "On the Groups page, a SuperAdmin (or a ScopedAdmin who looks after that group) can now set up where the money for a group goes: the institution's account as before, or an account of its own. It covers the group's fundraisers and the tickets of its paid events. Like year groups it needs platform approval first: the request appears under 'Group payout approvals' on the Billing page, approving creates or updates the Paystack subaccount, and the admins are notified either way. Until then, or if rejected, the group keeps settling through the institution's account. At charge time a group's account takes precedence over a year group's (a fundraiser aimed at a group is not aimed at a year group), also for recurring gifts. The institution's payout history and forecast list the group as its own account, and the platform's payout forecast no longer counts that money towards the institution. Migration AddGroupPayoutAccounts adds the payout columns to Communities."
+  },
+  {
+    date: "2026-10-25",
+    title: "Add many year groups at once: pick the first and last year and every missing year is created",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "On the year groups page (cohorts, batches, sets: whatever the community calls them), 'Add' now has two choices: 'One year', as before, and 'Several years'. For several, the admin gives the first year, the last year, and how each should be named ('Class of {year}' gives Class of 1989, Class of 1990 and so on; a name without {year} gets the year added to the end). A live line under the form says exactly what will happen before anything is saved: how many will be added, what the first name will be, and which years already exist and will be kept. Years that already have a year group are skipped and left exactly as they were, including their name, active setting and payout setup, so running a range twice, or adding 1989 to 2026 when 2016 is already there, is safe. Up to 150 years at a time, SuperAdmin only, like adding one. After saving, a message says how many were added and how many already existed. No migration."
+  },
+  {
+    date: "2026-10-24",
+    title: "Opening a payout day on the Payouts page is fast however busy the day was, and says when the list is cut short",
+    scopes: ["Institution"],
+    type: "Improvement",
+    body: "Opening a day used to read every payment of that day into memory before listing the newest 500. The day's total and count are now worked out in the database and only the newest 500 payments are read (about 20 ms for a day with 1,250 payments, and the same for a day with many thousands). When a day has more than 500 payments the list now says 'Showing the newest 500 of N payments. The total for the day covers all of them.' Measured with 150,000 payments: the dashboard payout figures take about 35 ms and a 90-day history about 75 ms. No migration."
+  },
+  {
     date: "2026-10-24",
     title: "Photos open in one viewer you can move through: an admin's album, a store product, and public previews",
     scopes: ["Institution", "Member"],

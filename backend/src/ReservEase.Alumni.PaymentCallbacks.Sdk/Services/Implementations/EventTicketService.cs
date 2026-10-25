@@ -31,7 +31,8 @@ public class EventTicketService(
     PaystackConfig paystackConfig,
     ITemporalClientProvider temporalProvider,
     IConfiguration configuration,
-    ILogger<EventTicketService> logger) : IEventTicketService
+    ILogger<EventTicketService> logger,
+    IAlumniPgRepository<Community>? communityRepo = null) : IEventTicketService
 {
     private readonly string _paystackCallbackUrl = BuildCallbackUrl(configuration);
 
@@ -120,7 +121,9 @@ public class EventTicketService(
                 Amount = charge.AmountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
                 Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "eventTicket", "true" }, { "eventId", ev.Id } },
-                Subaccount = institution?.PaystackSubaccountCode,
+                // A group's event pays into the group's own account once it has an approved one, otherwise the institution's.
+                Subaccount = await SettlementAccounts.ForAudienceAsync(null, communityRepo, currentTenant.InstitutionId, null, ev.CommunityId)
+                    ?? institution?.PaystackSubaccountCode,
                 TransactionCharge = charge.TransactionChargeSubunit,
                 Bearer = charge.Bearer,
             });
