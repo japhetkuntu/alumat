@@ -34,7 +34,8 @@ const payoutStatusVariant: Record<Batch["payoutStatus"], "neutral" | "warning" |
 };
 
 function PayoutSetupModal({ batch, onClose }: { batch: Batch; onClose: () => void }) {
-  const [useOwn, setUseOwn] = useState(!batch.useInstitutionAccount);
+  // Everyone starts on the institution's account; a dedicated one is only chosen on purpose.
+  const [useOwn, setUseOwn] = useState(batch.payoutStatus !== "None" && !batch.useInstitutionAccount);
   const [value, setValue] = useState<SettlementAccountValue>({
     settlementBankCode: "",
     settlementBankName: batch.settlementBankName ?? "",

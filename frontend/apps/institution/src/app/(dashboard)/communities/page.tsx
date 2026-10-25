@@ -386,9 +386,33 @@ const payoutStatusVariant: Record<CommunityListItem["payoutStatus"], "neutral" |
   Rejected: "destructive",
 };
 
+/** One line on where this group's money goes, what stage it is at, and how to change it. */
+function PayoutSummary({ group, onEdit }: { group: CommunityListItem; onEdit?: () => void }) {
+  const own = group.payoutStatus === "Approved" && !group.useInstitutionAccount;
+  const headline = own ? (group.settlementAccountName || "Its own account")
+    : group.payoutStatus === "Pending" ? "Waiting for approval"
+    : group.payoutStatus === "Rejected" ? "Needs changes"
+    : "Institution's account";
+  const detail = own ? [group.settlementBankName, group.settlementAccountNumber ? `····${group.settlementAccountNumber.slice(-4)}` : null].filter(Boolean).join(" ")
+    : group.payoutStatus === "Pending" ? "The platform is reviewing your request. Until then it uses the institution's account."
+    : group.payoutStatus === "Rejected" ? "Not approved. It uses the institution's account. Review and resubmit."
+    : "Fundraisers and paid events pay into the institution's account unless you set up one for this group.";
+  return (
+    <div className="min-w-0 text-right sm:min-w-[170px] sm:max-w-[260px] sm:text-left">
+      <div className="flex items-center justify-end gap-2 sm:justify-start">
+        <Badge variant={own ? "success" : payoutStatusVariant[group.payoutStatus]}>{own ? "Own account" : group.payoutStatus === "None" || group.payoutStatus === "Approved" ? "Institution account" : group.payoutStatus}</Badge>
+        {onEdit && <button type="button" onClick={onEdit} className="text-[12.5px] font-semibold text-accent hover:underline">{group.payoutStatus === "None" ? "Set up" : "Change"}</button>}
+      </div>
+      <p className="mt-1 text-[12.5px] font-medium leading-snug">{headline}</p>
+      <p className="text-[12px] leading-snug text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
 /** Where the money for this group's fundraisers and paid events goes. Needs platform approval, so nothing changes until then. */
 function PayoutSetupModal({ group, onClose }: { group: CommunityListItem; onClose: () => void }) {
-  const [useOwn, setUseOwn] = useState(!group.useInstitutionAccount);
+  // Everyone starts on the institution's account; a dedicated one is only chosen on purpose.
+  const [useOwn, setUseOwn] = useState(group.payoutStatus !== "None" && !group.useInstitutionAccount);
   const [value, setValue] = useState<SettlementAccountValue>({
     settlementBankCode: "",
     settlementBankName: group.settlementBankName ?? "",
@@ -527,18 +551,17 @@ export default function CommunitiesPage() {
                 <TableHead>Pending</TableHead>
                 <TableHead>Leaders</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Payout</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Payouts go to</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={8}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={8} />
+                <TableSkeleton rows={4} cols={7} />
               ) : communities.length === 0 ? (
-                <TableRow><TableCell colSpan={8}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
@@ -553,6 +576,7 @@ export default function CommunitiesPage() {
                       <div className="min-w-0">
                         <p className="font-medium truncate">{c.name}{c.kind && <span className="ml-2 align-middle rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{c.kind}</span>}</p>
                         {c.description && <ReadMore lines={2} className="text-[12px] text-muted-foreground">{richTextToPlain(c.description)}</ReadMore>}
+                        <p className="mt-0.5 text-[12px] text-muted-foreground">Created {formatDate(c.createdAt)}</p>
                         {(c.joinedViaInvites ?? 0) > 0 && (
                           <p className="mt-0.5 text-[12px] text-muted-foreground">{c.joinedViaInvites} joined by invitation</p>
                         )}
@@ -564,16 +588,10 @@ export default function CommunitiesPage() {
                   <TableCell>{c.leaderCount}</TableCell>
                   <TableCell><Badge variant={c.isActive ? "success" : "neutral"}>{c.isActive ? "Active" : "Inactive"}</Badge></TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={payoutStatusVariant[c.payoutStatus]}>{c.payoutStatus === "None" ? "Institution account" : c.payoutStatus}</Badge>
-                      {canSetUpPayout(c) && (
-                        <Button size="sm" variant="outline" onClick={() => setPayoutTarget(c)}>{c.payoutStatus === "None" ? "Set up" : "Edit"}</Button>
-                      )}
-                    </div>
+                    <PayoutSummary group={c} onEdit={canSetUpPayout(c) ? () => setPayoutTarget(c) : undefined} />
                   </TableCell>
-                  <TableCell>{formatDate(c.createdAt)}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 justify-end">
+                    <div className="flex flex-wrap items-center gap-2 justify-end">
                       {c.isActive && <MemberShareButton memberPath={`/communities/${c.id}`} title={c.name} message={shareMessages.community({ name: c.name, description: c.description })} />}
                       <Button size="sm" variant="outline" onClick={() => setViewingMembers(c)}>Members</Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing(c)}>Edit</Button>
