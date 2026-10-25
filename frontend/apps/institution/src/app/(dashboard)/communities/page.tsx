@@ -8,7 +8,7 @@ import { LoadError } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Crown, Users } from "@alumni/ui";
+import { Plus, Crown, Users, MoreHorizontal, Pencil, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@alumni/ui";
 import { toast } from "sonner";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
@@ -398,10 +398,10 @@ function PayoutSummary({ group, onEdit }: { group: CommunityListItem; onEdit?: (
     : group.payoutStatus === "Rejected" ? "Not approved. It uses the institution's account. Review and resubmit."
     : "Fundraisers and paid events pay into the institution's account unless you set up one for this group.";
   return (
-    <div className="min-w-0 text-right sm:min-w-[170px] sm:max-w-[260px] sm:text-left">
+    <div className="min-w-0 text-right sm:min-w-[140px] sm:max-w-[180px] sm:text-left">
       <div className="flex items-center justify-end gap-2 sm:justify-start">
         <Badge variant={own ? "success" : payoutStatusVariant[group.payoutStatus]}>{own ? "Own account" : group.payoutStatus === "None" || group.payoutStatus === "Approved" ? "Institution account" : group.payoutStatus}</Badge>
-        {onEdit && <button type="button" onClick={onEdit} className="text-[12.5px] font-semibold text-accent hover:underline">{group.payoutStatus === "None" ? "Set up" : "Change"}</button>}
+        {onEdit && <button type="button" onClick={onEdit} className="whitespace-nowrap text-[12.5px] font-semibold text-accent hover:underline">{group.payoutStatus === "None" ? "Set up" : "Change"}</button>}
       </div>
       <p className="mt-1 text-[12.5px] font-medium leading-snug">{headline}</p>
       <p className="text-[12px] leading-snug text-muted-foreground">{detail}</p>
@@ -539,33 +539,31 @@ export default function CommunitiesPage() {
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3.5 border-b border-border flex items-center justify-between">
-          <b className="text-[13.5px]">All communities</b>
+          <b className="text-[13.5px]">All groups</b>
           <span className="text-[12.5px] text-muted-foreground">{communities.length} total</span>
         </div>
         <CardContent className="p-0">
-          <Table stackOnMobile className="min-w-[760px]">
+          <Table stackOnMobile className="min-w-[720px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Members</TableHead>
-                <TableHead>Pending</TableHead>
-                <TableHead>Leaders</TableHead>
+                <TableHead>Group</TableHead>
+                <TableHead>People</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Payouts go to</TableHead>
-                <TableHead />
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={7}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={5}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={7} />
+                <TableSkeleton rows={4} cols={5} />
               ) : communities.length === 0 ? (
-                <TableRow><TableCell colSpan={7}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title="Groups bring together members who share something" description="Create a group for a chapter, a committee, a team or a year group. Members can ask to join, and you approve them here." /></TableCell></TableRow>
               ) : communities.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
+                    <div className="flex max-w-[200px] items-center gap-3">
                       {c.coverImageUrl ? (
                         <img src={c.coverImageUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                       ) : (
@@ -583,26 +581,35 @@ export default function CommunitiesPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{c.approvedCount}</TableCell>
-                  <TableCell>{c.pendingCount > 0 ? <Badge variant="warning">{c.pendingCount}</Badge> : 0}</TableCell>
-                  <TableCell>{c.leaderCount}</TableCell>
+                  <TableCell>
+                    <div className="space-y-0.5 whitespace-nowrap text-[13px]">
+                      <p className="font-medium tabular-nums">{c.approvedCount} {c.approvedCount === 1 ? "member" : "members"}</p>
+                      <p className="text-muted-foreground">{c.leaderCount} {c.leaderCount === 1 ? "leader" : "leaders"}</p>
+                      {c.pendingCount > 0 && (
+                        <button type="button" onClick={() => setViewingMembers(c)} className="block text-left" aria-label={`Review ${c.pendingCount} join requests for ${c.name}`}><Badge variant="warning">{c.pendingCount} waiting to join</Badge></button>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell><Badge variant={c.isActive ? "success" : "neutral"}>{c.isActive ? "Active" : "Inactive"}</Badge></TableCell>
                   <TableCell>
                     <PayoutSummary group={c} onEdit={canSetUpPayout(c) ? () => setPayoutTarget(c) : undefined} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                    <div className="flex items-center justify-end gap-2">
                       {c.isActive && <MemberShareButton memberPath={`/communities/${c.id}`} title={c.name} message={shareMessages.community({ name: c.name, description: c.description })} />}
-                      <Button size="sm" variant="outline" onClick={() => setViewingMembers(c)}>Members</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(c)}>Edit</Button>
-                      <Button
-                        size="sm"
-                        variant={c.isActive ? "destructive" : "secondary"}
-                        onClick={() => c.isActive ? setDeactivateTarget(c) : toggleActive(c)}
-                        isLoading={updateMut.isPending}
-                      >
-                        {c.isActive ? "Deactivate" : "Activate"}
-                      </Button>
+                      <Button size="sm" onClick={() => setViewingMembers(c)}>Members</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline" aria-label={`More actions for ${c.name}`} className="px-3"><MoreHorizontal size={15} /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-[190px]">
+                          <DropdownMenuItem onSelect={() => setEditing(c)}><Pencil size={14} />Edit group</DropdownMenuItem>
+                          {canSetUpPayout(c) && <DropdownMenuItem onSelect={() => setPayoutTarget(c)}>{c.payoutStatus === "None" ? "Set up payouts" : "Change payouts"}</DropdownMenuItem>}
+                          {c.isActive
+                            ? <DropdownMenuItem destructive onSelect={() => setDeactivateTarget(c)}>Deactivate</DropdownMenuItem>
+                            : <DropdownMenuItem onSelect={() => toggleActive(c)}>Activate</DropdownMenuItem>}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -23,7 +23,7 @@ public class PayoutHistoryTests
         return new PayoutService(
             new AlumniPgRepository<Contribution>(ctx), new AlumniPgRepository<StoreOrder>(ctx), new AlumniPgRepository<ServiceRequest>(ctx),
             new AlumniPgRepository<EventRsvp>(ctx), new AlumniPgRepository<AlumniEvent>(ctx), new AlumniPgRepository<ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Member>(ctx), new AlumniPgRepository<Campaign>(ctx), new AlumniPgRepository<Batch>(ctx),
-            new AlumniPgRepository<InstitutionEntity>(ctx), TestDb.Tenant(Tenant, "umat"), NullLogger<PayoutService>.Instance, new AlumniPgRepository<Community>(ctx));
+            new AlumniPgRepository<InstitutionEntity>(ctx), TestDb.Tenant(Tenant, "umat"), NullLogger<PayoutService>.Instance, new AlumniPgRepository<Community>(ctx), new AlumniPgRepository<ServiceType>(ctx));
     }
 
     private static Contribution Paid(string campaignId, decimal amount, DateTime at, string member = "m1") => new()
@@ -153,6 +153,36 @@ public class PayoutHistoryTests
         Assert.Equal(2, detail.Items.Count);
         Assert.All(detail.Items, i => Assert.Equal("Accra Chapter", i.Account));
         Assert.Equal(35m, (await service.GetDayAsync(tue, "main")).Data!.Amount);
+    }
+
+    [Fact]
+    public async Task A_service_is_paid_into_the_account_it_names_or_its_groups_by_default()
+    {
+        var mon = Monday; var tue = mon.AddDays(1);
+        var service = Create(db =>
+        {
+            db.Add(new Community { Id = "g1", Name = "Accra Chapter", PayoutStatus = "Approved", UseInstitutionAccount = false, PaystackSubaccountCode = "ACCT_g", InstitutionId = Tenant });
+            db.Add(new Batch { Id = "b19", Name = "Batch of 2019", Year = 2019, PayoutStatus = "Approved", UseInstitutionAccount = false, PaystackSubaccountCode = "ACCT_b", InstitutionId = Tenant });
+            db.Add(new ServiceType { Id = "plain", Name = "Transcript", InstitutionId = Tenant });
+            db.Add(new ServiceType { Id = "ofgroup", Name = "Chapter letter", CommunityId = "g1", InstitutionId = Tenant });       // for a group: its account by default
+            db.Add(new ServiceType { Id = "forced", Name = "Attestation", CommunityId = "g1", SettlementTarget = "institution", InstitutionId = Tenant });
+            db.Add(new ServiceType { Id = "toyear", Name = "Class letter", SettlementTarget = "year:2019", InstitutionId = Tenant });
+            db.Add(new ServiceRequest { RequestNumber = "1", MemberId = "m", ServiceTypeId = "plain", ServiceTypeName = "Transcript", PaymentStatus = "Successful", PaymentMethod = "Paystack", Amount = 10m, ConfirmedAt = At(mon) });
+            db.Add(new ServiceRequest { RequestNumber = "2", MemberId = "m", ServiceTypeId = "ofgroup", ServiceTypeName = "Chapter letter", PaymentStatus = "Successful", PaymentMethod = "Paystack", Amount = 20m, ConfirmedAt = At(mon) });
+            db.Add(new ServiceRequest { RequestNumber = "3", MemberId = "m", ServiceTypeId = "forced", ServiceTypeName = "Attestation", PaymentStatus = "Successful", PaymentMethod = "Paystack", Amount = 40m, ConfirmedAt = At(mon) });
+            db.Add(new ServiceRequest { RequestNumber = "4", MemberId = "m", ServiceTypeId = "toyear", ServiceTypeName = "Class letter", PaymentStatus = "Successful", PaymentMethod = "Paystack", Amount = 80m, ConfirmedAt = At(mon) });
+        });
+
+        var all = (await service.GetHistoryAsync(tue, 7, null)).Data!;
+        var day = Assert.Single(all.Days);
+        Assert.Equal(50m, day.Accounts.Single(a => a.Key == "main").Amount);            // plain + forced to the institution
+        Assert.Equal(20m, day.Accounts.Single(a => a.Key == "group:g1").Amount);
+        Assert.Equal(80m, day.Accounts.Single(a => a.Key == "b19").Amount);
+
+        var detail = (await service.GetDayAsync(tue, "group:g1")).Data!;
+        Assert.Equal(20m, detail.Amount);
+        Assert.Equal("Accra Chapter", Assert.Single(detail.Items).Account);
+        Assert.Equal(50m, (await service.GetDayAsync(tue, "main")).Data!.Amount);
     }
 
     [Fact]

@@ -732,6 +732,10 @@ export interface ServiceType {
   fields: ServiceFieldDefinition[];
   stages: string[];
   createdAt: string;
+  /** The group this service is for, if any. */
+  communityId?: string | null;
+  /** Where its money goes: empty for automatic, else "institution", "group:{id}" or "year:{year}". */
+  settlementTarget?: string | null;
 }
 
 export interface ServiceRequestUpdate {

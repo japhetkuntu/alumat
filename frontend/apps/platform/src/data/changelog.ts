@@ -21,6 +21,20 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-25",
+    title: "Groups are easier to find and read in the member portal",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "The Groups page now lists the member's own groups first (ones they lead, then ones they belong to, then pending requests), then the rest under 'More groups to join'. A group with no cover photo gets a coloured tile with its initials instead of a grey box, a search box appears once there are more than six groups, and the member count and status no longer wrap on a phone. On a group's own page, the name was dark text on the green banner and is now white, the kind of group (Chapter, Committee) shows above it, and the Share and Join buttons sit under the details on phones and tablets instead of beside them. A group that has nothing yet shows one short 'It is quiet here for now' card with a Start a discussion button, in place of four empty boxes. A non-member sees why the content is hidden and what to do, and a pending request says it is waiting for a leader. The words 'community' are now 'group' throughout, to match the Groups menu. No migration."
+  },
+  {
+    date: "2026-10-25",
+    title: "Member services can choose which account their payments go into",
+    scopes: ["Institution", "Platform", "Member"],
+    type: "Feature",
+    body: "A service now has 'For' (the whole institution, or one group) and 'Payments go to'. Payments go to the institution's account by default. A service for a group goes to that group's own account when it has an approved one. The admin can override it to the institution's account, or to any group's or year group's account. An account that is not live (not approved, or set to use the institution's) falls back to the institution's, so a payment is never stuck. Charging, the institution's payout history, forecast and day detail, and the platform's payout forecast all follow the same rule (SettlementAccounts.ForServiceAsync), so a service's money is shown under the account it was paid into. A service for a group is not hidden from other members; this only decides the account. Migration AddServiceSettlementTarget adds CommunityId and SettlementTarget to ServiceTypes."
+  },
+  {
+    date: "2026-10-25",
     title: "Groups can have their own payout account, like year groups",
     scopes: ["Institution", "Platform", "Member"],
     type: "Feature",

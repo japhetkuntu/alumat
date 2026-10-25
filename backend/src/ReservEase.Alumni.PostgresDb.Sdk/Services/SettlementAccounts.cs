@@ -15,6 +15,27 @@ public static class SettlementAccounts
     public static bool IsLive(string payoutStatus, bool useInstitutionAccount, string? subaccountCode) =>
         payoutStatus == "Approved" && !useInstitutionAccount && !string.IsNullOrEmpty(subaccountCode);
 
+    public const string InstitutionTarget = "institution";
+
+    /// <summary>What a service's settlement choice means: pay the institution, or the audience (a group, or one year group) it names.</summary>
+    public static (string? CommunityId, int? Year) AudienceOfService(string? settlementTarget, string? serviceCommunityId)
+    {
+        if (string.IsNullOrWhiteSpace(settlementTarget)) return (serviceCommunityId, null);
+        if (settlementTarget == InstitutionTarget) return (null, null);
+        if (settlementTarget.StartsWith("group:", StringComparison.Ordinal)) return (settlementTarget[6..], null);
+        if (settlementTarget.StartsWith("year:", StringComparison.Ordinal) && int.TryParse(settlementTarget[5..], out var year)) return (null, year);
+        return (serviceCommunityId, null);
+    }
+
+    /// <summary>The subaccount a paid service settles into, or null for the institution's account.</summary>
+    public static Task<string?> ForServiceAsync(
+        IAlumniPgRepository<Batch>? batchRepo, IAlumniPgRepository<Community>? communityRepo,
+        string? institutionId, string? settlementTarget, string? serviceCommunityId)
+    {
+        var (communityId, year) = AudienceOfService(settlementTarget, serviceCommunityId);
+        return ForAudienceAsync(batchRepo, communityRepo, institutionId, year is null ? null : [year.Value], communityId);
+    }
+
     /// <summary>
     /// The subaccount code for a payment aimed at a group, or at exactly one year group. A group takes precedence (an audience is one or
     /// the other). Null means "use the institution's account".

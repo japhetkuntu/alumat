@@ -315,6 +315,8 @@ public static class EntityDtoExtensions
         }).ToList(),
         Stages = s.Stages,
         CreatedAt = s.CreatedAt,
+        CommunityId = s.CommunityId,
+        SettlementTarget = s.SettlementTarget,
     };
 
     public static ServiceRequestDto ToDto(this ServiceRequest r) => new()

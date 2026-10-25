@@ -13,6 +13,7 @@ using ServiceRequestEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Se
 using CampaignEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Campaign;
 using BatchEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Batch;
 using CommunityEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Community;
+using ServiceTypeEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.ServiceType;
 using EventEntity = ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.AlumniEvent;
 
 namespace ReservEase.Alumni.Platform.Api.Services.Implementations;
@@ -37,6 +38,7 @@ public class PayoutService(
     IAlumniPgRepository<BatchEntity> batchRepo,
     IAlumniPgRepository<CommunityEntity> communityRepo,
     IAlumniPgRepository<EventEntity> eventRepo,
+    IAlumniPgRepository<ServiceTypeEntity> serviceTypeRepo,
     ILogger<PayoutService> logger) : IPayoutService
 {
     public async Task<IApiResponse<PlatformPayoutForecastResponse>> GetForecastAsync()
@@ -51,11 +53,11 @@ public class PayoutService(
 
         var lastContribs = await ExcludeBatchSettledAsync(await FetchContributionsAsync(windows.LastWindowStart, windows.LastWindowEnd));
         var lastOrders = await FetchOrdersAsync(windows.LastWindowStart, windows.LastWindowEnd);
-        var lastRequests = await FetchServiceRequestsAsync(windows.LastWindowStart, windows.LastWindowEnd);
+        var lastRequests = await ExcludeAccountSettledRequestsAsync(await FetchServiceRequestsAsync(windows.LastWindowStart, windows.LastWindowEnd));
         var lastTickets = await ExcludeGroupSettledTicketsAsync(await FetchTicketsAsync(windows.LastWindowStart, windows.LastWindowEnd));
         var nextContribs = await ExcludeBatchSettledAsync(await FetchContributionsAsync(windows.NextWindowStart, windows.NextWindowEnd));
         var nextOrders = await FetchOrdersAsync(windows.NextWindowStart, windows.NextWindowEnd);
-        var nextRequests = await FetchServiceRequestsAsync(windows.NextWindowStart, windows.NextWindowEnd);
+        var nextRequests = await ExcludeAccountSettledRequestsAsync(await FetchServiceRequestsAsync(windows.NextWindowStart, windows.NextWindowEnd));
         var nextTickets = await ExcludeGroupSettledTicketsAsync(await FetchTicketsAsync(windows.NextWindowStart, windows.NextWindowEnd));
 
         var perInstitution = institutions.Select(inst =>
@@ -179,5 +181,26 @@ public class PayoutService(
             .Select(e => new { e.Id, e.CommunityId }).ToListAsync())
             .Where(e => liveGroups.Contains(e.CommunityId!)).Select(e => e.Id).ToHashSet();
         return tickets.Where(t => !settledEvents.Contains(t.EventId)).ToList();
+    }
+
+    /// <summary>Service requests whose service pays into a group's or year group's own account never reach the institution's account.</summary>
+    private async Task<List<ServiceRequestEntity>> ExcludeAccountSettledRequestsAsync(List<ServiceRequestEntity> requests)
+    {
+        if (requests.Count == 0) return requests;
+        var ids = requests.Select(r => r.ServiceTypeId).Distinct().ToList();
+        var services = await serviceTypeRepo.GetQueryable(s => ids.Contains(s.Id), ignoreQueryFilters: true)
+            .Select(s => new { s.Id, s.InstitutionId, s.CommunityId, s.SettlementTarget }).ToListAsync();
+        var audiences = services.ToDictionary(s => s.Id, s => (s.InstitutionId, Audience: SettlementAccounts.AudienceOfService(s.SettlementTarget, s.CommunityId)));
+
+        var liveGroups = await LiveGroupIdsAsync();
+        var liveYears = (await batchRepo.GetQueryable(
+                b => b.PayoutStatus == "Approved" && !b.UseInstitutionAccount && b.PaystackSubaccountCode != null, ignoreQueryFilters: true)
+            .Select(b => new { b.InstitutionId, b.Year }).ToListAsync()).Select(b => (b.InstitutionId, b.Year)).ToHashSet();
+
+        var settledElsewhere = audiences.Where(kv =>
+                kv.Value.Audience.CommunityId is { } g ? liveGroups.Contains(g)
+                : kv.Value.Audience.Year is { } y && liveYears.Contains((kv.Value.InstitutionId, y)))
+            .Select(kv => kv.Key).ToHashSet();
+        return requests.Where(r => !settledElsewhere.Contains(r.ServiceTypeId)).ToList();
     }
 }

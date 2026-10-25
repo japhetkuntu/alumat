@@ -1634,6 +1634,8 @@ export interface ServiceTypeBody {
   status: ServiceType["status"];
   fields: ServiceFieldDefinitionBody[];
   stages: string[];
+  communityId?: string;
+  settlementTarget?: string;
 }
 
 export async function getServiceTypes(page = 1, pageSize = 50, status?: string, search?: string) {

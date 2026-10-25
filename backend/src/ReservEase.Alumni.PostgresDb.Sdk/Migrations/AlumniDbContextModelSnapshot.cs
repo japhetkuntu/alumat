@@ -3310,6 +3310,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<string>("CommunityId")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3334,6 +3337,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("SettlementTarget")
+                        .HasColumnType("text");
 
                     b.Property<string>("Stages")
                         .IsRequired()

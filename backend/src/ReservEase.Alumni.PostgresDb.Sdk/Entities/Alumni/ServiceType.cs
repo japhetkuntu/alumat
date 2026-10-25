@@ -47,4 +47,14 @@ public class ServiceType : BaseEntity, ITenantScoped
 
     /// <summary>Ordered pipeline stage names this institution uses for requests of this service type. A new request always starts at Stages[0]. Never empty — defaults to a single "Submitted" stage if the admin doesn't customize it.</summary>
     public List<string> Stages { get; set; } = ["Submitted"];
+
+    /// <summary>The group this service is for, or null for the whole institution. A group's service settles into that group's account by default.</summary>
+    public string? CommunityId { get; set; }
+
+    /// <summary>
+    /// Which account the money goes into. Null means automatic: the group's account when the service is for a group that has one,
+    /// else the institution's. Otherwise "institution", "group:{communityId}" or "year:{year}" (see <see cref="Services.SettlementAccounts"/>).
+    /// An account that is not live (not approved, or set to use the institution's) falls back to the institution's.
+    /// </summary>
+    public string? SettlementTarget { get; set; }
 }

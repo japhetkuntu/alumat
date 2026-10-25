@@ -43,7 +43,9 @@ public class ServiceRequestService(
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     IConfiguration configuration,
-    ILogger<ServiceRequestService> logger) : IServiceRequestService
+    ILogger<ServiceRequestService> logger,
+    IAlumniPgRepository<Batch>? batchRepo = null,
+    IAlumniPgRepository<Community>? communityRepo = null) : IServiceRequestService
 {
     private const string AttachmentFolderName = "alumni";
     private readonly string _paystackCallbackUrl = BuildCallbackUrl(configuration);
@@ -231,7 +233,9 @@ public class ServiceRequestService(
                 Amount = charge.amountSubunit,
                 CallbackUrl = !string.IsNullOrWhiteSpace(request.CallbackUrl) ? request.CallbackUrl : _paystackCallbackUrl,
                 Metadata = new Dictionary<string, string> { { "memberId", member.Id }, { "serviceRequest", "true" } },
-                Subaccount = currentInstitution?.PaystackSubaccountCode,
+                // The service's own account choice (a group's by default when it is for a group), else the institution's.
+                Subaccount = await SettlementAccounts.ForServiceAsync(batchRepo, communityRepo, currentTenant.InstitutionId, serviceType.SettlementTarget, serviceType.CommunityId)
+                    ?? currentInstitution?.PaystackSubaccountCode,
                 TransactionCharge = charge.transactionCharge,
                 Bearer = charge.bearer,
             });

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
@@ -32,8 +33,23 @@ public class ServiceService(
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
-    ILogger<ServiceService> logger) : IServiceService
+    ILogger<ServiceService> logger,
+    IAlumniPgRepository<Community>? communityRepo = null,
+    IAlumniPgRepository<Batch>? batchRepo = null) : IServiceService
 {
+    /// <summary>Checks a service's group and account choice belong to this institution. Returns an error message, or null when fine.</summary>
+    private async Task<string?> ValidateSettlementAsync(string? communityId, string? target)
+    {
+        if (!string.IsNullOrWhiteSpace(communityId) && (communityRepo is null || await communityRepo.GetByIdAsync(communityId) is null))
+            return "That group could not be found";
+        if (string.IsNullOrWhiteSpace(target) || target == SettlementAccounts.InstitutionTarget) return null;
+        if (target.StartsWith("group:", StringComparison.Ordinal))
+            return communityRepo is not null && await communityRepo.GetByIdAsync(target[6..]) is not null ? null : "That payout account could not be found";
+        if (target.StartsWith("year:", StringComparison.Ordinal) && int.TryParse(target[5..], out var year))
+            return batchRepo is not null && await batchRepo.GetQueryable(b => b.Year == year).AnyAsync() ? null : "That payout account could not be found";
+        return "That payout account is not recognised";
+    }
+
     private const string AttachmentFolderName = "alumni";
 
     private static string Slugify(string label)
@@ -133,8 +149,16 @@ public class ServiceService(
             if (RichText.IsTooLong(descriptionHtml))
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>(RichText.TooLongMessage);
 
+            var communityId = string.IsNullOrWhiteSpace(request.CommunityId) ? null : request.CommunityId;
+            var target = string.IsNullOrWhiteSpace(request.SettlementTarget) ? null : request.SettlementTarget;
+            var settlementError = await ValidateSettlementAsync(communityId, target);
+            if (settlementError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>(settlementError);
+
             var serviceType = new ServiceType
             {
+                CommunityId = communityId,
+                SettlementTarget = target,
                 Name = request.Name.Trim(),
                 Description = descriptionHtml,
                 Price = request.Price,
@@ -166,6 +190,14 @@ public class ServiceService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>("Name is required");
             if (request.Price <= 0)
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>("Price must be greater than zero — services can't be free");
+
+            var communityId = string.IsNullOrWhiteSpace(request.CommunityId) ? null : request.CommunityId;
+            var target = string.IsNullOrWhiteSpace(request.SettlementTarget) ? null : request.SettlementTarget;
+            var settlementError = await ValidateSettlementAsync(communityId, target);
+            if (settlementError is not null)
+                return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>(settlementError);
+            serviceType.CommunityId = communityId;
+            serviceType.SettlementTarget = target;
 
             serviceType.Name = request.Name.Trim();
             var descriptionHtml = RichText.Sanitize(request.Description);

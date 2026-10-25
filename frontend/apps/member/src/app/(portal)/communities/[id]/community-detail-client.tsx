@@ -177,7 +177,7 @@ export default function CommunityDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-community", id] });
       qc.invalidateQueries({ queryKey: ["m-communities"] });
-      toast.success("You left the community");
+      toast.success("You left the group");
       router.push("/communities");
     },
     onError: (e) => toast.error(handleApiError(e)),
@@ -231,17 +231,19 @@ export default function CommunityDetailPage() {
   if (!community) {
     return (
       <div className="p-6 lg:p-10 max-w-[1400px] mx-auto">
-        <EmptyState icon={<Users size={40} />} title="Community not found" description="This community may have been removed." />
+        <EmptyState icon={<Users size={40} />} title="Group not found" description="This group may have been removed." />
       </div>
     );
   }
 
   const previewMembers = members.slice(0, 6);
+  const allQuiet = isApproved && !threadsLoading && !eventsLoading && !resourcesLoading && !campaignsLoading
+    && threads.length + events.length + resources.length + campaigns.length === 0;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto pb-20 space-y-6 sm:space-y-8">
       <Link href="/communities" className="flex items-center gap-1.5 text-[13.5px] font-semibold hover:underline w-fit" style={{ color: "var(--muted-foreground)" }}>
-        <ArrowLeft size={15} /> Back to communities
+        <ArrowLeft size={15} /> Back to groups
       </Link>
 
       {/* ── Hero ── */}
@@ -260,12 +262,12 @@ export default function CommunityDetailPage() {
             <div className="absolute inset-0 pointer-events-none" style={{ background: "color-mix(in oklch, color-mix(in oklch, var(--primary) 88%, black) 90%, transparent)" }}   /* even all over: a lighter patch of the cover photo would drag the white text under it down */ />
           </>
         )}
-        <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5 mb-3">
               {isLeader && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold bg-white/15 backdrop-blur-sm">
-                  <Crown size={12} /> You lead this community
+                  <Crown size={12} /> You lead this group
                 </span>
               )}
               {community.myStatus === "Pending" && (
@@ -282,14 +284,15 @@ export default function CommunityDetailPage() {
                 </button>
               )}
             </div>
+            {community.kind && <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-white/70">{community.kind}</p>}
             <h1
               className="font-[family-name:var(--font-display)] font-bold leading-tight"
-              style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}
+              style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)", color: "var(--primary-foreground)" }}
             >
               {community.name}
             </h1>
             {community.description && (
-              <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-white/80">
+              <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-white/85">
                 {richTextToPlain(community.description)}
               </p>
             )}
@@ -312,14 +315,14 @@ export default function CommunityDetailPage() {
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <ShareLinkButton
               url={shareUrl}
               title={community.name}
               variant="outline"
               size="sm"
               className="bg-white/10 border-white/40 text-white hover:bg-white/20 hover:text-white"
-              onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Community link copied")}
+              onSuccess={(result) => toast.success(result === "shared" ? "Share sheet opened" : "Group link copied")}
               onError={(message) => toast.error(message)}
             />
             {!community.myStatus && (
@@ -342,7 +345,7 @@ export default function CommunityDetailPage() {
                 className="bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white hover:border-white/60 font-semibold"
                 style={{ height: 44 }}
               >
-                Leave community
+                Leave group
               </Button>
             )}
           </div>
@@ -350,16 +353,35 @@ export default function CommunityDetailPage() {
       </div>
 
       {!isApproved ? (
-        <EmptyState
-          icon={<Lock size={40} />}
-          title="Members only"
-          description="Join this community to see what's happening here."
-        />
+        <div className="card flex flex-col items-center gap-3 px-6 py-10 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary"><Lock size={20} className="text-muted-foreground" /></div>
+          <div className="space-y-1">
+            <p className="text-[16px] font-semibold">
+              {community.myStatus === "Pending" ? "Your request is waiting for a leader" : "Join to see what is happening here"}
+            </p>
+            <p className="mx-auto max-w-[46ch] text-[13.5px] text-muted-foreground">
+              {community.myStatus === "Pending"
+                ? "You will get a notification as soon as a leader approves it. Then this group's fundraisers, events and discussions open up."
+                : "Members of this group see its fundraisers, events, discussions and resources. Ask to join and a leader will review your request."}
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="space-y-8">
           {isLeader && <CommunityInvitePanel communityId={id} communityName={community.name} />}
 
+          {allQuiet && (
+            <div className="card flex flex-col items-start gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[15px] font-semibold">It is quiet here for now</p>
+                <p className="mt-0.5 text-[13.5px] text-muted-foreground">Fundraisers, events, discussions and resources for this group will show up here. Be the first to start a conversation.</p>
+              </div>
+              <Button size="sm" onClick={() => setShowNewThread(true)} className="shrink-0 gap-1.5"><Plus size={13} /> Start a discussion</Button>
+            </div>
+          )}
+
           {/* ── Fundraisers ── */}
+          {!allQuiet && (<>
           <section>
             <SectionHeader icon={HandCoins} title="Fundraisers" seeAllHref={`/contributions?communityId=${id}`} />
             {campaignsLoading ? (
@@ -446,28 +468,6 @@ export default function CommunityDetailPage() {
               }
             />
 
-            <FormSheet
-              open={showNewThread}
-              onClose={() => setShowNewThread(false)}
-              title="Start a discussion"
-              description="Visible to everyone in this group."
-              formId="community-thread-form"
-              submitLabel="Post"
-              savingLabel="Posting"
-              saving={createThreadMut.isPending}
-              submitDisabled={form.title.trim().length < 3 || form.content.trim().length < 3}
-            >
-              <form id="community-thread-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); createThreadMut.mutate(); }}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="ct-title">Title</Label>
-                  <Input id="ct-title" value={form.title} maxLength={150} autoFocus onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="What's on your mind?" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="ct-body">Message</Label>
-                  <Textarea id="ct-body" rows={9} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} required />
-                </div>
-              </form>
-            </FormSheet>
 
             {threadsLoading ? (
               <div className="space-y-3">{Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}</div>
@@ -513,6 +513,30 @@ export default function CommunityDetailPage() {
               </div>
             )}
           </section>
+          </>)}
+
+          <FormSheet
+            open={showNewThread}
+            onClose={() => setShowNewThread(false)}
+            title="Start a discussion"
+            description="Visible to everyone in this group."
+            formId="community-thread-form"
+            submitLabel="Post"
+            savingLabel="Posting"
+            saving={createThreadMut.isPending}
+            submitDisabled={form.title.trim().length < 3 || form.content.trim().length < 3}
+          >
+            <form id="community-thread-form" className="space-y-5" onSubmit={(e) => { e.preventDefault(); createThreadMut.mutate(); }}>
+              <div className="space-y-1.5">
+                <Label htmlFor="ct-title">Title</Label>
+                <Input id="ct-title" value={form.title} maxLength={150} autoFocus onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="What's on your mind?" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ct-body">Message</Label>
+                <Textarea id="ct-body" rows={9} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} required />
+              </div>
+            </form>
+          </FormSheet>
         </div>
       )}
 
@@ -581,9 +605,9 @@ export default function CommunityDetailPage() {
 
       <ConfirmModal
         open={confirmLeave}
-        title="Leave this community?"
+        title="Leave this group?"
         message="You'll lose access to its discussions, wall, resources, and fundraisers unless a leader approves your request to rejoin."
-        confirmLabel="Leave community"
+        confirmLabel="Leave group"
         variant="destructive"
         isLoading={leaveMut.isPending}
         onConfirm={() => { leaveMut.mutate(); setConfirmLeave(false); }}

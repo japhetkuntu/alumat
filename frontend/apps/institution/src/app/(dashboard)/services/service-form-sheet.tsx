@@ -2,8 +2,9 @@
 
 import { memo, useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { RichTextEditor, Plus, X, ArrowUp, ArrowDown, FormSheet, FormSection, Input, Label, FormSelect, Button } from "@alumni/ui";
-import type { ServiceFieldDefinitionBody, ServiceTypeBody } from "@/lib/institution-api";
+import { getBatches, getCommunities, type ServiceFieldDefinitionBody, type ServiceTypeBody } from "@/lib/institution-api";
 import type { ServiceType, ServiceFieldType } from "@/types";
 
 const FIELD_TYPES: { value: ServiceFieldType; label: string }[] = [
@@ -32,11 +33,13 @@ interface FormState {
   status: ServiceType["status"];
   fields: FieldFormRow[];
   stages: string[];
+  communityId: string;
+  settlementTarget: string;
 }
 
 const emptyForm: FormState = {
   name: "", description: "", price: "", status: "Active",
-  fields: [], stages: ["Submitted"],
+  fields: [], stages: ["Submitted"], communityId: "", settlementTarget: "",
 };
 
 function toFormState(s: ServiceType): FormState {
@@ -47,6 +50,8 @@ function toFormState(s: ServiceType): FormState {
     status: s.status,
     fields: s.fields.map((f) => ({ key: f.key, label: f.label, type: f.type, required: f.required, options: f.options, optionsRaw: (f.options ?? []).join(", ") })),
     stages: s.stages.length > 0 ? [...s.stages] : ["Submitted"],
+    communityId: s.communityId ?? "",
+    settlementTarget: s.settlementTarget ?? "",
   };
 }
 
@@ -129,6 +134,21 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
   const [form, setForm] = useState<FormState>(() => (editing ? toFormState(editing) : emptyForm));
   const [newStage, setNewStage] = useState("");
 
+  const { data: groups = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities, staleTime: 60_000 });
+  const { data: yearGroups = [] } = useQuery({ queryKey: ["batches"], queryFn: getBatches, staleTime: 60_000 });
+  const hasOwnAccount = (a: { payoutStatus: string; useInstitutionAccount: boolean }) => a.payoutStatus === "Approved" && !a.useInstitutionAccount;
+  const forGroup = groups.find((g) => g.id === form.communityId);
+  // What "automatic" means for this service right now, so the admin never has to guess.
+  const automaticLabel = forGroup
+    ? hasOwnAccount(forGroup) ? `${forGroup.name}'s own account (default)` : `Institution's account (default, ${forGroup.name} has no account of its own yet)`
+    : "Institution's account (default)";
+  const accountOptions = [
+    { value: "auto", label: automaticLabel },
+    { value: "institution", label: "Institution's account" },
+    ...groups.map((g) => ({ value: `group:${g.id}`, label: `${g.name}${hasOwnAccount(g) ? "" : " (no account of its own yet)"}` })),
+    ...yearGroups.map((b) => ({ value: `year:${b.year}`, label: `${b.name}${hasOwnAccount(b) ? "" : " (no account of its own yet)"}` })),
+  ];
+
   const updateField = useCallback((i: number, patch: Partial<FieldFormRow>) => {
     setForm((f) => ({ ...f, fields: f.fields.map((fl, idx) => (idx === i ? { ...fl, ...patch } : fl)) }));
   }, []);
@@ -180,6 +200,8 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
       price,
       status: form.status,
       stages: form.stages,
+      communityId: form.communityId || undefined,
+      settlementTarget: form.settlementTarget || undefined,
       fields: form.fields.map((fl) => ({
         key: fl.key,
         label: fl.label.trim(),
@@ -226,6 +248,29 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
                 value={form.status}
                 onValueChange={(v) => setForm((f) => ({ ...f, status: v as ServiceType["status"] }))}
                 options={STATUS_OPTIONS}
+              />
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection title="Who it is for and where the money goes" hint="Payments go to the institution's account unless you choose otherwise. A service for a group goes to that group's account when it has one.">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>For</Label>
+              <FormSelect
+                className="w-full"
+                value={form.communityId || "all"}
+                onValueChange={(v) => setForm((f) => ({ ...f, communityId: v === "all" ? "" : v }))}
+                options={[{ value: "all", label: "The whole institution" }, ...groups.map((g) => ({ value: g.id, label: g.name }))]}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Payments go to</Label>
+              <FormSelect
+                className="w-full"
+                value={form.settlementTarget || "auto"}
+                onValueChange={(v) => setForm((f) => ({ ...f, settlementTarget: v === "auto" ? "" : v }))}
+                options={accountOptions}
               />
             </div>
           </div>

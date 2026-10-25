@@ -47,4 +47,18 @@ public class SettlementAccountsTests
         Assert.Null(await SettlementAccounts.ForAudienceAsync(batches, groups, Tenant, [2019, 2020], null));   // more than one year group: the institution's
         Assert.Null(await SettlementAccounts.ForAudienceAsync(batches, groups, null, null, "live"));
     }
+
+    [Fact]
+    public async Task A_service_goes_where_it_says_a_groups_service_defaults_to_the_group_and_a_missing_account_means_the_institution()
+    {
+        var (batches, groups) = Seeded();
+        Assert.Null(await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, null, null));                       // plain service: institution
+        Assert.Equal("ACCT_g", await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, null, "live"));          // for a group: its account
+        Assert.Null(await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, null, "pending"));                  // group without a live account
+        Assert.Null(await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, "institution", "live"));            // forced to the institution
+        Assert.Equal("ACCT_g", await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, "group:live", null));    // another group's account
+        Assert.Equal("ACCT_b", await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, "year:2019", "live"));   // a year group's account
+        Assert.Null(await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, "year:2031", null));                // no such year group
+        Assert.Null(await SettlementAccounts.ForServiceAsync(batches, groups, Tenant, "nonsense", null));
+    }
 }

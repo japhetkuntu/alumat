@@ -326,6 +326,10 @@ public class ServiceTypeDto
     public List<ServiceFieldDefinitionDto> Fields { get; set; } = [];
     public List<string> Stages { get; set; } = [];
     public DateTime CreatedAt { get; set; }
+    /// <summary>The group this service is for, if any.</summary>
+    public string? CommunityId { get; set; }
+    /// <summary>Where the money goes: null for automatic, else "institution", "group:{id}" or "year:{year}".</summary>
+    public string? SettlementTarget { get; set; }
 }
 
 public class ServiceRequestUpdateDto
