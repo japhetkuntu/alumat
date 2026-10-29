@@ -868,11 +868,17 @@ function RegisterForm() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>
-                    Email address
+                    {onboardingToken ? "Your personal email address" : "Email address"}
                   </Label>
-                  <Input id="email" type="email" placeholder="you@example.com" error={!!errors.email}
+                  <Input id="email" type="email" placeholder={onboardingToken ? "yourname@gmail.com" : "you@example.com"} error={!!errors.email}
                     disabled={!!googleIdToken} className="h-11 text-[14px]" {...register("email")} />
                   <FieldError message={errors.email?.message} />
+                  {/* Only on a partner link: students tend to type their school address, which they lose after they leave. */}
+                  {onboardingToken && (
+                    <p className="text-[12.5px]" style={{ color: "var(--muted-foreground)" }}>
+                      Use a personal email you will keep, like Gmail or Outlook. Please do not use your school email: it stops working once you leave, and you would lose access to your account.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>

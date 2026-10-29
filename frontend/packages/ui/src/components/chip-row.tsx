@@ -88,7 +88,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "flex-1 shrink-0 whitespace-nowrap px-2 py-2.5 text-[12px] font-semibold transition-colors sm:flex-none sm:px-5 sm:text-[12.5px]",
+            "flex-auto shrink-0 whitespace-nowrap px-3 py-2.5 text-[12px] font-semibold transition-colors sm:flex-none sm:px-5 sm:text-[12.5px]",
             value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           )}
         >

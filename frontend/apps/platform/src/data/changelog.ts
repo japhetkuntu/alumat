@@ -21,6 +21,20 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-29",
+    title: "Partner sign-up link asks for a personal email, not a school one",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "On the registration page opened from a partner (Integrations) one-use link, the email field now reads 'Your personal email address', suggests a Gmail-style example, and says to use a personal email they will keep, such as Gmail or Outlook, and not a school address that stops working once they leave. The normal registration page is unchanged. This is wording only: nothing stops a school address being typed. No migration."
+  },
+  {
+    date: "2026-10-29",
+    title: "Tab strips no longer run into each other on a phone",
+    scopes: ["Member", "Institution"],
+    type: "Fix",
+    body: "On the forum at phone width, 'Needs a reply' and 'Pinned' printed over each other: every tab was squeezed to the same width whatever its label. The shared tab strip (SegmentedControl) now sizes each tab to its words, with a little less padding on small screens, so five tabs fit on a 375px phone with room to spare and, on a narrower one, the strip scrolls sideways instead of overlapping. Every page that uses it benefits (events, forum and others). No migration."
+  },
+  {
+    date: "2026-10-29",
     title: "Helpful marks on forum replies, and unanswered questions on the home page",
     scopes: ["Member"],
     type: "Feature",
