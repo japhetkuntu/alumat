@@ -17,3 +17,6 @@ public record ActivateMembershipRequest(List<int> MembershipYears);
 
 /// <summary>Answers to the community's own registration questions, replaced as a whole. Keyed by question id.</summary>
 public record UpdateMemberCustomFieldsRequest(Dictionary<string, string>? Answers);
+
+/// <summary>Move a member to another year group. Null or 0 clears it (only where the community treats the year as optional).</summary>
+public record UpdateMemberYearGroupRequest(int? GraduationYear);

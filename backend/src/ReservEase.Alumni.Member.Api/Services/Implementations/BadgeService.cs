@@ -16,12 +16,16 @@ public class BadgeService(
     IAlumniPgRepository<Campaign> campaignRepo,
     IAlumniPgRepository<EventRsvp> rsvpRepo,
     IAlumniPgRepository<Referral> referralRepo,
-    ILogger<BadgeService> logger) : IBadgeService
+    ILogger<BadgeService> logger,
+    IAlumniPgRepository<Notification>? notificationRepo = null) : IBadgeService
 {
     public async Task<IApiResponse<List<MemberBadgeDto>>> GetMyBadgesAsync(string memberId)
     {
         try
         {
+            // Nothing else ever awards a badge, so looking at your badges is what checks whether you have earned a new one.
+            // It only adds what is missing, so asking again changes nothing.
+            await EvaluateAndAwardBadgesAsync(memberId);
             var badges = await badgeRepo.GetAllAsync(b => b.MemberId == memberId);
             var dtos = badges.Select(b => b.ToDto()).OrderByDescending(b => b.EarnedAt).ToList();
 
@@ -119,7 +123,25 @@ public class BadgeService(
                 newBadges.Add(CreateBadge(memberId, snapshot, "MembershipStreak5", "5 consecutive years of membership"));
 
             if (newBadges.Count > 0)
+            {
                 await badgeRepo.AddRangeAsync(newBadges);
+
+                // Tell the member, so a badge is a moment and not something they find by chance.
+                if (notificationRepo is not null)
+                    await notificationRepo.AddRangeAsync(newBadges.Select(b => new Notification
+                    {
+                        InstitutionId = member.InstitutionId,
+                        RecipientId = memberId,
+                        RecipientType = "Member",
+                        Title = "You earned a badge",
+                        Body = b.Description ?? "A new badge is on your profile.",
+                        Type = "BadgeEarned",
+                        RelatedEntityId = b.Id,
+                        RelatedEntityType = "Badge",
+                        ActionUrl = "/profile",
+                        CreatedBy = "system",
+                    }).ToList());
+            }
         }
         catch (Exception e)
         {

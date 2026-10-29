@@ -512,6 +512,9 @@ export default function BrandingSettingsPage() {
 
   const [programs, setPrograms] = useState<string[] | null>(null);
   const [newProgram, setNewProgram] = useState("");
+  const [programSearch, setProgramSearch] = useState("");
+  const [programPage, setProgramPage] = useState(1);
+  const PROGRAMS_PER_PAGE = 10;
   if (institution && programs === null) setPrograms(institution.programsOfStudy);
 
   const programsMutation = useMutation({
@@ -532,6 +535,8 @@ export default function BrandingSettingsPage() {
     }
     setPrograms((p) => [...(p ?? []), value]);
     setNewProgram("");
+    setProgramSearch("");
+    setProgramPage(Math.ceil(((programs ?? []).length + 1) / PROGRAMS_PER_PAGE));
   }
 
   const savedPrograms = institution?.programsOfStudy ?? [];
@@ -1048,28 +1053,63 @@ export default function BrandingSettingsPage() {
 
                   {(programs ?? []).length === 0 ? (
                     <p className="text-[12.5px] text-muted-foreground py-2">Programs are the courses your members studied. Add them so members can pick theirs when they register.</p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {(programs ?? []).map((program, i) => (
-                        <li key={i} className="flex items-center gap-2">
+                  ) : (() => {
+                    // Keep each row's place in the full list, so editing or removing one while filtered changes the right program.
+                    const all = (programs ?? []).map((program, index) => ({ program, index }));
+                    const needle = programSearch.trim().toLowerCase();
+                    const matches = needle ? all.filter((r) => r.program.toLowerCase().includes(needle)) : all;
+                    const pages = Math.max(1, Math.ceil(matches.length / PROGRAMS_PER_PAGE));
+                    const page = Math.min(programPage, pages);
+                    const rows = matches.slice((page - 1) * PROGRAMS_PER_PAGE, page * PROGRAMS_PER_PAGE);
+                    return (
+                      <>
+                        {all.length > PROGRAMS_PER_PAGE && (
                           <Input
-                            value={program}
-                            onChange={(e) => setPrograms((p) => p!.map((it, idx) => (idx === i ? e.target.value : it)))}
+                            value={programSearch}
+                            onChange={(e) => { setProgramSearch(e.target.value); setProgramPage(1); }}
+                            placeholder={`Search ${all.length} programs`}
+                            aria-label="Search programs"
                             className="h-9"
-                            maxLength={200}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setPrograms((p) => p!.filter((_, idx) => idx !== i))}
-                            className="text-destructive hover:opacity-70 shrink-0"
-                            aria-label={`Remove ${program}`}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                        )}
+                        {rows.length === 0 ? (
+                          <p className="py-2 text-[12.5px] text-muted-foreground">No program matches that.</p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {rows.map(({ program, index }) => (
+                              <li key={index} className="flex items-center gap-2">
+                                <Input
+                                  value={program}
+                                  onChange={(e) => setPrograms((p) => p!.map((it, idx) => (idx === index ? e.target.value : it)))}
+                                  className="h-9"
+                                  maxLength={200}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setPrograms((p) => p!.filter((_, idx) => idx !== index))}
+                                  className="text-destructive hover:opacity-70 shrink-0"
+                                  aria-label={`Remove ${program}`}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {matches.length > PROGRAMS_PER_PAGE && (
+                          <div className="flex items-center justify-between gap-3 pt-1 text-[12.5px] text-muted-foreground">
+                            <span>
+                              {(page - 1) * PROGRAMS_PER_PAGE + 1}-{Math.min(page * PROGRAMS_PER_PAGE, matches.length)} of {matches.length}{needle ? " matching" : ""}
+                            </span>
+                            <div className="flex gap-2">
+                              <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setProgramPage(page - 1)}>Previous</Button>
+                              <Button type="button" size="sm" variant="outline" disabled={page >= pages} onClick={() => setProgramPage(page + 1)}>Next</Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   <div className="pt-1 flex items-center gap-3">
                     <Button

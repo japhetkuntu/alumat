@@ -14,13 +14,15 @@ import { Textarea } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
 import { formatDate, cn } from "@alumni/ui";
 import { useFeatures } from "@/hooks/use-institution-features";
-import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile, updateMemberCustomFields, type RegistrationField } from "@/lib/institution-api";
+import { getMember, approveMember, rejectMember, banMember, unbanMember, activateMembership, getCampaigns, getInstitutionProfile, updateMemberCustomFields, updateMemberYearGroup, getBatches, type RegistrationField } from "@/lib/institution-api";
 import { handleApiError } from "@/lib/api-client";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { toast } from "sonner";
 import type { MemberStatus } from "@/types";
-import { useInstitutionNavTheme } from "@/components/institution/institution-layout";
+import { useInstitutionNavTheme, useCohortLabels, useCohortPhrase } from "@/components/institution/institution-layout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, FormSelect, Label, FormError } from "@alumni/ui";
+import { useAuth } from "@/hooks/use-auth";
 
 const statusVariant: Record<MemberStatus, "success" | "warning" | "destructive" | "secondary"> = {
   Active: "success",
@@ -86,6 +88,67 @@ function AnswersCard({ memberId, questions, answers }: { memberId: string; quest
   );
 }
 
+/** Moves a member to the right year group when they picked the wrong one at sign-up. */
+function YearGroupDialog({ memberId, current, required, onClose, onSaved }: { memberId: string; current: number; required: boolean; onClose: () => void; onSaved: () => void }) {
+  const { user } = useAuth();
+  const { singular } = useCohortLabels();
+  const phrase = useCohortPhrase();
+  const { data: batches = [] } = useQuery({ queryKey: ["batches"], queryFn: getBatches, staleTime: 60_000 });
+  // A scoped admin can only move someone into a year group they look after.
+  const allowed = user?.role === "ScopedAdmin" ? new Set(user.yearGroups ?? []) : null;
+  const years = Array.from(new Set(batches.filter((b) => !allowed || allowed.has(b.year)).map((b) => b.year))).sort((a, b) => b - a);
+  const [value, setValue] = useState(current > 0 ? String(current) : "");
+  const [other, setOther] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = useMutation({
+    onMutate: () => setError(null),
+    mutationFn: () => updateMemberYearGroup(memberId, value ? Number(value) : null),
+    onSuccess: () => { toast.success(`${singular} updated`); onSaved(); onClose(); },
+    onError: (e) => { const m = handleApiError(e); setError(m); toast.error(m); },
+  });
+  const options = [
+    ...(!required ? [{ value: "none", label: "No year group" }] : []),
+    ...years.map((y) => ({ value: String(y), label: phrase.of(y) })),
+    ...(!allowed ? [{ value: "other", label: "Another year…" }] : []),
+  ];
+  const unchanged = (value ? Number(value) : 0) === current;
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Change {singular.toLowerCase()}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <p className="text-[13px] text-muted-foreground">Use this when a member chose the wrong one. Their dues, payments and messages stay as they are. They simply belong to the new {singular.toLowerCase()} from now on.</p>
+          <div className="space-y-1.5">
+            <Label>{singular}</Label>
+            {other ? (
+              <div className="flex gap-2">
+                <Input type="number" autoFocus placeholder="e.g. 2004" value={value} onChange={(e) => setValue(e.target.value)} />
+                <Button type="button" variant="outline" onClick={() => { setOther(false); setValue(current > 0 ? String(current) : ""); }}>Choose from list</Button>
+              </div>
+            ) : (
+              <FormSelect
+                className="w-full"
+                fullWidth
+                value={value || (required ? "" : "none")}
+                placeholder={`Choose a ${singular.toLowerCase()}`}
+                onValueChange={(v) => { if (v === "other") { setOther(true); setValue(""); } else setValue(v === "none" ? "" : v); }}
+                options={options}
+              />
+            )}
+          </div>
+        </div>
+        <FormError message={error} className="mt-3" />
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button isLoading={save.isPending} disabled={unchanged || (required && !value)} onClick={() => save.mutate()}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [modal, setModal] = useState<ModalState>(null);
@@ -113,6 +176,11 @@ export default function MemberDetailPage() {
   const duesRequired = institution?.memberActivePolicy !== "ApprovedOnly";
   const { data: navTheme } = useInstitutionNavTheme();
   const isCommunity = navTheme?.organizationType === "Community";
+  const [yearDialog, setYearDialog] = useState(false);
+  const yearMode = navTheme?.graduationYearMode ?? (isCommunity ? "Off" : "Required");
+  const { user: staff } = useAuth();
+  const canChangeYear = yearMode !== "Off" && (staff?.role === "SuperAdmin" || (staff?.role === "ScopedAdmin" && (staff.yearGroups?.length ?? 0) > 0));
+  const cohort = useCohortLabels();
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin-member", id] });
@@ -246,12 +314,19 @@ export default function MemberDetailPage() {
         />
       )}
 
+      {yearDialog && <YearGroupDialog memberId={member.id} current={member.graduationYear} required={yearMode === "Required"} onClose={() => setYearDialog(false)} onSaved={invalidate} />}
+
       {/* Details grid — mirrors the mockup's Personal / Professional / Membership 3-column layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader><CardTitle className="text-base">Personal information</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {!isCommunity && member.graduationYear > 0 && <InfoRow icon={<GraduationCap size={14} />} label="Graduation Year" value={String(member.graduationYear)} />}
+            {yearMode !== "Off" && (member.graduationYear > 0 || canChangeYear) && (
+              <div className="flex items-center justify-between gap-3">
+                <InfoRow icon={<GraduationCap size={14} />} label={cohort.singular} value={member.graduationYear > 0 ? String(member.graduationYear) : "Not set"} />
+                {canChangeYear && <button type="button" onClick={() => setYearDialog(true)} className="shrink-0 text-[12.5px] font-semibold text-accent hover:underline">Change</button>}
+              </div>
+            )}
             {member.program && <InfoRow icon={<BookOpen size={14} />} label="Program" value={member.program} />}
             <InfoRow icon={<Calendar size={14} />} label="Joined" value={formatDate(member.createdAt)} />
             {member.phone && <InfoRow icon={<Smartphone size={14} />} label="Phone" value={member.phone} />}

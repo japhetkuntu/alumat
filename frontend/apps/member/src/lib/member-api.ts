@@ -327,8 +327,8 @@ export async function uploadContributionProof(body: UploadProofBody) {
 
 // ── Events ───────────────────────────────────────────────────────────────────
 
-export async function getEvents(page = 1, pageSize = 20, status?: string, communityId?: string): Promise<PagedResult<AlumniEvent>> {
-  const res = await memberClient.get("/events", { params: { page, pageSize, status, communityId } });
+export async function getEvents(page = 1, pageSize = 20, status?: string, communityId?: string, sortDir?: "asc" | "desc"): Promise<PagedResult<AlumniEvent>> {
+  const res = await memberClient.get("/events", { params: { page, pageSize, status, communityId, sortDir } });
   return res.data.data!;
 }
 
@@ -597,6 +597,12 @@ export async function replyToThread(threadId: string, content: string) {
   return res.data;
 }
 
+/** Mark someone else's reply helpful, or take the mark back. Nobody is notified. */
+export async function toggleHelpful(postId: string): Promise<{ marked: boolean; helpfulCount: number }> {
+  const res = await memberClient.post(`/forum/posts/${postId}/helpful`);
+  return res.data.data;
+}
+
 // ── Mentorship ───────────────────────────────────────────────────────────────
 
 export async function getMentors(page = 1, pageSize = 20, search?: string): Promise<PagedResult<MentorProfile>> {
@@ -662,6 +668,14 @@ export async function uploadImage(file: File) {
 
 // ── Directory ────────────────────────────────────────────────────────────────
 
+export interface DirectorySuggestion { member: Member; reasons: string[] }
+
+/** A few members the caller probably knows (same groups, program or year), each with why. */
+export async function getDirectorySuggestions(): Promise<DirectorySuggestion[]> {
+  const res = await memberClient.get("/directory/suggestions");
+  return res.data.data ?? [];
+}
+
 export async function searchDirectory(params?: { page?: number; pageSize?: number; search?: string; departmentId?: string; graduationYear?: number }): Promise<PagedResult<Member>> {
   const res = await memberClient.get("/directory", { params });
   return res.data.data!;
@@ -715,6 +729,20 @@ export async function getLeaderboard(): Promise<YearGroupLeaderboardEntry[]> {
 export async function getMyBadges(): Promise<MemberBadge[]> {
   const res = await memberClient.get("/badges");
   return res.data.data!;
+}
+
+/** What a badge is called to the member. The stored type is a code, not a title. */
+export function badgeTitle(type: string): string {
+  const known: Record<string, string> = {
+    FirstContribution: "First gift",
+    EventAttendee3: "Regular at events",
+    Referrer: "Community builder",
+    SuperReferrer: "Super connector",
+    MembershipStreak2: "2 years strong",
+    MembershipStreak3: "3 years strong",
+    MembershipStreak5: "5 years strong",
+  };
+  return known[type] ?? type.replace(/([A-Z])/g, " $1").trim();
 }
 
 export async function evaluateBadges(): Promise<MemberBadge[]> {

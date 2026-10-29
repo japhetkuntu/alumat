@@ -59,7 +59,8 @@ public class ScheduledJobsActivities(
     IOptions<MailtrapConfig> mailtrapConfigOptions,
     IConfiguration configuration,
     ILogger<ScheduledJobsActivities> logger,
-    IAlumniPgRepository<Community>? communityRepo = null)
+    IAlumniPgRepository<Community>? communityRepo = null,
+    IAlumniPgRepository<CommunityMembership>? membershipRepo = null)
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     private const int MaxFailedRecurringAttempts = 3;
@@ -75,7 +76,9 @@ public class ScheduledJobsActivities(
     // ── Digest ──────────────────────────────────────────────────────────────
 
     private sealed record DigestItem(string Title, string Meta, List<int>? YearGroups);
-    private sealed record ContentBucket(List<DigestItem> Jobs, DigestItem? Event, DigestItem? Campaign, DigestItem? Spotlight);
+    private sealed record ContentBucket(List<DigestItem> Jobs, DigestItem? Event, DigestItem? Campaign, DigestItem? Spotlight, Dictionary<int, int> NewMembersByYear);
+    /// <summary>One thing happening in a group: what it is and when, filed under the group's id so each member only gets their own groups'.</summary>
+    private sealed record GroupItem(string CommunityId, DateTime When, DigestItem Item);
 
     [Activity("ScheduledJobs.SendDueDigestsForInstitution")]
     public virtual Task<int> SendDueDigestsForInstitutionAsync(string institutionId) =>
@@ -111,6 +114,14 @@ public class ScheduledJobsActivities(
             if (due.Count == 0)
                 return 0;
 
+            // What is happening in the groups members belong to. Loaded once for everyone, then each member is shown only their own groups'.
+            var groupItems = await BuildGroupItemsAsync(institutionId, now);
+            var groupsByMember = groupItems.Count == 0 || membershipRepo is null
+                ? new Dictionary<string, HashSet<string>>()
+                : (await membershipRepo.GetQueryable(m => m.InstitutionId == institutionId && m.Status == "Approved", ignoreQueryFilters: true)
+                    .Select(m => new { m.MemberId, m.CommunityId }).ToListAsync())
+                    .GroupBy(m => m.MemberId).ToDictionary(g => g.Key, g => g.Select(x => x.CommunityId).ToHashSet());
+
             var buckets = new Dictionary<string, ContentBucket>();
             var portalUrl = GetMemberPortalUrl(institution);
             var updatedPrefs = new List<NotificationPreference>();
@@ -129,10 +140,20 @@ public class ScheduledJobsActivities(
                 var ev = bucket.Event is not null && MatchesYear(bucket.Event.YearGroups, member.GraduationYear) ? bucket.Event : null;
                 var campaign = bucket.Campaign is not null && MatchesYear(bucket.Campaign.YearGroups, member.GraduationYear) ? bucket.Campaign : null;
                 var spotlight = bucket.Spotlight;
+                // People the member most likely knows are the best reason to open it: new members from their own year (not themselves).
+                var classmates = member.GraduationYear > 0 && bucket.NewMembersByYear.TryGetValue(member.GraduationYear, out var joined) ? joined : 0;
+                if (classmates > 0 && member.CreatedAt >= (frequency == "Monthly" ? now.AddDays(-30) : now.AddDays(-7))) classmates--;
+                var people = classmates > 0
+                    ? new DigestItem($"{classmates} new {(classmates == 1 ? "classmate" : "classmates")} joined", $"From your year, {member.GraduationYear}. Say hello in the directory.", null)
+                    : null;
 
-                if (jobs.Count > 0 || ev is not null || campaign is not null || spotlight is not null)
+                var mine = groupsByMember.TryGetValue(member.Id, out var myGroups)
+                    ? groupItems.Where(g => myGroups.Contains(g.CommunityId)).OrderBy(g => g.When).Take(3).Select(g => g.Item).ToList()
+                    : [];
+
+                if (jobs.Count > 0 || ev is not null || campaign is not null || spotlight is not null || people is not null || mine.Count > 0)
                 {
-                    await SendDigestEmailAsync(member, institution, frequency, portalUrl, jobs, ev, campaign, spotlight);
+                    await SendDigestEmailAsync(member, institution, frequency, portalUrl, jobs, ev, campaign, spotlight, people, mine);
                     sentCount++;
                 }
 
@@ -576,6 +597,27 @@ public class ScheduledJobsActivities(
     private static bool MatchesYear(List<int>? yearGroups, int memberYear) =>
         yearGroups is null || yearGroups.Count == 0 || yearGroups.Contains(memberYear);
 
+    /// <summary>The group events coming up in the next fortnight and group fundraisers still open, with the group's name on each.</summary>
+    private async Task<List<GroupItem>> BuildGroupItemsAsync(string institutionId, DateTime now)
+    {
+        if (communityRepo is null || membershipRepo is null) return [];
+        var soon = now.AddDays(14);
+        var events = await eventRepo.GetAllAsync(e => e.InstitutionId == institutionId && e.CommunityId != null && e.StartDate >= now && e.StartDate <= soon
+            && (e.Status == "Upcoming" || e.Status == "Ongoing"), ignoreQueryFilters: true);
+        var campaigns = await campaignRepo.GetAllAsync(c => c.InstitutionId == institutionId && c.CommunityId != null && c.Status == CampaignStatus.Active
+            && c.Deadline >= now && c.Deadline <= soon, ignoreQueryFilters: true);
+        if (!events.Any() && !campaigns.Any()) return [];
+
+        var ids = events.Select(e => e.CommunityId!).Concat(campaigns.Select(c => c.CommunityId!)).Distinct().ToList();
+        var names = (await communityRepo.GetAllAsync(c => ids.Contains(c.Id) && c.IsActive, ignoreQueryFilters: true)).ToDictionary(c => c.Id, c => c.Name);
+
+        return events.Where(e => names.ContainsKey(e.CommunityId!))
+            .Select(e => new GroupItem(e.CommunityId!, e.StartDate, new DigestItem($"{HtmlEncode(e.Title)}", $"{HtmlEncode(names[e.CommunityId!])} · {e.StartDate:MMMM d} · {HtmlEncode(e.Venue)}", null)))
+            .Concat(campaigns.Where(c => names.ContainsKey(c.CommunityId!))
+                .Select(c => new GroupItem(c.CommunityId!, c.Deadline, new DigestItem($"{HtmlEncode(c.Title)}", $"{HtmlEncode(names[c.CommunityId!])} · closes {c.Deadline:MMMM d}", null))))
+            .ToList();
+    }
+
     private async Task<ContentBucket> BuildContentBucketAsync(string institutionId, DateTime windowStart, DateTime now)
     {
         var jobs = (await jobRepo.GetAllAsync(j =>
@@ -605,14 +647,20 @@ public class ScheduledJobsActivities(
         var spotlightItem = latestSpotlight is null ? null : new DigestItem(
             HtmlEncode(latestSpotlight.Title), $"Featuring {HtmlEncode(latestSpotlight.Member?.FirstName)} {HtmlEncode(latestSpotlight.Member?.LastName)}".Trim(), null);
 
-        return new ContentBucket(jobs, eventItem, campaignItem, spotlightItem);
+        var newMembersByYear = (await memberRepo.GetQueryable(m => m.InstitutionId == institutionId && m.Status == "Active" && m.CreatedAt >= windowStart && m.GraduationYear > 0, ignoreQueryFilters: true)
+                .GroupBy(m => m.GraduationYear).Select(g => new { Year = g.Key, Count = g.Count() }).ToListAsync())
+            .ToDictionary(x => x.Year, x => x.Count);
+
+        return new ContentBucket(jobs, eventItem, campaignItem, spotlightItem, newMembersByYear);
     }
 
     private async Task SendDigestEmailAsync(
         MemberEntity member, Institution institution, string frequency, string portalUrl,
-        List<DigestItem> jobs, DigestItem? ev, DigestItem? campaign, DigestItem? spotlight)
+        List<DigestItem> jobs, DigestItem? ev, DigestItem? campaign, DigestItem? spotlight, DigestItem? people = null, List<DigestItem>? groups = null)
     {
         var sections = new List<string>();
+        if (groups is { Count: > 0 }) sections.Add(BuildSection("From your groups", groups));
+        if (people is not null) sections.Add(BuildSection("People", [people]));
         if (jobs.Count > 0) sections.Add(BuildSection("New jobs", jobs));
         if (ev is not null) sections.Add(BuildSection("Upcoming event", [ev]));
         if (campaign is not null) sections.Add(BuildSection("Campaign closing soon", [campaign]));

@@ -341,6 +341,39 @@ public class ContributionMemberForumServiceTests
     }
 
     [Fact]
+    public async Task UpdateMemberYearGroupAsync_MovesTheMember_ButKeepsAScopedAdminInsideTheirOwnYearGroups()
+    {
+        var member = new DbMember { Id = "m1", FirstName = "Ama", LastName = "Mensah", Email = "ama@x.com", GraduationYear = 2026 };
+        var memberRepo = new Mock<IAlumniPgRepository<DbMember>>();
+        memberRepo.Setup(r => r.GetByIdAsync("m1", It.IsAny<bool>())).ReturnsAsync(member);
+        var institution = new InstitutionEntity { Id = "inst1" };
+        var institutionRepo = new Mock<IAlumniPgRepository<InstitutionEntity>>();
+        institutionRepo.Setup(r => r.GetByIdAsync("inst1", It.IsAny<bool>())).ReturnsAsync(institution);
+        var tenant = new Mock<ICurrentTenantService>();
+        tenant.SetupGet(t => t.InstitutionId).Returns("inst1");
+        var service = new MemberManagementService(memberRepo.Object, Mock.Of<IAlumniPgRepository<Campaign>>(), Mock.Of<IAlumniPgRepository<Contribution>>(), institutionRepo.Object, Mock.Of<IAlumniPgRepository<CommunityMembership>>(), Mock.Of<IAlumniPgRepository<Referral>>(), tenant.Object, Mock.Of<IConfiguration>(), Microsoft.Extensions.Options.Options.Create(new MailtrapConfig()), Mock.Of<ITemporalClientProvider>(t => t.IsAvailable == false), Mock.Of<IInstitutionAuditLogService>(), new NullLogger<MemberManagementService>());
+        var boss = new AuthData { Id = "a", Role = "SuperAdmin" };
+
+        Assert.Equal(400, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(1800), boss)).Code);   // not a real year
+        Assert.Equal(400, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(null), boss)).Code);   // required by default
+        Assert.Equal(200, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(2019), boss)).Code);
+        Assert.Equal(2019, member.GraduationYear);
+
+        // A scoped admin looks after 2019 and 2020 only: they may move this member within them, never out to another year.
+        var scoped = new AuthData { Id = "s", Role = "ScopedAdmin", YearGroups = [2019, 2020] };
+        Assert.Equal(403, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(2031), scoped)).Code);
+        Assert.Equal(200, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(2020), scoped)).Code);
+        Assert.Equal(2020, member.GraduationYear);
+
+        // A community that is not organised by year has nothing to change; one where the year is optional may clear it.
+        institution.UseGraduationYears(ReservEase.Alumni.PostgresDb.Sdk.Entities.GraduationYearModes.Optional);
+        Assert.Equal(200, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(null), boss)).Code);
+        Assert.Equal(0, member.GraduationYear);
+        institution.UseGraduationYears(ReservEase.Alumni.PostgresDb.Sdk.Entities.GraduationYearModes.Off);
+        Assert.Equal(400, (await service.UpdateMemberYearGroupAsync("m1", new UpdateMemberYearGroupRequest(2019), boss)).Code);
+    }
+
+    [Fact]
     public async Task CreateCategoryAsync_AndThreadActions_ReturnForbidden_ForScopedAdmin()
     {
         var mockCategoryRepo = new Mock<IAlumniPgRepository<ForumCategory>>();

@@ -20,7 +20,7 @@ import {
 import { Button } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { Label } from "@alumni/ui";
-import { FormSelect } from "@alumni/ui";
+import { FormSelect, SearchableSelect } from "@alumni/ui";
 import { PhoneInput } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { memberClient, publicMemberClient, handleApiError, applyServerFieldErrors } from "@/lib/api-client";
@@ -962,7 +962,7 @@ function RegisterForm() {
                         <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>(optional)</span>
                       </Label>
                       {programMode === "select" ? (
-                        <FormSelect
+                        <SearchableSelect
                           value={watch("program") ?? ""}
                           onValueChange={(v) => {
                             if (v === CUSTOM_PROGRAM_VALUE) {
@@ -973,10 +973,10 @@ function RegisterForm() {
                             }
                           }}
                           placeholder="Select your program"
-                          fullWidth
+                          searchPlaceholder="Search programs"
                           options={[
                             ...programsOfStudy.map((p) => ({ value: p, label: p })),
-                            { value: CUSTOM_PROGRAM_VALUE, label: "Not listed — let me type it" },
+                            { value: CUSTOM_PROGRAM_VALUE, label: "Not listed, let me type it", pinned: true },
                           ]}
                         />
                       ) : (

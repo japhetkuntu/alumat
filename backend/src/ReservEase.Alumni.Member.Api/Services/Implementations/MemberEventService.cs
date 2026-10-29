@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Extensions;
 using ReservEase.Alumni.Common.Sdk.Models;
 using ReservEase.Alumni.Member.Api.Extensions;
@@ -60,12 +61,22 @@ public class MemberEventService(
 
             var status = string.IsNullOrWhiteSpace(filter.Status) ? "Upcoming" : filter.Status;
             var includeCancelled = status.Equals("All", StringComparison.OrdinalIgnoreCase);
+            // An event's status is worked out from its dates (see EventTiming), so one that has passed is Completed even though
+            // nothing ever updated the stored value.
+            var now = DateTime.UtcNow;
+            var openStatuses = new[] { "Upcoming", "Ongoing" };
+            // An event with no end date lasts EventTiming.DefaultLength from its start, so it is over once it started longer ago than that.
+            var startedBefore = now - EventTiming.DefaultLength;
 
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(memberId) : [];
 
             var result = await eventRepo.GetPagedAsync(
                 filter.Page, filter.PageSize, filter.SortColumn ?? "StartDate", filter.SortDir ?? "asc",
-                e => (includeCancelled || e.Status == status)
+                e => (includeCancelled
+                          || (status == "Upcoming" && openStatuses.Contains(e.Status) && (e.EndDate != null ? e.EndDate > now : e.StartDate > startedBefore))
+                          || (status == "Ongoing" && openStatuses.Contains(e.Status) && e.StartDate <= now && (e.EndDate != null ? e.EndDate > now : e.StartDate > startedBefore))
+                          || (status == "Completed" && (e.Status == "Completed" || (openStatuses.Contains(e.Status) && (e.EndDate != null ? e.EndDate <= now : e.StartDate <= startedBefore))))
+                          || (status != "Upcoming" && status != "Ongoing" && status != "Completed" && e.Status == status))
                       && (string.IsNullOrEmpty(filter.CommunityId)
                           ? (e.CommunityId == null || approvedCommunityIds.Contains(e.CommunityId))
                           : e.CommunityId == filter.CommunityId)
@@ -94,7 +105,7 @@ public class MemberEventService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(e => e.ToDto()).ToList(),
+                Results = result.Results.Select(e => { var dto = e.ToDto(); dto.Status = EventTiming.EffectiveStatus(e.Status, e.StartDate, e.EndDate, now); return dto; }).ToList(),
             };
             await EnrichCommunityNamesAsync(dtoResult.Results);
             return dtoResult.ToOkApiResponse();
@@ -119,7 +130,9 @@ public class MemberEventService(
             var confirmedRsvps = await rsvpRepo.CountAsync(r => r.EventId == eventId && r.Status == "Confirmed");
             ev.RsvpCount = confirmedRsvps;
 
-            return ev.ToDto().ToOkApiResponse();
+            var detail = ev.ToDto();
+            detail.Status = EventTiming.EffectiveStatus(ev.Status, ev.StartDate, ev.EndDate, DateTime.UtcNow);
+            return detail.ToOkApiResponse();
         }
         catch (Exception e)
         {
@@ -153,7 +166,7 @@ public class MemberEventService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event charges to RSVP. Pay to confirm your place.");
 
             // A cancelled or finished event takes no new RSVPs, and an event with a capacity stops at it.
-            if (ev.Status is "Cancelled" or "Completed")
+            if (ev.Status is "Cancelled" or "Completed" || EventTiming.EffectiveStatus(ev.Status, ev.StartDate, ev.EndDate, DateTime.UtcNow) == "Completed")
                 return ApiResponseExtensions.ToBadRequestApiResponse<object>("This event is no longer open for RSVPs");
             if (ev.Capacity.HasValue && await rsvpRepo.CountAsync(r => r.EventId == request.EventId && r.Status == "Confirmed") >= ev.Capacity.Value)
                 return ApiResponseExtensions.ToConflictApiResponse<object>("This event is full");

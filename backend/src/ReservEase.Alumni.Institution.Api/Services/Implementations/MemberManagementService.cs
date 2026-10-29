@@ -392,6 +392,49 @@ public class MemberManagementService(
         return salvaged is { Count: > 0 } ? salvaged : null;
     }
 
+    public async Task<IApiResponse<object>> UpdateMemberYearGroupAsync(string memberId, UpdateMemberYearGroupRequest request, AuthData admin)
+    {
+        try
+        {
+            var member = await memberRepo.GetByIdAsync(memberId);
+            if (member is null || !(await IsMemberInScopeAsync(admin, member)))
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Member not found");
+
+            var institution = string.IsNullOrEmpty(currentTenant.InstitutionId) ? null : await institutionRepo.GetByIdAsync(currentTenant.InstitutionId);
+            if (institution?.GraduationYearMode == GraduationYearModes.Off)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("This community does not use year groups.");
+
+            var year = request.GraduationYear ?? 0;
+            if (year == 0)
+            {
+                if (institution?.GraduationYearMode == GraduationYearModes.Required)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<object>("A year group is required for every member here.");
+            }
+            else if (year < 1900 || year > DateTime.UtcNow.Year + 10)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("Enter a valid year.");
+
+            // A scoped admin looks after certain year groups, so they can only move a member into one of them. Otherwise the member would vanish from their view.
+            if (admin.Role == StaffRoles.ScopedAdmin && admin.YearGroups?.Contains(year) != true)
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("You can only move a member into a year group you look after.");
+
+            var previous = member.GraduationYear;
+            if (previous == year)
+                return new object().ToOkApiResponse("Year group unchanged");
+
+            member.GraduationYear = year;
+            member.UpdatedAt = DateTime.UtcNow;
+            member.UpdatedBy = admin.Id;
+            await memberRepo.UpdateAsync(member);
+            await auditLog.LogAsync(admin, "Member Year Group Changed", $"{member.FirstName} {member.LastName} ({member.Email}): {(previous > 0 ? previous.ToString() : "none")} to {(year > 0 ? year.ToString() : "none")}");
+            return new object().ToOkApiResponse("Year group updated");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error changing year group for member {MemberId} by admin {AdminId}", memberId, admin.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to update the year group");
+        }
+    }
+
     public async Task<IApiResponse<object>> UpdateMemberCustomFieldsAsync(string memberId, UpdateMemberCustomFieldsRequest request, AuthData admin)
     {
         try

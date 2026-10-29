@@ -49,6 +49,7 @@ export * from "./components/rich-text-editor";
 export * from "./components/search-modal";
 export * from "./components/share-link-button";
 export * from "./components/select";
+export * from "./components/searchable-select";
 export * from "./components/separator";
 export * from "./components/settlement-account-fields";
 export * from "./components/skeleton";

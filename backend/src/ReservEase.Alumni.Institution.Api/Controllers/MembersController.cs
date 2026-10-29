@@ -99,6 +99,21 @@ public class MembersController(IMemberManagementService memberService) : Default
     }
 
     /// <summary>
+    /// Move a member to the right year group when they picked the wrong one.
+    /// </summary>
+    [HttpPut("{memberId}/year-group")]
+    [SwaggerOperation(Summary = "Change a member's year group")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> UpdateYearGroup(string memberId, [FromBody] UpdateMemberYearGroupRequest request)
+    {
+        var admin = User.GetAccount();
+        var result = await memberService.UpdateMemberYearGroupAsync(memberId, request, admin);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Correct or fill in a member's answers to the community's own registration questions.
     /// </summary>
     [HttpPut("{memberId}/custom-fields")]

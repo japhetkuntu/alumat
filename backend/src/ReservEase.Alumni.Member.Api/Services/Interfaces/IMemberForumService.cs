@@ -11,5 +11,6 @@ public interface IMemberForumService
     Task<IApiResponse<ForumThreadDto>> GetThreadByIdAsync(string threadId, AuthData member);
     Task<IApiResponse<ForumThreadDto>> CreateThreadAsync(CreateThreadRequest request, AuthData member);
     Task<IApiResponse<PgPagedResult<ForumPostDto>>> GetPostsAsync(string threadId, BaseFilter filter, AuthData member);
+    Task<IApiResponse<object>> ToggleHelpfulAsync(string postId, AuthData member);
     Task<IApiResponse<ForumPostDto>> ReplyToThreadAsync(CreateForumPostRequest request, AuthData member);
 }

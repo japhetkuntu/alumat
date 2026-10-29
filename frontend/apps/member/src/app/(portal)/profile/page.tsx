@@ -3,7 +3,7 @@
 import { compressImage } from "@alumni/ui";
 import Link from "next/link";
 import { DeleteAccountLink } from "@/components/member/delete-account";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,12 +23,14 @@ import { Badge } from "@alumni/ui";
 import { Separator } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import {
-  getMyProfile, updateMyProfile, changePassword, getMyBadges, getCurrentMembershipCampaign,
+  getMyProfile, updateMyProfile, changePassword, getMyBadges, badgeTitle, getCurrentMembershipCampaign,
   getNotificationPreferences, updateNotificationPreferences,
 } from "@/lib/member-api";
 import { getRoundedLocation } from "@/lib/geolocation";
 import { formatCurrency } from "@alumni/ui";
-import { handleApiError } from "@/lib/api-client";
+import { handleApiError, memberClient } from "@/lib/api-client";
+import { SearchableSelect } from "@alumni/ui";
+import { ProfileStrengthBar } from "@/components/member/profile-strength";
 import { toast } from "sonner";
 import { CardSkeleton } from "@alumni/ui";
 import { ConfirmModal } from "@alumni/ui";
@@ -134,6 +136,16 @@ export default function MemberProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
 
+  // The institution's own list of programs, when it keeps one, so members pick theirs instead of typing it.
+  const { data: programTheme } = useQuery({
+    queryKey: ["m-programs-of-study"],
+    queryFn: async () => (await memberClient.get<{ data: { programOfStudyEnabled: boolean; programsOfStudy: string[] } }>("/public/institution/theme")).data.data,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const programOptions = programTheme?.programOfStudyEnabled ? (programTheme.programsOfStudy ?? []) : [];
+  const [typeOwnProgram, setTypeOwnProgram] = useState(false);
+
   const { data: profile, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["m-profile"],
     queryFn:  getMyProfile,
@@ -176,6 +188,22 @@ export default function MemberProfilePage() {
   // render (React's documented alternative to an effect for this case)
   // rather than in a useEffect, guarded so it only fires once per distinct
   // `profile` reference.
+  // Arriving from a "finish your profile" prompt (/profile#bio): take the member straight to that field.
+  useEffect(() => {
+    if (!profile) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (id === "profile-photo") return;
+      const field = el.matches("input,textarea,button") ? el : el.querySelector<HTMLElement>("input,textarea");
+      field?.focus({ preventScroll: true });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [profile]);
+
   const [syncedProfile, setSyncedProfile] = useState(profile);
   if (profile && profile !== syncedProfile) {
     setSyncedProfile(profile);
@@ -422,6 +450,7 @@ export default function MemberProfilePage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-6xl mx-auto">
       <PageHeader eyebrow="Account" title="Profile" description="Your profile, visible to the people in your community, and how the portal works for you." />
+      <ProfileStrengthBar />
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-5 lg:gap-6 mt-6 items-start">
 
@@ -472,6 +501,7 @@ export default function MemberProfilePage() {
                   variant="secondary"
                   className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full"
                   disabled={avatarUploading}
+                  id="profile-photo"
                   aria-label="Change profile photo"
                   onClick={() => avatarInputRef.current?.click()}
                 >
@@ -497,7 +527,7 @@ export default function MemberProfilePage() {
                   </Badge>
                   {badges?.map(b => (
                     <Badge key={b.id} variant="secondary" className="gap-1 text-[12px] font-semibold">
-                      🏅 {b.badgeType.replace(/([A-Z])/g, " $1").trim()}
+                      🏅 {badgeTitle(b.badgeType)}
                     </Badge>
                   ))}
                 </div>
@@ -559,8 +589,38 @@ export default function MemberProfilePage() {
           <CardContent className="pt-0">
             <form className="space-y-4" onSubmit={e => { e.preventDefault(); updateMut.mutate(); }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="program" className="text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Program / course of study</Label>
+                  {programOptions.length > 0 && !typeOwnProgram && (profileForm.program === "" || programOptions.includes(profileForm.program)) ? (
+                    <SearchableSelect
+                      id="program"
+                      value={profileForm.program}
+                      onValueChange={(v) => {
+                        if (v === "__custom__") { setTypeOwnProgram(true); setProfileForm(f => ({ ...f, program: "" })); }
+                        else setProfileForm(f => ({ ...f, program: v }));
+                      }}
+                      placeholder="Select your program"
+                      searchPlaceholder="Search programs"
+                      options={[...programOptions.map((p) => ({ value: p, label: p })), { value: "__custom__", label: "Not listed, let me type it", pinned: true }]}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        id="program"
+                        placeholder="e.g. BSc Mining Engineering"
+                        value={profileForm.program}
+                        onChange={e => setProfileForm(f => ({ ...f, program: e.target.value }))}
+                        className="h-11 text-[14px]"
+                      />
+                      {programOptions.length > 0 && (
+                        <Button type="button" variant="outline" className="shrink-0 text-[13px]" onClick={() => { setTypeOwnProgram(false); setProfileForm(f => ({ ...f, program: "" })); }}>
+                          Choose from list
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {[
-                  { id: "program",  label: "Program / course of study", placeholder: "e.g. BSc Mining Engineering", type: "text" },
                   { id: "company",  label: "Company",  placeholder: "Where you work",    type: "text"  },
                   { id: "jobTitle", label: "Job title", placeholder: "Your current role", type: "text"  },
                   { id: "location", label: "Location",  placeholder: "City, Country",     type: "text"  },

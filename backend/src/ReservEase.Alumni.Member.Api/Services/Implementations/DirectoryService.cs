@@ -15,8 +15,82 @@ namespace ReservEase.Alumni.Member.Api.Services.Implementations;
 public class DirectoryService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     IAlumniPgRepository<Department> departmentRepo,
-    ILogger<DirectoryService> logger) : IDirectoryService
+    ILogger<DirectoryService> logger,
+    IAlumniPgRepository<CommunityMembership>? membershipRepo = null,
+    IAlumniPgRepository<Community>? communityRepo = null) : IDirectoryService
 {
+    private const int SuggestionCount = 6;
+    private const int CandidatesPerSignal = 60;
+
+    /// <summary>
+    /// A handful of members the caller probably knows, best first. Each shares something real with them: a group, the program they
+    /// studied, or the year they joined or graduated. Someone who shares several things ranks above someone who shares one.
+    /// </summary>
+    public async Task<IApiResponse<List<DirectorySuggestionDto>>> GetSuggestionsAsync(string memberId)
+    {
+        try
+        {
+            var me = await memberRepo.GetByIdAsync(memberId);
+            if (me is null) return new List<DirectorySuggestionDto>().ToOkApiResponse();
+
+            var reasons = new Dictionary<string, List<string>>();
+            var score = new Dictionary<string, int>();
+            void Note(string id, string reason, int points)
+            {
+                if (id == memberId) return;
+                if (!reasons.TryGetValue(id, out var list)) reasons[id] = list = [];
+                if (!list.Contains(reason)) list.Add(reason);
+                score[id] = score.GetValueOrDefault(id) + points;
+            }
+
+            // Groups: the strongest signal, since someone chose to join the same one.
+            if (membershipRepo is not null && communityRepo is not null)
+            {
+                var myGroupIds = (await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved")).Select(m => m.CommunityId).Distinct().ToList();
+                if (myGroupIds.Count > 0)
+                {
+                    var names = (await communityRepo.GetAllAsync(c => myGroupIds.Contains(c.Id) && c.IsActive)).ToDictionary(c => c.Id, c => c.Name);
+                    var shared = await membershipRepo.GetQueryable(m => m.Status == "Approved" && myGroupIds.Contains(m.CommunityId) && m.MemberId != memberId)
+                        .Select(m => new { m.MemberId, m.CommunityId }).Take(CandidatesPerSignal * 3).ToListAsync();
+                    foreach (var s in shared.Where(s => names.ContainsKey(s.CommunityId))) Note(s.MemberId, $"In {names[s.CommunityId]}", 3);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(me.Program))
+            {
+                var program = me.Program.Trim();
+                var same = await memberRepo.GetQueryable(m => m.Status == "Active" && m.Id != memberId && m.Program == program)
+                    .Select(m => m.Id).Take(CandidatesPerSignal).ToListAsync();
+                foreach (var id in same) Note(id, $"Studied {program}", 2);
+            }
+
+            if (me.GraduationYear > 0)
+            {
+                var year = me.GraduationYear;
+                var classmates = await memberRepo.GetQueryable(m => m.Status == "Active" && m.Id != memberId && m.GraduationYear == year)
+                    .OrderByDescending(m => m.ProfilePictureUrl != null).Select(m => m.Id).Take(CandidatesPerSignal).ToListAsync();
+                foreach (var id in classmates) Note(id, $"Class of {year}", 2);
+            }
+
+            var topIds = score.OrderByDescending(kv => kv.Value).Take(SuggestionCount * 2).Select(kv => kv.Key).ToList();
+            if (topIds.Count == 0) return new List<DirectorySuggestionDto>().ToOkApiResponse();
+
+            var people = (await memberRepo.GetAllAsync(m => topIds.Contains(m.Id) && m.Status == "Active")).ToDictionary(m => m.Id);
+            var result = topIds.Where(people.ContainsKey)
+                // A photo breaks ties: a face is what makes someone recognisable.
+                .OrderByDescending(id => score[id] * 10 + (people[id].ProfilePictureUrl is null ? 0 : 1))
+                .Take(SuggestionCount)
+                .Select(id => new DirectorySuggestionDto { Member = people[id].ToDto(), Reasons = reasons[id] })
+                .ToList();
+            return result.ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error building suggestions for member {MemberId}", memberId);
+            return ApiResponseExtensions.ToServerErrorApiResponse<List<DirectorySuggestionDto>>("Failed to load suggestions");
+        }
+    }
+
     public async Task<IApiResponse<PgPagedResult<DirectoryMemberDto>>> SearchMembersAsync(DirectoryFilter filter)
     {
         try

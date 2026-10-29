@@ -88,6 +88,20 @@ function arrayToComma(arr?: string[]): string {
   return arr?.join(", ") ?? "";
 }
 
+/** Starting points for a new event: what an admin would otherwise type from scratch. Each only fills the words; the date, venue and price stay theirs to set. */
+const EVENT_STARTERS: { key: string; label: string; title: string; venue?: string; description: string }[] = [
+  { key: "reunion", label: "Reunion dinner", title: "Annual reunion dinner",
+    description: "<p>Come and see the people you shared these years with. An evening of food, music and old stories, with a short programme and time to catch up.</p><p><strong>Who should come:</strong> everyone, and bring a classmate who has not been in touch for a while.</p><p><strong>What to wear:</strong> smart casual.</p>" },
+  { key: "meeting", label: "Chapter meeting", title: "Monthly chapter meeting",
+    description: "<p>Our regular meeting: updates from the leaders, what is coming up, and time to hear from members.</p><p><strong>Agenda:</strong> welcome, updates, open floor, close. It usually takes about an hour.</p>" },
+  { key: "career", label: "Career evening", title: "Career evening: meet members in the field",
+    description: "<p>Members share how they got where they are, then there is time to ask questions and meet people one on one. Students and recent graduates are especially welcome.</p><p>Bring a short introduction about yourself and what you are looking for.</p>" },
+  { key: "webinar", label: "Online session", title: "Online session", venue: "Online",
+    description: "<p>Join us online. We will share the link with everyone who RSVPs, and you can ask questions in the chat.</p><p><strong>Before you join:</strong> a quiet spot and a good connection help.</p>" },
+  { key: "fundraiser", label: "Fundraising event", title: "Fundraising gala",
+    description: "<p>An evening to raise money for a cause our community cares about. Every contribution goes to the project, and we will share the total and what it achieved afterwards.</p>" },
+];
+
 function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
   id: string;
   init: FormState; onSave: (f: FormState) => void;
@@ -251,6 +265,7 @@ export default function AdminEventsPage() {
   const focusId = useSearchParams().get("focus");
   const [showCreate, setShowCreate] = useState(false);
   const [copyFrom, setCopyFrom] = useState<AlumniEvent | null>(null);
+  const [starter, setStarter] = useState<string | null>(null);
   const [editEvent, setEditEvent] = useState<AlumniEvent | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AlumniEvent | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AlumniEvent | null>(null);
@@ -349,7 +364,7 @@ export default function AdminEventsPage() {
 
       <FormSheet
         open={showCreate || editEvent !== null || copyFrom !== null}
-        onClose={() => { setShowCreate(false); setEditEvent(null); setCopyFrom(null); }}
+        onClose={() => { setShowCreate(false); setEditEvent(null); setCopyFrom(null); setStarter(null); }}
         title={editEvent ? "Edit event" : copyFrom ? "Duplicate event" : "Create event"}
         description={editEvent ? editEvent.title : copyFrom ? `A new event started from "${copyFrom.title}"` : "Members RSVP from their portal, paying if you charge, and you see who is coming."}
         formId="event-form"
@@ -391,7 +406,32 @@ export default function AdminEventsPage() {
             />
           </>
         ) : showCreate ? (
-          <EventForm id="event-form" init={emptyForm} showStatus={false} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate({ f })} />
+          <>
+            <div className="mb-5 space-y-2" role="group" aria-label="Start from a template">
+              <p className="text-[12.5px] font-semibold text-muted-foreground">Start from</p>
+              <div className="flex flex-wrap gap-2">
+                {EVENT_STARTERS.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    aria-pressed={starter === t.key}
+                    onClick={() => setStarter(starter === t.key ? null : t.key)}
+                    className={`border px-3 py-1.5 text-[12.5px] font-medium transition-colors ${starter === t.key ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <EventForm
+              key={`new-${starter ?? "blank"}`}
+              id="event-form"
+              init={(() => { const t = EVENT_STARTERS.find((x) => x.key === starter); return t ? { ...emptyForm, title: t.title, description: t.description, venue: t.venue ?? "" } : emptyForm; })()}
+              showStatus={false}
+              isSuperAdmin={isSuperAdmin}
+              onSave={(f) => createMut.mutate({ f })}
+            />
+          </>
         ) : null}
       </FormSheet>
 

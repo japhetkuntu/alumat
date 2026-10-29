@@ -14,6 +14,7 @@ public interface IMemberManagementService
     Task<IApiResponse<object>> UnbanMemberAsync(string memberId, AuthData admin);
     Task<IApiResponse<ImportMembersResult>> ImportMembersAsync(ImportMembersRequest request, AuthData admin);
     Task<IApiResponse<object>> ActivateMembershipAsync(string memberId, ActivateMembershipRequest request, AuthData admin);
+    Task<IApiResponse<object>> UpdateMemberYearGroupAsync(string memberId, UpdateMemberYearGroupRequest request, AuthData admin);
     Task<IApiResponse<object>> UpdateMemberCustomFieldsAsync(string memberId, UpdateMemberCustomFieldsRequest request, AuthData admin);
 }
 

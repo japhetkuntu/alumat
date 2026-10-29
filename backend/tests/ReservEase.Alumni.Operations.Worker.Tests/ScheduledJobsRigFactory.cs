@@ -38,7 +38,8 @@ public sealed class ScheduledJobsRig
             R<ActivationTask>(db), R<PlatformStaff>(db), R<PlatformNotification>(db), R<Campaign>(db), R<Spotlight>(db), R<RecurringContribution>(db),
             R<Contribution>(db), R<Batch>(db), R<Notification>(db), R<ForumCategory>(db), R<ForumThread>(db), R<ForumPost>(db),
             Tenant, Paystack.Object, PaystackConfig, Temporal.Object,
-            Options.Create(new MailtrapConfig()), new ConfigurationBuilder().AddInMemoryCollection(Config).Build(), Log);
+            Options.Create(new MailtrapConfig()), new ConfigurationBuilder().AddInMemoryCollection(Config).Build(), Log,
+            R<Community>(db), R<CommunityMembership>(db));
     }
 
     private static AlumniPgRepository<T> R<T>(AlumniDbContext db) where T : BaseEntity => new(db);

@@ -27,6 +27,16 @@ public class DirectoryController(IDirectoryService directoryService) : DefaultCo
         return result.ToActionResult();
     }
 
+    [HttpGet("suggestions")]
+    [RequireFeature(InstitutionFeatures.Directory)]
+    [SwaggerOperation(Summary = "People you may know", Description = "A few members who share the caller's year, groups or program, with the reason for each")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<List<DirectorySuggestionDto>>))]
+    public async Task<IActionResult> GetSuggestions()
+    {
+        var result = await directoryService.GetSuggestionsAsync(User.GetAccount().Id);
+        return result.ToActionResult();
+    }
+
     [HttpGet("map")]
     [RequireFeature(InstitutionFeatures.AlumniMap)]
     [SwaggerOperation(Summary = "Alumni map", Description = "Get all members who have opted in to appear on the alumni map, with their location")]

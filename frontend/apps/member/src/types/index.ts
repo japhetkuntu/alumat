@@ -424,6 +424,10 @@ export interface ForumThread {
   isClosed: boolean;
   replyCount: number;
   createdAt: string;
+  /** The start of the opening post, plain text. */
+  excerpt?: string | null;
+  lastActivityAt?: string | null;
+  lastReplyByName?: string | null;
 }
 
 export interface ForumPost {
@@ -434,6 +438,9 @@ export interface ForumPost {
   authorProfilePictureUrl?: string;
   content: string;
   createdAt: string;
+  /** How many members marked this reply helpful. */
+  helpfulCount?: number;
+  markedHelpfulByMe?: boolean;
 }
 
 // ─── Mentorship ───────────────────────────────────────────────────────────────

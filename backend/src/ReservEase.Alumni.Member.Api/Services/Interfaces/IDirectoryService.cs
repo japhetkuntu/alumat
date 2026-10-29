@@ -8,4 +8,5 @@ public interface IDirectoryService
 {
     Task<IApiResponse<PgPagedResult<DirectoryMemberDto>>> SearchMembersAsync(DirectoryFilter filter);
     Task<IApiResponse<List<AlumniMapMemberDto>>> GetMapMembersAsync();
+    Task<IApiResponse<List<DirectorySuggestionDto>>> GetSuggestionsAsync(string memberId);
 }

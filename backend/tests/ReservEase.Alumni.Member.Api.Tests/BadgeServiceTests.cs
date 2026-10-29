@@ -26,7 +26,7 @@ public class BadgeServiceTests
             return Service = new BadgeService(
                 new AlumniPgRepository<MemberBadge>(db), new AlumniPgRepository<MemberEntity>(db), new AlumniPgRepository<Contribution>(db),
                 new AlumniPgRepository<Campaign>(db), new AlumniPgRepository<EventRsvp>(db), new AlumniPgRepository<Referral>(db),
-                NullLogger<BadgeService>.Instance);
+                NullLogger<BadgeService>.Instance, new AlumniPgRepository<Notification>(db));
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);
@@ -49,6 +49,23 @@ public class BadgeServiceTests
         new() { Id = $"c-{campaignId}-{memberId}", CampaignId = campaignId, MemberId = memberId, Status = "Successful" };
 
     private static Campaign Dues(int year) => new() { Id = $"dues-{year}", Title = $"Dues {year}", IsMembershipCampaign = true, MembershipYear = year, Deadline = DateTime.UtcNow.AddDays(30) };
+
+    [Fact]
+    public async Task Looking_at_your_badges_awards_the_ones_you_have_earned_once_and_tells_you_about_them()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person(), new Campaign { Id = "fund", Title = "Library", Deadline = DateTime.UtcNow.AddDays(30) }, Paid("fund"));
+
+        var first = await rig.Service.GetMyBadgesAsync("m1");
+        Assert.Equal(["FirstContribution"], first.Data!.Select(b => b.BadgeType));
+
+        // Asking again changes nothing: no second badge and no second notification.
+        await rig.Service.GetMyBadgesAsync("m1");
+        Assert.Equal(["FirstContribution"], await rig.Badges());
+        var told = await rig.Db().Notifications.Where(n => n.RecipientId == "m1" && n.Type == "BadgeEarned").ToListAsync();
+        Assert.Single(told);
+        Assert.Equal("Made your first contribution", told[0].Body);
+    }
 
     [Fact]
     public async Task A_member_with_no_activity_earns_nothing()

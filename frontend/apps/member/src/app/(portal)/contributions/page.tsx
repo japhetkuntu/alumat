@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -25,6 +26,8 @@ import {
   getMyCampaigns,
   getMyContributions,
   getPaystackPaymentStatus,
+  getMyBadges,
+  badgeTitle,
   initiatePaystackPayment,
   renewMembership,
   getMyProfile,
@@ -85,8 +88,14 @@ function PaymentStatusModal({
   const [status, setStatus]   = useState<PollStatus>("loading");
   const [message, setMessage] = useState("");
   const [seconds, setSeconds] = useState(10);
+  const [newBadge, setNewBadge] = useState<string | null>(null);
+  const router = useRouter();
+  const { user } = useAuth();
+  // Kept in a ref so a parent that re-renders (it does, once the payment is confirmed and the lists refresh) cannot restart the check.
+  const confirmedRef = useRef(onConfirmed);
+  useEffect(() => { confirmedRef.current = onConfirmed; });
 
-  const reset = useCallback(() => { setStatus("loading"); setMessage(""); setSeconds(10); }, []);
+  const reset = useCallback(() => { setStatus("loading"); setMessage(""); setSeconds(10); setNewBadge(null); }, []);
 
   const poll = useCallback(async () => {
     if (!reference) return;
@@ -95,7 +104,14 @@ function PaymentStatusModal({
       const res = await getPaystackPaymentStatus(reference);
       const n = res.status?.toLowerCase() ?? "unknown";
       if (n === "confirmed" || n === "success" || n === "successful") {
-        setStatus("success"); setMessage(res.message ?? "Thank you. Your payment is recorded and shows in your payment history below."); onConfirmed(); return;
+        setStatus("success"); setMessage(res.message ?? "Thank you. Your payment is recorded and shows in your payment history below.");
+        confirmedRef.current();
+        // Paying can earn a badge (a first gift, a membership streak). Say so now, while the member is looking at the screen.
+        getMyBadges().then((all) => {
+          const justNow = all.find((b) => Date.now() - new Date(b.earnedAt).getTime() < 3 * 60_000);
+          if (justNow) setNewBadge(badgeTitle(justNow.badgeType));
+        }).catch(() => { /* the badge shows up on the profile anyway */ });
+        return;
       }
       if (n === "pending" || n === "unknown") {
         setStatus("pending"); setMessage(res.message ?? "Still waiting for confirmation. Please do not pay again. If money left your account, it will show here shortly."); return;
@@ -104,7 +120,7 @@ function PaymentStatusModal({
     } catch (err) {
       setStatus("error"); setMessage(handleApiError(err));
     }
-  }, [reference, onConfirmed]);
+  }, [reference]);
 
   // Legitimate external-system sync: starting the payment-status poll (a
   // network request) when the modal opens, not adjusting state from a prop.
@@ -130,7 +146,7 @@ function PaymentStatusModal({
   const title = {
     loading: "Verifying payment…",
     pending: "Payment pending",
-    success: "Payment confirmed",
+    success: user?.firstName ? `Thank you, ${user.firstName}!` : "Thank you!",
     error:   "Something went wrong",
   }[status];
 
@@ -172,6 +188,15 @@ function PaymentStatusModal({
             </DialogDescription>
           )}
         </DialogHeader>
+        {status === "success" && newBadge && (
+          <p className="mx-auto -mt-1 rounded-full bg-secondary px-3.5 py-1.5 text-[13px] font-semibold">🏅 You earned a badge: {newBadge}</p>
+        )}
+        {status === "success" && (
+          <p className="mx-auto max-w-[290px] text-center text-[13px] text-muted-foreground">
+            Your classmates will be glad to see you here. Know someone who has not joined yet?{" "}
+            <button type="button" className="font-semibold text-primary underline underline-offset-4" onClick={() => { onClose(); router.push("/referrals"); }}>Invite them</button>
+          </p>
+        )}
         <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
           {!resolved && (
             <Button
@@ -949,7 +974,7 @@ export default function MemberContributionsPage() {
         amount={statusModalContext?.amount}
         onClose={closeModal}
         onConfirmed={() => {
-          closeModal();
+          // The member closes this themselves (Done), so they get to see the thank-you. Only the lists behind it refresh now.
           // Broad "m-contributions" prefix (not the current page's exact key)
           // so every page/variant of this query — including the campaign
           // detail page's ["m-contributions", { campaignId }] — refreshes too.

@@ -10,12 +10,14 @@ import { getNextSteps } from "@/lib/member-api";
  */
 export function NextSteps() {
   const { data } = useQuery({ queryKey: ["m-next-steps"], queryFn: getNextSteps, staleTime: 2 * 60_000, retry: false });
-  if (!data || data.length === 0) return null;
+  // The profile nudge has its own, richer card above this one (ProfileStrengthCard), so it is not repeated here.
+  const steps = (data ?? []).filter((s) => s.key !== "complete-profile");
+  if (steps.length === 0) return null;
   return (
     <section aria-labelledby="next-steps-heading" className="border border-border bg-card p-5 sm:p-6">
       <h2 id="next-steps-heading" className="text-[13px] font-semibold text-muted-foreground">Next for you</h2>
       <ul className="mt-3 divide-y divide-border">
-        {data.map((s) => (
+        {steps.map((s) => (
           <li key={s.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 first:pt-0 last:pb-0">
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-semibold leading-snug">{s.title}</p>

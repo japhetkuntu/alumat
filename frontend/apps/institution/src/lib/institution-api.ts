@@ -326,6 +326,11 @@ export async function updateMemberCustomFields(memberId: string, answers: Record
   await institutionClient.put(`/members/${memberId}/custom-fields`, { answers });
 }
 
+/** Move a member to another year group (graduation year). 0 or empty clears it where the community treats the year as optional. */
+export async function updateMemberYearGroup(memberId: string, graduationYear: number | null): Promise<void> {
+  await institutionClient.put(`/members/${memberId}/year-group`, { graduationYear });
+}
+
 // ─── Automatic messages ──────────────────────────────────────────────────────
 
 export interface AutomationSettings {

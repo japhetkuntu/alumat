@@ -22,7 +22,25 @@ import Link from "next/link";
 import { cn } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
+import { UserAvatar } from "@alumni/ui";
+import { formatDistanceToNowStrict } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
 import { SourceFilterChips } from "@/components/member/source-filter-chips";
+
+/** "3 days ago", never throwing on a bad date. */
+function ago(value: string | null | undefined): string {
+  if (!value) return "";
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? "" : `${formatDistanceToNowStrict(d)} ago`;
+}
+
+/** Ways to begin, for people who have something to say but not the first line. They only fill the title. */
+const STARTERS = [
+  { label: "Introduce yourself", title: "Hello, I am new here" },
+  { label: "Ask for advice", title: "I would love some advice on " },
+  { label: "Share good news", title: "Good news to share: " },
+  { label: "Looking for a recommendation", title: "Can anyone recommend " },
+];
 
 /* Safe date formatter — never throws on bad input */
 function safeDate(value: string | null | undefined): string {
@@ -36,6 +54,7 @@ const FILTERS = [
   { value: "all",     label: "All"     },
   { value: "recent",  label: "Recent"  },
   { value: "popular", label: "Popular" },
+  { value: "unanswered", label: "Needs a reply" },
   { value: "pinned",  label: "Pinned"  },
 ] as const;
 
@@ -52,6 +71,7 @@ export default function MemberForumPage() {
   const [communityId,      setCommunityId]       = useState<string | null>(() => searchParams.get("communityId"));
   const threadPageSize = 20;
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   const { data: catsData } = useQuery({
     queryKey: ["m-forum-cats"],
@@ -112,6 +132,17 @@ export default function MemberForumPage() {
         </p>
       </div>
 
+      {/* ── Invitation to speak: looks like a box to type in, opens the same sheet ── */}
+      <button
+        type="button"
+        onClick={openNewThread}
+        className="card flex w-full items-center gap-3.5 p-4 text-left transition-colors hover:border-primary/40 sm:p-5"
+      >
+        <UserAvatar name={user ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Me" : "Me"} size="default" />
+        <span className="flex-1 text-[14.5px] text-muted-foreground">What is on your mind{user?.firstName ? `, ${user.firstName}` : ""}? Ask, share or start a conversation.</span>
+        <span className="hidden shrink-0 items-center gap-1.5 text-[13px] font-semibold text-primary sm:inline-flex"><Plus size={14} /> Start</span>
+      </button>
+
       {/* ── New thread: a sheet over the page, so it is in view wherever you were on the list ── */}
       <FormSheet
         open={showNewThread}
@@ -125,6 +156,21 @@ export default function MemberForumPage() {
         submitDisabled={form.title.trim().length < 3 || form.content.trim().length < 3}
       >
         <form id="new-thread-form" className="space-y-5" onSubmit={e => { e.preventDefault(); createMut.mutate(); }}>
+          <div className="space-y-1.5" role="group" aria-label="Ways to start">
+            <p className="text-[12.5px] font-semibold text-muted-foreground">Not sure how to begin?</p>
+            <div className="flex flex-wrap gap-2">
+              {STARTERS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, title: f.title.trim() ? f.title : s.title }))}
+                  className="border border-border px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label className="text-[13px] font-semibold">Category</Label>
             <FormSelect
@@ -166,8 +212,9 @@ export default function MemberForumPage() {
         </form>
       </FormSheet>
 
-      {/* ── Search ── */}
-      <div className="relative sm:max-w-sm">
+      {/* ── Search and sort share a row, so the first thread is not pushed below the fold ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="relative w-full sm:max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
           style={{ color: "var(--muted-foreground)" }} />
         <Input
@@ -178,9 +225,11 @@ export default function MemberForumPage() {
         />
       </div>
 
-      {/* ── Sort + category filters ── */}
-      <div className="space-y-3">
         <SegmentedControl label="Sort threads" options={FILTERS} value={threadFilter} onChange={v => { setThreadFilter(v); setThreadPage(1); }} />
+      </div>
+
+      {/* ── Category filters ── */}
+      <div className="space-y-3">
 
         <ChipRow label="Filter by category" activeKey={selectedCategory}>
           {categories.length > 0 && (
@@ -225,61 +274,42 @@ export default function MemberForumPage() {
         />
       ) : (
         <div className="space-y-2">
-          {threads.map(t => (
-            <Link key={t.id} href={`/forum/${t.id}`} className="block group">
-              <div className="card p-4 sm:p-5 transition-all duration-150 hover:-translate-y-0.5">
-                <div className="flex items-start gap-4">
-                  <div className="flex-1 min-w-0 space-y-2">
-
-                    {/* Labels */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <SourceBadge communityId={t.communityId} communityName={t.communityName} />
-                      {t.categoryName && (
-                        <Badge variant="info" size="sm">{t.categoryName}</Badge>
-                      )}
-                      {t.isPinned && (
-                        <Badge variant="warning" size="sm" className="gap-1">
-                          <Pin size={9} /> Pinned
-                        </Badge>
-                      )}
-                      {t.isClosed && (
-                        <Badge variant="neutral" size="sm" className="gap-1">
-                          <Lock size={9} /> Closed
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Title */}
-                    <p
-                      className="text-[14.5px] font-semibold leading-snug transition-colors duration-150 group-hover:text-primary"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      {t.title}
-                    </p>
-
-                    {/* Meta */}
-                    <div className="flex flex-wrap items-center gap-4">
-                      {safeDate(t.createdAt) && (
-                        <span className="flex items-center gap-1 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                          <Clock size={11} /> {safeDate(t.createdAt)}
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-                        <MessageSquare size={11} />
-                        {t.replyCount ?? 0} {(t.replyCount ?? 0) === 1 ? "reply" : "replies"}
-                      </span>
+          {threads.map(t => {
+            const replies = t.replyCount ?? 0;
+            return (
+              <Link key={t.id} href={`/forum/${t.id}`} className="block group">
+                <div className="card p-4 sm:p-5 transition-all duration-150 hover:-translate-y-0.5">
+                  <div className="flex items-start gap-3.5">
+                    <UserAvatar name={t.authorName ?? "Member"} src={t.authorProfilePictureUrl} size="default" className="mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {t.isPinned && <Badge variant="warning" size="sm" className="gap-1"><Pin size={9} /> Pinned</Badge>}
+                        {t.categoryName && <Badge variant="info" size="sm">{t.categoryName}</Badge>}
+                        {t.communityId && <SourceBadge communityId={t.communityId} communityName={t.communityName} />}
+                        {t.isClosed && <Badge variant="neutral" size="sm" className="gap-1"><Lock size={9} /> Closed</Badge>}
+                      </div>
+                      <p className="text-[15px] font-semibold leading-snug transition-colors duration-150 group-hover:text-primary" style={{ color: "var(--foreground)" }}>
+                        {t.title}
+                      </p>
+                      {t.excerpt && <p className="line-clamp-2 text-[13.5px] leading-relaxed text-muted-foreground">{t.excerpt}</p>}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-[12.5px] text-muted-foreground">
+                        <span className="font-medium text-foreground/80">{t.authorName ?? "A member"}</span>
+                        <span>{ago(t.createdAt)}</span>
+                        {replies > 0 ? (
+                          <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+                            <MessageSquare size={12} /> {replies} {replies === 1 ? "reply" : "replies"}
+                            {t.lastReplyByName && <span className="font-normal text-muted-foreground">, latest from {t.lastReplyByName} {ago(t.lastActivityAt)}</span>}
+                          </span>
+                        ) : !t.isClosed ? (
+                          <span className="inline-flex items-center gap-1 font-semibold text-primary"><MessageSquare size={12} /> Be the first to reply</span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-
-                  <MessageSquare
-                    size={17}
-                    className="shrink-0 mt-1 transition-colors duration-150 group-hover:text-primary"
-                    style={{ color: "var(--muted-foreground)", opacity: 0.4 }}
-                  />
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
 

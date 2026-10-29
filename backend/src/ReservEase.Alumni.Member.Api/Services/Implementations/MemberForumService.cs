@@ -25,7 +25,8 @@ public class MemberForumService(
     IAlumniPgRepository<MemberEntity> memberRepo,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
-    ILogger<MemberForumService> logger) : IMemberForumService
+    ILogger<MemberForumService> logger,
+    IAlumniPgRepository<ForumPostHelpful>? helpfulRepo = null) : IMemberForumService
 {
     /// <summary>True if this member is an approved member or leader of the given community.</summary>
     private async Task<bool> IsApprovedCommunityMemberAsync(string communityId, string memberId)
@@ -38,6 +39,43 @@ public class MemberForumService(
     {
         var memberships = await membershipRepo.GetAllAsync(m => m.MemberId == memberId && m.Status == "Approved");
         return memberships.Select(m => m.CommunityId).ToList();
+    }
+
+    /// <summary>
+    /// What the list needs to make a thread worth opening: the start of what was said, and when and by whom it was last answered.
+    /// Two small grouped queries for the whole page, never one per thread.
+    /// </summary>
+    private async Task AddPreviewsAsync(IEnumerable<ForumThreadDto> results)
+    {
+        var threads = results.ToList();
+        if (threads.Count == 0) return;
+        var ids = threads.Select(t => t.Id).ToList();
+
+        var firsts = await postRepo.GetQueryable(p => ids.Contains(p.ThreadId) && !p.IsDeleted)
+            .GroupBy(p => p.ThreadId)
+            .Select(g => g.OrderBy(p => p.CreatedAt).Select(p => new { p.ThreadId, Text = p.Content.Length > 400 ? p.Content.Substring(0, 400) : p.Content }).First())
+            .ToListAsync();
+        var lasts = await postRepo.GetQueryable(p => ids.Contains(p.ThreadId) && !p.IsDeleted)
+            .GroupBy(p => p.ThreadId)
+            .Select(g => g.OrderByDescending(p => p.CreatedAt).Select(p => new { p.ThreadId, p.AuthorId, p.CreatedAt }).First())
+            .ToListAsync();
+
+        var replierIds = lasts.Select(l => l.AuthorId).Distinct().ToList();
+        var repliers = (await memberRepo.GetQueryable(m => replierIds.Contains(m.Id)).Card().ToListAsync()).ToDictionary(m => m.Id);
+        var firstText = firsts.ToDictionary(f => f.ThreadId, f => f.Text);
+        var lastPost = lasts.ToDictionary(l => l.ThreadId);
+
+        foreach (var t in threads)
+        {
+            if (firstText.TryGetValue(t.Id, out var text))
+            {
+                var plain = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+                t.Excerpt = plain.Length > 160 ? plain[..160].TrimEnd() + "…" : plain;
+            }
+            t.LastActivityAt = lastPost.TryGetValue(t.Id, out var last) ? last.CreatedAt : t.CreatedAt;
+            if (t.ReplyCount > 0 && lastPost.TryGetValue(t.Id, out last) && repliers.TryGetValue(last.AuthorId, out var who))
+                t.LastReplyByName = $"{who.FirstName} {who.LastName}".Trim();
+        }
     }
 
     private async Task EnrichCommunityNamesAsync(IEnumerable<ForumThreadDto> results)
@@ -92,7 +130,8 @@ public class MemberForumService(
 
             var search = filter.Search?.ToLower();
             var result = await threadRepo.GetPagedAsync(
-                filter.Page, filter.PageSize, filter.SortColumn ?? "IsPinned", filter.SortDir ?? "desc",
+                // Recent and Popular used to only filter nothing out, so the tabs looked the same. Each now orders the list as it says.
+                filter.Page, filter.PageSize, filter.SortColumn ?? filter.Filter switch { "recent" => "CreatedAt", "popular" => "ReplyCount", "unanswered" => "CreatedAt", _ => "IsPinned" }, filter.SortDir ?? "desc",
                 t => !t.IsClosed
                   && (string.IsNullOrEmpty(filter.CommunityId)
                       ? (t.CommunityId == null || approvedCommunityIds.Contains(t.CommunityId))
@@ -101,6 +140,7 @@ public class MemberForumService(
                   && TextSearch.Matches(search, t.Title)
                   && (string.IsNullOrEmpty(filter.Filter)
                       || (filter.Filter == "pinned" && t.IsPinned)
+                      || (filter.Filter == "unanswered" && t.ReplyCount == 0)
                       || (filter.Filter == "recent")
                       || (filter.Filter == "popular")
                       || (filter.Filter == "all"))
@@ -133,6 +173,8 @@ public class MemberForumService(
                     dto.AuthorProfilePictureUrl = author.ProfilePictureUrl;
                 }
             }
+
+            await AddPreviewsAsync(dtoResult.Results);
 
             return dtoResult.ToOkApiResponse();
         }
@@ -228,6 +270,36 @@ public class MemberForumService(
         }
     }
 
+    public async Task<IApiResponse<object>> ToggleHelpfulAsync(string postId, AuthData member)
+    {
+        try
+        {
+            if (helpfulRepo is null) return ApiResponseExtensions.ToServerErrorApiResponse<object>("Helpful marks are not available");
+            var post = await postRepo.GetByIdAsync(postId);
+            if (post is null || post.IsDeleted)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Reply not found");
+            var thread = await threadRepo.GetByIdAsync(post.ThreadId);
+            if (thread is null)
+                return ApiResponseExtensions.ToNotFoundApiResponse<object>("Reply not found");
+            if (!string.IsNullOrEmpty(thread.CommunityId) && !await IsApprovedCommunityMemberAsync(thread.CommunityId, member.Id))
+                return ApiResponseExtensions.ToForbiddenApiResponse<object>("You must be an approved member of this community to do that");
+            if (post.AuthorId == member.Id)
+                return ApiResponseExtensions.ToBadRequestApiResponse<object>("You cannot mark your own reply helpful");
+
+            var existing = await helpfulRepo.GetOneAsync(h => h.PostId == postId && h.MemberId == member.Id);
+            if (existing is not null) await helpfulRepo.RemoveAsync(existing);
+            else await helpfulRepo.AddAsync(new ForumPostHelpful { PostId = postId, ThreadId = post.ThreadId, MemberId = member.Id, CreatedBy = member.Id });
+
+            var count = await helpfulRepo.CountAsync(h => h.PostId == postId);
+            return ((object)new { Marked = existing is null, HelpfulCount = count }).ToOkApiResponse();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error toggling helpful on post {PostId} for member {MemberId}", postId, member.Id);
+            return ApiResponseExtensions.ToServerErrorApiResponse<object>("Failed to update that");
+        }
+    }
+
     public async Task<IApiResponse<PgPagedResult<ForumPostDto>>> GetPostsAsync(string threadId, BaseFilter filter, AuthData member)
     {
         try
@@ -254,6 +326,20 @@ public class MemberForumService(
                 UpperBoundSize = result.UpperBoundSize,
                 Results = result.Results.Select(p => p.ToDto()).ToList(),
             };
+
+            // How helpful each reply was found, and whether the caller marked it: one grouped query for the page.
+            if (helpfulRepo is not null && dtoResult.Results.Any())
+            {
+                var postIds = dtoResult.Results.Select(d => d.Id).ToList();
+                var marks = await helpfulRepo.GetQueryable(h => postIds.Contains(h.PostId)).Select(h => new { h.PostId, h.MemberId }).ToListAsync();
+                var counts = marks.GroupBy(m => m.PostId).ToDictionary(g => g.Key, g => g.Count());
+                var mine = marks.Where(m => m.MemberId == member.Id).Select(m => m.PostId).ToHashSet();
+                foreach (var dto in dtoResult.Results)
+                {
+                    dto.HelpfulCount = counts.GetValueOrDefault(dto.Id);
+                    dto.MarkedHelpfulByMe = mine.Contains(dto.Id);
+                }
+            }
 
             // Same staleness fix as GetThreadsAsync above — batched, not per-row.
             var authorIds = dtoResult.Results.Select(d => d.AuthorId).Distinct().ToList();

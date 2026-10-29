@@ -1,10 +1,11 @@
 "use client";
 
 import { ReportButton } from "@/components/member/report-button";
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import { formatDistanceToNowStrict } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send, Pin, Lock, MessageSquare, Clock } from "@alumni/ui";
+import { ArrowLeft, Send, Pin, Lock, MessageSquare, Clock, Check } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import { toast } from "sonner";
 
@@ -15,11 +16,19 @@ import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { formatDate } from "@alumni/ui";
-import { getThreadPosts, replyToThread, getForumThread } from "@/lib/member-api";
+import { getThreadPosts, replyToThread, getForumThread, toggleHelpful } from "@/lib/member-api";
+import { useAuth } from "@/hooks/use-auth";
 import { handleApiError } from "@/lib/api-client";
 import { cn } from "@alumni/ui";
 
 /* Safe date formatter — never throws on undefined / invalid input */
+/** "3 days ago", never throwing on a bad date. The full date stays as the hover title. */
+function ago(value: string | null | undefined): string {
+  if (!value) return "";
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? "" : `${formatDistanceToNowStrict(d)} ago`;
+}
+
 function safeDate(value: string | null | undefined): string {
   if (!value) return "";
   const d = new Date(value);
@@ -33,6 +42,7 @@ export default function ThreadDetailPage() {
   const qc      = useQueryClient();
   const [page,  setPage]  = useState(1);
   const [reply, setReply] = useState("");
+  const { user } = useAuth();
   const pageSize = 30;
 
   const { data: thread, isLoading: threadLoading } = useQuery({
@@ -60,7 +70,16 @@ export default function ThreadDetailPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  // Marking is instant on screen and settled by the server; nobody is told, so it never adds to anyone's notifications.
+  const helpfulMut = useMutation({
+    mutationFn: (postId: string) => toggleHelpful(postId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["m-thread-posts", id] }),
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+
   const posts      = data?.results ?? [];
+  // The reply the most people found helpful, if any did: it earns a badge so a good answer is easy to spot.
+  const topHelpful = posts.slice(1).reduce<{ id: string; n: number } | null>((best, p) => ((p.helpfulCount ?? 0) > (best?.n ?? 0) ? { id: p.id, n: p.helpfulCount ?? 0 } : best), null);
   const totalPages = data?.totalPages ?? 1;
 
   /* ── Loading ── */
@@ -162,8 +181,8 @@ export default function ThreadDetailPage() {
             const postedAt   = safeDate(post.createdAt);
 
             return (
+              <Fragment key={post.id}>
               <div
-                key={post.id}
                 className={cn("flex gap-3 sm:gap-4 card p-4 sm:p-5", isOriginal && "bg-primary/5 border-primary/20")}
               >
                 {/* Avatar */}
@@ -184,9 +203,12 @@ export default function ThreadDetailPage() {
                     {isOriginal && (
                       <Badge variant="secondary" className="text-[12px] font-semibold">OP</Badge>
                     )}
+                    {topHelpful?.id === post.id && (
+                      <Badge variant="success" className="gap-1 text-[12px] font-semibold"><Check size={10} /> Most helpful</Badge>
+                    )}
                     {postedAt && (
-                      <span className="text-[12px] ml-auto" style={{ color: "var(--muted-foreground)" }}>
-                        {postedAt}
+                      <span className="text-[12px] ml-auto" style={{ color: "var(--muted-foreground)" }} title={postedAt}>
+                        {ago(post.createdAt)}
                       </span>
                     )}
                   </div>
@@ -196,8 +218,44 @@ export default function ThreadDetailPage() {
                   >
                     {post.content}
                   </p>
+                  {!isOriginal && (
+                    <div className="flex items-center gap-2 pt-1">
+                      {post.authorId !== user?.id ? (
+                        <button
+                          type="button"
+                          onClick={() => helpfulMut.mutate(post.id)}
+                          disabled={helpfulMut.isPending && helpfulMut.variables === post.id}
+                          aria-pressed={!!post.markedHelpfulByMe}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 border px-2.5 py-1 text-[12.5px] font-medium transition-colors",
+                            post.markedHelpfulByMe ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-foreground",
+                          )}
+                        >
+                          <Check size={12} /> {post.markedHelpfulByMe ? "Marked helpful" : "Helpful"}{(post.helpfulCount ?? 0) > 0 && <span className="tabular-nums"> · {post.helpfulCount}</span>}
+                        </button>
+                      ) : (post.helpfulCount ?? 0) > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-primary"><Check size={12} /> {post.helpfulCount} found this helpful</span>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </div>
+              {isOriginal && (
+                posts.length === 1 ? (
+                  !thread.isClosed && (
+                    <div className="flex flex-col items-start gap-2.5 border border-dashed border-border bg-card/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-[14px]">
+                        <span className="font-semibold">No replies yet.</span>{" "}
+                        <span className="text-muted-foreground">A line of advice, an answer or your own story is all it takes. {authorName.split(" ")[0]} will be glad to hear from you.</span>
+                      </p>
+                      <Button size="sm" onClick={() => document.getElementById("forum-reply")?.focus()}>Be the first to reply</Button>
+                    </div>
+                  )
+                ) : (
+                  <p className="px-1 pt-2 text-[13px] font-semibold text-muted-foreground">{posts.length - 1}{page > 1 ? "+" : ""} {posts.length - 1 === 1 ? "reply" : "replies"}</p>
+                )
+              )}
+              </Fragment>
             );
           })}
         </div>
@@ -222,7 +280,7 @@ export default function ThreadDetailPage() {
             id="forum-reply"
             value={reply}
             onChange={e => setReply(e.target.value)}
-            placeholder="Share your thoughts…"
+            placeholder={`Reply to ${(thread.authorName ?? "this thread").split(" ")[0]}…`}
             rows={4}
             className="resize-none text-[14px]"
           />

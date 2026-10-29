@@ -52,6 +52,20 @@ interface FormState {
 
 const emptyForm: FormState = { title: "", content: "", category: "News", status: "Draft", isPinned: "false", isPublic: false, audienceMode: "everyone", yearGroups: [], communityId: "", images: [], existingImageUrls: [], youtubeVideoUrls: "" };
 
+/** Starting points for a post, so a first announcement is a few edits and not a blank page. They are saved as drafts, so nothing goes out until the admin publishes. */
+const POST_STARTERS: { key: string; label: string; category: string; title: string; content: string }[] = [
+  { key: "welcome", label: "Welcome to the community", category: "Announcement", title: "Welcome to our community",
+    content: "<p>We are glad you are here. This is where we share news, events and ways to help one another.</p><p><strong>Three good first steps:</strong> complete your profile, find your classmates in the directory, and RSVP to our next event.</p><p>If you need anything, reply to this post or message us.</p>" },
+  { key: "event", label: "Event announcement", category: "Event", title: "Save the date",
+    content: "<p>We are pleased to announce our next gathering.</p><p><strong>When:</strong> <br><strong>Where:</strong> <br><strong>Who should come:</strong> everyone</p><p>RSVP from the Events page so we can plan for you.</p>" },
+  { key: "thanks", label: "Thank you to our givers", category: "News", title: "Thank you for your generosity",
+    content: "<p>Because of you, we reached a milestone for our fundraiser. Every gift, large or small, moved us closer, and we are grateful.</p><p>We will keep you updated on how the money is being used.</p>" },
+  { key: "achievement", label: "Member achievement", category: "Achievement", title: "Congratulations to one of our own",
+    content: "<p>We are proud to celebrate a member of our community.</p><p>Tell the story: what they achieved, what it took, and what it means for the rest of us.</p>" },
+  { key: "opportunity", label: "Opportunity", category: "Opportunity", title: "An opportunity for our members",
+    content: "<p>We have heard of an opening that may suit some of you.</p><p><strong>What it is:</strong> <br><strong>How to apply:</strong> <br><strong>Closing date:</strong> </p>" },
+];
+
 function commaToArray(s: string): string[] | undefined {
   const arr = s.split(",").map(x => x.trim()).filter(Boolean);
   return arr.length > 0 ? arr : undefined;
@@ -139,6 +153,7 @@ export default function AdminNewsPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "SuperAdmin";
   const [showCreate, setShowCreate] = useState(false);
+  const [starter, setStarter] = useState<string | null>(null);
   const [pickedPost, setEditPost] = useState<NewsPost | null>(null);
   // "/news?edit=ID" (the Edit button on a post's own page) opens that post's editor here.
   const [linkedEditId] = useState(() => searchParams.get("edit"));   // read once: this page rewrites its own address as filters change
@@ -282,7 +297,7 @@ export default function AdminNewsPage() {
 
       <FormSheet
         open={showCreate || editPost !== null}
-        onClose={() => { setShowCreate(false); setEditPost(null); setClosedEditId(linkedEditId); setEditError(""); }}
+        onClose={() => { setShowCreate(false); setStarter(null); setEditPost(null); setClosedEditId(linkedEditId); setEditError(""); }}
         title={editPost ? "Edit post" : "Create post"}
         description={editPost ? editPost.title : "Publish an update for your community. Save it as a draft if you are not ready."}
         formId="news-post-form"
@@ -313,7 +328,31 @@ export default function AdminNewsPage() {
             onSave={(f) => { setEditError(""); updateMut.mutate({ id: editPost.id, f }); }}
           />
         ) : showCreate ? (
-          <PostForm id="news-post-form" init={emptyForm} isSuperAdmin={isSuperAdmin} onSave={(f) => createMut.mutate(f)} />
+          <>
+            <div className="mb-5 space-y-2" role="group" aria-label="Start from a template">
+              <p className="text-[12.5px] font-semibold text-muted-foreground">Start from</p>
+              <div className="flex flex-wrap gap-2">
+                {POST_STARTERS.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    aria-pressed={starter === t.key}
+                    onClick={() => setStarter(starter === t.key ? null : t.key)}
+                    className={`border px-3 py-1.5 text-[12.5px] font-medium transition-colors ${starter === t.key ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <PostForm
+              key={`new-${starter ?? "blank"}`}
+              id="news-post-form"
+              init={(() => { const t = POST_STARTERS.find((x) => x.key === starter); return t ? { ...emptyForm, title: t.title, content: t.content, category: t.category } : emptyForm; })()}
+              isSuperAdmin={isSuperAdmin}
+              onSave={(f) => createMut.mutate(f)}
+            />
+          </>
         ) : null}
       </FormSheet>
 

@@ -10,10 +10,10 @@ import { Pagination } from "@alumni/ui";
 import { UserAvatar } from "@alumni/ui";
 import { Badge } from "@alumni/ui";
 import { Button } from "@alumni/ui";
-import { FormSelect } from "@alumni/ui";
+import { SearchableSelect } from "@alumni/ui";
 import { Input } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
-import { searchDirectory } from "@/lib/member-api";
+import { searchDirectory, getMyProfile, getDirectorySuggestions } from "@/lib/member-api";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
 import { ensureAbsoluteUrl } from "@alumni/ui";
@@ -40,6 +40,8 @@ export default function MemberDirectoryPage() {
   const { data: navTheme } = useNavTheme();
   const cohort = useCohortPhrase();
   const isCommunity = navTheme?.organizationType === "Community";
+  const { data: me } = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile, staleTime: 5 * 60_000 });
+  const myYear = me?.graduationYear && me.graduationYear > 0 ? String(me.graduationYear) : "";
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey:        ["member-directory", search, yearFilter, page],
@@ -52,6 +54,7 @@ export default function MemberDirectoryPage() {
     placeholderData: (prev) => prev,
   });
 
+  const suggestions = useQuery({ queryKey: ["member-directory-suggestions"], queryFn: getDirectorySuggestions, staleTime: 5 * 60_000, retry: false });
   const members    = data?.results ?? [];
   const totalPages = data?.totalPages ?? 1;
   const hasFilters = !!(search || yearFilter);
@@ -84,11 +87,12 @@ export default function MemberDirectoryPage() {
           />
         </div>
         {!isCommunity && (
-          <FormSelect
+          <SearchableSelect
             value={yearFilter || "__all__"}
             onValueChange={v => { setYearFilter(v === "__all__" ? "" : v); setPage(1); }}
             placeholder="All years"
-            className="w-full sm:w-48"
+            searchPlaceholder="Type a year"
+            className="sm:w-56"
             options={[
               { value: "__all__", label: "All graduation years" },
               ...years.filter(y => y > 0).map(y => ({ value: String(y), label: cohort.of(y) })),
@@ -106,11 +110,42 @@ export default function MemberDirectoryPage() {
         )}
       </div>
 
+      {/* One tap to the people they most likely know. */}
+      {!isCommunity && myYear && (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick filters">
+          <button
+            type="button"
+            aria-pressed={yearFilter === myYear}
+            onClick={() => { setYearFilter(yearFilter === myYear ? "" : myYear); setPage(1); }}
+            className={`rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${yearFilter === myYear ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
+          >
+            My class, {myYear}
+          </button>
+        </div>
+      )}
+
       {/* Subtle "updating" indicator */}
       {isFetching && !isLoading && (
         <p className="text-[12.5px] font-medium text-center animate-pulse" style={{ color: "var(--primary)" }}>
           Updating…
         </p>
+      )}
+
+      {/* ── People you may know: only on the plain view, before any search or filter ── */}
+      {!hasFilters && page === 1 && (suggestions.data?.length ?? 0) > 0 && (
+        <section aria-labelledby="suggested-heading" className="space-y-3">
+          <h2 id="suggested-heading" className="text-[15px] font-bold">People you may know</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {suggestions.data!.map(({ member: m, reasons }) => (
+              <div key={m.id} className="flex flex-col gap-1.5">
+                <DirectoryMemberCard member={m} selected={selected?.id === m.id} isCommunity={isCommunity}
+                  onSelect={() => setSelected(selected?.id === m.id ? null : m)} />
+                <p className="px-1 text-[12.5px] text-muted-foreground">{reasons.slice(0, 2).join(" · ")}</p>
+              </div>
+            ))}
+          </div>
+          <h2 className="pt-2 text-[15px] font-bold">Everyone</h2>
+        </section>
       )}
 
       {/* ── Grid ── */}

@@ -69,6 +69,7 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<ForumCategory> ForumCategories => Set<ForumCategory>();
     public DbSet<ForumThread> ForumThreads => Set<ForumThread>();
     public DbSet<ForumPost> ForumPosts => Set<ForumPost>();
+    public DbSet<ForumPostHelpful> ForumPostHelpfuls => Set<ForumPostHelpful>();
     public DbSet<MentorProfile> MentorProfiles => Set<MentorProfile>();
     public DbSet<MentorshipRequest> MentorshipRequests => Set<MentorshipRequest>();
     public DbSet<Resource> Resources => Set<Resource>();
@@ -492,6 +493,10 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(p => p.ThreadId);
         modelBuilder.Entity<ForumPost>()
             .HasIndex(p => p.AuthorId);
+
+        // A member can mark a reply helpful once; counts are read per thread.
+        modelBuilder.Entity<ForumPostHelpful>().HasIndex(h => h.ThreadId);
+        modelBuilder.Entity<ForumPostHelpful>().HasIndex(h => new { h.PostId, h.MemberId }).IsUnique();
 
         // ForumThread: community-scoped threads (null = institution-wide, unchanged)
         modelBuilder.Entity<ForumThread>()

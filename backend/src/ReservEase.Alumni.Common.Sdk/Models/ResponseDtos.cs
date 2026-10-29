@@ -545,6 +545,12 @@ public class ForumThreadDto
     public bool IsClosed { get; set; }
     public int ReplyCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    /// <summary>The start of the opening post, plain text, so the list says what a thread is about.</summary>
+    public string? Excerpt { get; set; }
+    /// <summary>When the latest reply (or the thread itself) was posted.</summary>
+    public DateTime? LastActivityAt { get; set; }
+    /// <summary>Who wrote the latest reply, when there is one.</summary>
+    public string? LastReplyByName { get; set; }
 }
 
 public class ForumPostDto
@@ -556,6 +562,10 @@ public class ForumPostDto
     public string? AuthorProfilePictureUrl { get; set; }
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    /// <summary>How many members marked this reply helpful.</summary>
+    public int HelpfulCount { get; set; }
+    /// <summary>Whether the caller marked it.</summary>
+    public bool MarkedHelpfulByMe { get; set; }
 }
 
 public class EventRsvpDto
@@ -626,6 +636,13 @@ public class EventUpdatesResponse
     public int Count { get; set; }
     public List<EventUpdateCategoryCount> Categories { get; set; } = [];
     public List<EventUpdateDto> Updates { get; set; } = [];
+}
+
+/// <summary>A member the caller may know, with why: the things they have in common, shown beside the name.</summary>
+public class DirectorySuggestionDto
+{
+    public DirectoryMemberDto Member { get; set; } = new();
+    public List<string> Reasons { get; set; } = [];
 }
 
 public class DirectoryMemberDto

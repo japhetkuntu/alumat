@@ -66,6 +66,15 @@ public class ForumController(IMemberForumService forumService) : DefaultControll
         return result.ToActionResult();
     }
 
+    [HttpPost("posts/{postId}/helpful")]
+    [SwaggerOperation(Summary = "Mark a reply helpful", Description = "Mark someone else's reply as helpful, or take the mark back. Nobody is notified")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> ToggleHelpful(string postId)
+    {
+        var result = await forumService.ToggleHelpfulAsync(postId, User.GetAccount());
+        return result.ToActionResult();
+    }
+
     [HttpPost("threads/{threadId}/reply")]
     [SwaggerOperation(Summary = "Reply to thread", Description = "Post a reply to an existing forum thread")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<ForumPostDto>))]

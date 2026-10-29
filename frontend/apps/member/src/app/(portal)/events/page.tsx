@@ -36,8 +36,11 @@ export default function MemberEventsPage() {
   const router = useRouter();
 
   const { data: eventsData, isLoading } = useQuery({
-    queryKey:        ["m-events-list", page, communityId],
-    queryFn:         () => getEvents(page, pageSize, undefined, communityId || undefined),
+    // The Completed tab asks the server for finished events, newest first. Every other tab shows what is still ahead.
+    queryKey:        ["m-events-list", page, communityId, filter === "completed"],
+    queryFn:         () => filter === "completed"
+      ? getEvents(page, pageSize, "Completed", communityId || undefined, "desc")
+      : getEvents(page, pageSize, undefined, communityId || undefined),
     placeholderData: (prev) => prev,
   });
 
@@ -95,7 +98,7 @@ export default function MemberEventsPage() {
 
       {/* ── Filters ── */}
       <div className="flex flex-wrap items-center gap-2">
-        <SegmentedControl label="Filter events" options={EVENT_FILTERS} value={filter} onChange={setFilter} className="w-full sm:w-auto" />
+        <SegmentedControl label="Filter events" options={EVENT_FILTERS} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} className="w-full sm:w-auto" />
         <SourceFilterChips value={communityId} onChange={(v) => { setCommunityId(v); setPage(1); }} />
       </div>
 

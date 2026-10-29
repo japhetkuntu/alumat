@@ -20,6 +20,55 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-10-29",
+    title: "Helpful marks on forum replies, and unanswered questions on the home page",
+    scopes: ["Member"],
+    type: "Feature",
+    body: "Forum: any member can mark someone else's reply 'Helpful' (and take the mark back); you cannot mark your own, and the author of a reply sees how many found it helpful. The reply with the most marks gets a 'Most helpful' badge so a good answer is easy to spot. Nobody is notified of a mark or, as decided, of replies, so this adds nothing to anyone's notifications. Marks are checked against the same group-membership rule as viewing the thread. Home page: when forum threads have had no reply, up to three of them (not your own, not closed, from the last 60 days) are listed under 'Someone is waiting for an answer' with a Reply link, and the box is not shown when there are none. Migration AddForumPostHelpful adds the ForumPostHelpfuls table (unique per reply and member)."
+  },
+  {
+    date: "2026-10-29",
+    title: "A forum that invites people in",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "Thread list: each thread now shows who started it (with their photo), a two-line preview of what they said, how long ago, and the reply count with who answered last and when. A thread with no replies says 'Be the first to reply' in the accent colour, so unanswered questions stand out. The 'Everyone' label that sat on every thread is gone (a group's name still shows for group threads). At the top is a 'What is on your mind, Ama?' box that opens the new-thread sheet, and the sheet offers four ways to begin (introduce yourself, ask for advice, share good news, ask for a recommendation). Search and sort now share a row. Thread page: times read '3 days ago' (the full date on hover), replies are counted under the opening post, a thread with none shows a prompt with a Be the first to reply button that jumps to the reply box, and the box says who you are replying to. The list preview comes from two grouped queries for the whole page, not one per thread. No migration."
+  },
+  {
+    date: "2026-10-29",
+    title: "People you may know, group news in the digest, and starter templates for events and posts",
+    scopes: ["Member", "Institution"],
+    type: "Feature",
+    body: "Member directory: a 'People you may know' row above the full list, with up to six members who share something with the caller and the reason beside each (in the same group, studied the same program, same year), best matches first; pending members and people who only asked to join a group are never suggested. Weekly digest: members now also get what is coming up in their own groups (events in the next fortnight and fundraisers closing soon, with the group's name), and only for groups they have been approved into. Admins: creating an event or a news post now offers 'Start from' templates (reunion dinner, chapter meeting, career evening, online session, fundraising event; welcome, event announcement, thank you to givers, member achievement, opportunity) that fill the words only, with the date, venue and price left to the admin, and posts still start as drafts. Group leaders already see their invitation figures and join requests on the group page, so no separate leader dashboard was added. No migration."
+  },
+  {
+    date: "2026-10-29",
+    title: "Fixes found while testing the member portal end to end, and a thank-you moment",
+    scopes: ["Member", "Institution"],
+    type: "Fix",
+    body: "Found by walking the member portal as a real member. (1) Events never became Completed: nothing ever moved an Upcoming event on once its date passed, so finished events stayed in Upcoming for ever, the Completed tab on the Events page was always empty, the home page counted them as upcoming, and the 'RSVP to an event' step was ticked by a past event. The status is now worked out from the dates (an event with no end date is taken to last 12 hours), and RSVPs to a finished event are refused. (2) Badges were never awarded: the check that awards them was only ever run by an endpoint nothing called, so every member's badge list was empty. Opening the badges now awards what has been earned (once), tells the member in the notifications, and shows a message on the home page; badge names read as titles (First gift, 3 years strong) instead of codes. (3) The payment-confirmed message vanished the moment it appeared, because the screen closed itself on success. It now stays: 'Thank you, Ama!', any badge just earned, and a nudge to invite a classmate, until the member taps Done. (4) On the forum, Recent and Popular did not sort anything; they now order by newest and by replies, and there is a new 'Needs a reply' tab. (5) The directory's year list (back to 1952) is searchable, and there is a one-tap 'My class' chip. (6) The weekly email digest now says how many new classmates from the member's year joined, and is sent when that is the only news. No migration."
+  },
+  {
+    date: "2026-10-29",
+    title: "A friendlier nudge for members to finish their profile",
+    scopes: ["Member"],
+    type: "Improvement",
+    body: "On the member home page, a new card greets the member by name, shows how complete their profile is, and gives one clear next step with what it is worth (for example 'Add a photo +22%') and why it helps them, with a few smaller suggestions beside it. Each one opens the profile page at the right field and puts the cursor there. The percentage counts only what applies to that community (the program is counted only when the institution collects it, the map line only when the map is on). The card disappears at 100%, and a member who is not in the mood can hide it for three days. The profile page now opens with the same percentage and the next thing to add. The old 'Finish your profile' line in 'Next for you' is no longer repeated under it. Nothing is saved on the server, and there is no migration."
+  },
+  {
+    date: "2026-10-29",
+    title: "Program of study can be searched, and the admin's program list is paged",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+    body: "Where members pick their program (the sign-up form and their profile), the dropdown now has a search box: it narrows as they type, the arrow keys and Enter pick one, and 'Not listed, let me type it' always stays at the bottom, even while searching. It is a new shared SearchableSelect component that any long list can use. In the institution's Settings, the program list now shows ten at a time with Previous and Next, and a search box once there are more than ten. Searching still edits or removes the right program. Adding a program jumps to the page it landed on. No migration."
+  },
+  {
+    date: "2026-10-29",
+    title: "Admins can change a member's year group, and members pick their program from the institution's list",
+    scopes: ["Institution", "Member"],
+    type: "Improvement",
+    body: "On a member's page in the institution portal, the year group now has a Change link. It opens a short dialog with the institution's year groups to choose from (and 'Another year' for one that has no year group yet), for when a member chose the wrong one at sign-up. A scoped admin can only move a member into a year group they look after, so the member never disappears from their view. Where the year is optional it can be cleared, where it is required it cannot, and it does nothing where the community has no year groups. Dues, payments and the member number stay as they were, and the change goes in the audit log. On the member's own profile, Program / course of study is now a dropdown of the institution's list when it keeps one (with 'Not listed, let me type it'), like the sign-up form. A program already typed that is not on the list stays as it is. No migration."
+  },
+  {
     date: "2026-10-25",
     title: "Groups are easier to find and read in the member portal",
     scopes: ["Member"],
