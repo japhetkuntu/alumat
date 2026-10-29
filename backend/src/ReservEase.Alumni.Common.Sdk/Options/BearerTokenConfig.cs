@@ -7,6 +7,6 @@ public class BearerTokenConfig
     public string InstitutionSigningKey { get; set; } = string.Empty;
     public string MemberSigningKey { get; set; } = string.Empty;
     public string PlatformSigningKey { get; set; } = string.Empty;
-    public int AccessTokenLifetime { get; set; } = 8;
+    public int AccessTokenLifetime { get; set; } = 24;
     public int RefreshTokenLifetime { get; set; } = 30;
 }

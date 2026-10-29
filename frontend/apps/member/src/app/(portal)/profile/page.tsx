@@ -204,7 +204,9 @@ export default function MemberProfilePage() {
     return () => clearTimeout(t);
   }, [profile]);
 
-  const [syncedProfile, setSyncedProfile] = useState(profile);
+  // Starts empty on purpose: when the profile is already cached (coming back to this page), seeding it with `profile` would make the
+  // check below think the forms are in sync and leave every field blank until a hard refresh.
+  const [syncedProfile, setSyncedProfile] = useState<typeof profile>(undefined);
   if (profile && profile !== syncedProfile) {
     setSyncedProfile(profile);
     setProfileForm({
@@ -261,7 +263,6 @@ export default function MemberProfilePage() {
       phone:            profileForm.phone       || undefined,
       dateOfBirth:      profileForm.dateOfBirth || undefined,
       employmentStatus,
-      showOnAlumniMap,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-profile"] });
