@@ -41,6 +41,7 @@ import {
   ShoppingBag,
   Receipt,
   Images,
+  Vote,
   Building2,
   FileText,
   Share2,
@@ -84,6 +85,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/news", label: "News", icon: Newspaper },
       { href: "/resources", label: "Resources", icon: FolderOpen },
       { href: "/albums", label: "Photo Albums", icon: Images },
+      { href: "/polls", label: "Polls", icon: Vote },
       { href: "/business-directory", label: "Business Directory", icon: Building2 },
     ],
   },
@@ -125,6 +127,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/spotlights": "Spotlights",
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",
+  "/polls": "Polls",
 };
 
 // Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.

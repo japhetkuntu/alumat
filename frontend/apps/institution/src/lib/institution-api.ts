@@ -2397,3 +2397,82 @@ export async function getMyInstitutions(): Promise<StaffInstitution[]> {
   return res.data.data ?? [];
 }
 
+
+// ─── Polls and elections ─────────────────────────────────────────────────────
+
+export type PollState = "Draft" | "Scheduled" | "Open" | "Closed";
+export type PollResultsMode = "Live" | "AfterClose" | "Manual";
+
+export interface PollAspirantInput { name: string; details?: string; photoUrl?: string; memberId?: string }
+export interface PollPositionInput { title: string; description?: string; aspirants: PollAspirantInput[] }
+export interface SavePollBody {
+  title: string;
+  description?: string;
+  opensAt: string;
+  closesAt: string;
+  yearGroups?: number[];
+  communityId?: string;
+  resultsMode: PollResultsMode;
+  /** Leave out to keep the ballot as it is. Required to be left out once voting has started. */
+  positions?: PollPositionInput[];
+}
+
+export interface PollListItem {
+  id: string; title: string; status: "Draft" | "Published"; state: PollState; opensAt: string; closesAt: string;
+  yearGroups?: number[] | null; communityId?: string | null; communityName?: string | null;
+  resultsMode: PollResultsMode; resultsPublishedAt?: string | null;
+  positionCount: number; voted: number; eligible: number; isArchived: boolean; canDelete: boolean;
+}
+
+export interface PollDetail {
+  id: string; title: string; description?: string | null; status: "Draft" | "Published"; state: PollState;
+  opensAt: string; closesAt: string; yearGroups?: number[] | null; communityId?: string | null; communityName?: string | null;
+  resultsMode: PollResultsMode; resultsPublishedAt?: string | null; publishedAt?: string | null; isArchived: boolean;
+  voted: number; eligible: number; locked: boolean; canDelete: boolean;
+  positions: { id: string; title: string; description?: string | null; isYesNo: boolean; aspirants: { id: string; name: string; details?: string | null; photoUrl?: string | null; memberId?: string | null }[] }[];
+}
+
+export interface PollResults {
+  pollId: string; title: string; state: PollState; voted: number; eligible: number;
+  figuresAvailable: boolean; shownToMembers: boolean; resultsMode: PollResultsMode; resultsPublishedAt?: string | null; canPublish: boolean;
+  positions: { positionId: string; title: string; isYesNo: boolean; totalVotes: number; abstained: number; yes: number; no: number; passed?: boolean | null; tied: boolean;
+    options: { aspirantId: string; name: string; photoUrl?: string | null; votes: number; percent: number; leads: boolean }[] }[];
+}
+
+export async function getPolls(archived = false): Promise<PollListItem[]> {
+  const res = await institutionClient.get<ApiResponse<PollListItem[]>>("/polls", { params: { archived } });
+  return res.data.data ?? [];
+}
+export async function getPoll(id: string): Promise<PollDetail> {
+  const res = await institutionClient.get<ApiResponse<PollDetail>>(`/polls/${id}`);
+  return res.data.data!;
+}
+export async function createPoll(body: SavePollBody): Promise<PollDetail> {
+  const res = await institutionClient.post<ApiResponse<PollDetail>>("/polls", body);
+  return res.data.data!;
+}
+export async function updatePoll(id: string, body: SavePollBody): Promise<PollDetail> {
+  const res = await institutionClient.put<ApiResponse<PollDetail>>(`/polls/${id}`, body);
+  return res.data.data!;
+}
+export async function publishPoll(id: string): Promise<PollDetail> {
+  const res = await institutionClient.post<ApiResponse<PollDetail>>(`/polls/${id}/publish`);
+  return res.data.data!;
+}
+export async function unpublishPoll(id: string): Promise<PollDetail> {
+  const res = await institutionClient.post<ApiResponse<PollDetail>>(`/polls/${id}/unpublish`);
+  return res.data.data!;
+}
+export async function deletePoll(id: string): Promise<void> { await institutionClient.delete(`/polls/${id}`); }
+export async function archivePoll(id: string, archived: boolean): Promise<PollDetail> {
+  const res = await institutionClient.post<ApiResponse<PollDetail>>(`/polls/${id}/${archived ? "archive" : "restore"}`);
+  return res.data.data!;
+}
+export async function getPollResults(id: string): Promise<PollResults> {
+  const res = await institutionClient.get<ApiResponse<PollResults>>(`/polls/${id}/results`);
+  return res.data.data!;
+}
+export async function publishPollResults(id: string): Promise<PollResults> {
+  const res = await institutionClient.post<ApiResponse<PollResults>>(`/polls/${id}/publish-results`);
+  return res.data.data!;
+}

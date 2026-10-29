@@ -87,6 +87,8 @@ builder.Services.AddScoped<IDirectoryService, DirectoryService>();
 builder.Services.AddScoped<IMemberResourceService, MemberResourceService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<IBadgeService, BadgeService>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine>();
+builder.Services.AddScoped<IMemberPollService, MemberPollService>();
 builder.Services.AddScoped<ISpotlightService, SpotlightService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddScoped<IClassNoteService, ClassNoteService>();

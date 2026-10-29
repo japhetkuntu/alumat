@@ -96,6 +96,20 @@ public partial class PgRepository<T, TContext>(TContext context) : IPgRepository
         return await Query(ignoreQueryFilters).Where(TextSearch.Rewrite(predicate)).ExecuteUpdateAsync(setPropertyCalls);
     }
 
+    public async Task RunInTransactionAsync(Func<Task> work)
+    {
+        // Already inside one (a caller wrapped this call): just join it.
+        if (_context.Database.CurrentTransaction is not null) { await work(); return; }
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await work();
+        await transaction.CommitAsync();
+    }
+
+    public async Task<int> ExecuteDeleteAsync(Expression<Func<T, bool>> predicate, bool ignoreQueryFilters = false)
+    {
+        return await Query(ignoreQueryFilters).Where(TextSearch.Rewrite(predicate)).ExecuteDeleteAsync();
+    }
+
     public async Task<PgPagedResult<T>> GetPagedAsync(
         int pageIndex, int pageSize,
         string sortColumn = "Id", string sortDir = "desc",

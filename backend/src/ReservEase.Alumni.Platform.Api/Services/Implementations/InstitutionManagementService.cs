@@ -247,6 +247,7 @@ public class InstitutionManagementService(
                 SecondaryColorHex = request.SecondaryColorHex,
                 MemberActivePolicy = request.MemberActivePolicy,
                 Status = "Active",
+                DisabledFeatures = [.. InstitutionFeatures.OffForNewInstitutions],
                 TrialEndsAt = DateTime.UtcNow.AddDays(request.TrialDays ?? 14),
                 OnboardedAt = DateTime.UtcNow,
                 PlatformFeePercentage = byRepresentative ? DefaultPlatformFeePercentage() : request.PlatformFeePercentage,

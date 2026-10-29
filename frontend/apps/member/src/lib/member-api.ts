@@ -1192,3 +1192,43 @@ export async function suggestOpportunity(body: SuggestOpportunity) {
   const res = await memberClient.post("/jobs/suggest", { ...body, deadline: body.deadline || undefined, applyUrl: body.applyUrl || undefined });
   return res.data;
 }
+
+// ── Polls and elections ──────────────────────────────────────────────────────
+
+export type MemberPollState = "Draft" | "Scheduled" | "Open" | "Closed";
+
+export interface MemberPollListItem {
+  id: string; title: string; description?: string | null; state: MemberPollState; opensAt: string; closesAt: string;
+  audience: string; positionCount: number; hasVoted: boolean; resultsVisible: boolean;
+}
+
+export interface MemberPollAspirant { id: string; name: string; details?: string | null; photoUrl?: string | null; memberId?: string | null }
+export interface MemberPollPosition { id: string; title: string; description?: string | null; isYesNo: boolean; aspirants: MemberPollAspirant[] }
+export interface MemberPollDetail {
+  id: string; title: string; description?: string | null; state: MemberPollState; opensAt: string; closesAt: string; audience: string;
+  hasVoted: boolean; votedAt?: string | null; canVote: boolean; resultsVisible: boolean; positions: MemberPollPosition[];
+}
+
+export interface MemberPollResults {
+  pollId: string; title: string; state: MemberPollState; voted: number; eligible: number;
+  positions: { positionId: string; title: string; isYesNo: boolean; totalVotes: number; abstained: number; yes: number; no: number; passed?: boolean | null; tied: boolean;
+    options: { aspirantId: string; name: string; photoUrl?: string | null; votes: number; percent: number; leads: boolean }[] }[];
+}
+
+export type BallotChoiceBody = { positionId: string; aspirantId?: string | null; choice: "Candidate" | "Yes" | "No" | "Abstain" };
+
+export async function getMemberPolls(): Promise<MemberPollListItem[]> {
+  const res = await memberClient.get("/polls");
+  return res.data.data ?? [];
+}
+export async function getMemberPoll(id: string): Promise<MemberPollDetail> {
+  const res = await memberClient.get(`/polls/${id}`);
+  return res.data.data!;
+}
+export async function castBallot(id: string, choices: BallotChoiceBody[]): Promise<void> {
+  await memberClient.post(`/polls/${id}/vote`, { choices });
+}
+export async function getMemberPollResults(id: string): Promise<MemberPollResults> {
+  const res = await memberClient.get(`/polls/${id}/results`);
+  return res.data.data!;
+}

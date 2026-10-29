@@ -60,7 +60,10 @@ public class ScheduledJobsActivities(
     IConfiguration configuration,
     ILogger<ScheduledJobsActivities> logger,
     IAlumniPgRepository<Community>? communityRepo = null,
-    IAlumniPgRepository<CommunityMembership>? membershipRepo = null)
+    IAlumniPgRepository<CommunityMembership>? membershipRepo = null,
+    IAlumniPgRepository<Poll>? pollRepo = null,
+    IAlumniPgRepository<PollParticipation>? pollParticipationRepo = null,
+    ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine? pollEngine = null)
 {
     private readonly MailtrapConfig mailtrapConfig = mailtrapConfigOptions.Value;
     private const int MaxFailedRecurringAttempts = 3;
@@ -494,6 +497,45 @@ public class ScheduledJobsActivities(
             logger.LogInformation("Pledge reminder cycle for institution {InstitutionId}: {Sent} emailed, {Changed} pledges updated", institutionId, sent, changed.Count);
             return sent;
         }, "send due pledge reminders for institution", institutionId);
+
+    // ── Poll closing reminders ──────────────────────────────────────────────
+
+    /// <summary>
+    /// One in-app reminder, in the last day of a poll, to the eligible members who have not voted yet. A poll is reminded once
+    /// (ClosingReminderSentAt), and members who have already voted, or are not eligible, never hear about it. Light on purpose.
+    /// </summary>
+    [Activity("ScheduledJobs.SendPollClosingRemindersForInstitution")]
+    public virtual Task<int> SendPollClosingRemindersForInstitutionAsync(string institutionId) =>
+        Wrap(async () =>
+        {
+            if (pollRepo is null || pollParticipationRepo is null || pollEngine is null) return 0;
+            var institution = await institutionRepo.GetOneAsync(i => i.Id == institutionId, ignoreQueryFilters: true);
+            if (institution is null || institution.DisabledFeatures.Contains(InstitutionFeatures.Polls)) return 0;
+
+            var now = DateTime.UtcNow;
+            currentTenant.SetInstitutionId(institutionId);
+            var due = (await pollRepo.GetAllAsync(p => p.InstitutionId == institutionId && p.Status == PollStatuses.Published && p.ArchivedAt == null
+                && p.ClosingReminderSentAt == null && p.OpensAt <= now && p.ClosesAt > now && p.ClosesAt <= now.AddHours(24), ignoreQueryFilters: true)).ToList();
+
+            var sent = 0;
+            foreach (var poll in due)
+            {
+                var eligible = await pollEngine.EligibleMemberIdsAsync(poll);
+                var voted = (await pollParticipationRepo.GetAllAsync(v => v.PollId == poll.Id, ignoreQueryFilters: true)).Select(v => v.MemberId).ToHashSet();
+                var notices = eligible.Where(id => !voted.Contains(id)).Select(memberId => new Notification
+                {
+                    InstitutionId = institutionId, RecipientId = memberId, RecipientType = "Member",
+                    Title = "Voting closes soon", Body = $"{poll.Title}: you have until {poll.ClosesAt:MMMM d, h:mm tt} UTC to vote. It takes a minute.",
+                    Type = "PollClosing", RelatedEntityId = poll.Id, RelatedEntityType = "Poll", ActionUrl = $"/polls/{poll.Id}", CreatedBy = "system",
+                }).ToList();
+                for (var i = 0; i < notices.Count; i += 500) await notifRepo.AddRangeAsync(notices.Skip(i).Take(500).ToList());
+                sent += notices.Count;
+
+                poll.ClosingReminderSentAt = now;
+                await pollRepo.UpdateAsync(poll);
+            }
+            return sent;
+        }, "send poll closing reminders for institution", institutionId);
 
     // ── Day-before event reminders ──────────────────────────────────────────
 

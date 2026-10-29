@@ -26,4 +26,12 @@ public interface IPgRepository<T, TContext>
     /// filter like the rest of this interface's ignoreQueryFilters overloads, since the
     /// predicate is expected to already identify the row precisely (usually by Id).</summary>
     Task<int> ExecuteUpdateAsync(Expression<Func<T, bool>> predicate, Expression<Func<SetPropertyCalls<T>, SetPropertyCalls<T>>> setPropertyCalls, bool ignoreQueryFilters = false);
+
+    /// <summary>Deletes every matching row in one statement, without loading any of them. For replacing a whole set of child rows, where
+    /// removing them one by one is a round trip each.</summary>
+    Task<int> ExecuteDeleteAsync(Expression<Func<T, bool>> predicate, bool ignoreQueryFilters = false);
+
+    /// <summary>Runs several saves as one all-or-nothing unit: if <paramref name="work"/> throws, everything it saved is rolled back. Every repository
+    /// of a request shares one context, so saves made through other repositories inside <paramref name="work"/> join the same transaction.</summary>
+    Task RunInTransactionAsync(Func<Task> work);
 }

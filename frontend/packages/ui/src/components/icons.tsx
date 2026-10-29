@@ -70,6 +70,7 @@ import {
   faArrowsLeftRight,
   faLocationArrow,
   faNewspaper,
+  faCheckToSlot,
   faBox,
   faChampagneGlasses,
   faPen,
@@ -274,6 +275,7 @@ export const HeartHandshake = makeIcon(faHandHoldingHeart);
 export const ImageIcon = makeIcon(faImage);
 export const ImageOff = makeIcon(faImage);
 export const Images = makeIcon(faImages);
+export const Vote = makeIcon(faCheckToSlot);
 export const Inbox = makeIcon(faInbox);
 export const Info = makeIcon(faCircleInfo);
 export const HelpCircle = makeIcon(faCircleQuestion);

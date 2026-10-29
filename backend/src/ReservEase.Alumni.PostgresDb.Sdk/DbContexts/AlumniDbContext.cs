@@ -70,6 +70,11 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<ForumThread> ForumThreads => Set<ForumThread>();
     public DbSet<ForumPost> ForumPosts => Set<ForumPost>();
     public DbSet<ForumPostHelpful> ForumPostHelpfuls => Set<ForumPostHelpful>();
+    public DbSet<Poll> Polls => Set<Poll>();
+    public DbSet<PollPosition> PollPositions => Set<PollPosition>();
+    public DbSet<PollAspirant> PollAspirants => Set<PollAspirant>();
+    public DbSet<PollParticipation> PollParticipations => Set<PollParticipation>();
+    public DbSet<PollVote> PollVotes => Set<PollVote>();
     public DbSet<MentorProfile> MentorProfiles => Set<MentorProfile>();
     public DbSet<MentorshipRequest> MentorshipRequests => Set<MentorshipRequest>();
     public DbSet<Resource> Resources => Set<Resource>();
@@ -493,6 +498,23 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(p => p.ThreadId);
         modelBuilder.Entity<ForumPost>()
             .HasIndex(p => p.AuthorId);
+
+        // Polls. One participation per member per poll is the guard against voting twice, so it is unique in the database, not just in code.
+        modelBuilder.Entity<Poll>().Property(p => p.YearGroups).HasColumnType("integer[]");
+        modelBuilder.Entity<Poll>().HasIndex(p => new { p.InstitutionId, p.Status, p.ClosesAt });
+        modelBuilder.Entity<PollPosition>().HasIndex(p => p.PollId);
+        modelBuilder.Entity<PollAspirant>().HasIndex(a => a.PollId);
+        modelBuilder.Entity<PollAspirant>().HasIndex(a => a.PositionId);
+        modelBuilder.Entity<PollParticipation>().HasIndex(p => new { p.PollId, p.MemberId }).IsUnique();
+        modelBuilder.Entity<PollVote>().HasIndex(v => new { v.PollId, v.PositionId });
+        // The ballot cannot change under a vote. A vote points at its aspirant and position, and a row that has votes cannot be deleted, so if an
+        // admin replaces the ballot while a vote is landing, one of the two fails cleanly instead of leaving votes for choices that no longer exist.
+        modelBuilder.Entity<PollPosition>().HasOne<Poll>().WithMany().HasForeignKey(p => p.PollId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PollAspirant>().HasOne<PollPosition>().WithMany().HasForeignKey(a => a.PositionId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PollParticipation>().HasOne<Poll>().WithMany().HasForeignKey(p => p.PollId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PollVote>().HasOne<Poll>().WithMany().HasForeignKey(v => v.PollId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PollVote>().HasOne<PollPosition>().WithMany().HasForeignKey(v => v.PositionId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PollVote>().HasOne<PollAspirant>().WithMany().HasForeignKey(v => v.AspirantId).OnDelete(DeleteBehavior.Restrict);
 
         // A member can mark a reply helpful once; counts are read per thread.
         modelBuilder.Entity<ForumPostHelpful>().HasIndex(h => h.ThreadId);

@@ -30,6 +30,7 @@ import {
   Sitemap,
   ShoppingBag,
   Images,
+  Vote,
   Store,
   FileText,
   Filter,
@@ -72,6 +73,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/services": "Services",
   "/albums": "PhotoAlbums",
   "/business-directory": "BusinessDirectory",
+  "/polls": "Polls",
 };
 
 // Routes that aren't nav items but belong to a feature. Anything under a nav item's href inherits its feature too.
@@ -116,6 +118,7 @@ const baseNavItems = [
   { href: "/resources", label: "Resources", icon: FolderOpen },
   { href: "/spotlights", label: "Spotlights", icon: Star },
   { href: "/albums", label: "Photo Albums", icon: Images },
+  { href: "/polls", label: "Polls", icon: Vote },
   { href: "/business-directory", label: "Business Directory", icon: Store },
   { href: "/flagged-content", label: "Flagged Content", icon: ShieldAlert },
   { label: "Insights", isHeader: true },
@@ -203,7 +206,7 @@ function useNavItems() {
       if (item.href === "/mentorship" || item.href === "/albums") {
         if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
-      if ((item.href === "/store" || item.href === "/services" || item.href === "/audit-log" || item.href === "/payouts") && user?.role !== "SuperAdmin") return false;
+      if ((item.href === "/polls" || item.href === "/store" || item.href === "/services" || item.href === "/audit-log" || item.href === "/payouts") && user?.role !== "SuperAdmin") return false;
       // Community institutions have no graduation years — Batches has nothing
       // to manage for them (they organize via Communities instead).
       if (item.href === "/batches" && isCommunity) return false;

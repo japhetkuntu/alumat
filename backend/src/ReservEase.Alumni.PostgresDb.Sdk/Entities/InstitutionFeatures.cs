@@ -45,14 +45,19 @@ public static class InstitutionFeatures
     public const string RecurringGiving = "RecurringGiving";
     /// <summary>Members can add their date of birth; on that day the system auto-creates a Spotlight celebrating them (grouped with anyone else sharing the day). Self-service — see SelfService below. Meaningless if Spotlights itself is disabled.</summary>
     public const string BirthdaySpotlight = "BirthdaySpotlight";
+    /// <summary>Elections and votes: SuperAdmins set up a ballot of positions with aspirants and an audience; members vote once, in secret. Off for a new institution until platform staff turn it on.</summary>
+    public const string Polls = "Polls";
 
     public static readonly IReadOnlyList<string> All =
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
         Communities, ManualPayments, AlumniMap, Calendar, Store, PhotoAlbums,
-        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight, Services,
+        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight, Services, Polls,
     ];
+
+    /// <summary>Features a new institution starts WITHOUT. Platform staff switch them on once the institution asks. Everything else starts on.</summary>
+    public static readonly IReadOnlyList<string> OffForNewInstitutions = [Polls];
 
     /// <summary>
     /// Feature keys an institution's own SuperAdmin may toggle themselves
@@ -95,5 +100,6 @@ public static class InstitutionFeatures
         (Digest, "Re-engagement digest", "A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."),
         (RecurringGiving, "Recurring giving", "Members can set up a standing monthly gift, charged automatically."),
         (BirthdaySpotlight, "Birthday spotlight", "Members can add their date of birth; on their birthday the system automatically creates a spotlight celebrating them."),
+        (Polls, "Polls and elections", "SuperAdmins run elections: positions with aspirants (photos and details), an audience, open and close times. Members vote once, in secret, and results show live, after closing, or when the admin publishes them."),
     ];
 }

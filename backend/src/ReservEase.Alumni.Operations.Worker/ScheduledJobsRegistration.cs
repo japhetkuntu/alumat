@@ -57,6 +57,13 @@ public static class ScheduledJobsRegistration
                 new WorkflowOptions { Id = "event-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
             TimeSpan.FromHours(6));
 
+        // Every 6h: a poll is reminded once in its last 24 hours, so a 6h tick always lands inside that window.
+        await EnsureScheduleAsync(client, logger, "poll-closing-reminder-schedule",
+            ScheduleActionStartWorkflow.Create<PollClosingReminderDispatchWorkflow>(
+                wf => wf.RunAsync(),
+                new WorkflowOptions { Id = "poll-closing-reminder-dispatch", TaskQueue = OperationsTaskQueues.ScheduledJobs }),
+            TimeSpan.FromHours(6));
+
         await EnsureScheduleAsync(client, logger, "pledge-reminder-schedule",
             ScheduleActionStartWorkflow.Create<PledgeReminderDispatchWorkflow>(
                 wf => wf.RunAsync(),

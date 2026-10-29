@@ -81,6 +81,7 @@ builder.Services
     .AddWorkflow<RecurringGivingWorkflow>()
     .AddWorkflow<MembershipReminderDispatchWorkflow>()
     .AddWorkflow<EventReminderDispatchWorkflow>()
+    .AddWorkflow<PollClosingReminderDispatchWorkflow>()
     .AddWorkflow<PledgeReminderDispatchWorkflow>()
     .AddWorkflow<WorkReminderDispatchWorkflow>()
     .AddWorkflow<InstitutionActivationDispatchWorkflow>()
@@ -94,6 +95,7 @@ builder.Services
 // exports competing with payment callbacks for the database or filling the worker's memory.
 builder.Services.AddScoped<ReportDataBuilder>();
 builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Engagement.EngagementEngine>();
+builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine>();
 builder.Services
     .AddHostedTemporalWorker(ReportTaskQueues.Generation)
     .ConfigureOptions(options => options.MaxConcurrentActivities = 2)
