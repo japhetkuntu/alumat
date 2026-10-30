@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/institutions/layout,_N_T_/(dashboard)/institutions/new/layout,_N_T_/(dashboard)/institutions/new/page,_N_T_/institutions/new"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/institutions/new/__PAGE__",
+    "/!KGRhc2hib2FyZCk/institutions/new",
+    "/!KGRhc2hib2FyZCk/institutions",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

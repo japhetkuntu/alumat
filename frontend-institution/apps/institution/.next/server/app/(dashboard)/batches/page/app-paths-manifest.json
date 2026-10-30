@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/batches/page": "app/(dashboard)/batches/page.js"
+}

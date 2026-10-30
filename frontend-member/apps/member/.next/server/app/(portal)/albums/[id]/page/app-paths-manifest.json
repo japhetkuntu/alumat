@@ -1,0 +1,3 @@
+{
+  "/(portal)/albums/[id]/page": "app/(portal)/albums/[id]/page.js"
+}

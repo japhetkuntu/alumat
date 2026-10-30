@@ -1,0 +1,3 @@
+{
+  "/(auth)/undo-email-change/page": "app/(auth)/undo-email-change/page.js"
+}
