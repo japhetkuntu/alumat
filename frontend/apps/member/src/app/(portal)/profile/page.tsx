@@ -3,6 +3,7 @@
 import { compressImage } from "@alumni/ui";
 import Link from "next/link";
 import { DeleteAccountLink } from "@/components/member/delete-account";
+import { ChangeEmailCard } from "@/components/member/change-email";
 import { useState, useRef, useEffect } from "react";
 import { InfoTip } from "@alumni/ui";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1087,6 +1088,8 @@ export default function MemberProfilePage() {
             )}
           </CardContent>
         </Card>
+
+        <ChangeEmailCard email={profile.email} />
 
         {/* ── Security + About ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">

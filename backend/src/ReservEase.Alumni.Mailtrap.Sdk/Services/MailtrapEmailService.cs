@@ -96,6 +96,7 @@ public class MailtrapEmailService(
         return templateId switch
         {
             "email-verification" or "otp" => $"Your Verification Code — {brand}",
+            "email-change-code" => $"Your email change code — {brand}",
             "email-verification-link" => $"Verify Your Email — {brand}",
             "reset-password" => $"Password Reset — {brand}",
             "registration" => $"Welcome to {brand}",
@@ -214,6 +215,7 @@ public class MailtrapEmailService(
     {
         ["email-verification"] = ["otp_code"],
         ["otp"] = ["otp_code"],
+        ["email-change-code"] = ["otp_code"],
         ["email-verification-link"] = ["verify_url"],
         ["reset-password"] = ["reset_url"],
         ["institution-welcome"] = ["set_password_url"],

@@ -74,6 +74,7 @@ builder.Services.AddMemberControllers();
 builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationService>();
 builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationStatusCache>();
 builder.Services.AddScoped<IMemberAuthService, MemberAuthService>();
+builder.Services.AddScoped<IEmailChangeService, EmailChangeService>();
 builder.Services.AddScoped<ReservEase.Alumni.Member.Api.Services.Implementations.IInstitutionSwitchService, ReservEase.Alumni.Member.Api.Services.Implementations.InstitutionSwitchService>();
 builder.Services.AddScoped<IMemberAccountDeletionService, MemberAccountDeletionService>();
 builder.Services.AddScoped<IContributionService, ContributionService>();

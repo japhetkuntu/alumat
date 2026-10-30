@@ -175,6 +175,47 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return res.data;
 }
 
+// ── Change email ────────────────────────────────────────────────────────────
+
+export interface EmailChangeStatus {
+  /** "None" when no change is in progress; "Current" while waiting for the code sent to the present address; "New" for the one sent to the new address. */
+  step: "None" | "Current" | "New";
+  newEmail: string | null;
+  currentEmailHint: string;
+  newEmailHint: string | null;
+}
+
+export async function getEmailChange(): Promise<EmailChangeStatus> {
+  const res = await memberClient.get("/auth/email-change");
+  return res.data.data;
+}
+export async function startEmailChange(newEmail: string): Promise<EmailChangeStatus> {
+  const res = await memberClient.post("/auth/email-change/start", { newEmail });
+  return res.data.data;
+}
+export async function resendEmailChangeCode(): Promise<EmailChangeStatus> {
+  const res = await memberClient.post("/auth/email-change/resend");
+  return res.data.data;
+}
+export async function confirmEmailChangeCurrent(code: string): Promise<EmailChangeStatus> {
+  const res = await memberClient.post("/auth/email-change/confirm-current", { code });
+  return res.data.data;
+}
+export async function confirmEmailChangeNew(code: string): Promise<{
+  email: string;
+  session: { user: import("@/types").AuthData; tokens: import("@/types").AuthTokens };
+}> {
+  const res = await memberClient.post("/auth/email-change/confirm-new", { code });
+  return res.data.data;
+}
+export async function cancelEmailChange() {
+  await memberClient.delete("/auth/email-change");
+}
+export async function undoEmailChange(token: string): Promise<string> {
+  const res = await memberClient.post("/auth/email-change/undo", { token });
+  return res.data.message ?? "Your previous email address has been restored.";
+}
+
 // ── Campaigns ───────────────────────────────────────────────────────────────
 
 export async function getMyCampaigns(page = 1, pageSize = 20, communityId?: string): Promise<PagedResult<Campaign>> {

@@ -21,6 +21,13 @@ export interface ChangelogEntry {
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
     date: "2026-10-30",
+    title: "Members can change their sign-in email",
+    scopes: ["Member"],
+    type: "Feature",
+    body: "Profile now has an Email address card. A member enters the new address, then confirms two codes: one sent to the address they have now (so someone at an unlocked screen cannot take the account) and one to the new address (so it is reachable). It works the same whether they signed up with a password or Google, and nothing changes until both are right. Codes last 10 minutes, allow 5 wrong guesses, can be re-sent 3 times, and a member can start at most 5 changes an hour. An address another member has is refused, checked again at the end and enforced by the database's unique rule, so two people cannot both get it. When it completes, the member stays signed in on that device, every other device loses its refresh token, and the old address gets a notice with a 2-day link that puts the old email back, signs everyone out and tells them to reset their password; the link needs a click so mail scanners cannot trigger it, works once, and dies if the email changes again. Sign-in tokens still on other devices run out within 24 hours. Not covered: a member who has lost their old inbox cannot pass the first code and needs an administrator; copies of the old email in older class-note author names are not rewritten."
+  },
+  {
+    date: "2026-10-30",
     title: "Polls: faster to build, and safe when many people vote at once",
     scopes: ["Institution", "Member"],
     type: "Improvement",
