@@ -35,11 +35,12 @@ interface FormState {
   stages: string[];
   communityId: string;
   settlementTarget: string;
+  showOnWebsite: boolean;
 }
 
 const emptyForm: FormState = {
   name: "", description: "", price: "", status: "Active",
-  fields: [], stages: ["Submitted"], communityId: "", settlementTarget: "",
+  fields: [], stages: ["Submitted"], communityId: "", settlementTarget: "", showOnWebsite: false,
 };
 
 function toFormState(s: ServiceType): FormState {
@@ -52,6 +53,7 @@ function toFormState(s: ServiceType): FormState {
     stages: s.stages.length > 0 ? [...s.stages] : ["Submitted"],
     communityId: s.communityId ?? "",
     settlementTarget: s.settlementTarget ?? "",
+    showOnWebsite: s.showOnWebsite ?? false,
   };
 }
 
@@ -202,6 +204,7 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
       stages: form.stages,
       communityId: form.communityId || undefined,
       settlementTarget: form.settlementTarget || undefined,
+      showOnWebsite: form.showOnWebsite,
       fields: form.fields.map((fl) => ({
         key: fl.key,
         label: fl.label.trim(),
@@ -264,6 +267,10 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
                 options={[{ value: "all", label: "The whole institution" }, ...groups.map((g) => ({ value: g.id, label: g.name }))]}
               />
             </div>
+            <label className="flex items-start gap-2 text-[13px]">
+              <input type="checkbox" className="mt-0.5" checked={form.showOnWebsite} onChange={(e) => setForm((f) => ({ ...f, showOnWebsite: e.target.checked }))} />
+              <span>Show on the public website<span className="block text-[12px] text-muted-foreground">Visitors can see this service on your website. They sign in to request it.</span></span>
+            </label>
             <div className="space-y-2">
               <Label>Payments go to</Label>
               <FormSelect

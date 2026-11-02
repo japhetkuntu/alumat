@@ -36,3 +36,6 @@ public record InstitutionThemeResponse(
     List<RegistrationField>? RegistrationFields = null,
     /// <summary>Contact details and leaders the institution chose to show publicly.</summary>
     PublicProfile? PublicProfile = null);
+
+/// <summary>The published website page (see WebsiteDocument), as the member app renders it.</summary>
+public record PublicSiteResponse(Newtonsoft.Json.Linq.JRaw Document, int Revision, DateTime? PublishedAt);

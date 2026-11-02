@@ -22,13 +22,15 @@ export interface FieldRow {
 export interface ConfigDraft {
   priceLabel: string;
   trackStock: boolean;
+  /** Show this product on the institution's public website. */
+  showOnWebsite: boolean;
   details: StoreDetailItem[];
   fields: FieldRow[];
   deliveryFields: FieldRow[];
   stages: string[];
 }
 
-export const emptyConfigDraft: ConfigDraft = { priceLabel: "", trackStock: true, details: [], fields: [], deliveryFields: [], stages: [] };
+export const emptyConfigDraft: ConfigDraft = { priceLabel: "", trackStock: true, showOnWebsite: false, details: [], fields: [], deliveryFields: [], stages: [] };
 
 const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "Text", label: "Short answer" },
@@ -46,6 +48,7 @@ export function configFromProduct(p: StoreProduct): ConfigDraft {
   return {
     priceLabel: p.priceLabel ?? "",
     trackStock: p.trackStock ?? true,
+    showOnWebsite: p.showOnWebsite ?? false,
     details: (p.details ?? []).map((d) => ({ ...d })),
     fields: toRows(p.fields),
     deliveryFields: toRows(p.deliveryFields),
@@ -59,6 +62,7 @@ export function configFromTemplate(t: StoreProductTemplate): ConfigDraft {
   return {
     priceLabel: t.priceLabel ?? "",
     trackStock: t.trackStock,
+    showOnWebsite: false,
     details: t.details.map((d) => ({ ...d })),
     fields: strip(toRows(t.fields)),
     deliveryFields: strip(toRows(t.deliveryFields)),
@@ -82,6 +86,7 @@ export function configToBody(c: ConfigDraft): StoreProductConfigBody {
   return {
     priceLabel: c.priceLabel.trim() || undefined,
     trackStock: c.trackStock,
+    showOnWebsite: c.showOnWebsite,
     details: c.details.filter((d) => d.label.trim() && d.value.trim()),
     fields: rowsToBody(c.fields),
     deliveryFields: rowsToBody(c.deliveryFields),
@@ -145,6 +150,10 @@ export function DetailsEditor({ value, onChange }: { value: ConfigDraft; onChang
         <label className="flex items-center gap-2 text-[13px] self-end pb-2.5">
           <input type="checkbox" checked={!value.trackStock} onChange={(e) => set("trackStock", !e.target.checked)} />
           Unlimited availability (no stock count)
+        </label>
+        <label className="flex items-center gap-2 text-[13px] sm:col-span-2">
+          <input type="checkbox" checked={value.showOnWebsite} onChange={(e) => set("showOnWebsite", e.target.checked)} />
+          Show on the public website
         </label>
       </div>
       <div className="space-y-2">

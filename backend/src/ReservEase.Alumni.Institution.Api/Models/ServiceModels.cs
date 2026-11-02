@@ -23,6 +23,8 @@ public class CreateServiceTypeRequest
     public string? CommunityId { get; set; }
     /// <summary>Empty for automatic (the group's account if it has one, else the institution's); or "institution", "group:{id}", "year:{year}".</summary>
     public string? SettlementTarget { get; set; }
+    /// <summary>Show this service on the institution's public website.</summary>
+    public bool ShowOnWebsite { get; set; }
 }
 
 public class UpdateServiceTypeRequest
@@ -38,6 +40,8 @@ public class UpdateServiceTypeRequest
     public string? CommunityId { get; set; }
     /// <summary>Empty for automatic (the group's account if it has one, else the institution's); or "institution", "group:{id}", "year:{year}".</summary>
     public string? SettlementTarget { get; set; }
+    /// <summary>Show this service on the institution's public website.</summary>
+    public bool ShowOnWebsite { get; set; }
 }
 
 /// <summary>Advance/annotate a request — Stage must be one of the request's ServiceType.Stages when provided. At least one of Stage/Note/Attachment should be set.</summary>

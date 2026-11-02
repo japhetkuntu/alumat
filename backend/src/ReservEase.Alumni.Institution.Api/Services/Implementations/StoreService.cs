@@ -1,3 +1,5 @@
+using ReservEase.Alumni.Common.Sdk.Options;
+using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Institution.Api.Extensions;
 using ReservEase.Alumni.Institution.Api.Models;
 using ReservEase.Alumni.Institution.Api.Services.Interfaces;
@@ -27,8 +29,12 @@ public class StoreService(
     IStorageService storageService,
     ITemporalClientProvider temporalProvider,
     ICurrentTenantService currentTenant,
-    ILogger<StoreService> logger) : IStoreService
+    ILogger<StoreService> logger,
+    IRedisService<PublicContentCacheConfig>? publicCache = null) : IStoreService
 {
+    private Task ClearWebsiteCacheAsync()
+        => publicCache is not null && currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.SiteStore(id)) : Task.CompletedTask;
+
     /// <summary>
     /// Replaces the full variant set for a product (delete-existing-and-recreate,
     /// matching the "admin submits the whole variant table each edit" UX — no
@@ -210,6 +216,7 @@ public class StoreService(
                 QuantityAvailable = request.QuantityAvailable,
                 DeliveryInfo = deliveryInfo,
                 Status = request.Status,
+                ShowOnWebsite = request.ShowOnWebsite ?? false,
                 CreatedBy = admin.Id,
             };
 
@@ -225,12 +232,14 @@ public class StoreService(
                 product.ImageUrls = await storageService.BulkUploadFilesAsync(request.Images, institutionSlug: currentTenant.InstitutionSlug ?? "");
 
             await productRepo.AddAsync(product);
+            await ClearWebsiteCacheAsync();
 
             List<StoreProductVariant> variants = [];
             if (request.VariantOptionTypes is { Count: > 0 })
             {
                 variants = await ReplaceVariantsAsync(product, request.VariantOptionTypes, request.Variants, admin.Id);
                 await productRepo.UpdateAsync(product);
+            await ClearWebsiteCacheAsync();
             }
 
             logger.LogInformation("Store product {ProductId} created by admin {AdminId}", product.Id, admin.Id);
@@ -266,6 +275,7 @@ public class StoreService(
             product.QuantityAvailable = request.QuantityAvailable;
             product.DeliveryInfo = request.DeliveryInfo;
             product.Status = request.Status;
+            if (request.ShowOnWebsite is { } showOnWebsite) product.ShowOnWebsite = showOnWebsite;
 
             var configError = ApplyProductConfig(product, request.PriceLabel, request.TrackStock, request.DetailsJson, request.FieldsJson, request.DeliveryFieldsJson, request.StagesJson);
             if (configError is not null)
@@ -291,6 +301,7 @@ public class StoreService(
             product.UpdatedAt = DateTime.UtcNow;
             product.UpdatedBy = admin.Id;
             await productRepo.UpdateAsync(product);
+            await ClearWebsiteCacheAsync();
             logger.LogInformation("Store product {ProductId} updated by admin {AdminId}", product.Id, admin.Id);
             return product.ToDto(variants).ToOkApiResponse();
         }
@@ -314,6 +325,7 @@ public class StoreService(
                 await variantRepo.RemoveAsync(variant);
 
             await productRepo.RemoveAsync(product);
+            await ClearWebsiteCacheAsync();
             logger.LogInformation("Store product {ProductId} deleted", productId);
             return new object().ToOkApiResponse("Product deleted");
         }

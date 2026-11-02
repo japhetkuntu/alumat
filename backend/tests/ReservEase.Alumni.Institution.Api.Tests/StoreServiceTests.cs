@@ -42,13 +42,15 @@ public class StoreServiceTests
             Fresh();
         }
 
+        public Moq.Mock<ReservEase.Alumni.Redis.Sdk.Services.IRedisService<ReservEase.Alumni.Common.Sdk.Options.PublicContentCacheConfig>> Cache { get; } = new();
+
         public StoreService Fresh()
         {
             var db = TestDb.Create(DbName, Tenant);
             return Service = new StoreService(
                 new AlumniPgRepository<StoreProduct>(db), new AlumniPgRepository<StoreOrder>(db), new AlumniPgRepository<StoreProductVariant>(db),
                 new AlumniPgRepository<StoreProductTemplate>(db), new AlumniPgRepository<InstitutionEntity>(db), new AlumniPgRepository<MemberEntity>(db),
-                Storage.Object, Temporal.Object, TestDb.Tenant(Tenant, "umat"), NullLogger<StoreService>.Instance);
+                Storage.Object, Temporal.Object, TestDb.Tenant(Tenant, "umat"), NullLogger<StoreService>.Instance, Cache.Object);
         }
 
         public AlumniDbContext Db() => TestDb.Create(DbName, Tenant);
@@ -88,6 +90,15 @@ public class StoreServiceTests
         Assert.Equal(400, response.Code);
         Assert.Contains("Price", response.Message);
         Assert.Equal(0, await rig.Db().StoreProducts.CountAsync());
+    }
+
+    [Fact]
+    public async Task Ticking_show_on_website_clears_what_the_website_remembers_so_it_shows_at_once()
+    {
+        var rig = new Rig();
+        var response = await rig.Service.CreateProductAsync(Create(tweak: r => r.ShowOnWebsite = true), rig.Admin);
+        Assert.True(response.Data!.ShowOnWebsite);
+        rig.Cache.Verify(c => c.RemoveAsync(ReservEase.Alumni.Common.Sdk.Extensions.PublicContentCacheKeys.SiteStore(Tenant)), Moq.Times.AtLeastOnce);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 # Website builder: plan
 
-Status: proposed, not started. Agreed so far: block builder with a few templates on top, only SuperAdmins edit, images in any section, fast and smooth on every device for people who are not technical. **The website is one single page** that visitors scroll, with a menu that jumps to sections. It is not a set of separate pages. (This replaces the earlier idea of dynamic multi-page sites.)
+Status: built (backend, member-app site, institution editor). The HTML prototype in `docs/website-builder-prototype` is the design reference; the shared code is `frontend/packages/site`. Agreed so far: block builder with a few templates on top, only SuperAdmins edit, images in any section, fast and smooth on every device for people who are not technical. **The website is one single page** that visitors scroll, with a menu that jumps to sections. It is not a set of separate pages. (This replaces the earlier idea of dynamic multi-page sites.)
 
 ## What exists today
 
@@ -50,7 +50,11 @@ The institution's other features are part of the default templates, switched on 
 
 ## Templates
 
-Four at launch, each a set of design tokens plus a starting set of sections. The current landing page is rebuilt as the first, so the default site matches today's. Switching template changes the look only (colours, fonts, corners, light or dark) and never touches the admin's words and photos. A separate, confirmed "start over with this template's layout" replaces the sections, and can be undone.
+Four at launch, each a set of design tokens plus a starting set of sections. **Vibrant** is the flagship and the default for new sites: full-colour sections with rounded bottoms that sit over the next one, a hero with a short pill label, a two-tone headline and a cut-out figure, a rounded numbers panel, a three-step section with alternating pictures, pill buttons, soft raised cards and a rounded footer. Its figures are drawn from the brand colour, so the page looks finished before any photo is added, and a real photo replaces any of them. In the prototype every picture is a real photo from Unsplash (free to use, credit appreciated), loaded at the size each slot needs. In the app those slots start with the template's sample photos and the institution replaces them with its own uploads.
+
+**The builder, beyond the basics.** Press Ctrl or Cmd + K to search and run anything: jump to a section, add one, switch look, preview, undo. The right panel has three tabs (Section, Design, Header and footer). The section list shows a small picture of each block. Publish first checks the page in plain words (buttons that go nowhere, missing headings, an empty menu, no contact details) with a "Show me" link for each, then publishes with visible progress and a live link. The tablet and phone previews sit in device frames. The top bar is dark so the page is the brightest thing on screen.
+
+**The builder on small screens.** On a tablet or phone the page fills the screen and the two side panels become sheets that slide up from a bottom tab bar (Sections, Edit and design, Preview). Choosing a section opens its settings, adding one closes the sheet so the result is visible, and a dot on the Edit tab shows a section is selected. The current landing page is rebuilt as the first, so the default site matches today's. Switching template changes the look only (colours, fonts, corners, light or dark) and never touches the admin's words and photos. A separate, confirmed "start over with this template's layout" replaces the sections, and can be undone.
 
 ## The page and its menu
 
@@ -66,6 +70,37 @@ Four at launch, each a set of design tokens plus a starting set of sections. The
 - Contact details as real links (email opens the mail app, the phone number dials). Empty fields are hidden.
 - A legal row with Privacy and Terms (the platform's pages for that community), Back to top, and an optional "Powered by" credit.
 - Columns reflow by the width of the site itself: four across on a wide screen, brand on top with the columns below on a tablet, two across on a phone.
+
+## Branding
+
+- **The website starts with the institution's own branding**: its colours, logo and name, read from the portal theme. Nothing to set up.
+- **The admin can change the website's look without touching the institution's branding.** Under Design, "Use my institution's branding" is on by default. Turn it off to pick another colour or upload another logo for the website only. A line under the switch says so: the portal, emails and certificates keep the institution's branding.
+- **One click back.** "Back to my institution's branding" restores it. The website name can be changed the same way, with a "use the institution's name again" link.
+- Templates change layout, fonts and corners, never the colours. Text on top of any colour switches between light and dark automatically so it stays readable.
+
+## Where every link goes
+
+On the live website, the item a visitor picks opens the member portal's own page for it, in the same tab, with a way back. The prototype shows the same routes in a panel over the page, with the same address in the URL bar (`#/events/annual-reunion-dinner`), so Back, Forward, refresh and shared links all work.
+
+| Visitor action | Goes to |
+|---|---|
+| Event, news post, service, product, fundraiser, job, business, community card, or its button | `/events/{slug}`, `/news/{slug}`, `/services/{slug}`, `/store/{slug}`, `/fundraisers/{slug}`, `/jobs/{slug}`, `/businesses/{slug}`, `/communities/{slug}` |
+| "View all" beside a section heading | `/events`, `/news`, `/services` and so on |
+| RSVP, Get this, Add, Give now, Apply, Join (needs an account) | `/sign-in?next=/events/{slug}`, then straight back to the item |
+| Join the community | `/join` |
+| Member sign in (header and footer) | `/sign-in` |
+| Privacy, Terms | `/legal/privacy`, `/legal/terms` |
+| A button pointing at a section on the page | Smooth scroll to that section |
+| A button pointing at a website, email or phone | Opens it (new tab, mail app, dialler) |
+
+Every route has a loading state, and a friendly "We can't find that page" screen for an old or wrong link, with a way back. The panel closes with Escape, the Back button or a tap outside it, and focus returns to what was clicked. Links with no destination are flagged in the editor and again when publishing.
+
+## Loading states
+
+- **Shimmer that matches the real layout.** While a live section's data arrives, the section's own cards, rows and number panels show as shimmering blocks in their final shape, so nothing jumps when the content lands. In the brand-colour sections the shimmer is white on colour.
+- **Photos load on their own**, a little before they scroll into view, with a shimmer until they arrive and a soft fade-in. If a photo fails, a drawn scene takes its place instead of a hole.
+- **Moving around feels instant.** A thin progress line runs across the top when a page or panel opens, and a detail panel shows its own skeleton while the item loads.
+- Everything respects "reduce motion".
 
 ## Public API and caching
 

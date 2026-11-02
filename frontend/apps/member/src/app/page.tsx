@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getInstitutionThemeStatus } from "@/lib/theme";
 import LandingPage from "./landing-page";
+import { WebsitePage } from "./_site/website-page";
+import { brandFromTheme, getPublishedSite, getSiteData } from "@/lib/site";
 import PlatformMarketingPage from "./platform-marketing-page";
 import { FAQS } from "./_marketing/faqs";
 import { getRequestOrigin, MARKETING_DESCRIPTION, MARKETING_KEYWORDS, MARKETING_TITLE, SITE_NAME } from "@/lib/seo";
@@ -26,6 +28,23 @@ export async function generateMetadata(): Promise<Metadata> {
       alternates: { canonical: url },
       openGraph: { title: MARKETING_TITLE, description: MARKETING_DESCRIPTION, url, type: "website" },
       twitter: { card: "summary_large_image", title: MARKETING_TITLE, description: MARKETING_DESCRIPTION },
+    };
+  }
+
+  // An institution with its own published website uses the title, description and share image the admin wrote for it.
+  const site = theme ? await getPublishedSite() : null;
+  if (site) {
+    const seo = site.document.seo ?? {};
+    const siteName = theme?.displayName || theme?.portalName || SITE_NAME;
+    const siteTitle = seo.title || siteName;
+    const siteDescription = seo.description || theme?.tagline || `The official website of ${siteName}.`;
+    const image = seo.shareImage || site.document.sections.find((x) => !x.hidden && x.imgs?.main)?.imgs.main || theme?.logoUrl || undefined;
+    return {
+      title: { absolute: siteTitle },
+      description: siteDescription,
+      alternates: { canonical: url },
+      openGraph: { title: siteTitle, description: siteDescription, url, type: "website", images: image ? [image] : undefined },
+      twitter: { card: "summary_large_image", title: siteTitle, description: siteDescription },
     };
   }
 
@@ -120,6 +139,18 @@ var state = process.env.NODE_ENV === "development"? true: status === "not-found"
       </>
     );
   }
+  // The institution's own website, when it has published one from the builder. Otherwise the standard landing page below, unchanged.
+  const site = theme ? await getPublishedSite() : null;
+  if (site && theme) {
+    const data = await getSiteData();
+    return (
+      <>
+        <StructuredData isMarketing={false} theme={theme} origin={origin} />
+        <WebsitePage doc={site.document} brand={brandFromTheme(theme)} data={data} platformDisabled={theme.disabledFeatures ?? []} />
+      </>
+    );
+  }
+
   // Passed through as SSR-resolved initial data (see useLandingContent in
   // landing-page.tsx) so the first paint already has the real institution's
   // branding — no flash of generic placeholder content while a client-side

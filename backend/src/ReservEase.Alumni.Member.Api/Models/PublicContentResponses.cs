@@ -31,3 +31,26 @@ public record ReferralPreviewResponse(
 
 /// <summary>A group the institution chose to show on its public landing page. Counts only, never members.</summary>
 public record PublicCommunityItemResponse(string Id, string Name, string? Kind, string Description, string? CoverImageUrl, int MemberCount);
+
+// ── The institution's website (see PublicController.GetPublicSiteData) ───────────────────────────────
+
+public record PublicServiceItemResponse(string Id, string Name, string? Description, decimal Price);
+public record PublicProductItemResponse(string Id, string Name, decimal Price, string? ImageUrl);
+public record PublicFundraiserItemResponse(string Id, string Title, string? Summary, decimal Raised, decimal Goal, string? ImageUrl);
+public record PublicJobItemResponse(string Id, string Title, string? Company, string? Location);
+public record PublicSiteStatsResponse(int Members, int JoinedLast30Days, int? EventsNext30Days, int? OpenJobs, int? Businesses, int Communities);
+
+/// <summary>
+/// Everything the live sections of an institution's website show, in one call. Each list holds only what the institution made public, and is
+/// empty when its feature is switched off, so the website shows nothing it should not.
+/// </summary>
+public record PublicSiteDataResponse(
+    List<PublicNewsItemResponse> News,
+    List<PublicEventItemResponse> Events,
+    List<PublicCommunityItemResponse> Communities,
+    List<PublicBusinessListingItemResponse> Businesses,
+    List<PublicServiceItemResponse> Services,
+    List<PublicProductItemResponse> Store,
+    List<PublicFundraiserItemResponse> Fundraisers,
+    List<PublicJobItemResponse> Jobs,
+    PublicSiteStatsResponse Stats);

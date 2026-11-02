@@ -35,6 +35,7 @@ import {
   FileText,
   Filter,
   Landmark,
+  Globe,
 } from "@alumni/ui";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -118,6 +119,7 @@ const baseNavItems = [
   { href: "/resources", label: "Resources", icon: FolderOpen },
   { href: "/spotlights", label: "Spotlights", icon: Star },
   { href: "/albums", label: "Photo Albums", icon: Images },
+  { href: "/website", label: "Website", icon: Globe },
   { href: "/polls", label: "Polls", icon: Vote },
   { href: "/business-directory", label: "Business Directory", icon: Store },
   { href: "/flagged-content", label: "Flagged Content", icon: ShieldAlert },
@@ -206,7 +208,7 @@ function useNavItems() {
       if (item.href === "/mentorship" || item.href === "/albums") {
         if (user?.role !== "SuperAdmin" && user?.role !== "ScopedAdmin") return false;
       }
-      if ((item.href === "/polls" || item.href === "/store" || item.href === "/services" || item.href === "/audit-log" || item.href === "/payouts") && user?.role !== "SuperAdmin") return false;
+      if ((item.href === "/polls" || item.href === "/website" || item.href === "/store" || item.href === "/services" || item.href === "/audit-log" || item.href === "/payouts") && user?.role !== "SuperAdmin") return false;
       // Community institutions have no graduation years — Batches has nothing
       // to manage for them (they organize via Communities instead).
       if (item.href === "/batches" && isCommunity) return false;

@@ -14,6 +14,9 @@ importers:
 
   apps/institution:
     dependencies:
+      '@alumni/site':
+        specifier: workspace:*
+        version: link:../../packages/site
       '@alumni/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -171,6 +174,9 @@ importers:
 
   apps/member:
     dependencies:
+      '@alumni/site':
+        specifier: workspace:*
+        version: link:../../packages/site
       '@alumni/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -512,6 +518,25 @@ importers:
       vitest:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  packages/site:
+    dependencies:
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+    devDependencies:
+      '@types/react':
+        specifier: ^19
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.4(@types/react@19.2.18)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
 
   packages/ui:
     dependencies:

@@ -101,6 +101,8 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<StoreProductVariant> StoreProductVariants => Set<StoreProductVariant>();
     public DbSet<StoreProductTemplate> StoreProductTemplates => Set<StoreProductTemplate>();
     public DbSet<PhotoAlbum> PhotoAlbums => Set<PhotoAlbum>();
+    public DbSet<InstitutionWebsite> InstitutionWebsites => Set<InstitutionWebsite>();
+    public DbSet<InstitutionWebsiteVersion> InstitutionWebsiteVersions => Set<InstitutionWebsiteVersion>();
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
     public DbSet<BusinessListing> BusinessListings => Set<BusinessListing>();
 
@@ -251,6 +253,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
         // unindexed, this is a full-table scan across every institution's requests.
         modelBuilder.Entity<ServiceRequest>().HasIndex(r => r.TransactionRef).IsUnique();
 
+        // One website per institution; its published versions are listed newest first.
+        modelBuilder.Entity<InstitutionWebsite>().HasIndex(w => w.InstitutionId).IsUnique();
+        modelBuilder.Entity<InstitutionWebsiteVersion>().HasIndex(v => new { v.InstitutionId, v.Revision });
         // AlbumPhoto: list a given album's photos
         modelBuilder.Entity<AlbumPhoto>().HasIndex(p => p.AlbumId);
 

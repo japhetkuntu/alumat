@@ -199,6 +199,8 @@ public class StoreProductDto
     public string? DeliveryInfo { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    /// <summary>Whether this product is shown on the institution's public website.</summary>
+    public bool ShowOnWebsite { get; set; }
     /// <summary>Empty means this is a simple product with no variants.</summary>
     public List<string> VariantOptionTypes { get; set; } = [];
     public List<StoreProductVariantDto> Variants { get; set; } = [];
@@ -333,6 +335,8 @@ public class ServiceTypeDto
     public string? CommunityId { get; set; }
     /// <summary>Where the money goes: null for automatic, else "institution", "group:{id}" or "year:{year}".</summary>
     public string? SettlementTarget { get; set; }
+    /// <summary>Whether this service is shown on the institution's public website.</summary>
+    public bool ShowOnWebsite { get; set; }
 }
 
 public class ServiceRequestUpdateDto

@@ -209,6 +209,7 @@ public static class EntityDtoExtensions
         Variants = (variants ?? []).Select(v => v.ToDto(p)).ToList(),
         PriceLabel = p.PriceLabel,
         TrackStock = p.TrackStock,
+        ShowOnWebsite = p.ShowOnWebsite,
         Details = p.Details.Select(d => d.ToDto()).ToList(),
         Fields = p.Fields.Select(f => f.ToDto()).ToList(),
         DeliveryFields = p.DeliveryFields.Select(f => f.ToDto()).ToList(),
@@ -318,6 +319,7 @@ public static class EntityDtoExtensions
         CreatedAt = s.CreatedAt,
         CommunityId = s.CommunityId,
         SettlementTarget = s.SettlementTarget,
+        ShowOnWebsite = s.ShowOnWebsite,
     };
 
     public static ServiceRequestDto ToDto(this ServiceRequest r) => new()

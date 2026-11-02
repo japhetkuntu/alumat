@@ -57,4 +57,7 @@ public class ServiceType : BaseEntity, ITenantScoped
     /// An account that is not live (not approved, or set to use the institution's) falls back to the institution's.
     /// </summary>
     public string? SettlementTarget { get; set; }
+
+    /// <summary>The institution chose to show this service on its public website. Off by default, so nothing appears publicly unless it was picked.</summary>
+    public bool ShowOnWebsite { get; set; }
 }

@@ -644,6 +644,8 @@ export interface StoreProduct {
   priceLabel?: string;
   /** False means unlimited availability — no stock count is kept. */
   trackStock?: boolean;
+  /** Whether this product is shown on the institution's public website. */
+  showOnWebsite?: boolean;
   details?: StoreDetailItem[];
   /** Questions the buyer answers for this item. */
   fields?: ServiceFieldDefinition[];
@@ -753,6 +755,8 @@ export interface ServiceType {
   communityId?: string | null;
   /** Where its money goes: empty for automatic, else "institution", "group:{id}" or "year:{year}". */
   settlementTarget?: string | null;
+  /** Whether this service is shown on the institution's public website. */
+  showOnWebsite?: boolean;
 }
 
 export interface ServiceRequestUpdate {

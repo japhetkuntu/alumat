@@ -1,3 +1,5 @@
+using ReservEase.Alumni.Redis.Sdk.Services;
+using ReservEase.Alumni.Common.Sdk.Options;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using ReservEase.Alumni.Institution.Api.Extensions;
@@ -35,8 +37,12 @@ public class ServiceService(
     ICurrentTenantService currentTenant,
     ILogger<ServiceService> logger,
     IAlumniPgRepository<Community>? communityRepo = null,
-    IAlumniPgRepository<Batch>? batchRepo = null) : IServiceService
+    IAlumniPgRepository<Batch>? batchRepo = null,
+    IRedisService<PublicContentCacheConfig>? publicCache = null) : IServiceService
 {
+    private Task ClearWebsiteCacheAsync()
+        => publicCache is not null && currentTenant.InstitutionId is { } id ? publicCache.RemoveAsync(PublicContentCacheKeys.SiteServices(id)) : Task.CompletedTask;
+
     /// <summary>Checks a service's group and account choice belong to this institution. Returns an error message, or null when fine.</summary>
     private async Task<string?> ValidateSettlementAsync(string? communityId, string? target)
     {
@@ -159,6 +165,7 @@ public class ServiceService(
             {
                 CommunityId = communityId,
                 SettlementTarget = target,
+                ShowOnWebsite = request.ShowOnWebsite,
                 Name = request.Name.Trim(),
                 Description = descriptionHtml,
                 Price = request.Price,
@@ -169,6 +176,7 @@ public class ServiceService(
             };
 
             await serviceTypeRepo.AddAsync(serviceType);
+            await ClearWebsiteCacheAsync();
             logger.LogInformation("Service type {ServiceTypeId} \"{Name}\" created by admin {AdminId}", serviceType.Id, serviceType.Name, admin.Id);
             return serviceType.ToDto().ToOkApiResponse("Service type created");
         }
@@ -198,6 +206,7 @@ public class ServiceService(
                 return ApiResponseExtensions.ToBadRequestApiResponse<ServiceTypeDto>(settlementError);
             serviceType.CommunityId = communityId;
             serviceType.SettlementTarget = target;
+            serviceType.ShowOnWebsite = request.ShowOnWebsite;
 
             serviceType.Name = request.Name.Trim();
             var descriptionHtml = RichText.Sanitize(request.Description);
@@ -212,6 +221,7 @@ public class ServiceService(
             serviceType.UpdatedBy = admin.Id;
 
             await serviceTypeRepo.UpdateAsync(serviceType);
+            await ClearWebsiteCacheAsync();
             logger.LogInformation("Service type {ServiceTypeId} updated by admin {AdminId}", serviceType.Id, admin.Id);
             return serviceType.ToDto().ToOkApiResponse("Service type updated");
         }
@@ -238,10 +248,12 @@ public class ServiceService(
                 serviceType.Status = "Archived";
                 serviceType.UpdatedAt = DateTime.UtcNow;
                 await serviceTypeRepo.UpdateAsync(serviceType);
+            await ClearWebsiteCacheAsync();
                 return new object().ToOkApiResponse("Service type has existing requests, so it was archived instead of deleted");
             }
 
             await serviceTypeRepo.RemoveAsync(serviceType);
+            await ClearWebsiteCacheAsync();
             return new object().ToOkApiResponse("Service type deleted");
         }
         catch (Exception e)

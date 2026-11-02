@@ -1469,6 +1469,7 @@ export interface CreateStoreProductBody {
 export interface StoreProductConfigBody {
   priceLabel?: string;
   trackStock: boolean;
+  showOnWebsite?: boolean;
   details: StoreDetailItem[];
   fields: ServiceFieldDefinitionBody[];
   deliveryFields: ServiceFieldDefinitionBody[];
@@ -1515,6 +1516,7 @@ function appendStoreConfigFields(fd: FormData, config?: StoreProductConfigBody) 
   if (!config) return;
   if (config.priceLabel) fd.append("priceLabel", config.priceLabel);
   fd.append("trackStock", String(config.trackStock));
+  fd.append("showOnWebsite", String(!!config.showOnWebsite));
   fd.append("detailsJson", JSON.stringify(config.details));
   fd.append("fieldsJson", JSON.stringify(config.fields));
   fd.append("deliveryFieldsJson", JSON.stringify(config.deliveryFields));
@@ -1644,6 +1646,7 @@ export interface ServiceTypeBody {
   stages: string[];
   communityId?: string;
   settlementTarget?: string;
+  showOnWebsite?: boolean;
 }
 
 export async function getServiceTypes(page = 1, pageSize = 50, status?: string, search?: string) {
@@ -2477,5 +2480,58 @@ export async function getPollResults(id: string): Promise<PollResults> {
 }
 export async function publishPollResults(id: string): Promise<PollResults> {
   const res = await institutionClient.post<ApiResponse<PollResults>>(`/polls/${id}/publish-results`);
+  return res.data.data!;
+}
+
+// ── Website builder ──────────────────────────────────────────────────────────
+
+export interface WebsiteStatus {
+  isLive: boolean;
+  publishedAt?: string | null;
+  publishedBy?: string | null;
+  draftRevision: number;
+  publishedRevision: number;
+  hasUnpublishedChanges: boolean;
+}
+
+export interface WebsiteBrand { name: string; tagline?: string | null; primaryColor: string; secondaryColor?: string | null; logoUrl?: string | null; slug: string }
+
+export interface WebsiteEditorData {
+  status: WebsiteStatus;
+  /** The saved draft, or null until the institution first opens the builder. */
+  draft: import("@alumni/site").SiteDocument | null;
+  brand: WebsiteBrand;
+  disabledFeatures: string[];
+}
+
+export interface WebsiteVersion { id: string; revision: number; publishedAt: string; publishedBy: string }
+
+export async function getWebsite() {
+  const res = await institutionClient.get<ApiResponse<WebsiteEditorData>>("/website");
+  return res.data.data!;
+}
+
+export async function saveWebsiteDraft(document: import("@alumni/site").SiteDocument, baseRevision: number) {
+  const res = await institutionClient.put<ApiResponse<WebsiteStatus>>("/website/draft", { document, baseRevision });
+  return res.data.data!;
+}
+
+export async function publishWebsite(revision: number) {
+  const res = await institutionClient.post<ApiResponse<WebsiteStatus>>("/website/publish", { revision });
+  return res.data.data!;
+}
+
+export async function unpublishWebsite() {
+  const res = await institutionClient.post<ApiResponse<WebsiteStatus>>("/website/unpublish");
+  return res.data.data!;
+}
+
+export async function getWebsiteVersions() {
+  const res = await institutionClient.get<ApiResponse<WebsiteVersion[]>>("/website/versions");
+  return res.data.data ?? [];
+}
+
+export async function restoreWebsiteVersion(versionId: string) {
+  const res = await institutionClient.post<ApiResponse<WebsiteStatus>>(`/website/versions/${versionId}/restore`);
   return res.data.data!;
 }

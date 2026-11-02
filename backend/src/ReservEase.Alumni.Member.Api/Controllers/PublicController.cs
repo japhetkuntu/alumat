@@ -40,6 +40,8 @@ public class PublicController(
     IAlumniPgRepository<PhotoAlbum> albumRepo,
     IAlumniPgRepository<ServiceType> serviceTypeRepo,
     IAlumniPgRepository<Campaign> campaignRepo,
+    IAlumniPgRepository<InstitutionWebsite> websiteRepo,
+    IAlumniPgRepository<StoreProduct> storeProductRepo,
     IRedisService<PublicContentCacheConfig> publicCache) : DefaultController
 {
     /// <summary>Cache the widest reasonable slice once per institution (rather than one cache entry per `take` value) so every caller's request, whatever `take` it asks for, hits the same cached list — Institution.Api invalidates exactly one key per resource on any admin edit, see PublicContentCacheKeys.</summary>
@@ -101,6 +103,95 @@ public class PublicController(
             institution.PublicProfile);
 
         return Ok(new ApiResponse<InstitutionThemeResponse> { Message = "Success", Code = 200, Data = theme });
+    }
+
+    /// <summary>
+    /// The institution's own website page, when it has published one. 404 means "none": the app then shows its standard landing page, so
+    /// an institution that never opens the builder sees no change. Cached per institution; publishing, unpublishing and restoring clear it.
+    /// </summary>
+    [HttpGet("site")]
+    [SwaggerOperation(Summary = "Get the institution's published website page, if any")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicSiteResponse>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
+    public async Task<IActionResult> GetPublicSite()
+    {
+        if (HttpContext.Items["Institution"] is not Institution institution)
+            return NotFound(new ApiResponse<object> { Message = "No institution resolved for this host", Code = 404 });
+
+        var key = PublicContentCacheKeys.Site(institution.Id);
+        var cached = await publicCache.GetAsync<CachedSite>(key);
+        if (cached is null)
+        {
+            var site = await websiteRepo.GetOneAsync(w => w.IsLive && w.PublishedJson != null);
+            cached = site is null ? new CachedSite(null, 0, null) : new CachedSite(site.PublishedJson, site.PublishedRevision, site.PublishedAt);
+            await publicCache.SetAsync(key, cached);
+        }
+        if (cached.Json is null)
+            return NotFound(new ApiResponse<object> { Message = "No custom website", Code = 404 });
+
+        Response.Headers.CacheControl = "public, max-age=30, stale-while-revalidate=300";
+        var doc = new Newtonsoft.Json.Linq.JRaw(cached.Json);
+        return Ok(new ApiResponse<PublicSiteResponse> { Message = "Success", Code = 200, Data = new PublicSiteResponse(doc, cached.Revision, cached.PublishedAt) });
+    }
+
+    private sealed record CachedSite(string? Json, int Revision, DateTime? PublishedAt);
+
+    private static T? Unwrap<T>(IActionResult result) where T : class => (result as OkObjectResult)?.Value is ApiResponse<T> r ? r.Data : null;
+
+    /// <summary>The slice of an institution's website that is made of its own items. Reuses the landing page's cached lists for news, events, groups and businesses, and adds the four a website can also show. Services and products appear only when the institution ticked "Show on website"; fundraisers only when their public page is published; jobs only when public.</summary>
+    [HttpGet("site-data")]
+    [SwaggerOperation(Summary = "Get what the institution's website shows from its own items")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicSiteDataResponse>))]
+    public async Task<IActionResult> GetPublicSiteData()
+    {
+        var empty = new PublicSiteDataResponse([], [], [], [], [], [], [], [], new PublicSiteStatsResponse(0, 0, null, null, null, 0));
+        if (HttpContext.Items["Institution"] is not Institution institution)
+            return Ok(new ApiResponse<PublicSiteDataResponse> { Message = "Success", Code = 200, Data = empty });
+
+        var off = institution.DisabledFeatures ?? [];
+        bool On(string feature) => !off.Contains(feature);
+        const int take = 6;
+
+        var news = On(InstitutionFeatures.News) ? Unwrap<List<PublicNewsItemResponse>>(await GetPublicNews(take)) ?? [] : [];
+        var events = On(InstitutionFeatures.Events) ? Unwrap<List<PublicEventItemResponse>>(await GetPublicEvents(take)) ?? [] : [];
+        var communities = On(InstitutionFeatures.Communities) ? Unwrap<List<PublicCommunityItemResponse>>(await GetPublicCommunities(take)) ?? [] : [];
+        var businesses = On(InstitutionFeatures.BusinessDirectory) ? Unwrap<List<PublicBusinessListingItemResponse>>(await GetPublicBusinesses(take)) ?? [] : [];
+        var pulse = Unwrap<PublicPulseResponse>(await GetPublicPulse());
+
+        // These four are short-lived in the cache (a minute) because an admin ticking "Show on website" expects to see it soon.
+        var services = !On(InstitutionFeatures.Services) ? [] : await GetOrCacheShortAsync(PublicContentCacheKeys.SiteServices(institution.Id), async () =>
+            (await serviceTypeRepo.GetQueryable(s => s.Status == "Active" && s.ShowOnWebsite && s.CommunityId == null).OrderBy(s => s.Name).Take(MaxCacheableItems).ToListAsync())
+            .Select(s => new PublicServiceItemResponse(s.Id, s.Name, ExcerptFromHtml(s.Description, 140), s.Price)).ToList());
+
+        var store = !On(InstitutionFeatures.Store) ? [] : await GetOrCacheShortAsync(PublicContentCacheKeys.SiteStore(institution.Id), async () =>
+            (await storeProductRepo.GetQueryable(p => p.Status == "Active" && p.ShowOnWebsite).OrderByDescending(p => p.CreatedAt).Take(MaxCacheableItems).ToListAsync())
+            .Select(p => new PublicProductItemResponse(p.Id, p.Name, p.Price, p.ImageUrls?.FirstOrDefault())).ToList());
+
+        var fundraisers = !On(InstitutionFeatures.Contributions) ? [] : await GetOrCacheShortAsync($"public-content:site-fundraisers:{institution.Id}", async () =>
+            (await campaignRepo.GetQueryable(c => c.Status == CampaignStatus.Active && !c.IsMembershipCampaign && c.CommunityId == null && c.PublicPage != null && c.PublicPage.IsPublished
+                    && (c.YearGroups == null || c.YearGroups.Count == 0) && c.Deadline >= DateTime.UtcNow)
+                .OrderBy(c => c.Deadline).Take(MaxCacheableItems).ToListAsync())
+            .Select(c => new PublicFundraiserItemResponse(c.Id, c.Title, ExcerptFromHtml(c.Description, 140),
+                c.PublicPage!.ShowTotalRaised ? c.CollectedAmount : 0, c.PublicPage.ShowTarget ? c.TargetAmount : 0, c.BannerImageUrl)).ToList());
+
+        var jobs = !On(InstitutionFeatures.Jobs) ? [] : await GetOrCacheShortAsync($"public-content:site-jobs:{institution.Id}", async () =>
+            (await jobRepo.GetQueryable(j => j.Status == "Active" && j.IsPublic && j.CommunityId == null && (j.YearGroups == null || j.YearGroups.Count == 0)
+                    && (j.Deadline == null || j.Deadline >= DateTime.UtcNow))
+                .OrderByDescending(j => j.CreatedAt).Take(MaxCacheableItems).ToListAsync())
+            .Select(j => new PublicJobItemResponse(j.Id, j.Title, j.Company, j.Location)).ToList());
+
+        var stats = new PublicSiteStatsResponse(pulse?.Members ?? 0, pulse?.JoinedLast30Days ?? 0, pulse?.EventsNext30Days, pulse?.OpenJobs, pulse?.Businesses, communities.Count);
+        Response.Headers.CacheControl = "public, max-age=30, stale-while-revalidate=120";
+        return Ok(new ApiResponse<PublicSiteDataResponse> { Message = "Success", Code = 200, Data = new PublicSiteDataResponse(news, events, communities, businesses, services, store, fundraisers, jobs, stats) });
+    }
+
+    private async Task<List<T>> GetOrCacheShortAsync<T>(string key, Func<Task<List<T>>> load)
+    {
+        var cached = await publicCache.GetAsync<List<T>>(key);
+        if (cached is not null) return cached;
+        var fresh = await load();
+        await publicCache.SetAsync(key, fresh, TimeSpan.FromSeconds(60));
+        return fresh;
     }
 
     /// <summary>

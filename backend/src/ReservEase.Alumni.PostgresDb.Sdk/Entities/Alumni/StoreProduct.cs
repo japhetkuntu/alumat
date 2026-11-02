@@ -31,6 +31,9 @@ public class StoreProduct : BaseEntity, ITenantScoped
 
     public string Status { get; set; } = "Active"; // Active, Draft, Archived
 
+    /// <summary>The institution chose to show this product on its public website. Off by default, so nothing appears publicly unless it was picked.</summary>
+    public bool ShowOnWebsite { get; set; }
+
     /// <summary>Label shown beside the price, e.g. "per night", "per person". Null shows the bare price.</summary>
     public string? PriceLabel { get; set; }
 

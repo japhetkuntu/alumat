@@ -20,6 +20,8 @@ public class CreateStoreProductRequest
     /// <summary>Delivery/pickup instructions shown to buyers — delivery itself is handled by staff outside the platform.</summary>
     public string? DeliveryInfo { get; set; }
     public string Status { get; set; } = "Active";
+    /// <summary>Show this product on the institution's public website. Null on update means leave unchanged.</summary>
+    public bool? ShowOnWebsite { get; set; }
     public List<IFormFile>? Images { get; set; }
     /// <summary>Empty (default) means a simple product with no variants — Price/QuantityAvailable above are used as-is.</summary>
     public List<string> VariantOptionTypes { get; set; } = [];
@@ -46,6 +48,8 @@ public class UpdateStoreProductRequest
     public int QuantityAvailable { get; set; }
     public string? DeliveryInfo { get; set; }
     public string Status { get; set; } = "Active";
+    /// <summary>Show this product on the institution's public website. Null on update means leave unchanged.</summary>
+    public bool? ShowOnWebsite { get; set; }
     public List<IFormFile>? Images { get; set; }
     public List<string>? ExistingImageUrls { get; set; }
     /// <summary>Empty (default) means a simple product with no variants — Price/QuantityAvailable above are used as-is.</summary>

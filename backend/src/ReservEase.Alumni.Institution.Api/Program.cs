@@ -115,6 +115,7 @@ builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<ReservEase.Alumni.PostgresDb.Sdk.Polls.PollEngine>();
 builder.Services.AddScoped<IPollService, PollService>();
 builder.Services.AddScoped<IAlbumService, AlbumService>();
+builder.Services.AddScoped<IWebsiteService, WebsiteService>();
 builder.Services.AddScoped<IBusinessDirectoryService, BusinessDirectoryService>();
 builder.Services.AddScoped<INotificationPreferenceService, NotificationPreferenceService>();
 
