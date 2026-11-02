@@ -41,6 +41,14 @@ public class WebsiteDocumentValidatorTests
     }
 
     [Fact]
+    public void Every_kind_of_section_the_builder_offers_is_accepted_including_member_spotlights()
+    {
+        foreach (var type in WebsiteBlocks.All.Keys)
+            Assert.Equal(type, Ok(Page(Section("s1", type))).Sections[0].Type);
+        Assert.True(WebsiteBlocks.All.ContainsKey("spotlights"));
+    }
+
+    [Fact]
     public void Too_many_sections_or_a_repeated_identifier_is_refused()
     {
         Assert.False(WebsiteDocumentValidator.Validate(Page(Enumerable.Range(0, WebsiteDocumentValidator.MaxSections + 1).Select(i => Section($"s{i}")).ToArray())).IsValid);

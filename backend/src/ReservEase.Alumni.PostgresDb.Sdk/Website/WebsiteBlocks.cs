@@ -30,6 +30,7 @@ public static class WebsiteBlocks
         ["jobs"] = new(["list"], Head, None, None, None, None, None, InstitutionFeatures.Jobs, "Jobs"),
         ["businesses"] = new(["cards"], Head, None, None, None, None, None, InstitutionFeatures.BusinessDirectory, "Businesses"),
         ["communities"] = new(["cards"], Head, None, None, None, None, None, InstitutionFeatures.Communities, "Communities"),
+        ["spotlights"] = new(["cards"], Head, None, None, None, None, None, InstitutionFeatures.Spotlights, null),
     };
 
     public static readonly string[] WebsiteFeatures = ["Services", "Store", "Fundraisers", "Jobs", "Businesses", "Communities"];

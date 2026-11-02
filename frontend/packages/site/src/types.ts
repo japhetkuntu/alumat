@@ -15,7 +15,7 @@ export interface SiteItem {
 
 export type SectionType =
   | "hero" | "text" | "imagetext" | "news" | "events" | "stats" | "gallery" | "leaders" | "faq" | "cta" | "cards" | "contact"
-  | "services" | "store" | "fundraisers" | "jobs" | "businesses" | "communities";
+  | "services" | "store" | "fundraisers" | "jobs" | "businesses" | "communities" | "spotlights";
 
 export type Background = "plain" | "tint" | "brand";
 export type Spacing = "c" | "n" | "r";
@@ -97,6 +97,7 @@ export interface ServiceItem { id: string; name: string; description?: string | 
 export interface ProductItem { id: string; name: string; price: number; imageUrl?: string | null; category?: string | null }
 export interface FundraiserItem { id: string; title: string; summary?: string | null; raised: number; goal: number; imageUrl?: string | null }
 export interface JobItem { id: string; title: string; company?: string | null; location?: string | null }
+export interface SpotlightItem { id: string; title: string; story?: string | null; imageUrl?: string | null; memberName?: string | null }
 export interface StatsData { members?: number | null; joinedLast30Days?: number | null; eventsNext30Days?: number | null; openJobs?: number | null; businesses?: number | null; communities?: number | null }
 
 export interface SiteData {
@@ -108,5 +109,6 @@ export interface SiteData {
   store?: ProductItem[];
   fundraisers?: FundraiserItem[];
   jobs?: JobItem[];
+  spotlights?: SpotlightItem[];
   stats?: StatsData;
 }

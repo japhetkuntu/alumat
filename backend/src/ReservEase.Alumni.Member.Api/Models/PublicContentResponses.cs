@@ -53,4 +53,5 @@ public record PublicSiteDataResponse(
     List<PublicProductItemResponse> Store,
     List<PublicFundraiserItemResponse> Fundraisers,
     List<PublicJobItemResponse> Jobs,
+    List<PublicSpotlightItemResponse> Spotlights,
     PublicSiteStatsResponse Stats);

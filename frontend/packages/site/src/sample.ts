@@ -45,6 +45,11 @@ export const SAMPLE_DATA: SiteData = {
     { id: "f2", title: "Library renovation", summary: "New shelves, desks and a quiet reading room.", raised: 14000, goal: 50000 },
     { id: "f3", title: "Sports kit", summary: "Boots and balls for the campus teams.", raised: 8500, goal: 10000 },
   ],
+  spotlights: [
+    { id: "sp1", title: "From the lecture hall to the boardroom", story: "Ama graduated in 2009 and now leads a team of forty. She talks about the people who helped her along the way.", imageUrl: STOCK.gallery[1], memberName: "Ama Mensah" },
+    { id: "sp2", title: "Building something for home", story: "Kofi came back to Kumasi to start a company that employs graduates from his own year group.", imageUrl: STOCK.gallery[0], memberName: "Kofi Boateng" },
+    { id: "sp3", title: "Twenty years of teaching", story: "Efua still remembers her first class. This year she was named teacher of the year.", imageUrl: STOCK.cards[0], memberName: "Efua Owusu" },
+  ],
   jobs: [
     { id: "j1", title: "Operations officer", company: "Volta Logistics", location: "Accra" },
     { id: "j2", title: "Junior geologist", company: "Tarkwa Mining Co.", location: "Tarkwa" },

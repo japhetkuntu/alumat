@@ -44,6 +44,7 @@ interface RawSiteData {
   store: { id: string; name: string; price: number; imageUrl?: string | null }[];
   fundraisers: { id: string; title: string; summary?: string | null; raised: number; goal: number; imageUrl?: string | null }[];
   jobs: { id: string; title: string; company?: string | null; location?: string | null }[];
+  spotlights: { id: string; title: string; story?: string | null; imageUrl?: string | null; memberName?: string | null }[];
   stats: { members: number; joinedLast30Days: number; eventsNext30Days?: number | null; openJobs?: number | null; businesses?: number | null; communities: number };
 }
 
@@ -60,6 +61,7 @@ export const getSiteData = cache(async (): Promise<SiteData> => {
     store: d.store.map((p) => ({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl })),
     fundraisers: d.fundraisers.map((f) => ({ id: f.id, title: f.title, summary: f.summary, raised: f.raised, goal: f.goal, imageUrl: f.imageUrl })),
     jobs: d.jobs,
+    spotlights: (d.spotlights ?? []).map((s) => ({ id: s.id, title: s.title, story: s.story ? s.story.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : s.story, imageUrl: s.imageUrl, memberName: s.memberName })),
     stats: { members: d.stats.members, joinedLast30Days: d.stats.joinedLast30Days, eventsNext30Days: d.stats.eventsNext30Days, openJobs: d.stats.openJobs, businesses: d.stats.businesses, communities: d.stats.communities },
   };
 });

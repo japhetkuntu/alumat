@@ -55,6 +55,7 @@ export function buildTemplate(key: string, ctx: TemplateContext): SiteDocument {
   const store = sec("store", "grid", { heading: "The store" }, "tint", { count: 4 });
   const fundraisers = sec("fundraisers", "cards", { heading: "Fundraisers you can back" }, info.vibe ? "brand" : "plain");
   const news = sec("news", info.vibe ? "grid" : "list", { heading: "News" });
+  const spotlights = sec("spotlights", "cards", { heading: "Member spotlights" });
   const events = sec("events", "list", { heading: "Coming up" }, "tint");
   const jobs = sec("jobs", "list", { heading: "Opportunities" });
   const businesses = sec("businesses", "cards", { heading: "Member businesses" }, "tint");
@@ -67,8 +68,8 @@ export function buildTemplate(key: string, ctx: TemplateContext): SiteDocument {
   steps.items![2].links.btn = { t: "anchor", v: fundraisers.id };
 
   const sections = info.vibe
-    ? [hero, stats, steps, services, store, fundraisers, news, events, jobs, businesses, communities, cta]
-    : [hero, stats, services, news, events, store, fundraisers, jobs, businesses, communities, cta];
+    ? [hero, stats, steps, services, store, fundraisers, news, spotlights, events, jobs, businesses, communities, cta]
+    : [hero, stats, services, news, spotlights, events, store, fundraisers, jobs, businesses, communities, cta];
 
   return {
     schemaVersion: 1,

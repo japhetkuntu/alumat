@@ -35,6 +35,8 @@ export function WebsiteEditor() {
   const [photo, setPhoto_] = useState<{ id: string; slot: string } | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [welcomeGone, setWelcomeGone] = useState(false);
+  // Off: live sections show what they would show to visitors (nothing, until the institution has its own items). On: made-up examples, only to preview a layout.
+  const [examples, setExamples] = useState(false);
   const [versions, setVersions] = useState(false), [palette, setPalette] = useState(false);
 
   const doc = ed.doc, brand = ed.brand;
@@ -92,6 +94,7 @@ export function WebsiteEditor() {
 
   const commands: Command[] = [
     { group: "Do", label: preview ? "Back to editing" : "Preview the site as a visitor", run: () => { setPreview((p) => !p); setSelectedId(null); } },
+    { group: "Do", label: examples ? "Hide example content" : "Show example content", run: () => setExamples((e) => !e) },
     { group: "Do", label: "Publish…", run: () => setPublishing(true) },
     { group: "Do", label: "Earlier versions or take the website down…", run: () => setVersions(true) },
     { group: "Do", label: "Undo", hint: "Ctrl Z", run: ed.undo }, { group: "Do", label: "Redo", hint: "Ctrl Shift Z", run: ed.redo },
@@ -117,6 +120,7 @@ export function WebsiteEditor() {
         <Button variant="ghost" size="sm" onClick={ed.undo} disabled={!ed.canUndo} aria-label="Undo"><Undo size={14} /> <span className="hidden xl:inline">Undo</span></Button>
         <Button variant="ghost" size="sm" onClick={ed.redo} disabled={!ed.canRedo} aria-label="Redo"><Redo size={14} /> <span className="hidden xl:inline">Redo</span></Button>
         <span className={cn("hidden text-[12px] xl:inline", ed.saveState === "conflict" || ed.saveState === "error" ? "text-destructive" : "text-muted-foreground")} aria-live="polite">{SAVE_TEXT[ed.saveState]}</span>
+        <Button variant={examples ? "default" : "ghost"} size="sm" onClick={() => setExamples((e) => !e)} aria-pressed={examples} title="Show made-up items in the sections that fill themselves, to preview a layout. Never published.">{examples ? "Hide example content" : "Show example content"}</Button>
         <Button variant={preview ? "default" : "secondary"} size="sm" onClick={() => { setPreview((p) => !p); setSelectedId(null); }} aria-pressed={preview}>{preview ? "Back to editing" : "Preview"}</Button>
         {status?.isLive && liveUrl && <a href={liveUrl} target="_blank" rel="noopener noreferrer" className="hidden h-9 items-center gap-1 px-2 text-[13px] font-medium text-primary hover:underline xl:flex"><ExternalLink size={13} /> View live</a>}
         <Button size="sm" onClick={() => setPublishing(true)}>{status?.isLive ? (status.hasUnpublishedChanges ? "Publish changes" : "Published") : "Publish"}</Button>
@@ -146,10 +150,10 @@ export function WebsiteEditor() {
         {/* page */}
         <main className="min-w-0 flex-1 overflow-auto p-3 max-lg:pb-20 sm:p-4" data-site-scroller onClick={() => setSheet(null)}>
           <div className={cn("mx-auto overflow-clip bg-background shadow-[0_1px_2px_rgba(0,0,0,.12)] transition-[width] duration-300", device !== "desktop" && "border-[12px] border-[#17211e] shadow-2xl", device === "phone" ? "rounded-[38px]" : device === "tablet" ? "rounded-[26px]" : "")} style={{ width: WIDTHS[device], maxWidth: "100%" }}>
-            <SiteView doc={doc} brand={brand} data={SAMPLE_DATA} platformDisabled={ed.disabledFeatures} edit={api} sample />
+            <SiteView doc={doc} brand={brand} data={examples ? SAMPLE_DATA : {}} platformDisabled={ed.disabledFeatures} edit={api} sample={examples} />
           </div>
           {!preview && (
-            <p className="mx-auto mt-3 max-w-md text-center text-[12px] text-muted-foreground">Live sections show sample items here. Visitors only ever see your own news, events, services and products.</p>
+            <p className="mx-auto mt-3 max-w-md text-center text-[12px] text-muted-foreground">{examples ? "Example content is showing, only to preview layouts. It is never published." : "Sections that fill themselves from your news, events, services and products stay empty here until you have some."}</p>
           )}
         </main>
 

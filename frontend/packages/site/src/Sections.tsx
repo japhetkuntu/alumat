@@ -7,6 +7,7 @@ import { initials } from "./color";
 import { isExternal, linkHref, linkOk } from "./links";
 import type { SectionType, SiteItem, SiteSection } from "./types";
 import { SECTION_ICONS } from "./icons";
+import { hasContent } from "./visibility";
 
 const ARW = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 const BAG = <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 016 0v2" /></svg>;
@@ -58,6 +59,21 @@ const Price = ({ v, small }: { v: string; small?: string }) => <span className="
 export function SectionBody({ sec, ctx }: P): React.ReactNode {
   const { data, edit } = ctx, v = sec.variant, n = Math.max(1, sec.count);
   const cur = ctx.currency;
+  // In the editor, a live section with nothing to show says so plainly instead of showing made-up items.
+  const live = BLOCKS[sec.type];
+  if (edit && live.live && !hasContent(sec, data)) {
+    const where = live.feature ?? live.name;
+    return (
+      <div className="wrap">
+        {sec.type !== "stats" && <SecHead sec={sec} ctx={ctx} />}
+        <div className="emptylive" role="note">
+          <b>{sec.type === "stats" ? "Your community numbers" : `Fills itself from your ${live.live.toLowerCase()}`}</b>
+          <span>{sec.type === "stats" ? "Visitors see your real member and event numbers here." : `Visitors see your own ${live.live.toLowerCase()} here${live.feature ? " once you mark them “Show on website”" : ""}. If there are none, visitors do not see this section at all.`}</span>
+          <small>Use “Show example content” at the top to preview the layout with made-up items. They are never published.</small>
+        </div>
+      </div>
+    );
+  }
   switch (sec.type) {
     case "hero": return <Hero sec={sec} ctx={ctx} />;
     case "text":
@@ -284,6 +300,23 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
           <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x, i) => (
             <article className="card link" key={x.id}><div className="b">{icon(i + 2)}<h3>{x.name}</h3>
               <div className="cfoot">{x.category ? <span className="chip">{x.category}</span> : <span />}<Go ctx={ctx} href={portalPath.businesses(x.id)} className="btn sm ghost">Visit{ARW}</Go></div></div></article>
+          ))}</div>
+        </div>
+      );
+    }
+    case "spotlights": {
+      const list = (data.spotlights ?? []).slice(0, n);
+      return (
+        <div className="wrap"><SecHead sec={sec} ctx={ctx} />
+          <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x) => (
+            <article className="card link" key={x.id}>
+              {x.imageUrl ? <Photo src={x.imageUrl} alt={x.memberName ?? ""} width={700} className="newsimg" /> : <div className="img newsimg"><span className="noimg" aria-hidden="true" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", font: "600 48px var(--fd)", color: "var(--p)" }}>{initials(x.memberName ?? x.title)}</span></div>}
+              <div className="b">
+                {x.memberName && <span className="cat">{x.memberName}</span>}
+                <h3>{x.title}</h3>{x.story && <p className="clamp3">{x.story}</p>}
+                <Go ctx={ctx} href={portalPath.spotlights} className="more">Read the story{ARW}</Go>
+              </div>
+            </article>
           ))}</div>
         </div>
       );

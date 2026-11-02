@@ -144,7 +144,7 @@ public class PublicController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicSiteDataResponse>))]
     public async Task<IActionResult> GetPublicSiteData()
     {
-        var empty = new PublicSiteDataResponse([], [], [], [], [], [], [], [], new PublicSiteStatsResponse(0, 0, null, null, null, 0));
+        var empty = new PublicSiteDataResponse([], [], [], [], [], [], [], [], [], new PublicSiteStatsResponse(0, 0, null, null, null, 0));
         if (HttpContext.Items["Institution"] is not Institution institution)
             return Ok(new ApiResponse<PublicSiteDataResponse> { Message = "Success", Code = 200, Data = empty });
 
@@ -156,6 +156,7 @@ public class PublicController(
         var events = On(InstitutionFeatures.Events) ? Unwrap<List<PublicEventItemResponse>>(await GetPublicEvents(take)) ?? [] : [];
         var communities = On(InstitutionFeatures.Communities) ? Unwrap<List<PublicCommunityItemResponse>>(await GetPublicCommunities(take)) ?? [] : [];
         var businesses = On(InstitutionFeatures.BusinessDirectory) ? Unwrap<List<PublicBusinessListingItemResponse>>(await GetPublicBusinesses(take)) ?? [] : [];
+        var spotlights = On(InstitutionFeatures.Spotlights) ? Unwrap<List<PublicSpotlightItemResponse>>(await GetPublicSpotlights(take)) ?? [] : [];
         var pulse = Unwrap<PublicPulseResponse>(await GetPublicPulse());
 
         // These four are short-lived in the cache (a minute) because an admin ticking "Show on website" expects to see it soon.
@@ -182,7 +183,7 @@ public class PublicController(
 
         var stats = new PublicSiteStatsResponse(pulse?.Members ?? 0, pulse?.JoinedLast30Days ?? 0, pulse?.EventsNext30Days, pulse?.OpenJobs, pulse?.Businesses, communities.Count);
         Response.Headers.CacheControl = "public, max-age=30, stale-while-revalidate=120";
-        return Ok(new ApiResponse<PublicSiteDataResponse> { Message = "Success", Code = 200, Data = new PublicSiteDataResponse(news, events, communities, businesses, services, store, fundraisers, jobs, stats) });
+        return Ok(new ApiResponse<PublicSiteDataResponse> { Message = "Success", Code = 200, Data = new PublicSiteDataResponse(news, events, communities, businesses, services, store, fundraisers, jobs, spotlights, stats) });
     }
 
     private async Task<List<T>> GetOrCacheShortAsync<T>(string key, Func<Task<List<T>>> load)

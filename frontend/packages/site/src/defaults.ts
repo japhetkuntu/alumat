@@ -15,7 +15,7 @@ const COPY: Partial<Record<SectionType, Record<string, string>>> = {
   text: { heading: "Our story", body: "Add your words here." },
   imagetext: { heading: "A heading", body: "Add your words here.", link: "Learn more" },
   news: { heading: "News" }, events: { heading: "Coming up" }, services: { heading: "Services for members" }, store: { heading: "The store" },
-  fundraisers: { heading: "Fundraisers you can back" }, jobs: { heading: "Opportunities" }, businesses: { heading: "Member businesses" }, communities: { heading: "Communities" },
+  fundraisers: { heading: "Fundraisers you can back" }, jobs: { heading: "Opportunities" }, businesses: { heading: "Member businesses" }, communities: { heading: "Communities" }, spotlights: { heading: "Member spotlights" },
   gallery: { heading: "Photos" }, leaders: { heading: "Our leaders" }, faq: { heading: "Questions" }, cards: { heading: "What we do" },
   cta: { heading: "Ready to join?", body: "It takes two minutes.", b1: "Join now" },
   contact: { heading: "Get in touch", addr: "", mail: "", tel: "" },

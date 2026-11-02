@@ -34,6 +34,7 @@ export const BLOCKS: Record<SectionType, BlockInfo> = {
   fundraisers: { name: "Fundraisers", description: "Your fundraisers with how much has been raised.", variants: { cards: "Cards" }, live: "Fundraisers", feature: "Fundraisers", platformFeature: "Contributions", counted: true },
   jobs: { name: "Jobs", description: "Opportunities members have posted.", variants: { list: "List" }, live: "Job posts", feature: "Jobs", platformFeature: "Jobs", counted: true, allHref: "/jobs" },
   businesses: { name: "Member businesses", description: "Businesses run by your members.", variants: { cards: "Cards" }, live: "Business directory", feature: "Businesses", platformFeature: "BusinessDirectory", counted: true, allHref: "/business-directory" },
+  spotlights: { name: "Member spotlights", description: "Members your community is proud of, filled in from your Spotlights.", variants: { cards: "Cards" }, live: "Spotlights", platformFeature: "Spotlights", counted: true, allHref: "/spotlights" },
   communities: { name: "Communities", description: "Your communities and how many people are in them.", variants: { cards: "Cards" }, live: "Communities", feature: "Communities", platformFeature: "Communities", counted: true, allHref: "/communities" },
 };
 
@@ -51,7 +52,7 @@ export const WEBSITE_FEATURES: { key: WebsiteFeature; label: string; description
 /** The menu name a new section gets, and whether it appears in the menu from the start. */
 export const MENU_DEFAULT: Partial<Record<SectionType, string>> = {
   services: "Services", store: "Store", fundraisers: "Give", news: "News", events: "Events", contact: "Contact",
-  jobs: "Jobs", businesses: "Businesses", communities: "Communities",
+  jobs: "Jobs", businesses: "Businesses", communities: "Communities", spotlights: "Spotlight",
 };
 
 /** The member portal address for one item, or for the full list. The portal already shows these to visitors who are not signed in. */
@@ -64,6 +65,7 @@ export const portalPath = {
   jobs: (id: string) => `/jobs/${id}`,
   businesses: (id: string) => `/business-directory/${id}`,
   communities: (id: string) => `/communities/${id}`,
+  spotlights: "/spotlights",
   join: "/register",
   signin: "/login",
   privacy: "/privacy",

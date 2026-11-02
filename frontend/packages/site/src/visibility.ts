@@ -12,6 +12,7 @@ export function hasContent(sec: SiteSection, data: SiteData): boolean {
     case "jobs": return (data.jobs?.length ?? 0) > 0;
     case "businesses": return (data.businesses?.length ?? 0) > 0;
     case "communities": return (data.communities?.length ?? 0) > 0;
+    case "spotlights": return (data.spotlights?.length ?? 0) > 0;
     case "stats": { const s = data.stats; return !!s && [s.members, s.joinedLast30Days, s.eventsNext30Days, s.openJobs, s.businesses, s.communities].some((v) => (v ?? 0) > 0); }
     default: return true;
   }

@@ -45,3 +45,5 @@
 .alsite button{font-family:inherit}
 .alsite img{max-width:none}
 .alsite .pimg .noimg{position:absolute;inset:0;display:grid;place-items:center;font:600 clamp(36px,6cqw,64px) var(--fd);letter-spacing:-.03em;color:var(--p);background:color-mix(in srgb,var(--p) 10%,var(--card))}
+.alsite .clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.alsite .emptylive{display:grid;gap:6px;justify-items:start;padding:28px 26px;border:2px dashed color-mix(in srgb,currentColor 28%,transparent);border-radius:var(--r);color:var(--mut);font:400 15px/1.5 var(--fb)}.alsite .emptylive b{color:var(--ink);font-weight:600;font-size:16px}.alsite .sec.bg-brand .emptylive b{color:var(--on-p)}.alsite .emptylive small{font-size:13px;opacity:.85}
