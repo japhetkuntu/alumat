@@ -20,7 +20,8 @@ import { SourceBadge } from "@/components/member/source-badge";
 import { EventUpdates } from "@/components/member/event-updates";
 import { handleApiError } from "@/lib/api-client";
 import { EmptyState } from "@alumni/ui";
-import type { AlumniEvent, EventRegistration } from "@/types";
+import type { AlumniEvent, EventPriceOption, EventRegistration } from "@/types";
+import { eventPriceLabel } from "@/lib/event-price";
 
 type EventPlaceLink = { href: string; kind: "map" | "online" | "link"; label: string };
 
@@ -54,6 +55,8 @@ export default function EventDetailPage() {
   const [rsvpConfirmOpen, setRsvpConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [buyConfirmOpen, setBuyConfirmOpen] = useState(false);
+  // Which RSVP price the member picked. Nothing is picked for them when there is a choice, so nobody pays for the wrong one by accident.
+  const [pickedOption, setPickedOption] = useState<string | null>(null);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event", id],
@@ -64,6 +67,9 @@ export default function EventDetailPage() {
     queryKey: ["m-rsvps"],
     queryFn:  () => getMyRsvps(),
   });
+
+  const options = event?.priceOptions ?? [];
+  const chosenOption = options.length === 1 ? options[0] : options.find((o) => o.id === pickedOption) ?? null;
 
   const rsvpMut = useMutation({
     mutationFn: () => rsvpEvent(id),
@@ -84,7 +90,7 @@ export default function EventDetailPage() {
 
   // Paying happens on Paystack's page; we come back to the ticket-status page, which confirms the seat.
   const buyMut = useMutation({
-    mutationFn: () => buyEventTicket(id, `${window.location.origin}/events/ticket-status`),
+    mutationFn: () => buyEventTicket(id, `${window.location.origin}/events/ticket-status`, chosenOption?.id),
     onSuccess: (checkout) => {
       if (!checkout.authorizationUrl) { toast.error("We couldn't open the payment page. Please try again."); return; }
       window.location.href = checkout.authorizationUrl;
@@ -227,6 +233,9 @@ export default function EventDetailPage() {
               isFull={isFull}
               place={place}
               ticket={myRsvp}
+              options={options}
+              chosenId={chosenOption?.id ?? null}
+              onPick={setPickedOption}
               onRsvp={() => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true))}
               onCancel={() => setCancelConfirmOpen(true)}
               cancelPending={cancelMut.isPending}
@@ -253,7 +262,7 @@ export default function EventDetailPage() {
           <EventUpdates
             eventId={id}
             joinLabel="RSVP to read them"
-            onJoin={canRsvp && !isFull && !event.registrationClosed ? () => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true)) : undefined}
+            onJoin={canRsvp && !isFull && !event.registrationClosed && (!event.isTicketed || chosenOption) ? () => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true)) : undefined}
           />
 
           {/* Media gallery */}
@@ -287,6 +296,9 @@ export default function EventDetailPage() {
                 isFull={isFull}
                 place={place}
                 ticket={myRsvp}
+                options={options}
+                chosenId={chosenOption?.id ?? null}
+                onPick={setPickedOption}
                 onRsvp={() => (event.isTicketed ? setBuyConfirmOpen(true) : setRsvpConfirmOpen(true))}
                 onCancel={() => setCancelConfirmOpen(true)}
                 cancelPending={cancelMut.isPending}
@@ -312,7 +324,7 @@ export default function EventDetailPage() {
       <ConfirmModal
         open={buyConfirmOpen}
         title="Confirm your RSVP"
-        message={`RSVP for "${event.title}": ${event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. Once you pay, your RSVP can't be cancelled and isn't refunded.`}
+        message={`RSVP for "${event.title}"${chosenOption && options.length > 1 ? ` (${chosenOption.name})` : ""}: ${chosenOption ? formatCurrency(chosenOption.price) : event.ticketPrice ? formatCurrency(event.ticketPrice) : ""}. Once you pay, your RSVP can't be cancelled and isn't refunded.`}
         confirmLabel="Continue to payment"
         cancelLabel="Not now"
         variant="default"
@@ -340,10 +352,14 @@ export default function EventDetailPage() {
    RSVP BLOCK — shared between mobile (inline) and desktop (sidebar)
    ───────────────────────────────────────────────────────────────────────── */
 function RsvpBlock({
-  event, hasRsvp, canRsvp, isFull, place, ticket,
+  event, hasRsvp, canRsvp, isFull, place, ticket, options, chosenId, onPick,
   onRsvp, onCancel, cancelPending, rsvpPending,
 }: {
   event: AlumniEvent;
+  /** The RSVP prices on sale, the one the member picked, and how they pick. */
+  options: EventPriceOption[];
+  chosenId: string | null;
+  onPick: (id: string) => void;
   /** The member's own confirmed RSVP or ticket for this event, if any. */
   ticket?: EventRegistration;
   hasRsvp: boolean;
@@ -356,6 +372,8 @@ function RsvpBlock({
   rsvpPending: boolean;
 }) {
   const paid = event.isTicketed;
+  const choosing = options.length > 1 && !chosenId;
+  const chosen = options.find((o) => o.id === chosenId) ?? null;
   return (
     <div className="space-y-5">
 
@@ -369,11 +387,36 @@ function RsvpBlock({
             className="font-[family-name:var(--font-display)] font-bold"
             style={{ fontSize: "1.4rem", color: "var(--foreground)", letterSpacing: "-0.02em" }}
           >
-            {event.isTicketed && event.ticketPrice ? formatCurrency(event.ticketPrice) : "Free"}
+            {hasRsvp && paid && ticket?.amountPaid ? formatCurrency(ticket.amountPaid) : choosing ? eventPriceLabel(event) : chosen ? formatCurrency(chosen.price) : eventPriceLabel(event)}
           </p>
         </div>
         {event.isTicketed && <Ticket size={22} style={{ color: "var(--primary)" }} />}
       </div>
+
+      {/* More than one price: the member picks, and each says what it includes */}
+      {paid && !hasRsvp && canRsvp && !event.registrationClosed && options.length > 1 && (
+        <div role="radiogroup" aria-label="Choose your RSVP" className="space-y-2">
+          {options.map((o) => {
+            const on = o.id === chosenId;
+            return (
+              <button
+                key={o.id} type="button" role="radio" aria-checked={on} onClick={() => onPick(o.id)}
+                className="flex w-full items-start gap-3 rounded-xl p-3.5 text-left transition-colors"
+                style={{ background: on ? "var(--secondary)" : "var(--background)", border: `${on ? 2 : 1}px solid ${on ? "var(--primary)" : "var(--border)"}` }}
+              >
+                <span aria-hidden className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ border: `2px solid ${on ? "var(--primary)" : "var(--border)"}` }}>
+                  {on && <span className="h-2 w-2 rounded-full" style={{ background: "var(--primary)" }} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold" style={{ color: "var(--foreground)" }}>{o.name}</span>
+                  {o.description && <span className="mt-0.5 block text-[12.5px] leading-snug" style={{ color: "var(--muted-foreground)" }}>{o.description}</span>}
+                </span>
+                <span className="shrink-0 text-[14px] font-bold" style={{ color: "var(--foreground)" }}>{formatCurrency(o.price)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* The terms, shown before paying so nobody is surprised afterwards */}
       {paid && !hasRsvp && canRsvp && !event.registrationClosed && (
@@ -396,7 +439,7 @@ function RsvpBlock({
             <p className="text-[13.5px] font-semibold text-success">Your RSVP is confirmed.</p>
           </div>
           <p className="text-[12.5px] leading-relaxed pl-[30px]" style={{ color: "var(--muted-foreground)" }}>
-            {ticket?.amountPaid ? `Paid ${formatCurrency(ticket.amountPaid)}${ticket.paidAt ? ` on ${formatDate(ticket.paidAt)}` : ""}. ` : ""}
+            {ticket?.priceOptionName ? `${ticket.priceOptionName}. ` : ""}{ticket?.amountPaid ? `Paid ${formatCurrency(ticket.amountPaid)}${ticket.paidAt ? ` on ${formatDate(ticket.paidAt)}` : ""}. ` : ""}
             Paid RSVPs can&apos;t be cancelled or refunded.
           </p>
         </div>
@@ -438,7 +481,7 @@ function RsvpBlock({
           <Button
             className="w-full font-bold text-[15px] gap-2"
             style={{ height: 48 }}
-            disabled={rsvpPending || isFull}
+            disabled={rsvpPending || isFull || choosing}
             onClick={onRsvp}
           >
             {rsvpPending ? (
@@ -446,7 +489,9 @@ function RsvpBlock({
             ) : isFull ? (
               "Event fully booked"
             ) : paid ? (
-              <><Ticket size={16} /> RSVP{event.ticketPrice ? ` · ${formatCurrency(event.ticketPrice)}` : ""}</>
+              choosing
+                ? <><Ticket size={16} /> Choose an RSVP above</>
+                : <><Ticket size={16} /> RSVP{chosen ? ` · ${formatCurrency(chosen.price)}` : event.ticketPrice ? ` · ${formatCurrency(event.ticketPrice)}` : ""}</>
             ) : (
               <><Calendar size={16} /> Confirm RSVP</>
             )}

@@ -370,6 +370,10 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.Property<bool>("IsTicketed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("PriceOptions")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<bool>("RegistrationClosed")
                         .HasColumnType("boolean");
 
@@ -1506,6 +1510,12 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<decimal>("PlatformFeeAmount")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("PriceOptionId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PriceOptionName")
+                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()

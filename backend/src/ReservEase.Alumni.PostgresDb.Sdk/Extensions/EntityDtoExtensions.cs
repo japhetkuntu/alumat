@@ -37,6 +37,7 @@ public static class EntityDtoExtensions
         RegistrationClosed = data.RegistrationClosed,
         IsTicketed = data.IsTicketed,
         TicketPrice = data.TicketPrice,
+        PriceOptions = EventTicketRules.OptionsOf(data).Select(o => new EventPriceOptionDto { Id = o.Id, Name = o.Name, Description = o.Description, Price = o.Price, IsActive = o.IsActive }).ToList(),
         Status = data.Status,
         YearGroups = data.YearGroups,
         IsPublic = data.IsPublic,
@@ -492,6 +493,15 @@ public static class EntityDtoExtensions
         }).ToList(),
     };
 
+    /// <summary>The event as a member should see it: only the RSVP prices on sale, and "from" the lowest of them.</summary>
+    public static AlumniEventDto ForMembers(this AlumniEventDto dto)
+    {
+        if (!dto.IsTicketed) return dto;
+        dto.PriceOptions = dto.PriceOptions.Where(o => o.IsActive && o.Price > 0).ToList();
+        if (dto.PriceOptions.Count > 0) dto.TicketPrice = dto.PriceOptions.Min(o => o.Price);
+        return dto;
+    }
+
     public static EventRsvpDto ToDto(this EventRsvp r) => new()
     {
         Id = r.Id,
@@ -506,6 +516,7 @@ public static class EntityDtoExtensions
         UpdatedAt = r.UpdatedAt,
         // The price only means something once the ticket is paid; a pending or failed attempt shows nothing.
         AmountPaid = r.Status == EventRsvpStatuses.Confirmed ? r.AmountPaid : null,
+        PriceOptionName = r.Status == EventRsvpStatuses.Confirmed ? r.PriceOptionName : null,
         PaidAt = r.Status == EventRsvpStatuses.Confirmed ? r.PaidAt : null,
     };
 

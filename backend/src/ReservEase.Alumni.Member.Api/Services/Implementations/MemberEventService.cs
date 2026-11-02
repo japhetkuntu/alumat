@@ -105,7 +105,7 @@ public class MemberEventService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(e => { var dto = e.ToDto(); dto.Status = EventTiming.EffectiveStatus(e.Status, e.StartDate, e.EndDate, now); return dto; }).ToList(),
+                Results = result.Results.Select(e => { var dto = e.ToDto().ForMembers(); dto.Status = EventTiming.EffectiveStatus(e.Status, e.StartDate, e.EndDate, now); return dto; }).ToList(),
             };
             await EnrichCommunityNamesAsync(dtoResult.Results);
             return dtoResult.ToOkApiResponse();
@@ -130,7 +130,7 @@ public class MemberEventService(
             var confirmedRsvps = await rsvpRepo.CountAsync(r => r.EventId == eventId && r.Status == "Confirmed");
             ev.RsvpCount = confirmedRsvps;
 
-            var detail = ev.ToDto();
+            var detail = ev.ToDto().ForMembers();
             detail.Status = EventTiming.EffectiveStatus(ev.Status, ev.StartDate, ev.EndDate, DateTime.UtcNow);
             return detail.ToOkApiResponse();
         }

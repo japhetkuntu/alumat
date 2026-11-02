@@ -45,12 +45,58 @@ public class EventService(
     private Task<int> CountPaidTicketsAsync(string eventId) =>
         rsvpRepo.CountAsync(r => r.EventId == eventId && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0);
 
-    private async Task<string?> ValidatePricingAsync(bool isTicketed, decimal? ticketPrice, AlumniEvent? existing)
+    /// <summary>Paid tickets bought at each price option, per event. Tickets from before options existed carry no option and are not counted here.</summary>
+    private async Task<Dictionary<string, Dictionary<string, int>>> SoldByOptionAsync(IReadOnlyCollection<string> eventIds)
+    {
+        if (eventIds.Count == 0) return new();
+        var rows = await rsvpRepo.GetQueryable(r => eventIds.Contains(r.EventId) && r.Status == EventRsvpStatuses.Confirmed && r.AmountPaid > 0 && r.PriceOptionId != null)
+            .GroupBy(r => new { r.EventId, r.PriceOptionId })
+            .Select(g => new { g.Key.EventId, OptionId = g.Key.PriceOptionId!, Count = g.Count() })
+            .ToListAsync();
+        return rows.GroupBy(x => x.EventId).ToDictionary(g => g.Key, g => g.ToDictionary(x => x.OptionId, x => x.Count));
+    }
+
+    private static void FillOptionSales(AlumniEventDto dto, Dictionary<string, Dictionary<string, int>> sold)
+    {
+        if (!dto.IsTicketed) return;
+        sold.TryGetValue(dto.Id, out var byOption);
+        foreach (var o in dto.PriceOptions) o.SoldCount = byOption is not null && byOption.TryGetValue(o.Id, out var n) ? n : 0;
+    }
+
+    /// <summary>
+    /// Works out the saved prices from what the form sent. An old client (or an event with one price) sends only <paramref name="ticketPrice"/>,
+    /// which becomes a single option; an event that already has one option keeps its id and name so its tickets stay tied to it.
+    /// Returns an error to show, or null with <paramref name="options"/> filled in (empty for a free event).
+    /// </summary>
+    private async Task<string?> PrepareOptionsAsync(bool isTicketed, string? json, decimal? ticketPrice, AlumniEvent? existing, Action<List<EventPriceOption>> set)
+    {
+        if (!isTicketed) { set([]); return null; }
+        var current = existing is null ? [] : EventTicketRules.OptionsOf(existing);
+        List<EventPriceOptionInput>? input;
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            try { input = System.Text.Json.JsonSerializer.Deserialize<List<EventPriceOptionInput>>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }); }
+            catch (System.Text.Json.JsonException) { return "Those RSVP prices could not be read. Please check them and try again."; }
+        }
+        else
+        {
+            if (ticketPrice is not > 0) return "Enter the RSVP price.";
+            if (ticketPrice > EventTicketRules.MaxTicketPrice) return $"The RSVP price can't be more than {EventTicketRules.MaxTicketPrice:N0}.";
+            var only = current.Count == 1 ? current[0] : null;
+            input = [new EventPriceOptionInput { Id = only?.Id, Name = only?.Name ?? "RSVP", Description = only?.Description, Price = ticketPrice, IsActive = true }];
+        }
+        var sold = existing is null ? new Dictionary<string, int>() : (await SoldByOptionAsync([existing.Id])).GetValueOrDefault(existing.Id) ?? new();
+        var error = EventTicketRules.CleanOptions(input, current, sold, out var cleaned);
+        if (error is null) set(cleaned);
+        return error;
+    }
+
+    private async Task<string?> ValidatePricingAsync(bool isTicketed, IReadOnlyList<EventPriceOption> options, AlumniEvent? existing)
     {
         var institution = currentTenant.InstitutionId is { } id ? await institutionRepo.GetByIdAsync(id) : null;
         var paidSold = existing is null ? 0 : await CountPaidTicketsAsync(existing.Id);
         var confirmed = existing is null ? 0 : await rsvpRepo.CountAsync(r => r.EventId == existing.Id && r.Status == EventRsvpStatuses.Confirmed);
-        return EventTicketRules.ValidatePricing(isTicketed, ticketPrice, existing,
+        return EventTicketRules.ValidatePricing(isTicketed, options, existing,
             institution?.PaidEventsEnabled == true, !string.IsNullOrWhiteSpace(institution?.PaystackSubaccountCode), paidSold, confirmed);
     }
 
@@ -116,6 +162,7 @@ public class EventService(
                         .ToListAsync())
                     .ToDictionary(x => x.EventId, x => (x.Count, x.Amount));
 
+            var soldByOption = await SoldByOptionAsync(ticketedIds);
             var dtoResult = new PgPagedResult<AlumniEventDto>
             {
                 PageIndex = result.PageIndex,
@@ -125,7 +172,7 @@ public class EventService(
                 TotalPages = result.TotalPages,
                 LowerBoundSize = result.LowerBoundSize,
                 UpperBoundSize = result.UpperBoundSize,
-                Results = result.Results.Select(e => WithSales(e.ToDto(), sales)).ToList(),
+                Results = result.Results.Select(e => { var d = WithSales(e.ToDto(), sales); FillOptionSales(d, soldByOption); return d; }).ToList(),
             };
             return dtoResult.ToOkApiResponse();
         }
@@ -159,6 +206,7 @@ public class EventService(
                     .GroupBy(r => r.EventId).Select(g => new { Count = g.Count(), Amount = g.Sum(r => r.AmountPaid ?? 0m) }).FirstOrDefaultAsync();
                 dto.PaidTicketCount = sold?.Count ?? 0;
                 dto.TicketAmountCollected = sold?.Amount ?? 0m;
+                FillOptionSales(dto, await SoldByOptionAsync([eventId]));
             }
             return dto.ToOkApiResponse();
         }
@@ -174,7 +222,10 @@ public class EventService(
         try
         {
             logger.LogInformation("CreateEvent request: {Request} by admin {AdminId}", request.Serialize(), admin.Id);
-            var pricingError = await ValidatePricingAsync(request.IsTicketed, request.TicketPrice, null);
+            var newOptions = new List<EventPriceOption>();
+            if (await PrepareOptionsAsync(request.IsTicketed, request.PriceOptionsJson, request.TicketPrice, null, o => newOptions = o) is { } optionsError)
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(optionsError);
+            var pricingError = await ValidatePricingAsync(request.IsTicketed, newOptions, null);
             if (pricingError is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(pricingError);
             if (CleanLocationLink(request.GoogleLocationUrl, out var locationLink) is { } linkError)
@@ -196,7 +247,8 @@ public class EventService(
                 StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
                 EndDate = request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : (DateTime?)null,
                 IsTicketed = request.IsTicketed,
-                TicketPrice = request.IsTicketed ? request.TicketPrice : null,
+                PriceOptions = newOptions,
+                TicketPrice = EventTicketRules.LowestPrice(newOptions),
                 GoogleLocationUrl = locationLink,
                 Capacity = request.Capacity,
                 Status = "Upcoming",
@@ -266,7 +318,10 @@ public class EventService(
                 return ApiResponseExtensions.ToNotFoundApiResponse<AlumniEventDto>("Event not found");
             }
 
-            var pricingError = await ValidatePricingAsync(request.IsTicketed, request.TicketPrice, ev);
+            var newOptions = new List<EventPriceOption>();
+            if (await PrepareOptionsAsync(request.IsTicketed, request.PriceOptionsJson, request.TicketPrice, ev, o => newOptions = o) is { } optionsError)
+                return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(optionsError);
+            var pricingError = await ValidatePricingAsync(request.IsTicketed, newOptions, ev);
             if (pricingError is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<AlumniEventDto>(pricingError);
             if (CleanLocationLink(request.GoogleLocationUrl, out var locationLink) is { } linkError)
@@ -288,7 +343,8 @@ public class EventService(
             ev.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
             ev.EndDate = request.EndDate.HasValue ? DateTime.SpecifyKind(request.EndDate.Value, DateTimeKind.Utc) : (DateTime?)null;
             ev.IsTicketed = request.IsTicketed;
-            ev.TicketPrice = request.IsTicketed ? request.TicketPrice : null;
+            ev.PriceOptions = newOptions;
+            ev.TicketPrice = EventTicketRules.LowestPrice(newOptions);
             ev.GoogleLocationUrl = locationLink;
             ev.Capacity = request.Capacity;
             if (!string.IsNullOrWhiteSpace(request.Status)) ev.Status = request.Status;   // an edit that does not say keeps the current status

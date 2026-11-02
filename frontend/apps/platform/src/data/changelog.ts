@@ -20,6 +20,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-11-02",
+    title: "Paid events can have several RSVP prices",
+    scopes: ["Institution", "Member"],
+    type: "Feature",
+    body: "An event can now offer up to six RSVP prices, for example \"Attendance only\" and \"With certificate\", each with its own price and an optional line on what it includes. Organisers add, rename, reprice, switch off or remove prices in the event form; a price people have bought can't be removed but can be switched off, and at least one must stay on sale. Members see the prices as choices on the event page, nothing is pre-selected, and the RSVP button waits until they choose. The server takes the amount from the saved price, and each ticket records the price and name it was bought at, so later edits never change what someone paid. The organiser's RSVP list shows which price each person bought and how many bought each price. Lists and guest previews say \"From GH₵…\". Events priced before this keep working as a single price called RSVP; older clients that send only a price still work. Migration AddEventPriceOptions. Also: the default sign-in token length in the Common tests now matches the 24 hours set earlier."
+  },
+  {
     date: "2026-10-30",
     title: "Members can change their sign-in email",
     scopes: ["Member"],

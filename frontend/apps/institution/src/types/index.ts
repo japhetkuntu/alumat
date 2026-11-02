@@ -351,6 +351,18 @@ export type JobFilter = BaseFilter & {
 
 export type EventStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
+/** One way to RSVP to a paid event, with its own price, for example "Attendance only" or "With certificate". */
+export interface EventPriceOption {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  /** Off stops new RSVPs at this price; people who bought it keep theirs. */
+  isActive: boolean;
+  /** Paid tickets bought at this price. */
+  soldCount?: number | null;
+}
+
 export interface AlumniEvent {
   id: string;
   communityId?: string | null;
@@ -361,8 +373,11 @@ export interface AlumniEvent {
   venue: string;
   capacity?: number;
   isTicketed: boolean;
+  /** The lowest RSVP price on sale: "from" this amount when there are several. */
   ticketPrice?: number;
-  /** Tickets bought so far (paid events only). Once above zero the price is locked. */
+  /** The ways to RSVP and what each costs. */
+  priceOptions?: EventPriceOption[];
+  /** Tickets bought so far (paid events only). */
   paidTicketCount?: number;
   /** Ticket money collected for this event: price times tickets. */
   ticketAmountCollected?: number;
@@ -419,6 +434,8 @@ export interface EventRegistration {
   updatedAt?: string;
   /** Ticket price paid, for a paid event. */
   amountPaid?: number;
+  /** The RSVP price option this ticket was bought at. */
+  priceOptionName?: string;
   paidAt?: string;
 }
 

@@ -14,6 +14,11 @@ public class CreateEventRequest
     public int? Capacity { get; set; }
     public bool IsTicketed { get; set; }
     public decimal? TicketPrice { get; set; }
+    /// <summary>
+    /// The RSVP prices as JSON: [{ "id": "...", "name": "With certificate", "description": "...", "price": 150, "isActive": true }, ...]. Sent this way because
+    /// the form also carries files. An event with a single price may send <see cref="TicketPrice"/> instead.
+    /// </summary>
+    public string? PriceOptionsJson { get; set; }
     public string? GoogleLocationUrl { get; set; }
     public List<int>? YearGroups { get; set; }
     /// <summary>Show this in full to people who are not signed in.</summary>
@@ -42,6 +47,11 @@ public class UpdateEventRequest
     public int? Capacity { get; set; }
     public bool IsTicketed { get; set; }
     public decimal? TicketPrice { get; set; }
+    /// <summary>
+    /// The RSVP prices as JSON: [{ "id": "...", "name": "With certificate", "description": "...", "price": 150, "isActive": true }, ...]. Sent this way because
+    /// the form also carries files. An event with a single price may send <see cref="TicketPrice"/> instead.
+    /// </summary>
+    public string? PriceOptionsJson { get; set; }
     public string? GoogleLocationUrl { get; set; }
     public string Status { get; set; } = "";
     public List<int>? YearGroups { get; set; }

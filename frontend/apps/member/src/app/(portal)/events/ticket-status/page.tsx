@@ -69,7 +69,7 @@ function TicketStatusContent() {
             {status === "success" ? "You're going" : status === "error" ? "We couldn't confirm this payment" : "We're checking your payment"}
           </CardTitle>
           <CardDescription className="leading-relaxed">
-            {status === "success" && ticket?.eventTitle ? `Your place at "${ticket.eventTitle}" is reserved. ` : ""}{message}
+            {status === "success" && ticket?.eventTitle ? `Your place at "${ticket.eventTitle}"${ticket.optionName ? ` (${ticket.optionName})` : ""} is reserved. ` : ""}{message}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

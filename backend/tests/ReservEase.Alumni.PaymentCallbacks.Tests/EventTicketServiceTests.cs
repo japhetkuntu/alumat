@@ -300,4 +300,102 @@ public class EventTicketServiceTests
 
         Assert.Equal(200, (await rig.Service.InitiateAsync(Buy(), rig.Me)).Code);
     }
+
+    // ── Several RSVP prices ─────────────────────────────────────────────
+
+    private static AlumniEvent TwoPrices(string id = "e1") => new()
+    {
+        Id = id, Title = "Gala", Venue = "Hall", StartDate = DateTime.UtcNow.AddDays(10), Status = "Upcoming", IsTicketed = true, TicketPrice = 100m,
+        PriceOptions = [new() { Id = "a", Name = "Attendance only", Price = 100m }, new() { Id = "c", Name = "With certificate", Price = 150m }],
+    };
+
+    [Fact]
+    public async Task The_member_pays_the_price_they_chose_and_the_ticket_remembers_which_one()
+    {
+        var rig = new Rig();
+        await rig.Seed(TwoPrices());
+
+        var response = await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1", OptionId = "c" }, rig.Me);
+
+        Assert.Equal(200, response.Code);
+        var rsvp = await rig.Db().EventRsvps.SingleAsync();
+        Assert.Equal((150m, "c", "With certificate"), (rsvp.AmountPaid!.Value, rsvp.PriceOptionId, rsvp.PriceOptionName));
+        Assert.True(rsvp.GrossChargeAmount > 150m);                                                    // the fee is on top of the chosen price
+        Assert.Equal((long)(rsvp.GrossChargeAmount * 100m), Assert.Single(rig.Initialized).Amount);
+    }
+
+    [Fact]
+    public async Task With_more_than_one_price_on_sale_the_member_has_to_choose()
+    {
+        var rig = new Rig();
+        await rig.Seed(TwoPrices());
+
+        var response = await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1" }, rig.Me);
+
+        Assert.Equal(400, response.Code);
+        Assert.Empty(await rig.Db().EventRsvps.ToListAsync());
+        Assert.Empty(rig.Initialized);
+    }
+
+    [Fact]
+    public async Task A_price_that_does_not_exist_or_was_switched_off_cannot_be_bought()
+    {
+        var rig = new Rig();
+        var ev = TwoPrices(); ev.PriceOptions[1].IsActive = false;
+        await rig.Seed(ev);
+
+        Assert.Equal(400, (await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1", OptionId = "c" }, rig.Me)).Code);       // switched off
+        Assert.Equal(400, (await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1", OptionId = "nope" }, rig.Me)).Code);    // unknown
+        Assert.Empty(await rig.Db().EventRsvps.ToListAsync());
+    }
+
+    [Fact]
+    public async Task When_only_one_price_is_left_on_sale_the_member_does_not_need_to_choose()
+    {
+        var rig = new Rig();
+        var ev = TwoPrices(); ev.PriceOptions[1].IsActive = false;
+        await rig.Seed(ev);
+
+        Assert.Equal(200, (await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1" }, rig.Me)).Code);
+        Assert.Equal(100m, (await rig.Db().EventRsvps.SingleAsync()).AmountPaid);
+    }
+
+    [Fact]
+    public async Task Trying_again_with_another_price_changes_the_pending_ticket_to_it()
+    {
+        var rig = new Rig();
+        await rig.Seed(TwoPrices());
+
+        await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1", OptionId = "a" }, rig.Me);
+        await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1", OptionId = "c" }, rig.Me);
+
+        var rsvp = await rig.Db().EventRsvps.SingleAsync();                    // still one row
+        Assert.Equal((150m, "With certificate"), (rsvp.AmountPaid!.Value, rsvp.PriceOptionName));
+    }
+
+    [Fact]
+    public async Task An_event_priced_before_options_existed_is_bought_exactly_as_before()
+    {
+        var rig = new Rig();
+        await rig.Seed(PaidEvent(price: 100m));                               // no options saved, just a price
+
+        var response = await rig.Service.InitiateAsync(Buy(), rig.Me);
+
+        Assert.Equal(200, response.Code);
+        var rsvp = await rig.Db().EventRsvps.SingleAsync();
+        Assert.Equal((100m, EventTicketRules.LegacyOptionId), (rsvp.AmountPaid!.Value, rsvp.PriceOptionId));
+    }
+
+    [Fact]
+    public async Task The_status_page_says_which_price_was_bought()
+    {
+        var rig = new Rig();
+        await rig.Seed(TwoPrices());
+        var started = await rig.Service.InitiateAsync(new EventTicketRequest { EventId = "e1", OptionId = "c" }, rig.Me);
+
+        var status = await rig.Service.GetStatusAsync(started.Data!.Reference, rig.Me);
+
+        Assert.Equal("With certificate", status.Data!.OptionName);
+        Assert.Equal(150m, status.Data.Amount);
+    }
 }

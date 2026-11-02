@@ -1072,6 +1072,8 @@ export interface CreateEventBody {
   capacity?: number;
   isTicketed: boolean;
   ticketPrice?: number;
+  /** The RSVP prices as JSON: [{ id?, name, description?, price, isActive }]. Sent this way because the form also carries files. */
+  priceOptionsJson?: string;
   googleLocationUrl?: string;
   yearGroups?: number[];
   /** Show it in full to people who are not signed in (institution-wide items only). */
@@ -1095,6 +1097,7 @@ export interface UpdateEventBody {
   capacity?: number;
   isTicketed: boolean;
   ticketPrice?: number;
+  priceOptionsJson?: string;
   googleLocationUrl?: string;
   status: string;
   yearGroups?: number[];

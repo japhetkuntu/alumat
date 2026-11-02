@@ -37,7 +37,10 @@ public class AlumniEventDto
     /// <summary>The organiser stopped taking new RSVPs and ticket sales.</summary>
     public bool RegistrationClosed { get; set; }
     public bool IsTicketed { get; set; }
+    /// <summary>The lowest price on sale: "from" this amount when there are several.</summary>
     public decimal? TicketPrice { get; set; }
+    /// <summary>The ways to RSVP and what each costs. The organiser sees every option, members only the ones on sale.</summary>
+    public List<EventPriceOptionDto> PriceOptions { get; set; } = [];
     /// <summary>Tickets bought so far. Filled in for the institution's own views; once above zero the price is locked.</summary>
     public int? PaidTicketCount { get; set; }
     /// <summary>The ticket money collected for this event (ticket price times tickets, no fee). Institution views only.</summary>
@@ -568,6 +571,17 @@ public class ForumPostDto
     public bool MarkedHelpfulByMe { get; set; }
 }
 
+public class EventPriceOptionDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Price { get; set; }
+    public bool IsActive { get; set; } = true;
+    /// <summary>Paid tickets bought at this option. Filled in for the institution only.</summary>
+    public int? SoldCount { get; set; }
+}
+
 public class EventRsvpDto
 {
     public string Id { get; set; } = string.Empty;
@@ -582,6 +596,8 @@ public class EventRsvpDto
     public DateTime? UpdatedAt { get; set; }
     /// <summary>The ticket price paid, or null for a free RSVP. Never includes any fee.</summary>
     public decimal? AmountPaid { get; set; }
+    /// <summary>The price option this ticket was bought at, as it was named then.</summary>
+    public string? PriceOptionName { get; set; }
     public DateTime? PaidAt { get; set; }
 }
 

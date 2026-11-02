@@ -23,6 +23,12 @@ public class AlumniEvent : BaseEntity, ITenantScoped
     public bool RegistrationClosed { get; set; }
     public bool IsTicketed { get; set; }
     public decimal? TicketPrice { get; set; }
+    /// <summary>
+    /// The prices people can RSVP at. <see cref="TicketPrice"/> is kept as the lowest price on sale, so lists can say "from GH₵100". An event
+    /// that has none here but a <see cref="TicketPrice"/> is a single-price event from before options existed: read it through
+    /// <see cref="EventTicketRules.OptionsOf"/>, which turns that price into one option.
+    /// </summary>
+    public List<EventPriceOption> PriceOptions { get; set; } = [];
     public string Status { get; set; } = "Upcoming"; // Upcoming, Ongoing, Completed, Cancelled
     public List<int>? YearGroups { get; set; }
     /// <summary>The institution chose to show this in full to people who are not signed in. Off means guests see only a short preview.</summary>

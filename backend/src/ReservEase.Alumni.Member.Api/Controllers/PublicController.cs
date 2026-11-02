@@ -524,7 +524,8 @@ public class PublicController(
         var facts = new List<PublicFact>();
         if (isPublic)
         {
-            if (e.IsTicketed && e.TicketPrice is > 0) facts.Add(new PublicFact("RSVP", $"GH₵{e.TicketPrice:0.##}"));
+            var onSale = EventTicketRules.OnSale(e);
+            if (onSale.Count > 0) facts.Add(new PublicFact("RSVP", $"{(onSale.Count > 1 ? "From " : "")}GH₵{onSale.Min(o => o.Price):0.##}"));
             else facts.Add(new PublicFact("RSVP", "Free"));
             if (e.Capacity is > 0) facts.Add(new PublicFact("Places", e.Capacity.Value.ToString()));
         }

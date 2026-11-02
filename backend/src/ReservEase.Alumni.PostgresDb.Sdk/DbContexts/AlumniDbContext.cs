@@ -635,6 +635,12 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
         modelBuilder.Entity<Institution>().Property(i => i.ProgramsOfStudy).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<string>>(jsonOpts)).Metadata.SetValueComparer(jsonStringListComparer);
+        modelBuilder.Entity<AlumniEvent>().Property(e => e.PriceOptions).HasColumnType("jsonb")
+            .HasConversion(new JsonbConverter<List<EventPriceOption>>(jsonOpts))
+            .Metadata.SetValueComparer(new ValueComparer<List<EventPriceOption>>(
+                (l1, l2) => JsonSerializer.Serialize(l1, jsonOpts) == JsonSerializer.Serialize(l2, jsonOpts),
+                l => JsonSerializer.Serialize(l, jsonOpts).GetHashCode(),
+                l => JsonSerializer.Deserialize<List<EventPriceOption>>(JsonSerializer.Serialize(l, jsonOpts), jsonOpts)!));
         modelBuilder.Entity<Institution>().Property(i => i.RegistrationFields).HasColumnType("jsonb")
             .HasConversion(new JsonbConverter<List<RegistrationField>>(jsonOpts))
             .Metadata.SetValueComparer(new ValueComparer<List<RegistrationField>>(

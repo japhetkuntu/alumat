@@ -42,7 +42,7 @@ public class PublicContentCacheKeysTests
     public void Token_and_google_configs_have_sensible_defaults()
     {
         var bearer = new BearerTokenConfig();
-        Assert.Equal(8, bearer.AccessTokenLifetime);
+        Assert.Equal(24, bearer.AccessTokenLifetime);
         Assert.Equal(30, bearer.RefreshTokenLifetime);
         Assert.Equal(string.Empty, new GoogleAuthConfig().ClientId);
     }

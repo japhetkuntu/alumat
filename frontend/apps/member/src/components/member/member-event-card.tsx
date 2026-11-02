@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { eventPriceLabel } from "@/lib/event-price";
 import type { CSSProperties, ReactNode } from "react";
 import { MapPin, Users, Clock, CheckCircle2, Loader2, ArrowRight, Badge, Button, formatDate, formatCurrency, cn } from "@alumni/ui";
 import { SourceBadge } from "@/components/member/source-badge";
@@ -54,7 +55,7 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                     <Clock size={12} />
                     <span>{formatDate(e.startDate)}</span>
                     <span aria-hidden>·</span>
-                    <span>{e.isTicketed && e.ticketPrice ? formatCurrency(e.ticketPrice) : "Free"}</span>
+                    <span>{eventPriceLabel(e)}</span>
                     {hasRsvp && (
                       <span className="ml-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.85)" }} aria-label="You're going">
                         <CheckCircle2 size={13} color="white" />
@@ -123,7 +124,7 @@ export function MemberEventCard({ event: e, hasRsvp, isPast, canRsvp, isFull, is
                         ) : isFull ? (
                           "Event full"
                         ) : (
-                          e.isTicketed && e.ticketPrice ? `RSVP · ${formatCurrency(e.ticketPrice)}` : "RSVP"
+                          e.isTicketed && e.ticketPrice ? `RSVP · ${eventPriceLabel(e)}` : "RSVP"
                         )}
                       </Button>
                     ) : (

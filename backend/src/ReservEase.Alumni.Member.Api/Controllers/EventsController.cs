@@ -66,7 +66,7 @@ public class EventsController(IMemberEventService eventService, IEventTicketServ
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ApiResponse<object>))]
     public async Task<IActionResult> BuyTicket(string eventId, [FromBody] EventTicketBody? body)
     {
-        var result = await ticketService.InitiateAsync(new EventTicketRequest { EventId = eventId, CallbackUrl = body?.CallbackUrl }, User.GetAccount());
+        var result = await ticketService.InitiateAsync(new EventTicketRequest { EventId = eventId, CallbackUrl = body?.CallbackUrl, OptionId = body?.OptionId }, User.GetAccount());
         return result.ToActionResult();
     }
 

@@ -31,6 +31,7 @@ export default function EventRsvpsPage() {
 
   const rsvps = data?.results ?? [];
   const hasTickets = rsvps.some((r) => r.amountPaid != null);
+  const hasOptions = rsvps.some((r) => !!r.priceOptionName);
   const totalPages = data?.totalPages ?? 1;
 
   return (
@@ -73,15 +74,16 @@ export default function EventRsvpsPage() {
                 <TableHead>Member</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
+                {hasOptions && <TableHead>RSVP</TableHead>}
                 {hasTickets && <TableHead>Paid</TableHead>}
                 <TableHead>{hasTickets ? "Date" : "Changed"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isError ? (
-                <TableRow><TableCell colSpan={5}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6}><LoadError className="py-8" onRetry={() => refetch()} /></TableCell></TableRow>
               ) : isLoading ? (
-                <TableSkeleton rows={4} cols={hasTickets ? 5 : 4} />
+                <TableSkeleton rows={4} cols={4 + (hasTickets ? 1 : 0) + (hasOptions ? 1 : 0)} />
               ) : rsvps.length === 0 ? (
                 <TableRow><TableCell colSpan={5}><EmptyState className="py-8" title="Registrations appear here" description="Members RSVP from their portal. Once they do, you see who is coming and can plan for numbers." /></TableCell></TableRow>
               ) : rsvps.map((r) => (
@@ -97,6 +99,9 @@ export default function EventRsvpsPage() {
                       {r.status === "PendingPayment" ? "Awaiting payment" : r.status === "PaymentFailed" ? "Payment failed" : r.status}
                     </Badge>
                   </TableCell>
+                  {hasOptions && (
+                    <TableCell className="text-sm">{r.status === "Confirmed" ? (r.priceOptionName ?? "—") : "—"}</TableCell>
+                  )}
                   {hasTickets && (
                     <TableCell className="text-sm">{r.status === "Confirmed" && r.amountPaid != null ? formatCurrency(r.amountPaid) : "—"}</TableCell>
                   )}

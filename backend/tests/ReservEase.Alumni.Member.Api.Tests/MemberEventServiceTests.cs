@@ -52,6 +52,44 @@ public class MemberEventServiceTests
     private static EventRsvp Rsvp(string eventId, string memberId, string status = "Confirmed") =>
         new() { Id = $"r-{eventId}-{memberId}", EventId = eventId, MemberId = memberId, Status = status };
 
+    // ── Several RSVP prices ─────────────────────────────────────────────
+
+    private static AlumniEvent PaidEvent()
+    {
+        var e = Event("paid");
+        e.IsTicketed = true; e.TicketPrice = 100m;
+        e.PriceOptions = [new() { Id = "a", Name = "Attendance only", Price = 100m, IsActive = false }, new() { Id = "c", Name = "With certificate", Price = 150m }, new() { Id = "v", Name = "VIP table", Price = 400m }];
+        return e;
+    }
+
+    [Fact]
+    public async Task Members_are_shown_only_the_prices_on_sale_and_start_from_the_lowest_of_those()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person(), PaidEvent());
+
+        var listed = (await rig.Service.GetEventsAsync(new EventFilter(), "m1")).Data!.Results.Single();
+        var detail = (await rig.Service.GetEventByIdAsync("paid")).Data!;
+
+        foreach (var dto in new[] { listed, detail })
+        {
+            Assert.Equal(["With certificate", "VIP table"], dto.PriceOptions.Select(o => o.Name));
+            Assert.Equal(150m, dto.TicketPrice);                           // the switched-off 100 is not what they start from
+        }
+    }
+
+    [Fact]
+    public async Task A_paid_event_cannot_be_joined_through_the_free_rsvp_whatever_its_prices()
+    {
+        var rig = new Rig();
+        await rig.Seed(Person(), PaidEvent());
+
+        var response = await rig.Service.RsvpAsync(new RsvpRequest("paid"), rig.Me);
+
+        Assert.Equal(400, response.Code);
+        Assert.Empty(await rig.Db().EventRsvps.ToListAsync());
+    }
+
     // ── Listing ─────────────────────────────────────────────────────────
 
     [Fact]

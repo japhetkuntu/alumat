@@ -66,7 +66,22 @@ public class EventTicketService(
             if (unavailable is not null)
                 return ApiResponseExtensions.ToBadRequestApiResponse<EventTicketCheckoutResponse>(unavailable);
 
-            var price = ev.TicketPrice!.Value;
+            // Which price: the one the member picked, or the only one on sale.
+            var onSale = EventTicketRules.OnSale(ev);
+            EventPriceOption? option;
+            if (string.IsNullOrWhiteSpace(request.OptionId))
+            {
+                if (onSale.Count > 1)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<EventTicketCheckoutResponse>("Choose which RSVP you want.");
+                option = onSale[0];
+            }
+            else
+            {
+                option = onSale.FirstOrDefault(o => o.Id == request.OptionId);
+                if (option is null)
+                    return ApiResponseExtensions.ToBadRequestApiResponse<EventTicketCheckoutResponse>("That RSVP isn't on sale any more. Choose another.");
+            }
+            var price = option.Price;
             var existing = await rsvpRepo.GetOneAsync(r => r.EventId == ev.Id && r.MemberId == member.Id);
 
             // A payment the member started earlier may have gone through without the page coming back; settle it first.
@@ -104,12 +119,12 @@ public class EventTicketService(
                     Member = new MemberSnapshot { Id = member.Id, FirstName = member.FirstName, LastName = member.LastName, Email = member.Email, ProfilePictureUrl = member.ProfilePictureUrl },
                     CreatedBy = member.Id,
                 };
-                Apply(existing, price, reference, charge);
+                Apply(existing, option, reference, charge);
                 await rsvpRepo.AddAsync(existing);
             }
             else
             {
-                Apply(existing, price, reference, charge);
+                Apply(existing, option, reference, charge);
                 existing.UpdatedAt = DateTime.UtcNow;
                 await rsvpRepo.UpdateAsync(existing);
             }
@@ -147,10 +162,12 @@ public class EventTicketService(
         }
     }
 
-    private static void Apply(EventRsvp rsvp, decimal price, string reference, ZeroDeductionCharge charge)
+    private static void Apply(EventRsvp rsvp, EventPriceOption option, string reference, ZeroDeductionCharge charge)
     {
         rsvp.Status = EventRsvpStatuses.PendingPayment;
-        rsvp.AmountPaid = price;
+        rsvp.AmountPaid = option.Price;
+        rsvp.PriceOptionId = option.Id;
+        rsvp.PriceOptionName = option.Name;
         rsvp.TransactionRef = reference;
         rsvp.PaidAt = null;
         rsvp.FailureMessage = null;
@@ -193,6 +210,7 @@ public class EventTicketService(
                 EventTitle = rsvp.Event?.Title,
                 Status = status,
                 Amount = rsvp.AmountPaid,
+                OptionName = rsvp.PriceOptionName,
                 Message = status switch
                 {
                     "Successful" => "Payment confirmed.",

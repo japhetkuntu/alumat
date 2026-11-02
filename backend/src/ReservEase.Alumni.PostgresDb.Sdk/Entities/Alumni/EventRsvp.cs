@@ -35,6 +35,10 @@ public class EventRsvp : BaseEntity, ITenantScoped
     /// <summary>The ticket price paid, as set on the event when it was bought. Null for a free RSVP. The institution receives all of it.</summary>
     public decimal? AmountPaid { get; set; }
 
+    /// <summary>Which price option this ticket was bought at, and its name as it was then (the organiser may rename it later). Null on tickets from before options existed.</summary>
+    public string? PriceOptionId { get; set; }
+    public string? PriceOptionName { get; set; }
+
     /// <summary>Paystack reference for this ticket's payment (ET_…).</summary>
     public string? TransactionRef { get; set; }
 

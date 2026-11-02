@@ -9,7 +9,7 @@ import { ZoomableImage } from "@alumni/ui";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Calendar, MapPin, Users, Pencil, Ticket, Bell, Copy } from "@alumni/ui";
+import { Plus, Calendar, MapPin, Users, Pencil, Ticket, Bell, Copy, X } from "@alumni/ui";
 import { Pagination } from "@alumni/ui";
 import Link from "next/link";
 import { Badge } from "@alumni/ui";
@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { CardSkeleton } from "@alumni/ui";
 import { EmptyState } from "@alumni/ui";
-import type { AlumniEvent, EventStatus } from "@/types";
+import type { AlumniEvent, EventPriceOption, EventStatus } from "@/types";
 import { MemberShareButton } from "@/components/institution/member-share-button";
 
 function isPastEvent(e: { startDate: string; endDate?: string | null }): boolean {
@@ -54,8 +54,9 @@ interface FormState {
   venue: string;
   capacity: string;
   isTicketed: boolean;
-  ticketPrice: string;
-  /** Tickets already bought. Above zero the price is locked and the event stays paid. */
+  /** The ways to RSVP and their prices (one row for a single price). */
+  priceRows: PriceRow[];
+  /** Tickets already bought. Above zero the event stays a paid one and a bought price can't be removed. */
   paidTicketCount: number;
   googleLocationUrl: string;
   status: string;
@@ -70,9 +71,25 @@ interface FormState {
   communityId: string;
 }
 
+/** One RSVP price being edited. `id` is set for a price that is already saved. */
+interface PriceRow { key: string; id?: string; name: string; description: string; price: string; isActive: boolean; sold: number }
+let priceKey = 0;
+const newPriceRow = (over: Partial<PriceRow> = {}): PriceRow => ({ key: `p${++priceKey}`, name: "", description: "", price: "", isActive: true, sold: 0, ...over });
+const rowsFromEvent = (opts?: EventPriceOption[]): PriceRow[] =>
+  opts && opts.length > 0
+    ? opts.map((o) => newPriceRow({ id: o.id, name: o.name, description: o.description ?? "", price: String(o.price), isActive: o.isActive, sold: o.soldCount ?? 0 }))
+    : [newPriceRow()];
+/** What is sent: the rows as JSON. A single unnamed price is simply called "RSVP". */
+function priceOptionsJson(rows: PriceRow[]): string {
+  return JSON.stringify(rows.map((r) => ({
+    id: r.id, name: r.name.trim() || (rows.length === 1 ? "RSVP" : ""), description: r.description.trim() || undefined,
+    price: r.price === "" ? undefined : Number(r.price), isActive: r.isActive,
+  })));
+}
+
 const emptyForm: FormState = {
   title: "", description: "", startDate: "", endDate: "", venue: "", capacity: "",
-  isTicketed: false, ticketPrice: "", paidTicketCount: 0,
+  isTicketed: false, priceRows: [newPriceRow()], paidTicketCount: 0,
   googleLocationUrl: "", status: "Upcoming",
   audienceMode: "everyone", isPublic: false, yearGroups: [],
   bannerImage: null, existingBannerUrl: "", images: [], existingImageUrls: [], youtubeVideoUrls: "",
@@ -161,22 +178,14 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
                 )}
                 {form.isTicketed && (
                   <div className="space-y-4">
-                    <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]"><Label>RSVP price (GH₵)</Label>
-                      <Input type="number" min={1} step="0.01" placeholder="e.g. 150" value={form.ticketPrice}
-                        onChange={(e) => f("ticketPrice", e.target.value)} required />
-                      {sold > 0 && (
-                        <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-                          {sold} paid {sold === 1 ? "RSVP" : "RSVPs"} already. {sold === 1 ? "That person keeps" : "Those people keep"} what they paid; a new price applies to anyone who RSVPs from now on.
-                        </p>
-                      )}
-                    </div>
+                    <PriceOptionsEditor rows={form.priceRows} onChange={(rows) => f("priceRows", rows)} sold={sold} />
                     <div className="space-y-1.5 border border-border bg-muted/40 p-3 text-[13px] leading-relaxed">
                       <p className="font-semibold text-foreground">Good to know</p>
                       <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
                         <li><span className="text-foreground">Paid RSVPs are final.</span> Attendees can&apos;t cancel and nobody is refunded. A paid event can&apos;t be cancelled either, so no money ever has to go back.</li>
-                        <li>You can change the price whenever you like. People who already paid keep what they paid, and new RSVPs pay the new price.</li>
+                        <li>You can change a price whenever you like, or add another. People who already paid keep what they paid, and new RSVPs pay the new price.</li>
                         <li>A paid event can&apos;t be deleted once someone has paid to RSVP, or made free. You can still change its date, venue and details, and attendees are told.</li>
-                        <li>You receive the full RSVP price in your payout account.</li>
+                        <li>You receive the full RSVP price in your payout account, whichever price they pick.</li>
                       </ul>
                     </div>
                   </div>
@@ -236,6 +245,93 @@ function EventForm({ id, init, onSave, showStatus, isSuperAdmin }: {
   );
 }
 
+/**
+ * The prices an event is sold at. With one price it is just a price box, as before. "Offer a second price" turns it into a list where
+ * each price has a name (for example "Attendance only" and "With certificate"). A price people have bought can't be deleted:
+ * switch it off to stop selling it.
+ */
+const NAME_HINTS = ["e.g. Attendance only", "e.g. With certificate", "e.g. Student", "e.g. Group of five", "e.g. Sponsor", "e.g. VIP"];
+const NOTE_HINTS = ["e.g. Entry to all sessions and lunch", "e.g. Everything above, plus a printed certificate", "e.g. Valid student ID needed", "e.g. Five places together", "e.g. Your name on the programme", "e.g. Reserved front table"];
+
+function PriceOptionsEditor({ rows, onChange, sold }: { rows: PriceRow[]; onChange: (rows: PriceRow[]) => void; sold: number }) {
+  const set = (key: string, patch: Partial<PriceRow>) => onChange(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const several = rows.length > 1;
+  const limit = 6;
+  const soldNote = sold > 0 && (
+    <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+      {sold} paid {sold === 1 ? "RSVP" : "RSVPs"} already. {sold === 1 ? "That person keeps" : "Those people keep"} what they paid; a new price applies to anyone who RSVPs from now on.
+    </p>
+  );
+
+  if (!several) {
+    const r = rows[0];
+    return (
+      <div className="space-y-3">
+        <div className="space-y-2 sm:max-w-[calc(50%-0.5rem)]">
+          <Label htmlFor={`po-price-${r.key}`}>RSVP price (GH₵)</Label>
+          <Input id={`po-price-${r.key}`} type="number" min={1} step="0.01" placeholder="e.g. 150" value={r.price}
+            onChange={(e) => set(r.key, { price: e.target.value })} required />
+        </div>
+        <button type="button" onClick={() => onChange([...rows, newPriceRow()])}
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline">
+          <Plus size={13} />Offer a second price, for example with a certificate
+        </button>
+        {soldNote}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>RSVP prices (GH₵)</Label>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">Members pick one when they RSVP. Name each price so they know what they are paying for.</p>
+      </div>
+      <ul className="space-y-3">
+        {rows.map((r, i) => (
+          <li key={r.key} className={cn("space-y-3 border border-border p-3.5", !r.isActive && "bg-muted/40")}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Price {i + 1}</span>
+              {r.sold > 0
+                ? <span className="text-[12.5px] text-muted-foreground">{r.sold} bought. Switch it off to stop selling.</span>
+                : <button type="button" onClick={() => onChange(rows.filter((x) => x.key !== r.key))}
+                    className="inline-flex items-center gap-1 text-[12.5px] font-medium text-muted-foreground hover:text-destructive"><X size={12} />Remove</button>}
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_9rem]">
+              <div className="space-y-1.5">
+                <Label htmlFor={`po-name-${r.key}`} className="text-[12.5px]">Name</Label>
+                <Input id={`po-name-${r.key}`} maxLength={60} placeholder={NAME_HINTS[i % NAME_HINTS.length]} value={r.name}
+                  onChange={(e) => set(r.key, { name: e.target.value })} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`po-price-${r.key}`} className="text-[12.5px]">Price</Label>
+                <Input id={`po-price-${r.key}`} type="number" min={1} step="0.01" placeholder="e.g. 150" value={r.price}
+                  onChange={(e) => set(r.key, { price: e.target.value })} required />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`po-note-${r.key}`} className="text-[12.5px]">What it includes <span className="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input id={`po-note-${r.key}`} maxLength={200} placeholder={NOTE_HINTS[i % NOTE_HINTS.length]} value={r.description}
+                onChange={(e) => set(r.key, { description: e.target.value })} />
+            </div>
+            {r.id && (
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[13px]">
+                <input type="checkbox" checked={r.isActive} onChange={(e) => set(r.key, { isActive: e.target.checked })} />
+                On sale
+                {!r.isActive && <span className="text-muted-foreground">· not offered to new members</span>}
+              </label>
+            )}
+          </li>
+        ))}
+      </ul>
+      {rows.length < limit && (
+        <Button type="button" size="sm" variant="outline" onClick={() => onChange([...rows, newPriceRow()])}><Plus size={13} />Add another price</Button>
+      )}
+      {soldNote}
+    </div>
+  );
+}
+
 function toFormState(e: AlumniEvent): FormState {
   return {
     title: e.title, description: e.description ?? "", venue: e.venue,
@@ -243,7 +339,7 @@ function toFormState(e: AlumniEvent): FormState {
     endDate: e.endDate ? e.endDate.slice(0, 16) : "",
     capacity: e.capacity != null ? String(e.capacity) : "",
     isTicketed: e.isTicketed,
-    ticketPrice: e.ticketPrice != null ? String(e.ticketPrice) : "",
+    priceRows: rowsFromEvent(e.priceOptions),
     paidTicketCount: e.paidTicketCount ?? 0,
     googleLocationUrl: e.googleLocationUrl ?? "",
     status: e.status,
@@ -286,7 +382,7 @@ export default function AdminEventsPage() {
       startDate: f.startDate, endDate: f.endDate || undefined, venue: f.venue,
       capacity: f.capacity ? Number(f.capacity) : undefined,
       isTicketed: f.isTicketed,
-      ticketPrice: f.isTicketed ? Number(f.ticketPrice) : undefined,
+      priceOptionsJson: f.isTicketed ? priceOptionsJson(f.priceRows) : undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
@@ -308,7 +404,7 @@ export default function AdminEventsPage() {
       capacity: f.capacity ? Number(f.capacity) : undefined,
       status: f.status,
       isTicketed: f.isTicketed,
-      ticketPrice: f.isTicketed ? Number(f.ticketPrice) : undefined,
+      priceOptionsJson: f.isTicketed ? priceOptionsJson(f.priceRows) : undefined,
       googleLocationUrl: f.googleLocationUrl || undefined,
       yearGroups: isSuperAdmin && f.audienceMode === "yearGroups" ? f.yearGroups : undefined,
       isPublic: isSuperAdmin && f.audienceMode === "everyone" ? f.isPublic : false,
@@ -399,7 +495,7 @@ export default function AdminEventsPage() {
             <EventForm
               key={`copy-${copyFrom.id}`}
               id="event-form"
-              init={{ ...toFormState(copyFrom), startDate: "", endDate: "", status: "Upcoming", paidTicketCount: 0 }}
+              init={{ ...toFormState(copyFrom), startDate: "", endDate: "", status: "Upcoming", paidTicketCount: 0, priceRows: toFormState(copyFrom).priceRows.map((r) => ({ ...r, id: undefined, sold: 0, isActive: true })) }}
               showStatus={false}
               isSuperAdmin={isSuperAdmin}
               onSave={(f) => createMut.mutate({ f, copyOf: copyFrom })}
@@ -456,7 +552,7 @@ export default function AdminEventsPage() {
                     {e.registrationClosed && e.status !== "Cancelled" && e.status !== "Completed" && <Badge variant="warning">RSVPs closed</Badge>}
                   </div>
                   {e.isTicketed && e.ticketPrice && (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success"><Ticket size={13} />{formatCurrency(e.ticketPrice)}</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-success"><Ticket size={13} />{(e.priceOptions ?? []).filter((o) => o.isActive).length > 1 ? "From " : ""}{formatCurrency(e.ticketPrice)}</span>
                   )}
                   <div className="flex items-center gap-2">
                     {e.yearGroups && e.yearGroups.length > 0 ? (

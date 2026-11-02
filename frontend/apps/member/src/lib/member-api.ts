@@ -394,11 +394,11 @@ export async function getEventUpdates(eventId: string): Promise<EventUpdates> {
 }
 
 export interface EventTicketCheckout { authorizationUrl?: string | null; reference: string }
-export interface EventTicketStatus { reference: string; eventId: string; eventTitle?: string; status: "Pending" | "Successful" | "Failed"; amount?: number; message: string }
+export interface EventTicketStatus { reference: string; eventId: string; eventTitle?: string; status: "Pending" | "Successful" | "Failed"; amount?: number; optionName?: string; message: string }
 
 /** Start paying for a seat at a paid event. The caller sends the member to authorizationUrl. */
-export async function buyEventTicket(eventId: string, callbackUrl?: string): Promise<EventTicketCheckout> {
-  const res = await memberClient.post(`/events/${eventId}/ticket`, { callbackUrl });
+export async function buyEventTicket(eventId: string, callbackUrl?: string, optionId?: string): Promise<EventTicketCheckout> {
+  const res = await memberClient.post(`/events/${eventId}/ticket`, { callbackUrl, optionId });
   return res.data.data!;
 }
 

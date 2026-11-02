@@ -20,6 +20,16 @@ An institution can charge for an event. The platform decides which institutions 
 - **Seats.** Paid seats come only from a payment, never a free RSVP. A started payment holds its seat for 30 minutes
   (`SeatHoldWindow`). A ticket paid for after the event filled still stands and is logged as over capacity.
 
+## Several RSVP prices
+
+One paid event can offer more than one price, for example "Attendance only" and "With certificate". Up to six, each with a name, a price and an optional line saying what it includes.
+
+- **Stored on the event.** `AlumniEvent.PriceOptions` is a small jsonb list. `TicketPrice` stays as the **lowest price on sale**, so lists can say "From GH₵100" and older code keeps working. An event with a price but no list (from before options existed) is read as a single option called "RSVP" with the id `standard` (`EventTicketRules.OptionsOf`), so nothing needed migrating.
+- **Organiser.** The event form has a price editor: add another price, name it, switch a price off, remove one. A price people have bought cannot be removed (switch it off to stop selling it). Adding or repricing needs paid events switched on and a payout account, same as a single price. At least one price must stay on sale. Older clients that send only `ticketPrice` still work (it becomes one option). The RSVP list shows which price each person bought.
+- **Member.** The event page lists the prices on sale as choices, each with its note. Nothing is pre-selected when there is a choice, and the RSVP button says "Choose an RSVP above" until they pick, so nobody pays for the wrong one. With a single price on sale no choice is needed. The confirm step and the confirmation page name the chosen price.
+- **Checkout.** `EventTicketRequest.OptionId` picks the price; the server takes the amount from the saved option, never from the client. The ticket (`EventRsvp`) records `PriceOptionId`, `PriceOptionName` and `AmountPaid`, so renaming or repricing an option later never changes what someone paid. The payment verification is unchanged: it checks the charge stored on the ticket.
+- **Everyone else.** Guests see "RSVP · From GH₵…" on a public event. Money collected, payouts and the payments list read `AmountPaid`, so they already add up across prices.
+
 ## How a ticket is bought
 
 `EventTicketService` (PaymentCallbacks.Sdk), same shape as store checkout:
@@ -39,7 +49,7 @@ Confirmed paid tickets count in: institution revenue, the dashboard total, payou
 
 ## Deploying
 
-Run the `AddPaidEventTickets` migration first. Nothing else changes until the platform switches an institution on.
+Run the `AddPaidEventTickets` migration first. Then `AddEventPriceOptions`, which adds the price list to events (default empty) and the option columns to RSVPs. Nothing else changes until the platform switches an institution on.
 
 ## Known limits
 
