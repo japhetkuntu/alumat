@@ -2,7 +2,7 @@
  * The shape of an institution's website page. It mirrors the server's WebsiteDocument exactly (camelCase JSON): the server cleans every
  * page it stores, and this package renders it. A page is data, never code: no raw HTML, no scripts.
  */
-export type LinkKind = "none" | "anchor" | "join" | "signin" | "external" | "email" | "phone";
+export type LinkKind = "none" | "anchor" | "join" | "signin" | "external" | "email" | "phone" | "portal";
 export interface SiteLink { t: LinkKind; v?: string | null }
 
 export interface SiteMenuEntry { on: boolean; label: string }
@@ -15,7 +15,7 @@ export interface SiteItem {
 
 export type SectionType =
   | "hero" | "text" | "imagetext" | "news" | "events" | "stats" | "gallery" | "leaders" | "faq" | "cta" | "cards" | "contact"
-  | "services" | "store" | "fundraisers" | "jobs" | "businesses" | "communities" | "spotlights";
+  | "actions" | "membership" | "chapters" | "partners" | "services" | "store" | "fundraisers" | "jobs" | "businesses" | "communities" | "spotlights";
 
 export type Background = "plain" | "tint" | "brand";
 export type Spacing = "c" | "n" | "r";
@@ -63,6 +63,8 @@ export interface SiteFooter {
   style: "dark" | "brand" | "light";
   credit: boolean;
   social: Record<string, string>;
+  hours?: string | null;
+  links?: { label: string; url: string }[];
 }
 
 export interface SiteSeo { title?: string | null; description?: string | null; shareImage?: string | null }
@@ -93,7 +95,7 @@ export interface NewsItem { id: string; title: string; excerpt?: string | null; 
 export interface EventItem { id: string; title: string; startDate: string; venue?: string | null; bannerImageUrl?: string | null }
 export interface CommunityItem { id: string; name: string; memberCount?: number | null; description?: string | null; imageUrl?: string | null }
 export interface BusinessItem { id: string; name: string; category?: string | null; imageUrl?: string | null }
-export interface ServiceItem { id: string; name: string; description?: string | null; price: number }
+export interface ServiceItem { id: string; name: string; description?: string | null; price: number; imageUrl?: string | null }
 export interface ProductItem { id: string; name: string; price: number; imageUrl?: string | null; category?: string | null }
 export interface FundraiserItem { id: string; title: string; summary?: string | null; raised: number; goal: number; imageUrl?: string | null }
 export interface JobItem { id: string; title: string; company?: string | null; location?: string | null }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { BLOCKS, TEMPLATES, WEBSITE_FEATURES, applyLook, type SectionType, type SiteBrand, type SiteDocument, type SiteSection } from "@alumni/site";
+import { BLOCKS, TEMPLATES, WEBSITE_FEATURES, applyLook, buildTemplate, type SectionType, type SiteBrand, type SiteDocument, type SiteSection } from "@alumni/site";
 import { Button, ChevronDown, ChevronUp, Copy, Eye, EyeOff, Plus, Trash2, X, cn } from "@alumni/ui";
-import { addItem, duplicateSection, moveItem, moveSection, removeItem, removeSection, reorderSection, sectionName, setDesign, setFeature, setFooter, setLink, setSection, setSeo, setSocial } from "./doc-ops";
+import { setItemField as setItemFieldOp, addItem, duplicateSection, moveItem, moveSection, removeItem, removeSection, reorderSection, sectionName, setDesign, setFeature, setFooter, setLink, setSection, setSeo, setSocial } from "./doc-ops";
 import { Check, Field, Group, PanelTitle, Segmented, inputCls } from "./fields";
 import { LinkEditor } from "./link-editor";
 
@@ -18,6 +18,8 @@ export interface PanelCtx {
   /** Opens the file chooser, uploads, and returns the new address (or null if cancelled). */
   upload: () => Promise<string | null>;
   scrollTo: (id: string) => void;
+  /** Opens the member chooser for a Leaders section. */
+  pickMembers: (sectionId: string) => void;
 }
 
 const PLATFORM_KEY: Record<string, string> = { Services: "Services", Store: "Store", Fundraisers: "Contributions", Jobs: "Jobs", Businesses: "BusinessDirectory", Communities: "Communities" };
@@ -135,11 +137,40 @@ export function SectionPanel({ ctx, section: s }: { ctx: PanelCtx; section: Site
         </Field>
       )}
 
-      {s.type === "cards" && (s.items ?? []).some((it) => it.fields.btn) && (
+      {(s.type === "cards" || s.type === "membership") && (s.items ?? []).some((it) => it.fields.btn) && (
         <Group>
-          <div className="text-[12px] font-semibold text-muted-foreground">Where each card’s button goes</div>
+          <div className="text-[12px] font-semibold text-muted-foreground">Where each button goes</div>
           {(s.items ?? []).filter((it) => it.fields.btn).map((it) => (
             <LinkEditor key={it.id} label={`“${it.fields.title}”`} link={it.links.btn} sections={doc.sections} onChange={(l) => up(setLink(doc, s.id, "btn", l, it.id))} />
+          ))}
+        </Group>
+      )}
+      {s.type === "partners" && (s.items ?? []).length > 0 && (
+        <Group>
+          <div className="text-[12px] font-semibold text-muted-foreground">Where each logo links to (optional)</div>
+          {(s.items ?? []).map((it) => (
+            <LinkEditor key={it.id} label={`“${it.fields.name}”`} link={it.links.go} sections={doc.sections} onChange={(l) => up(setLink(doc, s.id, "go", l, it.id))} />
+          ))}
+        </Group>
+      )}
+      {s.type === "leaders" && (
+        <Group>
+          <div className="text-[12px] font-semibold text-muted-foreground">People</div>
+          <Button variant="secondary" size="sm" onClick={() => ctx.pickMembers(s.id)}>Add from your members</Button>
+          <p className="m-0 text-[12px] text-muted-foreground">Only the members you choose appear, with their name and photo. Nothing else from their profile is shown.</p>
+          {(s.items ?? []).map((it) => (
+            <Field key={it.id} label={it.fields.name || "Person"}>
+              <input className={inputCls} aria-label="Group, such as Executive or Council" placeholder="Group, such as Executive" maxLength={200} value={it.fields.group ?? ""} onChange={(e) => ctx.change(setItemFieldOp(doc, s.id, it.id, "group", e.target.value), "grp-" + it.id)} />
+            </Field>
+          ))}
+        </Group>
+      )}
+
+      {s.type === "actions" && (s.items ?? []).length > 0 && (
+        <Group>
+          <div className="text-[12px] font-semibold text-muted-foreground">Where each action goes</div>
+          {(s.items ?? []).map((it) => (
+            <LinkEditor key={it.id} label={`“${it.fields.label}”`} link={it.links.go} sections={doc.sections} onChange={(l) => up(setLink(doc, s.id, "go", l, it.id))} />
           ))}
         </Group>
       )}
@@ -194,6 +225,12 @@ export function DesignPanel({ ctx }: { ctx: PanelCtx }) {
             </button>
           ))}
         </div>
+        <Button variant="secondary" size="sm" onClick={() => {
+          if (!window.confirm(`Start a fresh page in the ${TEMPLATES.find((t) => t.key === doc.template)?.name ?? "current"} look? This replaces your sections and words. You can undo it straight after.`)) return;
+          const fresh = buildTemplate(doc.template, { brand });
+          // Keep what is about the institution rather than the layout: its own colours and logo choice, name and contact details.
+          ctx.change({ ...fresh, design: { ...fresh.design, useBrand: d.useBrand, primary: d.primary, logoUrl: d.logoUrl, name: d.name }, footer: { ...fresh.footer, email: doc.footer.email, phone: doc.footer.phone, addr: doc.footer.addr, social: doc.footer.social, hours: doc.footer.hours, links: doc.footer.links } });
+        }}>Start a fresh page in this look</Button>
       </Field>
 
       <Field label="Name shown on the website" hint={doc.design.name ? undefined : "Uses your institution’s name."}>
@@ -255,6 +292,20 @@ export function SitePanel({ ctx }: { ctx: PanelCtx }) {
         <Field label="Address"><input className={inputCls} value={f.addr ?? ""} maxLength={200} onChange={(e) => ctx.change(setFooter(doc, "addr", e.target.value), "ft-addr")} /></Field>
         <Field label="Email"><input className={inputCls} type="email" value={f.email ?? ""} onChange={(e) => ctx.change(setFooter(doc, "email", e.target.value), "ft-email")} /></Field>
         <Field label="Phone"><input className={inputCls} value={f.phone ?? ""} onChange={(e) => ctx.change(setFooter(doc, "phone", e.target.value), "ft-phone")} /></Field>
+        <Field label="Opening hours" hint="One line each, such as “Mon to Fri, 8am to 5pm”."><textarea className={cn(inputCls, "h-16 resize-none py-2")} value={f.hours ?? ""} maxLength={240} onChange={(e) => ctx.change(setFooter(doc, "hours", e.target.value), "ft-hours")} /></Field>
+        <div className="space-y-2">
+          <div className="text-[12px] font-semibold text-muted-foreground">Useful links (up to 6), such as your university website</div>
+          {Array.from({ length: Math.min(6, (f.links?.length ?? 0) + 1) }, (_, i) => {
+            const l = f.links?.[i] ?? { label: "", url: "" };
+            const set = (next: { label: string; url: string }) => { const all = [...(f.links ?? [])]; all[i] = next; ctx.change({ ...doc, footer: { ...f, links: all.filter((x) => x.label || x.url) } }, "ft-link-" + i); };
+            return (
+              <div key={i} className="grid grid-cols-[1fr_1.4fr] gap-1.5">
+                <input className={inputCls} aria-label={`Link ${i + 1} name`} placeholder="Name" maxLength={40} value={l.label} onChange={(e) => set({ ...l, label: e.target.value })} />
+                <input className={inputCls} aria-label={`Link ${i + 1} address`} placeholder="https://…" value={l.url} onChange={(e) => set({ ...l, url: e.target.value })} />
+              </div>
+            );
+          })}
+        </div>
         <Field label="Footer look"><Segmented label="Footer look" value={f.style} onChange={(v) => ctx.change(setFooter(doc, "style", v))} options={[{ value: "dark", label: "Dark" }, { value: "brand", label: "Colour" }, { value: "light", label: "Light" }]} /></Field>
         <Check checked={f.menu} onChange={(v) => ctx.change(setFooter(doc, "menu", v))}>List my sections in the footer, grouped by purpose</Check>
         <Check checked={f.credit} onChange={(v) => ctx.change(setFooter(doc, "credit", v))}>Show “Powered by AlumUnion”</Check>

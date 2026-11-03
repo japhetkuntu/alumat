@@ -13,3 +13,4 @@ export type { EditApi } from "./edit";
 export { SiteView, SiteSkeleton } from "./Site";
 export { Photo } from "./Photo";
 export * from "./defaults";
+export * from "./data";

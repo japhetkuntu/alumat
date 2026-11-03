@@ -1,0 +1,296 @@
+/*
+ * The website's look, applied over the base layout. Flat surfaces, hairline borders, one accent colour (the institution's own), real
+ * photographs and a clear type scale. No pills, floating badges, glows or lifted cards: the content is the design.
+ */
+.alsite{--rc:min(var(--r),14px)}
+.alsite .eyebrow,.alsite .pill,.alsite .decos,.alsite .hchip{display:none!important}
+.alsite .acc{font-style:normal}
+
+/* ── Header ─────────────────────────────────────────────────────────────────────────────────── */
+.alsite.vibe .hdr{background:var(--bg);box-shadow:none;border-bottom:1px solid var(--line);padding:14px 32px}
+.alsite.vibe .hdr.scrolled{box-shadow:0 1px 0 var(--line);padding-top:10px;padding-bottom:10px}
+.alsite.vibe .mark{border-radius:8px}
+.alsite.vibe .menu :is(a,button):not(.signin){border-radius:var(--rc);font-size:14.5px;font-weight:500;background-color:transparent;background-image:linear-gradient(var(--p),var(--p));background-repeat:no-repeat;background-position:10px calc(100% - 5px);background-size:0 2px;transition:background-size .3s var(--ease),color .15s}
+.alsite.vibe .menu :is(a,button):not(.signin):hover{background-color:transparent;color:var(--p)}
+.alsite.vibe .menu :is(a,button):not(.signin).on{background-color:transparent;color:var(--p);font-weight:600;background-size:calc(100% - 20px) 2px}
+.alsite.vibe .menu .signin{border-radius:var(--rc);font-size:14.5px;font-weight:600;letter-spacing:0;text-transform:none;padding:10px 18px}
+.alsite.vibe .nav-toggle{border-radius:var(--rc)}
+.alsite.vibe .mpop{border-radius:var(--rc);border:1px solid var(--line);box-shadow:0 12px 28px -12px rgba(0,0,0,.25);padding:6px}
+.alsite.vibe .mpop a,.alsite.vibe .mpop button{border-radius:calc(var(--rc) - 2px)}
+
+/* ── Buttons and links ──────────────────────────────────────────────────────────────────────── */
+.alsite.vibe .btn{border-radius:var(--rc);min-height:46px;padding:0 22px;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;border-width:1.5px;gap:8px}
+.alsite.vibe .btn:not(.ghost):hover{transform:none;box-shadow:none}
+.alsite.vibe .btn.ghost{background:transparent;color:var(--ink);border-color:color-mix(in srgb,var(--ink) 32%,transparent)}
+.alsite.vibe .btn.ghost:hover{background:var(--tint);color:var(--ink);border-color:var(--ink)}
+.alsite.vibe .btn.sm{min-height:40px;padding:0 16px;font-size:14px;text-transform:none;letter-spacing:0}
+.alsite.vibe .sec.bg-brand .btn.ghost{color:var(--on-p);border-color:color-mix(in srgb,var(--on-p) 55%,transparent)}
+.alsite.vibe .sec.bg-brand .btn.ghost:hover{background:color-mix(in srgb,var(--on-p) 12%,transparent);border-color:var(--on-p)}
+.alsite .more,.alsite .viewall{text-transform:none;letter-spacing:0;font-size:14.5px;font-weight:600}
+.alsite .viewall{padding:6px 0}
+.alsite .cat{text-transform:none;letter-spacing:0;font-size:13px;font-weight:500}
+.alsite .chip{border-radius:6px;font-weight:500}
+
+/* ── Section rhythm: flat bands, no overlapping or rounded edges ────────────────────────────── */
+.alsite.vibe .sec,.alsite.vibe .ft{--bigr:0px}
+.alsite.vibe .sec.bg-brand{border-radius:0}
+.alsite.vibe .ft{border-radius:0;margin-top:0;padding-top:64px}
+.alsite.vibe .sec:has(.stats){padding-top:var(--sp,72px)!important}
+.alsite.vibe .sec:has(.qa){padding-top:clamp(24px,3.4cqw,40px);padding-bottom:clamp(24px,3.4cqw,40px)}
+.alsite .sec.sp-n{--sp:clamp(56px,8cqw,96px)}
+.alsite.vibe .h-lg{font-size:clamp(26px,3.5cqw,38px);font-weight:600;letter-spacing:-.03em;line-height:1.12}
+.alsite.vibe .shead{align-items:baseline;margin-bottom:clamp(24px,3.4cqw,40px);border-top:1px solid var(--line);padding-top:22px}
+.alsite.vibe .sec.bg-brand .shead{border-top-color:color-mix(in srgb,var(--on-p) 30%,transparent)}
+.alsite.vibe .livebadge{border-radius:6px;background:none;border:1px solid var(--line)}
+
+/* ── Hero: one clear message beside one real photograph ─────────────────────────────────────── */
+.alsite.vibe .hero-split.sec{padding-top:clamp(44px,7cqw,92px);padding-bottom:clamp(44px,7cqw,92px)!important}
+.alsite.vibe .hero-split .wrap{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:clamp(28px,5cqw,72px);align-items:center}
+.alsite.vibe .hcopy{padding-bottom:0}
+.alsite.vibe .hero-split .h-xl{font-size:clamp(34px,5.4cqw,62px);font-weight:500;letter-spacing:-.04em;line-height:1.06}
+.alsite.vibe .hero-split .lead{max-width:46ch;font-size:clamp(16px,1.7cqw,18px)}
+.alsite.vibe .hmedia{max-width:none;width:100%;justify-self:stretch;clip-path:none;align-self:center}
+.alsite.vibe .hmedia .herophoto,.alsite.vibe .hmedia .herophoto.has,.alsite.vibe .hero-split .hmedia .herophoto.empty-slot{aspect-ratio:5/4;border-radius:var(--rc);box-shadow:none;--pos:center 22%}
+
+/* ── Quick actions ──────────────────────────────────────────────────────────────────────────── */
+.alsite .qa{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));border:1px solid var(--line);border-radius:var(--rc);background:var(--card);overflow:hidden}
+.alsite .qa>li{position:relative;min-width:0}
+.alsite .qa>li+li{border-left:1px solid var(--line)}
+.alsite .qi{display:flex;align-items:center;gap:14px;height:100%;padding:18px 20px;color:var(--ink);cursor:pointer;transition:background-color .15s}
+.alsite .qi:hover{background:var(--tint)}
+.alsite .qi .ico{display:grid;place-items:center;width:42px;height:42px;flex:none;border-radius:var(--rc);background:color-mix(in srgb,var(--p) 10%,var(--card));color:var(--p)}
+.alsite .qi .ico svg{width:22px;height:22px}
+.alsite .qt{display:grid;gap:1px;min-width:0;flex:1}
+.alsite .qt b{font:600 15.5px/1.25 var(--fd);letter-spacing:-.01em}
+.alsite .qt small{color:var(--mut);font-size:13.5px;line-height:1.35}
+.alsite .qi>svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--mut);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--ease),stroke .15s}
+.alsite .qi:hover>svg{transform:translateX(3px);stroke:var(--p)}
+.alsite .qa .itx{position:absolute;right:6px;top:6px}
+.alsite .qi.nolink{outline:2px dashed #d99a00;outline-offset:-4px}
+
+/* ── Cards ──────────────────────────────────────────────────────────────────────────────────── */
+.alsite.vibe .card{background:var(--card);border:1px solid var(--line);border-radius:var(--rc);box-shadow:none}
+.alsite.vibe .card:hover{translate:none;box-shadow:none;border-color:color-mix(in srgb,var(--ink) 40%,var(--line))}
+.alsite.vibe .card .b{padding:20px 22px 22px}
+.alsite.vibe .card h3{font-size:19px;letter-spacing:-.02em}
+.alsite.vibe .sec.bg-brand .card{background:color-mix(in srgb,var(--on-p) 8%,transparent);border-color:color-mix(in srgb,var(--on-p) 26%,transparent)}
+.alsite.vibe .sec.bg-brand .card:hover{background:color-mix(in srgb,var(--on-p) 13%,transparent)}
+.alsite .ico{border-radius:var(--rc)}
+.alsite.vibe .prod .card{padding:0}
+.alsite.vibe .prod .card .pimg{border-radius:0;aspect-ratio:1/1}
+.alsite.vibe .prod .card .b,.alsite .prod .card .b{padding:16px 18px 18px}
+.alsite.vibe .prod .pimg{border-radius:0}
+.alsite.vibe .bar{height:6px;border-radius:3px}
+.alsite.vibe .fmeta em{font-weight:600}
+
+/* ── Lists read like a schedule, not a stack of boxes ───────────────────────────────────────── */
+.alsite.vibe :is(.news-list,.ev-list,.rowlist){gap:0}
+.alsite.vibe :is(.news-list,.ev-list,.rowlist) article{background:none;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;padding:22px 0}
+.alsite.vibe :is(.news-list,.ev-list,.rowlist) article:last-child{border-bottom:1px solid var(--line)}
+.alsite.vibe .sec.bg-brand :is(.news-list,.ev-list,.rowlist) article{background:none;border-color:color-mix(in srgb,var(--on-p) 28%,transparent)}
+.alsite.vibe .date{background:none;color:var(--ink);border:0;border-radius:0;padding:0;text-align:left}
+.alsite.vibe .date b{font-size:34px;font-weight:600;letter-spacing:-.04em}
+.alsite.vibe .date small{color:var(--mut);opacity:1;font-size:12.5px}
+.alsite.vibe .sec.bg-brand .date b{color:var(--on-p)}
+.alsite.vibe .sec.bg-brand .date small{color:color-mix(in srgb,var(--on-p) 80%,transparent)}
+.alsite.vibe .ev-list article{grid-template-columns:64px minmax(0,1fr) auto}
+.alsite .calm{display:grid;gap:10px;justify-items:start;padding:clamp(24px,4cqw,44px);border:1px solid var(--line);border-radius:var(--rc);background:var(--card)}
+.alsite .calm h3{font-size:clamp(20px,2.4cqw,26px);letter-spacing:-.025em}
+.alsite .calm p{color:var(--mut);max-width:54ch}
+.alsite .calm .btn{margin-top:8px}
+
+/* ── Steps: three plain columns with a photograph each ──────────────────────────────────────── */
+.alsite .steps{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:clamp(20px,3cqw,40px);list-style:none;margin:0;padding:0}
+.alsite .steps>.step{display:flex;flex-direction:column;grid-template-columns:none;gap:0;min-width:0}
+.alsite .steps>.step>.stepfig{aspect-ratio:4/3;width:100%;max-width:none;margin:0;border-radius:var(--rc);box-shadow:none;grid-column:auto}
+.alsite .stepno{margin:20px 0 6px;font:600 14px var(--fd);color:var(--p);letter-spacing:.02em}
+.alsite .stepbody h3{font-size:clamp(20px,2.4cqw,24px);letter-spacing:-.025em}
+.alsite .stepbody .ctext{color:var(--mut);margin-top:8px;max-width:38ch}
+.alsite .stepbody .btns{margin-top:16px}
+
+/* ── Numbers, questions, people ─────────────────────────────────────────────────────────────── */
+.alsite.vibe .sec .stats{background:none;border-radius:0;box-shadow:none;padding:0;gap:0}
+.alsite.vibe .stats>div{padding:6px clamp(14px,2.4cqw,32px);text-align:left;border-top:0}
+.alsite.vibe .stats>div:first-child{padding-left:0}
+.alsite.vibe .stats>div+div{border-left:1px solid var(--line)}
+.alsite.vibe .stats b{font-size:clamp(34px,5cqw,58px);font-weight:600;letter-spacing:-.045em}
+.alsite.vibe .stats span{font-size:15px;opacity:1;color:var(--mut)}
+.alsite.vibe .sec.bg-brand .stats span{color:color-mix(in srgb,var(--on-p) 82%,transparent)}
+.alsite.vibe .faq details{background:none;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;padding:20px 0;margin:0}
+.alsite.vibe .faq details:last-of-type{border-bottom:1px solid var(--line)}
+.alsite.vibe .faq summary::after{width:auto;height:auto;border-radius:0;background:none;color:var(--p);font-size:24px;display:block}
+.alsite.vibe .pcell{text-align:left}
+.alsite.vibe .ppl{--cap:260px}
+.alsite.vibe .ppl .img{border-radius:var(--rc);box-shadow:none;aspect-ratio:4/5}
+.alsite.vibe .ppl h3{margin-top:14px}
+.alsite.vibe .contact .img,.alsite.vibe .split .img,.alsite.vibe .gal .img,.alsite.vibe .strip .img{border-radius:var(--rc)}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────────────────────── */
+.alsite .fcol .hours{margin-top:10px;white-space:pre-line;color:var(--fmut);font-size:14.5px}
+.alsite.vibe .fsoc a{border-radius:var(--rc);padding:8px 14px}
+
+/* ── Small containers ───────────────────────────────────────────────────────────────────────── */
+@container site (max-width:900px){
+  .alsite .qa{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .alsite .qa>li:nth-child(odd){border-left:0}
+  .alsite .qa>li:nth-child(n+3){border-top:1px solid var(--line)}
+  .alsite .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container site (max-width:800px){
+  .alsite.vibe .hdr{padding-left:20px;padding-right:20px}
+  .alsite.vibe .hero-split .wrap{grid-template-columns:minmax(0,1fr);gap:32px}
+  .alsite.vibe .hmedia{max-width:none;justify-self:stretch}
+  .alsite.vibe .hmedia .herophoto,.alsite.vibe .hmedia .herophoto.has{aspect-ratio:4/3}
+  .alsite.vibe .stats>div:nth-child(odd){border-left:0;padding-left:0}
+  .alsite.vibe .stats>div:nth-child(n+3){border-top:1px solid var(--line);padding-top:18px}
+}
+@container site (max-width:560px){
+  .alsite .qa{grid-template-columns:minmax(0,1fr)}
+  .alsite .qa>li+li{border-left:0;border-top:1px solid var(--line)}
+  .alsite .steps{grid-template-columns:minmax(0,1fr)}
+  .alsite.vibe .hero-split .h-xl{font-size:clamp(32px,9.4cqw,42px)}
+  .alsite.vibe .ev-list article{grid-template-columns:52px minmax(0,1fr)}
+  .alsite.vibe .ev-list article>.btn{grid-column:2;justify-self:start}
+  .alsite.vibe .card .b{padding:18px 18px 20px}
+}
+.alsite .qi .ico{margin:0}
+.alsite .bal{justify-content:flex-start}
+
+/* ── Leaders by tier, membership types, chapters, partners ──────────────────────────────────── */
+.alsite .pgroup+.pgroup{margin-top:clamp(32px,4.4cqw,56px)}
+.alsite .gname{font:600 15px var(--fd);letter-spacing:0;color:var(--mut);margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.alsite .plans .card .b{gap:0}
+.alsite .planprice{font:600 clamp(26px,3cqw,34px)/1.1 var(--fd);letter-spacing:-.035em;color:var(--p);margin:6px 0 12px}
+.alsite .plans .ctext{color:var(--mut);font-size:15px}
+.alsite .plans .btns{margin-top:auto;padding-top:20px}
+.alsite .chtable{border-top:1px solid var(--line)}
+.alsite .chrow{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1.3fr);gap:20px;padding:16px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.alsite .chrow b{font:600 16.5px var(--fd);letter-spacing:-.01em}
+.alsite .chrow span{color:var(--mut);font-size:15.5px}
+.alsite .chhead{padding:12px 0}
+.alsite .chhead span{font:600 13px var(--fb);color:var(--mut)}
+.alsite .logos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.alsite .logos li{position:relative;display:grid;gap:8px;justify-items:center;align-content:start;padding:18px 14px;border:1px solid var(--line);border-radius:var(--rc);background:var(--card);text-align:center}
+.alsite .logos a{display:block;width:100%}
+.alsite .logoimg{aspect-ratio:3/2;width:100%;min-height:0;background-color:transparent!important;border-radius:0!important}
+.alsite .logoimg>img{object-fit:contain!important}
+.alsite .lname2{font-size:13.5px;color:var(--mut)}
+@container site (max-width:640px){
+  .alsite .chhead{display:none}
+  .alsite .chrow{grid-template-columns:minmax(0,1fr);gap:4px;padding:16px 0}
+  .alsite .chrow span[data-l]::before{content:attr(data-l) ": ";color:var(--ink);font-weight:600;font-size:13px}
+  .alsite .chrow span:empty{display:none}
+}
+
+/* ── Fewer items should still fill the row, and one item should read as a feature ───────────── */
+.alsite .bal.cards{--cap:9999px}
+.alsite .bal.cards.prod{--cap:320px}
+.alsite .bal.cards:has(>.card:only-child):not(.prod):not(.plans)>.card{width:min(100%,760px)}
+.alsite .bal.prod:has(>.card:only-child)>.card{width:min(100%,780px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:stretch}
+.alsite .bal.prod:has(>.card:only-child) .pimg{height:100%;aspect-ratio:auto;min-height:260px}
+.alsite .bal.prod:has(>.card:only-child) .b{justify-content:center;padding:28px}
+.alsite .bal.prod:has(>.card:only-child) .b>h3{font-size:clamp(22px,2.6cqw,28px)}
+.alsite .steps>.step{align-items:stretch;text-align:left}
+.alsite .stepno{align-self:flex-start;display:block}
+.alsite .stepbody{text-align:left}
+@container site (max-width:560px){
+  .alsite .bal.prod:has(>.card:only-child)>.card{grid-template-columns:minmax(0,1fr)}
+  .alsite .bal.prod:has(>.card:only-child) .pimg{min-height:0;aspect-ratio:4/3;height:auto}
+}
+
+/* ── Page rhythm: a calmer, more confident type scale ───────────────────────────────────────── */
+.alsite.vibe .h-lg{font-size:clamp(28px,3.9cqw,44px);letter-spacing:-.035em}
+.alsite.vibe .shead .viewall{font-size:14px}
+.alsite.vibe .card h3,.alsite.vibe .qt b{font-weight:600}
+.alsite .lead{max-width:56ch}
+
+/* ── The reader page: one whole story, event, job or spotlight, then a way in ───────────────── */
+.alsite .readpage{padding-top:clamp(28px,4cqw,56px)}
+.alsite .readwrap{max-width:1120px}
+.alsite .readback{display:inline-block;margin-bottom:24px;font:600 14.5px var(--fb);color:var(--p)}
+.alsite .readback:hover{text-decoration:underline;text-underline-offset:3px}
+.alsite .readhero{display:block;width:100%;aspect-ratio:21/9;max-height:460px;object-fit:cover;border-radius:var(--rc);margin-bottom:28px;background:var(--tint)}
+.alsite .readsub{margin:0 0 8px;font:600 15px var(--fb);color:var(--p)}
+.alsite .readtitle{font-size:clamp(30px,4.6cqw,48px);letter-spacing:-.04em;line-height:1.08}
+.alsite .readmeta{margin-top:14px;color:var(--mut);font-size:15.5px}
+.alsite .readfacts{display:flex;flex-wrap:wrap;gap:8px 32px;margin:18px 0 0}
+.alsite .readfacts dt{font:600 13px var(--fb);color:var(--mut)}
+.alsite .readfacts dd{margin:0;font-size:16px}
+.alsite .readbody{margin-top:28px;font-size:17.5px;line-height:1.75;color:var(--ink)}
+.alsite .readbody :is(p,ul,ol){margin:0 0 1.1em}
+.alsite .readbody a{color:var(--p);text-decoration:underline;text-underline-offset:3px}
+.alsite .readbody :is(h2,h3){margin:1.6em 0 .6em;font-size:1.35em;letter-spacing:-.02em}
+.alsite .readgallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:28px}
+.alsite .readgallery img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--rc)}
+.alsite .readgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:clamp(32px,5cqw,64px);align-items:start}
+.alsite .read{max-width:740px}
+.alsite .readcta{position:sticky;top:96px;padding:clamp(24px,4cqw,40px);border:1px solid var(--line);border-radius:var(--rc);background:var(--tint)}
+.alsite .readcta h2{font-size:clamp(22px,3cqw,30px);letter-spacing:-.03em}
+.alsite .readcta p{margin-top:8px;color:var(--mut);max-width:50ch}
+.alsite .readcta small{display:block;margin-top:14px;color:var(--mut);font-size:13.5px}
+.alsite .readnote{margin-top:18px;padding:14px 16px;border-left:3px solid var(--p);background:var(--tint);color:var(--ink);font-size:15px}
+
+/* ── Simple: a calm letter from home ────────────────────────────────────────────────────────── */
+.alsite.tpl-journal{--bg:#fdf8f2;--card:#f3f1ee;--line:#d8d2c8;--tint:#f5efe6}
+.alsite.tpl-journal :is(h1,h2,h3){font-family:var(--fd);font-weight:500;letter-spacing:-.01em}
+.alsite.tpl-journal .hdr{background:var(--bg)}
+.alsite.tpl-journal .h-xl{font-size:clamp(40px,6.2cqw,72px);font-weight:500;letter-spacing:-.02em;line-height:1.05}
+.alsite.tpl-journal .h-lg{font-size:clamp(28px,3.8cqw,44px);font-weight:500;letter-spacing:-.015em}
+.alsite .wrap.introhero{max-width:1120px;width:100%;margin-left:auto;margin-right:auto;text-align:left}
+.alsite .introhero>*{max-width:760px}
+.alsite .hero-intro .lead{font-size:clamp(17px,1.9cqw,20px);line-height:1.65;max-width:56ch;margin-top:22px}
+.alsite .hero-intro .btns{margin-top:30px}
+.alsite.tpl-journal .shead{border-top:0;padding-top:0}
+.alsite.tpl-journal .btn{border-radius:0;font-weight:600}
+.alsite.tpl-journal .btn.ghost{border-color:var(--ink)}
+/* the three choices: flat boxes with one clear way forward */
+.alsite.tpl-journal .card{background:var(--card);border:2px solid color-mix(in srgb,var(--p) 80%,#fff);border-radius:0}
+.alsite.tpl-journal .card:hover{border-color:var(--p);background:color-mix(in srgb,var(--p) 6%,var(--card))}
+.alsite.tpl-journal .card .b{padding:28px 28px 30px}
+.alsite.tpl-journal .card h3{font:600 17px var(--fb);letter-spacing:0}
+.alsite.tpl-journal .card .btns .btn{background:none;border:0;min-height:0;padding:0;color:var(--p);font-weight:700;font-size:15px;text-transform:none}
+.alsite.tpl-journal .card .btns .btn::after{content:"→";margin-left:8px;transition:transform .2s}
+.alsite.tpl-journal .card:hover .btns .btn::after{transform:translateX(4px)}
+.alsite.tpl-journal .card .btns .btn:hover{background:none}
+/* stories: large photographs, a date and a headline */
+.alsite.tpl-journal .newsimg{aspect-ratio:3/2}
+.alsite.tpl-journal .card :is(time){font:600 13px var(--fb);color:var(--ink)}
+.alsite.tpl-journal .card .more,.alsite.tpl-journal .more{color:var(--p)}
+.alsite.tpl-journal .ft.light{--fbg:#f3ece2}
+
+/* A photograph behind the plain opening, with a soft shade so the words stay readable */
+.alsite .introbg{position:absolute;inset:0;background-size:cover;background-position:center 30%;z-index:0}
+.alsite .introbg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,16,14,.78),rgba(10,16,14,.55) 55%,rgba(10,16,14,.3))}
+.alsite .hero-intro:has(.introbg){color:#fff;min-height:clamp(340px,46cqw,520px);display:flex;align-items:center}
+.alsite .hero-intro:has(.introbg) .introhero{position:relative;z-index:1;width:100%}
+.alsite .hero-intro:has(.introbg) .lead{color:rgba(255,255,255,.9)}
+.alsite .hero-intro:has(.introbg) .acc{color:var(--acc)}
+.alsite .hero-intro:has(.introbg) .btn{background:#fff;color:#111;border-color:#fff}
+.alsite .hero-intro:has(.introbg) .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.alsite .hero-intro:has(.introbg) .btn.ghost:hover{background:rgba(255,255,255,.14)}
+.alsite .introtools{position:absolute;right:14px;top:14px;z-index:3;display:flex;gap:6px}
+.alsite .introtools .pick{position:static}
+
+/* Photos on lists and cards, only when the item has one */
+.alsite .withthumb.link{align-items:center}
+.alsite .news-list article.withthumb{grid-template-columns:120px 132px minmax(0,1fr)}
+.alsite.vibe .ev-list article.withthumb,.alsite .ev-list article.withthumb{grid-template-columns:64px 132px minmax(0,1fr) auto}
+.alsite .thumb{width:132px;aspect-ratio:3/2;min-height:0;border-radius:var(--rc);flex:none}
+.alsite .bizimg>img{object-fit:contain!important;padding:14px;background:var(--card)}
+@container site (max-width:640px){
+  .alsite .news-list article.withthumb{grid-template-columns:96px minmax(0,1fr)}
+  .alsite .news-list article.withthumb time{grid-column:1/-1}
+  .alsite .ev-list article.withthumb,.alsite.vibe .ev-list article.withthumb{grid-template-columns:52px 96px minmax(0,1fr)}
+  .alsite .ev-list article.withthumb>.btn{grid-column:2/-1;justify-self:start}
+  .alsite .thumb{width:96px}
+}
+.alsite .thumb.ph{background:none!important;border:0}
+.alsite .rowlist article.withthumb{grid-template-columns:132px minmax(0,1fr) auto auto}
+@container site (max-width:640px){.alsite .rowlist article.withthumb{grid-template-columns:96px minmax(0,1fr)}.alsite .rowlist article.withthumb>:nth-child(n+3){grid-column:2}}
+.alsite .thumb.ph{display:block}
+@container site (max-width:900px){
+  .alsite .readgrid{grid-template-columns:minmax(0,1fr)}
+  .alsite .readcta{position:static;margin-top:36px}
+  .alsite .readhero{aspect-ratio:16/9}
+}
+.alsite .readhero{object-position:center 22%}

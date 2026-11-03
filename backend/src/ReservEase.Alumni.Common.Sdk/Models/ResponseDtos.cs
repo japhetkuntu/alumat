@@ -337,6 +337,7 @@ public class ServiceTypeDto
     public string? SettlementTarget { get; set; }
     /// <summary>Whether this service is shown on the institution's public website.</summary>
     public bool ShowOnWebsite { get; set; }
+    public string? ImageUrl { get; set; }
 }
 
 public class ServiceRequestUpdateDto

@@ -34,7 +34,7 @@ public record PublicCommunityItemResponse(string Id, string Name, string? Kind, 
 
 // ── The institution's website (see PublicController.GetPublicSiteData) ───────────────────────────────
 
-public record PublicServiceItemResponse(string Id, string Name, string? Description, decimal Price);
+public record PublicServiceItemResponse(string Id, string Name, string? Description, decimal Price, string? ImageUrl = null);
 public record PublicProductItemResponse(string Id, string Name, decimal Price, string? ImageUrl);
 public record PublicFundraiserItemResponse(string Id, string Title, string? Summary, decimal Raised, decimal Goal, string? ImageUrl);
 public record PublicJobItemResponse(string Id, string Title, string? Company, string? Location);

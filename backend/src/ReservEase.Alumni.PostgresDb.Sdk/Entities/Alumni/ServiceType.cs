@@ -60,4 +60,7 @@ public class ServiceType : BaseEntity, ITenantScoped
 
     /// <summary>The institution chose to show this service on its public website. Off by default, so nothing appears publicly unless it was picked.</summary>
     public bool ShowOnWebsite { get; set; }
+
+    /// <summary>A photo for the service, shown on the public website and in the portal. Optional.</summary>
+    public string? ImageUrl { get; set; }
 }

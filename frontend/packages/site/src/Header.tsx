@@ -14,13 +14,15 @@ interface HeaderProps {
   sticky?: boolean;
   /** In the editor the page scrolls inside a frame, so scrolling is done by the element rather than the browser's address. */
   inEditor?: boolean;
+  /** "/" on pages other than the home page, so menu items lead back to their section on the home page. */
+  base?: string;
 }
 
 /**
  * The top bar. It shows as many menu items as fit, and tucks the rest under "More", measured from the real width of the bar so it adapts
  * to a long name, a narrow window or a phone with nobody setting anything up. On a phone the Menu button opens the full list.
  */
-export function SiteHeader({ logoUrl, mark, name, items, overlay, sticky, inEditor }: HeaderProps) {
+export function SiteHeader({ logoUrl, mark, name, items, overlay, sticky, inEditor, base = "" }: HeaderProps) {
   const hdr = useRef<HTMLElement>(null), menu = useRef<HTMLElement>(null), toggle = useRef<HTMLButtonElement>(null), sign = useRef<HTMLAnchorElement>(null), more = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false), [popOpen, setPopOpen] = useState(false);
   const [tucked, setTucked] = useState<MenuItem[]>([]);
@@ -84,25 +86,26 @@ export function SiteHeader({ logoUrl, mark, name, items, overlay, sticky, inEdit
   const go = (e: React.MouseEvent, id?: string) => {
     e.preventDefault(); setOpen(false); setPopOpen(false);
     const el = id ? document.getElementById("sec-" + id) : document.getElementById("alsite-top");
+    if (!el && base) { window.location.href = id ? `${base}#sec-${id}` : base; return; }
     el?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   };
 
   return (
     <header ref={hdr} id="hdr" className={`hdr ${overlay ? "overlay" : ""} ${sticky && !overlay ? "sticky" : ""} ${scrolled ? "scrolled" : ""} ${open ? "open" : ""}`}>
-      <a className="logo" href="#alsite-top" onClick={(e) => go(e)} aria-label={`${name}, back to the top`}>
+      <a className="logo" href={base ? base : "#alsite-top"} onClick={(e) => go(e)} aria-label={`${name}, back to the top`}>
         {logoUrl ? <img src={logoUrl} alt={name} /> : <>{mark}<span className="lname">{name}</span></>}
       </a>
       <button ref={toggle} type="button" className="nav-toggle" aria-expanded={open} aria-controls="alsite-menu" onClick={() => setOpen((o) => !o)}>Menu</button>
       <nav ref={menu} id="alsite-menu" className="menu" aria-label="Main">
         <div className="mitems">
-          <div className="mi"><a href="#alsite-top" className={active === null ? "on" : ""} onClick={(e) => go(e)}>Home</a></div>
+          <div className="mi"><a href={base ? base : "#alsite-top"} className={active === null ? "on" : ""} onClick={(e) => go(e)}>Home</a></div>
           {items.map((it) => (
-            <div className="mi" key={it.id}><a href={`#sec-${it.id}`} title={it.label} className={active === it.id ? "on" : ""} onClick={(e) => go(e, it.id)}>{it.label}</a></div>
+            <div className="mi" key={it.id}><a href={`${base}#sec-${it.id}`} title={it.label} className={active === it.id ? "on" : ""} onClick={(e) => go(e, it.id)}>{it.label}</a></div>
           ))}
         </div>
         <div ref={more} className={`mi mmore ${popOpen ? "open" : ""}`} hidden>
           <button type="button" className="mg" aria-haspopup="true" aria-expanded={popOpen} onClick={() => setPopOpen((o) => !o)}>More</button>
-          <div className="mpop">{tucked.map((it) => <a key={it.id} href={`#sec-${it.id}`} className={active === it.id ? "on" : ""} onClick={(e) => go(e, it.id)}>{it.label}</a>)}</div>
+          <div className="mpop">{tucked.map((it) => <a key={it.id} href={`${base}#sec-${it.id}`} className={active === it.id ? "on" : ""} onClick={(e) => go(e, it.id)}>{it.label}</a>)}</div>
         </div>
         <a ref={sign} className="signin" href={portalPath.signin}>Member sign in</a>
       </nav>

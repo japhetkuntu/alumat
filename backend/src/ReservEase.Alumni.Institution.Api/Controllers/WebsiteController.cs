@@ -12,12 +12,17 @@ namespace ReservEase.Alumni.Institution.Api.Controllers;
 /// The institution's own website: edit a draft, then publish it. SuperAdmin only, because a published page speaks for the whole institution.
 /// </summary>
 [Authorize(Roles = "SuperAdmin")]
-public class WebsiteController(IWebsiteService websiteService) : DefaultController
+public class WebsiteController(IWebsiteService websiteService, IWebsiteContentService contentService) : DefaultController
 {
     [HttpGet]
     [SwaggerOperation(Summary = "Open the website editor", Description = "The draft (null until first opened), where it stands, and the institution's own branding.")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<WebsiteEditorDto>))]
     public async Task<IActionResult> Get() => (await websiteService.GetAsync()).ToActionResult();
+
+    [HttpGet("content")]
+    [SwaggerOperation(Summary = "The institution's own items as the website would show them", Description = "Same rules as the public site: only what is public, only features that are on.")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<WebsiteContentDto>))]
+    public async Task<IActionResult> Content() => (await contentService.GetAsync()).ToActionResult();
 
     [HttpPut("draft")]
     [SwaggerOperation(Summary = "Save the draft", Description = "Autosave. BaseRevision must match the stored revision, or the save is refused (409) so two admins never overwrite each other.")]

@@ -12,4 +12,6 @@ export interface SiteCtx {
   /** True when the live sections are showing made-up sample items (inside the editor). */
   sample?: boolean;
   currency?: string;
+  /** The editor is still fetching the institution's items, so a section must not claim it has none. */
+  loading?: boolean;
 }

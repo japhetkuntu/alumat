@@ -1,3 +1,4 @@
+using ReservEase.Alumni.PostgresDb.Sdk.Website;
 using ReservEase.Alumni.Redis.Sdk.Services;
 using ReservEase.Alumni.Common.Sdk.Options;
 using Microsoft.EntityFrameworkCore;
@@ -166,6 +167,7 @@ public class ServiceService(
                 CommunityId = communityId,
                 SettlementTarget = target,
                 ShowOnWebsite = request.ShowOnWebsite,
+                ImageUrl = WebsiteDocumentValidator.Url(request.ImageUrl),
                 Name = request.Name.Trim(),
                 Description = descriptionHtml,
                 Price = request.Price,
@@ -207,6 +209,7 @@ public class ServiceService(
             serviceType.CommunityId = communityId;
             serviceType.SettlementTarget = target;
             serviceType.ShowOnWebsite = request.ShowOnWebsite;
+            serviceType.ImageUrl = WebsiteDocumentValidator.Url(request.ImageUrl);
 
             serviceType.Name = request.Name.Trim();
             var descriptionHtml = RichText.Sanitize(request.Description);

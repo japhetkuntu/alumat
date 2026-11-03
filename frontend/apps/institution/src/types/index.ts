@@ -757,6 +757,8 @@ export interface ServiceType {
   settlementTarget?: string | null;
   /** Whether this service is shown on the institution's public website. */
   showOnWebsite?: boolean;
+  /** An optional photo for the service. */
+  imageUrl?: string | null;
 }
 
 export interface ServiceRequestUpdate {

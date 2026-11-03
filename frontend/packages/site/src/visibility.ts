@@ -5,7 +5,7 @@ import type { SiteData, SiteDocument, SiteSection } from "./types";
 export function hasContent(sec: SiteSection, data: SiteData): boolean {
   switch (sec.type) {
     case "news": return (data.news?.length ?? 0) > 0;
-    case "events": return (data.events?.length ?? 0) > 0;
+    case "events": return true; // with nothing coming up the section says so and points to past events
     case "services": return (data.services?.length ?? 0) > 0;
     case "store": return (data.store?.length ?? 0) > 0;
     case "fundraisers": return (data.fundraisers?.length ?? 0) > 0;
@@ -13,6 +13,7 @@ export function hasContent(sec: SiteSection, data: SiteData): boolean {
     case "businesses": return (data.businesses?.length ?? 0) > 0;
     case "communities": return (data.communities?.length ?? 0) > 0;
     case "spotlights": return (data.spotlights?.length ?? 0) > 0;
+    case "actions": case "membership": case "chapters": case "partners": case "leaders": case "gallery": return (sec.items?.length ?? 0) > 0;
     case "stats": { const s = data.stats; return !!s && [s.members, s.joinedLast30Days, s.eventsNext30Days, s.openJobs, s.businesses, s.communities].some((v) => (v ?? 0) > 0); }
     default: return true;
   }

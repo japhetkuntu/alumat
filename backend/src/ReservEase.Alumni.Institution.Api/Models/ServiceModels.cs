@@ -25,6 +25,8 @@ public class CreateServiceTypeRequest
     public string? SettlementTarget { get; set; }
     /// <summary>Show this service on the institution's public website.</summary>
     public bool ShowOnWebsite { get; set; }
+    /// <summary>An optional photo (an https address from the image upload).</summary>
+    public string? ImageUrl { get; set; }
 }
 
 public class UpdateServiceTypeRequest
@@ -42,6 +44,8 @@ public class UpdateServiceTypeRequest
     public string? SettlementTarget { get; set; }
     /// <summary>Show this service on the institution's public website.</summary>
     public bool ShowOnWebsite { get; set; }
+    /// <summary>An optional photo (an https address from the image upload).</summary>
+    public string? ImageUrl { get; set; }
 }
 
 /// <summary>Advance/annotate a request — Stage must be one of the request's ServiceType.Stages when provided. At least one of Stage/Note/Attachment should be set.</summary>

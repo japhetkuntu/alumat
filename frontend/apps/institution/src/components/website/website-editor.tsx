@@ -5,12 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import "@alumni/site/styles.css";
-import { SiteView, SAMPLE_DATA, BLOCKS, TEMPLATES, applyLook, type EditApi, type SectionType } from "@alumni/site";
+import { SiteView, SAMPLE_DATA, BLOCKS, TEMPLATES, applyLook, siteDataFromRaw, type EditApi, type SectionType } from "@alumni/site";
 import { Button, ArrowLeft, ExternalLink, Redo, Search, Skeleton, Undo, compressImage, cn } from "@alumni/ui";
 import { handleApiError } from "@/lib/api-client";
-import { getInstitutionProfile, uploadImage } from "@/lib/institution-api";
+import { getInstitutionProfile, getWebsiteContent, uploadImage } from "@/lib/institution-api";
 import { sora } from "./site-font";
-import { AddSectionDialog, CommandPalette, PhotoDialog, PublishDialog, VersionsDialog, type Command } from "./dialogs";
+import { AddSectionDialog, MemberPickerDialog, CommandPalette, PhotoDialog, PublishDialog, VersionsDialog, type Command } from "./dialogs";
 import { addItem, duplicateSection, insertSection, moveSection, removeItem, removePhoto, removeSection, sectionName, setItemField, setPhoto, setProp } from "./doc-ops";
 import { DesignPanel, LeftPanel, SectionPanel, SitePanel, type PanelCtx } from "./panels";
 import { Segmented } from "./fields";
@@ -26,11 +26,15 @@ export function WebsiteEditor() {
   const profile = useQuery({ queryKey: ["institution-profile"], queryFn: getInstitutionProfile, staleTime: 5 * 60_000 });
   const liveUrl = (profile.data as { memberPortalUrl?: string | null } | undefined)?.memberPortalUrl ?? null;
 
+  // The institution's own items, as visitors would see them. Refreshed when the admin returns from adding some in another tab.
+  const content = useQuery({ queryKey: ["website-content"], queryFn: getWebsiteContent, staleTime: 20_000, refetchOnWindowFocus: true });
+  const realData = useMemo(() => (content.data ? siteDataFromRaw(content.data) : {}), [content.data]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("design");
   const [device, setDevice] = useState<keyof typeof WIDTHS>("desktop");
   const [preview, setPreview] = useState(false);
   const [sheet, setSheet] = useState<"left" | "right" | null>(null);
+  const [picking, setPicking] = useState<string | null>(null);
   const [adding, setAdding] = useState<{ at?: number } | null>(null);
   const [photo, setPhoto_] = useState<{ id: string; slot: string } | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -71,7 +75,7 @@ export function WebsiteEditor() {
       move: (id, dir) => ed.change(moveSection(doc, id, dir)),
       duplicate: (id) => { const r = duplicateSection(doc, id); ed.change(r.doc); if (r.section) select(r.section.id); },
       remove: (id) => { ed.change(removeSection(doc, id)); setSelectedId(null); toast("Section removed.", { action: { label: "Undo", onClick: ed.undo } }); },
-      describeLink: (s, key, itemId) => { const l = itemId ? s.items?.find((i) => i.id === itemId)?.links[key] : s.links[key]; return l ? `Goes to: ${l.t === "anchor" ? "a section on this page" : l.t === "join" ? "the join page" : l.t === "signin" ? "member sign in" : l.v ?? l.t}` : "No link yet"; },
+      describeLink: (s, key, itemId) => { const l = itemId ? s.items?.find((i) => i.id === itemId)?.links[key] : s.links[key]; return l ? `Goes to: ${l.t === "anchor" ? "a section on this page" : l.t === "join" ? "the join page" : l.t === "signin" ? "member sign in" : l.t === "portal" ? `the portal page “${l.v}”` : l.v ?? l.t}` : "No link yet"; },
     };
   }, [doc, preview, selectedId, select, ed]);
 
@@ -104,7 +108,7 @@ export function WebsiteEditor() {
     ...TEMPLATES.map((t) => ({ group: "Look", label: `Use the ${t.name} look`, hint: doc.template === t.key ? "current" : undefined, run: () => ed.change(applyLook(doc, t.key)) })),
   ];
   const section = doc.sections.find((s) => s.id === selectedId) ?? null;
-  const ctx: PanelCtx = { doc, brand, disabled: ed.disabledFeatures, change: ed.change, selectedId, select, openAdd: (at) => setAdding({ at }), upload, scrollTo };
+  const ctx: PanelCtx = { doc, brand, disabled: ed.disabledFeatures, change: ed.change, selectedId, select, openAdd: (at) => setAdding({ at }), upload, scrollTo, pickMembers: (id) => setPicking(id) };
   const panelTab: Tab = tab === "section" && !section ? "design" : tab;
   const status = ed.status;
 
@@ -150,10 +154,10 @@ export function WebsiteEditor() {
         {/* page */}
         <main className="min-w-0 flex-1 overflow-auto p-3 max-lg:pb-20 sm:p-4" data-site-scroller onClick={() => setSheet(null)}>
           <div className={cn("mx-auto overflow-clip bg-background shadow-[0_1px_2px_rgba(0,0,0,.12)] transition-[width] duration-300", device !== "desktop" && "border-[12px] border-[#17211e] shadow-2xl", device === "phone" ? "rounded-[38px]" : device === "tablet" ? "rounded-[26px]" : "")} style={{ width: WIDTHS[device], maxWidth: "100%" }}>
-            <SiteView doc={doc} brand={brand} data={examples ? SAMPLE_DATA : {}} platformDisabled={ed.disabledFeatures} edit={api} sample={examples} />
+            <SiteView doc={doc} brand={brand} data={examples ? SAMPLE_DATA : realData} platformDisabled={ed.disabledFeatures} edit={api} sample={examples} loading={content.isLoading && !examples} />
           </div>
           {!preview && (
-            <p className="mx-auto mt-3 max-w-md text-center text-[12px] text-muted-foreground">{examples ? "Example content is showing, only to preview layouts. It is never published." : "Sections that fill themselves from your news, events, services and products stay empty here until you have some."}</p>
+            <p className="mx-auto mt-3 max-w-md text-center text-[12px] text-muted-foreground">{examples ? "Example content is showing, only to preview layouts. It is never published." : "Sections that fill themselves show your own items. Where you have none yet, visitors do not see that section."}</p>
           )}
         </main>
 
@@ -176,6 +180,19 @@ export function WebsiteEditor() {
         <button className={cn("text-[13px] font-semibold", sheet === "right" && "bg-foreground text-background")} onClick={() => setSheet(sheet === "right" ? null : "right")}>Edit and design{selectedId ? " •" : ""}</button>
       </nav>
 
+      <MemberPickerDialog open={!!picking} onClose={() => setPicking(null)} onPick={(people) => {
+        if (!picking) return;
+        let next = doc;
+        for (const m of people) {
+          const r = addItem(next, picking); next = r.doc;
+          if (!r.item) continue;
+          next = setItemField(next, picking, r.item.id, "name", `${m.firstName} ${m.lastName}`.trim());
+          next = setItemField(next, picking, r.item.id, "role", "Add their role");
+          if (m.profilePictureUrl && /^https?:\/\//.test(m.profilePictureUrl)) next = setPhoto(next, picking, "i" + r.item.id, m.profilePictureUrl);
+        }
+        ed.change(next);
+        toast(`${people.length} ${people.length === 1 ? "person" : "people"} added. Set their roles and groups in the panel.`);
+      }} />
       <AddSectionDialog open={!!adding} disabled={ed.disabledFeatures} doc={doc} onClose={() => setAdding(null)} onAdd={(t: SectionType) => {
         const r = insertSection(doc, t, adding?.at); ed.change(r.doc); setAdding(null); select(r.section.id); scrollTo(r.section.id);
         toast(`“${sectionName(r.section)}” added.`, { action: { label: "Undo", onClick: ed.undo } });

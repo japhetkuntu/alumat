@@ -1647,6 +1647,7 @@ export interface ServiceTypeBody {
   communityId?: string;
   settlementTarget?: string;
   showOnWebsite?: boolean;
+  imageUrl?: string;
 }
 
 export async function getServiceTypes(page = 1, pageSize = 50, status?: string, search?: string) {
@@ -2533,5 +2534,11 @@ export async function getWebsiteVersions() {
 
 export async function restoreWebsiteVersion(versionId: string) {
   const res = await institutionClient.post<ApiResponse<WebsiteStatus>>(`/website/versions/${versionId}/restore`);
+  return res.data.data!;
+}
+
+/** The institution's own items as the website would show them (same rules as the public site). */
+export async function getWebsiteContent() {
+  const res = await institutionClient.get<ApiResponse<import("@alumni/site").RawSiteData>>("/website/content");
   return res.data.data!;
 }

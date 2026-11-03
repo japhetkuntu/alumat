@@ -6,13 +6,13 @@ import type { SiteSection } from "./types";
 
 const SOCIAL: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", linkedin: "LinkedIn", x: "X", youtube: "YouTube" };
 
-interface FooterProps { ctx: SiteCtx; brandMark: React.ReactNode; logoUrl?: string | null; items: { sec: SiteSection; label: string }[]; featureOf: (s: SiteSection) => boolean }
+interface FooterProps { base?: string; ctx: SiteCtx; brandMark: React.ReactNode; logoUrl?: string | null; items: { sec: SiteSection; label: string }[]; featureOf: (s: SiteSection) => boolean }
 
 /**
  * The footer is its own surface so the page visibly ends: the brand block, links grouped by purpose and built from the menu, contact details
  * as real links, and a legal row. Empty fields are left out.
  */
-export function SiteFooter({ ctx, brandMark, logoUrl, items, featureOf }: FooterProps) {
+export function SiteFooter({ base = "", ctx, brandMark, logoUrl, items, featureOf }: FooterProps) {
   const F = ctx.doc.footer, name = nameOf(ctx.doc.design, ctx.brand);
   const explore = items.filter((i) => !featureOf(i.sec)), involved = items.filter((i) => featureOf(i.sec));
   const cols: { label: string; links: (MenuItem | { id: "top"; label: string })[] }[] = [];
@@ -20,7 +20,9 @@ export function SiteFooter({ ctx, brandMark, logoUrl, items, featureOf }: Footer
     cols.push({ label: "Explore", links: [{ id: "top", label: "Home" }, ...explore.map((i) => ({ id: i.sec.id, label: i.label }))] });
     if (involved.length) cols.push({ label: "Get involved", links: involved.map((i) => ({ id: i.sec.id, label: i.label })) });
   }
-  const hasContact = !!(F.email || F.phone || F.addr);
+  const hasContact = !!(F.email || F.phone || F.addr || F.hours);
+  const useful = (F.links ?? []).filter((l) => l.label && l.url);
+  if (useful.length) cols.push({ label: "Useful links", links: [] });
   const social = Object.entries(F.social ?? {}).filter(([k, v]) => v && SOCIAL[k]);
   const one = "minmax(0,1fr)";
   const wide = ["minmax(0,1.5fr)", ...cols.map(() => one), ...(hasContact ? ["minmax(0,1.5fr)"] : [])].join(" ");
@@ -41,7 +43,7 @@ export function SiteFooter({ ctx, brandMark, logoUrl, items, featureOf }: Footer
           {cols.map((c) => (
             <div className="fcol" key={c.label}>
               <div className="fth">{c.label}</div>
-              <nav aria-label={c.label}>{c.links.map((l) => <a key={l.id} href={l.id === "top" ? "#alsite-top" : `#sec-${l.id}`}>{l.label}</a>)}</nav>
+              <nav aria-label={c.label}>{c.label === "Useful links" && useful.map((l) => <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer">{l.label}</a>)}{c.links.map((l) => <a key={l.id} href={l.id === "top" ? (base || "#alsite-top") : `${base}#sec-${l.id}`}>{l.label}</a>)}</nav>
             </div>
           ))}
           {hasContact && (
@@ -51,13 +53,14 @@ export function SiteFooter({ ctx, brandMark, logoUrl, items, featureOf }: Footer
                 {F.addr && <p>{F.addr}</p>}
                 {F.email && <a href={`mailto:${F.email}`}>{F.email}</a>}
                 {F.phone && <a href={`tel:${F.phone.replace(/[^\d+]/g, "")}`}>{F.phone}</a>}
+                {F.hours && <p className="hours">{F.hours}</p>}
               </address>
             </div>
           )}
         </div>
         <div className="legal">
           <span>© {new Date().getFullYear()} {name}. All rights reserved.</span>
-          <nav aria-label="Legal"><a href={portalPath.privacy}>Privacy</a><a href={portalPath.terms}>Terms</a><a href="#alsite-top">Back to top</a></nav>
+          <nav aria-label="Legal"><a href={portalPath.privacy}>Privacy</a><a href={portalPath.terms}>Terms</a><a href={base || "#alsite-top"}>{base ? "Home" : "Back to top"}</a></nav>
           {F.credit && <span className="credit">Powered by AlumUnion</span>}
         </div>
       </div>

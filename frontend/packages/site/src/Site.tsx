@@ -19,17 +19,20 @@ interface SiteViewProps {
   edit?: EditApi;
   sample?: boolean;
   currency?: string;
+  loading?: boolean;
   /** The id of the element that scrolls, so the menu can follow it inside the editor. */
   className?: string;
+  /** A page other than the home page (a full story): drawn between the same header and footer instead of the sections. */
+  reader?: React.ReactNode;
 }
 
 const menuLabel = (s: SiteSection) => (s.menu.label || BLOCKS[s.type].name).trim() || BLOCKS[s.type].name;
 
 /** The whole website: header, sections, footer. The same component draws the live page (no `edit`) and the editor's page (with `edit`). */
-export function SiteView({ doc, brand, data, platformDisabled = [], edit, sample, currency, className = "" }: SiteViewProps) {
+export function SiteView({ doc, brand, data, platformDisabled = [], edit, sample, currency, loading, className = "", reader }: SiteViewProps) {
   const editing = !!edit;
   const sections = visibleSections(doc, data, platformDisabled, editing);
-  const ctx: SiteCtx = { doc, brand, data, sections, edit, sample, currency };
+  const ctx: SiteCtx = { doc, brand, data, sections, edit, sample, currency, loading };
   const shown = editing ? sections.filter((s) => !whyHidden(s, doc, data, platformDisabled)) : sections;
   const items = shown.filter((s) => s.menu.on).map((s) => ({ sec: s, label: menuLabel(s) }));
   const d = doc.design, name = nameOf(d, brand);
@@ -41,11 +44,11 @@ export function SiteView({ doc, brand, data, platformDisabled = [], edit, sample
   const overlay = d.headerStyle === "overlay" && first?.type === "hero" && first.variant === "full";
 
   return (
-    <div id="alsite-top" className={`alsite ${d.vibe ? "vibe" : ""} ${d.sticky ? "stickyhdr" : ""} ${d.dark ? "dark" : ""} ${className}`} style={tokens(d, brand) as React.CSSProperties}>
-      <SiteHeader logoUrl={customLogo} mark={mark} name={name} items={items.map((i) => ({ id: i.sec.id, label: i.label }))} overlay={overlay} sticky={d.sticky} inEditor={editing} />
-      {sections.map((s, i) => {
+    <div id="alsite-top" className={`alsite tpl-${doc.template} ${d.vibe ? "vibe" : ""} ${d.sticky ? "stickyhdr" : ""} ${d.dark ? "dark" : ""} ${className}`} style={tokens(d, brand) as React.CSSProperties}>
+      <SiteHeader logoUrl={customLogo} mark={mark} name={name} items={items.map((i) => ({ id: i.sec.id, label: i.label }))} overlay={reader ? false : overlay} sticky={d.sticky} inEditor={editing} base={reader ? "/" : ""} />
+      {reader ? <main className="sec bg-plain sp-n readpage">{reader}</main> : sections.map((s, i) => {
         const why = editing ? whyHidden(s, doc, data, platformDisabled) : null;
-        const cls = ["sec", s.type === "hero" ? `hero-${s.variant === "full" ? "full" : s.variant === "center" ? "center" : "split"}` : "", `bg-${s.bg}`, `sp-${s.space}`, edit?.selectedId === s.id ? "selected" : "", why ? "featoff" : ""].join(" ");
+        const cls = ["sec", s.type === "hero" ? `hero-${s.variant === "full" ? "full" : s.variant === "center" ? "center" : s.variant === "intro" ? "intro" : "split"}` : "", `bg-${s.bg}`, `sp-${s.space}`, edit?.selectedId === s.id ? "selected" : "", why ? "featoff" : ""].join(" ");
         return (
           <div key={s.id} style={{ display: "contents" }}>
             {edit && i === 0 && <InsertGap at={0} edit={edit} />}
@@ -58,7 +61,7 @@ export function SiteView({ doc, brand, data, platformDisabled = [], edit, sample
         );
       })}
       {editing && sections.length === 0 && <div className="sec"><div className="wrap narrow"><button type="button" className="emptybox" onClick={() => edit!.insertAt(0)}>This page is empty. Add the first section</button></div></div>}
-      <SiteFooter ctx={ctx} brandMark={mark} logoUrl={customLogo} items={items} featureOf={(s) => !!BLOCKS[s.type].feature} />
+      <SiteFooter base={reader ? "/" : ""} ctx={ctx} brandMark={mark} logoUrl={customLogo} items={items} featureOf={(s) => !!BLOCKS[s.type].feature} />
       <Motion rootId="alsite-top" enabled={!editing} />
     </div>
   );

@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { getMembers } from "@/lib/institution-api";
+import type { Member } from "@/types";
 import { BLOCKS, STOCK, checkBeforePublish, sized, type SectionType, type SiteDocument } from "@alumni/site";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Check as CheckIcon, AlertTriangle, Info, Loader2, cn } from "@alumni/ui";
 import { inputCls } from "./fields";
@@ -176,6 +178,45 @@ export function CommandPalette({ open, commands, onClose }: { open: boolean; com
             </Fragment>
           ))}
         </ul>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Choose leaders from your members ──────────────────────────────────────────────────────────────
+
+/** The admin picks the people. Only a name, a role and the profile photo are copied onto the website, nothing else from the profile. */
+export function MemberPickerDialog({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (people: Member[]) => void }) {
+  const [text, setText] = useState(""), [chosen, setChosen] = useState<Record<string, Member>>({});
+  const q = useQuery({ queryKey: ["website-member-search", text], queryFn: () => getMembers({ search: text.trim() || undefined, status: "Active", pageSize: 12 }), enabled: open, staleTime: 15_000 });
+  const rows = q.data?.results ?? [];
+  const count = Object.keys(chosen).length;
+  const close = () => { setChosen({}); setText(""); onClose(); };
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) close(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader><DialogTitle>Add people from your members</DialogTitle><DialogDescription>Only their name and profile photo are put on the website. You choose who appears, and you can set their role afterwards.</DialogDescription></DialogHeader>
+        <input className={inputCls} placeholder="Search by name" aria-label="Search members" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+        <ul className="m-0 grid max-h-[320px] list-none gap-1 overflow-auto p-0" aria-busy={q.isLoading}>
+          {q.isLoading && Array.from({ length: 4 }, (_, i) => <li key={i} className="h-12 animate-pulse bg-muted" />)}
+          {!q.isLoading && rows.length === 0 && <li className="p-3 text-[13px] text-muted-foreground">No active members match.</li>}
+          {rows.map((m) => {
+            const on = !!chosen[m.id];
+            return (
+              <li key={m.id}>
+                <label className={cn("flex cursor-pointer items-center gap-3 border border-border p-2", on && "border-foreground bg-muted")}>
+                  <input type="checkbox" checked={on} onChange={() => setChosen((c) => { const n = { ...c }; if (n[m.id]) delete n[m.id]; else n[m.id] = m; return n; })} />
+                  {m.profilePictureUrl ? <img src={m.profilePictureUrl} alt="" className="h-9 w-9 object-cover" /> : <span className="grid h-9 w-9 place-items-center bg-muted text-[12px] font-semibold">{(m.firstName[0] ?? "") + (m.lastName[0] ?? "")}</span>}
+                  <span className="min-w-0 flex-1"><span className="block truncate text-[14px] font-medium">{m.firstName} {m.lastName}</span><span className="block truncate text-[12px] text-muted-foreground">{[m.jobTitle, m.graduationYear ? `Class of ${m.graduationYear}` : null].filter(Boolean).join(" · ")}</span></span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={close}>Cancel</Button>
+          <Button disabled={!count} onClick={() => { onPick(Object.values(chosen)); close(); }}>Add {count || ""} {count === 1 ? "person" : "people"}</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

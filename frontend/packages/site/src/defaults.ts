@@ -6,11 +6,13 @@ import type { SectionType, SiteDocument, SiteItem, SiteSection } from "./types";
 import { newSection } from "./templates";
 
 /** Words that mark a place still waiting for the admin's own. A page that still contains one is flagged before it goes live. */
-export const PLACEHOLDERS = ["Say a little about it here.", "Full name", "New question", "Write the answer here.", "New card", "Add your words here."];
+export const PLACEHOLDERS = ["Say a little about it here.", "Full name", "New question", "Write the answer here.", "New card", "Add your words here.", "Membership type", "Chapter name", "Partner name", "Add their role"];
 
 const item = (fields: Record<string, string>, links: SiteItem["links"] = {}): SiteItem => ({ id: uid(), fields, links });
 
 const COPY: Partial<Record<SectionType, Record<string, string>>> = {
+  actions: {},
+  membership: { heading: "Ways to belong" }, chapters: { heading: "Chapters and branches" }, partners: { heading: "Our partners" },
   hero: { heading: "Your headline", body: "A line or two that tells visitors who you are and why to join.", b1: "Join the community" },
   text: { heading: "Our story", body: "Add your words here." },
   imagetext: { heading: "A heading", body: "Add your words here.", link: "Learn more" },
@@ -31,6 +33,8 @@ export function createSection(type: SectionType): SiteSection {
   if (type === "contact") s.imgs.map = STOCK.campus;
   if (type === "cards") s.items = [0, 1, 2].map((i) => { const it = item({ title: ["First", "Second", "Third"][i], text: "Say a little about it here.", btn: "" }, { btn: { t: "none" } }); s.imgs["i" + it.id] = STOCK.cards[i]; return it; });
   if (type === "faq") s.items = [item({ q: "New question", a: "Write the answer here." })];
+  if (type === "actions") { s.menu = { on: false, label: "" }; s.items = [item({ label: "Join the community", hint: "Create your profile" }, { go: { t: "join" } }), item({ label: "Pay dues or give", hint: "Support your alumni family" }, { go: { t: "portal", v: "contributions" } }), item({ label: "Update your details", hint: "Stay in touch" }, { go: { t: "portal", v: "profile" } })]; }
+  if (type === "membership") { s.bg = "tint"; s.items = []; }
   if (type === "leaders") s.items = [];
   if (type === "gallery") s.items = [];
   return s;
@@ -41,7 +45,11 @@ export function createItem(type: SectionType): SiteItem {
   switch (type) {
     case "cards": return item({ title: "New card", text: "Say a little about it here.", btn: "" }, { btn: { t: "none" } });
     case "faq": return item({ q: "New question", a: "Write the answer here." });
-    case "leaders": return item({ name: "Full name", role: "Role" });
+    case "actions": return item({ label: "Pay dues or give", hint: "" }, { go: { t: "portal", v: "contributions" } });
+    case "leaders": return item({ name: "Full name", role: "Add their role", group: "" });
+    case "membership": return item({ title: "Membership type", price: "", text: "Say a little about it here.", btn: "Join now" }, { btn: { t: "join" } });
+    case "chapters": return item({ name: "Chapter name", where: "", contact: "" });
+    case "partners": return item({ name: "Partner name" }, { go: { t: "none" } });
     default: return item({});
   }
 }
@@ -62,7 +70,7 @@ export function checkBeforePublish(doc: SiteDocument, hiddenByPlatform: string[]
     ? { ok: false, text: `${dead.length} button${dead.length === 1 ? "" : "s"} go nowhere yet`, detail: dead.slice(0, 3).map((d) => d.what).join(", ") + (dead.length > 3 ? ` and ${dead.length - 3} more` : ""), sectionId: dead[0].id }
     : { ok: true, text: "Every button goes somewhere" });
 
-  const noHeading = secs.filter((s) => "heading" in s.props && !s.props.heading?.trim() && s.type !== "hero");
+  const noHeading = secs.filter((s) => "heading" in s.props && !s.props.heading?.trim() && s.type !== "hero" && s.type !== "actions");
   out.push(noHeading.length ? { ok: false, text: `${noHeading.length} section${noHeading.length === 1 ? " has" : "s have"} no heading`, detail: "A heading helps visitors and search engines.", sectionId: noHeading[0].id } : { ok: true, text: "Every section has a heading" });
 
   const holders = secs.filter((s) => JSON.stringify([s.props, s.items]).split(/\\"|"/).some((chunk) => PLACEHOLDERS.some((p) => chunk.includes(p))));

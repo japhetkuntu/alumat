@@ -320,6 +320,7 @@ public static class EntityDtoExtensions
         CommunityId = s.CommunityId,
         SettlementTarget = s.SettlementTarget,
         ShowOnWebsite = s.ShowOnWebsite,
+        ImageUrl = s.ImageUrl,
     };
 
     public static ServiceRequestDto ToDto(this ServiceRequest r) => new()

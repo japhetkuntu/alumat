@@ -54,7 +54,7 @@ public static class WebsiteDocumentValidator
     }
 
     /// <summary>The starter wording of a new section. Keep in step with PLACEHOLDERS in the site package.</summary>
-    public static readonly string[] PlaceholderWords = ["Say a little about it here.", "Full name", "New question", "Write the answer here.", "New card", "Add your words here."];
+    public static readonly string[] PlaceholderWords = ["Say a little about it here.", "Full name", "New question", "Write the answer here.", "New card", "Add your words here.", "Membership type", "Chapter name", "Partner name", "Add their role"];
 
     private static bool HoldsPlaceholder(WebsiteSection s)
         => s.Props.Values.Concat((s.Items ?? []).SelectMany(i => i.Fields.Values)).Any(v => PlaceholderWords.Any(p => v.Contains(p, StringComparison.Ordinal)));
@@ -154,6 +154,7 @@ public static class WebsiteDocumentValidator
             case "external":
                 var u = Url(v, allowHttp: true);
                 return u is null ? new() : new() { T = "external", V = u };
+            case "portal": return v is not null && WebsiteBlocks.PortalPages.Contains(v) ? new() { T = "portal", V = v } : new();
             case "email": return v is not null && v.Length <= 120 && Email.IsMatch(v) ? new() { T = "email", V = v } : new();
             case "phone": return v is not null && Phone.IsMatch(v) ? new() { T = "phone", V = v } : new();
             default: return new();
@@ -182,11 +183,14 @@ public static class WebsiteDocumentValidator
             Email = f.Email is not null && Email.IsMatch(f.Email.Trim()) && f.Email.Length <= 120 ? f.Email.Trim() : null,
             Phone = f.Phone is not null && Phone.IsMatch(f.Phone.Trim()) ? f.Phone.Trim() : null,
             Addr = NullIfEmpty(Plain(f.Addr, 200)),
+            Hours = NullIfEmpty(Plain(f.Hours, 240)),
             Menu = f.Menu, Credit = f.Credit,
             Style = Pick(f.Style, WebsiteBlocks.FooterStyles, "dark"),
         };
         foreach (var key in WebsiteBlocks.SocialKeys)
             if (f.Social is not null && f.Social.TryGetValue(key, out var v) && Url(v, allowHttp: false) is { } u) o.Social[key] = u;
+        foreach (var l in (f.Links ?? []).Where(l => l is not null).Take(6))
+            if (Plain(l.Label, 40) is { Length: > 0 } label && Url(l.Url, allowHttp: true) is { } href) o.Links.Add(new WebsiteFooterLink { Label = label, Url = href });
         return o;
     }
 

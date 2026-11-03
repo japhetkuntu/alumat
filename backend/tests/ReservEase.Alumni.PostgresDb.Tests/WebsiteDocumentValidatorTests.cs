@@ -235,4 +235,68 @@ public class WebsiteDocumentValidatorTests
         Assert.NotEmpty(WebsiteDocumentValidator.ProblemsBeforePublishing(Ok(Page())));
         Assert.Empty(WebsiteDocumentValidator.ProblemsBeforePublishing(Ok(Page(Section("a")))));
     }
+
+    // ── Quick actions, portal links and the fuller footer ───────────────
+
+    [Fact]
+    public void A_button_may_open_a_named_portal_page_but_never_an_arbitrary_path()
+    {
+        var items = new[] { new { id = "a1", fields = new { label = "Pay dues" }, links = new { go = new { t = "portal", v = "contributions" } } },
+                            new { id = "a2", fields = new { label = "Odd" }, links = new { go = new { t = "portal", v = "../admin" } } } };
+        var s = Ok(Page(Section("q", "actions", items: items))).Sections[0];
+        Assert.Equal("portal", s.Items![0].Links["go"].T);
+        Assert.Equal("contributions", s.Items![0].Links["go"].V);
+        Assert.Equal("none", s.Items![1].Links["go"].T);
+    }
+
+    [Fact]
+    public void Quick_actions_keep_at_most_six_items()
+    {
+        var items = Enumerable.Range(0, 9).Select(i => new { id = $"a{i}", fields = new { label = $"Do {i}" }, links = new { go = new { t = "join" } } }).ToArray();
+        Assert.Equal(6, Ok(Page(Section("q", "actions", items: items))).Sections[0].Items!.Count);
+    }
+
+    [Fact]
+    public void The_footer_keeps_opening_hours_and_safe_useful_links_only()
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            sections = new[] { Section("a") },
+            footer = new { hours = "Mon to Fri, 8am to 5pm", links = new[] { new { label = "University", url = "https://example.edu" }, new { label = "Bad", url = "javascript:alert(1)" }, new { label = "", url = "https://x.org" } } },
+        }, WebsiteDocument.Json);
+        var f = Ok(json).Footer;
+        Assert.Equal("Mon to Fri, 8am to 5pm", f.Hours);
+        Assert.Single(f.Links);
+        Assert.Equal("University", f.Links[0].Label);
+    }
+
+    [Fact]
+    public void Leaders_keep_a_group_and_membership_types_keep_a_price_and_button()
+    {
+        var leaders = new[] { new { id = "p1", fields = new { name = "Ama Mensah", role = "President", group = "Executive", secret = "x" }, links = new { } } };
+        var plans = new[] { new { id = "m1", fields = new { title = "Life member", price = "GH₵ 3,000 once", text = "For life.", btn = "Join" }, links = new { btn = new { t = "join" } } } };
+        var doc = Ok(Page(Section("l", "leaders", items: leaders), Section("m", "membership", items: plans)));
+        Assert.Equal("Executive", doc.Sections[0].Items![0].Fields["group"]);
+        Assert.False(doc.Sections[0].Items![0].Fields.ContainsKey("secret"));
+        Assert.Equal("GH₵ 3,000 once", doc.Sections[1].Items![0].Fields["price"]);
+        Assert.Equal("join", doc.Sections[1].Items![0].Links["btn"].T);
+    }
+
+    [Fact]
+    public void Chapters_and_partners_are_accepted_and_their_placeholder_words_block_publishing()
+    {
+        var chapters = new[] { new { id = "c1", fields = new { name = "Chapter name", where = "Accra", contact = "Kofi" }, links = new { } } };
+        var doc = Ok(Page(Section("c", "chapters", items: chapters)));
+        Assert.Single(doc.Sections[0].Items!);
+        Assert.NotEmpty(WebsiteDocumentValidator.ProblemsBeforePublishing(doc));
+    }
+
+    [Fact]
+    public void The_plain_opening_layout_and_the_simple_look_are_accepted()
+    {
+        var json = JsonSerializer.Serialize(new { template = "journal", sections = new[] { Section("h", "hero", variant: "intro") } }, WebsiteDocument.Json);
+        var doc = Ok(json);
+        Assert.Equal("intro", doc.Sections[0].Variant);
+        Assert.Equal("journal", doc.Template);
+    }
 }

@@ -162,7 +162,7 @@ public class PublicController(
         // These four are short-lived in the cache (a minute) because an admin ticking "Show on website" expects to see it soon.
         var services = !On(InstitutionFeatures.Services) ? [] : await GetOrCacheShortAsync(PublicContentCacheKeys.SiteServices(institution.Id), async () =>
             (await serviceTypeRepo.GetQueryable(s => s.Status == "Active" && s.ShowOnWebsite && s.CommunityId == null).OrderBy(s => s.Name).Take(MaxCacheableItems).ToListAsync())
-            .Select(s => new PublicServiceItemResponse(s.Id, s.Name, ExcerptFromHtml(s.Description, 140), s.Price)).ToList());
+            .Select(s => new PublicServiceItemResponse(s.Id, s.Name, ExcerptFromHtml(s.Description, 140), s.Price, s.ImageUrl)).ToList());
 
         var store = !On(InstitutionFeatures.Store) ? [] : await GetOrCacheShortAsync(PublicContentCacheKeys.SiteStore(institution.Id), async () =>
             (await storeProductRepo.GetQueryable(p => p.Status == "Active" && p.ShowOnWebsite).OrderByDescending(p => p.CreatedAt).Take(MaxCacheableItems).ToListAsync())
@@ -591,6 +591,7 @@ public class PublicController(
             "event" => await BuildEventPreviewAsync(id),
             "job" => await BuildJobPreviewAsync(id),
             "news" => await BuildNewsPreviewAsync(id),
+            "spotlight" => await BuildSpotlightPreviewAsync(id),
             "resource" => await BuildResourcePreviewAsync(id),
             "business" => await BuildBusinessPreviewAsync(id),
             "community" => await BuildCommunityPreviewAsync(id),
@@ -648,6 +649,21 @@ public class PublicController(
         return new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault(), Date: n.PublishedAt ?? n.CreatedAt,
             Subtitle: isPublic && !string.IsNullOrWhiteSpace(n.Category) ? n.Category : null,
             IsPublic: isPublic, Html: isPublic ? n.Content : null, Images: isPublic ? n.ImageUrls : null);
+    }
+
+    /// <summary>An approved spotlight is already shown in full on the public landing page, so its whole story is public here too. The story is plain text, so it is escaped and split into paragraphs.</summary>
+    private async Task<PublicPreviewResponse?> BuildSpotlightPreviewAsync(string id)
+    {
+        var s = await spotlightRepo.GetOneAsync(x => x.Id == id && x.Status == "Approved");
+        if (s is null) return null;
+        var who = s.Member is { } m ? $"{m.FirstName} {m.LastName}".Trim() : null;
+        var story = s.Story ?? "";
+        var html = ReservEase.Alumni.Common.Sdk.Text.RichText.LooksLikeHtml(story)
+            ? ReservEase.Alumni.Common.Sdk.Text.RichText.Sanitize(story) ?? ""
+            : string.Join("", story.Replace("\r", "").Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(p => $"<p>{System.Net.WebUtility.HtmlEncode(p).Replace("\n", "<br>")}</p>"));
+        return new PublicPreviewResponse(s.Title, ExcerptFromHtml(html, 180), s.ImageUrl ?? s.Member?.ProfilePictureUrl,
+            Subtitle: who, Date: s.FeaturedMonth, IsPublic: true, Html: html);
     }
 
     private async Task<PublicPreviewResponse?> BuildResourcePreviewAsync(string id)

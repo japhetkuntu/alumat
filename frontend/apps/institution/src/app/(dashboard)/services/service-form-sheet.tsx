@@ -3,8 +3,8 @@
 import { memo, useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { RichTextEditor, Plus, X, ArrowUp, ArrowDown, FormSheet, FormSection, Input, Label, FormSelect, Button } from "@alumni/ui";
-import { getBatches, getCommunities, type ServiceFieldDefinitionBody, type ServiceTypeBody } from "@/lib/institution-api";
+import { RichTextEditor, compressImage, Plus, X, ArrowUp, ArrowDown, FormSheet, FormSection, Input, Label, FormSelect, Button } from "@alumni/ui";
+import { getBatches, getCommunities, uploadImage, type ServiceFieldDefinitionBody, type ServiceTypeBody } from "@/lib/institution-api";
 import type { ServiceType, ServiceFieldType } from "@/types";
 
 const FIELD_TYPES: { value: ServiceFieldType; label: string }[] = [
@@ -36,11 +36,12 @@ interface FormState {
   communityId: string;
   settlementTarget: string;
   showOnWebsite: boolean;
+  imageUrl: string;
 }
 
 const emptyForm: FormState = {
   name: "", description: "", price: "", status: "Active",
-  fields: [], stages: ["Submitted"], communityId: "", settlementTarget: "", showOnWebsite: false,
+  fields: [], stages: ["Submitted"], communityId: "", settlementTarget: "", showOnWebsite: false, imageUrl: "",
 };
 
 function toFormState(s: ServiceType): FormState {
@@ -54,6 +55,7 @@ function toFormState(s: ServiceType): FormState {
     communityId: s.communityId ?? "",
     settlementTarget: s.settlementTarget ?? "",
     showOnWebsite: s.showOnWebsite ?? false,
+    imageUrl: s.imageUrl ?? "",
   };
 }
 
@@ -134,6 +136,7 @@ interface ServiceFormSheetProps {
  */
 export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubmit }: ServiceFormSheetProps) {
   const [form, setForm] = useState<FormState>(() => (editing ? toFormState(editing) : emptyForm));
+  const [uploading, setUploading] = useState(false);
   const [newStage, setNewStage] = useState("");
 
   const { data: groups = [] } = useQuery({ queryKey: ["communities"], queryFn: getCommunities, staleTime: 60_000 });
@@ -205,6 +208,7 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
       communityId: form.communityId || undefined,
       settlementTarget: form.settlementTarget || undefined,
       showOnWebsite: form.showOnWebsite,
+      imageUrl: form.imageUrl || undefined,
       fields: form.fields.map((fl) => ({
         key: fl.key,
         label: fl.label.trim(),
@@ -266,6 +270,25 @@ export function ServiceFormSheet({ open, editing, saving, error, onClose, onSubm
                 onValueChange={(v) => setForm((f) => ({ ...f, communityId: v === "all" ? "" : v }))}
                 options={[{ value: "all", label: "The whole institution" }, ...groups.map((g) => ({ value: g.id, label: g.name }))]}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Photo (optional)</Label>
+              <div className="flex items-center gap-3">
+                {form.imageUrl ? <img src={form.imageUrl} alt="" className="h-16 w-24 border border-border object-cover" /> : <div className="grid h-16 w-24 place-items-center border border-dashed border-border text-[11px] text-muted-foreground">No photo</div>}
+                <Button type="button" variant="secondary" size="sm" disabled={uploading} onClick={() => {
+                  const input = document.createElement("input"); input.type = "file"; input.accept = "image/*";
+                  input.onchange = async () => {
+                    const file = input.files?.[0]; if (!file) return;
+                    setUploading(true);
+                    try { const r = await uploadImage(await compressImage(file, { maxDimension: 1600 })); setForm((f) => ({ ...f, imageUrl: r.url })); }
+                    catch { toast.error("That photo could not be uploaded. Try another."); }
+                    finally { setUploading(false); }
+                  };
+                  input.click();
+                }}>{uploading ? "Uploading…" : form.imageUrl ? "Replace" : "Add a photo"}</Button>
+                {form.imageUrl && <Button type="button" variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, imageUrl: "" }))}>Remove</Button>}
+              </div>
+              <p className="m-0 text-[12px] text-muted-foreground">Shown with the service on your website.</p>
             </div>
             <label className="flex items-start gap-2 text-[13px]">
               <input type="checkbox" className="mt-0.5" checked={form.showOnWebsite} onChange={(e) => setForm((f) => ({ ...f, showOnWebsite: e.target.checked }))} />

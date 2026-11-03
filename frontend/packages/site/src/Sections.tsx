@@ -1,6 +1,6 @@
 import { BLOCKS, portalPath } from "./blocks";
 import type { SiteCtx } from "./context";
-import { dateOf, dayOf, group, money, monthOf, pct } from "./format";
+import { dateOf, dayOf, group, money, monthOf, pct, plainOf } from "./format";
 import { Photo } from "./Photo";
 import { Ed, Rich } from "./Text";
 import { initials } from "./color";
@@ -33,12 +33,8 @@ function Go({ ctx, href, className, children, title }: { ctx: SiteCtx; href: str
   return <a className={className} href={href}>{children}</a>;
 }
 
-function Eyebrow({ sec, ctx }: P) {
-  const v = sec.props.eyebrow;
-  if (!ctx.edit && !v) return null;
-  if (ctx.edit && v === undefined) return null;
-  return <span className="eyebrow"><Ed value={v} edit={ctx.edit} sectionId={sec.id} field="eyebrow" placeholder="Label" /></span>;
-}
+/** Small labels above headings are not used: the heading speaks for itself. */
+function Eyebrow(_: P) { return null; }
 
 function SecHead({ sec, ctx }: P) {
   const b = BLOCKS[sec.type];
@@ -67,15 +63,45 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
       <div className="wrap">
         {sec.type !== "stats" && <SecHead sec={sec} ctx={ctx} />}
         <div className="emptylive" role="note">
-          <b>{sec.type === "stats" ? "Your community numbers" : `Fills itself from your ${live.live.toLowerCase()}`}</b>
-          <span>{sec.type === "stats" ? "Visitors see your real member and event numbers here." : `Visitors see your own ${live.live.toLowerCase()} here${live.feature ? " once you mark them “Show on website”" : ""}. If there are none, visitors do not see this section at all.`}</span>
-          <small>Use “Show example content” at the top to preview the layout with made-up items. They are never published.</small>
+          <b>{ctx.loading ? "Loading your items…" : sec.type === "stats" ? "Your community numbers will appear here" : `No ${live.live.toLowerCase()} to show yet`}</b>
+          <span>{ctx.loading ? "Checking what you have." : sec.type === "stats" ? "Visitors see your real member and event numbers once you have members." : `This fills itself from your own ${live.live.toLowerCase()}${live.feature ? ", the ones you mark “Show on website”" : ""}. Until you have some, visitors do not see this section at all.`}</span>
+          {!ctx.loading && <small>Use “Show example content” at the top to preview the layout with made-up items. They are never published.</small>}
         </div>
       </div>
     );
   }
   switch (sec.type) {
     case "hero": return <Hero sec={sec} ctx={ctx} />;
+    case "actions": {
+      const its = sec.items ?? [];
+      return (
+        <div className="wrap">
+          {its.length ? (
+            <ul className="qa" style={{ ["--n" as string]: its.length }}>
+              {its.map((it, i) => {
+                const l = it.links.go, href = linkHref(l, ctx.sections), inner = (
+                  <>
+                    {icon(i + 1)}
+                    <span className="qt"><b><Ed value={it.fields.label} edit={edit} sectionId={sec.id} itemId={it.id} field="label" placeholder="What to do" /></b>
+                      {(it.fields.hint || edit) && <small><Ed value={it.fields.hint} edit={edit} sectionId={sec.id} itemId={it.id} field="hint" placeholder="A few words" /></small>}</span>
+                    {ARW}
+                  </>
+                );
+                return (
+                  <li key={it.id}>
+                    {edit
+                      ? <a className={`qi ${linkOk(l) ? "" : "nolink"}`} title={edit.describeLink(sec, "go", it.id)} onClick={(e) => e.preventDefault()}>{inner}</a>
+                      : href ? <a className="qi" href={href} {...(isExternal(l) ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{inner}</a> : null}
+                    {edit && <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove</button>}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : edit ? <button type="button" className="emptybox" onClick={(e) => { e.stopPropagation(); edit.addItem(sec.id); }}>Add the first action</button> : null}
+          <AddItem sec={sec} ctx={ctx} />
+        </div>
+      );
+    }
     case "text":
       return (
         <div className={`wrap ${v === "one" ? "narrow" : ""}`}>
@@ -101,6 +127,7 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
       );
     case "news": {
       const list = (data.news ?? []).slice(0, n);
+      const anyPic = list.some((x) => !!x.imageUrl);
       return (
         <div className="wrap"><SecHead sec={sec} ctx={ctx} />
           {v === "grid" ? (
@@ -118,7 +145,8 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
             </div>
           ) : (
             <div className="news-list">{list.map((x) => (
-              <article className="link" key={x.id}><time dateTime={x.publishedAt ?? undefined}>{dateOf(x.publishedAt)}</time>
+              <article className={`link ${anyPic ? "withthumb" : ""}`} key={x.id}><time dateTime={x.publishedAt ?? undefined}>{dateOf(x.publishedAt)}</time>
+                {x.imageUrl ? <Photo src={x.imageUrl} width={300} className="thumb" /> : anyPic ? <span className="thumb ph" aria-hidden="true" /> : null}
                 <div><h3><Go ctx={ctx} href={portalPath.news(x.id)}>{x.title}</Go></h3>{x.excerpt && <p>{x.excerpt}</p>}</div></article>
             ))}</div>
           )}
@@ -127,11 +155,20 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
     }
     case "events": {
       const list = (data.events ?? []).slice(0, n);
+      const anyPic = list.some((x) => !!x.bannerImageUrl);
       return (
         <div className="wrap"><SecHead sec={sec} ctx={ctx} />
-          {v === "cards" ? (
+          {!list.length ? (
+            <div className="calm">
+              <h3>{ctx.loading ? "Looking for events…" : "Nothing is scheduled right now"}</h3>
+              <p>New events are announced here as soon as they are confirmed. In the meantime you can look back at what happened before.</p>
+              <Go ctx={ctx} href="/events" className="btn ghost">See past events{ARW}</Go>
+            </div>
+          ) : v === "cards" ? (
             <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x) => (
-              <article className="card link" key={x.id}><div className="b">
+              <article className="card link" key={x.id}>
+                {x.bannerImageUrl && <Photo src={x.bannerImageUrl} width={700} className="newsimg" />}
+                <div className="b">
                 <div className="date" style={{ display: "inline-block", padding: "8px 14px", marginBottom: 12 }}><b>{dayOf(x.startDate)}</b><small>{monthOf(x.startDate)}</small></div>
                 <h3>{x.title}</h3>{x.venue && <p>{x.venue}</p>}
                 <Go ctx={ctx} href={portalPath.events(x.id)} className="more">Details{ARW}</Go>
@@ -139,8 +176,9 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
             ))}</div>
           ) : (
             <div className="ev-list">{list.map((x) => (
-              <article className="link" key={x.id}>
+              <article className={`link ${anyPic ? "withthumb" : ""}`} key={x.id}>
                 <div className="date"><b>{dayOf(x.startDate)}</b><small>{monthOf(x.startDate)}</small></div>
+                {x.bannerImageUrl ? <Photo src={x.bannerImageUrl} width={300} className="thumb" /> : anyPic ? <span className="thumb ph" aria-hidden="true" /> : null}
                 <div><h3>{x.title}</h3>{x.venue && <p>{x.venue}</p>}</div>
                 <Go ctx={ctx} href={portalPath.events(x.id)} className="btn sm ghost">Details{ARW}</Go>
               </article>
@@ -176,11 +214,16 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
     }
     case "leaders": {
       const its = sec.items ?? [];
+      // People are shown in the order given; a change of group starts a new labelled row.
+      const groups: { name: string; people: SiteItem[] }[] = [];
+      for (const it of its) { const g = (it.fields.group ?? "").trim(); const last = groups[groups.length - 1]; if (last && last.name === g) last.people.push(it); else groups.push({ name: g, people: [it] }); }
       return (
         <div className="wrap"><SecHead sec={sec} ctx={ctx} />
-          {its.length ? (
-            <div className="bal ppl" style={{ ["--n" as string]: its.length }}>
-              {its.map((it) => (
+          {its.length ? groups.map((g, gi) => (
+            <div className="pgroup" key={gi}>
+              {g.name && <h3 className="gname">{g.name}</h3>}
+              <div className="bal ppl" style={{ ["--n" as string]: g.people.length }}>
+              {g.people.map((it) => (
                 <div className="pcell" key={it.id}>
                   {sec.imgs["i" + it.id] || edit ? <Photo src={sec.imgs["i" + it.id]} alt={it.fields.name} width={500} edit={edit} sectionId={sec.id} slot={"i" + it.id} prompt="Add photo" className={sec.imgs["i" + it.id] ? "" : "mono"} /> : <div className="img mono" data-mono={initials(it.fields.name)} />}
                   <h3><Ed value={it.fields.name} edit={edit} sectionId={sec.id} itemId={it.id} field="name" placeholder="Name" /></h3>
@@ -188,8 +231,70 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
                   {edit && <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove</button>}
                 </div>
               ))}
+              </div>
             </div>
-          ) : edit ? <button type="button" className="emptybox" onClick={(e) => { e.stopPropagation(); edit.addItem(sec.id); }}>Add the first person</button> : null}
+          )) : edit ? <button type="button" className="emptybox" onClick={(e) => { e.stopPropagation(); edit.addItem(sec.id); }}>Add the first person</button> : null}
+          <AddItem sec={sec} ctx={ctx} />
+        </div>
+      );
+    }
+    case "membership": {
+      const its = sec.items ?? [];
+      return (
+        <div className="wrap"><SecHead sec={sec} ctx={ctx} />
+          {its.length ? (
+            <div className="bal cards plans" style={{ ["--n" as string]: its.length }}>{its.map((it) => (
+              <article className="card" key={it.id}><div className="b">
+                <h3><Ed value={it.fields.title} edit={edit} sectionId={sec.id} itemId={it.id} field="title" placeholder="Name" /></h3>
+                {(it.fields.price || edit) && <div className="planprice"><Ed value={it.fields.price} edit={edit} sectionId={sec.id} itemId={it.id} field="price" placeholder="Price, such as GH₵ 100 a year" /></div>}
+                <div className="ctext"><Rich value={it.fields.text} edit={edit} sectionId={sec.id} itemId={it.id} field="text" /></div>
+                {(it.fields.btn || edit) && <div className="btns"><Btn sec={sec} ctx={ctx} item={it} k="btn" label={it.fields.btn ?? ""} /></div>}
+                {edit && <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove</button>}
+              </div></article>
+            ))}</div>
+          ) : edit ? <button type="button" className="emptybox" onClick={(e) => { e.stopPropagation(); edit.addItem(sec.id); }}>Add the first membership type</button> : null}
+          <AddItem sec={sec} ctx={ctx} />
+        </div>
+      );
+    }
+    case "chapters": {
+      const its = sec.items ?? [];
+      return (
+        <div className="wrap"><SecHead sec={sec} ctx={ctx} />
+          {its.length ? (
+            <div className="chtable" role="table" aria-label={sec.props.heading || "Chapters"}>
+              <div className="chrow chhead" role="row"><span role="columnheader">Chapter</span><span role="columnheader">Meets at</span><span role="columnheader">Contact</span></div>
+              {its.map((it) => (
+                <div className="chrow" role="row" key={it.id}>
+                  <b role="cell" data-l="Chapter"><Ed value={it.fields.name} edit={edit} sectionId={sec.id} itemId={it.id} field="name" placeholder="Chapter" /></b>
+                  <span role="cell" data-l="Meets at"><Ed value={it.fields.where} edit={edit} sectionId={sec.id} itemId={it.id} field="where" placeholder="Where it meets" /></span>
+                  <span role="cell" data-l="Contact"><Ed value={it.fields.contact} edit={edit} sectionId={sec.id} itemId={it.id} field="contact" placeholder="Name and phone" /></span>
+                  {edit && <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove</button>}
+                </div>
+              ))}
+            </div>
+          ) : edit ? <button type="button" className="emptybox" onClick={(e) => { e.stopPropagation(); edit.addItem(sec.id); }}>Add the first chapter</button> : null}
+          <AddItem sec={sec} ctx={ctx} />
+        </div>
+      );
+    }
+    case "partners": {
+      const its = sec.items ?? [];
+      return (
+        <div className="wrap"><SecHead sec={sec} ctx={ctx} />
+          {its.length ? (
+            <ul className="logos">{its.map((it) => {
+              const href = linkHref(it.links.go, ctx.sections);
+              const pic = !edit && !sec.imgs["i" + it.id] ? null : <Photo src={sec.imgs["i" + it.id]} alt={it.fields.name ?? ""} width={400} className="logoimg" edit={edit} sectionId={sec.id} slot={"i" + it.id} prompt="Add logo" />;
+              return (
+                <li key={it.id}>
+                  {!edit && href ? <a href={href} target="_blank" rel="noopener noreferrer" aria-label={it.fields.name}>{pic}</a> : pic}
+                  <span className="lname2"><Ed value={it.fields.name} edit={edit} sectionId={sec.id} itemId={it.id} field="name" placeholder="Name" /></span>
+                  {edit && <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove</button>}
+                </li>
+              );
+            })}</ul>
+          ) : edit ? <button type="button" className="emptybox" onClick={(e) => { e.stopPropagation(); edit.addItem(sec.id); }}>Add the first partner</button> : null}
           <AddItem sec={sec} ctx={ctx} />
         </div>
       );
@@ -232,17 +337,20 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
       );
     case "services": {
       const list = (data.services ?? []).slice(0, n);
+      const anyPic = list.some((x) => !!x.imageUrl);
       const rows = v === "list";
       return (
         <div className="wrap"><SecHead sec={sec} ctx={ctx} />
           {rows ? (
             <div className="rowlist">{list.map((x) => (
-              <article className="link" key={x.id}><div><h3>{x.name}</h3>{x.description && <p>{x.description}</p>}</div><Price v={x.price > 0 ? money(x.price, cur) : "Free"} />
+              <article className={`link ${anyPic ? "withthumb" : ""}`} key={x.id}>{x.imageUrl ? <Photo src={x.imageUrl} alt="" width={300} className="thumb" /> : anyPic ? <span className="thumb ph" aria-hidden="true" /> : null}<div><h3>{x.name}</h3>{x.description && <p>{x.description}</p>}</div><Price v={x.price > 0 ? money(x.price, cur) : "Free"} />
                 <Go ctx={ctx} href={portalPath.services(x.id)} className="btn sm">Get this{ARW}</Go></article>
             ))}</div>
           ) : (
             <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x, i) => (
-              <article className="card link" key={x.id}><div className="b">{icon(i)}<h3>{x.name}</h3>{x.description && <p>{x.description}</p>}
+              <article className="card link" key={x.id}>
+                {x.imageUrl && <Photo src={x.imageUrl} alt={x.name} width={700} className="newsimg" />}
+                <div className="b">{!x.imageUrl && icon(i)}<h3>{x.name}</h3>{x.description && <p>{x.description}</p>}
                 <div className="cfoot"><Price v={x.price > 0 ? money(x.price, cur) : "Free"} /><Go ctx={ctx} href={portalPath.services(x.id)} className="btn sm">Get this{ARW}</Go></div></div></article>
             ))}</div>
           )}
@@ -273,7 +381,9 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
           <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x) => {
             const p = pct(x.raised, x.goal);
             return (
-              <article className="card link" key={x.id}><div className="b"><h3>{x.title}</h3>{x.summary && <p>{x.summary}</p>}
+              <article className="card link" key={x.id}>
+                {x.imageUrl && <Photo src={x.imageUrl} width={700} className="newsimg" />}
+                <div className="b"><h3>{x.title}</h3>{x.summary && <p>{x.summary}</p>}
                 <div className="bar" role="img" aria-label={`${p}% raised`}><i style={{ width: `${p}%` }} /></div>
                 <div className="fmeta"><span><b>{money(x.raised, cur)}</b> <small>raised of {money(x.goal, cur)}</small></span><em>{p}%</em></div>
                 <div className="cfoot"><Go ctx={ctx} href={portalPath.fundraisers(x.id)} className="btn sm block">Give now{ARW}</Go></div></div></article>
@@ -298,7 +408,9 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
       return (
         <div className="wrap"><SecHead sec={sec} ctx={ctx} />
           <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x, i) => (
-            <article className="card link" key={x.id}><div className="b">{icon(i + 2)}<h3>{x.name}</h3>
+            <article className="card link" key={x.id}>
+              {x.imageUrl && <Photo src={x.imageUrl} alt={x.name} width={700} className="newsimg bizimg" />}
+              <div className="b">{!x.imageUrl && icon(i + 2)}<h3>{x.name}</h3>
               <div className="cfoot">{x.category ? <span className="chip">{x.category}</span> : <span />}<Go ctx={ctx} href={portalPath.businesses(x.id)} className="btn sm ghost">Visit{ARW}</Go></div></div></article>
           ))}</div>
         </div>
@@ -313,8 +425,8 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
               {x.imageUrl ? <Photo src={x.imageUrl} alt={x.memberName ?? ""} width={700} className="newsimg" /> : <div className="img newsimg"><span className="noimg" aria-hidden="true" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", font: "600 48px var(--fd)", color: "var(--p)" }}>{initials(x.memberName ?? x.title)}</span></div>}
               <div className="b">
                 {x.memberName && <span className="cat">{x.memberName}</span>}
-                <h3>{x.title}</h3>{x.story && <p className="clamp3">{x.story}</p>}
-                <Go ctx={ctx} href={portalPath.spotlights} className="more">Read the story{ARW}</Go>
+                <h3>{x.title}</h3>{x.story && <p className="clamp3">{plainOf(x.story)}</p>}
+                <Go ctx={ctx} href={portalPath.spotlights(x.id)} className="more">Read the full story{ARW}</Go>
               </div>
             </article>
           ))}</div>
@@ -326,7 +438,9 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
       return (
         <div className="wrap"><SecHead sec={sec} ctx={ctx} />
           <div className="bal cards" style={{ ["--n" as string]: list.length }}>{list.map((x) => (
-            <article className="card link" key={x.id}><div className="b">{icon(4)}<h3>{x.name}</h3>
+            <article className="card link" key={x.id}>
+              {x.imageUrl && <Photo src={x.imageUrl} alt={x.name} width={700} className="newsimg" />}
+              <div className="b">{!x.imageUrl && icon(4)}<h3>{x.name}</h3>
               <div className="cfoot">{x.memberCount != null ? <Price v={group(x.memberCount)} small="Members" /> : <span />}<Go ctx={ctx} href={portalPath.communities(x.id)} className="btn sm ghost">Join{ARW}</Go></div></div></article>
           ))}</div>
         </div>
@@ -355,12 +469,13 @@ function Cards({ sec, ctx }: P) {
   return (
     <div className="wrap"><SecHead sec={sec} ctx={ctx} />
       {its.length ? v === "steps" ? (
-        <div className="steps">{its.map((it, i) => (
-          <article className={`step ${i % 2 ? "flip" : ""}`} key={it.id}>
-            <div className="stepcard"><span className="pill">STEP {i + 1} OF {its.length}</span>{body(it, i)}{remove(it.id, "Remove this step")}</div>
+        <ol className="steps" style={{ ["--n" as string]: its.length }}>{its.map((it, i) => (
+          <li className="step" key={it.id}>
             <Photo src={sec.imgs["i" + it.id]} width={700} className="stepfig" edit={edit} sectionId={sec.id} slot={"i" + it.id} />
-          </article>
-        ))}</div>
+            <span className="stepno" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+            <div className="stepbody">{body(it, i)}{remove(it.id, "Remove this step")}</div>
+          </li>
+        ))}</ol>
       ) : (
         <div className="bal cards" style={{ ["--n" as string]: its.length }}>{its.map((it, i) => (
           <article className="card" key={it.id}>
@@ -375,10 +490,9 @@ function Cards({ sec, ctx }: P) {
 }
 
 function Hero({ sec, ctx }: P) {
-  const { edit, data } = ctx, v = sec.variant;
+  const { edit } = ctx, v = sec.variant;
   const head = (style?: React.CSSProperties) => (
     <>
-      {(sec.props.eyebrow || (edit && sec.props.eyebrow !== undefined)) && <span className="eyebrow"><Ed value={sec.props.eyebrow} edit={edit} sectionId={sec.id} field="eyebrow" placeholder="Label" /></span>}
       <h1 className="h-xl" style={style}>
         <Ed value={sec.props.heading} edit={edit} sectionId={sec.id} field="heading" placeholder="Your headline" />
         {(sec.props.heading2 || (edit && sec.props.heading2 !== undefined)) && <> <em className="acc"><Ed value={sec.props.heading2} edit={edit} sectionId={sec.id} field="heading2" /></em></>}
@@ -401,6 +515,21 @@ function Hero({ sec, ctx }: P) {
       </div>
     );
   }
+  if (v === "intro") {
+    const bg = sec.imgs.bg;
+    return (
+      <>
+        {bg && <div className="introbg" aria-hidden="true" style={{ backgroundImage: `url('${bg}')` }} />}
+        {edit && (
+          <div className="introtools">
+            <button type="button" className="pick" onClick={(e) => { e.stopPropagation(); edit.pickPhoto(sec.id, "bg"); }}>{bg ? "Replace photo" : "Add a photo"}</button>
+            {bg && <button type="button" className="pick" onClick={(e) => { e.stopPropagation(); edit.removePhoto(sec.id, "bg"); }}>Remove photo</button>}
+          </div>
+        )}
+      <div className="wrap narrow introhero">{head()}<div className="lead"><Rich value={sec.props.body} edit={edit} sectionId={sec.id} field="body" /></div>{btns}</div>
+      </>
+    );
+  }
   if (v === "center") {
     return (
       <>
@@ -409,16 +538,13 @@ function Hero({ sec, ctx }: P) {
       </>
     );
   }
-  const next = data.events?.[0];
   return (
     <>
-      <div className="decos" aria-hidden="true"><i className="deco d1" /><i className="deco d2" /><i className="deco d3" /></div>
       <div className="wrap">
         <div className="hcopy">{head()}<div className="lead"><Rich value={sec.props.body} edit={edit} sectionId={sec.id} field="body" /></div>{btns}</div>
         {(sec.imgs.main || edit) && (
           <div className="hmedia">
             <Photo src={sec.imgs.main} width={900} priority className="herophoto" edit={edit} sectionId={sec.id} slot="main" />
-            {next && <div className="hchip"><b>{dayOf(next.startDate)}<small>{monthOf(next.startDate)}</small></b><span>{next.title}</span></div>}
           </div>
         )}
       </div>

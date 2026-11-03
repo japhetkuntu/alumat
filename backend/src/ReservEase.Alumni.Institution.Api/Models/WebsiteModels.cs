@@ -24,3 +24,25 @@ public class PublishWebsiteRequest
 }
 
 public record WebsiteVersionDto(string Id, int Revision, DateTime PublishedAt, string PublishedBy);
+
+// ── What the website's live sections would show right now ─────────────────────────────────────────────────────────
+
+public record WebsiteNewsItem(string Id, string Title, string Excerpt, string? ImageUrl, DateTime? PublishedAt, string Category);
+public record WebsiteEventItem(string Id, string Title, DateTime StartDate, string Venue, string? BannerImageUrl);
+public record WebsiteCommunityItem(string Id, string Name, int MemberCount, string Description, string? CoverImageUrl);
+public record WebsiteBusinessItem(string Id, string BusinessName, string Location, string? LogoUrl, string? BannerUrl);
+public record WebsiteServiceItem(string Id, string Name, string? Description, decimal Price, string? ImageUrl = null);
+public record WebsiteProductItem(string Id, string Name, decimal Price, string? ImageUrl);
+public record WebsiteFundraiserItem(string Id, string Title, string? Summary, decimal Raised, decimal Goal, string? ImageUrl);
+public record WebsiteJobItem(string Id, string Title, string? Company, string? Location);
+public record WebsiteSpotlightItem(string Id, string Title, string Story, string? ImageUrl, string MemberName);
+public record WebsiteStats(int Members, int JoinedLast30Days, int? EventsNext30Days, int? OpenJobs, int? Businesses, int Communities);
+
+/// <summary>
+/// The institution's own items as visitors would see them on the website: the same rules as the public site (only what is public, only
+/// features that are switched on). The editor shows this, so what an admin sees is what visitors will get.
+/// </summary>
+public record WebsiteContentDto(
+    List<WebsiteNewsItem> News, List<WebsiteEventItem> Events, List<WebsiteCommunityItem> Communities, List<WebsiteBusinessItem> Businesses,
+    List<WebsiteServiceItem> Services, List<WebsiteProductItem> Store, List<WebsiteFundraiserItem> Fundraisers, List<WebsiteJobItem> Jobs,
+    List<WebsiteSpotlightItem> Spotlights, WebsiteStats Stats);

@@ -92,6 +92,16 @@ public sealed class WebsiteFooter
     public string Style { get; set; } = "dark";
     public bool Credit { get; set; } = true;
     public Dictionary<string, string> Social { get; set; } = [];
+    /// <summary>When the office is open, in a few plain lines.</summary>
+    public string? Hours { get; set; }
+    /// <summary>Links the institution wants in the footer, such as its university website or the library.</summary>
+    public List<WebsiteFooterLink> Links { get; set; } = [];
+}
+
+public sealed class WebsiteFooterLink
+{
+    public string Label { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
 }
 
 public sealed class WebsiteSeo
