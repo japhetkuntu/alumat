@@ -5,6 +5,7 @@ import type { SiteCtx } from "./context";
 import type { EditApi } from "./edit";
 import { SiteFooter } from "./Footer";
 import { SiteHeader } from "./Header";
+import { Lightbox } from "./Lightbox";
 import { Motion } from "./Motion";
 import { SectionBody } from "./Sections";
 import { visibleSections, whyHidden } from "./visibility";
@@ -63,6 +64,7 @@ export function SiteView({ doc, brand, data, platformDisabled = [], edit, sample
       {editing && sections.length === 0 && <div className="sec"><div className="wrap narrow"><button type="button" className="emptybox" onClick={() => edit!.insertAt(0)}>This page is empty. Add the first section</button></div></div>}
       <SiteFooter base={reader ? "/" : ""} ctx={ctx} brandMark={mark} logoUrl={customLogo} items={items} featureOf={(s) => !!BLOCKS[s.type].feature} />
       <Motion rootId="alsite-top" enabled={!editing} />
+      <Lightbox rootId="alsite-top" enabled={!editing} />
     </div>
   );
 }

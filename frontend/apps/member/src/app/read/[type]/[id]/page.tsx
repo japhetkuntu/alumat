@@ -25,7 +25,7 @@ async function getPreview(type: string, id: string): Promise<ReaderPreview | nul
     const slug = (await cookies()).get("institution_slug")?.value;
     if (host) h["X-Internal-Tenant-Host"] = host;
     if (slug) h["X-Institution-Slug"] = slug;
-    const res = await fetch(`${API_URL}/public/preview/${type}/${encodeURIComponent(id)}`, { headers: h, cache: "no-store" });
+    const res = await fetch(`${API_URL}/public/preview/${type}/${encodeURIComponent(id)}?site=true`, { headers: h, cache: "no-store" });
     if (!res.ok) return null;
     return ((await res.json())?.data ?? null) as ReaderPreview | null;
   } catch { return null; }

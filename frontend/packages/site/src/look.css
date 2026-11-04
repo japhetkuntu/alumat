@@ -294,3 +294,14 @@
   .alsite .readhero{aspect-ratio:16/9}
 }
 .alsite .readhero{object-position:center 22%}
+
+/* The large photo viewer */
+.lbox{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(8,10,9,.92);cursor:zoom-out;font-family:system-ui,sans-serif;animation:als-pop .2s ease}
+.lbox>img{max-width:min(94vw,1500px);max-height:88vh;object-fit:contain;cursor:default;box-shadow:0 10px 50px rgba(0,0,0,.5)}
+.lbox button{position:absolute;display:grid;place-items:center;width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:30px;line-height:1;cursor:pointer}
+.lbox button:hover,.lbox button:focus-visible{background:rgba(255,255,255,.28);outline:2px solid #fff;outline-offset:2px}
+.lbox .lbx{top:16px;right:16px}
+.lbox .lbn{top:50%;transform:translateY(-50%)}
+.lbox .prev{left:16px}.lbox .next{right:16px}
+.lbox .lbc{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;background:rgba(0,0,0,.4);padding:4px 12px;border-radius:999px}
+@media (max-width:600px){.lbox .lbn{top:auto;bottom:12px;transform:none}.lbox .prev{left:12px}.lbox .next{right:12px}.lbox .lbc{bottom:24px}}

@@ -584,13 +584,13 @@ public class PublicController(
     [SwaggerOperation(Summary = "Get title/description/image for a shared link's Open Graph preview")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiResponse<PublicPreviewResponse>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ApiResponse<object>))]
-    public async Task<IActionResult> GetPublicPreview(string type, string id)
+    public async Task<IActionResult> GetPublicPreview(string type, string id, [FromQuery] bool site = false)
     {
         var preview = type.ToLowerInvariant() switch
         {
-            "event" => await BuildEventPreviewAsync(id),
-            "job" => await BuildJobPreviewAsync(id),
-            "news" => await BuildNewsPreviewAsync(id),
+            "event" => await BuildEventPreviewAsync(id, site),
+            "job" => await BuildJobPreviewAsync(id, site),
+            "news" => await BuildNewsPreviewAsync(id, site),
             "spotlight" => await BuildSpotlightPreviewAsync(id),
             "resource" => await BuildResourcePreviewAsync(id),
             "business" => await BuildBusinessPreviewAsync(id),
@@ -608,12 +608,12 @@ public class PublicController(
         return Ok(new ApiResponse<PublicPreviewResponse> { Message = "Success", Code = 200, Data = preview });
     }
 
-    private async Task<PublicPreviewResponse?> BuildEventPreviewAsync(string id)
+    private async Task<PublicPreviewResponse?> BuildEventPreviewAsync(string id, bool site = false)
     {
         var e = await eventRepo.GetOneAsync(x => x.Id == id);
         if (e is null) return null;
         if (e.CommunityId is not null || e.YearGroups is { Count: > 0 }) return new PublicPreviewResponse(e.Title, null, e.BannerImageUrl, Restricted: true);
-        var isPublic = PublicVisibility.IsFullyPublic(e.IsPublic, e.CommunityId, e.YearGroups);
+        var isPublic = site || PublicVisibility.IsFullyPublic(e.IsPublic, e.CommunityId, e.YearGroups);
         var facts = new List<PublicFact>();
         if (isPublic)
         {
@@ -627,25 +627,25 @@ public class PublicController(
             IsPublic: isPublic, Html: isPublic ? e.Description : null, Images: isPublic ? e.ImageUrls : null, Facts: isPublic ? facts : null);
     }
 
-    private async Task<PublicPreviewResponse?> BuildJobPreviewAsync(string id)
+    private async Task<PublicPreviewResponse?> BuildJobPreviewAsync(string id, bool site = false)
     {
         // Only live postings: a draft, closed, or member-suggested one still awaiting review is not shown to anyone signed out.
         var j = await jobRepo.GetOneAsync(x => x.Id == id && x.Status == "Active");
         if (j is null) return null;
         if (j.CommunityId is not null || j.YearGroups is { Count: > 0 }) return new PublicPreviewResponse($"{j.Title} at {j.Company}", null, j.BannerImageUrl, Restricted: true);
-        var isPublic = PublicVisibility.IsFullyPublic(j.IsPublic, j.CommunityId, j.YearGroups);
+        var isPublic = site || PublicVisibility.IsFullyPublic(j.IsPublic, j.CommunityId, j.YearGroups);
         return new PublicPreviewResponse($"{j.Title} at {j.Company}", ExcerptFromHtml(j.Description, 300), j.BannerImageUrl,
             Subtitle: string.IsNullOrWhiteSpace(j.Type) ? null : j.Type, Date: j.Deadline, Place: j.Location,
             IsPublic: isPublic, Html: isPublic ? j.Description : null,
             Facts: isPublic ? new List<PublicFact> { new("Company", j.Company) } : null);
     }
 
-    private async Task<PublicPreviewResponse?> BuildNewsPreviewAsync(string id)
+    private async Task<PublicPreviewResponse?> BuildNewsPreviewAsync(string id, bool site = false)
     {
         var n = await newsRepo.GetOneAsync(x => x.Id == id);
         if (n is null || n.Status != "Published") return null; // a draft must never unfurl or show to a guest
         if (n.CommunityId is not null || n.YearGroups is { Count: > 0 }) return new PublicPreviewResponse(n.Title, null, n.ImageUrls?.FirstOrDefault(), Restricted: true);
-        var isPublic = PublicVisibility.IsFullyPublic(n.IsPublic, n.CommunityId, n.YearGroups);
+        var isPublic = site || PublicVisibility.IsFullyPublic(n.IsPublic, n.CommunityId, n.YearGroups);
         return new PublicPreviewResponse(n.Title, ExcerptFromHtml(n.Content, 180), n.ImageUrls?.FirstOrDefault(), Date: n.PublishedAt ?? n.CreatedAt,
             Subtitle: isPublic && !string.IsNullOrWhiteSpace(n.Category) ? n.Category : null,
             IsPublic: isPublic, Html: isPublic ? n.Content : null, Images: isPublic ? n.ImageUrls : null);
