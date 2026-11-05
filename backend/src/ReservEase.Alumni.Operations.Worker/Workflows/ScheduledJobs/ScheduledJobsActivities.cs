@@ -787,6 +787,27 @@ public class ScheduledJobsActivities(
                 .ToList();
         }, "load today's celebrants", institutionId);
 
+    /// <summary>A birthday is over after 72 hours: the system unpins its spotlight and closes the shoutout threads, so nothing about it lingers on the website, the forum list or the dashboard. Only recent ones are looked at, so this stays cheap.</summary>
+    [Activity("ScheduledJobs.WrapUpExpiredBirthdays")]
+    public virtual Task<int> WrapUpExpiredBirthdaysAsync(string institutionId, DateTime now) =>
+        Wrap(async () =>
+        {
+            var cutoff = now.AddHours(-72);
+            var expired = (await spotlightRepo.GetAllAsync(
+                s => s.InstitutionId == institutionId && s.Type == "Birthday" && s.CreatedAt < cutoff && s.CreatedAt >= cutoff.AddDays(-60), ignoreQueryFilters: true)).ToList();
+
+            var unpinned = expired.Where(s => s.IsFeatured).ToList();
+            foreach (var s in unpinned) { s.IsFeatured = false; s.UpdatedBy = "system"; }
+            if (unpinned.Count > 0) await spotlightRepo.UpdateRangeAsync(unpinned);
+
+            var threadIds = expired.SelectMany(s => s.ForumThreadIds).Distinct().ToList();
+            if (threadIds.Count == 0) return unpinned.Count;
+            var open = (await forumThreadRepo.GetAllAsync(t => threadIds.Contains(t.Id) && !t.IsClosed, ignoreQueryFilters: true)).ToList();
+            foreach (var t in open) { t.IsClosed = true; t.UpdatedBy = "system"; }
+            if (open.Count > 0) await forumThreadRepo.UpdateRangeAsync(open);
+            return unpinned.Count + open.Count;
+        }, "wrap up expired birthdays", institutionId);
+
     private const string CelebrationsCategoryName = "Celebrations";
 
     [Activity("ScheduledJobs.CreateBirthdaySpotlight")]

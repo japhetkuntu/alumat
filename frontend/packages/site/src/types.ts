@@ -15,7 +15,7 @@ export interface SiteItem {
 
 export type SectionType =
   | "hero" | "text" | "imagetext" | "news" | "events" | "stats" | "gallery" | "leaders" | "faq" | "cta" | "cards" | "contact"
-  | "actions" | "membership" | "chapters" | "partners" | "services" | "store" | "fundraisers" | "jobs" | "businesses" | "communities" | "spotlights";
+  | "video" | "social" | "downloads" | "actions" | "membership" | "chapters" | "partners" | "services" | "store" | "fundraisers" | "jobs" | "businesses" | "communities" | "spotlights";
 
 export type Background = "plain" | "tint" | "brand";
 export type Spacing = "c" | "n" | "r";

@@ -299,4 +299,52 @@ public class WebsiteDocumentValidatorTests
         Assert.Equal("intro", doc.Sections[0].Variant);
         Assert.Equal("journal", doc.Template);
     }
+
+    [Theory]
+    [InlineData("https://youtu.be/3S6DmVoUhaM?si=abc", "https://www.youtube.com/watch?v=3S6DmVoUhaM")]
+    [InlineData("https://www.youtube.com/watch?v=3S6DmVoUhaM&t=5", "https://www.youtube.com/watch?v=3S6DmVoUhaM")]
+    [InlineData("https://www.youtube.com/embed/3S6DmVoUhaM", "https://www.youtube.com/watch?v=3S6DmVoUhaM")]
+    [InlineData("https://vimeo.com/123456789", "https://vimeo.com/123456789")]
+    [InlineData("https://evil.example/watch?v=3S6DmVoUhaM", null)]
+    [InlineData("https://youtube.com.evil.example/watch?v=3S6DmVoUhaM", null)]
+    [InlineData("http://www.youtube.com/watch?v=3S6DmVoUhaM", null)]
+    [InlineData("https://www.youtube.com/watch?v=\"><script>", null)]
+    [InlineData("javascript:alert(1)", null)]
+    public void A_video_address_is_kept_only_when_it_is_a_youtube_or_vimeo_video(string input, string? expected)
+    {
+        var doc = Ok(Page(Section("v", "video", props: new { heading = "Watch", url = input })));
+        Assert.Equal(expected, doc.Sections[0].Props.GetValueOrDefault("url"));
+    }
+
+    [Theory]
+    [InlineData("https://www.facebook.com/Alumniknust?mibextid=x", "https://www.facebook.com/Alumniknust")]
+    [InlineData("https://facebook.com/groups/12345", null)]
+    [InlineData("https://facebook.com.evil.example/Alumniknust", null)]
+    [InlineData("https://www.facebook.com/", null)]
+    public void A_facebook_page_is_kept_only_when_it_is_a_facebook_page(string input, string? expected)
+    {
+        var doc = Ok(Page(Section("s", "social", props: new { heading = "Follow", fb = input })));
+        Assert.Equal(expected, doc.Sections[0].Props.GetValueOrDefault("fb"));
+    }
+
+    [Fact]
+    public void A_hero_can_be_a_rotating_banner_with_up_to_six_slides_and_downloads_keep_their_link()
+    {
+        var slides = Enumerable.Range(1, 9).Select(n => new { id = $"s{n}", fields = new { title = $"Slide {n}", text = "Words" }, links = new { go = new { t = "portal", v = "events" } } }).ToArray();
+        var files = new[] { new { id = "d1", fields = new { label = "Newsletter", hint = "September" }, links = new { go = new { t = "external", v = "https://example.com/news.pdf" } } } };
+        var doc = Ok(Page(Section("h", "hero", variant: "slides", items: slides), Section("d", "downloads", items: files)));
+        Assert.Equal("slides", doc.Sections[0].Variant);
+        Assert.Equal(6, doc.Sections[0].Items!.Count);
+        Assert.Equal("portal", doc.Sections[0].Items![0].Links["go"].T);
+        Assert.Equal("https://example.com/news.pdf", doc.Sections[1].Items![0].Links["go"].V);
+    }
+
+    [Fact]
+    public void The_classic_look_and_tiktok_link_survive_saving()
+    {
+        var json = JsonSerializer.Serialize(new { template = "classic", sections = new[] { Section("t") }, footer = new { social = new { tiktok = "https://www.tiktok.com/@alumni" } } }, WebsiteDocument.Json);
+        var doc = Ok(json);
+        Assert.Equal("classic", doc.Template);
+        Assert.Equal("https://www.tiktok.com/@alumni", doc.Footer.Social["tiktok"]);
+    }
 }

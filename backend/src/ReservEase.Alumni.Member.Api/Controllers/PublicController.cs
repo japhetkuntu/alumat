@@ -504,7 +504,9 @@ public class PublicController(
             // InstitutionSpotlightService.SetFeaturedAsync) — falls back to
             // the previous implicit "most recently featured" ordering when
             // nothing has been explicitly picked.
-            var items = await spotlightRepo.GetQueryable(s => s.Status == "Approved")
+            // A birthday is a moment, not a story: it leaves the featured spotlights 72 hours after it was made, even if an admin pinned it.
+            var birthdayCutoff = DateTime.UtcNow.AddHours(-72);
+            var items = await spotlightRepo.GetQueryable(s => s.Status == "Approved" && (s.Type != "Birthday" || s.CreatedAt >= birthdayCutoff))
                 .OrderByDescending(s => s.IsFeatured)
                 .ThenByDescending(s => s.FeaturedMonth)
                 .ThenByDescending(s => s.CreatedAt)

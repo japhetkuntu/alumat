@@ -17,11 +17,14 @@ export interface BlockInfo {
 }
 
 export const BLOCKS: Record<SectionType, BlockInfo> = {
+  video: { name: "Video", description: "A YouTube or Vimeo video, played right on your page.", variants: { wide: "Wide" } },
+  social: { name: "Follow us", description: "Your Facebook page feed and links to your other social pages.", variants: { follow: "Feed and links" } },
+  downloads: { name: "Downloads", description: "Files people can open: newsletters, forms, reports, your constitution.", variants: { list: "List" }, items: { word: "download", many: "Downloads", label: (f) => f.label ?? "Download" } },
   actions: { name: "Quick actions", description: "A row of the things visitors come to do: join, pay dues, give, update their details.", variants: { bar: "Row" }, items: { word: "action", many: "Actions", label: (f) => f.label ?? "Action" } },
   membership: { name: "Membership types", description: "The kinds of membership you offer, what each costs and who it is for.", variants: { cards: "Cards" }, items: { word: "membership type", many: "Membership types", label: (f) => f.title ?? "Membership type" } },
   chapters: { name: "Chapters and branches", description: "Where your groups meet and who to contact, as a simple table.", variants: { table: "Table" }, items: { word: "chapter", many: "Chapters", label: (f) => f.name ?? "Chapter" } },
   partners: { name: "Partners and sponsors", description: "A row of logos for the organisations that support you.", variants: { strip: "Logo row" }, items: { word: "partner", many: "Partners", label: (f) => f.name ?? "Partner" } },
-  hero: { name: "Hero", description: "The big opening of the page: a headline, a few words and buttons.", variants: { split: "Photo beside text", full: "Full-width photo", center: "Centred text", intro: "Plain opening, no photo" } },
+  hero: { name: "Hero", description: "The big opening of the page: a headline, a few words and buttons.", variants: { split: "Photo beside text", full: "Full-width photo", center: "Centred text", intro: "Plain opening, no photo", slides: "Rotating banner of photos" }, items: { word: "slide", many: "Slides", label: (f) => f.title || "Slide" } },
   text: { name: "Text", description: "A heading and some paragraphs.", variants: { one: "One column", two: "Two columns" } },
   imagetext: { name: "Image and text", description: "A photo beside a heading and text.", variants: { left: "Image left", right: "Image right" } },
   news: { name: "Latest news", description: "Your latest news posts, filled in for you.", variants: { list: "List", grid: "Cards" }, live: "News posts", platformFeature: "News", counted: true, allHref: "/news" },
@@ -56,7 +59,7 @@ export const WEBSITE_FEATURES: { key: WebsiteFeature; label: string; description
 /** The menu name a new section gets, and whether it appears in the menu from the start. */
 export const MENU_DEFAULT: Partial<Record<SectionType, string>> = {
   services: "Services", store: "Store", fundraisers: "Give", news: "News", events: "Events", contact: "Contact",
-  jobs: "Jobs", businesses: "Businesses", communities: "Communities", spotlights: "Spotlight", membership: "Membership", chapters: "Chapters", leaders: "Leaders",
+  downloads: "Downloads", jobs: "Jobs", businesses: "Businesses", communities: "Communities", spotlights: "Spotlight", membership: "Membership", chapters: "Chapters", leaders: "Leaders",
 };
 
 /** The member portal pages a button can open, by name. Keep in step with PortalPages on the server. */

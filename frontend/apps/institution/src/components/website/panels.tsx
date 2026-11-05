@@ -108,7 +108,7 @@ export function SectionPanel({ ctx, section: s }: { ctx: PanelCtx; section: Site
       {!isOn && <p className="m-0 border-l-[3px] border-amber-500 bg-amber-50 px-2.5 py-1.5 text-[12px]">{b.feature ?? b.name} is not available for your institution, so visitors will not see this section.</p>}
 
       {Object.keys(b.variants).length > 1 && (
-        <Field label="Layout"><Segmented label="Layout" value={s.variant} onChange={(v) => up(setSection(doc, s.id, "variant", v))} options={Object.entries(b.variants).map(([value, label]) => ({ value, label }))} /></Field>
+        <Field label="Layout"><Segmented label="Layout" value={s.variant} onChange={(v) => { const next = setSection(doc, s.id, "variant", v); up(s.type === "hero" && v === "slides" && !(s.items ?? []).length ? addItem(next, s.id).doc : next); }} options={Object.entries(b.variants).map(([value, label]) => ({ value, label }))} /></Field>
       )}
       {b.counted && (
         <Field label="How many to show"><Segmented label="How many" value={String(s.count)} onChange={(v) => up(setSection(doc, s.id, "count", Number(v)))} options={["3", "4", "6"].map((n) => ({ value: n, label: n }))} /></Field>
@@ -119,7 +119,19 @@ export function SectionPanel({ ctx, section: s }: { ctx: PanelCtx; section: Site
         </Field>
       ))}
 
-      {b.items && (
+      {s.type === "video" && (
+        <Field label="YouTube or Vimeo link">
+          <input className={inputCls} inputMode="url" placeholder="https://www.youtube.com/watch?v=…" maxLength={300} value={s.props.url ?? ""} onChange={(e) => up(setProp2(doc, s.id, "url", e.target.value))} />
+          <p className="m-0 text-[12px] text-muted-foreground">Paste the address from your browser, or the Share button on the video. It plays on your page without leaving it.</p>
+        </Field>
+      )}
+      {s.type === "social" && (
+        <Field label="Facebook page address">
+          <input className={inputCls} inputMode="url" placeholder="https://www.facebook.com/yourpage" maxLength={300} value={s.props.fb ?? ""} onChange={(e) => up(setProp2(doc, s.id, "fb", e.target.value))} />
+          <p className="m-0 text-[12px] text-muted-foreground">Shows your latest posts here. The links to your other pages come from “Header and footer”, so they stay the same in both places. Leave this empty to show only the links.</p>
+        </Field>
+      )}
+      {(b.items && (s.type !== "hero" || s.variant === "slides")) && (
         <Field label={`${b.items.many} (${s.items?.length ?? 0})`}>
           <ul className="m-0 grid list-none gap-1.5 p-0">
             {(s.items ?? []).map((it, i) => (
@@ -132,7 +144,7 @@ export function SectionPanel({ ctx, section: s }: { ctx: PanelCtx; section: Site
             ))}
             {!(s.items ?? []).length && <li className="text-[12px] text-muted-foreground">Nothing here yet.</li>}
           </ul>
-          <Button variant="secondary" size="sm" onClick={() => up(addItem(doc, s.id).doc)}><Plus size={14} /> Add {s.type === "gallery" ? "a photo" : `a ${b.items.word}`}</Button>
+          <Button variant="secondary" size="sm" onClick={() => up(addItem(doc, s.id).doc)}><Plus size={14} /> Add {s.type === "gallery" ? "a photo" : `${/^[aeiou]/i.test(b.items.word) ? "an" : "a"} ${b.items.word}`}</Button>
           {s.type === "gallery" && s.variant === "mosaic" && !(s.items && s.items.length >= 5 && s.items.length % 2 === 1) && <p className="m-0 text-[12px] text-muted-foreground">The mosaic needs 5, 7 or 9 photos. It shows an even grid until then.</p>}
         </Field>
       )}
@@ -142,6 +154,24 @@ export function SectionPanel({ ctx, section: s }: { ctx: PanelCtx; section: Site
           <div className="text-[12px] font-semibold text-muted-foreground">Where each button goes</div>
           {(s.items ?? []).filter((it) => it.fields.btn).map((it) => (
             <LinkEditor key={it.id} label={`“${it.fields.title}”`} link={it.links.btn} sections={doc.sections} onChange={(l) => up(setLink(doc, s.id, "btn", l, it.id))} />
+          ))}
+        </Group>
+      )}
+      {s.type === "downloads" && (s.items ?? []).length > 0 && (
+        <Group>
+          <div className="text-[12px] font-semibold text-muted-foreground">Where each file is</div>
+          <p className="m-0 text-[12px] text-muted-foreground">Choose “A website address” and paste the file’s address. A file you uploaded elsewhere, for example to your Google Drive, works too once anyone with the link can open it.</p>
+          {(s.items ?? []).map((it) => (
+            <LinkEditor key={it.id} label={`“${it.fields.label}”`} link={it.links.go} sections={doc.sections} onChange={(l) => up(setLink(doc, s.id, "go", l, it.id))} />
+          ))}
+        </Group>
+      )}
+      {s.type === "hero" && s.variant === "slides" && (s.items ?? []).length > 0 && (
+        <Group>
+          <div className="text-[12px] font-semibold text-muted-foreground">Where each slide goes (optional)</div>
+          <p className="m-0 text-[12px] text-muted-foreground">Click a slide’s photo on the page to add or replace it. A slide with no photo is not shown to visitors.</p>
+          {(s.items ?? []).map((it, i) => (
+            <LinkEditor key={it.id} label={it.fields.title ? `“${it.fields.title}”` : `Slide ${i + 1}`} link={it.links.go} sections={doc.sections} onChange={(l) => up(setLink(doc, s.id, "go", l, it.id))} />
           ))}
         </Group>
       )}
@@ -311,7 +341,7 @@ export function SitePanel({ ctx }: { ctx: PanelCtx }) {
         <Check checked={f.credit} onChange={(v) => ctx.change(setFooter(doc, "credit", v))}>Show “Powered by AlumUnion”</Check>
         <div className="space-y-2">
           <div className="text-[12px] font-semibold text-muted-foreground">Social links (leave empty to hide)</div>
-          {(["facebook", "instagram", "linkedin", "x", "youtube"] as const).map((k) => (
+          {(["facebook", "instagram", "linkedin", "x", "youtube", "tiktok"] as const).map((k) => (
             <input key={k} className={inputCls} aria-label={`${k} address`} placeholder={`${k[0].toUpperCase()}${k.slice(1)} address (https://…)`} value={f.social[k] ?? ""} onChange={(e) => ctx.change(setSocial(doc, k, e.target.value), "soc-" + k)} />
           ))}
         </div>

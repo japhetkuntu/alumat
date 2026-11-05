@@ -64,6 +64,7 @@ export default function ThreadDetailPage() {
       // the community preview card — all need to reflect the new count.
       qc.invalidateQueries({ queryKey: ["m-forum-thread", id] });
       qc.invalidateQueries({ queryKey: ["m-forum-threads"] });
+      qc.invalidateQueries({ queryKey: ["m-unanswered-threads"] });
       qc.invalidateQueries({ queryKey: ["m-community-threads-preview"] });
       toast.success("Reply posted.");
     },

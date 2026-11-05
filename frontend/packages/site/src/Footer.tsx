@@ -4,7 +4,7 @@ import { nameOf } from "./color";
 import type { MenuItem } from "./Header";
 import type { SiteSection } from "./types";
 
-const SOCIAL: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", linkedin: "LinkedIn", x: "X", youtube: "YouTube" };
+const SOCIAL: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", linkedin: "LinkedIn", x: "X", youtube: "YouTube", tiktok: "TikTok" };
 
 interface FooterProps { base?: string; ctx: SiteCtx; brandMark: React.ReactNode; logoUrl?: string | null; items: { sec: SiteSection; label: string }[]; featureOf: (s: SiteSection) => boolean }
 

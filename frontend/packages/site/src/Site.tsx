@@ -49,7 +49,7 @@ export function SiteView({ doc, brand, data, platformDisabled = [], edit, sample
       <SiteHeader logoUrl={customLogo} mark={mark} name={name} items={items.map((i) => ({ id: i.sec.id, label: i.label }))} overlay={reader ? false : overlay} sticky={d.sticky} inEditor={editing} base={reader ? "/" : ""} />
       {reader ? <main className="sec bg-plain sp-n readpage">{reader}</main> : sections.map((s, i) => {
         const why = editing ? whyHidden(s, doc, data, platformDisabled) : null;
-        const cls = ["sec", s.type === "hero" ? `hero-${s.variant === "full" ? "full" : s.variant === "center" ? "center" : s.variant === "intro" ? "intro" : "split"}` : "", `bg-${s.bg}`, `sp-${s.space}`, edit?.selectedId === s.id ? "selected" : "", why ? "featoff" : ""].join(" ");
+        const cls = ["sec", s.type === "hero" ? `hero-${s.variant === "full" ? "full" : s.variant === "center" ? "center" : s.variant === "intro" ? "intro" : s.variant === "slides" ? "slides" : "split"}` : "", `bg-${s.bg}`, `sp-${s.space}`, edit?.selectedId === s.id ? "selected" : "", why ? "featoff" : ""].join(" ");
         return (
           <div key={s.id} style={{ display: "contents" }}>
             {edit && i === 0 && <InsertGap at={0} edit={edit} />}

@@ -1,7 +1,10 @@
 import { BLOCKS, portalPath } from "./blocks";
 import type { SiteCtx } from "./context";
 import { dateOf, dayOf, group, money, monthOf, pct, plainOf } from "./format";
+import { facebookEmbed, SOCIAL_NAMES, videoEmbed } from "./embed";
 import { Photo } from "./Photo";
+import { sized } from "./photos";
+import { Slides } from "./Slides";
 import { Ed, Rich } from "./Text";
 import { initials } from "./color";
 import { isExternal, linkHref, linkOk } from "./links";
@@ -278,6 +281,61 @@ export function SectionBody({ sec, ctx }: P): React.ReactNode {
         </div>
       );
     }
+    case "video": {
+      const vid = videoEmbed(sec.props.url);
+      return (
+        <div className="wrap vidwrap"><SecHead sec={sec} ctx={ctx} />
+          {(sec.props.body || edit) && <p className="vidtext"><Ed value={sec.props.body} edit={edit} sectionId={sec.id} field="body" placeholder="A line about the video (optional)" /></p>}
+          {vid
+            ? <div className="vid"><iframe src={vid.src} title={sec.props.heading || "Video"} loading="lazy" allow="fullscreen; picture-in-picture; encrypted-media" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>
+            : <div className="calm"><b>No video yet</b><span>Paste a YouTube or Vimeo link in the panel on the right.</span></div>}
+        </div>
+      );
+    }
+    case "social": {
+      const feed = facebookEmbed(sec.props.fb);
+      const links = Object.entries(ctx.doc.footer.social ?? {}).filter(([k, u]) => u && SOCIAL_NAMES[k]);
+      return (
+        <div className="wrap socwrap"><SecHead sec={sec} ctx={ctx} />
+          <div className={`socgrid${feed ? " withfeed" : ""}`}>
+            <div className="soccopy">
+              {(sec.props.body || edit) && <p><Ed value={sec.props.body} edit={edit} sectionId={sec.id} field="body" placeholder="Where to find us online" /></p>}
+              {links.length > 0
+                ? <ul className="socl">{links.map(([k, u]) => <li key={k}>{edit ? <a onClick={(e) => e.preventDefault()}>{SOCIAL_NAMES[k]}</a> : <a href={u} target="_blank" rel="noopener noreferrer">{SOCIAL_NAMES[k]}</a>}</li>)}</ul>
+                : edit && <div className="calm"><b>No social links yet</b><span>Add them under Header and footer. They show here and in the footer.</span></div>}
+            </div>
+            {feed
+              ? <div className="socfeed">{edit ? <div className="calm"><b>Your Facebook page shows here</b><span>Visitors see your latest posts. It does not load inside the editor.</span></div> : <iframe src={feed} title="Facebook page" loading="lazy" scrolling="no" allow="encrypted-media" referrerPolicy="strict-origin-when-cross-origin" />}</div>
+              : edit && <div className="calm"><b>No Facebook page yet</b><span>Add your page address in the panel to show your latest posts.</span></div>}
+          </div>
+        </div>
+      );
+    }
+    case "downloads": {
+      const its = (sec.items ?? []).filter((it) => edit || (it.links.go?.t && it.links.go.t !== "none"));
+      return (
+        <div className="wrap dlwrap"><SecHead sec={sec} ctx={ctx} />
+          {its.length ? (
+            <ul className="dl">{its.map((it) => {
+              const l = it.links.go, href = linkHref(l, ctx.sections);
+              const body = (
+                <>
+                  <span className="dlicon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M12 11v6m0 0-2.5-2.5M12 17l2.5-2.5" /></svg></span>
+                  <span className="dltext"><b><Ed value={it.fields.label} edit={edit} sectionId={sec.id} itemId={it.id} field="label" placeholder="Name of the file" /></b><small><Ed value={it.fields.hint} edit={edit} sectionId={sec.id} itemId={it.id} field="hint" placeholder="A few words about it" /></small></span>
+                  <span className="dlget">{edit ? "Open" : "Download"}{ARW}</span>
+                </>
+              );
+              return (
+                <li key={it.id}>
+                  {!edit && href ? <a className="dlrow" href={href} {...(isExternal(l) ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{body}</a> : <div className="dlrow">{body}</div>}
+                  {edit && <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove</button>}
+                </li>
+              );
+            })}</ul>
+          ) : <div className="calm"><b>No downloads yet</b><span>Add a file in the panel on the right, then paste its address.</span></div>}
+        </div>
+      );
+    }
     case "partners": {
       const its = sec.items ?? [];
       return (
@@ -514,6 +572,37 @@ function Hero({ sec, ctx }: P) {
         <div className="content"><div className="wrap">{head({ maxWidth: "16ch" })}<div className="lead"><Rich value={sec.props.body} edit={edit} sectionId={sec.id} field="body" /></div>{btns}</div></div>
       </div>
     );
+  }
+  if (v === "slides") {
+    const its = sec.items ?? [];
+    const intro = (sec.props.heading || edit) && (
+      <div className="wrap narrow slidesintro">{head()}{(sec.props.body || edit) && <div className="lead"><Rich value={sec.props.body} edit={edit} sectionId={sec.id} field="body" /></div>}{btns}</div>
+    );
+    if (edit) {
+      return (
+        <>
+          <div className="wrap slidesedit">
+            {its.map((it) => (
+              <div key={it.id} className="slideedit">
+                <Photo src={sec.imgs["i" + it.id]} width={1400} edit={edit} sectionId={sec.id} slot={"i" + it.id} prompt="Add the banner photo" />
+                <div className="scap">
+                  <h2><Ed value={it.fields.title} edit={edit} sectionId={sec.id} itemId={it.id} field="title" placeholder="Slide heading (optional)" /></h2>
+                  <p><Ed value={it.fields.text} edit={edit} sectionId={sec.id} itemId={it.id} field="text" placeholder="A line about it (optional)" /></p>
+                  <button type="button" className="itx" onClick={(e) => { e.stopPropagation(); edit.removeItem(sec.id, it.id); }}>Remove slide</button>
+                </div>
+              </div>
+            ))}
+            {!its.length && <p className="calm">Add your first slide in the panel on the right. Visitors see them turn one after another.</p>}
+          </div>
+          {intro}
+        </>
+      );
+    }
+    const slides = its.filter((it) => sec.imgs["i" + it.id]).map((it) => {
+      const l = it.links.go;
+      return { id: it.id, img: sized(sec.imgs["i" + it.id], 1800), title: it.fields.title, text: it.fields.text, href: linkHref(l, ctx.sections), external: isExternal(l) };
+    });
+    return <>{slides.length > 0 && <Slides slides={slides} label={sec.props.heading || "Highlights"} />}{intro}</>;
   }
   if (v === "intro") {
     const bg = sec.imgs.bg;

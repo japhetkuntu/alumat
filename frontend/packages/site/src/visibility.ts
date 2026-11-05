@@ -2,7 +2,7 @@ import { BLOCKS } from "./blocks";
 import type { SiteData, SiteDocument, SiteSection } from "./types";
 
 /** Does the live section have anything to show? A feature with nothing to show simply does not appear, so visitors never see an empty block. */
-export function hasContent(sec: SiteSection, data: SiteData): boolean {
+export function hasContent(sec: SiteSection, data: SiteData, doc?: SiteDocument): boolean {
   switch (sec.type) {
     case "news": return (data.news?.length ?? 0) > 0;
     case "events": return true; // with nothing coming up the section says so and points to past events
@@ -13,6 +13,9 @@ export function hasContent(sec: SiteSection, data: SiteData): boolean {
     case "businesses": return (data.businesses?.length ?? 0) > 0;
     case "communities": return (data.communities?.length ?? 0) > 0;
     case "spotlights": return (data.spotlights?.length ?? 0) > 0;
+    case "video": return !!sec.props.url;
+    case "social": return !!sec.props.fb || Object.values(doc?.footer.social ?? {}).some(Boolean);
+    case "downloads": return (sec.items ?? []).some((i) => i.links.go?.t && i.links.go.t !== "none");
     case "actions": case "membership": case "chapters": case "partners": case "leaders": case "gallery": return (sec.items?.length ?? 0) > 0;
     case "stats": { const s = data.stats; return !!s && [s.members, s.joinedLast30Days, s.eventsNext30Days, s.openJobs, s.businesses, s.communities].some((v) => (v ?? 0) > 0); }
     default: return true;
@@ -30,7 +33,7 @@ export function visibleSections(doc: SiteDocument, data: SiteData, platformDisab
     const b = BLOCKS[s.type];
     if (b.feature && doc.features[b.feature] === false) return false;
     if (b.platformFeature && platformDisabled.includes(b.platformFeature)) return false;
-    return hasContent(s, data);
+    return hasContent(s, data, doc);
   });
 }
 
@@ -40,6 +43,6 @@ export function whyHidden(sec: SiteSection, doc: SiteDocument, data: SiteData, p
   if (sec.hidden) return "Hidden from visitors";
   if (b.platformFeature && platformDisabled.includes(b.platformFeature)) return `${b.feature ?? b.name} is not available for your institution`;
   if (b.feature && doc.features[b.feature] === false) return `Hidden while ${b.feature} is switched off for the website`;
-  if (b.live && !hasContent(sec, data)) return `Nothing to show yet, so visitors will not see this`;
+  if (b.live && !hasContent(sec, data, doc)) return `Nothing to show yet, so visitors will not see this`;
   return null;
 }

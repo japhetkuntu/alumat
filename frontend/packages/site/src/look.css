@@ -305,3 +305,59 @@
 .lbox .prev{left:16px}.lbox .next{right:16px}
 .lbox .lbc{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;background:rgba(0,0,0,.4);padding:4px 12px;border-radius:999px}
 @media (max-width:600px){.lbox .lbn{top:auto;bottom:12px;transform:none}.lbox .prev{left:12px}.lbox .next{right:12px}.lbox .lbc{bottom:24px}}
+
+/* ── Rotating banner (hero "slides") ───────────────────────────────────────────────────── */
+.alsite .hero-slides{padding:0}
+.alsite .slides{position:relative;width:100%;aspect-ratio:21/8;min-height:260px;max-height:560px;overflow:hidden;background:color-mix(in srgb,var(--ink) 88%,transparent)}
+.alsite .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .7s ease,visibility .7s}
+.alsite .slide.on{opacity:1;visibility:visible}
+.alsite .slide>img{width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block}
+.alsite .scap{position:absolute;left:0;right:0;bottom:0;display:grid;gap:8px;justify-items:start;padding:clamp(28px,5cqw,64px) clamp(20px,6cqw,88px) clamp(52px,6cqw,64px);color:#fff;background:linear-gradient(to top,rgba(8,10,9,.78),rgba(8,10,9,.35) 55%,transparent)}
+.alsite .scap h2{margin:0;max-width:22ch;font-size:clamp(24px,3.6cqw,44px);line-height:1.1;letter-spacing:-.02em;color:#fff}
+.alsite .scap p{margin:0;max-width:56ch;font-size:clamp(15px,1.6cqw,18px);color:rgba(255,255,255,.92)}
+.alsite .scap .btn{margin-top:6px}
+.alsite .snav{position:absolute;top:50%;translate:0 -50%;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.88);color:#16201b;font-size:28px;line-height:1;cursor:pointer;transition:background-color .15s}
+.alsite .snav:hover{background:#fff}
+.alsite .snav.prev{left:clamp(10px,2cqw,24px)}.alsite .snav.next{right:clamp(10px,2cqw,24px)}
+.alsite .sdots{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center}
+.alsite .sdots button{position:relative;width:28px;min-width:28px;height:44px;padding:0;border:0;background:none;cursor:pointer}
+.alsite .sdots button::before{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;translate:-50% -50%;border-radius:50%;background:rgba(255,255,255,.6);transition:width .2s,background-color .2s}
+.alsite .sdots button.on::before{width:26px;border-radius:6px;background:#fff}
+.alsite .slidesintro{padding-top:clamp(28px,4cqw,48px)}
+.alsite .slidesedit{display:grid;gap:14px;padding-top:20px}
+.alsite .slideedit{position:relative;border:1px dashed var(--line);border-radius:var(--rc);overflow:hidden}
+.alsite .slideedit .img{aspect-ratio:21/8;min-height:180px}
+.alsite .slideedit .scap{position:static;background:var(--card);color:var(--ink);padding:14px 18px}
+.alsite .slideedit .scap h2,.alsite .slideedit .scap p{color:var(--ink)}
+.alsite .slideedit .scap h2{font-size:20px}
+@container site (max-width:640px){.alsite .slides{aspect-ratio:4/3;max-height:none}.alsite .snav{width:38px;height:38px}}
+@media (prefers-reduced-motion:reduce){.alsite .slide{transition:none}}
+
+/* ── Video, social, downloads ──────────────────────────────────────────────────────────── */
+.alsite .vidwrap{max-width:1000px}
+.alsite .vidtext{margin:0 0 18px;max-width:62ch;color:var(--mut)}
+.alsite .vid{position:relative;aspect-ratio:16/9;border-radius:var(--rc);overflow:hidden;background:#000}
+.alsite .vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.alsite .calm b{font:600 17px/1.3 var(--fd)}.alsite .calm span{color:var(--mut)}
+.alsite .socgrid{display:grid;gap:28px;align-items:start}
+.alsite .socgrid.withfeed{grid-template-columns:minmax(0,1fr) minmax(0,520px)}
+.alsite .soccopy p{margin:0 0 16px;max-width:52ch;color:var(--mut);font-size:17px}
+.alsite .socl{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.alsite .socl a{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border:1px solid var(--line);border-radius:var(--rc);background:var(--card);color:var(--ink);font-weight:600;transition:border-color .15s,background-color .15s}
+.alsite .socl a:hover{border-color:var(--p);background:var(--tint)}
+.alsite .socfeed{min-height:200px;border:1px solid var(--line);border-radius:var(--rc);background:var(--card);overflow:hidden}
+.alsite .socfeed iframe{display:block;width:100%;height:560px;border:0}
+@container site (max-width:800px){.alsite .socgrid.withfeed{grid-template-columns:minmax(0,1fr)}}
+.alsite .dlwrap{max-width:860px}
+.alsite .dl{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.alsite .dl li{position:relative}
+.alsite .dlrow{display:flex;align-items:center;gap:16px;padding:16px 18px;border:1px solid var(--line);border-radius:var(--rc);background:var(--card);color:var(--ink);transition:border-color .15s,background-color .15s}
+.alsite a.dlrow:hover{border-color:var(--p);background:var(--tint)}
+.alsite .dlicon{display:grid;place-items:center;width:44px;height:44px;flex:none;border-radius:var(--rc);background:color-mix(in srgb,var(--p) 10%,var(--card));color:var(--p)}
+.alsite .dltext{display:grid;gap:2px;min-width:0;flex:1}
+.alsite .dltext b{font:600 16px/1.3 var(--fd);overflow-wrap:anywhere}
+.alsite .dltext small{color:var(--mut);font-size:14px}
+.alsite .dlget{flex:none;color:var(--p);font-weight:600;font-size:14.5px}
+.alsite .dlget svg{width:16px;height:16px;vertical-align:-3px;margin-left:4px}
+.alsite .dl .itx{position:absolute;right:6px;top:6px}
+@container site (max-width:520px){.alsite .dlget{display:none}}

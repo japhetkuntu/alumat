@@ -54,7 +54,7 @@ public static class WebsiteDocumentValidator
     }
 
     /// <summary>The starter wording of a new section. Keep in step with PLACEHOLDERS in the site package.</summary>
-    public static readonly string[] PlaceholderWords = ["Say a little about it here.", "Full name", "New question", "Write the answer here.", "New card", "Add your words here.", "Membership type", "Chapter name", "Partner name", "Add their role"];
+    public static readonly string[] PlaceholderWords = ["Say a little about it here.", "Full name", "New question", "Write the answer here.", "New card", "Add your words here.", "Membership type", "Chapter name", "Partner name", "Add their role", "New file"];
 
     private static bool HoldsPlaceholder(WebsiteSection s)
         => s.Props.Values.Concat((s.Items ?? []).SelectMany(i => i.Fields.Values)).Any(v => PlaceholderWords.Any(p => v.Contains(p, StringComparison.Ordinal)));
@@ -114,6 +114,9 @@ public static class WebsiteDocumentValidator
             if (s.Props is null || !s.Props.TryGetValue(key, out var v)) continue;
             o.Props[key] = block.RichKeys.Contains(key) ? Rich(v) : Plain(v, key is "heading" or "heading2" ? 140 : key is "body" or "body2" ? 600 : 200);
         }
+        // An embedded address is only ever one of a few known hosts, and is rebuilt from its parts: a page never carries a free-form frame.
+        if (s.Type == "video") { o.Props.Remove("url"); if (VideoUrl(s.Props?.GetValueOrDefault("url")) is { } video) o.Props["url"] = video; }
+        if (s.Type == "social") { o.Props.Remove("fb"); if (FacebookPageUrl(s.Props?.GetValueOrDefault("fb")) is { } page) o.Props["fb"] = page; }
         foreach (var (slot, url) in s.Imgs ?? [])
             if (SlotKey.IsMatch(slot) && Url(url) is { } clean) o.Imgs[slot] = clean;
         foreach (var key in block.LinkKeys)
@@ -140,6 +143,42 @@ public static class WebsiteDocumentValidator
         }
         return o;
     }
+
+    /// <summary>A YouTube or Vimeo video address, reduced to its canonical form; anything else is refused.</summary>
+    public static string? VideoUrl(string? raw)
+    {
+        if (!Uri.TryCreate(raw?.Trim(), UriKind.Absolute, out var u) || u.Scheme != Uri.UriSchemeHttps) return null;
+        var host = u.Host.ToLowerInvariant();
+        if (host is "youtu.be")
+            return YoutubeId.IsMatch(u.AbsolutePath.Trim('/')) ? $"https://www.youtube.com/watch?v={u.AbsolutePath.Trim('/')}" : null;
+        if (host is "youtube.com" or "www.youtube.com" or "m.youtube.com")
+        {
+            var path = u.AbsolutePath.Trim('/');
+            string? id = null;
+            if (path == "watch") id = System.Web.HttpUtility.ParseQueryString(u.Query)["v"];
+            else if (path.StartsWith("embed/") || path.StartsWith("shorts/") || path.StartsWith("live/")) id = path[(path.IndexOf('/') + 1)..];
+            return id is not null && YoutubeId.IsMatch(id) ? $"https://www.youtube.com/watch?v={id}" : null;
+        }
+        if (host is "vimeo.com" or "www.vimeo.com")
+        {
+            var id = u.AbsolutePath.Trim('/');
+            return id.All(char.IsDigit) && id.Length is > 0 and <= 12 ? $"https://vimeo.com/{id}" : null;
+        }
+        return null;
+    }
+
+    /// <summary>A Facebook page address (never a login or share link), reduced to its first path segment.</summary>
+    public static string? FacebookPageUrl(string? raw)
+    {
+        if (!Uri.TryCreate(raw?.Trim(), UriKind.Absolute, out var u) || u.Scheme != Uri.UriSchemeHttps) return null;
+        if (u.Host.ToLowerInvariant() is not ("facebook.com" or "www.facebook.com" or "m.facebook.com" or "web.facebook.com")) return null;
+        var name = u.AbsolutePath.Trim('/').Split('/')[0];
+        return FacebookName.IsMatch(name) && !FacebookNotPages.Contains(name.ToLowerInvariant()) ? $"https://www.facebook.com/{name}" : null;
+    }
+
+    private static readonly HashSet<string> FacebookNotPages = ["groups", "sharer", "share", "login", "dialog", "plugins", "events", "watch", "people", "profile.php", "marketplace", "gaming", "stories", "reel", "photo", "photos", "story.php", "permalink.php", "hashtag", "help", "policies", "settings", "pages", "public", "l.php"];
+    private static readonly Regex YoutubeId = new("^[A-Za-z0-9_-]{6,20}$", RegexOptions.Compiled);
+    private static readonly Regex FacebookName = new(@"^[A-Za-z0-9.\-]{3,80}$", RegexOptions.Compiled);
 
     private static bool IsFixedSlot(string slot) => slot is "main" or "bg" or "map" or "a" or "b" or "c";
 

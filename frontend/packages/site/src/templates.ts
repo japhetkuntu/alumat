@@ -10,6 +10,7 @@ export interface TemplateInfo { key: string; name: string; description: string; 
 export const TEMPLATES: TemplateInfo[] = [
   { key: "vibrant", name: "Modern", description: "A full-colour opening, big photos and clean, flat cards.", vibe: true, font: "vibrant", corners: "14px" },
   { key: "journal", name: "Simple", description: "A calm letter from home: plain words, clear choices, big story photos.", vibe: false, font: "journal", corners: "0px" },
+  { key: "campus", name: "Institution", description: "A rotating photo banner, quick links, news and events, a video and your social pages. Made for an alumni office.", vibe: false, font: "campus", corners: "6px" },
   { key: "classic", name: "Classic", description: "Calm and square-cornered, like a well-kept journal.", vibe: false, font: "heritage", corners: "6px" },
 ];
 
@@ -31,6 +32,7 @@ const sec = (type: SectionType, variant: string, props: Record<string, string>, 
 export function buildTemplate(key: string, ctx: TemplateContext): SiteDocument {
   const info = TEMPLATES.find((t) => t.key === key) ?? TEMPLATES[0];
   if (info.key === "journal") return buildSimple(info, ctx);
+  if (info.key === "campus") return buildInstitution(info, ctx);
   const community = ctx.kind === "community";
   const short = ctx.brand.name.replace(/\b(alumni|association|society|union)\b/gi, "").trim() || ctx.brand.name;
 
@@ -135,6 +137,52 @@ function buildSimple(info: TemplateInfo, ctx: TemplateContext): SiteDocument {
     design: { useBrand: true, primary: null, logoUrl: null, name: null, font: info.font, corners: info.corners, dark: false, vibe: false, headerStyle: "solid", sticky: false },
     sections: [hero, boxes, spotlights, news, events, services, store, fundraisers, jobs, businesses, communities, cta],
     footer: { text: ctx.brand.tagline ?? null, email: null, phone: null, addr: null, menu: true, style: "light", credit: true, social: {} },
+    seo: { title: null, description: null, shareImage: null },
+    features: { Services: true, Store: true, Fundraisers: true, Jobs: true, Businesses: true, Communities: true },
+  };
+}
+
+/** The Institution look, for an alumni office: a banner of photos, the few things people come to do, then news and events, a video, downloads and social pages. Empty places (the video, downloads) are there to fill and stay hidden from visitors until they are. */
+function buildInstitution(info: TemplateInfo, ctx: TemplateContext): SiteDocument {
+  const community = ctx.kind === "community";
+  const slideList = [
+    item({ title: community ? `Welcome to ${ctx.brand.name}` : `Welcome home, ${ctx.brand.name}`, text: ctx.brand.tagline?.trim() || "Stay connected to the people and the place that shaped you." }, { go: { t: "join" } }),
+    item({ title: "Come to the next gathering", text: "Reunions, talks and meet-ups, near you and online." }, { go: { t: "portal", v: "events" } }),
+    item({ title: "Give back", text: "Mentor someone, hire from your network or back a good cause." }, { go: { t: "portal", v: "contributions" } }),
+  ];
+  const hero = sec("hero", "slides", { heading: "", body: "", b1: "", b2: "" }, "plain", { items: slideList, menu: { on: false, label: "" } }, "c");
+  [STOCK.hero, STOCK.campus, STOCK.toss].forEach((u, i) => { hero.imgs["i" + slideList[i].id] = u; });
+
+  const actions = newSection("actions", "bar", {}, {
+    bg: "plain", space: "c", menu: { on: false, label: "" },
+    items: [
+      item({ label: community ? "Join us" : "Register as an alumnus", hint: "Create your profile" }, { go: { t: "join" } }),
+      item({ label: "Job opportunities", hint: "Posted by members" }, { go: { t: "portal", v: "jobs" } }),
+      item({ label: "Pay dues or give", hint: "Support your family" }, { go: { t: "portal", v: "contributions" } }),
+      item({ label: "Member sign in", hint: "Directory, events, jobs" }, { go: { t: "signin" } }),
+    ],
+  });
+  const spotlights = sec("spotlights", "cards", { heading: community ? "Member of the month" : "Alumni in the spotlight" }, "tint");
+  const news = sec("news", "list", { heading: "Stories" });
+  const events = sec("events", "list", { heading: "Programmes and events" }, "tint");
+  const video = sec("video", "wide", { heading: "Watch", body: "", url: "" });
+  const downloads = sec("downloads", "list", { heading: "Newsletters and downloads" }, "tint", { items: [] });
+  const social = sec("social", "follow", { heading: "Follow us", body: "Stay close to what is happening between events.", fb: "" });
+  const leaders = sec("leaders", "row", { heading: community ? "Our leaders" : "Alumni executives" }, "tint", { items: [], menu: { on: false, label: "" } });
+  const chapters = sec("chapters", "table", { heading: "Chapters" }, "plain", { items: [], menu: { on: false, label: "" } });
+  const services = sec("services", "cards", { heading: "Services for members" }, "tint");
+  const store = sec("store", "grid", { heading: "The store" }, "plain", { count: 4 });
+  const fundraisers = sec("fundraisers", "cards", { heading: "Fundraisers you can back" }, "tint");
+  const jobs = sec("jobs", "list", { heading: "Opportunities" }, "plain", { menu: { on: false, label: "" } });
+  const businesses = sec("businesses", "cards", { heading: "Member businesses" }, "tint", { menu: { on: false, label: "" } });
+  const communities = sec("communities", "cards", { heading: "Communities" }, "plain", { menu: { on: false, label: "" } });
+  const contact = sec("contact", "split", { heading: "Contact us", addr: "", mail: "", tel: "" }, "tint", { imgs: { map: STOCK.campus } });
+
+  return {
+    schemaVersion: 1, template: info.key,
+    design: { useBrand: true, primary: null, logoUrl: null, name: null, font: info.font, corners: info.corners, dark: false, vibe: false, headerStyle: "solid", sticky: true },
+    sections: [hero, actions, spotlights, news, events, video, downloads, social, leaders, chapters, services, store, fundraisers, jobs, businesses, communities, contact],
+    footer: { text: ctx.brand.tagline ?? null, email: null, phone: null, addr: null, menu: true, style: "dark", credit: true, social: {} },
     seo: { title: null, description: null, shareImage: null },
     features: { Services: true, Store: true, Fundraisers: true, Jobs: true, Businesses: true, Communities: true },
   };

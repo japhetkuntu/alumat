@@ -13,7 +13,10 @@ public static class WebsiteBlocks
     public static readonly IReadOnlyDictionary<string, Block> All = new Dictionary<string, Block>
     {
         ["actions"] = new(["bar"], None, None, ["label", "hint"], None, None, ["go"], null, null, 6),
-        ["hero"] = new(["split", "full", "center", "intro"], ["eyebrow", "heading", "heading2", "body", "b1", "b2"], ["body"], None, None, ["b1", "b2"], None, null, null),
+        ["hero"] = new(["split", "full", "center", "intro", "slides"], ["eyebrow", "heading", "heading2", "body", "b1", "b2"], ["body"], ["title", "text"], None, ["b1", "b2"], ["go"], null, null, 6),
+        ["video"] = new(["wide"], ["eyebrow", "heading", "body", "url"], None, None, None, None, None, null, null),
+        ["social"] = new(["follow"], ["eyebrow", "heading", "body", "fb"], None, None, None, None, None, null, null),
+        ["downloads"] = new(["list"], Head, None, ["label", "hint"], None, None, ["go"], null, null, 12),
         ["text"] = new(["one", "two"], ["eyebrow", "heading", "body", "body2"], ["body", "body2"], None, None, None, None, null, null),
         ["imagetext"] = new(["left", "right"], ["eyebrow", "heading", "body", "link"], ["body"], None, None, ["link"], None, null, null),
         ["news"] = new(["list", "grid"], Head, None, None, None, None, None, InstitutionFeatures.News, null),
@@ -39,7 +42,7 @@ public static class WebsiteBlocks
 
     public static readonly string[] WebsiteFeatures = ["Services", "Store", "Fundraisers", "Jobs", "Businesses", "Communities"];
     public static readonly string[] Fonts = ["vibrant", "heritage", "campus", "journal", "bold"];
-    public static readonly string[] Templates = ["vibrant", "heritage", "campus", "journal", "bold"];
+    public static readonly string[] Templates = ["vibrant", "heritage", "campus", "journal", "bold", "classic"];
     public static readonly string[] Corners = ["0px", "6px", "14px", "26px"];
     public static readonly string[] Backgrounds = ["plain", "tint", "brand"];
     public static readonly string[] Spacings = ["c", "n", "r"];
@@ -49,5 +52,5 @@ public static class WebsiteBlocks
     public static readonly string[] PortalPages = ["contributions", "profile", "directory", "events", "news", "jobs", "store", "services", "albums", "resources", "mentorship", "polls", "communities", "business-directory", "spotlights", "forum", "calendar"];
     public static readonly string[] FooterStyles = ["dark", "brand", "light"];
     public static readonly string[] HeaderStyles = ["solid", "overlay"];
-    public static readonly string[] SocialKeys = ["facebook", "instagram", "linkedin", "x", "youtube"];
+    public static readonly string[] SocialKeys = ["facebook", "instagram", "linkedin", "x", "youtube", "tiktok"];
 }

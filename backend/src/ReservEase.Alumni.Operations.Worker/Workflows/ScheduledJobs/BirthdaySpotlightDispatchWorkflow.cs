@@ -29,6 +29,10 @@ public class BirthdaySpotlightDispatchWorkflow
         {
             try
             {
+                await Workflow.ExecuteActivityAsync(
+                    (ScheduledJobsActivities a) => a.WrapUpExpiredBirthdaysAsync(institutionId, Workflow.UtcNow),
+                    ScheduledJobsActivityOptions.DatabaseWrite);
+
                 var celebrants = await Workflow.ExecuteActivityAsync(
                     (ScheduledJobsActivities a) => a.LoadTodaysCelebrantsAsync(institutionId, today),
                     ScheduledJobsActivityOptions.DatabaseRead);

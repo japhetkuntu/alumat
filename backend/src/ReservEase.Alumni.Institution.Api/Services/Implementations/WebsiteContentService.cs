@@ -86,7 +86,7 @@ public class WebsiteContentService(
                     .OrderByDescending(j => j.CreatedAt).Take(Take).ToListAsync())
                 .Select(j => new WebsiteJobItem(j.Id, j.Title, j.Company, j.Location)).ToList();
 
-            var spotlights = !On(InstitutionFeatures.Spotlights) ? [] : (await spotlightRepo.GetQueryable(s => s.Status == "Approved")
+            var spotlights = !On(InstitutionFeatures.Spotlights) ? [] : (await spotlightRepo.GetQueryable(s => s.Status == "Approved" && (s.Type != "Birthday" || s.CreatedAt >= DateTime.UtcNow.AddHours(-72))) // birthdays leave after 72 hours, as on the live site
                     .OrderByDescending(s => s.IsFeatured).ThenByDescending(s => s.FeaturedMonth).ThenByDescending(s => s.CreatedAt).Take(Take).ToListAsync())
                 .Select(s => new WebsiteSpotlightItem(s.Id, s.Title, s.Story, s.ImageUrl ?? s.Member?.ProfilePictureUrl, s.Member is { } m ? $"{m.FirstName} {m.LastName}".Trim() : "Member")).ToList();
 

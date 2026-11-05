@@ -129,6 +129,7 @@ public class MemberForumService(
             var approvedCommunityIds = string.IsNullOrEmpty(filter.CommunityId) ? await GetApprovedCommunityIdsAsync(member.Id) : [];
 
             var search = filter.Search?.ToLower();
+            // "unanswered" leaves out threads made by the system (birthday shoutouts): they are not questions.
             var result = await threadRepo.GetPagedAsync(
                 // Recent and Popular used to only filter nothing out, so the tabs looked the same. Each now orders the list as it says.
                 filter.Page, filter.PageSize, filter.SortColumn ?? filter.Filter switch { "recent" => "CreatedAt", "popular" => "ReplyCount", "unanswered" => "CreatedAt", _ => "IsPinned" }, filter.SortDir ?? "desc",
@@ -140,7 +141,7 @@ public class MemberForumService(
                   && TextSearch.Matches(search, t.Title)
                   && (string.IsNullOrEmpty(filter.Filter)
                       || (filter.Filter == "pinned" && t.IsPinned)
-                      || (filter.Filter == "unanswered" && t.ReplyCount == 0)
+                      || (filter.Filter == "unanswered" && t.ReplyCount == 0 && t.CreatedBy != "system")
                       || (filter.Filter == "recent")
                       || (filter.Filter == "popular")
                       || (filter.Filter == "all"))
