@@ -1,6 +1,6 @@
 import {
   Bell, Briefcase, Megaphone, Calendar, Star, CreditCard, MessageSquare,
-  Radio, GraduationCap, Package, UserCheck, CalendarCheck, Wallet, Users, PartyPopper,
+  Radio, GraduationCap, Package, UserCheck, CalendarCheck, Wallet, Users, PartyPopper, MessageCircle,
 } from "@alumni/ui";
 
 /**
@@ -34,6 +34,7 @@ export const TYPE_META: Record<string, {
   EventRsvpConfirmed:           { icon: CalendarCheck, bg: "rgba(245,158,11,0.12)",  color: "#d97706", label: "RSVP"       },
   MembershipReminder:           { icon: Wallet,        bg: "rgba(220,38,38,0.12)",   color: "#dc2626", label: "Dues"       },
   SpotlightDecision:            { icon: Star,          bg: "rgba(234,179,8,0.12)",   color: "#ca8a04", label: "Spotlight"  },
+  IntroductionUpdate:           { icon: MessageCircle, bg: "rgba(14,165,233,0.12)",  color: "#0284c7", label: "Connection" },
   BirthdayShoutout:             { icon: PartyPopper,   bg: "rgba(236,72,153,0.12)",  color: "#db2777", label: "Birthday"   },
 };
 export const DEFAULT_TYPE_META = { icon: Bell, bg: "var(--brand-primary-100, var(--color-background-info))", color: "var(--primary)", label: "Notification" };

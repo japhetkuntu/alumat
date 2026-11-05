@@ -711,3 +711,26 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled) {
 
 /* A long unbroken word (a name, a title, a link) wraps instead of pushing the page sideways. Inherited by everything below body. */
 body { overflow-wrap: break-word; }
+
+/* Toasts: Sonner shows its close button only on hover, which does not help on a phone and hides the way out. Keep it visible, inside the
+   toast's top-right corner, and keep the text clear of it. Swiping a toast away still works too. */
+[data-sonner-toast] [data-close-button] {
+  opacity: .8 !important;
+  left: auto !important;
+  right: 7px !important;
+  top: 7px !important;
+  transform: none !important;
+  width: 26px;
+  height: 26px;
+  border: 0 !important;
+  border-radius: 9999px;
+  background: transparent !important;
+  color: inherit !important;
+  transition: opacity .15s, background-color .15s;
+}
+[data-sonner-toast] [data-close-button]:hover,
+[data-sonner-toast] [data-close-button]:focus-visible {
+  opacity: 1 !important;
+  background: color-mix(in srgb, currentColor 14%, transparent) !important;
+}
+[data-sonner-toast][data-styled="true"] { padding-right: 42px !important; }

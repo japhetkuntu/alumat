@@ -25,6 +25,7 @@ const TYPE_LABELS: Record<ContentReport["entityType"], string> = {
   Job: "Job post",
   BusinessListing: "Business listing",
   Spotlight: "Spotlight",
+  Introduction: "Private conversation",
 };
 
 // Where an admin goes to look at, edit or remove the reported item.
@@ -35,6 +36,7 @@ function itemHref(r: ContentReport): string {
     case "MentorProfile": return "/mentorship";
     case "BusinessListing": return "/business-directory";
     case "Spotlight": return "/spotlights";
+    case "Introduction": return "/members";
   }
 }
 
@@ -91,7 +93,7 @@ export default function FlaggedContentPage() {
       <header>
         <h1 className="m-0 text-[20px] font-bold sm:text-[25px]">Flagged content</h1>
         <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
-          Members can report forum threads, mentor profiles, job posts, business listings and spotlights. You review each report and decide what to do. AlumUnion provides the tool and does not moderate for you.
+          Members can report forum threads, mentor profiles, job posts, business listings, spotlights and private conversations. A private conversation reaches you only when one of the two members reports it, with the latest messages they chose to send. You review each report and decide what to do. AlumUnion provides the tool and does not moderate for you.
         </p>
       </header>
 
@@ -144,7 +146,7 @@ export default function FlaggedContentPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Link href={itemHref(r)}><Button size="sm" variant="outline">Look at the item</Button></Link>
+                  <Link href={itemHref(r)}><Button size="sm" variant="outline">{r.entityType === "Introduction" ? "Find the members" : "Look at the item"}</Button></Link>
                   {r.status === "Open" ? (
                     <>
                       <Button size="sm" onClick={() => { setReviewing({ report: r, outcome: "ActionTaken" }); setNote(""); setError(null); }}>Action taken</Button>

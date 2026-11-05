@@ -197,3 +197,42 @@ To force a frontend build without reading the Turborepo cache:
 ```bash
 sudo env TURBO_FORCE=true bash /opt/alumunion-src/deploy/deploy.sh frontend-member
 ```
+
+## Private conversations: encryption, live updates and scaling
+
+Members can ask each other for an introduction and chat privately (Connections in the member portal). Three things need to be set up on the server.
+
+### 1. Encryption key (required, or the Member API will not start)
+
+Messages and notes are stored AES-256-GCM encrypted. Generate a key once and add it to `/etc/alumunion/member-api.env` (see `member-api.env.example`):
+
+```bash
+openssl rand -base64 32
+# MessageEncryption__CurrentKeyId=k1
+# MessageEncryption__Keys__k1=<the key>
+```
+
+**Back the key up somewhere other than the database.** Without it the stored conversations cannot be read again. To rotate: add a second key under a new id, point `CurrentKeyId` at it, and keep the old one listed so older messages still open. Anything saved before encryption existed is converted automatically the first time the API starts.
+
+This is encryption at rest and in transit (HTTPS). It is not end-to-end encryption: the server can read messages, which is how a member's report to the administrators works. The app never says "end-to-end".
+
+### 2. Allow many open connections (existing servers: run once)
+
+Each member who has the portal open keeps one small live connection (about 20 KB of memory on the API; measured at 8,000 open with no growth after repeated connect and disconnect cycles). That needs higher limits than a default server has, and Nginx's per-address limit of 100 connections would otherwise be shared with these streams, so members behind one school or phone-network address would start getting errors. New installs get this from the templates. On an existing server:
+
+```bash
+sudo bash /opt/alumunion-src/deploy/enable-live-streams.sh
+sudo systemctl restart alumni-member-api
+```
+
+It backs up what it changes, runs `nginx -t` before reloading, and puts the backups back if the test fails.
+
+### 3. More than one Member API server (only when you add a second one)
+
+One API process keeps track of who is connected in its own memory, which is right for a single server. If you run two or more behind a load balancer, set this in every one's `member-api.env` so they relay notices to each other through Redis (the same Redis you already run); nothing else changes:
+
+```
+IntroductionEvents__RedisConnectionString=127.0.0.1:6379
+```
+
+If Redis is unreachable, members still get notices from their own server, and the page catches up when it next reconnects.

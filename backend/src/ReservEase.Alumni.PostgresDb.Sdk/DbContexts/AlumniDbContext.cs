@@ -77,6 +77,9 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
     public DbSet<PollVote> PollVotes => Set<PollVote>();
     public DbSet<MentorProfile> MentorProfiles => Set<MentorProfile>();
     public DbSet<MentorshipRequest> MentorshipRequests => Set<MentorshipRequest>();
+    public DbSet<Introduction> Introductions => Set<Introduction>();
+    public DbSet<IntroductionMessage> IntroductionMessages => Set<IntroductionMessage>();
+    public DbSet<MemberBlock> MemberBlocks => Set<MemberBlock>();
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
     public DbSet<MemberBadge> MemberBadges => Set<MemberBadge>();
@@ -551,6 +554,15 @@ public class AlumniDbContext(DbContextOptions<AlumniDbContext> options, ICurrent
             .HasIndex(mr => mr.MenteeId);
         modelBuilder.Entity<MentorshipRequest>()
             .HasIndex(mr => mr.Status);
+
+        // Introductions: each side's inbox, status filter; messages in order; one block per pair
+        // Each side's list is read newest-activity-first and paged by it, so these two serve the list, its paging and the unread count.
+        modelBuilder.Entity<Introduction>().HasIndex(i => new { i.RequesterId, i.LastActivityAt });
+        modelBuilder.Entity<Introduction>().HasIndex(i => new { i.RecipientId, i.LastActivityAt });
+        modelBuilder.Entity<Introduction>().HasIndex(i => i.Status);
+        modelBuilder.Entity<IntroductionMessage>().HasIndex(m => new { m.IntroductionId, m.CreatedAt });
+        modelBuilder.Entity<MemberBlock>().HasIndex(b => new { b.BlockerId, b.BlockedId }).IsUnique();
+        modelBuilder.Entity<MemberBlock>().HasIndex(b => b.BlockedId);
 
         // Resource: filter by category
         modelBuilder.Entity<Resource>()

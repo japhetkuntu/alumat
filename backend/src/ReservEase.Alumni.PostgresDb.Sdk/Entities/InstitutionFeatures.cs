@@ -47,13 +47,15 @@ public static class InstitutionFeatures
     public const string BirthdaySpotlight = "BirthdaySpotlight";
     /// <summary>Elections and votes: SuperAdmins set up a ballot of positions with aspirants and an audience; members vote once, in secret. Off for a new institution until platform staff turn it on.</summary>
     public const string Polls = "Polls";
+    /// <summary>Members ask each other for an introduction; once accepted they chat privately. Self-service: an institution's own SuperAdmin can switch it off.</summary>
+    public const string Introductions = "Introductions";
 
     public static readonly IReadOnlyList<string> All =
     [
         Contributions, Events, Jobs, News, Forum, Mentorship,
         Resources, Spotlights, Leaderboard, Referrals, ClassNotes, Directory,
         Communities, ManualPayments, AlumniMap, Calendar, Store, PhotoAlbums,
-        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight, Services, Polls,
+        BusinessDirectory, Digest, RecurringGiving, BirthdaySpotlight, Services, Polls, Introductions,
     ];
 
     /// <summary>Features a new institution starts WITHOUT. Platform staff switch them on once the institution asks. Everything else starts on.</summary>
@@ -67,7 +69,7 @@ public static class InstitutionFeatures
     /// small: only features where a wrong self-service call can't strand the
     /// institution's core data or billing, unlike e.g. Contributions or Store.
     /// </summary>
-    public static readonly IReadOnlyList<string> SelfService = [Digest, RecurringGiving, BirthdaySpotlight];
+    public static readonly IReadOnlyList<string> SelfService = [Digest, RecurringGiving, BirthdaySpotlight, Introductions];
 
     /// <summary>
     /// Label + one-line description per key — the single source of truth the
@@ -100,6 +102,7 @@ public static class InstitutionFeatures
         (Digest, "Re-engagement digest", "A scheduled email roundup of new jobs, an upcoming event, a spotlight, and a campaign deadline."),
         (RecurringGiving, "Recurring giving", "Members can set up a standing monthly gift, charged automatically."),
         (BirthdaySpotlight, "Birthday spotlight", "Members can add their date of birth; on their birthday the system automatically creates a spotlight celebrating them."),
+        (Introductions, "Introductions and private chat", "Members ask each other for an introduction with a short note. If the other member accepts, the two can chat privately. Admins see counts only, never the messages."),
         (Polls, "Polls and elections", "SuperAdmins run elections: positions with aspirants (photos and details), an audience, open and close times. Members vote once, in secret, and results show live, after closing, or when the admin publishes them."),
     ];
 }

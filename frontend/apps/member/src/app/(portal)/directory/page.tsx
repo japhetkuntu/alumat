@@ -1,5 +1,6 @@
 "use client";
 
+import { IntroduceButton } from "@/components/member/introduce-button";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
@@ -306,6 +307,8 @@ export default function MemberDirectoryPage() {
                 </a>
               )}
 
+              <IntroduceButton memberId={selected.id} firstName={selected.firstName}
+                person={{ name: `${selected.firstName} ${selected.lastName}`.trim(), photoUrl: selected.profilePictureUrl, subtitle: [selected.jobTitle, selected.company].filter(Boolean).join(" at ") || (selected.graduationYear > 0 ? `Class of ${selected.graduationYear}` : null) }} />
             </div>
           </div>
         </div>

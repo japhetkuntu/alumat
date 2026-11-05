@@ -34,6 +34,7 @@ public class MemberAccountDeletionServiceTests
                 new AlumniPgRepository<StoreOrder>(db), new AlumniPgRepository<ServiceRequest>(db),
                 new AlumniPgRepository<ForumThread>(db), new AlumniPgRepository<ForumPost>(db), new AlumniPgRepository<ClassNote>(db),
                 new AlumniPgRepository<ClassNoteLike>(db), new AlumniPgRepository<Referral>(db),
+                new AlumniPgRepository<Introduction>(db), new AlumniPgRepository<IntroductionMessage>(db), new AlumniPgRepository<MemberBlock>(db),
                 new ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationStatusCache(Mock.Of<ReservEase.Alumni.Redis.Sdk.Services.IRedisService<ReservEase.Alumni.Common.Sdk.Options.PublicContentCacheConfig>>()),
                 NullLogger<MemberAccountDeletionService>.Instance);
         }

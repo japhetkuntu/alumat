@@ -10,7 +10,7 @@ import { ApiResponse } from "@/types";
 // that fixed hostname maps to, no matter which institution's portal the
 // browser is actually on. Set NEXT_PUBLIC_MEMBER_API_URL only for setups
 // that deliberately want a fixed cross-origin API host.
-const API_URL = process.env.NEXT_PUBLIC_MEMBER_API_URL || "/api/v1";
+export const API_URL = process.env.NEXT_PUBLIC_MEMBER_API_URL || "/api/v1";
 
 let isRefreshing = false;
 let failedQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];

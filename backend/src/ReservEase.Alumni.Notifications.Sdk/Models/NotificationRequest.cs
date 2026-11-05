@@ -46,6 +46,12 @@ public sealed class NotificationRequest
     public string? MentorMemberId { get; init; }
     public string? MenteeId { get; init; }
     public string? MenteeName { get; init; }
+    /// <summary>For <see cref="NotificationKind.IntroductionUpdate"/>: who is told, and what they read. The text never carries a message or a note.</summary>
+    public string? NoticeRecipientId { get; init; }
+    public string? NoticeTitle { get; init; }
+    public string? NoticeBody { get; init; }
+    /// <summary>Makes this notice distinct from an earlier one with the same words (the platform drops exact repeats). Set per message.</summary>
+    public string? NoticeKey { get; init; }
     public string? Area { get; init; }
     public bool? Accepted { get; init; }
     public string? ThreadAuthorId { get; init; }
@@ -139,6 +145,12 @@ public sealed class NotificationRequest
     {
         Kind = NotificationKind.MentorshipRequestReceived, InstitutionId = institutionId,
         MentorMemberId = mentorMemberId, MenteeName = menteeName, Area = area, RequestId = requestId,
+    };
+
+    public static NotificationRequest IntroductionUpdate(string institutionId, string recipientMemberId, string title, string body, string introductionId, string? noticeKey = null) => new()
+    {
+        Kind = NotificationKind.IntroductionUpdate, InstitutionId = institutionId,
+        NoticeRecipientId = recipientMemberId, NoticeTitle = title, NoticeBody = body, RequestId = introductionId, NoticeKey = noticeKey,
     };
 
     public static NotificationRequest MentorshipRequestDecision(string institutionId, string menteeId, bool accepted, string area, string requestId) => new()

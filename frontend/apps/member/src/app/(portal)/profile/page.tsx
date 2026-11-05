@@ -25,7 +25,7 @@ import { Separator } from "@alumni/ui";
 import { PageHeader } from "@alumni/ui";
 import {
   getMyProfile, updateMyProfile, changePassword, getMyBadges, badgeTitle, getCurrentMembershipCampaign,
-  getNotificationPreferences, updateNotificationPreferences,
+  getNotificationPreferences, updateNotificationPreferences, getBlockedMembers, unblockMember,
 } from "@/lib/member-api";
 import { getRoundedLocation } from "@/lib/geolocation";
 import { formatCurrency } from "@alumni/ui";
@@ -127,7 +127,7 @@ export default function MemberProfilePage() {
   const [connectionType, setConnectionType] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
-  const [visibility, setVisibility] = useState({ email: false, phone: false, company: true, bio: true });
+  const [visibility, setVisibility] = useState({ email: false, phone: false, company: true, bio: true, intros: true });
   const [showOnAlumniMap, setShowOnAlumniMap] = useState(false);
   const [employmentStatus, setEmploymentStatus] = useState("Employed");
   const [confirmPensioner, setConfirmPensioner]  = useState(false);
@@ -237,6 +237,7 @@ export default function MemberProfilePage() {
       phone: profile.showPhoneOnDirectory ?? false,
       company: profile.showCompanyOnDirectory ?? true,
       bio: profile.showBioOnDirectory ?? true,
+      intros: profile.allowIntroductions ?? true,
     });
     setEmploymentStatus(profile.employmentStatus ?? "Employed");
     setShowOnAlumniMap(profile.showOnAlumniMap ?? false);
@@ -308,6 +309,7 @@ export default function MemberProfilePage() {
       showPhoneOnDirectory: visibility.phone,
       showCompanyOnDirectory: visibility.company,
       showBioOnDirectory: visibility.bio,
+      allowIntroductions: visibility.intros,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["m-profile"] });
@@ -789,6 +791,7 @@ export default function MemberProfilePage() {
               ["phone", "Phone number", "Let members contact you by phone."],
               ["company", "Company and role", "Show your workplace and current role."],
               ["bio", "Bio", "Show your introduction on your directory profile."],
+              ...(featureFlags.enabled("Introductions") ? [["intros", "Introductions", "Let members ask to be introduced to you. You choose whether to accept, and nothing is shared until you do."]] : []),
             ].map(([key, label, description]) => (
               <Toggle
                 key={key}
@@ -803,6 +806,8 @@ export default function MemberProfilePage() {
             </Button>
           </CardContent>
         </Card>
+
+        {featureFlags.enabled("Introductions") && <BlockedMembers />}
 
         {/* ── Community records — cohort-based organizations only ── */}
         {!isCommunity && (
@@ -1223,5 +1228,34 @@ export default function MemberProfilePage() {
         onCancel={() => setConfirmPensioner(false)}
       />
     </div>
+  );
+}
+
+
+/** Members this person has blocked, with a way to undo it. Shown only when there is someone to show. */
+function BlockedMembers() {
+  const qc = useQueryClient();
+  const { data } = useQuery({ queryKey: ["intro-blocked"], queryFn: getBlockedMembers, retry: false });
+  const unblock = useMutation({
+    mutationFn: (id: string) => unblockMember(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["intro-blocked"] }); qc.invalidateQueries({ queryKey: ["intros"] }); toast.success("Unblocked."); },
+    onError: (e) => toast.error(handleApiError(e)),
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <Card className="border-border/40">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Blocked members</CardTitle>
+        <CardDescription>You can&apos;t message each other or ask each other for introductions. They aren&apos;t told.</CardDescription>
+      </CardHeader>
+      <CardContent className="divide-y divide-border/40">
+        {data.map((p) => (
+          <div key={p.id} className="flex items-center justify-between gap-3 py-2.5">
+            <span className="truncate text-[14px] font-medium">{p.name}</span>
+            <Button size="sm" variant="outline" onClick={() => unblock.mutate(p.id)} disabled={unblock.isPending}>Unblock</Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

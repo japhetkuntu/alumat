@@ -15,4 +15,6 @@ public record MemberProfileResponse(
     // Answers to the community's own registration questions, keyed by question id.
     Dictionary<string, string>? CustomFields = null,
     // Set for a while after registering through a partner onboarding link: where to send them back to, and what to tell them.
-    ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationBanner? IntegrationBanner = null);
+    ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationBanner? IntegrationBanner = null,
+    // Whether other members may ask this member for an introduction.
+    bool AllowIntroductions = true);

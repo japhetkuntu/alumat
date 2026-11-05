@@ -14,6 +14,9 @@ RestartSec=5
 KillSignal=SIGINT
 TimeoutStartSec=300
 SyslogIdentifier=alumni-member-api
+# One open file per connected member (live chat notices keep a connection open), plus database and cache connections. The usual default
+# of 1024 would stop the API accepting connections at about a thousand members online.
+LimitNOFILE=65536
 StandardOutput=journal
 StandardError=journal
 

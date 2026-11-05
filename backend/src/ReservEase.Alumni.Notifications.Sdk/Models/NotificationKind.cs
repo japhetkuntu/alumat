@@ -33,4 +33,6 @@ public enum NotificationKind
     EventUpdatePosted,
     /// <summary>A member submitted something an administrator must decide (a listing, a suggestion, a story, a mentor profile).</summary>
     RequestAwaitingReview,
+    /// <summary>Something happened in an introduction (a request arrived, was accepted, or a first unread message): one in-app notice to one member.</summary>
+    IntroductionUpdate,
 }

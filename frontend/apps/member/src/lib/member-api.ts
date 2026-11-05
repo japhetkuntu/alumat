@@ -89,6 +89,8 @@ export interface MemberProfileResponse {
   showPhoneOnDirectory?: boolean;
   showCompanyOnDirectory?: boolean;
   showBioOnDirectory?: boolean;
+  /** Whether other members may ask this member for an introduction. */
+  allowIntroductions?: boolean;
   /** Answers to the community's own registration questions, keyed by question id. */
   customFields?: Record<string, string> | null;
   /** Set for a while after registering through a partner onboarding link: where to send them back to, and what to tell them. */
@@ -145,6 +147,7 @@ export interface UpdateProfileBody {
   showPhoneOnDirectory?: boolean;
   showCompanyOnDirectory?: boolean;
   showBioOnDirectory?: boolean;
+  allowIntroductions?: boolean;
 }
 
 export async function updateMyProfile(body: UpdateProfileBody) {
@@ -1271,5 +1274,70 @@ export async function castBallot(id: string, choices: BallotChoiceBody[]): Promi
 }
 export async function getMemberPollResults(id: string): Promise<MemberPollResults> {
   const res = await memberClient.get(`/polls/${id}/results`);
+  return res.data.data!;
+}
+
+
+// ── Introductions: ask a member to be introduced, then chat privately once they accept ──────────────
+
+export interface IntroPerson { id: string; name: string; photoUrl?: string | null; graduationYear?: number | null; /** Job title and company, only when the member shows their company. */ headline?: string | null }
+/** "none" (can ask), "pending" (asked, no reply yet), "incoming" (they asked me), "connected", "unavailable" or "self". */
+export interface IntroState {
+  /** "resumable": a conversation I ended and can reopen. "blocked": I blocked them. "unavailable" never says why. */
+  state: "none" | "pending" | "incoming" | "connected" | "resumable" | "reconnectable" | "blocked" | "unavailable" | "self";
+  introductionId?: string | null;
+  /** When my pending request was sent. */
+  askedAt?: string | null;
+}
+/** How a conversation stands for me: "open", "ended", "blocked" (I blocked them) or "unavailable" (no reason shown). */
+export type IntroCondition = "open" | "ended" | "blocked" | "unavailable";
+export interface IntroItem {
+  id: string; status: "Pending" | "Accepted" | "Declined" | "Withdrawn" | "Ended"; mine: boolean; other: IntroPerson;
+  reason?: string | null; createdAt: string; lastMessagePreview?: string | null; lastMessageAt?: string | null; unread: boolean; lastMessageMine?: boolean; condition?: IntroCondition; endedByMe?: boolean;
+  /** For a request: the earlier, ended conversation it would reopen (accepting brings that same chat back). */
+  reopensIntroductionId?: string | null;
+}
+export interface IntroMessage { id: string; mine: boolean; body: string; createdAt: string }
+export interface IntroDetail { item: IntroItem; canSend: boolean; messages: IntroMessage[]; /** When the other member last opened the conversation. */ otherReadAt?: string | null }
+export interface IntroSummary { unreadChats: number; incomingRequests: number }
+
+export const INTRO_REASON_MIN = 10;
+export const INTRO_REASON_MAX = 300;
+export const INTRO_MESSAGE_MAX = 2000;
+
+export async function getIntroState(memberId: string): Promise<IntroState> {
+  const res = await memberClient.get(`/introductions/with/${memberId}`);
+  return res.data.data!;
+}
+export async function requestIntroduction(memberId: string, reason: string): Promise<IntroState> {
+  const res = await memberClient.post("/introductions", { memberId, reason });
+  return res.data.data!;
+}
+export async function getIntroductions(box: "chats" | "incoming" | "sent"): Promise<IntroItem[]> {
+  const res = await memberClient.get("/introductions", { params: { box } });
+  return res.data.data!;
+}
+export async function getIntroSummary(): Promise<IntroSummary> {
+  const res = await memberClient.get("/introductions/summary");
+  return res.data.data!;
+}
+export async function getIntroduction(id: string, after?: string): Promise<IntroDetail> {
+  const res = await memberClient.get(`/introductions/${id}`, { params: { after } });
+  return res.data.data!;
+}
+/** Answers a request. The reply says which conversation to open: the new one, or an earlier one that was reopened. */
+export const answerIntroduction = (id: string, accept: boolean): Promise<{ data?: { introductionId?: string } }> => memberClient.post(`/introductions/${id}/${accept ? "accept" : "decline"}`).then((r) => r.data);
+export const withdrawIntroduction = (id: string) => memberClient.post(`/introductions/${id}/withdraw`).then((r) => r.data);
+export const endIntroduction = (id: string) => memberClient.post(`/introductions/${id}/end`).then((r) => r.data);
+export const resumeIntroduction = (id: string) => memberClient.post(`/introductions/${id}/resume`).then((r) => r.data);
+export async function sendIntroMessage(id: string, body: string): Promise<IntroMessage> {
+  const res = await memberClient.post(`/introductions/${id}/messages`, { body });
+  return res.data.data!;
+}
+export const reportIntroduction = (id: string, reason: string, details?: string) => memberClient.post(`/introductions/${id}/report`, { reason, details }).then((r) => r.data);
+export const blockMember = (memberId: string) => memberClient.post("/introductions/blocks", { memberId }).then((r) => r.data);
+export const unblockMember = (memberId: string) => memberClient.delete(`/introductions/blocks/${memberId}`).then((r) => r.data);
+export async function getBlockedMembers(): Promise<IntroPerson[]> {
+  const res = await memberClient.get("/introductions/blocks");
   return res.data.data!;
 }

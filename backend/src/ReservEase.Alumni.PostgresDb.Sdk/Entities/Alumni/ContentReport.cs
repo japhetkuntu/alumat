@@ -36,8 +36,10 @@ public static class ContentReportTypes
     public const string Job = "Job";
     public const string BusinessListing = "BusinessListing";
     public const string Spotlight = "Spotlight";
+    /// <summary>A private conversation. The reporter chooses to send its recent messages along; an admin never sees a conversation otherwise.</summary>
+    public const string Introduction = "Introduction";
 
-    public static readonly string[] All = [ForumThread, MentorProfile, Job, BusinessListing, Spotlight];
+    public static readonly string[] All = [ForumThread, MentorProfile, Job, BusinessListing, Spotlight, Introduction];
 }
 
 public static class ContentReportStatuses

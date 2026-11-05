@@ -2084,6 +2084,124 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.ToTable("InstitutionWebsiteVersions", "alumni");
                 });
 
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Introduction", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EndedById")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastMessageAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastMessagePreview")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastMessageSenderId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecipientId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RecipientReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequesterId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RequesterReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("RecipientId", "LastActivityAt");
+
+                    b.HasIndex("RequesterId", "LastActivityAt");
+
+                    b.ToTable("Introductions", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.IntroductionMessage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IntroductionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("IntroductionId", "CreatedAt");
+
+                    b.ToTable("IntroductionMessages", "alumni");
+                });
+
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.Job", b =>
                 {
                     b.Property<string>("Id")
@@ -2169,6 +2287,9 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
 
                     b.Property<string>("Achievements")
                         .HasColumnType("text");
+
+                    b.Property<bool>("AllowIntroductions")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("BanReason")
                         .HasColumnType("text");
@@ -2431,6 +2552,48 @@ namespace ReservEase.Alumni.PostgresDb.Sdk.Migrations
                     b.HasIndex("MemberId");
 
                     b.ToTable("MemberBadges", "alumni");
+                });
+
+            modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.MemberBlock", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BlockedId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BlockerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("InstitutionId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlockedId");
+
+                    b.HasIndex("InstitutionId");
+
+                    b.HasIndex("BlockerId", "BlockedId")
+                        .IsUnique();
+
+                    b.ToTable("MemberBlocks", "alumni");
                 });
 
             modelBuilder.Entity("ReservEase.Alumni.PostgresDb.Sdk.Entities.Alumni.MentorProfile", b =>

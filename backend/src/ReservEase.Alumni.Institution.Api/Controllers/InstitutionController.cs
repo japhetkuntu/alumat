@@ -280,6 +280,7 @@ public class InstitutionController(
         Set(InstitutionFeatures.Digest, request.DigestEnabled);
         Set(InstitutionFeatures.RecurringGiving, request.RecurringGivingEnabled);
         Set(InstitutionFeatures.BirthdaySpotlight, request.BirthdaySpotlightEnabled);
+        Set(InstitutionFeatures.Introductions, request.IntroductionsEnabled);
 
         institution.DisabledFeatures = disabled.ToList();
         institution.PromptMembershipActivationAtSignup = request.PromptMembershipActivationAtSignup;

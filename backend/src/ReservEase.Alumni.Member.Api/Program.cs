@@ -1,3 +1,5 @@
+using ReservEase.Alumni.Member.Api.Services.Realtime;
+using ReservEase.Alumni.Member.Api.Services.Security;
 using Serilog;
 using Serilog.Events;
 using ReservEase.Alumni.Common.Sdk.Extensions;
@@ -84,6 +86,36 @@ builder.Services.AddScoped<IMemberJobService, MemberJobService>();
 builder.Services.AddScoped<IMemberNewsService, MemberNewsService>();
 builder.Services.AddScoped<IMemberForumService, MemberForumService>();
 builder.Services.AddScoped<IMemberMentorshipService, MemberMentorshipService>();
+// Live introduction notices. With one API server they live in this process's memory. With several, set IntroductionEvents:RedisConnectionString
+// (for example 127.0.0.1:6379) and each server relays notices to the others through Redis; nothing else changes.
+{
+    var relayConnection = builder.Configuration["IntroductionEvents:RedisConnectionString"];
+    if (string.IsNullOrWhiteSpace(relayConnection))
+        builder.Services.AddSingleton<IIntroductionEvents, InMemoryIntroductionEvents>();
+    else
+    {
+        builder.Services.AddSingleton<InMemoryIntroductionEvents>();
+        builder.Services.AddSingleton(sp => new RedisEventRelay(relayConnection, sp.GetRequiredService<ILogger<RedisEventRelay>>()));
+        builder.Services.AddSingleton<IEventRelay>(sp => sp.GetRequiredService<RedisEventRelay>());
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<RedisEventRelay>());
+        builder.Services.AddSingleton<IIntroductionEvents>(sp => new RelayedIntroductionEvents(sp.GetRequiredService<InMemoryIntroductionEvents>(), sp.GetRequiredService<IEventRelay>()));
+    }
+}
+builder.Services.AddScoped<IMemberIntroductionService, MemberIntroductionService>();
+// Private conversations are stored encrypted. Outside development the API refuses to start without a key rather than quietly saving plain text.
+{
+    var encryption = builder.Configuration.GetSection(MessageEncryptionOptions.Section).Get<MessageEncryptionOptions>() ?? new MessageEncryptionOptions();
+    if (encryption.Keys.Count == 0)
+    {
+        if (!builder.Environment.IsDevelopment())
+            throw new InvalidOperationException("MessageEncryption is not configured. Set MessageEncryption__CurrentKeyId and MessageEncryption__Keys__<id> (generate a key with: openssl rand -base64 32).");
+        // A fixed, public key so a fresh development checkout starts. It protects nothing and is never used outside Development.
+        encryption.CurrentKeyId = "dev-default";
+        encryption.Keys["dev-default"] = "YWx1bXVuaW9uLWRldi1vbmx5LW1lc3NhZ2Uta2V5ISE=";
+    }
+    builder.Services.AddSingleton<IMessageProtector>(new AesGcmMessageProtector(encryption));
+    builder.Services.AddHostedService<IntroductionEncryptionBackfill>();
+}
 builder.Services.AddScoped<IDirectoryService, DirectoryService>();
 builder.Services.AddScoped<IMemberResourceService, MemberResourceService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
@@ -141,12 +173,14 @@ app.UseExceptionHandler(!app.Environment.IsProduction());
 // One line per request, but only the ones worth reading: failures, and anything slower than the half second we aim for.
 app.UseSerilogRequestLogging(o => o.GetLevel = (http, elapsedMs, ex) =>
     ex is not null || http.Response.StatusCode >= 500 ? LogEventLevel.Error
+    : http.Request.Path.StartsWithSegments(IntroductionStreamEndpoint.Path) ? LogEventLevel.Debug   // a stream is meant to last, so being "slow" is normal
     : elapsedMs > 500 ? LogEventLevel.Warning
     : http.Response.StatusCode >= 400 ? LogEventLevel.Information
     : LogEventLevel.Debug);
 app.UseRouting();
 app.UseCors();
 app.UseRateLimiter();
+app.MapIntroductionStream();   // before tenant resolution on purpose: see IntroductionStreamEndpoint
 app.UseTenantResolution();
 app.UseAuthentication();
 app.UseAuthorization();

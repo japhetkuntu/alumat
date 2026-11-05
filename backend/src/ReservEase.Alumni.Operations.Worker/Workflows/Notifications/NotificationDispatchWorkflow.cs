@@ -58,6 +58,7 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
         NotificationKind.EventRsvpCancelled
             => ProcessMemberLifecycleAsync(request),
         NotificationKind.EventUpdatePosted => ProcessEventUpdatePostedAsync(request),
+        NotificationKind.IntroductionUpdate => ProcessIntroductionUpdateAsync(request),
         _ => LogUnhandledKindAsync(request),
     };
 
@@ -530,6 +531,27 @@ public class NotificationDispatchWorkflow : INotificationDispatchWorkflow
             CreatedBy = "system",
         };
         await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+    }
+
+    private async Task ProcessIntroductionUpdateAsync(NotificationRequest request)
+    {
+        var institution = await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.LoadInstitutionAsync(request.InstitutionId), NotificationActivityOptions.DatabaseRead);
+        var notification = new Notification
+        {
+            RecipientId = request.NoticeRecipientId!,
+            RecipientType = "Member",
+            Title = request.NoticeTitle ?? "Introductions",
+            Body = request.NoticeBody ?? string.Empty,
+            Type = "IntroductionUpdate",
+            RelatedEntityId = request.NoticeKey ?? request.RequestId,
+            RelatedEntityType = "Introduction",
+            ActionUrl = MemberUrl(institution, $"/connections/{request.RequestId}"),
+            CreatedBy = "system",
+        };
+        await Workflow.ExecuteActivityAsync((NotificationDispatchActivities a) => a.CreateNotificationAsync(request.InstitutionId, notification), NotificationActivityOptions.DatabaseWrite);
+        // For a member who is away from the app: a phone or desktop alert. Same words as the in-app notice, which never carry a message or a note.
+        // (The page itself stays quiet when the member is looking at the app: see public/sw.js.)
+        await SendPushIfEligibleAsync(request.NoticeRecipientId!, "Member", notification.Title, notification.Body, notification.ActionUrl);
     }
 
     private async Task ProcessForumReplyAsync(NotificationRequest request)

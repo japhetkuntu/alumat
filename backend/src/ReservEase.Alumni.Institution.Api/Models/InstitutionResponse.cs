@@ -181,7 +181,9 @@ public record UpdateSelfServiceFeaturesRequest(
     bool PromptMembershipActivationAtSignup,
     bool EmailNotificationsEnabled,
     bool SmsNotificationsEnabled,
-    bool BirthdaySpotlightEnabled);
+    bool BirthdaySpotlightEnabled,
+    // Defaults to on so an older admin screen that does not send it never switches introductions off by accident.
+    bool IntroductionsEnabled = true);
 
 /// <summary>
 /// Submitted by this institution's own SuperAdmin only (unlike a batch's

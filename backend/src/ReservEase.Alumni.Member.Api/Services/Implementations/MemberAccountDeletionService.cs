@@ -30,6 +30,9 @@ public class MemberAccountDeletionService(
     IAlumniPgRepository<ClassNote> classNoteRepo,
     IAlumniPgRepository<ClassNoteLike> classNoteLikeRepo,
     IAlumniPgRepository<Referral> referralRepo,
+    IAlumniPgRepository<Introduction> introductionRepo,
+    IAlumniPgRepository<IntroductionMessage> introductionMessageRepo,
+    IAlumniPgRepository<MemberBlock> memberBlockRepo,
     ReservEase.Alumni.PostgresDb.Sdk.Integrations.IntegrationStatusCache integrationCache,
     ILogger<MemberAccountDeletionService> logger) : IMemberAccountDeletionService
 {
@@ -67,6 +70,14 @@ public class MemberAccountDeletionService(
             foreach (var req in await mentorshipRequestRepo.GetAllAsync(r => r.MenteeId == id || profileIds.Contains(r.MentorProfileId)))
                 await mentorshipRequestRepo.RemoveAsync(req);
             foreach (var p in mentorProfiles) await mentorRepo.RemoveAsync(p);
+
+            // Introductions: private conversations go with the account (the other member loses the chat, as with any deleted account), and so do blocks.
+            var intros = (await introductionRepo.GetAllAsync(i => i.RequesterId == id || i.RecipientId == id)).ToList();
+            var introIds = intros.Select(i => i.Id).ToList();
+            if (introIds.Count > 0)
+                foreach (var m in await introductionMessageRepo.GetAllAsync(m => introIds.Contains(m.IntroductionId))) await introductionMessageRepo.RemoveAsync(m);
+            foreach (var i in intros) await introductionRepo.RemoveAsync(i);
+            foreach (var bl in await memberBlockRepo.GetAllAsync(x => x.BlockerId == id || x.BlockedId == id)) await memberBlockRepo.RemoveAsync(bl);
 
             // A monthly gift must stop with the account.
             var recurring = (await recurringRepo.GetAllAsync(r => r.MemberId == id)).ToList();

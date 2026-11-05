@@ -18,7 +18,8 @@ import { InstallPromptBanner, useInstallPrompt } from "@/components/member/insta
 import { MemberSetupChecklist } from "@/components/member/setup-checklist";
 import { InstitutionSwitcher } from "@/components/member/institution-switcher";
 import { memberClient } from "@/lib/api-client";
-import { getHomeModules, getMyProfile, getUnreadNotificationsByCategory } from "@/lib/member-api";
+import { useIntroductionStream, useStreamConnected, pollWhenOffline } from "@/lib/introduction-stream";
+import { getHomeModules, getIntroSummary, getMyProfile, getUnreadNotificationsByCategory } from "@/lib/member-api";
 import { GPU_LAYER_STYLE } from "@/lib/gpu-layer-style";
 import {
   LayoutDashboard,
@@ -45,6 +46,7 @@ import {
   Building2,
   FileText,
   Share2,
+  MessageCircle,
 } from "@alumni/ui";
 
 // Grouped by what a member is trying to DO, not by feature type — keeps the
@@ -73,6 +75,7 @@ const navGroups: { section: string | null; items: { href: string; label: string;
       { href: "/jobs", label: "Jobs", icon: Briefcase },
       { href: "/mentorship", label: "Mentorship", icon: GraduationCap },
       { href: "/directory", label: "Directory", icon: Users },
+      { href: "/connections", label: "Connections", icon: MessageCircle },
       { href: "/alumni-map", label: "Community Map", icon: Globe },
     ],
   },
@@ -116,6 +119,7 @@ const NAV_FEATURE_KEYS: Record<string, string> = {
   "/jobs": "Jobs",
   "/events": "Events",
   "/directory": "Directory",
+  "/connections": "Introductions",
   "/alumni-map": "AlumniMap",
   "/calendar": "Calendar",
   "/news": "News",
@@ -235,6 +239,22 @@ function useUnreadByCategory() {
   return data ?? { jobs: 0, events: 0, forum: 0 };
 }
 
+/** Chats with something new plus requests waiting for an answer, for the Connections menu item. Polls gently, and only when the feature is on. */
+function useIntroductionBadge() {
+  const { isMember } = useAuth();
+  const disabled = useDisabledFeatures();
+  const live = useStreamConnected();
+  const { data } = useQuery({
+    queryKey: ["intro-summary"],
+    queryFn: getIntroSummary,
+    enabled: isMember && !disabled.has("Introductions"),
+    refetchInterval: pollWhenOffline(live, 20_000),
+    staleTime: 10_000,
+    retry: false,
+  });
+  return (data?.unreadChats ?? 0) + (data?.incomingRequests ?? 0);
+}
+
 const NAV_BADGE_CATEGORY: Record<string, keyof ReturnType<typeof useUnreadByCategory>> = {
   "/jobs": "jobs",
   "/events": "events",
@@ -264,6 +284,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   const { data: navTheme } = useNavTheme();
   const disabledFeatures = useDisabledFeatures();
   const unreadByCategory = useUnreadByCategory();
+  const introBadge = useIntroductionBadge();
   const brandName = navTheme?.displayName || "Member Portal";
   const brandMark = navTheme?.iconUrl || navTheme?.logoUrl;
   const visibleGroups = navGroups
@@ -341,6 +362,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                     {NAV_BADGE_CATEGORY[item.href] && (
                       <NavBadge count={unreadByCategory[NAV_BADGE_CATEGORY[item.href]]} />
                     )}
+                    {item.href === "/connections" && <NavBadge count={introBadge} />}
                   </Link>
                 );
               })}
@@ -356,12 +378,14 @@ function MobileBottomNav() {
   const pathname = usePathname();
   const disabledFeatures = useDisabledFeatures();
   const unreadByCategory = useUnreadByCategory();
+  const introBadge = useIntroductionBadge();
 
   // Home and Profile always, then the first three of the rest that the institution has switched on.
   const bottomNavItems = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },
     ...[
       { href: "/contributions", label: "Give", icon: CreditCard },
+      { href: "/connections", label: "Connections", icon: MessageCircle },
       { href: "/jobs", label: "Jobs", icon: Briefcase },
       { href: "/events", label: "Events", icon: Calendar },
       { href: "/directory", label: "Directory", icon: Users },
@@ -398,6 +422,14 @@ function MobileBottomNav() {
             >
               <div className="relative">
                 <item.icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+                {item.href === "/connections" && introBadge > 0 && (
+                  <span
+                    className="absolute -right-2.5 -top-1.5 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none text-white"
+                    style={{ background: "var(--accent)" }}
+                  >
+                    {introBadge > 9 ? "9+" : introBadge}
+                  </span>
+                )}
                 {hasUnread && (
                   <span
                     className="absolute -right-0.5 -top-0.5 h-[7px] w-[7px] rounded-full border border-background"
@@ -438,6 +470,8 @@ export function MemberLayout({ children }: { children: ReactNode }) {
   // Shared with the profile page, so a new photo shows in the header straight away.
   const { data: myProfile } = useQuery({ queryKey: ["m-profile"], queryFn: getMyProfile, enabled: isMember, staleTime: 5 * 60 * 1000 });
   const disabledForSearch = useDisabledFeatures();
+  // One live connection for introductions (messages, requests, badges), opened once for the whole portal.
+  useIntroductionStream(isMember && !disabledForSearch.has("Introductions"));
   const searchPages = useMemo(
     () => navGroups.flatMap((g) => g.items).filter((i) => {
       const key = NAV_FEATURE_KEYS[i.href];

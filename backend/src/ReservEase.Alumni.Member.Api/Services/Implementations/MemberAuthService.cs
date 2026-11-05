@@ -945,6 +945,7 @@ public class MemberAuthService(
             member.ShowPhoneOnDirectory = request.ShowPhoneOnDirectory ?? member.ShowPhoneOnDirectory;
             member.ShowCompanyOnDirectory = request.ShowCompanyOnDirectory ?? member.ShowCompanyOnDirectory;
             member.ShowBioOnDirectory = request.ShowBioOnDirectory ?? member.ShowBioOnDirectory;
+            member.AllowIntroductions = request.AllowIntroductions ?? member.AllowIntroductions;
 
             if (request.CustomFieldsJson is not null)
             {
@@ -1205,5 +1206,5 @@ public class MemberAuthService(
         m.ClubsAndSocieties, m.LeadershipRoles, m.Achievements,
         m.ConnectionType, m.Skills, m.Interests,
         m.ShowEmailOnDirectory, m.ShowPhoneOnDirectory, m.ShowCompanyOnDirectory, m.ShowBioOnDirectory,
-        m.CustomFields);
+        m.CustomFields, AllowIntroductions: m.AllowIntroductions);
 }

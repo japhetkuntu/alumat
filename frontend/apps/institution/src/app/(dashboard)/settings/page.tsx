@@ -28,7 +28,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SettlementAccountFields, type SettlementAccountValue } from "@alumni/ui";
 import {
   getStaffProfile, changeStaffPassword, getInstitutionProfile, updateInstitutionBranding, updateLandingContent, updateMemberActivePolicy, updateAutoApproveMembers, updateRegistrationFields, type RegistrationField,
-  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateGraduationYears, getInstitutionTemplates, applyInstitutionTemplate, type GraduationYearMode,
+  updateSelfServiceFeatures, updateProgramOfStudy, updateSocialLinks, submitInstitutionPayoutSetup, updateGraduationYears, getInstitutionTemplates, applyInstitutionTemplate, getIntroductionCounts, type GraduationYearMode,
   getBatchPayoutBanks, resolveBatchPayoutAccount, type InstitutionProfileResponse,
   uploadImage, STORY_ICON_OPTIONS, type LandingPageStory, type NewsBanner,
   getAdminNotificationPreferences, updateAdminNotificationPreferences, type AdminNotificationPreferences,
@@ -497,6 +497,7 @@ export default function BrandingSettingsPage() {
     onError: (e) => toast.error(handleApiError(e)),
   });
 
+  const { data: introCounts } = useQuery({ queryKey: ["introduction-counts"], queryFn: getIntroductionCounts, enabled: !isScopedAdmin, staleTime: 60_000, retry: false });
   const { data: templates } = useQuery({ queryKey: ["institution-templates"], queryFn: getInstitutionTemplates, staleTime: 30 * 60_000, enabled: !isScopedAdmin });
   const templateMutation = useMutation({
     mutationFn: (id: string) => applyInstitutionTemplate(id),
@@ -608,6 +609,7 @@ export default function BrandingSettingsPage() {
       emailNotificationsEnabled: institution?.emailNotificationsEnabled ?? true,
       smsNotificationsEnabled: institution?.smsNotificationsEnabled ?? true,
       birthdaySpotlightEnabled: !institution?.disabledFeatures?.includes("BirthdaySpotlight"),
+      introductionsEnabled: !institution?.disabledFeatures?.includes("Introductions"),
       ...patch,
     });
   }
@@ -1210,6 +1212,19 @@ export default function BrandingSettingsPage() {
                   label="Birthday spotlight"
                   description="Members who add their date of birth get an automatic entry on the Member Portal's Spotlights page on their birthday. Several birthdays on the same day are combined into one entry."
                 />
+                <Toggle
+                  checked={!institution?.disabledFeatures?.includes("Introductions")}
+                  onChange={(checked) => patchFeatures({ introductionsEnabled: checked })}
+                  label="Introductions and private chat"
+                  tip="Members ask each other for an introduction; the other member can accept or decline."
+                  description="A member sends a short note asking to be introduced. If the other member accepts, the two can chat privately. Messages and notes are stored encrypted. Members can opt out, block and report. You see counts only, never notes or messages; a member can choose to report a conversation to you."
+                />
+                {!institution?.disabledFeatures?.includes("Introductions") && introCounts && (
+                  <p className="-mt-1 mb-1 text-[12.5px] text-muted-foreground">
+                    Last 30 days: {introCounts.requestsLast30Days} {introCounts.requestsLast30Days === 1 ? "request" : "requests"}, {introCounts.acceptedLast30Days} accepted, {introCounts.activeConversations} active {introCounts.activeConversations === 1 ? "conversation" : "conversations"}
+                    {introCounts.openReports > 0 && <> · <a href="/flagged-content" className="font-semibold text-foreground underline underline-offset-4">{introCounts.openReports} reported {introCounts.openReports === 1 ? "conversation" : "conversations"} to review</a></>}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

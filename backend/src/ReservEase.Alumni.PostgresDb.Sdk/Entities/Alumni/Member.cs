@@ -100,6 +100,9 @@ public class Member : BaseEntity, ITenantScoped
     public bool ShowCompanyOnDirectory { get; set; } = true;
     public bool ShowBioOnDirectory { get; set; } = true;
 
+    /// <summary>Whether other members may ask this member for an introduction. On by default; a member can switch it off.</summary>
+    public bool AllowIntroductions { get; set; } = true;
+
     /// <summary>The partner onboarding link this member registered through, if any. Such members are approved on registration.</summary>
     public string? OnboardingLinkId { get; set; }
 

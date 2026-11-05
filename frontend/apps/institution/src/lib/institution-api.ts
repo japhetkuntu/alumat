@@ -442,6 +442,14 @@ export async function updateSocialLinks(socialLinks: Record<string, string>): Pr
   return profile;
 }
 
+export interface IntroductionCounts { requestsLast30Days: number; acceptedLast30Days: number; activeConversations: number; openReports: number }
+
+/** How much members use introductions: counts only, never who or what was said. */
+export async function getIntroductionCounts() {
+  const res = await institutionClient.get<ApiResponse<IntroductionCounts>>("/introductions/counts");
+  return res.data.data!;
+}
+
 /** The self-service toggles institution admins can flip themselves — the re-engagement digest, recurring (monthly) giving, the signup activation prompt, and outbound email/SMS notifications. Everything else in disabledFeatures is platform-staff-only. */
 export async function updateSelfServiceFeatures(features: {
   digestEnabled: boolean;
@@ -450,6 +458,7 @@ export async function updateSelfServiceFeatures(features: {
   emailNotificationsEnabled: boolean;
   smsNotificationsEnabled: boolean;
   birthdaySpotlightEnabled: boolean;
+  introductionsEnabled: boolean;
 }): Promise<InstitutionProfileResponse> {
   const res = await institutionClient.patch<ApiResponse<InstitutionProfileResponse>>("/institution/me/self-service-features", features);
   const profile = res.data.data;
@@ -2156,7 +2165,7 @@ export async function getPayoutForecast(): Promise<PayoutForecast> {
 
 export interface ContentReport {
   id: string;
-  entityType: "ForumThread" | "MentorProfile" | "Job" | "BusinessListing" | "Spotlight";
+  entityType: "ForumThread" | "MentorProfile" | "Job" | "BusinessListing" | "Spotlight" | "Introduction";
   entityId: string;
   entityTitle: string;
   reason: string;
